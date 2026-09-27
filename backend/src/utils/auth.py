@@ -10,6 +10,7 @@ import logging
 from datetime import datetime
 import hashlib
 import time
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -371,25 +372,44 @@ async def increment_anonymous_calls(anonymous_id: str):
     except Exception as e:
         logger.error(f"Error incrementing anonymous call count: {e}")
 
-async def verify_authentication_optional(
+def get_guest_user_id(request: Request) -> Optional[str]:
+    """A browser-generated 256-bit bearer secret proves guest ownership.
+
+    Store only its hash. Never fall back to IP, User-Agent, or a generation ID.
+    """
+    secret = request.headers.get("x-guest-session")
+    if secret is None:
+        return None
+    if not re.fullmatch(r"[0-9a-f]{64}", secret):
+        raise HTTPException(status_code=401, detail="Invalid guest session")
+    return "guest_" + hashlib.sha256(secret.encode()).hexdigest()
+
+
+async def get_optional_identity(
     request: Request,
     authorization: Optional[str] = Header(None),
     x_api_key: Optional[str] = Header(None)
 ) -> Dict[str, Any]:
     """
-    Verify authentication but allow anonymous users with rate limiting
+    Resolve account or guest ownership without charging read/poll requests.
     """
+    guest_user_id = get_guest_user_id(request)
     # Check for developer API key first
     if x_api_key and x_api_key == DEVELOPER_API_KEY:
         logger.info("Request authenticated with developer API key")
         return {
             "authenticated": True, 
             "user_email": "developer@brickai.com",
+            "user_id": "developer",
+            "guest_user_id": guest_user_id,
             "auth_method": "api_key",
             "is_developer": True,
             "is_anonymous": False
         }
     
+    # Invalid credentials must not silently turn an account request into a guest.
+    if authorization and (not authorization.startswith("Bearer ") or not supabase_client):
+        raise HTTPException(status_code=401, detail="Invalid authentication token")
     # Check for Supabase JWT token
     if authorization and authorization.startswith("Bearer "):
         token = authorization.replace("Bearer ", "")
@@ -403,36 +423,42 @@ async def verify_authentication_optional(
                     "authenticated": True,
                     "user_email": user_info["email"],
                     "user_id": user_info["user_id"],
+                    "guest_user_id": guest_user_id,
                     "auth_method": "jwt",
                     "is_developer": False,
                     "is_anonymous": False
                 }
         except AuthError as e:
-            logger.warning(f"Invalid token provided, treating as anonymous user: {e.message}")
-    
-    # Handle anonymous users
-    anonymous_id = get_anonymous_user_id(request)
-    short_window_status = check_anonymous_short_window_limit(anonymous_id)
-    rate_limit_status = await check_anonymous_rate_limit(anonymous_id)
-    rate_limit_status["short_window"] = short_window_status
-    
-    if rate_limit_status["limit_exceeded"]:
-        raise HTTPException(
-            status_code=429,  # Too Many Requests
-            detail=f"Anonymous user limit exceeded. Please create account or sign in for more access."
-        )
-    
-    logger.info(f"Anonymous user request - hash: {anonymous_id[:8]}..., Lifetime calls: {rate_limit_status['calls_made']}/{ANONYMOUS_CALL_LIMIT}")
+            raise HTTPException(status_code=401, detail="Invalid authentication token") from e
     
     return {
         "authenticated": False,
-        "user_email": f"anonymous_{anonymous_id[:8]}",
-        "user_id": anonymous_id,
+        "user_email": "anonymous",
+        "user_id": guest_user_id,
+        "guest_user_id": guest_user_id,
         "auth_method": "anonymous",
         "is_developer": False,
         "is_anonymous": True,
-        "rate_limit": rate_limit_status
     }
+
+
+async def verify_authentication_optional(
+    request: Request,
+    auth_info: Dict[str, Any] = Depends(get_optional_identity),
+) -> Dict[str, Any]:
+    if not auth_info.get("is_anonymous"):
+        return auth_info
+    if not auth_info.get("user_id"):
+        raise HTTPException(status_code=401, detail="Guest session required")
+    # IP fingerprints are abuse controls only, never proof of ownership.
+    rate_limit_id = get_anonymous_user_id(request)
+    short_window_status = check_anonymous_short_window_limit(rate_limit_id)
+    rate_limit_status = await check_anonymous_rate_limit(rate_limit_id)
+    rate_limit_status["short_window"] = short_window_status
+    if rate_limit_status["limit_exceeded"]:
+        raise HTTPException(status_code=429, detail="Anonymous user limit exceeded. Please sign in.")
+    return {**auth_info, "rate_limit_id": rate_limit_id, "rate_limit": rate_limit_status}
+
 
 async def get_user_with_optional_auth(
     auth_info: Dict[str, Any] = Depends(verify_authentication_optional)
@@ -449,7 +475,7 @@ async def increment_anonymous_usage_after_fal_success(auth_info: Dict[str, Any])
     This mirrors the credit deduction timing for authenticated users
     """
     if auth_info.get("is_anonymous", False):
-        anonymous_id = auth_info["user_id"]
+        anonymous_id = auth_info["rate_limit_id"]
         logger.info(f"Incrementing anonymous call count after successful fal.ai API call")
         await increment_anonymous_calls(anonymous_id)
         

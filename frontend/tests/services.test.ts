@@ -59,7 +59,9 @@ describe('JSON API service contracts', () => {
     const [url, options] = vi.mocked(fetch).mock.calls[0];
     expect(String(url).endsWith(endpoint)).toBe(true);
     expect(options).toMatchObject({ method: 'POST', body: JSON.stringify(body) });
-    expect((options?.headers as Record<string, string>).Authorization).toBe('Bearer tok');
+    const headers = new Headers(options?.headers);
+    expect(headers.get('Authorization')).toBe('Bearer tok');
+    expect(headers.get('X-Guest-Session')).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('persists pricing results used by checkout', async () => {

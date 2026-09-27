@@ -44,7 +44,7 @@ it('loads all pages of active generations and forwards auth and cancellation', a
   const jobs = await GetUserGenerationsApiService.getProcessingGenerations('token', controller.signal);
   expect(jobs.map(row => row.id)).toEqual(['one', 'two']);
   expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ processing: true, limit: 50, offset: 1 });
-  expect(fetch.mock.calls[0][1]).toMatchObject({ headers: { Authorization: 'Bearer token' }, signal: controller.signal });
+  expect(fetch.mock.calls[0][1]).toMatchObject({ headers: { authorization: 'Bearer token' }, signal: controller.signal });
 });
 
 it('restores every active job and retains completed and failed outcomes independently', async () => {
@@ -70,7 +70,7 @@ it('restores every active job and retains completed and failed outcomes independ
 it('recovers a job that completed while the page was closed', async () => {
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ status: 'completed', prompt: 'Castle' } as never);
-  localStorage.setItem('pending_generations:user', JSON.stringify([job('saved')]));
+  localStorage.setItem('pending_generations:v2:user', JSON.stringify([job('saved')]));
   await act(async () => root.render(<Harness />));
   expect(container.textContent).toContain('Castle');
   expect(container.textContent).toContain('View model');
@@ -106,4 +106,14 @@ it('waits for auth and clears another account’s cards', async () => {
   expect(container.textContent).toContain('Build private');
   await act(async () => root.render(<Harness owner="other" />));
   expect(container.textContent).not.toContain('Build private');
+});
+
+it('never restores legacy guest rows that may belong to another visitor', async () => {
+  localStorage.setItem('pending_generations:anonymous', JSON.stringify([job('leaked')]));
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const status = vi.spyOn(GetGenerationApiService, 'getGeneration');
+  await act(async () => root.render(<Harness owner="anonymous" />));
+  expect(container.textContent).not.toContain('leaked');
+  expect(activity.generations).toEqual([]);
+  expect(status).not.toHaveBeenCalled();
 });

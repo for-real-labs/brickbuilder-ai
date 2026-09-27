@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 import { readApiError } from "./apiError";
 
 // API Configuration
@@ -38,7 +39,7 @@ export class ToggleGenerationLikeApiService {
       headers['Authorization'] = 'Bearer ' + accessToken;
     }
 
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify({ generation_id: generationId }),

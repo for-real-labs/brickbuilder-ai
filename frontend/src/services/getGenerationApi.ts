@@ -1,3 +1,4 @@
+import { authenticatedApiFetch } from './apiFetch';
 // API Configuration
 const API_MODE = import.meta.env.VITE_API_MODE || 'local';
 const LOCAL_API_URL = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002';
@@ -56,7 +57,7 @@ export class GetGenerationApiService {
     const url = `${API_BASE_URL}/generation/${generationId}`;
 
     try {
-      const response = await fetch(url, {
+      const response = await authenticatedApiFetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
