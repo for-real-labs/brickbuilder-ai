@@ -62,6 +62,7 @@ import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
 import { GetGenerationStatsApiService } from '../src/services/getGenerationStatsApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
+import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 
 describe('LandingPage', () => {
   it('starts LLM jobs in the background and allows another submission while they run', async () => {
@@ -100,6 +101,92 @@ describe('LandingPage', () => {
       expect(stream).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(JSON.parse(localStorage.getItem('pending_generations:anonymous')!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it('shows the top eight community models with chevron controls', async () => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
+      generations: Array.from({ length: 8 }, (_, index) => ({
+        id: `generation-${index + 1}`,
+        user_id: `owner-${index + 1}`,
+        user_type: 'authenticated',
+        prompt: 'castle',
+        name: `Model ${index + 1}`,
+        detail_level: 10,
+        endpoint: 'llm',
+        created_at: '2026-09-26T00:00:00Z',
+        status: 'completed',
+        preview_image_url: `https://example.com/model-${index + 1}.png`,
+        username: `builder-${index + 1}`,
+        like_count: 20 - index,
+      })),
+      total_count: 8,
+      has_more: false,
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ stargazers_count: 10 }),
+    }));
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await act(async () => root.render(<LandingPage />));
+
+      expect(container.querySelector('[aria-label="Scroll community models left"]')).toBeTruthy();
+      expect(container.querySelector('[aria-label="Scroll community models right"]')).toBeTruthy();
+      expect(Array.from(container.querySelectorAll('[data-featured-copy="0"] button')).filter((button) => button.textContent?.includes('View Model'))).toHaveLength(8);
+      expect(container.textContent).toContain('Model 1');
+      expect(container.textContent).toContain('20');
+      expect(container.textContent).toContain('Sep 26, 2026');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it('disables carousel arrows when there is only one distinct model', async () => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
+      generations: [{
+        id: 'generation-1',
+        user_id: 'owner-1',
+        user_type: 'authenticated',
+        prompt: 'castle',
+        name: 'Solo Model',
+        detail_level: 10,
+        endpoint: 'llm',
+        created_at: '2026-09-26T00:00:00Z',
+        status: 'completed',
+        preview_image_url: 'https://example.com/model-1.png',
+        username: 'builder-1',
+        like_count: 9,
+      }],
+      total_count: 1,
+      has_more: false,
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ stargazers_count: 10 }),
+    }));
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await act(async () => root.render(<LandingPage />));
+
+      expect((container.querySelector('[aria-label="Scroll community models left"]') as HTMLButtonElement).disabled).toBe(true);
+      expect((container.querySelector('[aria-label="Scroll community models right"]') as HTMLButtonElement).disabled).toBe(true);
     } finally {
       act(() => root.unmount());
       container.remove();

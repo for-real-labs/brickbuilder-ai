@@ -32,10 +32,12 @@ from .requests.getGenerationStats import get_generation_stats, GetGenerationStat
 from .requests.getUserGenerations import get_user_generations, GetUserGenerationsRequest, GetUserGenerationsResponse
 from .requests.getGenerationsByImage import get_generations_by_image, GetGenerationsByImageRequest, GetGenerationsByImageResponse
 from .requests.getCommunityGenerations import get_community_generations, GetCommunityGenerationsRequest, GetCommunityGenerationsResponse
+from .requests.getGenerationLikeStatus import get_generation_like_status, GetGenerationLikeStatusRequest, GetGenerationLikeStatusResponse
 from .requests.updateModel import update_model, UpdateModelRequest, UpdateModelResponse
 from .requests.updateLdrAndPartsList import update_ldr_and_parts_list, UpdateLdrAndPartsListRequest, UpdateLdrAndPartsListResponse
 from .requests.sendWaitlistEmail import send_waitlist_email, SendWaitlistEmailRequest, SendWaitlistEmailResponse
 from .requests.toggleIsCommunity import toggle_is_community, ToggleIsCommunityRequest, ToggleIsCommunityResponse
+from .requests.toggleGenerationLike import toggle_generation_like, ToggleGenerationLikeRequest, ToggleGenerationLikeResponse
 from .requests.claimGeneration import claim_generation, ClaimGenerationRequest, ClaimGenerationResponse
 from .requests.updateGenerationName import update_generation_name, UpdateGenerationNameRequest, UpdateGenerationNameResponse
 from .requests.updateImagePreview import update_image_preview, UpdateImagePreviewRequest, UpdateImagePreviewResponse
@@ -446,6 +448,15 @@ async def get_community_generations_endpoint(
     return await get_community_generations(request_body, auth_info)
 
 
+@app.post("/getGenerationLikeStatus", response_model=GetGenerationLikeStatusResponse)
+async def get_generation_like_status_endpoint(
+    request: GetGenerationLikeStatusRequest,
+    auth_info: dict = Depends(get_user_with_optional_auth)
+) -> GetGenerationLikeStatusResponse:
+    """Get like count and viewer like status for a generation."""
+    return await get_generation_like_status(request, auth_info)
+
+
 @app.post("/updateModel", response_model=UpdateModelResponse)
 async def update_model_endpoint(
     request: UpdateModelRequest,
@@ -497,6 +508,15 @@ async def toggle_is_community_endpoint(
     as false, so the first toggle will set it to true.
     """
     return await toggle_is_community(request, auth_info)
+
+
+@app.post("/toggleGenerationLike", response_model=ToggleGenerationLikeResponse)
+async def toggle_generation_like_endpoint(
+    request: ToggleGenerationLikeRequest,
+    auth_info: dict = Depends(get_user_with_optional_auth)
+) -> ToggleGenerationLikeResponse:
+    """Toggle the current user's like for a community generation."""
+    return await toggle_generation_like(request, auth_info)
 
 
 @app.post("/claimGeneration", response_model=ClaimGenerationResponse)

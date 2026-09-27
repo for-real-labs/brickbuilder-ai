@@ -32,6 +32,8 @@ import { GetGenerationApiService, GetGenerationResponse } from "../services/getG
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { ToggleIsCommunityApiService } from "../services/toggleIsCommunityApi";
+import { GetGenerationLikeStatusApiService } from "../services/getGenerationLikeStatusApi";
+import { ToggleGenerationLikeApiService } from "../services/toggleGenerationLikeApi";
 import { ClaimGenerationApiService } from "../services/claimGenerationApi";
 import { UpdateModelApiService, UpdateModelResponse } from "../services/updateModelApi";
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
@@ -50,6 +52,7 @@ import {
   Mail,
   Boxes,
   Star,
+  Heart,
   Loader2,
   Pencil,
   Users,
@@ -253,11 +256,15 @@ export default function GeneratedModel() {
   const [generationOwnerId, setGenerationOwnerId] = React.useState<string | null>(null);
   const [communityToggleLoading, setCommunityToggleLoading] = React.useState<boolean>(false);
   const [communityToggleError, setCommunityToggleError] = React.useState<string | null>(null);
+  const [likeCount, setLikeCount] = React.useState<number>(0);
+  const [hasLikedCommunityModel, setHasLikedCommunityModel] = React.useState<boolean>(false);
+  const [likeToggleLoading, setLikeToggleLoading] = React.useState<boolean>(false);
   // Login modal shown when a logged-out user tries to post to community
   const [showLoginModal, setShowLoginModal] = React.useState<boolean>(false);
   // Set when a logged-out user clicks "Post to Community" so the posting flow
   // can resume automatically once they finish logging in.
   const [pendingCommunityPost, setPendingCommunityPost] = React.useState<boolean>(false);
+  const [pendingLikeAfterLogin, setPendingLikeAfterLogin] = React.useState<boolean>(false);
   // Naming modal (shown when posting to community)
   const [showCommunityNameModal, setShowCommunityNameModal] = React.useState<boolean>(false);
   const [communityNameInput, setCommunityNameInput] = React.useState<string>("");
@@ -710,6 +717,38 @@ export default function GeneratedModel() {
     };
   }, [currentGenerationId]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+
+    const fetchLikeStatus = async () => {
+      if (!currentGenerationId) {
+        setLikeCount(0);
+        setHasLikedCommunityModel(false);
+        return;
+      }
+
+      try {
+        const response = await GetGenerationLikeStatusApiService.getGenerationLikeStatus(
+          currentGenerationId,
+          accessToken || undefined,
+        );
+        if (cancelled) return;
+        setIsCommunity(response.is_community);
+        setLikeCount(response.like_count);
+        setHasLikedCommunityModel(response.viewer_has_liked);
+      } catch (error) {
+        if (!cancelled) {
+          console.warn('Failed to fetch generation like status:', error);
+        }
+      }
+    };
+
+    void fetchLikeStatus();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessToken, currentGenerationId, currentUser?.id]);
+
   // Whether the signed-in user owns the current generation. Required to
   // upload a preview image (and matches the backend's authorization check).
   const isGenerationOwner = Boolean(
@@ -1036,6 +1075,51 @@ export default function GeneratedModel() {
     }
   };
 
+  const handleToggleCommunityLike = async () => {
+    if (!currentGenerationId || likeToggleLoading || !isCommunity) return;
+
+    if (!currentUser) {
+      setPendingLikeAfterLogin(true);
+      setShowLoginModal(true);
+      return;
+    }
+
+    const previousLiked = hasLikedCommunityModel;
+    const previousLikeCount = likeCount;
+    const nextLiked = !previousLiked;
+
+    setLikeToggleLoading(true);
+    setHasLikedCommunityModel(nextLiked);
+    setLikeCount(Math.max(previousLikeCount + (nextLiked ? 1 : -1), 0));
+    setCommunityToggleError(null);
+
+    posthog.capture('community_model_like_clicked', {
+      generation_id: currentGenerationId,
+      has_liked: nextLiked,
+      surface: 'generated_model',
+      is_demo_model: isDemoModel,
+      is_authenticated: true,
+    });
+
+    try {
+      const response = await ToggleGenerationLikeApiService.toggleGenerationLike(
+        currentGenerationId,
+        accessToken || undefined,
+      );
+      setHasLikedCommunityModel(response.has_liked);
+      setLikeCount(response.like_count);
+    } catch (error) {
+      setHasLikedCommunityModel(previousLiked);
+      setLikeCount(previousLikeCount);
+      console.error('Failed to toggle generation like:', error);
+      setCommunityToggleError(
+        error instanceof Error ? error.message : 'Failed to update like'
+      );
+    } finally {
+      setLikeToggleLoading(false);
+    }
+  };
+
   // Re-fetch ownership/community flags for the current generation. Used after
   // login so the "Post to Community" button reflects fresh ownership.
   const refreshGenerationOwnership = async () => {
@@ -1066,6 +1150,7 @@ export default function GeneratedModel() {
   const handleCommunityLoginSuccess = async () => {
     setShowLoginModal(false);
     const shouldResumePost = pendingCommunityPost;
+    const shouldResumeLike = pendingLikeAfterLogin;
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token || undefined;
@@ -1089,10 +1174,14 @@ export default function GeneratedModel() {
       if (shouldResumePost) {
         void handleToggleCommunity();
       }
+      if (shouldResumeLike) {
+        void handleToggleCommunityLike();
+      }
     } catch (e) {
       console.warn('Failed to finalize community login flow:', e);
     } finally {
       setPendingCommunityPost(false);
+      setPendingLikeAfterLogin(false);
     }
   };
 
@@ -1709,6 +1798,7 @@ export default function GeneratedModel() {
         onClose={() => {
           setShowLoginModal(false);
           setPendingCommunityPost(false);
+          setPendingLikeAfterLogin(false);
         }}
         onSuccess={() => { void handleCommunityLoginSuccess(); }}
       />
@@ -2143,6 +2233,36 @@ export default function GeneratedModel() {
           </div>
 
           <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
+            {isCommunity && (
+              <button
+                type="button"
+                aria-label={hasLikedCommunityModel ? 'Unlike community model' : 'Like community model'}
+                disabled={!currentGenerationId || likeToggleLoading || isSavePolling}
+                onClick={() => {
+                  void handleToggleCommunityLike();
+                }}
+                className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold transition-all duration-150 sm:w-auto sm:min-w-44 ${
+                  !currentGenerationId || likeToggleLoading || isSavePolling
+                    ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed'
+                    : hasLikedCommunityModel
+                      ? 'bg-rose-50 text-rose-600 border-rose-200 cursor-pointer hover:bg-rose-100 hover:scale-[1.03] hover:shadow-lg'
+                      : 'bg-white text-black border-gray-300 cursor-pointer hover:border-[#f44336] hover:text-[#f44336] hover:scale-[1.03] hover:shadow-lg'
+                }`}
+              >
+                {likeToggleLoading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  <>
+                    <Heart size={16} className={hasLikedCommunityModel ? 'fill-current' : ''} />
+                    {hasLikedCommunityModel ? 'Liked' : 'Like Community Model'} · {likeCount}
+                  </>
+                )}
+              </button>
+            )}
+
             {/* Post / Remove from Community button — owners can toggle; logged-out
                 visitors see it too and are prompted to log in on click */}
             {canShowCommunityButton && (

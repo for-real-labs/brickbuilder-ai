@@ -4,6 +4,7 @@ import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { CreateCheckoutSessionApiService } from '../src/services/createCheckoutSessionApi';
 import { EstimatePriceApiService } from '../src/services/estimatePriceApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
+import { GetGenerationLikeStatusApiService } from '../src/services/getGenerationLikeStatusApi';
 import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 import { GetPriceApiService } from '../src/services/getPriceApi';
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
@@ -13,6 +14,7 @@ import { PromptEditModelApiService } from '../src/services/promptEditModelApi';
 import { ResizeModelApiService } from '../src/services/resizeModelApi';
 import { SendWaitlistEmailApiService } from '../src/services/sendWaitlistEmailApi';
 import { ToggleIsCommunityApiService } from '../src/services/toggleIsCommunityApi';
+import { ToggleGenerationLikeApiService } from '../src/services/toggleGenerationLikeApi';
 import { UpdateGenerationNameApiService } from '../src/services/updateGenerationNameApi';
 import { UpdateImagePreviewApiService } from '../src/services/updateImagePreviewApi';
 import { UpdateModelApiService } from '../src/services/updateModelApi';
@@ -35,12 +37,14 @@ describe('JSON API service contracts', () => {
     ['llm bricks', () => LlmToBricksApiService.generate({ prompt: ' castle ' }, 'tok'), '/llmToBricks', { prompt: 'castle', image_media_type: 'image/png', detail_level: 40, model: 'claude-opus-5-5' }, { generation_id: 'g2', message: 'started' }],
     ['llm bricks openai', () => LlmToBricksApiService.generate({ prompt: 'castle', model: 'gpt-5.6-sol' }, 'tok'), '/llmToBricks', { prompt: 'castle', image_media_type: 'image/png', detail_level: 40, model: 'gpt-5.6-sol' }, { generation_id: 'g3', message: 'started' }],
     ['checkout', () => CreateCheckoutSessionApiService.createCheckoutSession({ quantity: 2 }, 'tok'), '/createCheckoutSession', { quantity: 2 }, { session_id: 's1', checkout_url: 'url' }],
-    ['community', () => GetCommunityGenerationsApiService.getCommunityGenerations('tok', 10, 2, true), '/getCommunityGenerations', { limit: 10, offset: 2, processing: true }, { generations: [], total_count: 0, has_more: false }],
+    ['community', () => GetCommunityGenerationsApiService.getCommunityGenerations('tok', 10, 2, true, 'top'), '/getCommunityGenerations', { limit: 10, offset: 2, processing: true, sort: 'top' }, { generations: [], total_count: 0, has_more: false }],
+    ['community like status', () => GetGenerationLikeStatusApiService.getGenerationLikeStatus('g1', 'tok'), '/getGenerationLikeStatus', { generation_id: 'g1' }, { generation_id: 'g1', is_community: true, like_count: 2, viewer_has_liked: true }],
     ['by image', () => GetGenerationsByImageApiService.getGenerationsByImage('tok', 'img'), '/getGenerationsByImage', { processed_image_url: 'img' }, { generations: [], total_count: 0 }],
     ['user generations', () => GetUserGenerationsApiService.getUserGenerations('tok', 10, 3, false), '/getUserGenerations', { limit: 10, offset: 3, processing: false }, { generations: [], total_count: 0, has_more: false }],
     ['prompt edit', () => PromptEditModelApiService.promptEditModel('g1', 'blue', 'tok', 'a'), '/promptEditModel', { generation_id: 'g1', edit_prompt: 'blue', model_option: 'a' }, { generation_id: 'g2', message: 'ok' }],
     ['resize', () => ResizeModelApiService.resizeModel('g1', 24, 'tok'), '/resizeModel', { generation_id: 'g1', detail_level: 24, use_red_bricks: true }, { generation_id: 'g2', message: 'ok' }],
     ['toggle', () => ToggleIsCommunityApiService.toggleIsCommunity('g1', 'tok'), '/toggleIsCommunity', { generation_id: 'g1' }, { generation_id: 'g1', is_community: true }],
+    ['toggle like', () => ToggleGenerationLikeApiService.toggleGenerationLike('g1', 'tok'), '/toggleGenerationLike', { generation_id: 'g1' }, { generation_id: 'g1', like_count: 3, has_liked: true }],
     ['rename', () => UpdateGenerationNameApiService.updateGenerationName('g1', 'Castle', 'tok'), '/updateGenerationName', { generation_id: 'g1', name: 'Castle' }, { generation_id: 'g1', name: 'Castle' }],
     ['preview', () => UpdateImagePreviewApiService.updateImagePreview('g1', 'base64', 'tok'), '/updateImagePreview', { generation_id: 'g1', image_base64: 'base64' }, { generation_id: 'g1', preview_image_url: 'url' }],
     ['model', () => UpdateModelApiService.updateModel('g1', '0 0 0', 'tok'), '/updateModel', { generation_id: 'g1', xyzrgb_content: '0 0 0' }, { generation_id: 'g1', success: true }],
@@ -84,6 +88,22 @@ describe('JSON API service contracts', () => {
     await expect(UpdateModelApiService.updateModel('g', 'xyz')).rejects.toThrow('API error: 500 - broken');
     vi.mocked(fetch).mockResolvedValueOnce(fail(409, 'taken') as unknown as Response);
     await expect(UpdateUsernameApiService.updateUsername('taken')).rejects.toBeInstanceOf(UsernameTakenError);
+  });
+
+  it('extracts JSON error details for generation like services', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(
+      fail(503, '{"detail":"Community likes are temporarily unavailable until the latest database migration is applied."}') as unknown as Response,
+    );
+    await expect(ToggleGenerationLikeApiService.toggleGenerationLike('g1', 'tok')).rejects.toThrow(
+      'API error: 503 - Community likes are temporarily unavailable until the latest database migration is applied.',
+    );
+
+    vi.mocked(fetch).mockResolvedValueOnce(
+      fail(500, '{"detail":"Like status unavailable"}') as unknown as Response,
+    );
+    await expect(GetGenerationLikeStatusApiService.getGenerationLikeStatus('g1', 'tok')).rejects.toThrow(
+      'API error: 500 - Like status unavailable',
+    );
   });
 
   it('streams LLM brick-design thinking before returning the result', async () => {

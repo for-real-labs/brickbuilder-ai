@@ -1,6 +1,6 @@
 
-import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box } from "lucide-react";
+import React, { useEffect, useRef, useState, memo } from "react";
+import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -12,7 +12,6 @@ import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import StreamingMeshViewer from "../components/StreamingMeshViewer";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { useAuth } from "../contexts/AuthContext";
-import modelsMetadata from "../assets/demo-images/models-metadata.json";
 import { SiteFooter } from "../components/SiteFooter";
 import { GlbUploadCard } from "../components/GlbUploadCard";
 import { ProfileMenu } from "../components/ProfileMenu";
@@ -20,6 +19,7 @@ import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity } from "../hooks/useGenerationActivity";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
 import { GenerationStats, GetGenerationStatsApiService } from "../services/getGenerationStatsApi";
+import { CommunityGeneration, GetCommunityGenerationsApiService } from "../services/getCommunityGenerationsApi";
 import {
   DEFAULT_LLM_MODEL,
   LLM_MODEL_OPTIONS,
@@ -206,24 +206,37 @@ const NAV_LINKS = [
   { label: "Today", href: "#today" },
 ];
 
-type ModelMetadata = {
-  id: string;
-  cost: number;
-  pieces: number;
-  weight: number;
-  img_url: string;
-};
-
 type FeaturedItem = {
+  id: string;
   title: string;
-  metadata: ModelMetadata;
+  imageUrl: string | null;
+  creator: string | null;
+  createdAt: string;
+  likeCount: number;
 };
 
-// Generate FEATURED array from metadata
-const FEATURED: FeaturedItem[] = Object.entries(modelsMetadata).map(([title, metadata]) => ({
-  title,
-  metadata: metadata as ModelMetadata
-}));
+const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
+  id: generation.id,
+  title: generation.name?.trim() || "Untitled Model",
+  imageUrl: generation.preview_image_url
+    || generation.external_image_url
+    || generation.image_url
+    || generation.thumbnail_url
+    || generation.processed_image_url
+    || null,
+  creator: generation.username?.trim() || null,
+  createdAt: generation.created_at,
+  likeCount: generation.like_count ?? 0,
+});
+
+const formatFeaturedDate = (value: string) => (
+  new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  })
+);
 
 // ---- Typewriter placeholder logic ----
 const EXAMPLE_PHRASES = [
@@ -368,6 +381,7 @@ export default function LandingPage() {
   );
   const [showGlbUpload, setShowGlbUpload] = useState(false);
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
+  const [featuredCommunityModels, setFeaturedCommunityModels] = useState<FeaturedItem[]>([]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -387,6 +401,32 @@ export default function LandingPage() {
     return () => {
       window.clearInterval(interval);
       controller.abort();
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    GetCommunityGenerationsApiService.getCommunityGenerations(
+      undefined,
+      8,
+      0,
+      undefined,
+      'top',
+    )
+      .then((response) => {
+        if (cancelled) return;
+        setFeaturedCommunityModels((response.generations || []).slice(0, 8).map(toFeaturedItem));
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.warn("Unable to load featured community models", error);
+          setFeaturedCommunityModels([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
     };
   }, []);
 
@@ -1207,9 +1247,11 @@ export default function LandingPage() {
                 </button>
               </div>
             )}
-            <div className="w-screen relative left-1/2 -translate-x-1/2">
-              <FeaturedStrip items={FEATURED} />
-            </div>
+            {featuredCommunityModels.length > 0 && (
+              <div className="w-screen relative left-1/2 -translate-x-1/2">
+                <FeaturedStrip items={featuredCommunityModels} />
+              </div>
+            )}
           </section>
 
           <HowItWorks />
@@ -1422,178 +1464,118 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
   );
 }
 
-/** TranslateX marquee (no user scroll). Cards remain 1:1 squares. */
-const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: FeaturedItem[] }) {
+export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: FeaturedItem[] }) {
   const navigate = useNavigate();
   const trackRef = useRef<HTMLDivElement>(null);
-  const runRef = useRef<HTMLDivElement>(null);
-  const xRef = useRef(0);
-  const lastRef = useRef(0);
-  const rafRef = useRef<number>(0);
-  const [runWidth, setRunWidth] = useState(0);
-  
-  const isDraggingRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartPosRef = useRef(0);
-  const hasDraggedRef = useRef(false);
+  const positionRef = useRef(0);
+  const pausedRef = useRef(false);
+  // Fill even a short list before duplicating it for a seamless loop.
+  const loopItems = items.length > 0
+    ? Array.from({ length: Math.max(items.length, 8) }, (_, index) => items[index % items.length])
+    : [];
 
-  useLayoutEffect(() => {
-    const measure = () => {
-      if (!runRef.current) return;
-      setRunWidth(runRef.current.offsetWidth);
-      xRef.current = 0;
-      if (trackRef.current) trackRef.current.style.transform = `translate3d(0,0,0)`;
-    };
-    const onResize = () => requestAnimationFrame(measure);
-    measure();
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
+  const move = (distance: number) => {
+    const track = trackRef.current;
+    const width = track?.firstElementChild?.getBoundingClientRect().width || 0;
+    if (!track || !width) return;
+    positionRef.current = ((positionRef.current + distance) % width + width) % width;
+    track.style.transform = `translate3d(${-positionRef.current}px, 0, 0)`;
+  };
 
   useEffect(() => {
-    const track = trackRef.current;
-    if (!track || !runWidth) return;
-
-    const speed = 37; // px/sec
-
-    const step = (ts: number) => {
-      if (isDraggingRef.current) {
-        rafRef.current = requestAnimationFrame(step);
-        return;
+    let frame: number;
+    let previous = 0;
+    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    const step = (time: number) => {
+      if (previous && !pausedRef.current && !reducedMotion?.matches) {
+        move(37 * Math.min((time - previous) / 1000, 0.1));
       }
-
-      if (!lastRef.current) lastRef.current = ts;
-      const dt = (ts - lastRef.current) / 1000;
-      lastRef.current = ts;
-
-      xRef.current -= speed * dt;
-      if (-xRef.current >= runWidth) xRef.current += runWidth;
-
-      track.style.transform = `translate3d(${Math.round(xRef.current)}px,0,0)`; // snap to int px
-      rafRef.current = requestAnimationFrame(step);
+      previous = time;
+      frame = requestAnimationFrame(step);
     };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [items]);
 
-    rafRef.current = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(rafRef.current);
-  }, [runWidth]);
-
-  useEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    const handlePointerDown = (e: PointerEvent) => {
-      isDraggingRef.current = true;
-      hasDraggedRef.current = false;
-      dragStartXRef.current = e.clientX;
-      dragStartPosRef.current = xRef.current;
-      track.style.cursor = 'grabbing';
-    };
-
-    const handlePointerMove = (e: PointerEvent) => {
-      if (!isDraggingRef.current) return;
-      const delta = e.clientX - dragStartXRef.current;
-      
-      // Mark as dragged if moved more than 5 pixels
-      if (Math.abs(delta) > 5) {
-        hasDraggedRef.current = true;
-      }
-      
-      xRef.current = dragStartPosRef.current + delta;
-      
-      // Normalize position to stay within bounds
-      while (-xRef.current >= runWidth) xRef.current += runWidth;
-      while (xRef.current > 0) xRef.current -= runWidth;
-      
-      track.style.transform = `translate3d(${Math.round(xRef.current)}px,0,0)`;
-    };
-
-    const handlePointerUp = () => {
-      if (isDraggingRef.current) {
-        isDraggingRef.current = false;
-        lastRef.current = 0; // Reset for smooth resumption
-        track.style.cursor = 'grab';
-        
-        // Reset hasDragged after a brief delay to allow click prevention
-        setTimeout(() => {
-          hasDraggedRef.current = false;
-        }, 100);
-      }
-    };
-
-    const handleClick = (e: MouseEvent) => {
-      if (hasDraggedRef.current) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-
-    track.addEventListener('pointerdown', handlePointerDown);
-    track.addEventListener('click', handleClick, true);
-    window.addEventListener('pointermove', handlePointerMove);
-    window.addEventListener('pointerup', handlePointerUp);
-    window.addEventListener('pointercancel', handlePointerUp);
-
-    return () => {
-      track.removeEventListener('pointerdown', handlePointerDown);
-      track.removeEventListener('click', handleClick, true);
-      window.removeEventListener('pointermove', handlePointerMove);
-      window.removeEventListener('pointerup', handlePointerUp);
-      window.removeEventListener('pointercancel', handlePointerUp);
-    };
-  }, [runWidth]);
-
-  const Row = () => (
-    <div ref={runRef} className="flex w-max gap-6 py-1" style={{ willChange: "transform" }}>
-      {items.map((m, i) => (
-        <article
-          key={`card-${i}`}
-          className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
-          style={{
-            width: "clamp(10rem, 18vw, 17rem)",
-            flex: "0 0 clamp(10rem, 18vw, 17rem)",
-            backfaceVisibility: "hidden",
-            transform: "translateZ(0)",
-          }}
-        >
-          <div
-            className="relative w-full overflow-hidden rounded-xl bg-slate-50"
-            style={{ paddingTop: "100%" }}
-          >
-            <img
-              src={m.metadata.img_url}
-              alt={m.title}
-              className="absolute left-0 top-0 h-full w-full object-contain"
-              style={{ transform: "translateZ(0)" }}
-              draggable="false"
-              onDragStart={(e) => e.preventDefault()}
-            />
-          </div>
-          <div className="mt-3 text-center">
-            <h3 className="text-sm font-semibold text-slate-800 mb-1">{m.title}</h3>
-            <p className="text-xs text-slate-600">{m.metadata.pieces} pieces</p>
-            <p className="text-xs text-slate-600">${m.metadata.cost} USD</p>
-            <button
-              onClick={() => navigate(`/generated-model?id=${m.metadata.id}`)}
-              className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
-            >
-              <Eye className="w-4 h-4"/> View Model
-            </button>
-          </div>
-        </article>
-      ))}
-    </div>
-  );
+  const handleScroll = (direction: 'left' | 'right') => {
+    const cardWidth = trackRef.current?.querySelector('article')?.getBoundingClientRect().width || 160;
+    move((direction === 'left' ? -1 : 1) * (cardWidth + 24));
+    posthog.capture('landing_featured_models_arrow_clicked', {
+      direction, item_count: items.length, surface: 'landing_featured_models',
+    });
+  };
 
   return (
-    <div className="relative w-full overflow-hidden select-none">
-      <div
-        ref={trackRef}
-        className="flex w-max gap-6"
-        style={{ transform: "translate3d(0,0,0)", willChange: "transform", backfaceVisibility: "hidden", cursor: "grab", touchAction: "none" }}
-      >
-        <Row />
-        <Row />
+    <div className="relative w-full select-none"
+      onMouseEnter={() => { pausedRef.current = true; }}
+      onMouseLeave={() => { pausedRef.current = false; }}
+      onFocus={() => { pausedRef.current = true; }}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) pausedRef.current = false;
+      }}>
+      <button type="button" aria-label="Scroll community models left"
+        onClick={() => handleScroll('left')} disabled={items.length < 2}
+        className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <div className="overflow-hidden">
+        <div ref={trackRef} data-featured-track className="flex w-max" style={{ willChange: 'transform' }}>
+          {[0, 1].map((copy) => (
+            <div key={copy} data-featured-copy={copy} className="flex w-max gap-6 py-1 pr-6">
+              {loopItems.map((item, index) => (
+                  <article
+                    key={`${item.id}-${index}`}
+                    className="shrink-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
+                    style={{ width: "clamp(7.5rem, 13.5vw, 12.75rem)" }}
+                  >
+                    <div
+                      className="relative w-full overflow-hidden rounded-xl bg-slate-50"
+                      style={{ paddingTop: "100%" }}
+                    >
+                      {item.imageUrl ? (
+                        <img
+                          src={item.imageUrl}
+                          alt={item.title}
+                          className="absolute left-0 top-0 h-full w-full object-contain"
+                          draggable="false"
+                          onDragStart={(e) => e.preventDefault()}
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
+                          <Sparkles className="h-10 w-10" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-3 text-center">
+                      <h3 className="text-sm font-semibold text-slate-800 mb-1 line-clamp-2 min-h-[2.5rem]">{item.title}</h3>
+                      <p className="text-xs text-slate-600 truncate">
+                        {item.creator ? `By ${item.creator}` : 'Shared by the community'}
+                      </p>
+                      <div className="mt-1 flex items-center justify-center gap-3 text-xs text-slate-500">
+                        <span className="inline-flex items-center gap-1">
+                          <Heart className="h-3.5 w-3.5 fill-current text-rose-500" />
+                          {item.likeCount}
+                        </span>
+                        <span>{formatFeaturedDate(item.createdAt)}</span>
+                      </div>
+                      <button
+                        onClick={() => navigate(`/generated-model?id=${item.id}`)}
+                        className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
+                      >
+                        <Eye className="w-4 h-4"/> View Model
+                      </button>
+                    </div>
+                  </article>
+              ))}
+            </div>
+          ))}
+        </div>
       </div>
+      <button type="button" aria-label="Scroll community models right"
+        onClick={() => handleScroll('right')} disabled={items.length < 2}
+        className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
+        <ChevronRight className="h-5 w-5" />
+      </button>
     </div>
   );
 });
