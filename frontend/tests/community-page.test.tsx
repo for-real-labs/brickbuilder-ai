@@ -94,4 +94,75 @@ describe('CommunityPage', () => {
       container.remove();
     }
   });
+
+  it('defaults to sorting by likes and requests the top sort from the API', async () => {
+    const getCommunityGenerations = vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
+      generations: [],
+      total_count: 0,
+      has_more: false,
+    });
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await act(async () => {
+        root.render(<CommunityPage />);
+      });
+
+      expect(getCommunityGenerations).toHaveBeenCalledWith('tok', 50, 0, undefined, 'top');
+      expect((container.querySelector('[aria-label="Sort community models"]') as HTMLSelectElement).value).toBe('likes');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it('filters by name or creator and refetches with the selected date sort', async () => {
+    const getCommunityGenerations = vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
+      generations: [
+        {
+          id: 'generation-1', user_id: 'owner-1', user_type: 'authenticated', prompt: 'castle',
+          name: 'Castle', detail_level: 10, endpoint: 'llm', created_at: '2026-09-26T00:00:00Z',
+          status: 'completed', username: 'alice', like_count: 2,
+        },
+        {
+          id: 'generation-2', user_id: 'owner-2', user_type: 'authenticated', prompt: 'dragon',
+          name: 'Dragon', detail_level: 10, endpoint: 'llm', created_at: '2026-09-25T00:00:00Z',
+          status: 'completed', username: 'bob', like_count: 5,
+        },
+      ],
+      total_count: 2,
+      has_more: false,
+    });
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await act(async () => {
+        root.render(<CommunityPage />);
+      });
+
+      const search = container.querySelector('input[placeholder="Search by name or creator"]') as HTMLInputElement;
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(search, 'alice');
+        search.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(container.textContent).toContain('Castle');
+      expect(container.textContent).not.toContain('Dragon');
+
+      const sortSelect = container.querySelector('[aria-label="Sort community models"]') as HTMLSelectElement;
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!.call(sortSelect, 'date_asc');
+        sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(getCommunityGenerations).toHaveBeenLastCalledWith('tok', 50, 0, undefined, 'recent');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
 });

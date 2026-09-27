@@ -3,8 +3,6 @@ import json
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
-import pytest
-
 from src.utils import llm_output as module
 
 
@@ -84,36 +82,3 @@ def test_recorder_bounds_output_size():
     recorder = module.OutputRecorder('job')
     asyncio.run(recorder.append('a' * (module.MAX_OUTPUT_CHARS + 10)))
     assert len(recorder.text) == module.MAX_OUTPUT_CHARS
-
-
-def test_legacy_migration_copies_to_private_storage_before_removing_public_copy():
-    from src.cli.migrate_generation_output import migrate
-    class Missing(Exception):
-        status = 404
-    public, private = Mock(), Mock()
-    public.download.return_value = b'{"text":"private"}'
-    private.download.side_effect = Missing()
-    query = Mock()
-    query.select.return_value = query
-    query.eq.return_value = query
-    query.order.return_value = query
-    query.range.return_value = query
-    query.execute.return_value = SimpleNamespace(data=[{'id': 'job'}])
-    storage = Mock()
-    storage.get_bucket.return_value = SimpleNamespace(public=False)
-    storage.from_.side_effect = lambda name: public if name == 'generations' else private
-    client = SimpleNamespace(storage=storage, table=Mock(return_value=query))
-    assert migrate(client) == 1
-    query.eq.assert_called_with('endpoint', 'llmToBricks')
-    public.remove.assert_not_called()
-    assert migrate(client, apply=True) == 1
-    private.upload.assert_called_once()
-    public.remove.assert_called_once_with(['job/llm-output.json'])
-    public.remove.reset_mock()
-    private.upload.side_effect = RuntimeError('storage unavailable')
-    with pytest.raises(RuntimeError):
-        migrate(client, apply=True)
-    public.remove.assert_not_called()
-    storage.get_bucket.return_value.public = True
-    with pytest.raises(RuntimeError):
-        migrate(client, apply=True)

@@ -7,6 +7,7 @@ from src.utils.brick_design import (
     build_design,
     load_palette,
     rasterize,
+    render_ldraw_preview_png,
     render_preview_png,
 )
 
@@ -162,6 +163,24 @@ def test_preview_is_a_png():
     png = render_preview_png(result.grid, result.unit, load_palette())
     assert png[:8] == b"\x89PNG\r\n\x1a\n"
     assert len(png) > 2000
+
+
+def test_ldraw_preview_matches_the_model_page_capture():
+    from io import BytesIO
+
+    from PIL import Image
+
+    image = Image.open(BytesIO(render_ldraw_preview_png(build_design(castle_design()).ldr)))
+    assert image.format == "PNG"
+    assert image.size == (1024, 1024)
+    assert image.getpixel((0, 0)) == (255, 255, 255)
+    assert image.getbbox() is not None
+    assert len(image.getcolors(maxcolors=1 << 20)) > 10
+
+
+def test_ldraw_preview_requires_drawable_parts():
+    with pytest.raises(ValueError, match="no basic bricks"):
+        render_ldraw_preview_png("1 4 0 0 0 1 0 0 0 1 0 0 0 1 custom.dat\n")
 
 
 def _xyzrgb_cells(xyzrgb):

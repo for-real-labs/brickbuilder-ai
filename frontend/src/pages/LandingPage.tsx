@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -228,15 +228,6 @@ const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
   createdAt: generation.created_at,
   likeCount: generation.like_count ?? 0,
 });
-
-const formatFeaturedDate = (value: string) => (
-  new Date(value).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  })
-);
 
 // ---- Typewriter placeholder logic ----
 const EXAMPLE_PHRASES = [
@@ -1123,15 +1114,6 @@ export default function LandingPage() {
                   This app uses generative AI to create brick models. Results may vary.
                 </p> */}
 
-                <button
-                  type="button"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-all hover:-translate-y-px hover:border-[#f44336]/30 hover:bg-red-50 hover:text-[#f44336] landing-fade-in landing-delay-3"
-                  onClick={() => navigate("/community")}
-                >
-                  <Users className="h-4 w-4" />
-                  View Community Models
-                </button>
-                
                 {/* Last completed generation */}
                 {/* {lastGeneration && !isCardHidden && (
                   <div className="mt-4 w-full max-w-xl rounded-xl border border-slate-200 bg-white shadow-sm relative">
@@ -1252,9 +1234,22 @@ export default function LandingPage() {
                 <FeaturedStrip items={featuredCommunityModels} />
               </div>
             )}
+            {!loading && (
+              <div className="mt-4 flex justify-center">
+                <button
+                  type="button"
+                  className="inline-flex items-center justify-center gap-1.5 h-12 rounded-full border border-slate-200 bg-white px-6 min-w-36 text-sm font-medium text-slate-700 shadow-sm transition-all hover:-translate-y-px hover:border-[#f44336]/30 hover:bg-red-50 hover:text-[#f44336]"
+                  onClick={() => navigate("/community")}
+                >
+                  <Users className="h-5 w-5" />
+                  View Community Models
+                </button>
+              </div>
+            )}
           </section>
 
           <HowItWorks />
+          <RealLifeBuilds />
         </main>
 
         <SiteFooter />
@@ -1285,7 +1280,7 @@ function HowItWorks() {
   return (
     <section
       id="how-it-works"
-      className="w-full mt-24 mb-16 relative"
+      className="w-full mt-10 mb-16 relative"
       style={{ zIndex: 15 }}
     >
       <div className="mx-auto max-w-5xl px-2">
@@ -1333,6 +1328,27 @@ function HowItWorks() {
             );
           })}
         </div>
+      </div>
+    </section>
+  );
+}
+
+function RealLifeBuilds() {
+  return (
+    <section className="w-full mb-16 relative" style={{ zIndex: 15 }}>
+      <div className="mx-auto max-w-5xl px-2 text-center landing-fade-in landing-delay-1">
+        <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">
+          Build It In Real Life
+        </h2>
+        <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
+          Every model comes with real, orderable LEGO parts and instructions. Here's a display of
+          BrickBuilder AI creations physically built at BrickWorld Chicago 2026's Meme World exhibit.
+        </p>
+        <img
+          src="/assets/blog/brickworld26/brickbuilderai-models.jpg"
+          alt="BrickBuilder AI models built with real LEGO bricks, on display at BrickWorld Chicago 2026's Meme World exhibit"
+          className="mt-8 w-full rounded-2xl border border-slate-200 shadow-sm"
+        />
       </div>
     </section>
   );
@@ -1547,20 +1563,10 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
                       )}
                     </div>
                     <div className="mt-3 text-center">
-                      <h3 className="text-sm font-semibold text-slate-800 mb-1 line-clamp-2 min-h-[2.5rem]">{item.title}</h3>
-                      <p className="text-xs text-slate-600 truncate">
-                        {item.creator ? `By ${item.creator}` : 'Shared by the community'}
-                      </p>
-                      <div className="mt-1 flex items-center justify-center gap-3 text-xs text-slate-500">
-                        <span className="inline-flex items-center gap-1">
-                          <Heart className="h-3.5 w-3.5 fill-current text-rose-500" />
-                          {item.likeCount}
-                        </span>
-                        <span>{formatFeaturedDate(item.createdAt)}</span>
-                      </div>
+                      <h3 className="text-sm font-semibold text-slate-800 mb-1 line-clamp-2">{item.title}</h3>
                       <button
                         onClick={() => navigate(`/generated-model?id=${item.id}`)}
-                        className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
+                        className="mt-1 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
                       >
                         <Eye className="w-4 h-4"/> View Model
                       </button>

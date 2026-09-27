@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import csv
 import io
+import math
 import re
 from collections import Counter
 from dataclasses import dataclass, field
@@ -776,6 +777,148 @@ def render_preview_png(grid: np.ndarray, unit: str, palette: Optional[Dict[int, 
     return buffer.getvalue()
 
 
+# Camera and framing of captureCleanPreview in frontend/src/components/ThreeLDRViewer.tsx.
+PREVIEW_SIZE = 1024
+_PREVIEW_FOV_DEGREES = 45.0
+_PREVIEW_DISTANCE = 1.8  # times the model's largest dimension
+_PREVIEW_DIRECTION = (-1.0, 0.5, 1.0)
+_PREVIEW_TURN_DEGREES = 15.0
+_PREVIEW_SUPERSAMPLE = 2
+_PLATE_LDU = 8
+_STUD_RADIUS = 6
+_STUD_HEIGHT = 4
+_STUD_SEGMENTS = 16
+_KEY_LIGHT = tuple(np.array((200.0, 400.0, 200.0)) / np.linalg.norm((200.0, 400.0, 200.0)))
+_FILL_LIGHT = tuple(np.array((-150.0, 200.0, -100.0)) / np.linalg.norm((-150.0, 200.0, -100.0)))
+_EDGE_SHADE = 0.7
+# Cell axes are (stud x, stud z, plate level); each face lists its two in-plane axes.
+_CELL_FACES = tuple((axis, sign, tuple(a for a in range(3) if a != axis)) for axis in range(3) for sign in (1, -1))
+
+
+def _cell_to_world(i: float, k: float, h: float) -> Tuple[float, float, float]:
+    """Viewer world space: the viewer flips LDraw models about X, so +Y is up and LDraw +Z is -Z."""
+    return i * LDU_PER_STUD, h * _PLATE_LDU, -k * LDU_PER_STUD
+
+
+def _cell_normal(axis: int, sign: int) -> Tuple[float, float, float]:
+    return ((float(sign), 0.0, 0.0), (0.0, 0.0, float(-sign)), (0.0, float(sign), 0.0))[axis]
+
+
+def _dot(a, b) -> float:
+    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2]
+
+
+def render_ldraw_preview_png(ldr: str, palette: Optional[Dict[int, Tuple[str, str]]] = None,
+                             size: int = PREVIEW_SIZE) -> bytes:
+    """The model page's saved preview of an LDraw model: square, white, from the same camera."""
+    from PIL import Image, ImageDraw
+
+    palette = palette or load_palette()
+    parts, owner = _ldraw_part_cells(ldr)
+    if not parts:
+        raise ValueError("the model has no basic bricks or plates to draw")
+
+    cells = np.array(list(owner))
+    lo, hi = cells.min(axis=0), cells.max(axis=0) + 1
+    mins = np.array((lo[0] * LDU_PER_STUD, lo[2] * _PLATE_LDU, -hi[1] * LDU_PER_STUD), dtype=float)
+    # the highest part always has uncovered studs
+    maxs = np.array((hi[0] * LDU_PER_STUD, hi[2] * _PLATE_LDU + _STUD_HEIGHT, -lo[1] * LDU_PER_STUD), dtype=float)
+    center = (mins + maxs) / 2
+    turn = math.radians(_PREVIEW_TURN_DEGREES)
+    dx, dy, dz = np.array(_PREVIEW_DIRECTION) / np.linalg.norm(_PREVIEW_DIRECTION)
+    offset = np.array((dx * math.cos(turn) + dz * math.sin(turn), dy, -dx * math.sin(turn) + dz * math.cos(turn)))
+    camera_array = center + offset * _PREVIEW_DISTANCE * float((maxs - mins).max())
+    forward_array = (center - camera_array) / np.linalg.norm(center - camera_array)
+    right_array = np.cross(forward_array, (0.0, 1.0, 0.0))
+    right_array /= np.linalg.norm(right_array)
+    camera, forward, right = tuple(camera_array), tuple(forward_array), tuple(right_array)
+    up = tuple(np.cross(right_array, forward_array))
+    canvas_size = size * _PREVIEW_SUPERSAMPLE
+    focal = canvas_size / 2 / math.tan(math.radians(_PREVIEW_FOV_DEGREES) / 2)
+
+    def project(point) -> Tuple[float, float]:
+        view = (point[0] - camera[0], point[1] - camera[1], point[2] - camera[2])
+        depth = _dot(view, forward)
+        return (canvas_size / 2 + focal * _dot(view, right) / depth,
+                canvas_size / 2 - focal * _dot(view, up) / depth)
+
+    def distance(points) -> float:
+        n = len(points)
+        centroid = [sum(p[axis] for p in points) / n - camera[axis] for axis in range(3)]
+        return _dot(centroid, centroid)
+
+    def faces_camera(normal, point) -> bool:
+        return _dot(normal, (camera[0] - point[0], camera[1] - point[1], camera[2] - point[2])) > 0
+
+    def shade(code: int, normal, factor: float = 1.0) -> Tuple[int, int, int]:
+        rgb = palette.get(code, ("", "888888"))[1]
+        light = min(1.0, 0.5 + 0.5 * max(0.0, _dot(normal, _KEY_LIGHT)) + 0.2 * max(0.0, _dot(normal, _FILL_LIGHT)))
+        return tuple(int(int(rgb[i:i + 2], 16) * light * factor) for i in (0, 2, 4))
+
+    polygons = []  # (distance, screen points, fill, edge segments, edge color)
+    for cell, index in owner.items():
+        code = parts[index][0]
+        for axis, sign, (u, w) in _CELL_FACES:
+            step = [0, 0, 0]
+            step[axis] = sign
+            if (cell[0] + step[0], cell[1] + step[1], cell[2] + step[2]) in owner:
+                continue
+            corners = []
+            for du, dw in ((0, 0), (1, 0), (1, 1), (0, 1)):
+                corner = list(cell)
+                corner[axis] += sign > 0
+                corner[u] += du
+                corner[w] += dw
+                corners.append(_cell_to_world(*corner))
+            normal = _cell_normal(axis, sign)
+            if not faces_camera(normal, corners[0]):
+                continue
+            screen = [project(corner) for corner in corners]
+            edges = []
+            for j, (edge_axis, edge_sign) in enumerate(((w, -1), (u, 1), (w, 1), (u, -1))):
+                neighbor = list(cell)
+                neighbor[edge_axis] += edge_sign
+                beyond = list(neighbor)
+                beyond[axis] += sign
+                if owner.get(tuple(neighbor)) != index or tuple(beyond) in owner:
+                    edges.append((screen[j], screen[(j + 1) % 4]))
+            polygons.append((distance(corners), screen, shade(code, normal), edges,
+                             shade(code, normal, _EDGE_SHADE)))
+
+    angles = [2 * math.pi * j / _STUD_SEGMENTS for j in range(_STUD_SEGMENTS)]
+    for (i, k, h), index in owner.items():
+        code, top = parts[index]
+        if h != top - 1 or (i, k, h + 1) in owner:
+            continue
+        x, _, z = _cell_to_world(i + 0.5, k + 0.5, 0)
+        y0 = (h + 1) * _PLATE_LDU
+        y1 = y0 + _STUD_HEIGHT
+        ring = [(x + _STUD_RADIUS * math.cos(a), z + _STUD_RADIUS * math.sin(a)) for a in angles]
+        for j, angle in enumerate(angles):
+            (ax, az), (bx, bz) = ring[j], ring[(j + 1) % _STUD_SEGMENTS]
+            middle = angle + math.pi / _STUD_SEGMENTS
+            normal = (math.cos(middle), 0.0, math.sin(middle))
+            side = [(ax, y0, az), (bx, y0, bz), (bx, y1, bz), (ax, y1, az)]
+            if faces_camera(normal, side[0]):
+                polygons.append((distance(side), [project(p) for p in side], shade(code, normal), [], None))
+        cap = [(px, y1, pz) for px, pz in ring]
+        screen = [project(p) for p in cap]
+        normal = (0.0, 1.0, 0.0)
+        polygons.append((distance(cap), screen, shade(code, normal),
+                         list(zip(screen, screen[1:] + screen[:1])), shade(code, normal, _EDGE_SHADE)))
+
+    image = Image.new("RGB", (canvas_size, canvas_size), (255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    for _, screen, fill, edges, edge_color in sorted(polygons, key=lambda polygon: -polygon[0]):
+        draw.polygon(screen, fill=fill, outline=fill)
+        for edge in edges:
+            draw.line(edge, fill=edge_color, width=_PREVIEW_SUPERSAMPLE)
+    image = image.resize((size, size), Image.Resampling.LANCZOS)
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG", optimize=True)
+    return buffer.getvalue()
+
+
 # --------------------------------------------------------------------------- LDraw audit
 
 _KNOWN_PARTS: Dict[str, Tuple[int, int, int]] = {}  # part -> (length_x, width_z, height_in_plates)
@@ -821,6 +964,48 @@ class LdrawAudit:
         return "; ".join(parts) or "no problems found"
 
 
+def _upright_part_box(tokens: List[str]) -> Optional[Tuple[float, float, float, int, int, int]]:
+    """(x0, z0, bottom plate, fx, fz, plates) of a type-1 line's basic part, or None if unsupported."""
+    part = tokens[14].lower()
+    if part not in _KNOWN_PARTS:
+        return None
+    try:
+        x, y, z = (float(t) for t in tokens[2:5])
+        m = [float(t) for t in tokens[5:14]]
+    except ValueError:
+        return None
+    length, width, plates = _KNOWN_PARTS[part]
+    # upright parts rotated a multiple of 90 degrees about Y only
+    if not (abs(m[4] - 1) < 1e-6 and all(abs(m[i]) < 1e-6 for i in (1, 3, 5, 7))):
+        return None
+    if abs(m[0]) > 0.5:          # long side along X
+        fx, fz = length, width
+    else:                        # long side along Z
+        fx, fz = width, length
+    return x / LDU_PER_STUD - fx / 2, z / LDU_PER_STUD - fz / 2, -y / 8 - plates, fx, fz, plates
+
+
+def _ldraw_part_cells(ldr: str) -> Tuple[List[Tuple[int, int]], Dict[Tuple[int, int, int], int]]:
+    """(color, top plate level) of each on-grid basic part, and the part filling each cell."""
+    parts: List[Tuple[int, int]] = []
+    owner: Dict[Tuple[int, int, int], int] = {}
+    for line in ldr.splitlines():
+        tokens = line.split()
+        if len(tokens) != 15 or tokens[0] != "1":
+            continue
+        box = _upright_part_box(tokens)
+        if box is None or not all(abs(v - round(v)) < 0.05 for v in box[:3]):
+            continue
+        x0, z0, bottom = (int(round(v)) for v in box[:3])
+        fx, fz, plates = box[3:]
+        parts.append((int(tokens[1]) if tokens[1].isdigit() else -1, bottom + plates))
+        for i in range(x0, x0 + fx):
+            for k in range(z0, z0 + fz):
+                for h in range(bottom, bottom + plates):
+                    owner.setdefault((i, k, h), len(parts) - 1)
+    return parts, owner
+
+
 def audit_ldraw(ldr: str) -> LdrawAudit:
     """Check an LDraw model built from basic bricks/plates for off-grid parts, overlapping parts
     and parts touching nothing above or below. Other parts are skipped (counted in .skipped)."""
@@ -831,27 +1016,11 @@ def audit_ldraw(ldr: str) -> LdrawAudit:
         tokens = line.split()
         if len(tokens) != 15 or tokens[0] != "1":
             continue
-        part = tokens[14].lower()
-        if part not in _KNOWN_PARTS:
+        box = _upright_part_box(tokens)
+        if box is None:
             audit.skipped += 1
             continue
-        try:
-            x, y, z = (float(t) for t in tokens[2:5])
-            m = [float(t) for t in tokens[5:14]]
-        except ValueError:
-            audit.skipped += 1
-            continue
-        length, width, plates = _KNOWN_PARTS[part]
-        # upright parts rotated a multiple of 90 degrees about Y only
-        if not (abs(m[4] - 1) < 1e-6 and all(abs(m[i]) < 1e-6 for i in (1, 3, 5, 7))):
-            audit.skipped += 1
-            continue
-        if abs(m[0]) > 0.5:          # long side along X
-            fx, fz = length, width
-        else:                        # long side along Z
-            fx, fz = width, length
-        gx, gz = x / LDU_PER_STUD - fx / 2, z / LDU_PER_STUD - fz / 2
-        bottom = -y / 8 - plates
+        gx, gz, bottom, fx, fz, plates = box
         audit.checked += 1
         if not all(abs(v - round(v)) < 0.05 for v in (gx, gz, bottom)):
             audit.off_grid.append(number)
