@@ -57,13 +57,7 @@ const MODEL_QUALITY_PRESETS: { label: string; value: ModelQuality; modelOption: 
   { label: "Regular", value: "regular", modelOption: "a" },
   { label: "Premium", value: "premium", modelOption: "b" },
 ];
-
-type StyleOption = "videogame" | "plush" | "voxel";
-const STYLE_PRESETS: { label: string; value: StyleOption; promptOption: string }[] = [
-  { label: "Videogame", value: "videogame", promptOption: "a" },
-  { label: "Plush", value: "plush", promptOption: "b" },
-  { label: "Block", value: "voxel", promptOption: "c" },
-];
+const DEFAULT_PROMPT_OPTION = "a";
 
 type GenerationMethod = "3d" | "llm";
 export const DEFAULT_GENERATION_METHOD: GenerationMethod = "llm";
@@ -73,9 +67,9 @@ const GENERATION_METHOD_PRESETS: Array<{
   description: string;
 }> = [
   {
-    label: "3D Render",
+    label: "image-to-glb",
     value: "3d",
-    description: "Create a 3D model, then convert it into bricks",
+    description: "Convert an image into a 3D model",
   },
   {
     label: "LLM Render",
@@ -95,6 +89,8 @@ const LLM_PROVIDER_GROUPS: Array<{ provider: LlmProvider; label: string }> = [
   { provider: "anthropic", label: "Claude" },
   { provider: "openai", label: "OpenAI" },
 ];
+
+const IMAGE_TO_GLB_GROUP_LABEL = "image-to-glb";
 
 const isThreeDModel = (value: unknown): value is ThreeDModel =>
   THREE_D_MODEL_OPTIONS.some((option) => option.id === value);
@@ -123,17 +119,36 @@ export function GenerationMethodSelector({
 
   const handleModelChange = (modelId: string) => {
     if (disabled) return;
-    if (value === "3d") {
-      if (!isThreeDModel(modelId)) return;
+    if (isThreeDModel(modelId)) {
+      if (value === "3d" && threeDModel === modelId) return;
+      if (value !== "3d") {
+        onChange("3d");
+        posthog.capture('landing_generation_method_selected', {
+          generation_method: '3d',
+        });
+      }
       onThreeDModelChange(modelId);
-    } else {
-      if (!getLlmModelOption(modelId)) return;
-      onLlmModelChange(modelId);
+      posthog.capture('landing_render_model_selected', {
+        generation_method: '3d',
+        model: modelId,
+        provider: '3d',
+      });
+      return;
     }
+    const llmOption = getLlmModelOption(modelId);
+    if (!llmOption) return;
+    if (value === "llm" && llmModel === modelId) return;
+    if (value !== "llm") {
+      onChange("llm");
+      posthog.capture('landing_generation_method_selected', {
+        generation_method: 'llm',
+      });
+    }
+    onLlmModelChange(modelId);
     posthog.capture('landing_render_model_selected', {
-      generation_method: value,
+      generation_method: 'llm',
       model: modelId,
-      provider: value === "3d" ? "3d" : getLlmModelOption(modelId)?.provider,
+      provider: llmOption.provider,
     });
   };
 
@@ -143,39 +158,8 @@ export function GenerationMethodSelector({
       style={{ zIndex: 25 }}
     >
       <div className="flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <span className="shrink-0 text-sm font-medium text-slate-600 sm:w-36">Generation method:</span>
-        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-          {GENERATION_METHOD_PRESETS.map((method) => {
-            const active = method.value === value;
-            return (
-              <button
-                key={method.value}
-                type="button"
-                onClick={() => {
-                  if (disabled) return;
-                  onChange(method.value);
-                  posthog.capture('landing_generation_method_selected', {
-                    generation_method: method.value,
-                  });
-                }}
-                className={`min-h-10 flex-1 rounded-full px-4 py-2 text-sm transition-all duration-150 sm:flex-none ${
-                  active
-                    ? "border border-transparent bg-[#f44336] text-white"
-                    : "border border-slate-300 bg-white text-slate-700 hover:border-red-200 hover:bg-red-50"
-                }`}
-                aria-pressed={active}
-                disabled={disabled}
-                title={method.description}
-              >
-                {method.label}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-      <div className="flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
         <label htmlFor={modelSelectId} className="shrink-0 text-sm font-medium text-slate-600 sm:w-36">
-          {value === "3d" ? "3D model:" : "LLM model:"}
+          Render model:
         </label>
         <select
           id={modelSelectId}
@@ -184,19 +168,32 @@ export function GenerationMethodSelector({
           disabled={disabled}
           className="min-h-10 w-full min-w-0 cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed sm:w-56"
         >
-          {value === "3d"
-            ? THREE_D_MODEL_OPTIONS.map((option) => (
-                <option key={option.id} value={option.id}>{option.label}</option>
-              ))
-            : LLM_PROVIDER_GROUPS.map((group) => (
-                <optgroup key={group.provider} label={group.label}>
-                  {LLM_MODEL_OPTIONS.filter((option) => option.provider === group.provider).map((option) => (
-                    <option key={option.id} value={option.id}>{option.label}</option>
-                  ))}
-                </optgroup>
+          <optgroup label={IMAGE_TO_GLB_GROUP_LABEL}>
+            {THREE_D_MODEL_OPTIONS.map((option) => (
+              <option
+                key={option.id}
+                value={option.id}
+              >
+                {option.label}
+              </option>
+            ))}
+          </optgroup>
+          {LLM_PROVIDER_GROUPS.map((group) => (
+            <optgroup key={group.provider} label={group.label}>
+              {LLM_MODEL_OPTIONS.filter((option) => option.provider === group.provider).map((option) => (
+                <option
+                  key={option.id}
+                  value={option.id}
+                >
+                  {option.label}
+                </option>
               ))}
+            </optgroup>
+          ))}
         </select>
-        <p className="text-xs leading-5 text-slate-500 sm:ml-auto sm:max-w-40">{modelDescription}</p>
+        {modelDescription && (
+          <p className="text-xs leading-5 text-slate-500 sm:ml-auto sm:max-w-40">{modelDescription}</p>
+        )}
       </div>
     </div>
   );
@@ -349,7 +346,6 @@ export default function LandingPage() {
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
-  const [styleOption, setStyleOption] = useState<StyleOption>("videogame");
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
@@ -459,7 +455,6 @@ export default function LandingPage() {
         prompt?: string;
         size?: SizeValue;
         modelQuality?: ModelQuality;
-        styleOption?: StyleOption;
         generationMethod?: string;
         threeDModel?: string;
         llmModel?: string;
@@ -469,7 +464,6 @@ export default function LandingPage() {
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      if (payload.styleOption) setStyleOption(payload.styleOption);
       if (payload.generationMethod === '3d' || payload.generationMethod === 'llm') {
         setGenerationMethod(payload.generationMethod);
       }
@@ -593,7 +587,6 @@ export default function LandingPage() {
         prompt,
         size,
         modelQuality,
-        styleOption,
         generationMethod,
         threeDModel,
         llmModel,
@@ -659,8 +652,7 @@ export default function LandingPage() {
       // Get modelOption based on quality selection
       const modelOption = MODEL_QUALITY_PRESETS.find(q => q.value === modelQuality)?.modelOption || 'b';
       
-      // Get promptOption based on style selection
-      const promptOption = STYLE_PRESETS.find(st => st.value === styleOption)?.promptOption || 'a';
+      const promptOption = DEFAULT_PROMPT_OPTION;
       
       // Get auth token if user is logged in
       const authToken = session?.access_token;
@@ -1102,30 +1094,6 @@ export default function LandingPage() {
                 onThreeDModelChange={setThreeDModel}
                 onLlmModelChange={setLlmModel}
               />
-            )}
-
-            {/* Style chips - hidden during loading and unused for LLM Render */}
-            {!loading && !areOptionsHidden && generationMethod === '3d' && (
-              <div className="flex flex-wrap items-center justify-center gap-3 relative" style={{ zIndex: 25 }}>
-                <span className="text-sm text-slate-500">Style:</span>
-                {STYLE_PRESETS.map((st) => {
-                  const active = st.value === styleOption;
-                  return (
-                    <button
-                      key={st.value}
-                      onClick={() => !loading && setStyleOption(st.value)}
-                      className={`rounded-full px-4 py-1 text-sm transition-all duration-150 ${
-                        active
-                          ? "bg-[#f44336] text-white border border-transparent"
-                          : "bg-white text-slate-700 border border-slate-300 hover:opacity-70"
-                      } ${loading ? "cursor-not-allowed" : "cursor-pointer"}`}
-                      disabled={loading}
-                    >
-                      {st.label}
-                    </button>
-                  );
-                })}
-              </div>
             )}
 
             {/* Upload GLB toggle - lives in settings */}
