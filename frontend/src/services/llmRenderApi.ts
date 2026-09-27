@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 // API Configuration
 const API_MODE = import.meta.env.VITE_API_MODE || 'local';
 const LOCAL_API_URL = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002';
@@ -107,7 +108,7 @@ export class LlmRenderApiService {
         : {}),
     };
 
-    const response = await fetch(url, {
+    const response = await apiFetch(url, {
       method: 'POST',
       headers,
       body: JSON.stringify(requestBody),
@@ -140,7 +141,7 @@ export class LlmRenderApiService {
       headers.Authorization = 'Bearer ' + accessToken;
     }
 
-    const response = await fetch(`${API_BASE_URL}/llmRender/stream`, {
+    const response = await apiFetch(`${API_BASE_URL}/llmRender/stream`, {
       method: 'POST',
       headers,
       body: JSON.stringify({

@@ -67,3 +67,45 @@ def test_get_community_generations_falls_back_to_recent_when_like_count_is_missi
     assert len(client.queries) == 2
     assert ("like_count", True) in client.queries[0].ordering
     assert client.queries[1].ordering == [("created_at", True)]
+
+
+def test_store_preview_image_uploads_png_and_saves_its_url():
+    updates = []
+
+    class FakeUpdate:
+        def __init__(self, data):
+            self.data = data
+
+        def eq(self, key, value):
+            updates.append((self.data, key, value))
+            return self
+
+        def execute(self):
+            return self
+
+    class FakeTable:
+        def update(self, data):
+            return FakeUpdate(data)
+
+    class FakeClient:
+        def table(self, table_name):
+            assert table_name == "generations"
+            return FakeTable()
+
+    uploads = []
+
+    async def fake_upload(content, path, content_type):
+        uploads.append((content, path, content_type))
+        return "https://example.com/preview.png"
+
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = FakeClient()
+    storage._upload_file_to_storage = fake_upload
+
+    url = asyncio.run(storage.store_preview_image("generation-1", b"png"))
+
+    assert url == "https://example.com/preview.png"
+    content, path, content_type = uploads[0]
+    assert (content, content_type) == (b"png", "image/png")
+    assert path.startswith("generations/generation-1/preview_image_") and path.endswith(".png")
+    assert updates == [({"preview_image_url": url}, "id", "generation-1")]

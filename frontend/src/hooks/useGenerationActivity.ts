@@ -1,3 +1,4 @@
+import { getGuestSession } from '../utils/guestSession';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GetGenerationApiService } from '../services/getGenerationApi';
 import { GetUserGenerationsApiService } from '../services/getUserGenerationsApi';
@@ -34,6 +35,8 @@ function persist(owner: string, rows: GenerationActivity[]) {
 }
 
 export function useGenerationActivity(owner: string, authToken: string | undefined, enabled: boolean) {
+  // Version the cache so IDs previously leaked into guest storage are discarded.
+  owner = `v2:${authToken ? owner : `guest:${getGuestSession()}`}`;
   const [generations, setGenerations] = useState<GenerationActivity[]>([]);
   const [error, setError] = useState<string | null>(null);
   const rows = useRef<GenerationActivity[]>([]);

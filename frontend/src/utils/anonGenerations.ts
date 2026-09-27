@@ -4,7 +4,8 @@
 // IP-hash-based bulk migration, which could sweep other users' anonymous
 // generations into whoever loaded the dashboard first when behind a proxy.
 
-const STORAGE_KEY = 'anon_generation_ids';
+// Legacy IDs cannot prove ownership and must not be claimed automatically.
+const STORAGE_KEY = 'anon_generation_ids_v2';
 
 export function getAnonymousGenerationIds(): string[] {
   try {

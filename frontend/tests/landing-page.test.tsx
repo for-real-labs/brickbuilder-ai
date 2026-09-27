@@ -1,3 +1,4 @@
+import { getGuestSession } from '../src/utils/guestSession';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
@@ -100,7 +101,7 @@ describe('LandingPage', () => {
       });
       expect(stream).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
-      expect(JSON.parse(localStorage.getItem('pending_generations:anonymous')!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
+      expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
     } finally {
       act(() => root.unmount());
       container.remove();

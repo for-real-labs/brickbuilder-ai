@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 import type {
   StreamEvent,
   VoxelDataEvent,
@@ -74,7 +75,7 @@ export class TextToBricksApiService {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
     
-    const response = await fetch(API_URLS.textToBricks, {
+    const response = await apiFetch(API_URLS.textToBricks, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -158,7 +159,7 @@ export class TextToBricksApiService {
       console.log('[stream] Adding Authorization header');
     }
 
-    const response = await fetch(API_URLS.textToBricks, {
+    const response = await apiFetch(API_URLS.textToBricks, {
       method: 'POST',
       headers,
       body: JSON.stringify({

@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 // API Configuration
 const API_MODE = import.meta.env.VITE_API_MODE || 'local';
 const LOCAL_API_URL = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002';
@@ -88,7 +89,7 @@ export class GetCommunityGenerationsApiService {
     }
 
     try {
-      const response = await fetch(url, {
+      const response = await apiFetch(url, {
         method: 'POST',
         headers,
         body: JSON.stringify(requestBody),

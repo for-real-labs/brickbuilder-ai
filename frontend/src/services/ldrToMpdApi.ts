@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 /// <reference types="vite/client" />
 
 export interface LdrToMpdResponse {
@@ -54,7 +55,7 @@ export class LdrToMpdApiService {
 
     try {
       // Forward request to API
-      const response = await fetch(API_URLS.ldrToMpd, {
+      const response = await apiFetch(API_URLS.ldrToMpd, {
         method: 'POST',
         headers,
         body: JSON.stringify({

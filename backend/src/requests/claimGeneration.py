@@ -27,14 +27,13 @@ async def claim_generation(
     Claim ownership of an anonymous generation for the authenticated user.
 
     This is used after a logged-out visitor signs in to take ownership of a
-    generation they created while anonymous (identified by the known
-    generation_id), without relying on a fragile IP-hash match.
+    generation they created while anonymous, proven by their guest session secret.
 
     Rules:
       - Requires authentication (anonymous callers are rejected with 401).
       - If the generation is already owned by the caller, this is a no-op.
-      - If the generation is currently anonymous, it is reassigned to the
-        caller (user_type -> "authenticated", user_id -> caller).
+      - Anonymous generations require the original guest session proof before
+        reassignment (user_type -> "authenticated", user_id -> caller).
       - If the generation is owned by a different authenticated user, the
         caller receives 403.
     """
@@ -96,6 +95,10 @@ async def claim_generation(
                 detail="You do not have permission to claim this generation",
             )
 
+        if (current_user_type != "anonymous" or not auth_info.get("guest_user_id")
+                or current_user_id != auth_info["guest_user_id"]):
+            raise HTTPException(status_code=403, detail="You do not own this guest generation")
+
         # Anonymous generation — reassign ownership to the caller. Scope the
         # update to the current anonymous owner as defense-in-depth so we never
         # overwrite a row that changed underneath us.
@@ -108,6 +111,7 @@ async def claim_generation(
             })
             .eq("id", request.generation_id)
             .eq("user_type", "anonymous")
+            .eq("user_id", auth_info["guest_user_id"])
             .execute()
         )
 

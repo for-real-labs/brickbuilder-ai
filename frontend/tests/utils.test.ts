@@ -27,9 +27,9 @@ describe('anonymous generation storage', () => {
   });
 
   it('tolerates malformed and non-array storage values', () => {
-    localStorage.setItem('anon_generation_ids', '{');
+    localStorage.setItem('anon_generation_ids_v2', '{');
     expect(getAnonymousGenerationIds()).toEqual([]);
-    localStorage.setItem('anon_generation_ids', JSON.stringify(['ok', 1, null]));
+    localStorage.setItem('anon_generation_ids_v2', JSON.stringify(['ok', 1, null]));
     expect(getAnonymousGenerationIds()).toEqual(['ok']);
   });
 });

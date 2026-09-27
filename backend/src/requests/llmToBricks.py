@@ -22,6 +22,7 @@ from ..utils.brick_design import (
     build_design,
     load_palette,
     palette_prompt_text,
+    render_ldraw_preview_png,
     render_preview_png,
 )
 from ..utils.generation_storage import generation_storage
@@ -627,6 +628,14 @@ async def process_llm_to_bricks_task(
             await generation_storage.store_model_file(
                 generation_id, build.problematic_xyzrgb, "problematic_xyzrgb", raise_on_error=True
             )
+        try:
+            preview = await asyncio.get_running_loop().run_in_executor(
+                None, render_ldraw_preview_png, ldr_content
+            )
+            await generation_storage.store_preview_image(generation_id, preview)
+        except Exception as exc:
+            # The model page still captures and uploads a preview when none is saved.
+            logger.warning("LLM preview render failed for %s: %s", generation_id, exc)
         # The shared generations schema persists the LDR and parts list but
         # does not require an mpd_url column. The frontend follows the same
         # path as existing generations and converts the saved LDR through

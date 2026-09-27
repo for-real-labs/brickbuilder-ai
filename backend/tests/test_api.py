@@ -85,11 +85,11 @@ def test_generation_endpoints_delegate(monkeypatch):
     handler = AsyncMock(return_value={"status": "completed"})
     monkeypatch.setattr(api, "get_generation", handler)
     request = object()
-    assert asyncio.run(api.get_generation_endpoint(request)) == {"status": "completed"}
-    handler.assert_awaited_once_with(request)
+    assert asyncio.run(api.get_generation_endpoint(request, AUTH)) == {"status": "completed"}
+    handler.assert_awaited_once_with(request, AUTH)
 
     handler.reset_mock()
-    asyncio.run(api.get_generation_by_id_endpoint("generation-1"))
+    asyncio.run(api.get_generation_by_id_endpoint("generation-1", AUTH))
     assert handler.await_args.args[0].generation_id == "generation-1"
 
 
@@ -167,18 +167,18 @@ def test_generation_output_endpoint_validates_job_before_streaming(monkeypatch):
     from uuid import UUID
 
     id = UUID('7c1326b2-890a-4fb8-9750-d3aa15cdc8e4')
-    storage = SimpleNamespace(get_generation=AsyncMock(return_value={'status': 'processing'}))
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value={'status': 'processing', 'user_id': 'user', 'user_type': 'anonymous'}))
     monkeypatch.setattr(api, 'generation_storage', storage)
-    async def events(generation_id):
+    async def events(generation_id, auth_info):
         assert generation_id == str(id)
         yield 'data: {"type":"output","text":"Build","status":"processing"}\n\n'
     monkeypatch.setattr(api, 'output_events', events)
     async def run():
-        response = await api.generation_output_endpoint(id)
+        response = await api.generation_output_endpoint(id, AUTH)
         assert response.headers['x-accel-buffering'] == 'no'
         return [event async for event in response.body_iterator]
     assert len(asyncio.run(run())) == 1
     storage.get_generation.return_value = None
     with pytest.raises(HTTPException) as error:
-        asyncio.run(api.generation_output_endpoint(id))
+        asyncio.run(api.generation_output_endpoint(id, AUTH))
     assert error.value.status_code == 404

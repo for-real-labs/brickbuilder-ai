@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 /// <reference types="vite/client" />
 
 export interface CreateCheckoutSessionRequest {
@@ -56,7 +57,7 @@ export class CreateCheckoutSessionApiService {
 
     try {
       // Send checkout session creation request to API
-      const response = await fetch(API_URLS.createCheckoutSession, {
+      const response = await apiFetch(API_URLS.createCheckoutSession, {
         method: 'POST',
         headers,
         body: JSON.stringify(request),
