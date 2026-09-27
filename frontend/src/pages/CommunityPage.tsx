@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
   Coins,
   Users,
   Loader2,
+  Search,
   Sparkles,
   LayoutDashboard,
   Heart,
@@ -20,6 +21,16 @@ import { ToggleGenerationLikeApiService } from "../services/toggleGenerationLike
 import { SiteFooter } from "../components/SiteFooter";
 import LoginModal from "../components/LoginModal";
 import posthog from "posthog-js";
+
+type SortMode = 'likes' | 'date_desc' | 'date_asc';
+
+function sortGenerations(generations: CommunityGeneration[], mode: SortMode): CommunityGeneration[] {
+  return generations.slice().sort((a, b) => {
+    if (mode === 'likes') return (b.like_count ?? 0) - (a.like_count ?? 0);
+    const delta = new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    return mode === 'date_desc' ? delta : -delta;
+  });
+}
 
 function CommunityHeader() {
   const navigate = useNavigate();
@@ -198,9 +209,11 @@ export default function CommunityPage() {
   const [hasMore, setHasMore] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [likingGenerationId, setLikingGenerationId] = useState<string | null>(null);
+  const [sortMode, setSortMode] = useState<SortMode>('likes');
+  const [searchQuery, setSearchQuery] = useState('');
   const PAGE_LIMIT = 50;
 
-  const fetchCommunity = async (currentOffset: number, append: boolean = false) => {
+  const fetchCommunity = async (currentOffset: number, mode: SortMode, append: boolean = false) => {
     if (append) {
       setLoadingMore(true);
     } else {
@@ -212,13 +225,12 @@ export default function CommunityPage() {
       const response = await GetCommunityGenerationsApiService.getCommunityGenerations(
         session?.access_token || undefined,
         PAGE_LIMIT,
-        currentOffset
+        currentOffset,
+        undefined,
+        mode === 'likes' ? 'top' : 'recent'
       );
 
-      // Sort by created_at desc, matching dashboard behavior
-      const sorted = (response.generations || []).slice().sort((a, b) => {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
+      const sorted = sortGenerations(response.generations || [], mode);
 
       if (append) {
         setGenerations((prev) => [...prev, ...sorted]);
@@ -237,19 +249,18 @@ export default function CommunityPage() {
 
   useEffect(() => {
     setOffset(0);
-    fetchCommunity(0);
-    // Refetch when auth token changes (anonymous -> logged in)
+    fetchCommunity(0, sortMode);
+    // Refetch when auth token or sort mode changes (anonymous -> logged in, likes -> date)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session?.access_token]);
+  }, [session?.access_token, sortMode]);
 
   const handleLoadMore = () => {
     const newOffset = offset + PAGE_LIMIT;
     setOffset(newOffset);
-    fetchCommunity(newOffset, true);
+    fetchCommunity(newOffset, sortMode, true);
   };
 
-  const handleLike = async (generation: CommunityGeneration) => {
-    if (likingGenerationId === generation.id) return;
+  const handleLike = async (generation: CommunityGeneration) => {    if (likingGenerationId === generation.id) return;
 
     if (!user) {
       setShowLoginModal(true);
@@ -308,6 +319,15 @@ export default function CommunityPage() {
     }
   };
 
+  const filteredGenerations = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return generations;
+    return generations.filter((g) => (
+      (g.name?.trim() || "").toLowerCase().includes(query)
+      || (g.username?.trim() || "").toLowerCase().includes(query)
+    ));
+  }, [generations, searchQuery]);
+
   return (
     <>
       <SEO
@@ -336,6 +356,28 @@ export default function CommunityPage() {
           </section>
 
           <section className="mt-10 landing-fade-in landing-delay-3">
+            <div className="flex flex-col sm:flex-row gap-3 mb-6">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by name or creator"
+                  className="w-full h-10 rounded-xl border border-slate-300 bg-white pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#f44336]/30"
+                />
+              </div>
+              <select
+                value={sortMode}
+                onChange={(e) => setSortMode(e.target.value as SortMode)}
+                aria-label="Sort community models"
+                className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#f44336]/30"
+              >
+                <option value="likes">Most liked</option>
+                <option value="date_desc">Newest first</option>
+                <option value="date_asc">Oldest first</option>
+              </select>
+            </div>
             {loading ? (
               <div className="flex items-center justify-center py-20">
                 <Loader2 className="h-8 w-8 animate-spin text-slate-400" />
@@ -344,18 +386,22 @@ export default function CommunityPage() {
               <div className="text-center py-20">
                 <p className="text-red-500 font-medium">{error}</p>
               </div>
-            ) : generations.length === 0 ? (
+            ) : filteredGenerations.length === 0 ? (
               <div className="text-center py-20">
                 <Sparkles className="h-10 w-10 text-slate-300 mx-auto mb-3" />
-                <p className="text-slate-600 font-medium">No community models yet.</p>
-                <p className="text-slate-500 text-sm mt-1">
-                  Be the first to share your build!
+                <p className="text-slate-600 font-medium">
+                  {searchQuery.trim() ? "No models match your search." : "No community models yet."}
                 </p>
+                {!searchQuery.trim() && (
+                  <p className="text-slate-500 text-sm mt-1">
+                    Be the first to share your build!
+                  </p>
+                )}
               </div>
             ) : (
               <>
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-                  {generations.map((g) => (
+                  {filteredGenerations.map((g) => (
                     <CommunityCard
                       key={g.id}
                       g={g}
