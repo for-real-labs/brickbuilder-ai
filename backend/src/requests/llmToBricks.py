@@ -333,8 +333,8 @@ BUILD RULES (the builder enforces them; follow them to avoid rework)
   of the cells they sit against, or support them from below.
 - Overhangs: each layer should step out at most 1-2 studs beyond the layer below it.
 - Solid volumes are hollowed automatically (hollow: true); keep walls you design at least 2 studs thick.
-- If the model needs a base, include it as box shapes in layer 0 and put the model above it.
-  The base must be part of the voxel design so it survives final conversion.
+- Do not add a display base, stand, plinth, or ground plate under the model. Build only the requested
+  subject, resting directly on layer 0, unless the user explicitly asks for a base or stand.
 
 WORKFLOW: think about proportions and the recognizable features first, then submit one complete design.
 After each build you get a report and two isometric renders (front-left and back-right). Fix any errors you

@@ -305,11 +305,11 @@ def test_design_conversion_accepts_a_single_voxel():
         module._convert_design_voxels("")
 
 
-def test_design_tool_uses_brick_height_voxels_and_explicit_bases():
+def test_design_tool_uses_brick_height_voxels_and_discourages_bases():
     properties = module.DESIGN_TOOLS[0].schema["properties"]
     assert properties["layer_unit"]["enum"] == ["brick"]
     assert "base_color" not in properties
-    assert "include it as box shapes" in module.DESIGN_SYSTEM_PROMPT
+    assert "Do not add a display base" in module.DESIGN_SYSTEM_PROMPT
 
 
 def test_start_records_the_selected_model_and_llm_endpoint(monkeypatch):
