@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 // API service for uploading a GLB file and converting it to bricks via glb2brick.
 
 export interface GlbToBricksResponse {
@@ -41,7 +42,7 @@ export class GlbToBricksApiService {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const response = await fetch(`${getBaseUrl()}/glbToBricks`, {
+    const response = await apiFetch(`${getBaseUrl()}/glbToBricks`, {
       method: 'POST',
       headers,
       body: formData,

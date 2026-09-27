@@ -121,8 +121,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
     """
     Get all generations for the authenticated or anonymous user along with any associated orders
     
-    If an authenticated user has anonymous generations from their current IP hash,
-    those generations will be automatically migrated to their authenticated account.
+    Guest generations are claimed explicitly using proof of guest ownership.
     
     Args:
         request: GetUserGenerationsRequest containing optional limit

@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 // Response from async POST endpoint (initiates generation)
 export interface ImageToBricksResponse {
   generation_id: string;
@@ -168,7 +169,7 @@ export class ImageToBricksApiService {
 
     try {
       // Forward request to API
-      const response = await fetch(API_URLS.imageToBricks, {
+      const response = await apiFetch(API_URLS.imageToBricks, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -261,7 +262,7 @@ export class ImageToBricksApiService {
       console.log('[stream] Adding Authorization header');
     }
 
-    const response = await fetch(API_URLS.imageToBricks, {
+    const response = await apiFetch(API_URLS.imageToBricks, {
       method: 'POST',
       headers,
       body: JSON.stringify({
@@ -464,7 +465,7 @@ export class ImageToBricksApiService {
 
     try {
       // Forward request to API
-      const response = await fetch(API_URLS.ldrToBrickOwl, {
+      const response = await apiFetch(API_URLS.ldrToBrickOwl, {
         method: 'POST',
         headers,
         body: JSON.stringify({

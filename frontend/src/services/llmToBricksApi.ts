@@ -1,3 +1,4 @@
+import { apiFetch, authenticatedApiFetch } from './apiFetch';
 export type LlmProvider = 'anthropic' | 'openai';
 
 export interface LlmModelOption {
@@ -66,7 +67,7 @@ export class LlmToBricksApiService {
     onOutput: (output: LlmGenerationOutput) => void,
     signal: AbortSignal,
   ): Promise<boolean> {
-    const response = await fetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/output`, { signal });
+    const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/output`, { signal });
     if (!response.ok || !response.body || !response.headers.get('content-type')?.includes('text/event-stream')) {
       throw new Error('Unable to connect to generation output');
     }
@@ -124,7 +125,7 @@ export class LlmToBricksApiService {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = 'Bearer ' + authToken;
 
-    const response = await fetch(`${API_BASE_URL}/llmToBricks`, {
+    const response = await apiFetch(`${API_BASE_URL}/llmToBricks`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),
@@ -159,7 +160,7 @@ export class LlmToBricksApiService {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = 'Bearer ' + authToken;
 
-    const response = await fetch(`${API_BASE_URL}/llmToBricks/stream`, {
+    const response = await apiFetch(`${API_BASE_URL}/llmToBricks/stream`, {
       method: 'POST',
       headers,
       body: JSON.stringify(body),

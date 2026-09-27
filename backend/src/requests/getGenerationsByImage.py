@@ -61,12 +61,10 @@ async def get_generations_by_image(
         GetGenerationsByImageResponse with list of all generations for that image
     """
     try:
-        # Determine user_id to use
-        user_id = request.user_id
-        if not user_id:
-            # Use authenticated user's ID if not provided
-            user_id = auth_info.get("user_id")
-        
+        user_id = auth_info.get("user_id")
+        if request.user_id and request.user_id != user_id:
+            raise HTTPException(status_code=403, detail="Cannot list another user's generations")
+
         if not user_id:
             raise HTTPException(status_code=401, detail="User ID not found")
         
