@@ -112,6 +112,10 @@ def test_background_task_stores_standard_generation_artifacts(monkeypatch, tmp_p
         async def update_detail_level(self, generation_id, detail_level):
             calls.append(("detail", generation_id, detail_level))
 
+        async def store_preview_image(self, generation_id, png):
+            calls.append(("preview", generation_id, png))
+            return "https://example.com/preview.png"
+
     class FakePacker:
         def pack_ldraw_model(self, ldr_path):
             mpd_path = tmp_path / "model.mpd"
@@ -160,6 +164,59 @@ def test_background_task_stores_standard_generation_artifacts(monkeypatch, tmp_p
     assert ("detail", "generation-1", 4) in calls
     assert ("model", "generation-1", "problematic_xyzrgb", "3 1 0 255 0 0\n",
             {"raise_on_error": True}) in calls
+    preview = next(call for call in calls if call[0] == "preview")
+    assert preview[1] == "generation-1"
+    assert preview[2][:8] == b"\x89PNG\r\n\x1a\n"
+    assert calls.index(preview) < calls.index(("status", "generation-1", "completed", None))
+
+
+def test_background_task_completes_when_preview_render_fails(monkeypatch, tmp_path):
+    statuses = []
+
+    class FakeStorage:
+        async def update_status(self, generation_id, status, error_message=None):
+            statuses.append(status)
+
+        async def store_model_file(self, *_args, **_kwargs):
+            return "https://example.com/model"
+
+        async def store_parts_list_csv(self, *_args, **_kwargs):
+            return "https://example.com/parts.csv"
+
+        async def store_preview_image(self, *_args):
+            raise AssertionError("a failed render must not be stored")
+
+    class FakePacker:
+        def pack_ldraw_model(self, _ldr_path):
+            mpd_path = tmp_path / "model.mpd"
+            mpd_path.write_text("0 FILE model.ldr\n", encoding="utf-8")
+            return str(mpd_path)
+
+    async def fake_generate(_request, on_thinking=None):
+        return module.LlmBuild(ldr=validate_ldr_content(VALID_PART))
+
+    async def fake_deduct(**_kwargs):
+        return {}
+
+    def fail_render(_ldr):
+        raise ValueError("render failed")
+
+    monkeypatch.setattr(module, "generation_storage", FakeStorage())
+    monkeypatch.setattr(module, "LDrawPacker", FakePacker)
+    monkeypatch.setattr(module, "_generate_ldr", fake_generate)
+    monkeypatch.setattr(module, "deduct_credits", fake_deduct)
+    monkeypatch.setattr(module, "render_ldraw_preview_png", fail_render)
+    monkeypatch.setattr(module, "track_image_conversion", lambda **_kwargs: None)
+
+    error = asyncio.run(process_llm_to_bricks_task(
+        "generation-1",
+        LlmToBricksRequest(prompt="castle"),
+        {"user_email": "builder@example.com", "is_developer": False, "is_anonymous": False},
+        {"user_id": "user-1"},
+    ))
+
+    assert error is None
+    assert statuses[-1] == "completed"
 
 
 def test_voxel_extent_is_the_longest_axis():

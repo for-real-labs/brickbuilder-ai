@@ -322,6 +322,14 @@ class GenerationStorage:
             logger.error(f"Failed to store image data for generation {generation_id}")
             # Don't raise - this shouldn't break the main flow
 
+    async def store_preview_image(self, generation_id: str, png: bytes) -> str:
+        """Upload a PNG preview and save it as the generation's preview_image_url."""
+        # Same path pattern as /updateImagePreview (timestamp busts CDN cache)
+        file_path = f"generations/{generation_id}/preview_image_{int(time.time())}.png"
+        preview_image_url = await self._upload_file_to_storage(png, file_path, "image/png")
+        self.client.table("generations").update({"preview_image_url": preview_image_url}).eq("id", generation_id).execute()
+        return preview_image_url
+
     async def store_reference_images(
         self,
         generation_id: str,
