@@ -1,6 +1,6 @@
 """Replayable output snapshots shared by background jobs and SSE observers.
 
-Uses the existing generation storage bucket, so reconnects and other workers
+Uses a private generation-output storage bucket, so reconnects and other workers
 can read the output without a database schema change. Text and Claude's exposed
 thinking deltas are recorded; signatures and redacted blocks are never published.
 """
@@ -9,13 +9,14 @@ import json
 import logging
 
 from .generation_storage import generation_storage
+from .authorization import require_generation_access
 
 logger = logging.getLogger(__name__)
 MAX_OUTPUT_CHARS = 128_000
 
 
 async def write_output(generation_id: str, snapshot: dict) -> None:
-    bucket = generation_storage.client.storage.from_(generation_storage.bucket_name)
+    bucket = generation_storage.client.storage.from_("generation-output")
     await asyncio.to_thread(
         bucket.upload, path=f"{generation_id}/llm-output.json",
         file=json.dumps(snapshot).encode(),
@@ -24,7 +25,7 @@ async def write_output(generation_id: str, snapshot: dict) -> None:
 
 
 async def read_output(generation_id: str) -> dict | None:
-    bucket = generation_storage.client.storage.from_(generation_storage.bucket_name)
+    bucket = generation_storage.client.storage.from_("generation-output")
     try:
         data = await asyncio.to_thread(bucket.download, f"{generation_id}/llm-output.json")
         return json.loads(data)
@@ -82,14 +83,15 @@ async def run_with_output(generation_id: str, generate, *args) -> None:
         await recorder.flush("failed" if error else "completed", error)
 
 
-async def output_events(generation_id: str):
+async def output_events(generation_id: str, auth_info: dict):
     previous = None
     final_retries = 0
     while True:
-        # Same UUID access model as GET /generation/{generation_id}.
+        # Recheck every snapshot so ownership changes revoke existing observers.
         generation = await generation_storage.get_generation(generation_id)
         if not generation:
             return
+        require_generation_access(generation, auth_info)
         snapshot = await read_output(generation_id) or {"text": ""}
         terminal = generation["status"] in {"completed", "failed"}
         if terminal and snapshot.get("status") not in {"completed", "failed"} and final_retries < 3:

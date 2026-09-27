@@ -7,11 +7,14 @@ os.environ["DISPLAY"] = ":99"
 os.environ["OPEN3D_HEADLESS"] = "1" 
 os.environ["PYOPENGL_PLATFORM"] = "egl"
 
-from fastapi import FastAPI, Depends, Request, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Depends, Request, Response, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from dotenv import load_dotenv
+
+from .utils.auth import get_optional_identity
+from .utils.authorization import require_generation_access
 
 from .requests.imageToBricks import image_to_bricks, image_to_bricks_stream, ImageToBricksRequest, ImageToBricksResponse
 from .requests.glbToBricks import glb_to_bricks, GlbToBricksResponse
@@ -171,6 +174,8 @@ async def serve_local_storage(bucket: str, file_path: str):
     if not str(target).startswith(str(bucket_root)) or not target.is_file():
         raise HTTPException(status_code=404, detail="File not found")
 
+    if bucket == "generation-output" or target.name == "llm-output.json":
+        raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(target)
 
 @app.post("/imageToBricks")
@@ -228,15 +233,18 @@ async def llm_to_bricks_stream_endpoint(
 
 
 @app.get("/generation/{generation_id}/output")
-async def generation_output_endpoint(generation_id: UUID) -> StreamingResponse:
+async def generation_output_endpoint(
+    generation_id: UUID, auth_info: dict = Depends(get_optional_identity)
+) -> StreamingResponse:
     """Observe a job; disconnecting only stops observation, never generation."""
     generation_id = str(generation_id)
     generation = await generation_storage.get_generation(generation_id)
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
+    require_generation_access(generation, auth_info)
     return StreamingResponse(
-        output_events(generation_id), media_type="text/event-stream",
-        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+        output_events(generation_id, auth_info), media_type="text/event-stream",
+        headers={"Cache-Control": "private, no-store", "X-Accel-Buffering": "no"},
     )
 
 
@@ -381,19 +389,21 @@ async def stripe_webhook_endpoint(
 
 @app.post("/getGeneration", response_model=GetGenerationResponse)
 async def get_generation_endpoint(
-    request: GetGenerationRequest
+    request: GetGenerationRequest, auth_info: dict = Depends(get_optional_identity)
 ) -> GetGenerationResponse:
     """Get generation status and data by generation ID (POST version)"""
-    return await get_generation(request)
+    return await get_generation(request, auth_info)
 
 
 @app.get("/generation/{generation_id}", response_model=GetGenerationResponse)
 async def get_generation_by_id_endpoint(
-    generation_id: str
+    generation_id: str, auth_info: dict = Depends(get_optional_identity), response: Response = None
 ) -> GetGenerationResponse:
     """Get generation status and data by generation ID (GET version for polling)"""
+    if response is not None:
+        response.headers["Cache-Control"] = "private, no-store"
     request = GetGenerationRequest(generation_id=generation_id)
-    return await get_generation(request)
+    return await get_generation(request, auth_info)
 
 
 @app.get("/generation-stats", response_model=GetGenerationStatsResponse)
@@ -406,15 +416,14 @@ async def get_generation_stats_endpoint() -> GetGenerationStatsResponse:
 async def get_user_generations_endpoint(
     request_body: GetUserGenerationsRequest = GetUserGenerationsRequest(),
     request: Request = None,
-    auth_info: dict = Depends(get_user_with_optional_auth)
+    auth_info: dict = Depends(get_optional_identity)
 ) -> GetUserGenerationsResponse:
     """Get all generations for the authenticated or anonymous user
     
     This endpoint retrieves all generations for the authenticated or anonymous user
     along with any associated orders from the orders table.
     
-    If an authenticated user has anonymous generations from their current IP,
-    those generations will be migrated to their authenticated account.
+    Guest generations are claimed explicitly using proof of guest ownership.
     """
     return await get_user_generations(request_body, auth_info, request)
 
@@ -422,7 +431,7 @@ async def get_user_generations_endpoint(
 @app.post("/getGenerationsByImage", response_model=GetGenerationsByImageResponse)
 async def get_generations_by_image_endpoint(
     request_body: GetGenerationsByImageRequest,
-    auth_info: dict = Depends(get_user_with_optional_auth)
+    auth_info: dict = Depends(get_optional_identity)
 ) -> GetGenerationsByImageResponse:
     """Get all generations for a specific processed_image_url and user_id
     

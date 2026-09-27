@@ -1,3 +1,4 @@
+import { apiFetch } from './apiFetch';
 /// <reference types="vite/client" />
 
 export interface PartBreakdownItem {
@@ -65,7 +66,7 @@ export class GetPriceApiService {
 
     try {
       // Send price request to API
-      const response = await fetch(API_URLS.getPrice, {
+      const response = await apiFetch(API_URLS.getPrice, {
         method: 'POST',
         headers,
         body: JSON.stringify({

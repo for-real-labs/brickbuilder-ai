@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from fastapi import HTTPException
 
+from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_error
 
@@ -32,12 +33,12 @@ class GetGenerationResponse(BaseModel):
     error_message: Optional[str] = None  # Only when failed
 
 
-async def get_generation(request: GetGenerationRequest) -> GetGenerationResponse:
+async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetGenerationResponse:
     """
     Get generation status and data by generation ID.
     
     This endpoint is used for polling to check generation progress.
-    No auth required - the generation_id UUID acts as the security token.
+    Private jobs require their owner; completed community models remain public.
     
     Returns:
         - status: "started" | "queued" | "processing" | "ldr_processing" | "completed" | "failed"
@@ -59,6 +60,8 @@ async def get_generation(request: GetGenerationRequest) -> GetGenerationResponse
         generation = await generation_storage.get_generation(request.generation_id)
         if not generation:
             raise HTTPException(status_code=404, detail=f"Generation {request.generation_id} not found")
+
+        require_generation_access(generation, auth_info, allow_community=True)
 
         # Extract fields
         status = generation.get("status", "started")
