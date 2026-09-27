@@ -62,6 +62,7 @@ import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
 import { GetGenerationStatsApiService } from '../src/services/getGenerationStatsApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
+import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 
 describe('LandingPage', () => {
   it('starts LLM jobs in the background and allows another submission while they run', async () => {
@@ -106,6 +107,92 @@ describe('LandingPage', () => {
     }
   });
 
+  it('shows the top eight community models with chevron controls', async () => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
+      generations: Array.from({ length: 8 }, (_, index) => ({
+        id: `generation-${index + 1}`,
+        user_id: `owner-${index + 1}`,
+        user_type: 'authenticated',
+        prompt: 'castle',
+        name: `Model ${index + 1}`,
+        detail_level: 10,
+        endpoint: 'llm',
+        created_at: '2026-09-26T00:00:00Z',
+        status: 'completed',
+        preview_image_url: `https://example.com/model-${index + 1}.png`,
+        username: `builder-${index + 1}`,
+        like_count: 20 - index,
+      })),
+      total_count: 8,
+      has_more: false,
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ stargazers_count: 10 }),
+    }));
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await act(async () => root.render(<LandingPage />));
+
+      expect(container.querySelector('[aria-label="Scroll community models left"]')).toBeTruthy();
+      expect(container.querySelector('[aria-label="Scroll community models right"]')).toBeTruthy();
+      expect(Array.from(container.querySelectorAll('[data-featured-copy="0"] button')).filter((button) => button.textContent?.includes('View Model'))).toHaveLength(8);
+      expect(container.textContent).toContain('Model 1');
+      expect(container.textContent).toContain('20');
+      expect(container.textContent).toContain('Sep 26, 2026');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it('disables carousel arrows when there is only one distinct model', async () => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
+      generations: [{
+        id: 'generation-1',
+        user_id: 'owner-1',
+        user_type: 'authenticated',
+        prompt: 'castle',
+        name: 'Solo Model',
+        detail_level: 10,
+        endpoint: 'llm',
+        created_at: '2026-09-26T00:00:00Z',
+        status: 'completed',
+        preview_image_url: 'https://example.com/model-1.png',
+        username: 'builder-1',
+        like_count: 9,
+      }],
+      total_count: 1,
+      has_more: false,
+    });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ stargazers_count: 10 }),
+    }));
+
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    try {
+      await act(async () => root.render(<LandingPage />));
+
+      expect((container.querySelector('[aria-label="Scroll community models left"]') as HTMLButtonElement).disabled).toBe(true);
+      expect((container.querySelector('[aria-label="Scroll community models right"]') as HTMLButtonElement).disabled).toBe(true);
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
   it('uses the updated hero headline', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 
@@ -113,7 +200,7 @@ describe('LandingPage', () => {
     expect(markup).not.toContain('Create and Build');
   });
 
-  it('defaults to LLM Render with Claude Opus 5.5, and SAM3D for 3D Render', () => {
+  it('defaults to LLM Render with Claude Opus 5.5, and SAM3D for image-to-glb', () => {
     expect(DEFAULT_GENERATION_METHOD).toBe('llm');
     expect(DEFAULT_THREE_D_MODEL).toBe('sam3d');
     expect(DEFAULT_LLM_MODEL).toBe('claude-opus-5-5');
@@ -121,44 +208,53 @@ describe('LandingPage', () => {
     const markup = renderToStaticMarkup(
       <GenerationMethodSelector value="3d" onChange={() => undefined} />,
     );
-    expect(markup).toContain('3D Render');
-    expect(markup).toContain('LLM Render');
-    expect(markup).toMatch(/<option value="sam3d" selected="">SAM3D<\/option>/);
-    expect(markup).toContain('<option value="trellis">Trellis</option>');
+    expect(markup).toContain('Render model:');
+    expect(markup).not.toContain('3D Render');
+    expect(markup).not.toContain('LLM Render');
+    expect(markup).not.toContain('Generation method:');
+    expect(markup).not.toMatch(/>image-to-glb<\/button>/);
+    expect(markup).toContain('<optgroup label="image-to-glb">');
+    expect(markup).toMatch(/<option value="sam3d"[^>]*selected="">SAM3D<\/option>/);
+    expect(markup).toContain('Claude Opus 5.5');
+    expect(markup).toContain('Trellis');
   });
 
-  it('offers SAM3D and Trellis for 3D Render', () => {
+  it('offers SAM3D and Trellis in the image-to-glb optgroup without old 3D style controls', () => {
     const markup = renderToStaticMarkup(
       <GenerationMethodSelector value="3d" threeDModel="trellis" onChange={() => undefined} />,
     );
 
-    expect(markup).toContain('Generation method:');
-    expect(markup).toContain('3D model:');
-    expect(markup).toMatch(/<option value="trellis" selected="">Trellis<\/option>/);
-    expect(markup).not.toContain('Claude Opus 5.5');
+    expect(markup).not.toContain('Generation method:');
+    expect(markup).toContain('Render model:');
+    expect(markup).not.toMatch(/>image-to-glb<\/button>/);
+    expect(markup).toContain('<optgroup label="image-to-glb">');
+    expect(markup).toMatch(/<option value="trellis"[^>]*selected="">Trellis<\/option>/);
+    expect(markup).not.toContain('3D model:');
   });
 
-  it('offers grouped Claude and OpenAI models for LLM Render, defaulting to Opus 5.5', () => {
+  it('offers grouped image-to-glb, Claude, and OpenAI models for LLM Render, defaulting to Opus 5.5', () => {
     const markup = renderToStaticMarkup(
       <GenerationMethodSelector value="llm" onChange={() => undefined} />,
     );
 
-    expect(markup).toContain('LLM model:');
+    expect(markup).toContain('Render model:');
+    expect(markup).toContain('<optgroup label="image-to-glb">');
     expect(markup).toContain('<optgroup label="Claude">');
     expect(markup).toContain('<optgroup label="OpenAI">');
-    expect(markup).toMatch(/<option value="claude-opus-5-5" selected="">Claude Opus 5.5<\/option>/);
-    expect(markup).toContain('<option value="gpt-5.6-sol">GPT-5.6 Sol</option>');
-    expect(markup).not.toContain('SAM3D');
-    expect(markup).toMatch(/aria-pressed="true"[^>]*>LLM Render/);
+    expect(markup).toMatch(/<option value="claude-opus-5-5"[^>]*selected="">Claude Opus 5.5<\/option>/);
+    expect(markup).toMatch(/<option value="gpt-5.6-sol"[^>]*>GPT-5.6 Sol<\/option>/);
+    expect(markup).toContain('SAM3D');
+    expect(markup).not.toContain('Generation method:');
   });
 
-  it('reports method changes and model selections through the shared controls', () => {
+  it('reports method changes and model selections through the shared controls', async () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
     const onChange = vi.fn();
     const onThreeDModelChange = vi.fn();
     const onLlmModelChange = vi.fn();
+    const capture = (await import('posthog-js')).default.capture;
 
     try {
       act(() => {
@@ -172,11 +268,21 @@ describe('LandingPage', () => {
         );
       });
 
-      const threeDButton = Array.from(container.querySelectorAll('button')).find(
-        (button) => button.textContent === '3D Render',
-      );
-      act(() => threeDButton?.click());
+      const renderModelSelect = container.querySelector('select') as HTMLSelectElement;
+      act(() => {
+        renderModelSelect.value = 'trellis';
+        renderModelSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      });
       expect(onChange).toHaveBeenCalledWith('3d');
+      expect(onThreeDModelChange).toHaveBeenCalledWith('trellis');
+      expect(capture).toHaveBeenCalledWith('landing_generation_method_selected', {
+        generation_method: '3d',
+      });
+      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
+        generation_method: '3d',
+        model: 'trellis',
+        provider: '3d',
+      });
 
       const llmSelect = container.querySelector('select') as HTMLSelectElement;
       act(() => {
@@ -184,24 +290,73 @@ describe('LandingPage', () => {
         llmSelect.dispatchEvent(new Event('change', { bubbles: true }));
       });
       expect(onLlmModelChange).toHaveBeenCalledWith('gpt-5.6-sol');
+      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
+        generation_method: 'llm',
+        model: 'gpt-5.6-sol',
+        provider: 'openai',
+      });
 
       act(() => {
         root.render(
           <GenerationMethodSelector
             value="3d"
+            threeDModel="sam3d"
             onChange={onChange}
             onThreeDModelChange={onThreeDModelChange}
             onLlmModelChange={onLlmModelChange}
           />,
         );
       });
+      onChange.mockClear();
+      onThreeDModelChange.mockClear();
+      onLlmModelChange.mockClear();
+      vi.mocked(capture).mockClear();
 
       const threeDSelect = container.querySelector('select') as HTMLSelectElement;
+      act(() => {
+        threeDSelect.value = 'sam3d';
+        threeDSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(onChange).not.toHaveBeenCalled();
+      expect(onThreeDModelChange).not.toHaveBeenCalled();
+      expect(onLlmModelChange).not.toHaveBeenCalled();
+      expect(capture).not.toHaveBeenCalled();
+
+      vi.mocked(capture).mockClear();
+
       act(() => {
         threeDSelect.value = 'trellis';
         threeDSelect.dispatchEvent(new Event('change', { bubbles: true }));
       });
+      expect(onChange).not.toHaveBeenCalled();
       expect(onThreeDModelChange).toHaveBeenCalledWith('trellis');
+      expect(capture).not.toHaveBeenCalledWith('landing_generation_method_selected', {
+        generation_method: '3d',
+      });
+      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
+        generation_method: '3d',
+        model: 'trellis',
+        provider: '3d',
+      });
+
+      onChange.mockClear();
+      onLlmModelChange.mockClear();
+      vi.mocked(capture).mockClear();
+
+      act(() => {
+        threeDSelect.value = 'claude-opus-5-5';
+        threeDSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(onChange).toHaveBeenCalledWith('llm');
+      expect(onLlmModelChange).toHaveBeenCalledWith('claude-opus-5-5');
+      expect(capture).toHaveBeenCalledWith('landing_generation_method_selected', {
+        generation_method: 'llm',
+      });
+      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
+        generation_method: 'llm',
+        model: 'claude-opus-5-5',
+        provider: 'anthropic',
+      });
     } finally {
       act(() => root.unmount());
       container.remove();
@@ -217,12 +372,17 @@ describe('LandingPage', () => {
     try {
       const markup = renderToStaticMarkup(<LandingPage />);
 
-      expect(markup).toContain('Generation method:');
-      expect(markup).toContain('3D Render');
-      expect(markup).toContain('LLM Render');
-      expect(markup).toContain('LLM model:');
+      expect(markup).not.toContain('Generation method:');
+      expect(markup).toContain('<optgroup label="image-to-glb">');
+      expect(markup).not.toMatch(/>image-to-glb<\/button>/);
+      expect(markup).not.toContain('3D Render');
+      expect(markup).not.toContain('LLM Render');
+      expect(markup).toContain('Render model:');
       expect(markup).toContain('Claude Opus 5.5');
       expect(markup).toContain('GPT-5.6 Sol');
+      expect(markup).not.toContain('Style:');
+      expect(markup).not.toContain('Plush');
+      expect(markup).not.toContain('Block');
     } finally {
       delete window.__BRICKBUILDER_NATIVE_APP__;
     }

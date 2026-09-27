@@ -1,9 +1,10 @@
 import logging
-from typing import Optional, List
+from typing import Literal, Optional, List
 
 from pydantic import BaseModel
 from fastapi import HTTPException
 
+from ..utils.community_likes import is_community_likes_schema_error
 from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_api_call, track_error
 
@@ -35,12 +36,15 @@ class CommunityGeneration(BaseModel):
     ordered: Optional[bool] = False
     updated_at: Optional[str] = None
     is_community: Optional[bool] = True
+    like_count: int = 0
+    viewer_has_liked: bool = False
 
 
 class GetCommunityGenerationsRequest(BaseModel):
     limit: int = 50
     offset: int = 0  # Offset for pagination (number of unique generations to skip)
     processing: Optional[bool] = None  # If True, return only processing/queued generations
+    sort: Literal["recent", "top"] = "recent"
 
 
 class GetCommunityGenerationsResponse(BaseModel):
@@ -87,6 +91,7 @@ async def get_community_generations(
             limit=request.limit + 1,
             status_filter=status_filter,
             offset=request.offset,
+            sort=request.sort,
         )
 
         has_more = len(generations_batch) > request.limit
@@ -128,6 +133,38 @@ async def get_community_generations(
                 # Non-fatal: just leave usernames as None
                 logger.warning(f"Failed to fetch usernames for community generations: {e}")
 
+        viewer_likes = set()
+        viewer_user_id = auth_info.get("user_id")
+        if (
+            viewer_user_id
+            and auth_info.get("authenticated", False)
+            and not auth_info.get("is_anonymous", False)
+        ):
+            generation_ids = [gen.get("id") for gen in generations if gen.get("id")]
+            if generation_ids:
+                try:
+                    likes_result = (
+                        generation_storage.client
+                        .table("generation_likes")
+                        .select("generation_id")
+                        .eq("user_id", viewer_user_id)
+                        .in_("generation_id", generation_ids)
+                        .execute()
+                    )
+                    viewer_likes = {
+                        row.get("generation_id")
+                        for row in (likes_result.data or [])
+                        if row.get("generation_id")
+                    }
+                except Exception as e:
+                    if is_community_likes_schema_error(e):
+                        logger.warning(
+                            "Community likes schema unavailable while fetching viewer likes; "
+                            "defaulting viewer_has_liked to false"
+                        )
+                    else:
+                        raise
+
         community_generations = [
             CommunityGeneration(
                 id=gen.get("id"),
@@ -153,6 +190,8 @@ async def get_community_generations(
                 ordered=gen.get("ordered", False),
                 updated_at=gen.get("updated_at"),
                 is_community=gen.get("is_community", True),
+                like_count=int(gen.get("like_count") or 0),
+                viewer_has_liked=gen.get("id") in viewer_likes,
             )
             for gen in generations
         ]

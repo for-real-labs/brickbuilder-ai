@@ -7,6 +7,7 @@ import {
   Loader2,
   Sparkles,
   LayoutDashboard,
+  Heart,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { SEO } from "../components/SEO";
@@ -15,7 +16,10 @@ import {
   GetCommunityGenerationsApiService,
   CommunityGeneration,
 } from "../services/getCommunityGenerationsApi";
+import { ToggleGenerationLikeApiService } from "../services/toggleGenerationLikeApi";
 import { SiteFooter } from "../components/SiteFooter";
+import LoginModal from "../components/LoginModal";
+import posthog from "posthog-js";
 
 function CommunityHeader() {
   const navigate = useNavigate();
@@ -86,76 +90,114 @@ function CommunityHeader() {
   );
 }
 
-function CommunityCard({ g, onClick }: { g: CommunityGeneration; onClick: () => void }) {
+function CommunityCard({
+  g,
+  onClick,
+  onLikeClick,
+  liking,
+}: {
+  g: CommunityGeneration;
+  onClick: () => void;
+  onLikeClick: () => void;
+  liking: boolean;
+}) {
   const sourceImage = g.processed_image_url;
   const mainImage = g.preview_image_url || g.external_image_url || g.image_url || g.thumbnail_url || g.processed_image_url;
   const showOverlay = Boolean(g.preview_image_url && sourceImage);
   const title = g.name?.trim() || "Untitled Model";
   const truncated = title.length > 80 ? title.slice(0, 77) + "..." : title;
+  const likeCount = g.like_count ?? 0;
+  const liked = Boolean(g.viewer_has_liked);
 
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="group text-left bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 cursor-pointer p-0"
-    >
-      <div className="relative aspect-square w-full bg-slate-100 overflow-hidden flex items-center justify-center">
-        {mainImage ? (
-          <img
-            src={mainImage}
-            alt={truncated}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = "none";
-            }}
-          />
-        ) : (
-          <Sparkles className="h-10 w-10 text-slate-300" />
-        )}
-        {showOverlay && (
-          <div className="absolute top-2 right-2 w-1/4 aspect-square rounded-lg overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center">
+    <article className="relative bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200">
+      <button
+        type="button"
+        onClick={onClick}
+        className="group block w-full text-left cursor-pointer p-0"
+      >
+        <div className="relative aspect-square w-full bg-slate-100 overflow-hidden flex items-center justify-center">
+          {mainImage ? (
             <img
-              src={sourceImage as string}
-              alt=""
-              className="w-full h-full object-contain"
+              src={mainImage}
+              alt={truncated}
+              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               onError={(e) => {
-                (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                (e.currentTarget as HTMLImageElement).style.display = "none";
               }}
             />
-          </div>
-        )}
-      </div>
-      <div className="p-4">
-        <div className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
-          {truncated}
-        </div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mt-2">
-          {g.username?.trim() ? (
-            <div className="text-xs text-slate-600 min-w-0 truncate order-1">
-              <span className="text-slate-500">Created by: </span>
-              <span className="font-medium text-slate-700">{g.username}</span>
-            </div>
           ) : (
-            <span className="hidden sm:block" />
+            <Sparkles className="h-10 w-10 text-slate-300" />
           )}
-          <div className="text-xs text-slate-500 flex-shrink-0 order-2">
-            {new Date(g.created_at).toLocaleDateString()}
+          {showOverlay && (
+            <div className="absolute top-2 right-2 w-1/4 aspect-square rounded-lg overflow-hidden border-2 border-white shadow-md bg-white flex items-center justify-center">
+              <img
+                src={sourceImage as string}
+                alt=""
+                className="w-full h-full object-contain"
+                onError={(e) => {
+                  (e.currentTarget.parentElement as HTMLElement).style.display = "none";
+                }}
+              />
+            </div>
+          )}
+        </div>
+        <div className="p-4">
+          <div className="text-sm font-semibold text-slate-800 line-clamp-2 min-h-[2.5rem]">
+            {truncated}
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 mt-2">
+            {g.username?.trim() ? (
+              <div className="text-xs text-slate-600 min-w-0 truncate order-1">
+                <span className="text-slate-500">Created by: </span>
+                <span className="font-medium text-slate-700">{g.username}</span>
+              </div>
+            ) : (
+              <span className="hidden sm:block" />
+            )}
+            <div className="text-xs text-slate-500 flex-shrink-0 order-2">
+              {new Date(g.created_at).toLocaleDateString()}
+            </div>
           </div>
         </div>
-      </div>
-    </button>
+      </button>
+      <button
+        type="button"
+        aria-label={liked ? "Unlike community model" : "Like community model"}
+        onClick={(event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          onLikeClick();
+        }}
+        disabled={liking}
+        className={`absolute left-3 top-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold shadow-sm backdrop-blur-sm transition-colors cursor-pointer ${
+          liked
+            ? 'border-rose-200 bg-white/95 text-rose-600'
+            : 'border-white/80 bg-white/90 text-slate-700 hover:text-rose-600'
+        } disabled:cursor-not-allowed disabled:opacity-60`}
+      >
+        {liking ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Heart className={`h-3.5 w-3.5 ${liked ? 'fill-current' : ''}`} />
+        )}
+        {likeCount}
+      </button>
+    </article>
   );
 }
 
 export default function CommunityPage() {
   const navigate = useNavigate();
-  const { session } = useAuth();
+  const { session, user } = useAuth();
   const [generations, setGenerations] = useState<CommunityGeneration[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [likingGenerationId, setLikingGenerationId] = useState<string | null>(null);
   const PAGE_LIMIT = 50;
 
   const fetchCommunity = async (currentOffset: number, append: boolean = false) => {
@@ -206,11 +248,76 @@ export default function CommunityPage() {
     fetchCommunity(newOffset, true);
   };
 
+  const handleLike = async (generation: CommunityGeneration) => {
+    if (likingGenerationId === generation.id) return;
+
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    const previousLiked = Boolean(generation.viewer_has_liked);
+    const previousCount = generation.like_count ?? 0;
+    const nextLiked = !previousLiked;
+    const nextCount = Math.max(previousCount + (nextLiked ? 1 : -1), 0);
+
+    setLikingGenerationId(generation.id);
+    setError(null);
+    setGenerations((prev) => prev.map((item) => (
+      item.id === generation.id
+        ? { ...item, viewer_has_liked: nextLiked, like_count: nextCount }
+        : item
+    )));
+
+    posthog.capture('community_model_like_clicked', {
+      generation_id: generation.id,
+      has_liked: nextLiked,
+      surface: 'community_grid',
+      is_authenticated: true,
+    });
+
+    try {
+      const response = await ToggleGenerationLikeApiService.toggleGenerationLike(
+        generation.id,
+        session?.access_token || undefined,
+      );
+
+      setGenerations((prev) => prev.map((item) => (
+        item.id === generation.id
+          ? {
+              ...item,
+              viewer_has_liked: response.has_liked,
+              like_count: response.like_count,
+            }
+          : item
+      )));
+    } catch (likeError) {
+      console.error('Failed to toggle community model like:', likeError);
+      setGenerations((prev) => prev.map((item) => (
+        item.id === generation.id
+          ? {
+              ...item,
+              viewer_has_liked: previousLiked,
+              like_count: previousCount,
+            }
+          : item
+      )));
+      setError(likeError instanceof Error ? likeError.message : 'Failed to update like');
+    } finally {
+      setLikingGenerationId(null);
+    }
+  };
+
   return (
     <>
       <SEO
         title="Community Models — BrickBuilder"
         description="Explore LEGO models shared by the BrickBuilder community."
+      />
+      <LoginModal
+        open={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        redirectTo="/community"
       />
       <div className="min-h-screen bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
@@ -253,6 +360,10 @@ export default function CommunityPage() {
                       key={g.id}
                       g={g}
                       onClick={() => navigate(`/generated-model?id=${g.id}`)}
+                      onLikeClick={() => {
+                        void handleLike(g);
+                      }}
+                      liking={likingGenerationId === g.id}
                     />
                   ))}
                 </div>

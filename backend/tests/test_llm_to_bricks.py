@@ -1,5 +1,6 @@
 import asyncio
 import base64
+from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
@@ -120,7 +121,8 @@ def test_background_task_stores_standard_generation_artifacts(monkeypatch, tmp_p
     voxels = "0 0 0 255 0 0\n3 1 0 255 0 0\n0 0 1 255 0 0\n"
 
     async def fake_generate(_request, on_thinking=None):
-        return module.LlmBuild(ldr=validate_ldr_content(VALID_PART), voxels_xyzrgb=voxels)
+        return module.LlmBuild(ldr=validate_ldr_content(VALID_PART), voxels_xyzrgb=voxels,
+                               problematic_xyzrgb="3 1 0 255 0 0\n")
 
     async def fake_deduct(**_kwargs):
         return {}
@@ -156,6 +158,8 @@ def test_background_task_stores_standard_generation_artifacts(monkeypatch, tmp_p
     assert ("model", "generation-1", "xyzrgb", voxels, {"raise_on_error": True}) in calls
     assert ("model", "generation-1", "design_voxels", voxels, {"raise_on_error": True}) in calls
     assert ("detail", "generation-1", 4) in calls
+    assert ("model", "generation-1", "problematic_xyzrgb", "3 1 0 255 0 0\n",
+            {"raise_on_error": True}) in calls
 
 
 def test_voxel_extent_is_the_longest_axis():
@@ -165,6 +169,13 @@ def test_voxel_extent_is_the_longest_axis():
 
 def test_generate_ldr_returns_design_voxels_in_design_mode_and_none_in_direct_mode(monkeypatch):
     result = module.build_design(GOOD_DESIGN)
+    converted = []
+    real_convert = module._convert_design_voxels
+
+    def convert(xyzrgb):
+        build = real_convert(xyzrgb)
+        converted.append(build)
+        return build
 
     async def fake_design(_request, on_thinking=None):
         return result
@@ -174,15 +185,74 @@ def test_generate_ldr_returns_design_voxels_in_design_mode_and_none_in_direct_mo
 
     monkeypatch.setattr(module, "_generate_ldr_with_design", fake_design)
     monkeypatch.setattr(module, "_generate_ldr_direct", fake_direct)
+    monkeypatch.setattr(module, "_convert_design_voxels", convert)
     request = LlmToBricksRequest(prompt="tower")
 
     monkeypatch.setattr(module, "LDR_MODE", "design")
     design_build = asyncio.run(module._generate_ldr(request))
     assert design_build.voxels_xyzrgb == result.xyzrgb()
-    assert "3001.dat" in design_build.ldr or "3003.dat" in design_build.ldr
+    assert design_build is converted[0]
+    assert any(line.startswith("1 ") for line in design_build.ldr.splitlines())
+    assert design_build.ldr != result.ldr  # the draft packer is not the final artifact
 
     monkeypatch.setattr(module, "LDR_MODE", "direct")
     assert asyncio.run(module._generate_ldr(request)).voxels_xyzrgb is None
+    assert len(converted) == 1
+
+
+def test_design_conversion_uses_image_pipeline_and_cleans_files(monkeypatch, tmp_path):
+    voxels = "0 0 0 255 0 0\n1 0 0 255 0 0\n"
+    paths = []
+    diagnostic = tmp_path / "problematic.xyzrgb"
+
+    def convert(*, glb_path, xyzrgb_path, auto_adjust_brick_count):
+        assert not auto_adjust_brick_count
+        assert not Path(glb_path).exists()
+        assert Path(xyzrgb_path).read_text() == voxels
+        paths.append(Path(xyzrgb_path).parent)
+        ldr_path = Path(glb_path).with_suffix(".ldr")
+        ldr_path.write_text(VALID_PART)
+        diagnostic.write_text("1 0 0 255 0 0\n")
+        return {"ldr_file": str(ldr_path), "problematic_xyzrgb_file": str(diagnostic)}
+
+    monkeypatch.setattr(module, "glb2brick", convert)
+    build = module._convert_design_voxels(voxels)
+    assert build.ldr == validate_ldr_content(VALID_PART)
+    assert build.voxels_xyzrgb == voxels
+    assert build.problematic_xyzrgb == "1 0 0 255 0 0\n"
+    assert not diagnostic.exists()
+    assert not paths[0].exists()
+
+
+def test_design_converter_failure_does_not_fall_back_to_draft(monkeypatch):
+    async def design(_request, on_thinking=None):
+        return module.build_design(GOOD_DESIGN)
+
+    def fail(**kwargs):
+        raise ValueError("voxel conversion failed")
+
+    monkeypatch.setattr(module, "LDR_MODE", "design")
+    monkeypatch.setattr(module, "_generate_ldr_with_design", design)
+    monkeypatch.setattr(module, "glb2brick", fail)
+    with pytest.raises(module.HTTPException) as exc:
+        asyncio.run(module._generate_ldr(LlmToBricksRequest(prompt="tower")))
+    assert exc.value.detail == "voxel conversion failed"
+
+
+def test_design_conversion_accepts_a_single_voxel():
+    build = module._convert_design_voxels("0 0 0 201 26 9\n")
+    parts = [line for line in build.ldr.splitlines() if line.startswith("1 ")]
+    assert len(parts) == 1
+    assert parts[0].lower().endswith("3005.dat")
+    with pytest.raises(ValueError, match="any voxels"):
+        module._convert_design_voxels("")
+
+
+def test_design_tool_uses_brick_height_voxels_and_explicit_bases():
+    properties = module.DESIGN_TOOLS[0].schema["properties"]
+    assert properties["layer_unit"]["enum"] == ["brick"]
+    assert "base_color" not in properties
+    assert "include it as box shapes" in module.DESIGN_SYSTEM_PROMPT
 
 
 def test_start_records_the_selected_model_and_llm_endpoint(monkeypatch):

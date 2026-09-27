@@ -36,7 +36,7 @@ def load_xyzrgb_to_voxel_array(xyzrgb_path: str) -> Tuple[np.ndarray, np.ndarray
     print(f"📂 Loading voxel data from: {xyzrgb_path}")
     
     # Load the XYZRGB data
-    data = np.loadtxt(xyzrgb_path)
+    data = np.loadtxt(xyzrgb_path, ndmin=2)
     
     # Extract coordinates and colors
     coords = data[:, :3].astype(int)  # X, Y, Z coordinates

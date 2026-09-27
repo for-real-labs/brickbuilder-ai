@@ -25,6 +25,7 @@ from ..utils.brick_design import (
     render_preview_png,
 )
 from ..utils.generation_storage import generation_storage
+from ..utils.conversions.glb2brick import glb2brick
 from ..utils.llm_output import run_with_output
 from ..utils.llm_tool_conversation import (
     ConversationSettings,
@@ -75,8 +76,8 @@ TIMEOUT_SECONDS = float(os.getenv("LLM_TO_BRICKS_TIMEOUT_SECONDS", "600"))
 OPENAI_REASONING_EFFORT = os.getenv("LLM_TO_BRICKS_OPENAI_REASONING_EFFORT", "medium")
 
 # "design" (default): the model describes the build as colored voxel shapes on a stud grid and
-# brick_design.py turns that into bricks deterministically (no overlaps, off-grid parts or
-# floating bricks), with a build -> feedback -> review loop.
+# brick_design.py validates and previews the design in a build -> feedback -> review loop.
+# The accepted solid voxels go through the same glb2brick/voxel2brick pipeline as image builds.
 # "direct": the model writes raw LDraw (the original path), audited for overlaps/floating
 # parts with a correction round.
 LDR_MODE = os.getenv("LLM_TO_BRICKS_MODE", "design").strip().lower()
@@ -306,9 +307,8 @@ GRID AND COORDINATES
   (0..depth-1; z = 0 is the side facing the viewer), y is the layer number from the ground (0..layers-1).
 - layer_unit "brick" (default): a layer is one brick tall = 1.2 studs. A shape that should look round and 10
   studs tall needs about 8 layers. Good for most models.
-- layer_unit "plate": a layer is one plate tall = 0.4 studs (3 plates = 1 brick). Finer vertical detail (faces,
-  gentle slopes, small models) at about 3x the pieces.
-- Size: {size_hint} Hard limits: 64 x 64 studs, 96 brick or 240 plate layers, 5,000 pieces.
+- Use layer_unit "brick": the final voxel-to-brick converter uses brick-height voxels.
+- Size: {size_hint} Hard limits: 64 x 64 studs, 96 brick layers, 5,000 pieces.
 
 SHAPES (applied in order; later shapes override earlier ones)
 - {{"shape":"box","x":[x0,x1],"y":[y0,y1],"z":[z0,z1],"color":C}}  (inclusive integer ranges)
@@ -332,8 +332,8 @@ BUILD RULES (the builder enforces them; follow them to avoid rework)
   of the cells they sit against, or support them from below.
 - Overhangs: each layer should step out at most 1-2 studs beyond the layer below it.
 - Solid volumes are hollowed automatically (hollow: true); keep walls you design at least 2 studs thick.
-- Set base_color to put the whole model on one plate base (recommended for scenes, buildings, vehicles on
-  display, and anything made of separate parts standing on the ground).
+- If the model needs a base, include it as box shapes in layer 0 and put the model above it.
+  The base must be part of the voxel design so it survives final conversion.
 
 WORKFLOW: think about proportions and the recognizable features first, then submit one complete design.
 After each build you get a report and two isometric renders (front-left and back-right). Fix any errors you
@@ -353,18 +353,17 @@ DESIGN_TOOLS = [
             "type": "object",
             "properties": {
                 "title": {"type": "string", "maxLength": 120},
-                "layer_unit": {"type": "string", "enum": ["brick", "plate"]},
+                "layer_unit": {"type": "string", "enum": ["brick"]},
                 "grid": {
                     "type": "object",
                     "properties": {
                         "width": {"type": "integer", "minimum": 1, "maximum": 64},
                         "depth": {"type": "integer", "minimum": 1, "maximum": 64},
-                        "layers": {"type": "integer", "minimum": 1, "maximum": 240},
+                        "layers": {"type": "integer", "minimum": 1, "maximum": 96},
                     },
                     "required": ["width", "depth", "layers"],
                 },
                 "hollow": {"type": "boolean"},
-                "base_color": {"type": "integer"},
                 "shapes": {
                     "type": "array",
                     "items": {"type": "object"},
@@ -399,6 +398,31 @@ def _design_system_prompt(request: LlmToBricksRequest) -> str:
 class LlmBuild:
     ldr: str
     voxels_xyzrgb: Optional[str] = None  # set in design mode: the model's voxels for editing/resizing
+    problematic_xyzrgb: Optional[str] = None
+
+
+def _convert_design_voxels(xyzrgb: str) -> LlmBuild:
+    """Build the final bricks with the image pipeline, without re-voxelizing a mesh."""
+    if not xyzrgb.strip():
+        raise ValueError("The model did not produce any voxels")
+    with tempfile.TemporaryDirectory(prefix="llm-voxels-") as temp_dir:
+        # The converter also uses the stem for diagnostics in tmp; keep it unique per job.
+        stem = Path(temp_dir) / Path(temp_dir).name
+        xyzrgb_path = stem.with_suffix(".xyzrgb")
+        xyzrgb_path.write_text(xyzrgb, encoding="utf-8")
+        info = glb2brick(
+            glb_path=str(stem.with_suffix(".glb")),
+            xyzrgb_path=str(xyzrgb_path),
+            auto_adjust_brick_count=False,
+        )
+        problematic_path = info.get("problematic_xyzrgb_file")
+        try:
+            ldr = validate_ldr_content(Path(info["ldr_file"]).read_text(encoding="utf-8"))
+            problematic = Path(problematic_path).read_text(encoding="utf-8") if problematic_path else None
+            return LlmBuild(ldr=ldr, voxels_xyzrgb=xyzrgb, problematic_xyzrgb=problematic)
+        finally:
+            if problematic_path:
+                Path(problematic_path).unlink(missing_ok=True)
 
 
 def voxel_extent(xyzrgb: str) -> int:
@@ -529,7 +553,7 @@ async def _generate_ldr(
         return LlmBuild(ldr=await _generate_ldr_direct(request, on_thinking))
     try:
         result = await _generate_ldr_with_design(request, on_thinking)
-        return LlmBuild(ldr=validate_ldr_content(result.ldr), voxels_xyzrgb=result.xyzrgb() or None)
+        return await asyncio.get_running_loop().run_in_executor(None, _convert_design_voxels, result.xyzrgb())
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -599,6 +623,10 @@ async def process_llm_to_bricks_task(
                 generation_id, build.voxels_xyzrgb, "design_voxels", raise_on_error=True
             )
             await generation_storage.update_detail_level(generation_id, voxel_extent(build.voxels_xyzrgb))
+        if build.problematic_xyzrgb:
+            await generation_storage.store_model_file(
+                generation_id, build.problematic_xyzrgb, "problematic_xyzrgb", raise_on_error=True
+            )
         # The shared generations schema persists the LDR and parts list but
         # does not require an mpd_url column. The frontend follows the same
         # path as existing generations and converts the saved LDR through
