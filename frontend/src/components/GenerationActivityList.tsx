@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import posthog from 'posthog-js';
-import { GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
+import { GenerationActivity, isGenerationActive, isPreviewPending } from '../hooks/useGenerationActivity';
 import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
 
@@ -23,6 +23,7 @@ export function GenerationActivityList({ generations, error, onOpen }: {
         {generations.map(generation => {
           const active = isGenerationActive(generation.status);
           const failed = generation.status === 'failed';
+          const previewPending = isPreviewPending(generation);
           const label = generation.status === 'queued' ? 'Queued'
             : generation.status === 'completed' ? 'Ready to build'
             : failed ? 'Generation failed'
@@ -30,7 +31,9 @@ export function GenerationActivityList({ generations, error, onOpen }: {
           return (
             <article key={generation.id} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="relative h-36 overflow-hidden bg-slate-50">
-                {active && generation.endpoint === 'llmToBricks'
+                {previewPending
+                  ? <div role="status" aria-label="Loading model preview" className="flex h-full items-center justify-center"><Loader2 aria-hidden="true" className="h-9 w-9 animate-spin text-slate-400" /></div>
+                  : active && generation.endpoint === 'llmToBricks'
                   ? <LlmPreviewLoader previewImageUrl={generation.imageUrl} compact />
                   : generation.imageUrl
                     ? <img src={generation.imageUrl} alt="" className="h-full w-full object-contain" />
@@ -44,6 +47,8 @@ export function GenerationActivityList({ generations, error, onOpen }: {
                     : <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0 text-green-600" />}
                   {label}
                 </p>
+                {previewPending && <p className="mt-2 text-xs text-slate-500">Preparing preview…</p>}
+                {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
                 {generation.endpoint === 'llmToBricks' && <LlmGenerationOutput generationId={generation.id} active={active} />}
                 {generation.status === 'completed' && <button type="button"

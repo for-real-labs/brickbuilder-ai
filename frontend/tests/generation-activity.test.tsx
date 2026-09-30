@@ -76,6 +76,61 @@ it('recovers a job that completed while the page was closed', async () => {
   expect(container.textContent).toContain('View model');
 });
 
+it.each([
+  { preview_image_url: '/preview.png', processed_image_url: '/processed.png', external_image_url: '/reference.png', expected: '/preview.png' },
+  { preview_image_url: '/preview.png', processed_image_url: null, external_image_url: null, expected: '/preview.png' },
+  { preview_image_url: null, processed_image_url: '/processed.png', external_image_url: '/reference.png', expected: '/processed.png' },
+  { preview_image_url: null, processed_image_url: null, external_image_url: '/reference.png', expected: '/reference.png' },
+  { preview_image_url: null, processed_image_url: null, external_image_url: null, expected: '/existing.png' },
+])('shows the best available image when a generation completes: $expected', async ({ expected, ...images }) => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations')
+    .mockResolvedValueOnce([{ ...job('preview'), external_image_url: '/existing.png' }] as never)
+    .mockResolvedValue([]);
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    generation_id: 'preview', status: 'completed', prompt: 'A limo', ...images,
+  } as never);
+  await act(async () => root.render(<Harness />));
+  await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+  if (!images.preview_image_url) {
+    expect(container.querySelector('[aria-label="Loading model preview"]')).not.toBeNull();
+    await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  }
+  expect(container.textContent).toContain('Ready to build');
+  expect(container.querySelector('article img')?.getAttribute('src')).toBe(expected);
+});
+
+it('polls a completed generation until its delayed preview arrives', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const get = vi.spyOn(GetGenerationApiService, 'getGeneration')
+    .mockResolvedValueOnce({ status: 'completed', prompt: 'A limo', preview_image_url: null } as never)
+    .mockResolvedValue({ status: 'completed', prompt: 'A limo', preview_image_url: '/limo.png' } as never);
+  localStorage.setItem('pending_generations:v2:user', JSON.stringify([job('delayed')]));
+  await act(async () => root.render(<Harness />));
+  expect(container.querySelector('[aria-label="Loading model preview"]')).not.toBeNull();
+  expect(container.textContent).toContain('View model');
+  await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+  expect(container.querySelector('article img')?.getAttribute('src')).toBe('/limo.png');
+  expect(container.querySelector('[aria-label="Loading model preview"]')).toBeNull();
+  await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+  expect(get).toHaveBeenCalledTimes(2);
+});
+
+it('stops waiting after 60 seconds even when preview requests fail', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const get = vi.spyOn(GetGenerationApiService, 'getGeneration')
+    .mockResolvedValueOnce({ status: 'completed', prompt: 'A limo' } as never)
+    .mockRejectedValue(new Error('offline'));
+  localStorage.setItem('pending_generations:v2:user', JSON.stringify([job('timeout')]));
+  await act(async () => root.render(<Harness />));
+  await act(async () => { await vi.advanceTimersByTimeAsync(60_000); });
+  expect(container.querySelector('[aria-label="Loading model preview"]')).toBeNull();
+  expect(container.textContent).toContain('Preview unavailable');
+  expect(container.textContent).toContain('View model');
+  const calls = get.mock.calls.length;
+  await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+  expect(get).toHaveBeenCalledTimes(calls);
+});
+
 it('keeps submitted jobs during refresh, retries network errors, and cancels on unmount', async () => {
   let finish!: (rows: never[]) => void;
   const fetchJobs = vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations')
