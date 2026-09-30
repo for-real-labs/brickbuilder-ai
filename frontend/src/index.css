@@ -254,3 +254,18 @@
 .input {
   @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
 }
+/* Reveal lower landing content together when visible, after its data settles. */
+.landing-scroll-reveal .landing-fade-in {
+  opacity: 0;
+  animation: none;
+}
+.landing-scroll-reveal .landing-fade-in.landing-visible {
+  animation: landingFadeIn 700ms ease-out both;
+  animation-delay: 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-scroll-reveal .landing-fade-in.landing-visible {
+    opacity: 1;
+    animation: none;
+  }
+}

@@ -543,3 +543,43 @@ def test_background_generation_survives_request_cancellation(monkeypatch):
         assert not module._background_tasks
 
     asyncio.run(scenario())
+
+
+def test_voxel_edit_loads_current_saved_voxels_and_checks_ownership(monkeypatch):
+    from unittest.mock import AsyncMock
+    from fastapi import HTTPException
+    storage = AsyncMock()
+    storage.get_generation.return_value = {
+        "user_id": "owner", "user_type": "authenticated", "status": "completed",
+        "xyzrgb_url": "saved-current", "design_voxels_url": "old-original",
+    }
+    storage.download_file_from_storage.return_value = b"0 0 0 255 0 0\n"
+    monkeypatch.setattr(module, "generation_storage", storage)
+    request = LlmToBricksRequest(prompt="blue roof", source_generation_id="source")
+    asyncio.run(module._load_edit_source(request, {"authenticated": True, "user_id": "owner"}))
+    storage.download_file_from_storage.assert_awaited_once_with("saved-current")
+    assert "0 0 0 255 0 0" in module._user_input(request).text
+    storage.download_file_from_storage.reset_mock()
+    with pytest.raises(HTTPException):
+        asyncio.run(module._load_edit_source(request, {"authenticated": True, "user_id": "other"}))
+    storage.download_file_from_storage.assert_not_awaited()
+
+
+def test_voxel_patch_preserves_untouched_cells_and_uses_shared_converter(monkeypatch):
+    from unittest.mock import AsyncMock
+    request = LlmToBricksRequest(prompt="change one color", source_generation_id="source")
+    request._source_voxels = "0 0 0 255 0 0\n1 0 0 255 0 0\n2 0 0 255 0 0\n"
+    conversation = AsyncMock()
+    conversation.send.return_value = Turn(tool_calls=[ToolCall("edit", "edit_voxels", {
+        "set": [[0, 0, 0, 0, 0, 255]], "remove": [[2, 0, 0]],
+    })])
+    monkeypatch.setattr(module, "_open_conversation", lambda *args: conversation)
+    monkeypatch.setattr(module, "_convert_design_voxels", lambda content: module.LlmBuild("ldr", content))
+    result = asyncio.run(module._generate_ldr(request))
+    assert result.voxels_xyzrgb == "0 0 0 0 0 255\n1 0 0 255 0 0\n"
+
+
+@pytest.mark.parametrize("content", ["", "0 0 0 256 0 0", "0 0 0 1 2", "nan 0 0 0 0 0"])
+def test_voxel_edit_rejects_invalid_cells(content):
+    with pytest.raises(ValueError):
+        module._voxel_cells(content)

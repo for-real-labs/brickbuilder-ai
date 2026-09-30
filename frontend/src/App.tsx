@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
+import { GenerationNotificationsProvider } from "./contexts/GenerationNotificationsContext";
+
 import LandingPage from "./pages/LandingPage";
 import GeneratedModel from "./pages/GeneratedModel";
 import OrderKit from "./pages/OrderKit";
@@ -30,6 +32,7 @@ function ExternalRedirect({ to }: { to: string }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <GenerationNotificationsProvider>
       <ChangeRequestProvider>
         {/* <ProtectedRoute> */}
         {/* <AnnouncementBanner /> */}
@@ -68,6 +71,7 @@ export default function App() {
         {/* </ProtectedRoute> */}
       </ChangeRequestProvider>
       <FeedbackWidget />
+      </GenerationNotificationsProvider>
     </BrowserRouter>
   );
 }

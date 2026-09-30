@@ -26,6 +26,7 @@ export function getLlmModelOption(id: string): LlmModelOption | undefined {
 }
 
 export interface LlmToBricksRequest {
+  sourceGenerationId?: string;
   prompt?: string;
   imageBase64?: string;
   imageMediaType?: string;
@@ -109,6 +110,7 @@ export class LlmToBricksApiService {
     }
 
     return {
+      source_generation_id: request.sourceGenerationId,
       prompt: prompt || undefined,
       image_base64: request.imageBase64,
       image_media_type: request.imageMediaType || 'image/png',

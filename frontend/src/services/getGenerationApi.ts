@@ -28,6 +28,7 @@ export interface GetGenerationResponse {
   prompt: string | null;
   external_image_url: string | null;
   processed_image_url: string | null;
+  preview_image_url?: string | null;
   reference_images?: Partial<Record<'front' | 'back' | 'side' | 'top', string>>;
   detail_level: number | null;
   ldr_content: string | null;

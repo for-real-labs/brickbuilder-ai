@@ -59,14 +59,13 @@ Help me set up and run the BrickBuilder project locally.
 
 Prerequisites I need installed:
 - Python 3.10+
-- Node.js
-- uv (Python package manager from Astral)
+- Node.js 18+
 
 Steps:
 1. Copy backend/.env-example to backend/.env and frontend/.env-example to frontend/.env
 2. Ask me for my fal.ai API key and set FAL_KEY in backend/.env
-3. Run `python install.py` to install dependencies (uses uv for backend, npm for frontend)
-4. Run `python run.py` to start both the backend API (port 8002) and frontend dev server. The backend server will take a minute to start the first run as it builds c++ executables.
+3. Run `npm install` to install dependencies (uses Python venv/pip for backend, npm for frontend)
+4. Run `npm start` to start both the backend API (port 8002) and frontend dev server. The backend server will take a minute to start the first run as it builds c++ executables.
 
 The backend is a FastAPI server, frontend is React+Vite. Let me know if any dependencies are missing.
 ```
@@ -78,8 +77,7 @@ The backend is a FastAPI server, frontend is React+Vite. Let me know if any depe
 | Requirement | Notes |
 | --- | --- |
 | **Python 3.10+** | [python.org/downloads](https://www.python.org/downloads/) |
-| **Node.js** | [nodejs.org](https://nodejs.org/) |
-| **uv** | Python package manager — [install guide](https://docs.astral.sh/uv/getting-started/installation/) |
+| **Node.js 18+** | [nodejs.org](https://nodejs.org/) |
 | **fal.ai account** | Sign up at [fal.ai](https://fal.ai/) and get an API key |
 
 ### Environment setup
@@ -100,9 +98,11 @@ The backend is a FastAPI server, frontend is React+Vite. Let me know if any depe
 ### Install & run
 
 ```bash
-python install.py
-python run.py
+npm install
+npm start
 ```
+Run these commands from the repository root. `npm install` creates `backend/.venv` and installs the pinned Python dependencies with pip, then installs the frontend dependencies. `npm start` launches both dev servers; Ctrl+C stops both, and if either server exits the other is stopped too. Python 3.10+ must be installed; if needed, set `PYTHON` to the path of your Python executable. uv is not required for local setup. You can also run just one server with `npm run start:backend` or `npm run start:frontend`.
+
 Voxelization with SAM-3D produces better results than Trellis, but it runs as a separate worker that you host on RunPod. To enable it, deploy the SAM-3D image on [RunPod](https://www.runpod.io/)
 
 Since the LEGO pipeline only needs voxels, BrickBuilder streams SAM3D's geometry/appearance callbacks and stops after the final colored voxel output. This avoids the extra mesh decoding and GLB export step, reducing end-to-end generation time.
@@ -132,12 +132,16 @@ Pull requests run isolated backend and frontend test jobs in GitHub Actions. The
 tests mock external APIs and storage, so no production credentials are needed.
 
 ```bash
+# Setup and startup scripts
+npm test
+
 # Backend
+npm run install:backend
 cd backend
-uv run --group dev pytest
+.venv/bin/python -m pytest
 
 # Frontend (unit tests and coverage gate)
-cd frontend
+cd ../frontend
 npm ci
 npm run test:coverage
 ```
