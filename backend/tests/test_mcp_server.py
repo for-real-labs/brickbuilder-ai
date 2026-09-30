@@ -187,6 +187,20 @@ def test_failed_missing_models_and_invalid_id(client):
     storage.get_generation.assert_not_called()
 
 
+@pytest.mark.parametrize("timestamp", ["2000-01-01T00:00:00Z", "2000-01-01T00:00:00+00:00", "2000-01-01T00:00:00"])
+def test_interrupted_jobs_do_not_poll_forever(client, timestamp):
+    http, _, storage = client
+    row = storage.get_generation.return_value
+    row["updated_at"] = timestamp
+    result = call(http, "get_lego_model", {"generation_id": GENERATION_ID})["structuredContent"]
+    assert result["status"] == "failed"
+    assert "poll_after_seconds" not in result
+    # A progress read does not alter stored state; a fresh heartbeat can resume.
+    assert row["status"] == "processing"
+    row["updated_at"] = module.datetime.now(module.timezone.utc).isoformat()
+    assert call(http, "get_lego_model", {"generation_id": GENERATION_ID})["structuredContent"]["status"] == "processing"
+
+
 def test_credit_errors_and_unexpected_errors_are_safe(client, monkeypatch):
     http, _, _ = client
     for exc, message in [(HTTPException(status_code=402), "credit"), (RuntimeError("SECRET"), "try again")]:

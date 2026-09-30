@@ -103,6 +103,8 @@ snapshots are not sent to the host model. Generation uses the existing credit
 checks/deductions and PostHog tracking. MCP reads do not consume anonymous
 quotas or credits. Existing background jobs are process-local; a backend
 restart can interrupt a job, just as for the website.
+The read tool reports a missing heartbeat after 30 seconds as a failed build,
+so clients do not keep polling an interrupted job indefinitely.
 
 ## Connect the clients
 

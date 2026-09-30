@@ -5,6 +5,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from enum import Enum
 from typing import Annotated
 from urllib.parse import urlsplit
@@ -160,6 +161,23 @@ def _result(data: dict) -> CallToolResult:
     return CallToolResult(content=[TextContent(type="text", text=json.dumps(data))], structuredContent=data)
 
 
+def _generation_status(row: dict) -> str:
+    status = row.get("status", "started")
+    timestamp = row.get("updated_at") or row.get("created_at")
+    if status in {"started", "queued", "processing", "ldr_processing"} and timestamp:
+        try:
+            heartbeat = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+            if heartbeat.tzinfo is None:
+                heartbeat = heartbeat.replace(tzinfo=timezone.utc)
+            # Match /generation's heartbeat timeout without mutating the row
+            # from this read-only tool or downloading the entire LDraw model.
+            if datetime.now(timezone.utc) - heartbeat > timedelta(seconds=30):
+                return "failed"
+        except (ValueError, TypeError, AttributeError):
+            pass
+    return status
+
+
 def create_mcp_server(settings: McpSettings) -> FastMCP:
     server = BrickBuilderMcp(
         "BrickBuilder AI", website_url=settings.website_url,
@@ -228,7 +246,7 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
             if not row:
                 raise HTTPException(status_code=404)
             require_generation_access(row, _identity())
-            status = row.get("status", "started")
+            status = _generation_status(row)
             result = {
                 "generation_id": str(generation_id), "status": status,
                 "model_url": f"{settings.website_url}/generated-model?id={generation_id}&exact=1",
