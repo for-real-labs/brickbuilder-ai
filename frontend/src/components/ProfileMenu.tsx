@@ -1,3 +1,4 @@
+import { NotificationMenu } from "./NotificationMenu";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, ChevronDown, Sparkles, Settings, LogOut } from "lucide-react";
@@ -43,8 +44,11 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
   const showUserIdentity = isSupabaseConfigured && user;
 
   return (
+    <div className="flex items-center gap-2">
     <div className="relative">
       <button
+        aria-label="Account menu"
+        aria-expanded={dropdownOpen}
         onClick={() => setDropdownOpen(!dropdownOpen)}
         className="flex h-8 items-center gap-1 rounded-full border-none bg-slate-100 px-2 cursor-pointer transition-colors hover:bg-slate-200 sm:h-9 sm:gap-2 sm:px-3"
       >
@@ -119,6 +123,8 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
           </div>
         </>
       )}
+    </div>
+    <NotificationMenu onNavigate={onNavigate} />
     </div>
   );
 }

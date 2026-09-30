@@ -1,3 +1,4 @@
+import { NotificationMenu } from "../components/NotificationMenu";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -96,6 +97,7 @@ function CommunityHeader() {
             </button>
           </>
         )}
+        {!showProfileMenu && <NotificationMenu />}
       </div>
     </header>
   );

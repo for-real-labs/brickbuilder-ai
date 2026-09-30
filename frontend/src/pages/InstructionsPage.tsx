@@ -1,3 +1,4 @@
+import { NotificationMenu } from "../components/NotificationMenu";
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import * as THREE from 'three';
@@ -83,6 +84,7 @@ function Header() {
             </button>
           </>
         )}
+        {!showProfileMenu && <NotificationMenu />}
       </div>
       
     </header>

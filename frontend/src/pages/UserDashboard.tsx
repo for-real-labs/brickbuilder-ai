@@ -1,3 +1,4 @@
+import { NotificationMenu } from "../components/NotificationMenu";
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -805,6 +806,7 @@ const UserDashboard: React.FC = () => {
                       <span className="hidden sm:inline">Create New Model</span>
                       <span className="sm:hidden">Create</span>
                     </button>
+                    <NotificationMenu />
                   </div>
                 </div>
               </div>
