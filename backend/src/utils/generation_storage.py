@@ -41,7 +41,8 @@ class GenerationStorage:
         detail_level: float,
         endpoint: str = "textToBricks",
         image_model: Optional[str] = None,
-        model_3d: Optional[str] = None
+        model_3d: Optional[str] = None,
+        source_generation_id: Optional[str] = None
     ) -> str:
         """
         Create a new generation record and return the generation ID
@@ -63,6 +64,8 @@ class GenerationStorage:
         try:
             generation_data = {
                 "id": generation_id,
+                "notification_seen": False,
+                "source_generation_id": source_generation_id,
                 "user_id": user_id,
                 "user_type": user_type,
                 "prompt": prompt,

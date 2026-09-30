@@ -788,6 +788,7 @@ async def llm_to_bricks(
             detail_level=request.detail_level,
             endpoint="llmToBricks",
             model_3d=request.model,
+            source_generation_id=request.source_generation_id,
         )
         task = asyncio.create_task(
             run_with_output(generation_id, process_llm_to_bricks_task, request, user_info, auth_info)
@@ -845,6 +846,7 @@ async def llm_to_bricks_stream(
         detail_level=request.detail_level,
         endpoint="llmToBricks",
         model_3d=request.model,
+        source_generation_id=request.source_generation_id,
     )
 
     async def event_stream():

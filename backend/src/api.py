@@ -46,6 +46,8 @@ from .requests.updateGenerationName import update_generation_name, UpdateGenerat
 from .requests.updateImagePreview import update_image_preview, UpdateImagePreviewRequest, UpdateImagePreviewResponse
 from .requests.updateUsername import update_username, UpdateUsernameRequest, UpdateUsernameResponse
 
+from .requests.generationNotifications import list_generation_notifications, mark_generation_viewed, latest_generation_edit
+
 # Import utilities
 from .utils.pack_ldraw_model import LDrawPacker
 from .utils.posthog_client import track_api_call
@@ -597,3 +599,18 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+@app.get("/generation-notifications")
+async def generation_notifications_endpoint(auth_info: dict = Depends(get_optional_identity)):
+    return await list_generation_notifications(auth_info)
+
+
+@app.post("/generation/{generation_id}/viewed")
+async def generation_viewed_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
+    return await mark_generation_viewed(str(generation_id), auth_info)
+
+
+@app.get("/generation/{generation_id}/latest-edit")
+async def generation_latest_edit_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
+    return await latest_generation_edit(str(generation_id), auth_info)

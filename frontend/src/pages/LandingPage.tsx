@@ -1,3 +1,4 @@
+import { NotificationMenu } from "../components/NotificationMenu";
 
 import React, { useEffect, useRef, useState, memo } from "react";
 import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight } from "lucide-react";
@@ -1511,6 +1512,7 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
             </button>
           </>
         )}
+        {!showProfileMenu && <NotificationMenu />}
       </div>
 
     </header>

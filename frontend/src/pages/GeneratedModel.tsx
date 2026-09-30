@@ -1,3 +1,7 @@
+import { GenerationNotificationsApi } from "../services/generationNotificationsApi";
+import { useGenerationNotifications } from "../contexts/GenerationNotificationsContext";
+import { isGenerationActive } from "../hooks/useGenerationActivity";
+import { NotificationMenu } from "../components/NotificationMenu";
 import React, { useState } from "react";
 import { SEO } from "../components/SEO";
 import { SiteFooter } from "../components/SiteFooter";
@@ -133,7 +137,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
   );
 
   return (
-    <header className="flex items-center justify-between w-full relative landing-fade-in landing-delay-1" style={{ zIndex: 50 }}>
+    <header className="flex flex-wrap items-center justify-between gap-y-3 w-full relative landing-fade-in landing-delay-1" style={{ zIndex: 50 }}>
       <a href="/" className="flex items-center gap-3">
         <img
           src="/logo.svg"
@@ -148,9 +152,9 @@ function Header({ onGuardedNavigate }: HeaderProps) {
       </a>
 
       {/* Login / Sign Up OR Account Menu */}
-      <div className="flex items-center gap-3">
+      <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:gap-3">
         <button
-          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
+          className="hidden sm:inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
           onClick={() => onGuardedNavigate("/community")}
         >
           <Users className="h-4 w-4" />
@@ -162,7 +166,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
           <>
             {/* Dashboard button */}
             <button
-              className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
+              className="hidden sm:inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
               onClick={() => onGuardedNavigate('/dashboard')}
             >
               <LayoutDashboard className="h-4 w-4" />
@@ -190,6 +194,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
             </button>
           </>
         )}
+        {!showProfileMenu && <NotificationMenu />}
       </div>
       
     </header>
@@ -204,6 +209,8 @@ export default function GeneratedModel() {
   const { user: currentUser, userProfile: currentUserProfile, updateUsername } = useAuth();
   
   // Generation fetch state
+  const { markViewed, refresh: refreshNotifications } = useGenerationNotifications();
+  const [displayedGenerationId, setDisplayedGenerationId] = useState<string | null>(null);
   const [generationLoading, setGenerationLoading] = React.useState(false);
   const [generationError, setGenerationError] = React.useState<string | null>(null);
   const [currentGenerationId, setCurrentGenerationId] = React.useState<string | null>(null);
@@ -385,6 +392,9 @@ export default function GeneratedModel() {
   
   // Initialize model data on component mount - check URL id param first, then fetch from backend, fall back to localStorage
   React.useEffect(() => {
+    const controller = new AbortController();
+    setDisplayedGenerationId(null);
+    setSceneReady(false);
     const initializeModelData = async () => {
       // Priority 1: Check for id parameter in URL (e.g., /generated-model?id=abc123)
       const urlGenerationId = searchParams.get('id');
@@ -395,10 +405,21 @@ export default function GeneratedModel() {
         
         try {
           // First check the current status
-          const statusResponse = await GetGenerationApiService.getGeneration(urlGenerationId);
+          const statusResponse = await GetGenerationApiService.getGeneration(urlGenerationId, controller.signal);
+          if (controller.signal.aborted) return;
+          // Returning to the original model resumes its latest edit, even from another device.
+          try {
+            const edit = await GenerationNotificationsApi.latestEdit(urlGenerationId, controller.signal);
+            if (controller.signal.aborted) return;
+            if (edit.generation_id && searchParams.get("exact") !== "1") {
+              navigate(`/generated-model?id=${encodeURIComponent(edit.generation_id)}`, { replace: true });
+              return;
+            }
+          } catch { /* The original model is still usable if edit lookup is temporarily unavailable. */ }
+          if (controller.signal.aborted) return;
           
           // If still processing, poll until complete
-          if (statusResponse.status === 'started' || statusResponse.status === 'processing') {
+          if (isGenerationActive(statusResponse.status)) {
             // Show preview image if available
             if (statusResponse.external_image_url) {
               setEditPreviewImageUrl(statusResponse.external_image_url);
@@ -414,8 +435,10 @@ export default function GeneratedModel() {
                 if (response.processed_image_url) {
                   setProcessedImageUrl(response.processed_image_url);
                 }
-              }
+              },
+              2500, 1440, controller.signal
             );
+            if (controller.signal.aborted) return;
             
             // Clear preview image after completion
             setEditPreviewImageUrl(null);
@@ -458,6 +481,7 @@ export default function GeneratedModel() {
           }
           
         } catch (error) {
+          if (controller.signal.aborted) return;
           console.error('Failed to fetch generation data from URL id:', error);
           setGenerationError(`Failed to load generation: ${error instanceof Error ? error.message : 'Unknown error'}`);
           setGenerationLoading(false);
@@ -648,16 +672,31 @@ export default function GeneratedModel() {
         }
       }
       
-      if (mpdContent) {
-        setMpdContent(mpdContent);
-      }
+      if (controller.signal.aborted) return;
+      if (!mpdContent) throw new Error("The model is saved, but its preview could not be loaded. Please try again shortly.");
+      setMpdContent(mpdContent);
       
+      if (controller.signal.aborted) return;
+      if (mpdContent) setDisplayedGenerationId(generationId);
       setGenerationLoading(false);
     };
     
     initializeModelData();
-  }, [searchParams]);
+    return () => controller.abort();
+  }, [searchParams, navigate]);
   
+  React.useEffect(() => {
+    if (!displayedGenerationId || !sceneReady || generationLoading || generationError) return;
+    let canceled = false;
+    let retry: ReturnType<typeof setTimeout>;
+    const acknowledge = async () => {
+      try { await markViewed(displayedGenerationId); }
+      catch { if (!canceled) retry = setTimeout(acknowledge, 5000); }
+    };
+    void acknowledge();
+    return () => { canceled = true; clearTimeout(retry); };
+  }, [displayedGenerationId, sceneReady, generationLoading, generationError, markViewed]);
+
   // Fetch access token on mount
   React.useEffect(() => {
     const fetchToken = async () => {
@@ -1528,84 +1567,10 @@ export default function GeneratedModel() {
       }, accessToken || undefined);
 
       const newGenerationId = response.generation_id;
-      console.log('[GeneratedModel] Edit started, polling for status:', newGenerationId);
-
-      // Poll for completion with status updates
-      const completedGeneration = await GetGenerationApiService.pollUntilComplete(
-        newGenerationId,
-        (statusResponse: GetGenerationResponse) => {
-          // Show preview image if available during processing
-          if (statusResponse.external_image_url) {
-            setEditPreviewImageUrl(statusResponse.external_image_url);
-          }
-        }
-      );
-
-      // Clear preview image after completion
-      setEditPreviewImageUrl(null);
-
-      console.log('[GeneratedModel] Edit completed:', completedGeneration.generation_id);
-
-      // Get MPD content from URL or convert LDR to MPD
-      let mpdContent: string | null = null;
-      if (completedGeneration.mpd_url) {
-        try {
-          const mpdResponse = await fetch(completedGeneration.mpd_url);
-          if (mpdResponse.ok) {
-            mpdContent = await mpdResponse.text();
-          }
-        } catch (mpdError) {
-          console.warn('Failed to fetch MPD from URL:', mpdError);
-        }
-      }
-
-      if (!mpdContent) {
-        try {
-          const authToken = (await supabase.auth.getSession()).data.session?.access_token;
-          const mpdData = await LdrToMpdApiService.convertLdrToMpd(
-            completedGeneration.ldr_content,
-            modelName,
-            authToken
-          );
-          mpdContent = mpdData.mpd_content;
-        } catch (mpdError) {
-          console.warn('Failed to convert LDR to MPD:', mpdError);
-        }
-      }
-
-      if (!mpdContent) throw new Error("The edit was saved, but its preview could not be loaded. Find it in your generations to retry.");
-      // Update localStorage with new content
-      localStorage.setItem('lastLdrContent', completedGeneration.ldr_content);
-      setLdrContent(completedGeneration.ldr_content);
-
-      localStorage.setItem('lastGenerationId', completedGeneration.generation_id);
-      // If created while logged out, remember it so it can be claimed on login.
-      if (!currentUser) recordAnonymousGeneration(completedGeneration.generation_id);
-      setCurrentGenerationId(completedGeneration.generation_id);
-
-      localStorage.setItem('lastMpdContent', mpdContent);
-      setMpdContent(mpdContent);
-      setPriceRefreshCounter((value) => value + 1);
-
-      // Update xyzrgb URLs
-      if (completedGeneration.xyzrgb_url) {
-        setXyzrgbUrl(completedGeneration.xyzrgb_url);
-      }
-      if (completedGeneration.problematic_xyzrgb_url) {
-        setProblematicXyzrgbUrl(completedGeneration.problematic_xyzrgb_url);
-      }
-
-      setXyzrgbContent(null);
-      setProblematicXyzrgbUrl(completedGeneration.problematic_xyzrgb_url || null);
-      const editedUrl = new URL(window.location.href);
-      editedUrl.searchParams.set("id", completedGeneration.generation_id);
-      window.history.replaceState({}, "", editedUrl.toString());
-      posthog.capture("generated_model_ai_edit_completed", { generation_id: completedGeneration.generation_id });
-
-      // Clear screenshots to force regeneration with new model
-      setScreenshots(null);
-
-      // Clear the prompt input after successful edit
+      localStorage.setItem('lastGenerationId', newGenerationId);
+      if (!currentUser) recordAnonymousGeneration(newGenerationId);
+      refreshNotifications();
+      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true });
       setEditPrompt('');
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
@@ -1615,7 +1580,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, modelName, currentGenerationId, currentUser, isPromptEditing, isResizing, isSavePolling]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, isPromptEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -1838,7 +1803,9 @@ export default function GeneratedModel() {
               </div>
             )}
             <Loader2 className="h-12 w-12 animate-spin text-[#f44336] mb-4" />
-            <p className="text-slate-600">Loading model...</p>
+            <p className="text-slate-600">Preparing your model…</p>
+            <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
+            <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
           </div>
         )}
 
