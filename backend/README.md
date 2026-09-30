@@ -1,15 +1,23 @@
 # BrickBuilder Backend
 
 ## Running locally
- - Create .env file and populate
- - Make sure `uv` is installed on cmd line
- - Then run:
+
+Install Python 3.10+ and Node.js 18+, then create `.env` and populate it.
+From the repository root:
+
 ```bash
-uv sync
+npm install
+npm run start:backend
 ```
-```bash
-uv run local_run.py
-```
+
+The installer creates `backend/.venv` with Python's built-in `venv` and installs
+`requirements.txt` with pip. Set `PYTHON` to your Python executable path if needed.
+`npm start` runs both backend and frontend. uv is not required for local setup.
+The uv lockfile remains available for the existing Docker and CI workflows.
+Keep `requirements.txt` in sync with `pyproject.toml` when changing dependencies.
+The direct Python examples below use `.venv/bin/python`; on Windows use
+`.venv\Scripts\python.exe`.
+
 ## Endpoints
 Developer API keys are for local curl and server-side callers only. Browser clients should authenticate with Supabase JWT bearer tokens instead of sending `X-API-Key`.
 
@@ -206,13 +214,13 @@ curl -X POST http://localhost:8002/estimatePrice \
 ## Testing
 ### Run LLM render against the local backend
 
-Start the backend first with `uv run local_run.py`. Its `.env` must contain
+Start the backend first with `npm run start:backend` from the repository root. Its `.env` must contain
 `OPENAI_API_KEY`, `FAL_KEY`, and your Supabase settings. Then pass the UUID of an
 existing completed generation; the command automatically uses that generation's
 `xyzrgb_url` and processed reference image:
 
 ```bash
-uv run python -m src.cli.llm_render YOUR_GENERATION_UUID
+.venv/bin/python -m src.cli.llm_render YOUR_GENERATION_UUID
 ```
 
 If `DEVELOPER_API_KEY` is set in `backend/.env` or your shell, it is sent
@@ -222,7 +230,7 @@ automatically. Otherwise, pass it explicitly with `--api-key`. Successful runs c
 You can override the saved inputs or target a deployed backend:
 
 ```bash
-uv run python -m src.cli.llm_render YOUR_GENERATION_UUID \
+.venv/bin/python -m src.cli.llm_render YOUR_GENERATION_UUID \
   --api-url https://your-backend.example.com \
   --api-key "$DEVELOPER_API_KEY" \
   --xyzrgb-url https://example.com/model.xyzrgb \
@@ -230,16 +238,16 @@ uv run python -m src.cli.llm_render YOUR_GENERATION_UUID \
   --include-preview
 ```
 
-Run `uv run python -m src.cli.llm_render --help` for all output, prompt, and
+Run `.venv/bin/python -m src.cli.llm_render --help` for all output, prompt, and
 segment options.
 
 ### Run glb2brick from cmd line to bypass .glb generation
 ```bash
-uv run python -m src.utils.conversions.glb2brick ./test-files/glb/pikachu.glb --voxel-size 30
+.venv/bin/python -m src.utils.conversions.glb2brick ./test-files/glb/pikachu.glb --voxel-size 30
 ```
 ### Run glb2brick with xyzrgb file (bypassing glb voxelization)
 ```bash
-uv run python -m src.utils.conversions.glb2brick ./test-files/glb/pikachu.glb --voxel-size 36 --xy
+.venv/bin/python -m src.utils.conversions.glb2brick ./test-files/glb/pikachu.glb --voxel-size 36 --xy
 zrgb ./lambo-no-bottom.xyzrgb 
 ```
 ### Stripe Webhook testing
@@ -251,7 +259,7 @@ stripe listen --forward-to localhost:8002/stripeWebhook
 ```
 Read output and make sure STRIPE_WEBHOOK_SECRET is correct in `.env`. Restart local server if necessary
 ```bash
-uv run local_run.py
+.venv/bin/python local_run.py
 ```
 ```bash
 stripe trigger checkout.session.completed
