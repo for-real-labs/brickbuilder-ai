@@ -27,7 +27,8 @@ type PendingExitAction = () => void | Promise<void>;
 import { GetPriceApiService, GetPriceResponse } from "../services/getPriceApi";
 import { ResizeScaler } from "../components/ResizeScaler";
 import { ResizeModelApiService } from "../services/resizeModelApi";
-import { PromptEditModelApiService } from "../services/promptEditModelApi";
+import { LlmToBricksApiService } from "../services/llmToBricksApi";
+import { VoxelPromptEditor } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
@@ -216,7 +217,6 @@ export default function GeneratedModel() {
   const [showPriceResize, setShowPriceResize] = React.useState(false);
   const [isPromptEditing, setIsPromptEditing] = React.useState(false);
   const [editPrompt, setEditPrompt] = React.useState("");
-  const [editModelQuality, setEditModelQuality] = React.useState<"regular" | "premium">("premium");
   const [editPreviewImageUrl, setEditPreviewImageUrl] = React.useState<string | null>(null);
   const [editPromptError, setEditPromptError] = React.useState<string | null>(null);
   
@@ -1500,6 +1500,7 @@ export default function GeneratedModel() {
   }, [mpdContent, accessToken, currentGenerationId, modelName]);
 
   const handlePromptEditModel = React.useCallback(async () => {
+    if (isPromptEditing || isResizing || isSavePolling) return;
     if (!editPrompt.trim()) {
       console.error('No prompt provided for editing');
       return;
@@ -1511,27 +1512,24 @@ export default function GeneratedModel() {
       return;
     }
 
-    // Get modelOption based on quality selection
-    const modelOption = editModelQuality === 'regular' ? 'a' : 'b';
-
-    console.log('[GeneratedModel] Prompt edit:', editPrompt, 'modelOption:', modelOption);
+    posthog.capture('generated_model_ai_edit_submitted', {
+      generation_id: currentGenerationId, prompt_length: editPrompt.trim().length,
+    });
 
     setIsPromptEditing(true);
     setEditPromptError(null);
     setEditPreviewImageUrl(null);
-    
-    try {      
+
+    try {
       // Start the async edit operation
-      const response = await PromptEditModelApiService.promptEditModel(
-        currentGenerationId,
-        editPrompt.trim(),
-        accessToken || undefined,
-        modelOption
-      );
-      
+      const response = await LlmToBricksApiService.generate({
+        sourceGenerationId: currentGenerationId,
+        prompt: editPrompt.trim(),
+      }, accessToken || undefined);
+
       const newGenerationId = response.generation_id;
       console.log('[GeneratedModel] Edit started, polling for status:', newGenerationId);
-      
+
       // Poll for completion with status updates
       const completedGeneration = await GetGenerationApiService.pollUntilComplete(
         newGenerationId,
@@ -1542,21 +1540,12 @@ export default function GeneratedModel() {
           }
         }
       );
-      
+
       // Clear preview image after completion
       setEditPreviewImageUrl(null);
-      
+
       console.log('[GeneratedModel] Edit completed:', completedGeneration.generation_id);
-            
-      // Update localStorage with new content
-      localStorage.setItem('lastLdrContent', completedGeneration.ldr_content);
-      setLdrContent(completedGeneration.ldr_content);
-      
-      localStorage.setItem('lastGenerationId', completedGeneration.generation_id);
-      // If created while logged out, remember it so it can be claimed on login.
-      if (!currentUser) recordAnonymousGeneration(completedGeneration.generation_id);
-      setCurrentGenerationId(completedGeneration.generation_id);
-      
+
       // Get MPD content from URL or convert LDR to MPD
       let mpdContent: string | null = null;
       if (completedGeneration.mpd_url) {
@@ -1569,7 +1558,7 @@ export default function GeneratedModel() {
           console.warn('Failed to fetch MPD from URL:', mpdError);
         }
       }
-      
+
       if (!mpdContent) {
         try {
           const authToken = (await supabase.auth.getSession()).data.session?.access_token;
@@ -1583,12 +1572,21 @@ export default function GeneratedModel() {
           console.warn('Failed to convert LDR to MPD:', mpdError);
         }
       }
-      
-      if (mpdContent) {
-        localStorage.setItem('lastMpdContent', mpdContent);
-        setMpdContent(mpdContent);
-      }
-      
+
+      if (!mpdContent) throw new Error("The edit was saved, but its preview could not be loaded. Find it in your generations to retry.");
+      // Update localStorage with new content
+      localStorage.setItem('lastLdrContent', completedGeneration.ldr_content);
+      setLdrContent(completedGeneration.ldr_content);
+
+      localStorage.setItem('lastGenerationId', completedGeneration.generation_id);
+      // If created while logged out, remember it so it can be claimed on login.
+      if (!currentUser) recordAnonymousGeneration(completedGeneration.generation_id);
+      setCurrentGenerationId(completedGeneration.generation_id);
+
+      localStorage.setItem('lastMpdContent', mpdContent);
+      setMpdContent(mpdContent);
+      setPriceRefreshCounter((value) => value + 1);
+
       // Update xyzrgb URLs
       if (completedGeneration.xyzrgb_url) {
         setXyzrgbUrl(completedGeneration.xyzrgb_url);
@@ -1596,20 +1594,28 @@ export default function GeneratedModel() {
       if (completedGeneration.problematic_xyzrgb_url) {
         setProblematicXyzrgbUrl(completedGeneration.problematic_xyzrgb_url);
       }
-      
+
+      setXyzrgbContent(null);
+      setProblematicXyzrgbUrl(completedGeneration.problematic_xyzrgb_url || null);
+      const editedUrl = new URL(window.location.href);
+      editedUrl.searchParams.set("id", completedGeneration.generation_id);
+      window.history.replaceState({}, "", editedUrl.toString());
+      posthog.capture("generated_model_ai_edit_completed", { generation_id: completedGeneration.generation_id });
+
       // Clear screenshots to force regeneration with new model
       setScreenshots(null);
-      
+
       // Clear the prompt input after successful edit
       setEditPrompt('');
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
+      posthog.capture("generated_model_ai_edit_failed", { generation_id: currentGenerationId });
       setEditPromptError(error instanceof Error ? error.message : 'Failed to edit model');
       setEditPreviewImageUrl(null);
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, editModelQuality, accessToken, modelName, currentGenerationId]);
+  }, [editPrompt, accessToken, modelName, currentGenerationId, currentUser, isPromptEditing, isResizing, isSavePolling]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -2188,12 +2194,23 @@ export default function GeneratedModel() {
           <section className="mt-12 max-w-md mx-auto space-y-6">
             <ResizeScaler
               onResize={handleResizeModel}
-              disabled={!mpdContent}
+              disabled={!mpdContent || isPromptEditing}
               isResizing={isResizing}
               scaler={currentScaler}
               onScalerChange={setCurrentScaler}
             />
           </section>
+        )}
+
+        {!showVoxelEditor && mpdContent && xyzrgbUrl && currentGenerationId && (
+          <VoxelPromptEditor
+            prompt={editPrompt}
+            onPromptChange={setEditPrompt}
+            onSubmit={() => { void handlePromptEditModel(); }}
+            loading={isPromptEditing}
+            disabled={isResizing || isSavePolling}
+            error={editPromptError}
+          />
         )}
 
         {/* Centered model actions */}
@@ -2207,7 +2224,7 @@ export default function GeneratedModel() {
           <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
             <ModelEditControls
               isManualEditorOpen={showVoxelEditor}
-              manualLoading={xyzrgbLoading}
+              manualLoading={xyzrgbLoading || isPromptEditing}
               onManualEdit={() => { void handleEditModelClick(); }}
             />
             {/* Instructions button — white with grey border, turns red on hover */}
@@ -2215,7 +2232,7 @@ export default function GeneratedModel() {
               type="button"
               aria-label="View instructions"
               onClick={navigateToInstructions}
-              disabled={!currentGenerationId || isSavePolling}
+              disabled={!currentGenerationId || isSavePolling || isPromptEditing}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-300 bg-white px-7 font-semibold text-black transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-44"
             >
               {isSavePolling ? (
@@ -2349,7 +2366,7 @@ export default function GeneratedModel() {
           <section className="mt-6 max-w-xs mx-auto">
             <ResizeScaler
               onResize={handleResizeModel}
-              disabled={!mpdContent}
+              disabled={!mpdContent || isPromptEditing}
               isResizing={isResizing}
               scaler={currentScaler}
               onScalerChange={setCurrentScaler}

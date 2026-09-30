@@ -1,3 +1,4 @@
+import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GetGenerationApiService, type GetGenerationResponse } from '../src/services/getGenerationApi';
 import { GlbToBricksApiService } from '../src/services/glbToBricksApi';
@@ -20,6 +21,16 @@ const sse = (events: unknown[], options?: { crlf?: boolean; trailingDelimiter?: 
 
 describe('generation services', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
+
+  it('sends the source generation and prompt for voxel edits with owner credentials', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({ generation_id: 'edited', message: 'ok' }) as unknown as Response);
+    await LlmToBricksApiService.generate({ sourceGenerationId: 'source', prompt: '  red roof  ' }, 'token');
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(String(url)).toContain('/llmToBricks');
+    expect(JSON.parse(init?.body as string)).toMatchObject({ source_generation_id: 'source', prompt: 'red roof' });
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
+    expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
+  });
 
   it('starts image and text generations with defaults and authentication', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(response({ generation_id: 'image', message: 'ok' }) as unknown as Response);
