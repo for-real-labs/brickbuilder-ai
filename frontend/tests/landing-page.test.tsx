@@ -66,6 +66,62 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 
 describe('LandingPage', () => {
+  it.each(['stats', 'community'])('waits for %s before mounting lower content', async delayed => {
+    let finish!: () => void;
+    const pending = new Promise<void>(resolve => { finish = resolve; });
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockImplementation(async () => {
+      if (delayed === 'stats') await pending;
+      return { generation_count: 12, brick_count: 400 };
+    });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockImplementation(async () => {
+      if (delayed === 'community') await pending;
+      return { generations: [], total_count: 0, has_more: false };
+    });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      expect(container.querySelector('#how-it-works')).toBeNull();
+      expect(container.textContent).toContain('Generate');
+      await act(async () => { finish(); await pending; });
+      expect(container.querySelector('#how-it-works')).toBeTruthy();
+      expect(container.querySelector('.landing-scroll-reveal .landing-visible')).toBeTruthy();
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
+  it('fades lower elements only when they enter the viewport', async () => {
+    let callback!: IntersectionObserverCallback;
+    const observe = vi.fn();
+    const unobserve = vi.fn();
+    const disconnect = vi.fn();
+    vi.stubGlobal('IntersectionObserver', class {
+      constructor(next: IntersectionObserverCallback) { callback = next; }
+      observe = observe;
+      unobserve = unobserve;
+      disconnect = disconnect;
+    });
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const root = createRoot(document.createElement('div'));
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const target = observe.mock.calls[0][0] as Element;
+      expect(target.classList.contains('landing-visible')).toBe(false);
+      callback([{ target, isIntersecting: false }] as IntersectionObserverEntry[], {} as IntersectionObserver);
+      expect(target.classList.contains('landing-visible')).toBe(false);
+      callback([{ target, isIntersecting: true }] as IntersectionObserverEntry[], {} as IntersectionObserver);
+      expect(target.classList.contains('landing-visible')).toBe(true);
+      expect(unobserve).toHaveBeenCalledWith(target);
+    } finally {
+      act(() => root.unmount());
+      expect(disconnect).toHaveBeenCalled();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it('starts LLM jobs in the background and allows another submission while they run', async () => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
