@@ -229,6 +229,30 @@ const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
   likeCount: generation.like_count ?? 0,
 });
 
+function ScrollRevealContent({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const elements = ref.current?.querySelectorAll('.landing-fade-in') || [];
+    if (!('IntersectionObserver' in window)) {
+      elements.forEach(element => element.classList.add('landing-visible'));
+      return;
+    }
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('landing-visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0 });
+    elements.forEach(element => observer.observe(element));
+    return () => observer.disconnect();
+  }, []);
+
+  return <div ref={ref} className="landing-scroll-reveal contents">{children}</div>;
+}
+
 // ---- Typewriter placeholder logic ----
 const EXAMPLE_PHRASES = [
   "a unicorn",
@@ -372,6 +396,9 @@ export default function LandingPage() {
   );
   const [showGlbUpload, setShowGlbUpload] = useState(false);
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
+  const [statsReady, setStatsReady] = useState(false);
+  const [communityReady, setCommunityReady] = useState(false);
+  const lowerContentReady = statsReady && communityReady;
   const [featuredCommunityModels, setFeaturedCommunityModels] = useState<FeaturedItem[]>([]);
 
   useEffect(() => {
@@ -383,6 +410,9 @@ export default function LandingPage() {
         .catch((error) => {
           if (error instanceof DOMException && error.name === "AbortError") return;
           console.warn("Unable to load generation stats", error);
+        })
+        .finally(() => {
+          if (!controller.signal.aborted) setStatsReady(true);
         });
     };
 
@@ -414,6 +444,9 @@ export default function LandingPage() {
           console.warn("Unable to load featured community models", error);
           setFeaturedCommunityModels([]);
         }
+      })
+      .finally(() => {
+        if (!cancelled) setCommunityReady(true);
       });
 
     return () => {
@@ -1153,10 +1186,11 @@ export default function LandingPage() {
             )}
           </div>
 
-          {/* Featured horizontal marquee OR in‑place progress UI */}
-          <section className="mt-4 w-full relative landing-fade-in landing-delay-4" style={{ zIndex: 15 }}>
             <GenerationActivityList generations={generations} error={activityError}
               onOpen={id => navigate(`/generated-model?id=${id}`)} />
+          {lowerContentReady && <ScrollRevealContent>
+          {/* Featured horizontal marquee OR in‑place progress UI */}
+          <section className="mt-4 w-full relative landing-fade-in landing-delay-4" style={{ zIndex: 15 }}>
             {loading && (
               <div className="flex w-full flex-col items-center gap-4 mb-4">
                 {/* Preview container with overlaid status + beat text */}
@@ -1250,9 +1284,12 @@ export default function LandingPage() {
 
           <HowItWorks />
           <RealLifeBuilds />
+          </ScrollRevealContent>}
         </main>
 
-        <SiteFooter />
+        {lowerContentReady && <ScrollRevealContent>
+          <div className="landing-fade-in"><SiteFooter /></div>
+        </ScrollRevealContent>}
       </div>
     </div>
   );
