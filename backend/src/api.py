@@ -1,6 +1,7 @@
 import os
 import logging
 from uuid import UUID
+from contextlib import asynccontextmanager
 
 # Configure headless mode for Open3D before any imports
 os.environ["DISPLAY"] = ":99"
@@ -65,10 +66,29 @@ logger = logging.getLogger(__name__)
 # Suppress verbose httpx logs from fal.ai API requests
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
+brick_mcp = None
+mcp_app = None
+if os.getenv("MCP_ENABLED", "false").lower() == "true":
+    from .mcp_server import McpSettings, create_mcp_server
+
+    brick_mcp = create_mcp_server(McpSettings.from_env())
+    mcp_app = brick_mcp.streamable_http_app()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if brick_mcp:
+        async with brick_mcp.session_manager.run():
+            yield
+    else:
+        yield
+
+
 app = FastAPI(
     title="Image2Brick API",
     description="Convert text or images to brick building instructions",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan,
 )
 
 ALLOWED_ORIGINS = [
@@ -597,10 +617,6 @@ def main():
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="info")
 
-if __name__ == "__main__":
-    main()
-
-
 @app.get("/generation-notifications")
 async def generation_notifications_endpoint(auth_info: dict = Depends(get_optional_identity)):
     return await list_generation_notifications(auth_info)
@@ -614,3 +630,17 @@ async def generation_viewed_endpoint(generation_id: UUID, auth_info: dict = Depe
 @app.get("/generation/{generation_id}/latest-edit")
 async def generation_latest_edit_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
     return await latest_generation_edit(str(generation_id), auth_info)
+
+
+if mcp_app is not None:
+    # Mount last so normal API routes take precedence. Keeping the child at the
+    # root preserves the SDK's RFC 9728 discovery URL as well as /mcp.
+    app.mount("/", mcp_app)
+else:
+    @app.api_route("/mcp", methods=["GET", "POST", "DELETE"])
+    async def mcp_unavailable():
+        raise HTTPException(status_code=503, detail="BrickBuilder MCP is not configured")
+
+
+if __name__ == "__main__":
+    main()

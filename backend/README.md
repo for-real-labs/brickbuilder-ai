@@ -271,3 +271,10 @@ can view events at `https://dashboard.stripe.com/acct_1SRdqKBSm75IitZv/test/work
 Colors used are in `gobrick_colors.csv`
 ### Part Types
 Part types used are in `brick_library.json`
+
+## ChatGPT and Claude MCP connector
+
+The optional authenticated `/mcp` endpoint exposes the existing LLM generation
+and edit pipeline to remote AI clients. See [deployment, OAuth, and client setup](../docs/mcp-connector.md).
+It is disabled until `MCP_ENABLED=true` and the documented Supabase/Railway
+configuration is complete.
