@@ -10,7 +10,13 @@ export interface GenerationActivity {
   endpoint?: string;
   imageUrl?: string;
   errorMessage?: string;
+  previewWaitUntil?: number;
 }
+
+export const isPreviewPending = (row: GenerationActivity) =>
+  row.status === 'completed' && !!row.previewWaitUntil && row.previewWaitUntil > Date.now();
+
+const PREVIEW_WAIT_MS = 60_000;
 
 export const isGenerationActive = (status: string) =>
   ['queued', 'started', 'processing', 'ldr_processing'].includes(status);
@@ -21,7 +27,7 @@ function restore(owner: string): GenerationActivity[] {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(storageKey(owner)) || '[]');
     return Array.isArray(value) ? value.filter((row): row is GenerationActivity =>
-      row && typeof row.id === 'string' && typeof row.prompt === 'string' && isGenerationActive(row.status),
+      row && typeof row.id === 'string' && typeof row.prompt === 'string' && (isGenerationActive(row.status) || isPreviewPending(row)),
     ) : [];
   } catch {
     return [];
@@ -30,7 +36,7 @@ function restore(owner: string): GenerationActivity[] {
 
 function persist(owner: string, rows: GenerationActivity[]) {
   try {
-    localStorage.setItem(storageKey(owner), JSON.stringify(rows.filter(row => isGenerationActive(row.status))));
+    localStorage.setItem(storageKey(owner), JSON.stringify(rows.filter(row => isGenerationActive(row.status) || isPreviewPending(row))));
   } catch { /* Status recovery through the API still works without browser storage. */ }
 }
 
@@ -41,6 +47,18 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
   const [error, setError] = useState<string | null>(null);
   const rows = useRef<GenerationActivity[]>([]);
   const currentOwner = useRef(owner);
+
+  useEffect(() => {
+    if (!enabled) return;
+    const deadlines = generations.filter(isPreviewPending).map(row => row.previewWaitUntil!);
+    if (!deadlines.length) return;
+    // This timer is independent of network requests, which may themselves stall.
+    const timeout = setTimeout(() => {
+      persist(owner, rows.current);
+      setGenerations([...rows.current]);
+    }, Math.max(0, Math.min(...deadlines) - Date.now()));
+    return () => clearTimeout(timeout);
+  }, [generations, owner, enabled]);
 
   const trackGeneration = useCallback((generation: GenerationActivity) => {
     if (currentOwner.current !== owner) return;
@@ -67,11 +85,14 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
         const activeIds = new Set(active.map(row => row.id));
         // Jobs absent from the active list may have completed while this page
         // was closed. Keep their result cards so the user can open each model.
-        const missing = rows.current.filter(row => isGenerationActive(row.status) && !activeIds.has(row.id));
+        const missing = rows.current.filter(row => (isGenerationActive(row.status) || isPreviewPending(row)) && !activeIds.has(row.id));
         const settled = await Promise.allSettled(missing.map(async row => {
           const status = await GetGenerationApiService.getGeneration(row.id, controller.signal);
+          const previewWaitUntil = status.status === 'completed' && !status.preview_image_url
+            ? row.previewWaitUntil ?? Date.now() + PREVIEW_WAIT_MS : undefined;
           return { ...row, status: status.status, prompt: status.prompt || row.prompt,
-            imageUrl: status.external_image_url || row.imageUrl,
+            previewWaitUntil,
+            imageUrl: status.preview_image_url || status.processed_image_url || status.external_image_url || row.imageUrl,
             errorMessage: status.error_message || undefined };
         }));
         if (controller.signal.aborted) return;
@@ -91,7 +112,12 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
       } catch {
         if (!controller.signal.aborted) setError('Unable to refresh generations. Retrying…');
       } finally {
-        if (!controller.signal.aborted) timer = setTimeout(refresh, 5_000);
+        if (!controller.signal.aborted) {
+          // Expire the spinner even when an API refresh fails. Preserve the deadline
+          // so a missing preview never starts another waiting period.
+          setGenerations([...rows.current]);
+          timer = setTimeout(refresh, 5_000);
+        }
       }
     };
     void refresh();
