@@ -2,5 +2,8 @@
 __pycache__/
 *.py[oc]
 
+# Root npm tooling
+/node_modules/
+
 # Supabase CLI project-link metadata
 supabase/.temp/

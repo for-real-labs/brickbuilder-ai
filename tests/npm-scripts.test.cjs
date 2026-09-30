@@ -1,0 +1,54 @@
+const assert = require('node:assert/strict');
+const { test } = require('node:test');
+const { spawn } = require('node:child_process');
+const { mkdtempSync, writeFileSync, rmSync } = require('node:fs');
+const { tmpdir } = require('node:os');
+const path = require('node:path');
+const { scripts } = require('../package.json');
+
+test('install prepares backend before installing frontend', () => {
+  assert.equal(scripts.postinstall, 'npm run install:backend && npm run install:frontend');
+  assert.equal(scripts['install:backend'], 'node scripts/backend.cjs install');
+  assert.equal(scripts['install:frontend'], 'npm --prefix frontend install');
+});
+
+test('servers run in their project directories', () => {
+  assert.equal(scripts['start:backend'], 'node scripts/backend.cjs start');
+  assert.equal(scripts['start:frontend'], 'npm --prefix frontend run dev');
+});
+
+for (const exitCode of [0, 1]) {
+  test(`startup stops the other server when one exits with ${exitCode}`, { timeout: 15000 }, async () => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'brickbuilder-start-'));
+    const worker = path.join(directory, 'worker.cjs');
+    writeFileSync(worker, `
+      if (process.argv[2] === 'exit') {
+        setTimeout(() => process.exit(${exitCode}), 800);
+      } else {
+        process.on('SIGTERM', () => { console.log('server-stopped'); process.exit(0); });
+        setInterval(() => {}, 1000);
+      }
+    `);
+    // Use the same supervisor options as npm start with tiny fixture servers.
+    const command = scripts.start.replace('npm run start:backend', `node ${JSON.stringify(worker)} exit`)
+      .replace('npm run start:frontend', `node ${JSON.stringify(worker)} wait`);
+    const child = spawn(command, { shell: true, env: {
+      ...process.env,
+      PATH: `${path.resolve(__dirname, '../node_modules/.bin')}${path.delimiter}${process.env.PATH}`,
+    } });
+    let output = '';
+    child.stdout.on('data', (data) => { output += data; });
+    child.stderr.on('data', (data) => { output += data; });
+    try {
+      const code = await new Promise((resolve, reject) => {
+        child.once('error', reject);
+        child.once('exit', resolve);
+      });
+      assert.equal(code, exitCode, output);
+      assert.match(output, /server-stopped/);
+    } finally {
+      child.kill();
+      rmSync(directory, { recursive: true, force: true });
+    }
+  });
+}
