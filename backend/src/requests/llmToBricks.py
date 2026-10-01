@@ -12,7 +12,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional
 
 import httpx
 from fastapi import Depends, HTTPException
-from pydantic import BaseModel, PrivateAttr, field_validator, model_validator
+from pydantic import AliasChoices, BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.brick_design import (
@@ -96,7 +96,9 @@ PART_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+\.dat$", re.IGNORECASE)
 
 
 class LlmToBricksRequest(BaseModel):
-    source_generation_id: Optional[str] = None
+    generation_id: Optional[str] = Field(
+        default=None, validation_alias=AliasChoices("generation_id", "source_generation_id"),
+    )  # Input revision ID; the legacy request name remains accepted.
     _source_voxels: Optional[str] = PrivateAttr(default=None)
     prompt: Optional[str] = None
     image_base64: Optional[str] = None
@@ -559,11 +561,11 @@ async def _generate_ldr_direct(
 
 
 async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> None:
-    if not request.source_generation_id:
+    if not request.generation_id:
         return
     if not request.prompt:
         raise HTTPException(status_code=400, detail="Describe the changes to make")
-    generation = await generation_storage.get_generation(request.source_generation_id)
+    generation = await generation_storage.get_generation(request.generation_id)
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(generation, auth_info)
@@ -797,13 +799,13 @@ async def llm_to_bricks(
 
     try:
         generation_id = await generation_storage.create_generation(
-            user_id=user_id,
+            user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=request.prompt or "Image reference",
             detail_level=request.detail_level,
             endpoint="llmToBricks",
             model_3d=request.model,
-            source_generation_id=request.source_generation_id,
+            edit_generation_id=request.generation_id,
         )
         task = start_generation_task(generation_id,
             run_with_output(generation_id, process_llm_to_bricks_task, request, user_info, auth_info)
@@ -855,13 +857,13 @@ async def llm_to_bricks_stream(
         user_type = "authenticated"
 
     generation_id = await generation_storage.create_generation(
-        user_id=user_id,
+        user_id=auth_info.get("user_id", user_id),
         user_type=user_type,
         prompt=request.prompt or "Image reference",
         detail_level=request.detail_level,
         endpoint="llmToBricks",
         model_3d=request.model,
-        source_generation_id=request.source_generation_id,
+        edit_generation_id=request.generation_id,
     )
 
     async def event_stream():

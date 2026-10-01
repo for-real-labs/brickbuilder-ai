@@ -3,7 +3,7 @@ import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -164,26 +164,16 @@ export function GenerationMethodSelector({
         <label htmlFor={modelSelectId} className="shrink-0 text-sm font-medium text-slate-600 sm:w-36">
           Render model:
         </label>
-        <select
-          id={modelSelectId}
-          value={value === "3d" ? threeDModel : llmModel}
-          onChange={(event) => handleModelChange(event.target.value)}
-          disabled={disabled}
-          className="min-h-10 w-full min-w-0 cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed sm:w-56"
-        >
-          <optgroup label={IMAGE_TO_GLB_GROUP_LABEL}>
-            {THREE_D_MODEL_OPTIONS.map((option) => (
-              <option
-                key={option.id}
-                value={option.id}
-              >
-                {option.label}
-              </option>
-            ))}
-          </optgroup>
-          {LLM_PROVIDER_GROUPS.map((group) => (
-            <optgroup key={group.provider} label={group.label}>
-              {LLM_MODEL_OPTIONS.filter((option) => option.provider === group.provider).map((option) => (
+        <div className="relative w-full min-w-0 sm:w-56">
+          <select
+            id={modelSelectId}
+            value={value === "3d" ? threeDModel : llmModel}
+            onChange={(event) => handleModelChange(event.target.value)}
+            disabled={disabled}
+            className="min-h-10 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-300 bg-white pl-4 pr-10 py-2 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed"
+          >
+            <optgroup label={IMAGE_TO_GLB_GROUP_LABEL}>
+              {THREE_D_MODEL_OPTIONS.map((option) => (
                 <option
                   key={option.id}
                   value={option.id}
@@ -192,8 +182,21 @@ export function GenerationMethodSelector({
                 </option>
               ))}
             </optgroup>
-          ))}
-        </select>
+            {LLM_PROVIDER_GROUPS.map((group) => (
+              <optgroup key={group.provider} label={group.label}>
+                {LLM_MODEL_OPTIONS.filter((option) => option.provider === group.provider).map((option) => (
+                  <option
+                    key={option.id}
+                    value={option.id}
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        </div>
         {modelDescription && (
           <p className="text-xs leading-5 text-slate-500 sm:ml-auto sm:max-w-40">{modelDescription}</p>
         )}

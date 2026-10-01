@@ -254,12 +254,13 @@ async def update_model(request: UpdateModelRequest, auth_info: dict) -> UpdateMo
 
         # Create a new generation record with status="ldr_processing"
         new_generation_id = await generation_storage.create_generation(
-            user_id=user_id,
+            user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=f"Updated model from {request.generation_id}",
             detail_level=generation.get('detail_level', 1.6),
             endpoint="updateModel",
-            model_3d=generation.get('model_used_3d', 'unknown')
+            model_3d=generation.get('model_used_3d', 'unknown'),
+            edit_generation_id=request.generation_id
         )
         
         logger.info(f"Created new generation record: {new_generation_id}")

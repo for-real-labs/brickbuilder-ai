@@ -113,7 +113,7 @@ def test_existing_stream_stops_when_guest_job_is_claimed(monkeypatch):
 
 def test_claim_requires_guest_proof_and_scopes_update(monkeypatch):
     guest = identity('a' * 64)
-    row = {'id': 'job', 'user_type': 'anonymous', 'user_id': guest['user_id']}
+    row = {'id': 'job', 'generation_id': 'model', 'user_type': 'anonymous', 'user_id': guest['user_id']}
     query = Mock()
     query.select.return_value = query
     query.eq.return_value = query
@@ -128,13 +128,14 @@ def test_claim_requires_guest_proof_and_scopes_update(monkeypatch):
     query.update.assert_not_called()
     result = asyncio.run(claimGeneration.claim_generation(claimGeneration.ClaimGenerationRequest(generation_id='job'), {**logged_in, 'guest_user_id': guest['user_id']}))
     assert result.claimed
+    query.eq.assert_any_call('generation_id', 'model')
     query.eq.assert_any_call('user_id', guest['user_id'])
 
 
 def test_image_history_cannot_override_owner():
     with pytest.raises(HTTPException) as error:
         asyncio.run(getGenerationsByImage.get_generations_by_image(
-            getGenerationsByImage.GetGenerationsByImageRequest(processed_image_url='https://example.test/image.png', user_id='victim'), identity('a' * 64)))
+            getGenerationsByImage.GetGenerationsByImageRequest(generation_id='model', user_id='victim'), identity('a' * 64)))
     assert error.value.status_code == 403
 
 

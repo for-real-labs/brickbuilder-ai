@@ -51,6 +51,7 @@ def test_resize_rescales_llm_design_voxels(monkeypatch):
     assert max(c[0] for c in cells) == 7 and max(c[2] for c in cells) == 3  # grown 2x on every axis
     assert ("resized-1", "xyzrgb", response.xyzrgb_content) in storage.stored
     assert ("resized-1", "resizing") in storage.statuses
+    assert storage.created["edit_generation_id"] == "llm-1"
     assert storage.created["model_3d"] == "claude-opus-5-5"
     assert spawned == ["resized-1"]
 

@@ -23,7 +23,9 @@ export type GenerationStatus = 'queued' | 'started' | 'processing' | 'ldr_proces
 
 // Response type for polling endpoint
 export interface GetGenerationResponse {
-  source_generation_id?: string | null;
+  previous_completed_generation_id?: string | null;
+  model_generation_id?: string;
+  version?: number;
   endpoint?: string;
   generation_id: string;
   status: GenerationStatus;

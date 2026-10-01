@@ -300,12 +300,13 @@ async def resize_model(
 
         # Create new generation record early so we can store files to it
         new_generation_id = await generation_storage.create_generation(
-            user_id=user_id,
+            user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=f"Resized model from {request.generation_id}",
             detail_level=request.detail_level,
             endpoint="resizeModel",
-            model_3d=generation.get('model_used_3d', 'unknown')
+            model_3d=generation.get('model_used_3d', 'unknown'),
+            edit_generation_id=request.generation_id
         )
         logger.info(f"Created new generation record: {new_generation_id}")
 

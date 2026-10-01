@@ -150,9 +150,11 @@ def test_naming_storage_failure_does_not_block_completion(monkeypatch):
 
 
 def test_derived_generation_inherits_saved_name():
-    storage = make_storage({'id': 'source', 'name': 'My Custom Name'})
-    asyncio.run(storage.create_generation('user', 'authenticated', 'Resize model', 40, source_generation_id='source'))
+    storage = make_storage({'id': 'source', 'generation_id': 'root', 'name': 'My Custom Name', 'user_id': 'user', 'user_type': 'authenticated'})
+    asyncio.run(storage.create_generation('user', 'authenticated', 'Resize model', 40, edit_generation_id='source'))
     assert storage.client.writes[0][0]['name'] == 'My Custom Name'
+    assert storage.client.writes[0][0]['generation_id'] == 'root'
+    assert 'source_generation_id' not in storage.client.writes[0][0]
 
 
 @pytest.mark.parametrize('auth,row,status', [
