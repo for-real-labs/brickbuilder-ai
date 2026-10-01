@@ -21,7 +21,7 @@ export function LlmGenerationOutput({ generationId, active }: { generationId: st
           if (controller.signal.aborted) return;
           // Each event is a full snapshot, so reconnecting cannot duplicate text.
           setNotes(output.text);
-          setFinished(output.status === 'completed' || output.status === 'failed');
+          setFinished(['completed', 'failed', 'cancelled'].includes(output.status));
           setReconnecting(false);
           retryDelay = 1_000;
         }, controller.signal);

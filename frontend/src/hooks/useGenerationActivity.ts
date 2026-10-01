@@ -19,7 +19,7 @@ export const isPreviewPending = (row: GenerationActivity) =>
 const PREVIEW_WAIT_MS = 60_000;
 
 export const isGenerationActive = (status: string) =>
-  ['queued', 'started', 'processing', 'ldr_processing'].includes(status);
+  ['queued', 'started', 'processing', 'ldr_processing', 'resizing'].includes(status);
 
 const storageKey = (owner: string) => `pending_generations:${owner}`;
 
@@ -102,6 +102,10 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
         }]));
         for (const result of settled) {
           if (result.status === 'fulfilled') updates.set(result.value.id, result.value);
+        }
+        // A refresh started before cancellation must not revive a stopped card.
+        for (const row of rows.current) {
+          if (row.status === 'cancelled') updates.set(row.id, row);
         }
         // Read the latest rows here so a job submitted during a refresh isn't lost.
         rows.current = [...updates.values(), ...rows.current.filter(row => !updates.has(row.id))];

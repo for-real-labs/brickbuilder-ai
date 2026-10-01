@@ -17,6 +17,8 @@ class GetGenerationRequest(BaseModel):
 
 
 class GetGenerationResponse(BaseModel):
+    source_generation_id: Optional[str] = None
+    endpoint: Optional[str] = None
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
     prompt: Optional[str] = None
@@ -110,6 +112,8 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
 
         # Build response based on status
         response = GetGenerationResponse(
+            source_generation_id=generation.get("source_generation_id"),
+            endpoint=generation.get("endpoint"),
             generation_id=request.generation_id,
             status=status,
             prompt=prompt,

@@ -130,6 +130,7 @@ describe('LandingPage', () => {
       .mockResolvedValueOnce({ generation_id: 'two', message: 'Started' });
     const stream = vi.spyOn(LlmToBricksApiService, 'generateStream');
     const poll = vi.spyOn(GetGenerationApiService, 'pollUntilComplete');
+    const cancel = vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue();
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -158,6 +159,11 @@ describe('LandingPage', () => {
       expect(stream).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
+      await act(async () => container.querySelector('[aria-label="Your generations"] article button')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+      expect(cancel).toHaveBeenCalledWith('two');
+      expect(container.textContent).toContain('Generation cancelled');
+      expect(container.textContent).toContain('1 in progress');
+      expect(input.value).toBe('Red castle');
     } finally {
       act(() => root.unmount());
       container.remove();

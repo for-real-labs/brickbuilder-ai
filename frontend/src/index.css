@@ -157,97 +157,38 @@
   }
 }
 
+/* Friendly brick build, kept lightweight for mobile activity cards. */
 .llm-preview-loader {
-  position: relative;
-  width: 100%;
-  height: 340px;
-  overflow: hidden;
-  background:
-    radial-gradient(circle at top, rgb(56 189 248 / 0.22), transparent 42%),
-    radial-gradient(circle at 20% 80%, rgb(244 63 94 / 0.16), transparent 28%),
-    linear-gradient(160deg, #020617 0%, #0f172a 52%, #1e293b 100%);
+  position: relative; width: 100%; height: 340px; overflow: hidden;
+  display: grid; place-items: center;
+  background: radial-gradient(ellipse at 50% 30%, #fff 0%, #f0f9ff 58%, #e6f5ed 100%);
 }
-
-.llm-preview-loader-glow {
-  position: absolute;
-  inset: 16% 18%;
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgb(59 130 246 / 0.18), transparent 70%);
-  filter: blur(28px);
+.brick-build-scene { width: min(100%, 420px); height: 100%; padding: 12px 0 32px; }
+.llm-preview-loader-compact .brick-build-scene { padding: 0; }
+.brick-build-piece { animation-duration: 6.8s; animation-iteration-count: infinite; animation-fill-mode: both; animation-timing-function: cubic-bezier(.22,1,.36,1); }
+.brick-build-details { animation: brickDetails 6.8s ease infinite; }
+@keyframes brickDetails { 0%, 54%, 97%, 100% { opacity: 0; } 62%, 86% { opacity: 1; } }
+.llm-preview-loader-image-shell { width: 80%; height: 76%; padding: 12px; border-radius: 20px; background: #fff; box-shadow: 0 8px 24px #0f172a12; }
+.build-thinking-shimmer {
+  color: #64748b;
+  background-image: linear-gradient(105deg, #64748b 0%, #64748b 40%, #cbd5e1 50%, #64748b 60%, #64748b 100%);
+  background-size: 240% 100%; background-clip: text; -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent; animation: buildThinkingSweep 2.4s linear infinite;
 }
-
-.llm-preview-loader-grid {
-  position: absolute;
-  left: -20%;
-  right: -20%;
-  bottom: -24%;
-  height: 62%;
-  background-image:
-    linear-gradient(rgb(148 163 184 / 0.16) 1px, transparent 1px),
-    linear-gradient(90deg, rgb(148 163 184 / 0.16) 1px, transparent 1px);
-  background-size: 2.75rem 2.75rem;
-  transform: perspective(1000px) rotateX(78deg);
-  transform-origin: center top;
-  mask-image: linear-gradient(to top, rgb(0 0 0 / 0.9), transparent 88%);
-}
-
-.llm-preview-loader-orbit {
-  position: absolute;
-  inset: 0;
-  perspective: 1200px;
-  transform-style: preserve-3d;
-}
-
-.llm-preview-loader-block {
-  position: absolute;
-  width: 2.6rem;
-  height: 1.35rem;
-  transform-style: preserve-3d;
-  animation: llmPreviewLoaderDrift 6s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
-}
-
-.llm-preview-loader-block-face {
-  position: absolute;
-  inset: 0;
-  border: 1px solid rgb(255 255 255 / 0.22);
-  border-radius: 0.45rem;
-}
-
-.llm-preview-loader-block-face-top {
-  background: linear-gradient(135deg, rgb(255 255 255 / 0.95), rgb(191 219 254 / 0.82));
-  box-shadow: 0 0.75rem 1.6rem rgb(15 23 42 / 0.3);
-}
-
-.llm-preview-loader-block-face-front {
-  background: linear-gradient(180deg, rgb(96 165 250 / 0.72), rgb(59 130 246 / 0.4));
-  transform: translateZ(-0.7rem) translateY(0.66rem) scaleY(0.5);
-  transform-origin: top center;
-}
-
-.llm-preview-loader-block-face-side {
-  background: linear-gradient(180deg, rgb(165 180 252 / 0.68), rgb(99 102 241 / 0.42));
-  transform: translateX(0.92rem) translateZ(-0.38rem) rotateY(90deg) scaleX(0.58) scaleY(1.02);
-  transform-origin: right center;
-}
-
-.llm-preview-loader-image-shell {
-  width: min(78%, 16rem);
-  max-height: 78%;
-  overflow: hidden;
-  border-radius: 1.35rem;
-  border: 1px solid rgb(255 255 255 / 0.16);
-  background: linear-gradient(180deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04));
-  padding: 0.9rem;
-  box-shadow:
-    0 1.4rem 3rem rgb(15 23 42 / 0.42),
-    inset 0 1px 0 rgb(255 255 255 / 0.18);
-  backdrop-filter: blur(16px);
-}
-
+@keyframes buildThinkingSweep { from { background-position: 140% 0; } to { background-position: -100% 0; } }
+@keyframes brickSnap0 { 0%, 3.0% { opacity: 0; transform: translateY(-65px); } 9.0% { opacity: 1; transform: translateY(2px); } 12.0%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap1 { 0%, 7.5% { opacity: 0; transform: translateY(-65px); } 13.5% { opacity: 1; transform: translateY(2px); } 16.5%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap2 { 0%, 12.0% { opacity: 0; transform: translateY(-65px); } 18.0% { opacity: 1; transform: translateY(2px); } 21.0%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap3 { 0%, 16.5% { opacity: 0; transform: translateY(-65px); } 22.5% { opacity: 1; transform: translateY(2px); } 25.5%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap4 { 0%, 21.0% { opacity: 0; transform: translateY(-65px); } 27.0% { opacity: 1; transform: translateY(2px); } 30.0%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap5 { 0%, 25.5% { opacity: 0; transform: translateY(-65px); } 31.5% { opacity: 1; transform: translateY(2px); } 34.5%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap6 { 0%, 30.0% { opacity: 0; transform: translateY(-65px); } 36.0% { opacity: 1; transform: translateY(2px); } 39.0%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap7 { 0%, 34.5% { opacity: 0; transform: translateY(-65px); } 40.5% { opacity: 1; transform: translateY(2px); } 43.5%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap8 { 0%, 39.0% { opacity: 0; transform: translateY(-65px); } 45.0% { opacity: 1; transform: translateY(2px); } 48.0%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
+@keyframes brickSnap9 { 0%, 43.5% { opacity: 0; transform: translateY(-65px); } 49.5% { opacity: 1; transform: translateY(2px); } 52.5%, 86% { opacity: 1; transform: translateY(0); } 97%, 100% { opacity: 0; transform: translateY(0); } }
 @media (prefers-reduced-motion: reduce) {
-  .llm-preview-loader-block {
-    animation: none;
-  }
+  .brick-build-piece, .brick-build-details { animation: none; opacity: 1; transform: none; }
+  .build-thinking-shimmer { animation: none; background: none; -webkit-text-fill-color: currentColor; }
 }
 
 /* Component Styles */

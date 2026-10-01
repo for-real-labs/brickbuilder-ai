@@ -71,8 +71,12 @@ async def run_with_output(generation_id: str, generate, *args) -> None:
     recorder = OutputRecorder(generation_id)
     writer = asyncio.create_task(recorder.run())
     error = None
+    cancelled = False
     try:
         error = await generate(generation_id, *args, recorder.append)
+    except asyncio.CancelledError:
+        cancelled = True
+        raise
     except Exception as exc:
         error = str(exc) or "Generation failed"
         raise
@@ -80,7 +84,7 @@ async def run_with_output(generation_id: str, generate, *args) -> None:
         # Let an in-flight upload finish before writing the final snapshot.
         recorder.stopped.set()
         await writer
-        await recorder.flush("failed" if error else "completed", error)
+        await recorder.flush("cancelled" if cancelled else "failed" if error else "completed", error)
 
 
 async def output_events(generation_id: str, auth_info: dict):
@@ -93,8 +97,8 @@ async def output_events(generation_id: str, auth_info: dict):
             return
         require_generation_access(generation, auth_info)
         snapshot = await read_output(generation_id) or {"text": ""}
-        terminal = generation["status"] in {"completed", "failed"}
-        if terminal and snapshot.get("status") not in {"completed", "failed"} and final_retries < 3:
+        terminal = generation["status"] in {"completed", "failed", "cancelled"}
+        if terminal and snapshot.get("status") not in {"completed", "failed", "cancelled"} and final_retries < 3:
             final_retries += 1
             await asyncio.sleep(1)
             continue

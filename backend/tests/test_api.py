@@ -93,6 +93,17 @@ def test_generation_endpoints_delegate(monkeypatch):
     assert handler.await_args.args[0].generation_id == "generation-1"
 
 
+def test_cancel_endpoint_forwards_validated_id_and_uses_identity_without_consuming_credits(monkeypatch):
+    from uuid import UUID
+    generation_id = UUID("7c1326b2-890a-4fb8-9750-d3aa15cdc8e4")
+    handler = AsyncMock(return_value={"status": "cancelled"})
+    monkeypatch.setattr(api, "cancel_generation", handler)
+    assert asyncio.run(api.cancel_generation_endpoint(generation_id, AUTH)) == {"status": "cancelled"}
+    handler.assert_awaited_once_with(str(generation_id), AUTH)
+    route = next(route for route in api.app.routes if route.path == "/generation/{generation_id}/cancel")
+    assert [dependency.call for dependency in route.dependant.dependencies] == [api.get_optional_identity]
+
+
 def test_image_and_text_endpoints_choose_streaming_handler(monkeypatch):
     for endpoint, normal_name, stream_name in [
         (api.imageToBricks_endpoint, "image_to_bricks", "image_to_bricks_stream"),

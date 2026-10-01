@@ -16,7 +16,10 @@ let activity: ReturnType<typeof useGenerationActivity>;
 const open = vi.fn();
 function Harness({ owner = 'user', enabled = true }: { owner?: string; enabled?: boolean }) {
   activity = useGenerationActivity(owner, owner === 'user' ? 'token' : undefined, enabled);
-  return <GenerationActivityList {...activity} onOpen={open} />;
+  return <GenerationActivityList {...activity} onOpen={open} onCancelled={id => {
+    const row = activity.generations.find(row => row.id === id);
+    if (row) activity.trackGeneration({ ...row, status: 'cancelled' });
+  }} />;
 }
 const job = (id: string) => ({ id, prompt: `Build ${id}`, status: 'processing', endpoint: 'llmToBricks' });
 const page = (generations: unknown[], has_more = false) => ({ generations, has_more, total_count: generations.length });
@@ -74,6 +77,22 @@ it('recovers a job that completed while the page was closed', async () => {
   await act(async () => root.render(<Harness />));
   expect(container.textContent).toContain('Castle');
   expect(container.textContent).toContain('View model');
+});
+
+it('cancels a card and preserves cancellation when an older refresh finishes', async () => {
+  let finish!: (rows: never[]) => void;
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations')
+    .mockResolvedValueOnce([job('stop')] as never)
+    .mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }));
+  vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue();
+  await act(async () => root.render(<Harness />));
+  await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+  await act(async () => container.querySelector('button')!.click());
+  expect(container.textContent).toContain('Generation cancelled');
+  expect(container.querySelector('button')).toBeNull();
+  await act(async () => finish([job('stop')] as never));
+  expect(activity.generations[0].status).toBe('cancelled');
+  expect(container.querySelector('.brick-build-scene')).toBeNull();
 });
 
 it.each([
