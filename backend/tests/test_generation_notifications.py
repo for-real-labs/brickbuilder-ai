@@ -93,3 +93,45 @@ def test_cancelled_edits_do_not_resume_and_resizes_remain_cancellable(storage):
     feed = asyncio.run(module.list_generation_notifications(auth))
     assert [row['id'] for row in feed['active']] == ['resize']
     assert all(row['id'] != 'cancelled' for row in feed['notifications'])
+
+
+@pytest.mark.parametrize('authenticated', [True, False])
+def test_bulk_read_only_changes_displayed_completed_models_for_current_owner(storage, authenticated):
+    from uuid import uuid4
+    ids = [str(uuid4()) for _ in range(5)]
+    owner_type = 'authenticated' if authenticated else 'anonymous'
+    storage.extend([
+        model(ids[0], user_type=owner_type),
+        model(ids[1], user_type=owner_type, status='processing'),
+        model(ids[2], owner='two', user_type=owner_type),
+        model(ids[3], user_type='anonymous' if authenticated else 'authenticated'),
+        model(ids[4], user_type=owner_type),  # arrived after the displayed snapshot
+    ])
+    request = module.MarkNotificationsReadRequest(generation_ids=ids[:4])
+    auth = {'user_id': 'one', 'authenticated': authenticated}
+    result = asyncio.run(module.mark_notifications_read(request, auth))
+    assert result == {'seen_ids': [ids[0]]}
+    assert storage[0]['notification_seen']
+    assert all(not row['notification_seen'] for row in storage[1:])
+    assert asyncio.run(module.list_generation_notifications(auth))['unread_count'] == 1
+    assert asyncio.run(module.mark_notifications_read(request, auth)) == result
+
+
+def test_bulk_read_requires_identity_even_with_empty_list(storage):
+    request = module.MarkNotificationsReadRequest(generation_ids=[])
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(module.mark_notifications_read(request, {}))
+    assert error.value.status_code == 401
+    assert asyncio.run(module.mark_notifications_read(request, {'user_id': 'one'})) == {'seen_ids': []}
+
+
+def test_bulk_read_storage_failure_is_retryable(monkeypatch):
+    from unittest.mock import Mock
+    from uuid import uuid4
+    fake = Mock()
+    fake.client.table.side_effect = RuntimeError('database unavailable')
+    monkeypatch.setattr(module, 'generation_storage', fake)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(module.mark_notifications_read(
+            module.MarkNotificationsReadRequest(generation_ids=[uuid4()]), {'user_id': 'one', 'authenticated': True}))
+    assert error.value.status_code == 503

@@ -1497,7 +1497,7 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
               className="h-8 rounded-full border-none bg-[#f44336] px-3 text-xs font-medium text-white cursor-pointer transition-all duration-200 hover:-translate-y-px hover:bg-[#ff6b6b] sm:h-9 sm:px-4 sm:text-sm"
               onClick={onLoginClick}
             >
-              Login
+              Sign up
             </button>
           </>
         )}

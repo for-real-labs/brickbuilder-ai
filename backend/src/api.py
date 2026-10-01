@@ -46,7 +46,7 @@ from .requests.updateGenerationName import update_generation_name, UpdateGenerat
 from .requests.updateImagePreview import update_image_preview, UpdateImagePreviewRequest, UpdateImagePreviewResponse
 from .requests.updateUsername import update_username, UpdateUsernameRequest, UpdateUsernameResponse
 
-from .requests.generationNotifications import list_generation_notifications, mark_generation_viewed, latest_generation_edit
+from .requests.generationNotifications import list_generation_notifications, mark_generation_viewed, latest_generation_edit, MarkNotificationsReadRequest, mark_notifications_read
 from .requests.cancelGeneration import cancel_generation
 
 # Import utilities
@@ -610,6 +610,11 @@ if __name__ == "__main__":
 @app.get("/generation-notifications")
 async def generation_notifications_endpoint(auth_info: dict = Depends(get_optional_identity)):
     return await list_generation_notifications(auth_info)
+
+
+@app.post("/generation-notifications/read")
+async def notifications_read_endpoint(request: MarkNotificationsReadRequest, auth_info: dict = Depends(get_optional_identity)):
+    return await mark_notifications_read(request, auth_info)
 
 
 @app.post("/generation/{generation_id}/viewed")

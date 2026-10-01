@@ -82,3 +82,60 @@ it('keeps in-progress models linked after navigation and retries notification po
   expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=running&exact=1');
   expect(feed.error).toBeNull();
 });
+
+it('marks all unread completions as read only on explicit action, retaining model links and active builds', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({
+    notifications: [ready('first'), ready('second'), ready('already', true)],
+    active: [{ ...ready('running'), status: 'processing' }], unread_count: 2,
+  });
+  const markAll = vi.spyOn(GenerationNotificationsApi, 'markAllRead').mockResolvedValue({ seen_ids: ['first', 'second'] });
+  await render();
+  await act(async () => container.querySelector('button')!.click());
+  expect(markAll).not.toHaveBeenCalled();
+  const action = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Mark all as read')!;
+  await act(async () => action().click());
+  expect(markAll).toHaveBeenCalledWith(['first', 'second']);
+  expect(container.querySelector('[data-testid="notification-badge"]')).toBeNull();
+  expect(container.querySelectorAll('a')).toHaveLength(4);
+  expect(container.textContent).toContain('Model in progress');
+  expect(action().disabled).toBe(true);
+  // An older in-flight feed response must not revive acknowledged badges.
+  await act(async () => { await feed.refresh(); });
+  expect(container.querySelector('[data-testid="notification-badge"]')).toBeNull();
+});
+
+it('preserves unread notifications on failure and lets the user retry', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('done')], active: [], unread_count: 1 });
+  vi.spyOn(GenerationNotificationsApi, 'markAllRead').mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ seen_ids: ['done'] });
+  await render();
+  await act(async () => container.querySelector('button')!.click());
+  const action = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Mark all as read')!;
+  await act(async () => action().click());
+  expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again');
+  expect(container.querySelector('[data-testid="notification-badge"]')?.textContent).toBe('1');
+  expect(action().disabled).toBe(false);
+  await act(async () => action().click());
+  expect(container.querySelector('[role="alert"]')).toBeNull();
+  expect(container.querySelector('[data-testid="notification-badge"]')).toBeNull();
+});
+
+it('does not mark new arrivals or another account read while a bulk request is pending', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('old')], active: [], unread_count: 1 });
+  let finish!: (value: { seen_ids: string[] }) => void;
+  vi.spyOn(GenerationNotificationsApi, 'markAllRead').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  await render();
+  let pending!: Promise<void>;
+  act(() => { pending = feed.markAllRead(); });
+  vi.mocked(GenerationNotificationsApi.list).mockResolvedValue({ notifications: [ready('new'), ready('old')], active: [], unread_count: 2 });
+  await act(async () => { feed.refresh(); });
+  await act(async () => { finish({ seen_ids: ['old'] }); await pending; });
+  expect(feed.unread_count).toBe(1);
+  expect(feed.notifications.find(model => model.id === 'new')?.seen).toBe(false);
+  act(() => { pending = feed.markAllRead(); });
+  auth = { user: { id: 'another' }, session: { access_token: 'another-token' }, loading: false };
+  vi.mocked(GenerationNotificationsApi.list).mockResolvedValue({ notifications: [ready('new')], active: [], unread_count: 1 });
+  await render();
+  await act(async () => { finish({ seen_ids: ['new'] }); await pending; });
+  expect(feed.unread_count).toBe(1);
+  expect(feed.notifications[0].seen).toBe(false);
+});
