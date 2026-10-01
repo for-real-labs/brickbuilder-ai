@@ -9,7 +9,7 @@ import pytest
 
 DURATION_MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000001_generation_duration.sql").read_text()
 MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000002_generation_versions.sql").read_text()
-REMOVE_SOURCE = (Path(__file__).resolve().parents[2] / "supabase/deferred-migrations/20261001000003_remove_generation_source.sql").read_text()
+REMOVE_SOURCE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000003_remove_generation_source.sql").read_text()
 
 
 @pytest.fixture(scope="module")
@@ -106,12 +106,16 @@ def test_private_cross_owner_edits_rejected_and_community_forks_are_separate(db)
     assert versions(db)[fork] == (fork, 1)
 
 
-def test_latest_view_honors_rls_and_version_before_pagination(db):
+@pytest.mark.parametrize("remove_source", [False, True])
+def test_latest_view_honors_rls_and_version_before_pagination(db, remove_source):
     migrate(db)
     root = insert(db, date="2026-09-01")
     latest = insert(db, parent=root, date="2026-09-02")
     insert(db, parent=root, date="2026-09-01")  # highest version despite older timestamp
     private = insert(db, owner="other", date="2026-10-01")
+    if remove_source:
+        with db.transaction():
+            db.execute(REMOVE_SOURCE)
     db.execute("alter table public.generations enable row level security")
     db.execute("create policy owner_read on public.generations for select using (user_id = current_setting('app.test_owner', true))")
     db.execute("grant select on public.generations to authenticated")

@@ -1,7 +1,5 @@
--- Deploy the application that uses model identity/version before applying this
--- cleanup. Move this file into supabase/migrations after deployment, then use
--- the normal migration push. Keeping it deferred prevents a backfill push from
--- dropping a column still used by the running backend.
+-- Requires the deployed application to use generation_id/version for edits,
+-- history, notifications, and cancellation before removing the legacy parent.
 create or replace function public.assign_generation_version() returns trigger
 language plpgsql set search_path = public as $$
 begin
