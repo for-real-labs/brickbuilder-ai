@@ -44,7 +44,8 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
     Get generation status and data by generation ID.
     
     This endpoint is used for polling to check generation progress.
-    Private jobs require their owner; completed community models remain public.
+    Completed model links are public. Unfinished jobs require their owner.
+    Reasoning output and ownership operations use separate, private endpoints.
     
     Returns:
         - status: "started" | "queued" | "processing" | "ldr_processing" | "completed" | "failed"
@@ -67,7 +68,11 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
         if not generation:
             raise HTTPException(status_code=404, detail=f"Generation {request.generation_id} not found")
 
-        require_generation_access(generation, auth_info, allow_community=True)
+        # Sharing a finished model must not grant access to its owner's live
+        # output, generation history, or editing/claiming permissions. Keep this
+        # exception on the model-read endpoint instead of the shared auth helper.
+        if generation.get("status") != "completed":
+            require_generation_access(generation, auth_info)
 
         # Extract fields
         status = generation.get("status", "started")
