@@ -38,6 +38,7 @@ export interface GenerationWithOrder {
   user_id: string;
   user_type: string;
   prompt: string;
+  name?: string | null;
   detail_level: number;
   endpoint: string;
   created_at: string;

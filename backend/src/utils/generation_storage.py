@@ -16,6 +16,7 @@ from .auth import supabase_client
 from .community_likes import is_community_likes_schema_error
 from .image_processing import convert_base64_to_png
 from .brickowl_utils import parse_ldr_file, generate_parts_list_csv
+from .generation_titles import generate_title
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,11 @@ class GenerationStorage:
                 "created_at": datetime.utcnow().isoformat(),
                 "status": "started"
             }
+            # Resizes and edits retain the model's saved title.
+            if source_generation_id:
+                source = await self.get_generation(source_generation_id)
+                if source and source.get("name"):
+                    generation_data["name"] = source["name"]
             
             # Add model information if provided
             if image_model:
@@ -563,6 +569,8 @@ class GenerationStorage:
             prompt_enhancement: Optional prompt enhancement text that was used
         """
         try:
+            if status == "completed":
+                await self.ensure_generation_name(generation_id)
             update_data = {
                 "status": status,
                 "updated_at": datetime.utcnow().isoformat()
@@ -580,6 +588,19 @@ class GenerationStorage:
         except Exception as e:
             logger.error(f"Failed to update status for generation {generation_id}: {e}")
             # Don't raise - this shouldn't break the main flow
+
+    async def ensure_generation_name(self, generation_id: str) -> None:
+        """Save an automatic title before publishing completion; never replace an owner name."""
+        try:
+            row = await self.get_generation(generation_id)
+            if not row or row.get("name") or row.get("status") == "cancelled":
+                return
+            name = await generate_title(row, self.client.storage)
+            (self.client.table("generations").update({"name": name})
+             .eq("id", generation_id).is_("name", "null").neq("status", "cancelled").execute())
+        except Exception:
+            # Naming must never prevent a completed build from being delivered.
+            logger.warning("Unable to save model title for %s", generation_id)
     
     async def cancel_generation(self, generation_id: str) -> bool:
         from .generation_tasks import ACTIVE_STATUSES

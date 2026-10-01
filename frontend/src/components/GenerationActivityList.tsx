@@ -43,7 +43,7 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
                     : <div className="flex h-full items-center justify-center"><Box className="h-9 w-9 text-slate-300" /></div>}
               </div>
               <div className="p-4">
-                <h3 className="break-words text-sm font-semibold text-slate-900">{generation.prompt || 'Image reference'}</h3>
+                <h3 className="break-words text-sm font-semibold text-slate-900">{generation.name || generation.prompt || 'Image reference'}</h3>
                 {!(active && generation.endpoint === 'llmToBricks') && <p className={`mt-2 flex items-center gap-2 text-sm ${failed ? 'text-red-600' : 'text-slate-600'}`}>
                   {active ? <Loader2 aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin" />
                     : cancelled ? <Square aria-hidden="true" className="h-4 w-4 shrink-0" />

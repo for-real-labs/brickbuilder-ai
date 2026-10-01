@@ -191,3 +191,16 @@ it('never restores legacy guest rows that may belong to another visitor', async 
   expect(activity.generations).toEqual([]);
   expect(status).not.toHaveBeenCalled();
 });
+
+it('uses the saved title in preview cards when a processing job completes', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations')
+    .mockResolvedValueOnce([job('named')] as never).mockResolvedValue([]);
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    generation_id: 'named', status: 'completed', prompt: 'a dachshund in sunglasses, standing on a lawn',
+    name: 'Sunny Dachshund', preview_image_url: '/preview.png',
+  } as never);
+  await act(async () => root.render(<Harness />));
+  await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+  expect(container.querySelector('h3')?.textContent).toBe('Sunny Dachshund');
+  expect(activity.generations[0].prompt).toContain('standing on a lawn');
+});
