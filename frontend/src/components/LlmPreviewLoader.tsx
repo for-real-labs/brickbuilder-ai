@@ -12,7 +12,7 @@ export function LlmPreviewLoader({ previewImageUrl, compact = false }: { preview
           <img src={previewImageUrl} alt="Generation preview" className="h-full w-full object-contain" />
         </div>
       ) : (
-        <svg viewBox="0 0 420 270" className="brick-build-scene" role="img" aria-label={`Colorful bricks snapping together to build a ${scene.name}`} data-build-scene={scene.id}>
+        <svg key={scene.id} viewBox="0 0 420 270" className="brick-build-scene" role="img" aria-label={`Colorful bricks snapping together to build a ${scene.name}`} data-build-scene={scene.id}>
           <ellipse cx="210" cy="227" rx="117" ry="17" fill="#cbded7" opacity=".5" />
           <g fill="#fff" opacity=".85"><path d="M44 62h57c10-18-12-28-22-20-3-17-29-15-28 1-17-2-23 19-7 19Z" /><path d="M325 48h45c8-14-10-23-18-16-3-14-23-12-22 1-14-2-18 15-5 15Z" /></g>
           <path d="m95 218 18-10h209v18H95Z" fill="#34d399" />

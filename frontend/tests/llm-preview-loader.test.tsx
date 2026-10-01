@@ -2,60 +2,91 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { BRICK_BUILD_SCENES } from '../src/components/brickBuildScenes';
 import { LlmPreviewLoader } from '../src/components/LlmPreviewLoader';
+import { BRICK_BUILD_CYCLE_MS } from '../src/hooks/useBrickBuildScene';
 
-it('reserves eleven different animations under StrictMode, then permits duplicates', () => {
-  vi.spyOn(Math, 'random').mockReturnValue(0);
+afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers(); });
+
+it.each([0, 0.5, 0.99])('plays all eleven before repeating, without consecutive repeats (random %s)', random => {
+  vi.useFakeTimers();
+  vi.spyOn(Math, 'random').mockReturnValue(random);
   const container = document.createElement('div');
   const root = createRoot(container);
-  const render = (ids: number[]) => act(() => root.render(<React.StrictMode>{ids.map(id =>
-    <div key={id} data-loader={id}><LlmPreviewLoader compact /></div>,
-  )}</React.StrictMode>));
-  const ids = Array.from({length: 11}, (_, index) => index);
-  const scenes = () => Array.from(container.querySelectorAll('svg')).map(svg => svg.getAttribute('data-build-scene'));
+  const scene = () => container.querySelector('svg')!.getAttribute('data-build-scene');
   try {
-    render(ids);
-    expect(new Set(scenes()).size).toBe(11);
-    const original = scenes();
-    render([...ids, 11]);
-    expect(scenes().slice(0, 11)).toEqual(original);
-    expect(scenes()).toHaveLength(12);
-    expect(new Set(scenes()).size).toBe(11);
-    // The duplicate still holds the house after the first house unmounts.
-    render([...ids.slice(1), 11, 12]);
-    expect(new Set(scenes()).size).toBe(11);
-    expect(container.querySelector('[data-loader="12"] svg')?.getAttribute('data-build-scene')).toBe('house');
-    // Releasing the castle makes it the only available choice for a new loader.
-    render([...ids.slice(2), 11, 12, 13]);
-    expect(container.querySelector('[data-loader="13"] svg')?.getAttribute('data-build-scene')).toBe('castle');
+    act(() => root.render(<React.StrictMode><LlmPreviewLoader compact /></React.StrictMode>));
+    const sequence = [scene()];
+    const firstSvg = container.querySelector('svg');
+    act(() => vi.advanceTimersByTime(BRICK_BUILD_CYCLE_MS - 1));
+    expect(scene()).toBe(sequence[0]);
+    act(() => vi.advanceTimersByTime(1));
+    sequence.push(scene());
+    // A fresh SVG restarts the snap-in animation for the new model.
+    expect(container.querySelector('svg')).not.toBe(firstSvg);
+    for (let i = 2; i < 33; i++) {
+      act(() => vi.advanceTimersByTime(BRICK_BUILD_CYCLE_MS));
+      sequence.push(scene());
+    }
+    for (let i = 0; i < sequence.length; i += 11) {
+      expect(new Set(sequence.slice(i, i + 11))).toEqual(new Set(BRICK_BUILD_SCENES.map(scene => scene.id)));
+    }
+    sequence.slice(1).forEach((id, i) => expect(id).not.toBe(sequence[i]));
+    expect(vi.getTimerCount()).toBe(1);
   } finally { act(() => root.unmount()); }
-  const nextRoot = createRoot(container);
-  try {
-    act(() => nextRoot.render(<LlmPreviewLoader />));
-    expect(container.querySelector('svg')?.getAttribute('data-build-scene')).toBe('house');
-  } finally { act(() => nextRoot.unmount()); }
+  expect(vi.getTimerCount()).toBe(0);
 });
 
-it('releases animations for previews and reserves an unused animation when they resume', () => {
+it('lets cards share animations while keeping separate playback cycles', () => {
+  vi.useFakeTimers();
   vi.spyOn(Math, 'random').mockReturnValue(0);
   const container = document.createElement('div');
   const root = createRoot(container);
-  const render = (preview: boolean, count: number) => act(() => root.render(<>
-    {Array.from({length: count}, (_, id) => <div key={id} data-loader={id}>
-      <LlmPreviewLoader compact previewImageUrl={preview && id === 0 ? '/preview.png' : null} />
-    </div>)}
-  </>));
+  const render = (ids: number[]) => act(() => root.render(<>{ids.map(id =>
+    <div key={id} data-loader={id}><LlmPreviewLoader compact /></div>,
+  )}</>));
+  const scene = (id: number) => container.querySelector(`[data-loader="${id}"] svg`)!.getAttribute('data-build-scene');
   try {
-    render(false, 10);
-    render(true, 11);
-    expect(container.querySelector('[data-loader="0"] svg')).toBeNull();
-    expect(container.querySelector('[data-loader="10"] svg')?.getAttribute('data-build-scene')).toBe('house');
-    render(false, 11);
-    expect(container.querySelector('[data-loader="0"] svg')?.getAttribute('data-build-scene')).toBe('lighthouse');
-    expect(new Set(Array.from(container.querySelectorAll('svg')).map(svg => svg.getAttribute('data-build-scene'))).size).toBe(11);
+    render([0, 1]);
+    expect(scene(0)).toBe(scene(1));
+    const initial = scene(0);
+    act(() => vi.advanceTimersByTime(BRICK_BUILD_CYCLE_MS));
+    const next = scene(0);
+    expect(next).not.toBe(initial);
+    render([0, 1, 2]);
+    expect(scene(0)).toBe(next);
+    expect(scene(2)).toBe(initial);
+    act(() => vi.advanceTimersByTime(BRICK_BUILD_CYCLE_MS));
+    expect(scene(2)).toBe(next);
+    expect(scene(0)).not.toBe(scene(2));
+  } finally { act(() => root.unmount()); }
+});
+
+it('pauses playback for preview images and resumes the same card cycle', () => {
+  vi.useFakeTimers();
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const render = (preview: boolean) => act(() => root.render(<LlmPreviewLoader previewImageUrl={preview ? '/preview.png' : null} />));
+  const scene = () => container.querySelector('svg')!.getAttribute('data-build-scene');
+  try {
+    render(false);
+    const sequence = [scene()];
+    act(() => vi.advanceTimersByTime(BRICK_BUILD_CYCLE_MS));
+    sequence.push(scene());
+    render(true);
+    expect(container.querySelector('svg')).toBeNull();
+    expect(vi.getTimerCount()).toBe(0);
+    act(() => vi.advanceTimersByTime(BRICK_BUILD_CYCLE_MS * 20));
+    render(false);
+    expect(scene()).toBe(sequence[1]);
+    for (let i = 2; i < 11; i++) {
+      act(() => vi.advanceTimersByTime(BRICK_BUILD_CYCLE_MS));
+      sequence.push(scene());
+    }
+    expect(new Set(sequence).size).toBe(11);
   } finally { act(() => root.unmount()); }
 });
 
