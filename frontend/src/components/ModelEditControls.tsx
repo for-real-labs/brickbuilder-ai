@@ -32,10 +32,10 @@ export function ModelEditControls({
   return (
     <button
       type="button"
-      aria-label="Edit model"
+      aria-label="Manually edit model"
       onClick={onManualEdit}
       disabled={manualLoading}
-      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-slate-300 bg-white px-7 font-semibold text-slate-800 transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:min-w-44"
+      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:min-w-44 sm:px-7 sm:text-base"
     >
       {manualLoading ? (
         <>
@@ -44,8 +44,8 @@ export function ModelEditControls({
         </>
       ) : (
         <>
-          <Pencil size={16} />
-          Edit
+          <Pencil size={16} className="hidden sm:block" />
+          Manually Edit
         </>
       )}
     </button>

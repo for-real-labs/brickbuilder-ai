@@ -3,6 +3,7 @@ import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { expect, it, vi } from 'vitest';
 import { VoxelPromptEditor } from '../src/components/VoxelPromptEditor';
+import { ModelEditControls } from '../src/components/ModelEditControls';
 
 it('submits a requested edit and prevents empty or duplicate submissions', () => {
   const container = document.createElement('div');
@@ -23,5 +24,28 @@ it('submits a requested edit and prevents empty or duplicate submissions', () =>
     expect(container.querySelector('textarea')?.disabled).toBe(true);
     render('red roof', false, 'Try again');
     expect(container.querySelector('[role="alert"]')?.textContent).toBe('Try again');
+  } finally { act(() => root.unmount()); }
+});
+
+it('uses the shorter edit copy and places a non-submitting Manually Edit action after Apply Edit', () => {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const submit = vi.fn();
+  const manualEdit = vi.fn();
+  try {
+    act(() => root.render(<VoxelPromptEditor
+      prompt="Red roof" onPromptChange={vi.fn()} onSubmit={submit} loading={false} disabled={false} error={null}
+      manualEditControl={<ModelEditControls isManualEditorOpen={false} manualLoading={false} onManualEdit={manualEdit} />}
+    />));
+    expect(container.querySelector('label')?.textContent).toBe('Edit');
+    expect(container.textContent).not.toContain('Each edit uses 1 credit');
+    expect(container.querySelector('textarea')?.placeholder).toBe('i.e. Make the roof red and add a chimney…');
+    const buttons = container.querySelectorAll('button');
+    expect(buttons[0].textContent).toBe('Apply Edit');
+    expect(buttons[1].textContent).toBe('Manually Edit');
+    expect(buttons[1].type).toBe('button');
+    act(() => buttons[1].click());
+    expect(manualEdit).toHaveBeenCalledOnce();
+    expect(submit).not.toHaveBeenCalled();
   } finally { act(() => root.unmount()); }
 });

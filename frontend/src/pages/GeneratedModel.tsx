@@ -2207,23 +2207,46 @@ export default function GeneratedModel() {
             loading={isPromptEditing}
             disabled={isResizing || isSavePolling}
             error={editPromptError}
+            manualEditControl={<ModelEditControls
+              isManualEditorOpen={false}
+              manualLoading={xyzrgbLoading || isPromptEditing || isResizing || isSavePolling}
+              onManualEdit={() => { void handleEditModelClick(); }}
+            />}
           />
         )}
 
         {/* Centered model actions */}
         <section className="relative z-40 mt-4 mb-4 flex flex-col items-center gap-3 px-4">
-          {/* Tip nudging users toward the Block Editor (hidden in edit mode) */}
-          {!showVoxelEditor && (
-            <p className="text-sm text-slate-500 text-center mb-2 max-w-2xl">
-              Not what you were expecting? Try editing your model!
-            </p>
-          )}
-          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
-            <ModelEditControls
+            {(showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
               isManualEditorOpen={showVoxelEditor}
               manualLoading={xyzrgbLoading || isPromptEditing}
               onManualEdit={() => { void handleEditModelClick(); }}
-            />
+            />}
+          <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
+            {/* Order is the primary model action. */}
+            <button
+              type="button"
+              aria-label="Order my kit"
+              disabled={priceLoading || isSavePolling}
+              onClick={navigateToOrder}
+              className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold text-white shadow-lg shadow-[#f44336]/25 transition-all duration-150 sm:w-auto sm:min-w-44 ${
+                priceLoading || isSavePolling
+                  ? 'cursor-not-allowed border-red-300 bg-red-300 opacity-70'
+                  : 'attention-pulse cursor-pointer border-[#f44336] bg-[#f44336] hover:scale-[1.03] hover:border-[#ff6b6b] hover:bg-[#ff6b6b]'
+              }`}
+            >
+              {priceLoading || isSavePolling ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white"></div>
+                  Order my Kit!
+                </>
+              ) : (
+                <>
+                  <ShoppingCart size={16} />
+                  Order
+                </>
+              )}
+            </button>
             {/* Instructions button — white with grey border, turns red on hover */}
             <button
               type="button"
@@ -2240,13 +2263,10 @@ export default function GeneratedModel() {
               ) : (
                 <>
                   <BookOpen size={16} />
-                  Building Instructions
+                  View Instructions
                 </>
               )}
             </button>
-          </div>
-
-          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
             {isCommunity && (
               <button
                 type="button"
@@ -2311,33 +2331,8 @@ export default function GeneratedModel() {
                 )}
               </button>
             )}
-
-            {/* Order is the primary final action. */}
-            <button
-              type="button"
-              aria-label="Order my kit"
-              disabled={priceLoading || isSavePolling}
-              onClick={navigateToOrder}
-              className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold text-white shadow-lg shadow-[#f44336]/25 transition-all duration-150 sm:w-auto sm:min-w-44 ${
-                priceLoading || isSavePolling
-                  ? 'cursor-not-allowed border-red-300 bg-red-300 opacity-70'
-                  : 'cursor-pointer border-[#f44336] bg-[#f44336] hover:scale-[1.03] hover:border-[#ff6b6b] hover:bg-[#ff6b6b]'
-              }`}
-            >
-              {priceLoading || isSavePolling ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white"></div>
-                  Order my Kit!
-                </>
-              ) : (
-                <>
-                  <ShoppingCart size={16} />
-                  Order
-                </>
-              )}
-            </button>
           </div>
-          
+
           {/* Error message for voxel editor */}
           {xyzrgbError && (
             <p className="text-red-500 text-sm">{xyzrgbError}</p>

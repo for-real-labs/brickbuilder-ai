@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter, useLocation } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { LdrToMpdApiService } from '../src/services/ldrToMpdApi';
@@ -12,6 +12,8 @@ import GeneratedModel from '../src/pages/GeneratedModel';
 import OrderKit from '../src/pages/OrderKit';
 import { GenerationCard } from '../src/pages/UserDashboard';
 import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
+import { getGeneratedModelPath } from '../src/utils/generationRoutes';
+import posthog from 'posthog-js';
 
 const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, userProfile: null, isSupabaseConfigured: true})}));
@@ -121,4 +123,110 @@ it('opens the earlier completed version after cancellation without a stored sour
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
   expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=old&exact=1');
   expect(container.querySelector('h1')?.textContent).toBe('Earlier Rover');
+});
+
+const pendingEdit = {
+  id: 'pending', generation_id: 'root', version: 5, prompt: 'Make it a Pepsi can',
+  user_id: 'owner', user_type: 'authenticated', status: 'processing', endpoint: 'llmToBricks',
+  created_at: '2026-10-01', detail_level: 30,
+  preview_image_url: '/unfinished.png',
+  previous_completed_generation_id: 'completed-v2',
+  previous_completed_preview_image_url: '/completed-v2.png',
+};
+
+it.each(['queued', 'started', 'processing', 'ldr_processing', 'resizing'])(
+  'keeps the completed preview and model actions available during %s', async status => {
+    const onView = vi.fn();
+    await act(async () => root.render(<MemoryRouter><GenerationCard g={{...pendingEdit, status}} onView={onView} /></MemoryRouter>));
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/completed-v2.png');
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('Processing...');
+    const view = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('View Model'))!;
+    expect(view.disabled).toBe(false);
+    act(() => view.click());
+    expect(onView).toHaveBeenCalledWith('completed-v2', true);
+    expect(posthog.capture).toHaveBeenCalledWith('dashboard_generation_viewed', {
+      generation_id: 'pending', viewed_generation_id: 'completed-v2', status,
+    });
+  },
+);
+
+it('opens the last completed model from its dashboard thumbnail while a newer edit is active', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({
+    generation_id: 'completed-v2', status: 'completed', name: 'Completed Can', ldr_content: 'ldr',
+  } as never);
+  vi.mocked(GenerationNotificationsApi.latestEdit).mockResolvedValue({generation_id: 'pending'});
+  const DashboardCard = () => {
+    const navigate = useNavigate();
+    return <GenerationCard g={pendingEdit} onView={(id, exact) => navigate(getGeneratedModelPath(id, exact))} />;
+  };
+  const Location = () => { const location = useLocation(); return <output>{location.pathname}{location.search}</output>; };
+  await act(async () => root.render(<MemoryRouter initialEntries={['/dashboard']}>
+    <Routes>
+      <Route path="/dashboard" element={<DashboardCard />} />
+      <Route path="/generated-model" element={<GeneratedModel />} />
+    </Routes><Location />
+  </MemoryRouter>));
+  await act(async () => (container.querySelector('[aria-label="View model preview"]') as HTMLButtonElement).click());
+  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=completed-v2&exact=1');
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('Completed Can');
+  expect(GetGenerationApiService.getGeneration).toHaveBeenCalledWith('completed-v2', expect.any(AbortSignal));
+});
+
+it('keeps an initial generation without a completed revision unavailable', async () => {
+  const onView = vi.fn();
+  await act(async () => root.render(<MemoryRouter><GenerationCard g={{
+    ...pendingEdit, version: 1, previous_completed_generation_id: null, previous_completed_preview_image_url: null,
+  }} onView={onView} /></MemoryRouter>));
+  const preview = container.querySelector('[aria-label="View model preview"]') as HTMLButtonElement;
+  expect(preview.disabled).toBe(true);
+  expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent?.includes('View Model'))).toBe(false);
+  act(() => preview.click());
+  expect(onView).not.toHaveBeenCalled();
+});
+
+it('uses the new revision preview and regular navigation once the edit completes', async () => {
+  const onView = vi.fn();
+  await act(async () => root.render(<MemoryRouter><GenerationCard g={{...pendingEdit, status: 'completed'}} onView={onView} /></MemoryRouter>));
+  expect(container.querySelector('img')?.getAttribute('src')).toBe('/unfinished.png');
+  expect(container.querySelector('[role="status"]')).toBeNull();
+  act(() => (container.querySelector('[aria-label="View model preview"]') as HTMLButtonElement).click());
+  expect(onView).toHaveBeenCalledWith('pending', false);
+});
+
+it('places Manually Edit inside the edit form, opens the block editor, and pulses the Order action', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({
+    generation_id: 'g', status: 'completed', name: 'Sunny Dachshund', ldr_content: 'ldr', xyzrgb_url: '/voxels.xyzrgb',
+  } as never);
+  vi.mocked(fetch).mockResolvedValue({ok: true, text: async () => '0 0 0 255 0 0', json: async () => ({stargazers_count: 0})} as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  const editForm = container.querySelector('#voxel-edit-prompt')!.closest('form')!;
+  const manualButtons = container.querySelectorAll('[aria-label="Manually edit model"]');
+  expect(manualButtons).toHaveLength(1);
+  expect(editForm.contains(manualButtons[0])).toBe(true);
+  const order = container.querySelector('[aria-label="Order my kit"]') as HTMLButtonElement;
+  expect(order.disabled).toBe(false);
+  expect(order.classList.contains('attention-pulse')).toBe(true);
+  const instructions = container.querySelector('[aria-label="View instructions"]')!;
+  const community = container.querySelector('[aria-label="Remove from community"], [aria-label="Post to community"]')!;
+  expect(instructions.textContent).toBe('View Instructions');
+  expect(order.parentElement).toBe(instructions.parentElement);
+  expect(order.parentElement).toBe(community.parentElement);
+  expect(order.compareDocumentPosition(instructions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(instructions.compareDocumentPosition(community) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(container.textContent).not.toContain('Not what you were expecting?');
+  await act(async () => (manualButtons[0] as HTMLButtonElement).click());
+  expect(fetch).toHaveBeenCalledWith('/voxels.xyzrgb');
+  expect(container.querySelector('#voxel-edit-prompt')).toBeNull();
+  expect(container.querySelector('[aria-label="Exit block editor"]')).not.toBeNull();
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_edit_button_clicked', {
+    generation_id: 'g', action: 'enter_editor', is_demo_model: false,
+  });
+});
+
+it('does not pulse Order while its price is loading', async () => {
+  vi.mocked(GetPriceApiService.getPrice).mockImplementation(() => new Promise(() => {}));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  const order = container.querySelector('[aria-label="Order my kit"]') as HTMLButtonElement;
+  expect(order.disabled).toBe(true);
+  expect(order.classList.contains('attention-pulse')).toBe(false);
 });

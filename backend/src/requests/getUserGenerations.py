@@ -8,6 +8,7 @@ from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_api_call, track_error
 
 logger = logging.getLogger(__name__)
+ACTIVE_GENERATION_STATUSES = ["processing", "queued", "started", "ldr_processing", "resizing"]
 
 
 class OrderInfo(BaseModel):
@@ -45,6 +46,8 @@ class GenerationWithOrder(BaseModel):
     original_image_url: Optional[str] = None  # Supabase storage copy
     processed_image_url: Optional[str] = None  # Supabase storage copy
     preview_image_url: Optional[str] = None  # User-uploaded preview image, if set
+    previous_completed_generation_id: Optional[str] = None
+    previous_completed_preview_image_url: Optional[str] = None
     external_image_url: Optional[str] = None  # fal.ai generated image URL
     external_glb_url: Optional[str] = None  # fal.ai generated GLB URL
     model_used_image: Optional[str] = None
@@ -115,7 +118,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
 
         # Get generations for the user (authenticated or anonymous)
         # Apply status filter at database level if processing filter is requested
-        status_filter = ["processing", "queued", "started", "ldr_processing", "resizing"] if request.processing else None
+        status_filter = ACTIVE_GENERATION_STATUSES if request.processing else None
         
         # Storage selects the highest version per model before applying pagination.
         # The activity feed still lists every active job, including simultaneous edits.
@@ -161,6 +164,9 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
         # Combine generations with their orders
         generations_with_orders = []
         for gen in generations:
+            previous_completed = None
+            if gen.get("version", 1) > 1 and gen.get("status") in ACTIVE_GENERATION_STATUSES:
+                previous_completed = await generation_storage.get_previous_completed_generation(gen)
             # If this generation has an order, enrich it with generation data
             order_info = None
             if gen["id"] in orders_by_generation:
@@ -190,6 +196,8 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
                 original_image_url=gen.get("original_image_url"),
                 processed_image_url=gen.get("processed_image_url"),
                 preview_image_url=gen.get("preview_image_url"),
+                previous_completed_generation_id=previous_completed["id"] if previous_completed else None,
+                previous_completed_preview_image_url=previous_completed.get("preview_image_url") if previous_completed else None,
                 external_image_url=gen.get("external_image_url"),
                 external_glb_url=gen.get("external_glb_url"),
                 model_used_image=gen.get("model_used_image"),
