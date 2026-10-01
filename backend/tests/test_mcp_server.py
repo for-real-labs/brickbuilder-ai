@@ -11,7 +11,7 @@ import jwt
 import pytest
 from cryptography.hazmat.primitives.asymmetric import ec
 from fastapi import HTTPException
-from jsonschema import validate
+from jsonschema import ValidationError, validate
 from starlette.testclient import TestClient
 
 from src import mcp_server as module
@@ -71,6 +71,12 @@ def test_protocol_initialization_and_tool_contracts(client):
         assert "user_id" not in tool["inputSchema"]["properties"]
         assert "token" not in tool["inputSchema"]["properties"]
         assert tool["annotations"]["openWorldHint"] is False
+        assert tool["annotations"]["title"] == tool["title"]
+        if "model" in tool["inputSchema"]["properties"]:
+            assert tool["inputSchema"]["properties"]["model"]["type"] == "string"
+            validate({"prompt": "A cube", **({"generation_id": GENERATION_ID} if tool["name"] == "edit_lego_model" else {})}, tool["inputSchema"])
+            with pytest.raises(ValidationError):
+                validate({"prompt": "A cube", "generation_id": GENERATION_ID, "model": "unapproved-model"}, tool["inputSchema"])
     assert next(tool for tool in tools if tool["name"] == "generate_lego_model")["annotations"]["idempotentHint"] is False
     assert next(tool for tool in tools if tool["name"] == "get_lego_model")["annotations"]["readOnlyHint"] is True
 
@@ -267,6 +273,16 @@ from src.utils.auth import get_user_with_optional_auth
 app.dependency_overrides[get_user_with_optional_auth] = lambda: {"authenticated": False}
 with TestClient(app, base_url="https://api.example.com") as client:
     assert client.get("/").status_code == 200
+    challenge_path = "/.well-known/openai-apps-challenge"
+    for invalid in ("", "short", "valid-looking-but-with-a-newline\\n", "x" * 201):
+        os.environ["OPENAI_APPS_CHALLENGE"] = invalid
+        assert client.get(challenge_path).status_code == 404
+    os.environ["OPENAI_APPS_CHALLENGE"] = "directory-challenge-test-token"
+    challenge = client.get(challenge_path)
+    assert challenge.status_code == 200
+    assert challenge.text == os.environ["OPENAI_APPS_CHALLENGE"]
+    assert challenge.headers["content-type"].startswith("text/plain")
+    assert challenge.headers["cache-control"] == "no-store"
     assert client.post("/llmToBricks", json={}).status_code == 422
     response = client.post("/mcp", json={})
     assert response.status_code == (401 if os.environ["MCP_ENABLED"] == "true" else 503)
