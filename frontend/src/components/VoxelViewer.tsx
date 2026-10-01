@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import { captureTransparentPreview } from '../utils/captureTransparentPreview';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { Link } from 'react-router-dom';
@@ -1037,8 +1038,7 @@ export function VoxelViewer({ xyzrgbContent, problematicXyzrgbContent, className
     problematicHighlightsRef.current.forEach(hide);
 
     try {
-      renderer.render(scene, camera);
-      return renderer.domElement.toDataURL('image/png');
+      return captureTransparentPreview(renderer, scene, camera);
     } catch (err) {
       console.warn('Failed to capture voxel preview:', err);
       return null;
@@ -1046,6 +1046,7 @@ export function VoxelViewer({ xyzrgbContent, problematicXyzrgbContent, className
       hidden.forEach((obj) => {
         obj.visible = true;
       });
+      renderer.render(scene, camera);
     }
   };
 
@@ -1142,7 +1143,7 @@ export function VoxelViewer({ xyzrgbContent, problematicXyzrgbContent, className
 
     // Create renderer with accurate color output. preserveDrawingBuffer lets
     // us read the canvas via toDataURL() for preview capture after a save.
-    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
