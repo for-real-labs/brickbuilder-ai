@@ -129,3 +129,10 @@ describe('generation services', () => {
     await expect(GetGenerationApiService.pollUntilComplete('g', undefined, 0, 1, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
   });
 });
+
+it('preserves the saved model title when returning a completed polling result', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    generation_id: 'g', status: 'completed', name: 'Moon Rover', prompt: 'please make a rover', ldr_content: 'ldr',
+  } as GetGenerationResponse);
+  expect(await GetGenerationApiService.pollUntilComplete('g')).toMatchObject({name: 'Moon Rover', prompt: 'please make a rover'});
+});

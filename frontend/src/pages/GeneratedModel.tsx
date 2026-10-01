@@ -1,3 +1,4 @@
+import { GenerationTitle } from '../components/GenerationTitle';
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { LlmPreviewLoader } from '../components/LlmPreviewLoader';
 import { LlmGenerationOutput } from '../components/LlmGenerationOutput';
@@ -266,6 +267,7 @@ export default function GeneratedModel() {
   // Community toggle state
   const [isCommunity, setIsCommunity] = React.useState<boolean>(false);
   const [generationOwnerId, setGenerationOwnerId] = React.useState<string | null>(null);
+  const [ownershipGenerationId, setOwnershipGenerationId] = React.useState<string | null>(null);
   const [communityToggleLoading, setCommunityToggleLoading] = React.useState<boolean>(false);
   const [communityToggleError, setCommunityToggleError] = React.useState<string | null>(null);
   const [likeCount, setLikeCount] = React.useState<number>(0);
@@ -317,7 +319,7 @@ export default function GeneratedModel() {
 
   // Only the owner of the generation (when logged in) can post / unpost to community
   const canToggleCommunity = Boolean(
-    currentUser?.id && generationOwnerId && currentUser.id === generationOwnerId
+    currentUser?.id && ownershipGenerationId === currentGenerationId && generationOwnerId && currentUser.id === generationOwnerId
   );
   // Show the community button to the owner, or to any logged-out visitor (who
   // will be prompted to log in when they click it). Also keep it visible while
@@ -490,6 +492,7 @@ export default function GeneratedModel() {
             
             await processCompletedGeneration(urlGenerationId, {
               generation_id: statusResponse.generation_id,
+              name: statusResponse.name,
               prompt: statusResponse.prompt || 'Your Model',
               ldr_content: statusResponse.ldr_content,
               mpd_url: statusResponse.mpd_url,
@@ -524,6 +527,7 @@ export default function GeneratedModel() {
             }
             await processCompletedGeneration(stateGenerationId, {
               generation_id: statusResponse.generation_id,
+              name: statusResponse.name,
               prompt: statusResponse.prompt || stateData?.modelName || 'Your Model',
               ldr_content: statusResponse.ldr_content,
               mpd_url: statusResponse.mpd_url,
@@ -586,7 +590,7 @@ export default function GeneratedModel() {
             setLdrContent(statusResponse.ldr_content);
             
             // Set model name from backend prompt
-            const freshModelName = statusResponse.prompt || localStorage.getItem('lastModelName') || "Your Model";
+            const freshModelName = statusResponse.name || statusResponse.prompt || localStorage.getItem('lastModelName') || "Your Model";
             setModelName(freshModelName);
             localStorage.setItem('lastModelName', freshModelName);
             
@@ -642,6 +646,7 @@ export default function GeneratedModel() {
       data: { 
         generation_id: string; 
         prompt: string; 
+        name?: string | null;
         ldr_content: string; 
         mpd_url: string | null;
         xyzrgb_url: string | null; 
@@ -665,7 +670,7 @@ export default function GeneratedModel() {
       setLdrContent(data.ldr_content);
       
       // Set model name from prompt
-      const fetchedModelName = data.prompt || "Your Model";
+      const fetchedModelName = data.name || data.prompt || "Your Model";
       setModelName(fetchedModelName);
       
       // Get MPD content from URL or convert LDR to MPD
@@ -744,6 +749,7 @@ export default function GeneratedModel() {
         setNeedsPreviewUpload(false);
         return;
       }
+      setGenerationOwnerId(null);
       try {
         const { data, error } = await supabase
           .from('generations')
@@ -765,6 +771,7 @@ export default function GeneratedModel() {
         } | null;
         setIsCommunity(Boolean(row?.is_community));
         setGenerationOwnerId(row?.user_id ?? null);
+        setOwnershipGenerationId(currentGenerationId);
         setNeedsPreviewUpload(!row?.preview_image_url);
       } catch (e) {
         if (!cancelled) {
@@ -814,7 +821,7 @@ export default function GeneratedModel() {
   // Whether the signed-in user owns the current generation. Required to
   // upload a preview image (and matches the backend's authorization check).
   const isGenerationOwner = Boolean(
-    currentUser?.id && generationOwnerId && currentUser.id === generationOwnerId
+    currentUser?.id && ownershipGenerationId === currentGenerationId && generationOwnerId && currentUser.id === generationOwnerId
   );
 
   // Called once after ThreeLDRViewer finishes loading the model. Stores the
@@ -1199,6 +1206,7 @@ export default function GeneratedModel() {
       } | null;
       setIsCommunity(Boolean(row?.is_community));
       setGenerationOwnerId(row?.user_id ?? null);
+      setOwnershipGenerationId(currentGenerationId);
       setNeedsPreviewUpload(!row?.preview_image_url);
     } catch (e) {
       console.warn('Failed to refresh generation ownership:', e);
@@ -1864,22 +1872,20 @@ export default function GeneratedModel() {
         {/* Main content - only show when not loading and no error */}
         {!generationLoading && !generationError && (
           <>
-        {/* Centered Title - hide when in edit mode */}
-        {!showVoxelEditor && (
-          <section className="relative mt-2 mb-2 md:mb-3 landing-fade-in landing-delay-2">
-            {/* <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-center break-words px-4">
-              Successfully Generated Model 🎉
-            </h2> */}
-            {currentGenerationId && (
-              <p className="text-xs text-slate-400 text-center mt-1">
-                {/* id: {currentGenerationId} */}
-              </p>
-            )}
-            {/* <p className="text-sm text-slate-500 text-center italic mt-3 px-4">
-              Generations offer a starting point, but it's up to you to resize, recolor, and reshape your model to perfection!
-            </p> */}
-          </section>
-        )}
+        <section className="mt-3 mb-5 sm:mb-6">
+          <GenerationTitle
+            key={currentGenerationId || 'local'}
+            generationId={currentGenerationId || undefined}
+            name={modelName}
+            canEdit={canToggleCommunity && !isSavePolling}
+            accessToken={accessToken || undefined}
+            onSaved={name => {
+              setModelName(name);
+              localStorage.setItem('lastModelName', name);
+              refreshNotifications();
+            }}
+          />
+        </section>
 
 {/* Voxel Editor - shown when edit mode is active */}
 {showVoxelEditor && xyzrgbContent ? (

@@ -74,7 +74,8 @@ export default function OrderKit() {
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
 
-  const name = state?.name ?? "Cosmic Speedster X-7";
+  const [resolvedName, setResolvedName] = React.useState<string | null>(null);
+  const name = resolvedName || state?.name || "Your Model";
   const size = "Regular"; // Default size since it's not passed in navigation state
   
   // Get model image from navigation state screenshots
@@ -166,6 +167,8 @@ export default function OrderKit() {
 
   // Fetch model content for 3D preview
   React.useEffect(() => {
+    const controller = new AbortController();
+    setResolvedName(null);
     const fetchModelContent = async () => {
       if (!generationId) {
         // Try to get from localStorage as fallback
@@ -178,7 +181,10 @@ export default function OrderKit() {
 
       setModelLoading(true);
       try {
-        const generationData = await GetGenerationApiService.getGeneration(generationId);
+        const generationData = await GetGenerationApiService.getGeneration(generationId, controller.signal);
+        if (controller.signal.aborted) return;
+        const fetchedName = generationData.name || generationData.prompt || state.name || "Your Model";
+        setResolvedName(fetchedName);
         
         // Get MPD content from URL or convert LDR to MPD (same as GeneratedModel)
         let mpdContent: string | null = null;
@@ -197,7 +203,7 @@ export default function OrderKit() {
         // If no MPD from URL, try converting LDR to MPD
         if (!mpdContent && generationData.ldr_content) {
           try {
-            const modelName = generationData.prompt || name;
+            const modelName = fetchedName;
             const authToken = (await supabase.auth.getSession()).data.session?.access_token;
             const mpdData = await LdrToMpdApiService.convertLdrToMpd(
               generationData.ldr_content,
@@ -210,10 +216,11 @@ export default function OrderKit() {
           }
         }
         
-        if (mpdContent) {
+        if (mpdContent && !controller.signal.aborted) {
           setMpdContent(mpdContent);
         }
       } catch (error) {
+        if (controller.signal.aborted) return;
         console.error('Failed to fetch model content:', error);
         // Try localStorage as fallback
         const storedMpd = localStorage.getItem('MPD_CONTENT') || localStorage.getItem('lastMpdContent');
@@ -221,12 +228,13 @@ export default function OrderKit() {
           setMpdContent(storedMpd);
         }
       } finally {
-        setModelLoading(false);
+        if (!controller.signal.aborted) setModelLoading(false);
       }
     };
 
-    fetchModelContent();
-  }, [generationId, name]);
+    void fetchModelContent();
+    return () => controller.abort();
+  }, [generationId, state.name]);
 
   const handleCheckout = async () => {
   try {
@@ -269,7 +277,7 @@ export default function OrderKit() {
 
   return (
     <div className="min-h-screen bg-white">
-      <SEO title="Order Kit — BrickBuilder" description="Review and order your custom brick kit." url="https://brickbuilder.ai/order" />
+      <SEO title={`Order Kit — ${name}`} description="Review and order your custom brick kit." url="https://brickbuilder.ai/order" />
       {/* Top nav with logo */}
       <header className="w-full border-b border-slate-200 landing-fade-in landing-delay-1">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 sm:px-6 md:px-8 lg:px-10 py-4">
@@ -301,9 +309,7 @@ export default function OrderKit() {
           Back to Model
         </button>
 
-        {/* <h1 className="text-3xl sm:text-4xl font-semibold mb-6 landing-fade-in landing-delay-2">
-          Order Today!
-        </h1> */}
+        <h1 className="mb-6 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 landing-fade-in landing-delay-3">
           {/* LEFT: model hero + BOM list */}

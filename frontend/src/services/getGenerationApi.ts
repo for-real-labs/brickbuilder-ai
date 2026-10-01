@@ -28,6 +28,7 @@ export interface GetGenerationResponse {
   generation_id: string;
   status: GenerationStatus;
   prompt: string | null;
+  name?: string | null;
   external_image_url: string | null;
   processed_image_url: string | null;
   preview_image_url?: string | null;
@@ -45,6 +46,7 @@ export interface GetGenerationResponse {
 export interface CompletedGeneration {
   generation_id: string;
   prompt: string;
+  name?: string | null;
   ldr_content: string;
   mpd_url: string | null;
   xyzrgb_url: string | null;
@@ -133,6 +135,7 @@ export class GetGenerationApiService {
         return {
           generation_id: response.generation_id,
           prompt: response.prompt,
+          name: response.name,
           ldr_content: response.ldr_content,
           mpd_url: response.mpd_url,
           xyzrgb_url: response.xyzrgb_url,

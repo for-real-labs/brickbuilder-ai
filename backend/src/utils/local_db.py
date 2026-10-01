@@ -115,6 +115,12 @@ class _QueryBuilder:
         self._filters.append(("neq", column, value))
         return self
 
+    def is_(self, column: str, value: Any) -> "_QueryBuilder":
+        if value not in (None, "null"):
+            raise ValueError("Local is_ filters currently support null only")
+        self._filters.append(("is", column, None))
+        return self
+
     def in_(self, column: str, values: List[Any]) -> "_QueryBuilder":
         self._filters.append(("in", column, list(values)))
         return self
@@ -144,6 +150,9 @@ class _QueryBuilder:
             elif kind == "neq":
                 clauses.append(f"NOT ({alias} @> %s::jsonb)")
                 params.append(Json({col: val}))
+            elif kind == "is":
+                clauses.append(f"({alias}->>%s) IS NULL")
+                params.append(col)
             elif kind == "in":
                 clauses.append(f"{alias}->>%s = ANY(%s)")
                 params.append(col)
@@ -240,6 +249,9 @@ class _QueryBuilder:
             elif kind == "neq":
                 clauses.append(f"NOT ({target} @> %s::jsonb)")
                 params.append(Json({key: val}))
+            elif kind == "is":
+                clauses.append(f"({target}->>%s) IS NULL")
+                params.append(key)
             elif kind == "in":
                 clauses.append(f"{target}->>%s = ANY(%s)")
                 params.append(key)
