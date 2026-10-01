@@ -2,7 +2,7 @@ import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewrit
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 
-import React, { useEffect, useRef, useState, memo } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
 import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
@@ -1511,11 +1511,12 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
 export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: FeaturedItem[] }) {
   const navigate = useNavigate();
   const trackRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(0);
   const pausedRef = useRef(false);
   // Fill even a short list before duplicating it for a seamless loop.
   const loopItems = items.length > 0
-    ? Array.from({ length: Math.max(items.length, 8) }, (_, index) => items[index % items.length])
+    ? Array.from({ length: Math.ceil(8 / items.length) * items.length }, (_, index) => items[index % items.length])
     : [];
 
   const move = (distance: number) => {
@@ -1525,6 +1526,23 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
     positionRef.current = ((positionRef.current + distance) % width + width) % width;
     track.style.transform = `translate3d(${-positionRef.current}px, 0, 0)`;
   };
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    if (!viewport || !track || !items.length) return;
+    const centerFirstModel = () => {
+      const loopWidth = track.firstElementChild?.getBoundingClientRect().width || 0;
+      const cardWidth = track.querySelector('article')?.getBoundingClientRect().width || 0;
+      if (!loopWidth || !cardWidth) return;
+      positionRef.current = 0;
+      move(loopWidth - (viewport.getBoundingClientRect().width - cardWidth) / 2);
+    };
+    centerFirstModel();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(centerFirstModel) : null;
+    observer?.observe(viewport);
+    return () => observer?.disconnect();
+  }, [items]);
 
   useEffect(() => {
     let frame: number;
@@ -1562,7 +1580,7 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
         className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
         <ChevronLeft className="h-5 w-5" />
       </button>
-      <div className="overflow-hidden">
+      <div ref={viewportRef} className="overflow-hidden">
         <div ref={trackRef} data-featured-track className="flex w-max" style={{ willChange: 'transform' }}>
           {[0, 1].map((copy) => (
             <div key={copy} data-featured-copy={copy} className="flex w-max gap-6 py-1 pr-6">
