@@ -443,7 +443,7 @@ export default function GeneratedModel() {
                 setPendingGeneration(response);
                 if (response.status === 'cancelled') {
                   controller.abort();
-                  navigate(response.source_generation_id ? `/generated-model?id=${encodeURIComponent(response.source_generation_id)}&exact=1` : '/', { replace: true });
+                  navigate(response.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(response.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
                   return;
                 }
                 if (response.external_image_url) {
@@ -467,7 +467,7 @@ export default function GeneratedModel() {
           
           // If failed, show error
           if (statusResponse.status === 'cancelled') {
-            navigate(statusResponse.source_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.source_generation_id)}&exact=1` : '/', { replace: true });
+            navigate(statusResponse.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
             return;
           }
           if (statusResponse.status === 'failed') {
@@ -538,7 +538,7 @@ export default function GeneratedModel() {
           }
           
           if (statusResponse.status === 'cancelled') {
-            navigate(statusResponse.source_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.source_generation_id)}&exact=1` : '/', { replace: true });
+            navigate(statusResponse.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
             return;
           }
           if (statusResponse.status === 'failed') {
@@ -1046,7 +1046,7 @@ export default function GeneratedModel() {
     setEditHistoryOpen(false);
     setEditHistory([]);
     setEditHistoryError(null);
-  }, [processedImageUrl]);
+  }, [currentGenerationId]);
 
   React.useEffect(() => {
     if (!editHistoryOpen) return;
@@ -1072,17 +1072,17 @@ export default function GeneratedModel() {
     }
 
     setEditHistoryOpen(true);
-    if (!processedImageUrl) return;
+    if (!currentGenerationId) return;
 
     setEditHistoryLoading(true);
     setEditHistoryError(null);
     try {
       const response = await GetGenerationsByImageApiService.getGenerationsByImage(
         accessToken || undefined,
-        processedImageUrl,
+        currentGenerationId,
       );
       setEditHistory([...response.generations].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        (a, b) => b.version - a.version,
       ));
     } catch (error) {
       console.error('Failed to load edit history:', error);
@@ -1090,7 +1090,7 @@ export default function GeneratedModel() {
     } finally {
       setEditHistoryLoading(false);
     }
-  }, [accessToken, editHistoryOpen, processedImageUrl]);
+  }, [accessToken, currentGenerationId, editHistoryOpen]);
 
   const handleToggleCommunity = async () => {
     if (!currentGenerationId || communityToggleLoading) return;
@@ -1829,12 +1829,12 @@ export default function GeneratedModel() {
                 : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
             </div>
             {pendingGeneration && isGenerationActive(pendingGeneration.status) && <CancelGenerationButton
-              generationId={pendingGeneration.generation_id} isEdit={!!pendingGeneration.source_generation_id}
+              generationId={pendingGeneration.generation_id} isEdit={(pendingGeneration.version ?? 1) > 1}
               onCancelled={() => {
                 modelLoadAbortRef.current?.abort();
                 refreshNotifications();
-                navigate(pendingGeneration.source_generation_id
-                  ? `/generated-model?id=${encodeURIComponent(pendingGeneration.source_generation_id)}&exact=1` : '/', { replace: true });
+                navigate(pendingGeneration.previous_completed_generation_id
+                  ? `/generated-model?id=${encodeURIComponent(pendingGeneration.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
               }} />}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
@@ -2061,7 +2061,7 @@ export default function GeneratedModel() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {editHistory.map((edit, index) => {
+                      {editHistory.map((edit) => {
                         const isCurrentGeneration = edit.id === currentGenerationId;
                         const isCompleted = edit.status === 'completed';
 
@@ -2078,7 +2078,7 @@ export default function GeneratedModel() {
                               <div className="min-w-0 flex-1">
                                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
                                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                    Version {editHistory.length - index}
+                                    Version {edit.version}
                                   </span>
                                   {isCurrentGeneration && (
                                     <span className="rounded-full bg-[#f44336] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
@@ -2103,7 +2103,7 @@ export default function GeneratedModel() {
 
                               {isCompleted && !isCurrentGeneration ? (
                                 <a
-                                  href={getGeneratedModelPath(edit.id)}
+                                  href={`${getGeneratedModelPath(edit.id)}&exact=1`}
                                   className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-[11px] font-medium text-slate-700 transition-colors hover:border-[#f44336]/60 hover:text-[#f44336]"
                                 >
                                   <Eye size={13} />
@@ -2136,9 +2136,9 @@ export default function GeneratedModel() {
               type="button"
               aria-controls="edit-history-menu"
               aria-expanded={editHistoryOpen}
-              disabled={!processedImageUrl || isSavePolling}
+              disabled={!currentGenerationId || isSavePolling}
               onClick={() => { void handleToggleEditHistory(); }}
-              title={!processedImageUrl ? 'No edit history is available for this model' : 'View previous edits'}
+              title={!currentGenerationId ? 'No edit history is available for this model' : 'View previous edits'}
               className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-150 hover:scale-[1.03] hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100 sm:px-4"
             >
               <History size={14} />

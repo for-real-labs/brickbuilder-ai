@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import threading
 import uuid
 from datetime import datetime
@@ -69,7 +70,7 @@ class _QueryBuilder:
     """A minimal, chainable query builder backed by a JSONB column."""
 
     def __init__(self, conn, lock: threading.Lock, table: str):
-        if table not in _TABLES:
+        if table not in (*_TABLES, "latest_generations"):
             # Unknown tables are still allowed; create lazily would be ideal, but
             # the app only uses the known set. Fail loud to catch typos.
             logger.warning("Local DB: query on unregistered table '%s'", table)
@@ -81,7 +82,7 @@ class _QueryBuilder:
         self._count_mode: Optional[str] = None
         self._payload: Optional[Dict[str, Any]] = None
         self._filters: List[Tuple[str, str, Any]] = []
-        self._order: Optional[Tuple[str, bool]] = None
+        self._order: List[Tuple[str, bool]] = []
         self._range: Optional[Tuple[int, int]] = None
         self._limit: Optional[int] = None
 
@@ -125,8 +126,16 @@ class _QueryBuilder:
         self._filters.append(("in", column, list(values)))
         return self
 
+    def lt(self, column: str, value: Any) -> "_QueryBuilder":
+        self._filters.append(("lt", column, value))
+        return self
+
+    def gt(self, column: str, value: Any) -> "_QueryBuilder":
+        self._filters.append(("gt", column, value))
+        return self
+
     def order(self, column: str, desc: bool = False) -> "_QueryBuilder":
-        self._order = (column, desc)
+        self._order.append((column, desc))
         return self
 
     def range(self, start: int, end: int) -> "_QueryBuilder":
@@ -157,6 +166,10 @@ class _QueryBuilder:
                 clauses.append(f"{alias}->>%s = ANY(%s)")
                 params.append(col)
                 params.append([str(v) for v in val])
+            elif kind in ("gt", "lt"):
+                operator = ">" if kind == "gt" else "<"
+                clauses.append(f"({alias}->%s) {operator} %s::jsonb")
+                params.extend([col, Json(val)])
         where = (" WHERE " + " AND ".join(clauses)) if clauses else ""
         return where, params
 
@@ -206,10 +219,13 @@ class _QueryBuilder:
 
         where, params = self._build_where()
         sql = f"SELECT doc FROM {table}{where}"
-        if self._order is not None:
-            col, desc = self._order
-            sql += f" ORDER BY doc->>%s {'DESC' if desc else 'ASC'}"
-            params = params + [col]
+        if self._order:
+            expressions = []
+            for col, desc in self._order:
+                expression = "(doc->>%s)::integer" if col == "version" else "doc->>%s"
+                expressions.append(f"{expression} {'DESC' if desc else 'ASC'}")
+                params.append(col)
+            sql += " ORDER BY " + ", ".join(expressions)
         if self._range is not None:
             start, end = self._range
             sql += f" LIMIT {max(end - start + 1, 0)} OFFSET {max(start, 0)}"
@@ -264,10 +280,10 @@ class _QueryBuilder:
             f"{where}"
         )
         join_params = ["generation_id", "id"] + params
-        if self._order is not None:
-            col, desc = self._order
-            sql += f" ORDER BY o.doc->>%s {'DESC' if desc else 'ASC'}"
-            join_params = join_params + [col]
+        if self._order:
+            sql += " ORDER BY " + ", ".join(
+                f"o.doc->>%s {'DESC' if desc else 'ASC'}" for _col, desc in self._order)
+            join_params.extend(col for col, _desc in self._order)
 
         rows = self._execute_cursor(sql, join_params)
         result: List[Dict[str, Any]] = []
@@ -357,6 +373,89 @@ def _create_schema(conn) -> None:
                 f'CREATE INDEX IF NOT EXISTS "{table}_doc_gin" '
                 f'ON "{table}" USING gin (doc jsonb_path_ops)'
             )
+    _create_local_generation_versions(conn)
+
+
+def _backfill_local_generation_versions(conn) -> None:
+    """Recover legacy local edit ancestry before installing version allocation."""
+    from psycopg.types.json import Json
+
+    rows = [row[0] for row in conn.execute('SELECT doc FROM generations')]
+    pending = [row for row in rows if not row.get("generation_id") or not row.get("version")]
+    if not pending:
+        return
+    by_id = {row["id"]: row for row in rows}
+    parents = {}
+    image_predecessors = {}
+    for row in sorted(rows, key=lambda row: (row.get("created_at", ""), row["id"])):
+        owner = (row.get("user_id"), row.get("user_type"))
+        image_key = (*owner, row.get("processed_image_url"))
+        parent = row.get("source_generation_id")
+        if not parent and row.get("endpoint") in ("updateModel", "resizeModel", "promptEditModel"):
+            match = re.match(r"^(?:Updated model from |Resized model from |Edited from )([0-9a-fA-F-]{36})", row.get("prompt") or "")
+            parent = match.group(1) if match else None
+            if parent not in by_id and row.get("processed_image_url"):
+                parent = image_predecessors.get(image_key)
+        source = by_id.get(parent)
+        if source and parent != row["id"] and (source.get("user_id"), source.get("user_type")) == owner:
+            parents[row["id"]] = parent
+        if row.get("processed_image_url"):
+            image_predecessors[image_key] = row["id"]
+
+    counters = {}
+    for row in rows:
+        if row.get("generation_id") and row.get("version"):
+            group = row["generation_id"]
+            counters[group] = max(counters.get(group, 0), row["version"])
+    for row in sorted(pending, key=lambda row: (row.get("created_at", ""), row["id"])):
+        ancestor = row["id"]
+        seen = {ancestor}
+        while ancestor in parents and parents[ancestor] not in seen:
+            ancestor = parents[ancestor]
+            seen.add(ancestor)
+        group = by_id[ancestor].get("generation_id") or ancestor
+        counters[group] = counters.get(group, 0) + 1
+        payload = {"generation_id": group, "version": counters[group]}
+        conn.execute('UPDATE generations SET doc = doc || %s::jsonb WHERE id = %s',
+                     (Json(payload), row["id"]))
+
+
+def _create_local_generation_versions(conn) -> None:
+    """Match the Supabase migration for the embedded database's JSONB schema."""
+    with conn.transaction():
+        conn.execute('LOCK TABLE generations IN SHARE ROW EXCLUSIVE MODE')
+        _backfill_local_generation_versions(conn)
+        conn.execute("UPDATE generations SET doc = doc - 'source_generation_id' WHERE doc ? 'source_generation_id'")
+        conn.execute("""
+            CREATE OR REPLACE FUNCTION assign_local_generation_version() RETURNS trigger
+            LANGUAGE plpgsql AS $$
+            DECLARE model_id text; next_version integer := 1;
+            BEGIN
+                model_id := coalesce(new.doc->>'generation_id', new.doc->>'id');
+                IF model_id <> new.doc->>'id' THEN
+                    PERFORM pg_advisory_xact_lock(hashtextextended(model_id, 0));
+                    IF NOT EXISTS (
+                        SELECT 1 FROM generations WHERE doc->>'generation_id' = model_id
+                          AND doc->>'user_id' = new.doc->>'user_id'
+                          AND doc->>'user_type' = new.doc->>'user_type'
+                    ) THEN RAISE EXCEPTION 'Model not found for this owner'; END IF;
+                    SELECT coalesce(max((doc->>'version')::integer), 0) + 1
+                    INTO next_version FROM generations WHERE doc->>'generation_id' = model_id;
+                END IF;
+                new.doc := new.doc - 'source_generation_id';
+                new.doc := new.doc || jsonb_build_object('generation_id', model_id, 'version', next_version);
+                RETURN new;
+            END; $$;
+            DROP TRIGGER IF EXISTS generations_assign_local_version ON generations;
+            CREATE TRIGGER generations_assign_local_version BEFORE INSERT ON generations
+            FOR EACH ROW EXECUTE FUNCTION assign_local_generation_version();
+            CREATE UNIQUE INDEX IF NOT EXISTS generations_model_version_idx
+              ON generations ((doc->>'generation_id'), ((doc->>'version')::integer));
+            CREATE OR REPLACE VIEW latest_generations AS
+              SELECT DISTINCT ON (doc->>'user_id', doc->>'user_type', doc->>'generation_id') pk, id, doc
+              FROM generations ORDER BY doc->>'user_id', doc->>'user_type', doc->>'generation_id',
+                (doc->>'version')::integer DESC;
+        """)
 
 
 def init_local_supabase() -> LocalSupabaseClient:

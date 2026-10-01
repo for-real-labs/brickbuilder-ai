@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { LdrToMpdApiService } from '../src/services/ldrToMpdApi';
@@ -10,6 +10,8 @@ import { GetGenerationLikeStatusApiService } from '../src/services/getGeneration
 import { UpdateGenerationNameApiService } from '../src/services/updateGenerationNameApi';
 import GeneratedModel from '../src/pages/GeneratedModel';
 import OrderKit from '../src/pages/OrderKit';
+import { GenerationCard } from '../src/pages/UserDashboard';
+import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 
 const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, userProfile: null, isSupabaseConfigured: true})}));
@@ -72,4 +74,51 @@ it('shows the saved server title on /order even when navigation contains an old 
   await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state: {generation_id:'g', name:'Old Title'}}]}><OrderKit /></MemoryRouter>));
   expect(container.querySelector('h1')?.textContent).toBe('Sunny Dachshund');
   expect(LdrToMpdApiService.convertLdrToMpd).toHaveBeenCalledWith('ldr', 'Sunny Dachshund', 'token');
+});
+
+const revisionHistory = [
+  {id: 'old', generation_id: 'root', version: 3, status: 'completed', created_at: '2026-10-01', prompt: 'rover'},
+  {id: 'g', generation_id: 'root', version: 7, status: 'completed', created_at: '2026-09-30', prompt: 'rover'},
+];
+
+it('shows image-free LLM history ordered and labelled by stored version on the model page', async () => {
+  const history = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage').mockResolvedValue({generations: revisionHistory, total_count: 2});
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  const button = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Previous edits'))!;
+  expect(button.disabled).toBe(false);
+  await act(async () => button.click());
+  expect(history).toHaveBeenCalledWith('token', 'g');
+  const dialog = container.querySelector('[aria-label="Previous model edits"]')!;
+  expect(dialog.textContent!.indexOf('Version 7')).toBeLessThan(dialog.textContent!.indexOf('Version 3'));
+  expect(dialog.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=old&exact=1');
+});
+
+it('shows image-free history on dashboard cards and opens the selected revision exactly', async () => {
+  const history = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage').mockResolvedValue({generations: revisionHistory, total_count: 2});
+  const Location = () => { const location = useLocation(); return <output>{location.pathname}{location.search}</output>; };
+  await act(async () => root.render(<MemoryRouter><GenerationCard
+    g={{id: 'g', generation_id: 'root', version: 7, prompt: 'rover', user_id: 'owner', user_type: 'authenticated', status: 'completed', endpoint: 'llmToBricks', created_at: '2026-09-30', detail_level: 30}}
+    onView={vi.fn()} authToken="token"
+  /><Location /></MemoryRouter>));
+  const button = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('View Edits'))!;
+  expect(button.disabled).toBe(false);
+  await act(async () => button.click());
+  expect(history).toHaveBeenCalledWith('token', 'g');
+  expect(container.textContent!.indexOf('VERSION 7')).toBeLessThan(container.textContent!.indexOf('VERSION 3'));
+  const viewButtons = Array.from(container.querySelectorAll('button')).filter(button => button.textContent?.includes('View Model'));
+  await act(async () => viewButtons.at(-1)!.click());
+  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=old&exact=1');
+});
+
+it('opens the earlier completed version after cancellation without a stored source link', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id => (
+    id === 'g' ? {generation_id: 'g', model_generation_id: 'root', version: 4,
+      status: 'cancelled', previous_completed_generation_id: 'old'} :
+      {generation_id: 'old', model_generation_id: 'root', version: 2,
+        status: 'completed', name: 'Earlier Rover', ldr_content: 'ldr'}
+  ) as never);
+  const Location = () => { const location = useLocation(); return <output>{location.pathname}{location.search}</output>; };
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
+  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=old&exact=1');
+  expect(container.querySelector('h1')?.textContent).toBe('Earlier Rover');
 });

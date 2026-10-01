@@ -15,6 +15,7 @@ class Query:
         self.sort = None
     def select(self, *args, **kwargs): return self
     def eq(self, field, value): self.filters.append(lambda row: row.get(field) == value); return self
+    def gt(self, field, value): self.filters.append(lambda row: row.get(field, 0) > value); return self
     def in_(self, field, values): self.filters.append(lambda row: row.get(field) in values); return self
     def order(self, field, desc=False): self.sort = (field, desc); return self
     def limit(self, count): self.maximum = count; return self
@@ -40,12 +41,12 @@ def storage(monkeypatch):
 
 
 def model(id, owner='one', status='completed', **extra):
-    return {'id': id, 'user_id': owner, 'user_type': 'authenticated', 'status': status,
+    return {'id': id, 'generation_id': id, 'version': 1, 'user_id': owner, 'user_type': 'authenticated', 'status': status,
             'notification_seen': False, 'prompt': id, 'updated_at': '2026-09-30', 'created_at': id, **extra}
 
 
 def test_notifications_are_owner_scoped_and_do_not_deduplicate_edits(storage):
-    storage.extend([model('a'), model('b', source_generation_id='a'), model('pending', status='queued'), model('private', owner='two')])
+    storage.extend([model('a'), model('b', generation_id='a', version=2), model('pending', status='queued'), model('private', owner='two')])
     feed = asyncio.run(module.list_generation_notifications({'user_id': 'one', 'authenticated': True}))
     assert feed['unread_count'] == 2
     assert {row['id'] for row in feed['notifications']} == {'a', 'b'}
@@ -68,12 +69,21 @@ def test_view_receipts_require_owner_and_completed_model_and_are_durable(storage
 
 
 def test_guest_access_and_latest_edit_recovery(storage):
-    storage.extend([model('source', owner='guest', user_type='anonymous'), model('edit', owner='guest', user_type='anonymous', source_generation_id='source', status='queued')])
+    storage.extend([model('source', owner='guest', user_type='anonymous'), model('edit', owner='guest', user_type='anonymous', generation_id='source', version=2, status='queued')])
     auth = {'user_id': 'guest', 'authenticated': False}
     assert asyncio.run(module.latest_generation_edit('source', auth)) == {'generation_id': 'edit'}
     with pytest.raises(HTTPException):
         asyncio.run(module.latest_generation_edit('source', {'user_id': 'another', 'authenticated': False}))
     assert asyncio.run(module.list_generation_notifications(auth))['unread_count'] == 1
+
+
+def test_latest_edit_finds_grandchildren_and_never_redirects_latest_to_itself(storage):
+    storage.extend([model('root'), model('child', generation_id='root', version=2),
+                    model('grandchild', generation_id='root', version=3)])
+    auth = {'user_id': 'one', 'authenticated': True}
+    assert asyncio.run(module.latest_generation_edit('root', auth)) == {'generation_id': 'grandchild'}
+    assert asyncio.run(module.latest_generation_edit('child', auth)) == {'generation_id': 'grandchild'}
+    assert asyncio.run(module.latest_generation_edit('grandchild', auth)) == {'generation_id': None}
 
 
 def test_old_unread_notifications_are_kept_outside_recent_history(storage):
@@ -85,10 +95,10 @@ def test_old_unread_notifications_are_kept_outside_recent_history(storage):
 
 
 def test_cancelled_edits_do_not_resume_and_resizes_remain_cancellable(storage):
-    storage.extend([model('source'), model('cancelled', status='cancelled', source_generation_id='source')])
+    storage.extend([model('source'), model('cancelled', status='cancelled', generation_id='source', version=2)])
     auth = {'user_id': 'one', 'authenticated': True}
     assert asyncio.run(module.latest_generation_edit('source', auth)) == {'generation_id': None}
-    storage.append(model('resize', status='resizing', source_generation_id='source'))
+    storage.append(model('resize', status='resizing', generation_id='source', version=2))
     assert asyncio.run(module.latest_generation_edit('source', auth)) == {'generation_id': 'resize'}
     feed = asyncio.run(module.list_generation_notifications(auth))
     assert [row['id'] for row in feed['active']] == ['resize']

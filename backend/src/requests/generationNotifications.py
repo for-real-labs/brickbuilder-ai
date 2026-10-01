@@ -48,8 +48,7 @@ def _summary(row: dict) -> dict:
             "status": row.get("status"), "seen": bool(row.get("notification_seen", True)),
             "updated_at": row.get("updated_at") or row.get("created_at"),
             "image_url": row.get("preview_image_url") or row.get("processed_image_url"),
-            "is_edit": bool(row.get("source_generation_id")) or row.get("endpoint") in
-            ("updateModel", "promptEditModel", "resizeModel")}
+            "is_edit": row.get("version", 1) > 1}
 
 
 async def list_generation_notifications(auth_info: dict) -> dict:
@@ -83,7 +82,8 @@ async def latest_generation_edit(generation_id: str, auth_info: dict) -> dict:
     if not row:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(row, auth_info)
-    edits = (_owned_query(auth_info).eq("source_generation_id", generation_id)
+    edits = (_owned_query(auth_info).eq("generation_id", row.get("generation_id", generation_id))
+             .gt("version", row.get("version", 1))
              .in_("status", ["queued", "started", "processing", "ldr_processing", "resizing", "completed"])
-             .order("created_at", desc=True).limit(1).execute().data or [])
+             .order("version", desc=True).limit(1).execute().data or [])
     return {"generation_id": edits[0]["id"] if edits else None}

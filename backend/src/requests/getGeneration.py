@@ -17,7 +17,9 @@ class GetGenerationRequest(BaseModel):
 
 
 class GetGenerationResponse(BaseModel):
-    source_generation_id: Optional[str] = None
+    model_generation_id: Optional[str] = None
+    version: int = 1
+    previous_completed_generation_id: Optional[str] = None
     endpoint: Optional[str] = None
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
@@ -110,9 +112,16 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
                 except Exception as e:
                     logger.warning(f"Failed to check timeout for {request.generation_id}: {e}")
 
+        previous_id = None
+        if generation.get("version", 1) > 1 and status != "completed":
+            previous = await generation_storage.get_previous_completed_generation(generation)
+            previous_id = previous["id"] if previous else None
+
         # Build response based on status
         response = GetGenerationResponse(
-            source_generation_id=generation.get("source_generation_id"),
+            model_generation_id=generation.get("generation_id", request.generation_id),
+            version=generation.get("version", 1),
+            previous_completed_generation_id=previous_id,
             endpoint=generation.get("endpoint"),
             generation_id=request.generation_id,
             status=status,

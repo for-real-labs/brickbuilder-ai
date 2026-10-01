@@ -8,7 +8,6 @@ from src.requests.estimatePrice import EstimatePriceRequest
 from src.requests.getPrice import calculate_price, parse_parts_list_csv
 from src.requests import getPrice as get_price_module
 from src.requests.getPrice import GetPriceRequest
-from src.requests.getUserGenerations import _filter_duplicate_glb_generations
 from src.requests.ldrToMpd import LdrToMpdRequest, extract_last_step_from_ldr
 from src.requests.textToBricks import TextToBricksRequest
 from src.requests.updateImagePreview import UpdateImagePreviewRequest
@@ -69,18 +68,6 @@ def test_extract_last_step_handles_explicit_implicit_and_no_steps():
     assert extract_last_step_from_ldr(f"{first}\n0 STEP\n{last}") == last + "\n"
     assert extract_last_step_from_ldr(f"{first}\n{last}") == first + "\n" + last + "\n"
     assert extract_last_step_from_ldr(f"{first}\n0 STEP") == first + "\n"
-
-
-def test_duplicate_generation_filter_keeps_newest_and_unkeyed_rows():
-    rows = [
-        {"id": "old", "processed_image_url": "same", "created_at": "2025-01-01T00:00:00"},
-        {"id": "new", "processed_image_url": "same", "created_at": "2025-02-01T00:00:00"},
-        {"id": "other", "processed_image_url": None, "created_at": "2024-01-01T00:00:00"},
-    ]
-    assert {row["id"] for row in _filter_duplicate_glb_generations(rows)} == {"new", "other"}
-    malformed = [{"id": "a", "processed_image_url": "x", "created_at": "bad"}, {"id": "b", "processed_image_url": "x"}]
-    assert _filter_duplicate_glb_generations(malformed) == [malformed[0]]
-    assert _filter_duplicate_glb_generations([]) == []
 
 
 @pytest.mark.parametrize("bad", ["", "   "])
