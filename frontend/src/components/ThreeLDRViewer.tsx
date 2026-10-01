@@ -1402,6 +1402,7 @@ interface ThreeLDRViewerProps {
   currentStepIndex?: number;  // 0-indexed, show parts up to and including this step
   totalSteps?: number;        // Total number of steps in model
   showBaseplate?: boolean;    // Whether to show baseplate with studs
+  topLeftOverlay?: React.ReactNode;
   animateModelBuild?: boolean; // Whether to drop parts into place on load
 }
 
@@ -1446,7 +1447,8 @@ export function ThreeLDRViewer({
   currentStepIndex,
   totalSteps,
   showBaseplate = false,
-  animateModelBuild = false
+  animateModelBuild = false,
+  topLeftOverlay,
 }: ThreeLDRViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -2158,11 +2160,16 @@ export function ThreeLDRViewer({
             className="w-full h-full bg-gray-100 rounded-lg overflow-hidden"
             style={{ visibility: loading ? 'hidden' : 'visible' }}
           />
+          {topLeftOverlay && (
+            <div className="absolute left-3 top-3 z-20 max-w-[calc(100%-6rem)] sm:max-w-[calc(100%-9rem)]">
+              {topLeftOverlay}
+            </div>
+          )}
           <button
             type="button"
             onClick={() => setShowRulerGrid((visible) => !visible)}
             disabled={loading || !!error}
-            className="absolute left-3 top-3 z-20 inline-flex items-center gap-2 rounded-full border border-slate-700/30 bg-slate-950/85 px-2.5 py-2 text-xs font-semibold text-white shadow-lg shadow-black/25 backdrop-blur-sm transition-all duration-150 hover:bg-slate-800 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4"
+            className={`absolute z-20 inline-flex items-center gap-2 rounded-full border border-slate-700/30 bg-slate-950/85 px-2.5 py-2 text-xs font-semibold text-white shadow-lg shadow-black/25 backdrop-blur-sm transition-all duration-150 hover:bg-slate-800 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 ${topLeftOverlay ? 'right-3 top-14' : 'left-3 top-3'}`}
             title={showRulerGrid ? 'Hide ruler' : 'Show ruler'}
             aria-label={showRulerGrid ? 'Hide ruler' : 'Show ruler'}
             aria-pressed={showRulerGrid}

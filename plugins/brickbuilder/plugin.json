@@ -1,0 +1,18 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "brickbuilder",
+  "version": "0.1.0",
+  "description": "Generate and edit LEGO brick models from descriptions with AI design feedback, geometry checks, downloadable LDraw models, previews, and parts lists.",
+  "author": { "name": "BrickBuilder AI", "url": "https://brickbuilder.ai" },
+  "homepage": "https://brickbuilder.ai",
+  "repository": "https://github.com/jjohnson5253/brickbuilderai",
+  "keywords": ["lego", "bricks", "3d", "model", "building", "ldraw"],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "BrickBuilder AI",
+        "shortDescription": "Turn ideas into LEGO brick models and parts lists."
+      }
+    }
+  }
+}

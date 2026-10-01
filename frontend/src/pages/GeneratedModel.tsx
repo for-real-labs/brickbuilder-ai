@@ -217,6 +217,7 @@ export default function GeneratedModel() {
   const [displayedGenerationId, setDisplayedGenerationId] = useState<string | null>(null);
   const [generationLoading, setGenerationLoading] = React.useState(false);
   const [pendingGeneration, setPendingGeneration] = React.useState<GetGenerationResponse | null>(null);
+  const [editGenerationId, setEditGenerationId] = React.useState<string | null>(null);
   const modelLoadAbortRef = React.useRef<AbortController | null>(null);
   const [generationError, setGenerationError] = React.useState<string | null>(null);
   const [currentGenerationId, setCurrentGenerationId] = React.useState<string | null>(null);
@@ -333,6 +334,7 @@ export default function GeneratedModel() {
     modelName?: string,
     voxelSize?: number,
     generation_id?: string,
+    editSourceGenerationId?: string,
     storageKeys?: {
       LDR_CONTENT: string,
       MPD_CONTENT: string,
@@ -344,6 +346,23 @@ export default function GeneratedModel() {
 
   const isDemoModel = !!currentGenerationId && DEMO_MODEL_IDS.has(currentGenerationId);
   
+  const retainedEditSourceId = stateData?.editSourceGenerationId;
+  const canKeepModelVisible = Boolean(mpdContent && (
+    searchParams.get('id') === currentGenerationId ||
+    retainedEditSourceId === currentGenerationId ||
+    pendingGeneration?.previous_completed_generation_id === currentGenerationId
+  ));
+  const isModelEditing = isPromptEditing || Boolean(editGenerationId) ||
+    (generationLoading && canKeepModelVisible && retainedEditSourceId === currentGenerationId);
+  const showModelPage = !generationError && (!generationLoading || canKeepModelVisible);
+
+  const handleEditCancelled = () => {
+    modelLoadAbortRef.current?.abort();
+    refreshNotifications();
+    const previousId = pendingGeneration?.previous_completed_generation_id || retainedEditSourceId;
+    navigate(previousId ? `/generated-model?id=${encodeURIComponent(previousId)}&exact=1` : '/', { replace: true });
+  };
+
   // Function to load model data from various sources
   const getModelData = () => {
     if (stateData?.mpdContent && stateData?.ldrContent) {
@@ -402,8 +421,11 @@ export default function GeneratedModel() {
     const controller = new AbortController();
     modelLoadAbortRef.current = controller;
     setPendingGeneration(null);
-    setDisplayedGenerationId(null);
-    setSceneReady(false);
+    setEditGenerationId(null);
+    if (!canKeepModelVisible) {
+      setDisplayedGenerationId(null);
+      setSceneReady(false);
+    }
     const initializeModelData = async () => {
       // Priority 1: Check for id parameter in URL (e.g., /generated-model?id=abc123)
       const urlGenerationId = searchParams.get('id');
@@ -412,6 +434,7 @@ export default function GeneratedModel() {
         setGenerationLoading(true);
         setGenerationError(null);
         
+        let editingExistingModel = false;
         try {
           // First check the current status
           const statusResponse = await GetGenerationApiService.getGeneration(urlGenerationId, controller.signal);
@@ -430,6 +453,24 @@ export default function GeneratedModel() {
           
           // If still processing, poll until complete
           if (isGenerationActive(statusResponse.status)) {
+            const previousId = statusResponse.previous_completed_generation_id;
+            if (previousId) {
+              setEditGenerationId(urlGenerationId);
+              if (currentGenerationId === previousId && mpdContent) {
+                setGenerationLoading(false);
+              } else {
+                const previous = await GetGenerationApiService.getGeneration(previousId, controller.signal);
+                if (controller.signal.aborted) return;
+                if (previous.status !== 'completed' || !previous.ldr_content) {
+                  throw new Error('The previous model could not be loaded.');
+                }
+                setProcessedImageUrl(previous.processed_image_url);
+                setCurrentScaler(previous.detail_level ?? undefined);
+                await processCompletedGeneration(previousId, { ...previous, ldr_content: previous.ldr_content, prompt: previous.prompt || 'Your Model' });
+                if (controller.signal.aborted) return;
+              }
+              editingExistingModel = true;
+            }
             // Show preview image if available
             if (statusResponse.external_image_url) {
               setEditPreviewImageUrl(statusResponse.external_image_url);
@@ -462,6 +503,8 @@ export default function GeneratedModel() {
             
             // Process completed generation
             await processCompletedGeneration(urlGenerationId, generationData);
+            if (controller.signal.aborted) return;
+            setEditGenerationId(null);
             return;
           }
           
@@ -505,7 +548,13 @@ export default function GeneratedModel() {
         } catch (error) {
           if (controller.signal.aborted) return;
           console.error('Failed to fetch generation data from URL id:', error);
-          setGenerationError(`Failed to load generation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          if (editingExistingModel) {
+            setEditPromptError(message);
+          } else {
+            setGenerationError(`Failed to load generation: ${message}`);
+          }
+          setEditGenerationId(null);
           setGenerationLoading(false);
           return;
         }
@@ -653,31 +702,13 @@ export default function GeneratedModel() {
         problematic_xyzrgb_url: string | null;
       }
     ) => {
-      // Store generation ID for edit mode
-      setCurrentGenerationId(generationId);
-      
-      // Update xyzrgb URL if available
-      if (data.xyzrgb_url) {
-        setXyzrgbUrl(data.xyzrgb_url);
-      }
-      
-      // Update problematic xyzrgb URL if available
-      if (data.problematic_xyzrgb_url) {
-        setProblematicXyzrgbUrl(data.problematic_xyzrgb_url);
-      }
-      
-      // Set LDR content
-      setLdrContent(data.ldr_content);
-      
-      // Set model name from prompt
       const fetchedModelName = data.name || data.prompt || "Your Model";
-      setModelName(fetchedModelName);
-      
+
       // Get MPD content from URL or convert LDR to MPD
       let mpdContent: string | null = null;
       if (data.mpd_url) {
         try {
-          const mpdResponse = await fetch(data.mpd_url);
+          const mpdResponse = await fetch(data.mpd_url, { signal: controller.signal });
           if (mpdResponse.ok) {
             mpdContent = await mpdResponse.text();
           }
@@ -686,6 +717,7 @@ export default function GeneratedModel() {
         }
       }
       
+      if (controller.signal.aborted) return;
       if (!mpdContent) {
         try {
           const authToken = (await supabase.auth.getSession()).data.session?.access_token;
@@ -702,10 +734,14 @@ export default function GeneratedModel() {
       
       if (controller.signal.aborted) return;
       if (!mpdContent) throw new Error("The model is saved, but its preview could not be loaded. Please try again shortly.");
+      // Keep the previous model intact until the replacement preview is ready.
+      setCurrentGenerationId(generationId);
+      setXyzrgbUrl(data.xyzrgb_url);
+      setProblematicXyzrgbUrl(data.problematic_xyzrgb_url);
+      setLdrContent(data.ldr_content);
+      setModelName(fetchedModelName);
       setMpdContent(mpdContent);
-      
-      if (controller.signal.aborted) return;
-      if (mpdContent) setDisplayedGenerationId(generationId);
+      setDisplayedGenerationId(generationId);
       setGenerationLoading(false);
     };
     
@@ -1570,7 +1606,7 @@ export default function GeneratedModel() {
   }, [mpdContent, accessToken, currentGenerationId, modelName]);
 
   const handlePromptEditModel = React.useCallback(async () => {
-    if (isPromptEditing || isResizing || isSavePolling) return;
+    if (isModelEditing || isResizing || isSavePolling) return;
     if (!editPrompt.trim()) {
       console.error('No prompt provided for editing');
       return;
@@ -1601,7 +1637,7 @@ export default function GeneratedModel() {
       localStorage.setItem('lastGenerationId', newGenerationId);
       if (!currentUser) recordAnonymousGeneration(newGenerationId);
       refreshNotifications();
-      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true });
+      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true, state: { editSourceGenerationId: currentGenerationId } });
       setEditPrompt('');
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
@@ -1611,7 +1647,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, isPromptEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -1629,6 +1665,7 @@ export default function GeneratedModel() {
   };
 
   const navigateToOrder = () => {
+    if (isModelEditing) return;
     guardUnsavedChanges(() => navigate("/order", {
       state: {
         name: modelName,
@@ -1818,7 +1855,7 @@ export default function GeneratedModel() {
         </button>
 
         {/* Loading state when fetching generation by ID */}
-        {generationLoading && (
+        {generationLoading && !canKeepModelVisible && (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200">
               <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
@@ -1830,12 +1867,7 @@ export default function GeneratedModel() {
             </div>
             {pendingGeneration && isGenerationActive(pendingGeneration.status) && <CancelGenerationButton
               generationId={pendingGeneration.generation_id} isEdit={(pendingGeneration.version ?? 1) > 1}
-              onCancelled={() => {
-                modelLoadAbortRef.current?.abort();
-                refreshNotifications();
-                navigate(pendingGeneration.previous_completed_generation_id
-                  ? `/generated-model?id=${encodeURIComponent(pendingGeneration.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
-              }} />}
+              onCancelled={handleEditCancelled} />}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
           </div>
@@ -1869,15 +1901,15 @@ export default function GeneratedModel() {
           </div>
         )}
 
-        {/* Main content - only show when not loading and no error */}
-        {!generationLoading && !generationError && (
+        {/* Keep the completed model page visible while its edit runs. */}
+        {showModelPage && (
           <>
         <section className="mt-3 mb-5 sm:mb-6">
           <GenerationTitle
             key={currentGenerationId || 'local'}
             generationId={currentGenerationId || undefined}
             name={modelName}
-            canEdit={canToggleCommunity && !isSavePolling}
+            canEdit={canToggleCommunity && !isSavePolling && !isModelEditing}
             accessToken={accessToken || undefined}
             onSaved={name => {
               setModelName(name);
@@ -2166,6 +2198,14 @@ export default function GeneratedModel() {
                 onModelLoaded={() => setSceneReady(true)}
                 onExportCaptureReady={handleExportCaptureReady}
                 animateModelBuild
+                topLeftOverlay={isModelEditing ? (
+                  <div className="w-fit max-w-full rounded-xl bg-white/90 px-3 pb-3 shadow-sm backdrop-blur-sm">
+                    {editGenerationId && pendingGeneration?.endpoint === 'llmToBricks'
+                      ? <LlmGenerationOutput generationId={editGenerationId} active />
+                      : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
+                    {editGenerationId && <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />}
+                  </div>
+                ) : undefined}
                 /* onScreenshotsReady={setScreenshots} — disabled */
               />
             ) : (
@@ -2191,7 +2231,7 @@ export default function GeneratedModel() {
           <section className="mt-12 max-w-md mx-auto space-y-6">
             <ResizeScaler
               onResize={handleResizeModel}
-              disabled={!mpdContent || isPromptEditing}
+              disabled={!mpdContent || isModelEditing}
               isResizing={isResizing}
               scaler={currentScaler}
               onScalerChange={setCurrentScaler}
@@ -2205,11 +2245,12 @@ export default function GeneratedModel() {
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}
             loading={isPromptEditing}
-            disabled={isResizing || isSavePolling}
+            disabled={isResizing || isSavePolling || isModelEditing}
             error={editPromptError}
             manualEditControl={<ModelEditControls
               isManualEditorOpen={false}
               manualLoading={xyzrgbLoading || isPromptEditing || isResizing || isSavePolling}
+              disabled={isModelEditing}
               onManualEdit={() => { void handleEditModelClick(); }}
             />}
           />
@@ -2219,7 +2260,8 @@ export default function GeneratedModel() {
         <section className="relative z-40 mt-4 mb-4 flex flex-col items-center gap-3 px-4">
             {(showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
               isManualEditorOpen={showVoxelEditor}
-              manualLoading={xyzrgbLoading || isPromptEditing}
+              manualLoading={xyzrgbLoading}
+              disabled={isModelEditing}
               onManualEdit={() => { void handleEditModelClick(); }}
             />}
           <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
@@ -2227,10 +2269,10 @@ export default function GeneratedModel() {
             <button
               type="button"
               aria-label="Order my kit"
-              disabled={priceLoading || isSavePolling}
+              disabled={priceLoading || isSavePolling || isModelEditing}
               onClick={navigateToOrder}
               className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold text-white shadow-lg shadow-[#f44336]/25 transition-all duration-150 sm:w-auto sm:min-w-44 ${
-                priceLoading || isSavePolling
+                priceLoading || isSavePolling || isModelEditing
                   ? 'cursor-not-allowed border-red-300 bg-red-300 opacity-70'
                   : 'attention-pulse cursor-pointer border-[#f44336] bg-[#f44336] hover:scale-[1.03] hover:border-[#ff6b6b] hover:bg-[#ff6b6b]'
               }`}
@@ -2252,7 +2294,7 @@ export default function GeneratedModel() {
               type="button"
               aria-label="View instructions"
               onClick={navigateToInstructions}
-              disabled={!currentGenerationId || isSavePolling || isPromptEditing}
+              disabled={!currentGenerationId || isSavePolling}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-300 bg-white px-7 font-semibold text-black transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-44"
             >
               {isSavePolling ? (
@@ -2303,7 +2345,7 @@ export default function GeneratedModel() {
               <button
                 type="button"
                 aria-label={isCommunity ? 'Remove from community' : 'Post to community'}
-                disabled={!currentGenerationId || communityToggleLoading || isSavePolling}
+                disabled={!currentGenerationId || communityToggleLoading || isSavePolling || isModelEditing}
                 onClick={() => {
                   if (!currentUser) {
                     setPendingCommunityPost(true);
@@ -2313,7 +2355,7 @@ export default function GeneratedModel() {
                   guardUnsavedChanges(() => { void handleToggleCommunity(); });
                 }}
                 className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold transition-all duration-150 sm:w-auto sm:min-w-44 ${
-                  !currentGenerationId || communityToggleLoading || isSavePolling
+                  !currentGenerationId || communityToggleLoading || isSavePolling || isModelEditing
                     ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed'
                     : 'bg-white text-black border-gray-300 cursor-pointer hover:border-[#f44336] hover:text-[#f44336] hover:scale-[1.03] hover:shadow-lg'
                 }`}
@@ -2331,6 +2373,7 @@ export default function GeneratedModel() {
                 )}
               </button>
             )}
+
           </div>
 
           {/* Error message for voxel editor */}
@@ -2358,7 +2401,7 @@ export default function GeneratedModel() {
           <section className="mt-6 max-w-xs mx-auto">
             <ResizeScaler
               onResize={handleResizeModel}
-              disabled={!mpdContent || isPromptEditing}
+              disabled={!mpdContent || isModelEditing}
               isResizing={isResizing}
               scaler={currentScaler}
               onScalerChange={setCurrentScaler}
@@ -2399,7 +2442,7 @@ export default function GeneratedModel() {
                       : ""
               }
               actionLabel="Order this model"
-              disabled={priceLoading || isSavePolling || !priceData}
+              disabled={priceLoading || isSavePolling || !priceData || isModelEditing}
               onClick={() => {
                 posthog.capture('generated_model_stat_action_clicked', {
                   action: 'order',
@@ -2416,8 +2459,9 @@ export default function GeneratedModel() {
                   Too expensive?{' '}
                   <button
                     type="button"
+                    disabled={isModelEditing}
                     onClick={() => setShowPriceResize(prev => !prev)}
-                    className="text-[#f44336] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0 text-sm"
+                    className="text-[#f44336] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0 text-sm disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Try resizing!
                   </button>

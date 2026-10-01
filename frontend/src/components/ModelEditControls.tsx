@@ -4,12 +4,14 @@ import { Loader2, Pencil } from 'lucide-react';
 interface ModelEditControlsProps {
   isManualEditorOpen: boolean;
   manualLoading: boolean;
+  disabled?: boolean;
   onManualEdit: () => void;
 }
 
 export function ModelEditControls({
   isManualEditorOpen,
   manualLoading,
+  disabled = false,
   onManualEdit,
 }: ModelEditControlsProps) {
   if (isManualEditorOpen) {
@@ -19,7 +21,7 @@ export function ModelEditControls({
           type="button"
           aria-label="Exit block editor"
           onClick={onManualEdit}
-          disabled={manualLoading}
+          disabled={manualLoading || disabled}
           className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-[#f44336] bg-[#f44336] px-7 font-semibold text-white shadow-lg shadow-[#f44336]/25 transition-all duration-150 hover:scale-[1.03] hover:border-[#ff6b6b] hover:bg-[#ff6b6b] focus:outline-none focus:ring-2 focus:ring-[#f44336] focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:min-w-44"
         >
           <Pencil size={16} />
@@ -34,7 +36,7 @@ export function ModelEditControls({
       type="button"
       aria-label="Manually edit model"
       onClick={onManualEdit}
-      disabled={manualLoading}
+      disabled={manualLoading || disabled}
       className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-slate-300 bg-white px-3 text-sm font-semibold text-slate-800 transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70 sm:w-auto sm:min-w-44 sm:px-7 sm:text-base"
     >
       {manualLoading ? (

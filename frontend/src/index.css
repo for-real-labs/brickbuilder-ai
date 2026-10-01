@@ -210,3 +210,20 @@
     animation: none;
   }
 }
+
+/* Draw attention to completed models without changing their card layout. */
+.generation-view-model-pulse {
+  animation: generationViewModelPulse 2.4s ease-out infinite;
+}
+@keyframes generationViewModelPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgb(244 67 54 / 0); }
+  35% { box-shadow: 0 0 0 3px rgb(244 67 54 / 0.18); }
+  75% { box-shadow: 0 0 0 7px rgb(244 67 54 / 0); }
+}
+.generation-view-model-pulse:hover,
+.generation-view-model-pulse:focus-visible {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .generation-view-model-pulse { animation: none; }
+}

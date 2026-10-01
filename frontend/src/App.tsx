@@ -9,6 +9,7 @@ import Success from "./pages/Success";
 import { InstructionsPage } from "./pages/InstructionsPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
+import OAuthConsentPage from "./pages/OAuthConsentPage";
 import UserDashboard from "./pages/UserDashboard"; // NEW
 import CommunityPage from "./pages/CommunityPage";
 import CompetitionsPage from "./pages/CompetitionsPage";
@@ -42,6 +43,7 @@ export default function App() {
           <Route path="/landing" element={<Navigate to="/" replace />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/oauth/consent" element={<OAuthConsentPage />} />
 
           {/* App pages */}
           <Route path="/dashboard" element={<UserDashboard />} /> {/* NEW */}
