@@ -1,28 +1,29 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { BRICK_BUILD_SCENES } from '../components/brickBuildScenes';
 
-// Counts matter once more than eleven loaders are active: releasing one
-// duplicate must not make its animation available while another still plays.
-const playing = new Map<number, number>();
+// Keep each model on screen for one full brick snap-in cycle.
+export const BRICK_BUILD_CYCLE_MS = 6800;
 
 export function useBrickBuildScene(active: boolean) {
   const [index, setIndex] = useState(() => Math.floor(Math.random() * BRICK_BUILD_SCENES.length));
-  const preferred = useRef(index);
+  const current = useRef(index);
+  const remaining = useRef(BRICK_BUILD_SCENES.map((_, sceneIndex) => sceneIndex).filter(sceneIndex => sceneIndex !== index));
 
   useLayoutEffect(() => {
     if (!active) return;
-    const available = BRICK_BUILD_SCENES.map((_, index) => index).filter(index => !playing.has(index));
-    const selected = available.length && playing.has(preferred.current)
-      ? available[Math.floor(Math.random() * available.length)] : preferred.current;
-    playing.set(selected, (playing.get(selected) || 0) + 1);
-    preferred.current = selected;
-    setIndex(selected);
+    const timer = window.setInterval(() => {
+      if (!remaining.current.length) {
+        remaining.current = BRICK_BUILD_SCENES.map((_, sceneIndex) => sceneIndex);
+      }
+      // A new round includes every scene, but cannot start with the last one.
+      const choices = remaining.current.filter(sceneIndex => sceneIndex !== current.current);
+      const selected = choices[Math.floor(Math.random() * choices.length)];
+      remaining.current = remaining.current.filter(sceneIndex => sceneIndex !== selected);
+      current.current = selected;
+      setIndex(selected);
+    }, BRICK_BUILD_CYCLE_MS);
 
-    return () => {
-      const remaining = (playing.get(selected) || 1) - 1;
-      if (remaining) playing.set(selected, remaining);
-      else playing.delete(selected);
-    };
+    return () => window.clearInterval(timer);
   }, [active]);
 
   return BRICK_BUILD_SCENES[index];
