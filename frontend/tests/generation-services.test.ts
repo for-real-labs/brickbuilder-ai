@@ -33,6 +33,15 @@ describe('generation services', () => {
     await expect(GetGenerationApiService.cancelGeneration('job')).rejects.toThrow('already finished');
   });
 
+  it('explains network cancellation failures and allows a successful retry', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await expect(GetGenerationApiService.cancelGeneration('job')).rejects.toThrow(
+      'Unable to reach the server to cancel this build. Please try again.',
+    );
+    vi.mocked(fetch).mockResolvedValueOnce(response({ status: 'cancelled' }) as unknown as Response);
+    await expect(GetGenerationApiService.cancelGeneration('job')).resolves.toBeUndefined();
+  });
+
   it('stops polling a server-cancelled job and does not return a late result after abort', async () => {
     const base = { generation_id: 'g', status: 'cancelled', prompt: 'Castle', ldr_content: 'ldr' } as GetGenerationResponse;
     vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(base);

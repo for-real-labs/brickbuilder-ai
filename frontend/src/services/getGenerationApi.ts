@@ -55,7 +55,12 @@ export interface CompletedGeneration {
 
 export class GetGenerationApiService {
   static async cancelGeneration(generationId: string): Promise<void> {
-    const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/cancel`, { method: 'POST' });
+    let response: Response;
+    try {
+      response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/cancel`, { method: 'POST' });
+    } catch {
+      throw new Error('Unable to reach the server to cancel this build. Please try again.');
+    }
     if (!response.ok) {
       const message = response.status === 409 ? 'This build has already finished. Refresh to see its result.'
         : 'Unable to cancel this build. Please try again.';

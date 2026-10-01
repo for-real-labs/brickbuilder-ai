@@ -61,6 +61,19 @@ def test_completion_racing_with_cancellation_is_not_overwritten(monkeypatch):
     stop.assert_not_called()
 
 
+def test_storage_failure_returns_retryable_error_without_stopping_worker(monkeypatch):
+    monkeypatch.setattr(endpoint, "generation_storage", SimpleNamespace(
+        get_generation=AsyncMock(return_value={"user_id": "owner", "user_type": "anonymous", "status": "processing"}),
+        cancel_generation=AsyncMock(side_effect=RuntimeError("database unavailable"))))
+    stop = Mock()
+    monkeypatch.setattr(endpoint, "cancel_local_task", stop)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(endpoint.cancel_generation("job", {"user_id": "owner"}))
+    assert error.value.status_code == 503
+    assert error.value.detail == "Unable to cancel this build. Please try again."
+    stop.assert_not_called()
+
+
 def test_worker_observes_durable_cancellation_from_another_api_worker(monkeypatch):
     row = {"status": "processing"}
     async def read(_id):
