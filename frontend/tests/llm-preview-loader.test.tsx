@@ -8,17 +8,19 @@ describe('LlmPreviewLoader', () => {
   it('fits compact activity cards without clipping the loading copy', () => {
     const markup = renderToStaticMarkup(<LlmPreviewLoader compact />);
     expect(markup).toContain('height:100%');
-    expect(markup).toContain('llm-preview-loader-block');
-    expect(markup).not.toContain('BrickBuilder AI is sketching your build');
+    expect(markup).toContain('brick-build-piece');
+    expect(markup).not.toContain('One brick at a time');
   });
 
   it('renders the animated block scene and loading copy without a preview image', () => {
     const markup = renderToStaticMarkup(<LlmPreviewLoader />);
 
     expect(markup).toContain('llm-preview-loader');
-    expect(markup).toContain('llm-preview-loader-block');
-    expect(markup).toContain('BrickBuilder AI is sketching your build');
+    expect(markup).toContain('brick-build-piece');
+    expect(markup).toContain('One brick at a time');
     expect(markup).not.toContain('Generation preview');
+    expect(markup).toContain('Colorful bricks snapping together to build a little house');
+    expect(markup.match(/class="brick-build-piece"/g)).toHaveLength(10);
   });
 
   it('renders the preview image inside the animated shell when one is available', () => {

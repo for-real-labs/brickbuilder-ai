@@ -89,7 +89,7 @@ export class LlmToBricksApiService {
           const event = JSON.parse(data);
           if (event.type !== 'output' || typeof event.text !== 'string' || typeof event.status !== 'string') continue;
           onOutput(event);
-          if (event.status === 'completed' || event.status === 'failed') return true;
+          if (['completed', 'failed', 'cancelled'].includes(event.status)) return true;
         }
         if (done) return false;
       }

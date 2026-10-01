@@ -1,4 +1,5 @@
 import { NotificationMenu } from "../components/NotificationMenu";
+import { CancelGenerationButton } from '../components/CancelGenerationButton';
 
 import React, { useEffect, useRef, useState, memo } from "react";
 import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight } from "lucide-react";
@@ -375,6 +376,8 @@ export default function LandingPage() {
 
   // NEW: in‑place loading state
   const [loading, setLoading] = useState(false);
+  const generationAbortRef = useRef<AbortController | null>(null);
+  const [activeGenerationId, setActiveGenerationId] = useState<string | null>(null);
   const [activeLoadingMethod, setActiveLoadingMethod] = useState<GenerationMethod | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [generationStatus, setGenerationStatus] = useState<string | null>(null);
@@ -658,6 +661,9 @@ export default function LandingPage() {
     // Start loading
     setActiveLoadingMethod(generationMethod);
     setLoading(true);
+    const controller = new AbortController();
+    generationAbortRef.current = controller;
+    setActiveGenerationId(null);
     
     try {
       // Convert size to voxelSize (similar to BrickBuilder component)
@@ -684,9 +690,11 @@ export default function LandingPage() {
       
       // Shared stream-event handler used by both image and text streaming calls.
       const handleStreamEvent = (event: StreamEvent) => {
+        if (controller.signal.aborted) return;
         // Update UI based on streaming events
         if ('type' in event && event.type === 'pipeline') {
           const pe = event as PipelineEvent;
+          if (pe.generation_id) setActiveGenerationId(pe.generation_id);
           if (pe.stage === 'image_generation') {
             const queueInfo = pe.queue_position != null ? ` (position ${pe.queue_position})` : '';
             setGenerationStatus(pe.message ? `${pe.message}${queueInfo}` : `Generating…${queueInfo}`);
@@ -764,6 +772,7 @@ export default function LandingPage() {
           stream3d,
           'trimesh',
           prompt.trim(),
+          controller.signal,
         );
         modelName = prompt.trim() || imgFile.name.replace(/\.[^/.]+$/, ''); // Remove file extension
       } else {
@@ -776,11 +785,15 @@ export default function LandingPage() {
           promptOption,
           handleStreamEvent,
           stream3d,
+          'trimesh',
+          controller.signal,
         );
         modelName = prompt.trim();
       }
       
+      if (controller.signal.aborted) return;
       const generationId = postResponse.generation_id;
+      setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
       
       // Save generation ID immediately so page reload can resume polling
@@ -802,6 +815,7 @@ export default function LandingPage() {
       const completedGeneration = await GetGenerationApiService.pollUntilComplete(
         generationId,
         (statusResponse: GetGenerationResponse) => {
+          if (controller.signal.aborted) return;
           // Update status display
           setGenerationStatus(statusResponse.status);
           
@@ -809,7 +823,8 @@ export default function LandingPage() {
           if (statusResponse.external_image_url) {
             setPreviewImageUrl(statusResponse.external_image_url);
           }
-        }
+        },
+        2500, 120, controller.signal
       );
       
       console.log('Generation completed:', completedGeneration.generation_id);
@@ -841,6 +856,7 @@ export default function LandingPage() {
         }
       }
       
+      if (controller.signal.aborted) return;
       setGeneratedMpdContent(mpdContent);
       setLoading(false);
       setActiveLoadingMethod(null);
@@ -860,6 +876,17 @@ export default function LandingPage() {
       navigate(`/generated-model?id=${completedGeneration.generation_id}`);
       
     } catch (error) {
+      if (controller.signal.aborted) return;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setLoading(false);
+        setActiveLoadingMethod(null);
+        setActiveGenerationId(null);
+        setGenerationStatus(null);
+        setPreviewImageUrl(null);
+        setVoxelData(null);
+        localStorage.removeItem('recently_prompted_generation_id');
+        return;
+      }
       console.error('Generation failed:', error);
       // Check if error is a network error - if user is online but fetch failed, backend is likely not running
       const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
@@ -1188,7 +1215,23 @@ export default function LandingPage() {
           </div>
 
             <GenerationActivityList generations={generations} error={activityError}
-              onOpen={id => navigate(`/generated-model?id=${id}`)} />
+              onOpen={id => navigate(`/generated-model?id=${id}`)}
+              onCancelled={id => {
+                const row = generations.find(generation => generation.id === id);
+                if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
+              }} />
+          {loading && activeGenerationId && <div className="flex justify-center mb-4">
+            <CancelGenerationButton generationId={activeGenerationId} onCancelled={() => {
+              generationAbortRef.current?.abort();
+              setLoading(false);
+              setActiveLoadingMethod(null);
+              setActiveGenerationId(null);
+              setGenerationStatus(null);
+              setPreviewImageUrl(null);
+              setVoxelData(null);
+              localStorage.removeItem('recently_prompted_generation_id');
+            }} />
+          </div>}
           {lowerContentReady && <ScrollRevealContent>
           {/* Featured horizontal marquee OR in‑place progress UI */}
           <section className="mt-4 w-full relative landing-fade-in landing-delay-4" style={{ zIndex: 15 }}>

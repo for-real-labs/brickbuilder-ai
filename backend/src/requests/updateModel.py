@@ -8,6 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from fastapi import HTTPException, Depends
 
+from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import RESIZE_SOURCE_KEYS, generation_storage
 from ..utils.authorization import get_generation_or_404
 from ..utils.posthog_client import track_api_call, track_error
@@ -273,7 +274,7 @@ async def update_model(request: UpdateModelRequest, auth_info: dict) -> UpdateMo
         await generation_storage.update_status(new_generation_id, "ldr_processing")
         
         # Spawn background task to process LDR/MPD generation
-        asyncio.create_task(process_update_model_task(
+        start_generation_task(new_generation_id, process_update_model_task(
             generation_id=new_generation_id,
             original_generation_id=request.generation_id,
             xyzrgb_content=request.xyzrgb_content,

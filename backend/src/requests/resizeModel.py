@@ -16,6 +16,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from ..utils.auth import get_user_with_optional_auth, handle_auth_and_tracking, deduct_credits
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.pack_ldraw_model import LDrawPacker
+from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import RESIZE_SOURCE_KEYS, generation_storage
 from ..utils.authorization import get_generation_or_404
 from ..utils.conversions.glb2brick import glb2brick, glb2xyzrgb
@@ -412,7 +413,7 @@ async def resize_model(
             await generation_storage.update_status(new_generation_id, "resizing")
 
             # Spawn background task for brick optimization, LDR packing, file storage
-            asyncio.create_task(process_resize_model_task(
+            start_generation_task(new_generation_id, process_resize_model_task(
                 generation_id=new_generation_id,
                 original_generation_id=request.generation_id,
                 xyzrgb_path=xyzrgb_path,

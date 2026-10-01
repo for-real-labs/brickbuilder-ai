@@ -22,6 +22,43 @@ const sse = (events: unknown[], options?: { crlf?: boolean; trailingDelimiter?: 
 describe('generation services', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
 
+  it('posts cancellation with owner credentials and reports completed-job conflicts', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({ status: 'cancelled' }) as unknown as Response);
+    await GetGenerationApiService.cancelGeneration('job/one');
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(String(url)).toContain('/generation/job%2Fone/cancel');
+    expect(init?.method).toBe('POST');
+    expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 409 } as Response);
+    await expect(GetGenerationApiService.cancelGeneration('job')).rejects.toThrow('already finished');
+  });
+
+  it('stops polling a server-cancelled job and does not return a late result after abort', async () => {
+    const base = { generation_id: 'g', status: 'cancelled', prompt: 'Castle', ldr_content: 'ldr' } as GetGenerationResponse;
+    vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(base);
+    await expect(GetGenerationApiService.pollUntilComplete('g')).rejects.toMatchObject({ name: 'AbortError' });
+    const controller = new AbortController();
+    vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async () => {
+      controller.abort();
+      return { ...base, status: 'completed' };
+    });
+    const update = vi.fn();
+    await expect(GetGenerationApiService.pollUntilComplete('g', update, 0, 1, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('aborts polling during the wait and removes abort listeners', async () => {
+    vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'g', status: 'processing' } as GetGenerationResponse);
+    const controller = new AbortController();
+    const removed = vi.spyOn(controller.signal, 'removeEventListener');
+    const update = vi.fn();
+    const pending = GetGenerationApiService.pollUntilComplete('g', update, 10000, 120, controller.signal);
+    await Promise.resolve();
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    expect(removed).toHaveBeenCalled();
+  });
+
   it('sends the source generation and prompt for voxel edits with owner credentials', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(response({ generation_id: 'edited', message: 'ok' }) as unknown as Response);
     await LlmToBricksApiService.generate({ sourceGenerationId: 'source', prompt: '  red roof  ' }, 'token');

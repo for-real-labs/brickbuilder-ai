@@ -1,3 +1,6 @@
+import { CancelGenerationButton } from '../components/CancelGenerationButton';
+import { LlmPreviewLoader } from '../components/LlmPreviewLoader';
+import { LlmGenerationOutput } from '../components/LlmGenerationOutput';
 import { GenerationNotificationsApi } from "../services/generationNotificationsApi";
 import { useGenerationNotifications } from "../contexts/GenerationNotificationsContext";
 import { isGenerationActive } from "../hooks/useGenerationActivity";
@@ -212,6 +215,8 @@ export default function GeneratedModel() {
   const { markViewed, refresh: refreshNotifications } = useGenerationNotifications();
   const [displayedGenerationId, setDisplayedGenerationId] = useState<string | null>(null);
   const [generationLoading, setGenerationLoading] = React.useState(false);
+  const [pendingGeneration, setPendingGeneration] = React.useState<GetGenerationResponse | null>(null);
+  const modelLoadAbortRef = React.useRef<AbortController | null>(null);
   const [generationError, setGenerationError] = React.useState<string | null>(null);
   const [currentGenerationId, setCurrentGenerationId] = React.useState<string | null>(null);
   const [screenshots, setScreenshots] = React.useState<{ angle1: string; angle2: string } | null>(null);
@@ -393,6 +398,8 @@ export default function GeneratedModel() {
   // Initialize model data on component mount - check URL id param first, then fetch from backend, fall back to localStorage
   React.useEffect(() => {
     const controller = new AbortController();
+    modelLoadAbortRef.current = controller;
+    setPendingGeneration(null);
     setDisplayedGenerationId(null);
     setSceneReady(false);
     const initializeModelData = async () => {
@@ -407,6 +414,7 @@ export default function GeneratedModel() {
           // First check the current status
           const statusResponse = await GetGenerationApiService.getGeneration(urlGenerationId, controller.signal);
           if (controller.signal.aborted) return;
+          setPendingGeneration(statusResponse);
           // Returning to the original model resumes its latest edit, even from another device.
           try {
             const edit = await GenerationNotificationsApi.latestEdit(urlGenerationId, controller.signal);
@@ -429,6 +437,13 @@ export default function GeneratedModel() {
             const generationData = await GetGenerationApiService.pollUntilComplete(
               urlGenerationId,
               (response: GetGenerationResponse) => {
+                if (controller.signal.aborted) return;
+                setPendingGeneration(response);
+                if (response.status === 'cancelled') {
+                  controller.abort();
+                  navigate(response.source_generation_id ? `/generated-model?id=${encodeURIComponent(response.source_generation_id)}&exact=1` : '/', { replace: true });
+                  return;
+                }
                 if (response.external_image_url) {
                   setEditPreviewImageUrl(response.external_image_url);
                 }
@@ -449,6 +464,10 @@ export default function GeneratedModel() {
           }
           
           // If failed, show error
+          if (statusResponse.status === 'cancelled') {
+            navigate(statusResponse.source_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.source_generation_id)}&exact=1` : '/', { replace: true });
+            return;
+          }
           if (statusResponse.status === 'failed') {
             throw new Error(statusResponse.error_message || 'Generation failed');
           }
@@ -514,6 +533,10 @@ export default function GeneratedModel() {
             return;
           }
           
+          if (statusResponse.status === 'cancelled') {
+            navigate(statusResponse.source_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.source_generation_id)}&exact=1` : '/', { replace: true });
+            return;
+          }
           if (statusResponse.status === 'failed') {
             throw new Error(statusResponse.error_message || 'Generation failed');
           }
@@ -1789,21 +1812,22 @@ export default function GeneratedModel() {
         {/* Loading state when fetching generation by ID */}
         {generationLoading && (
           <div className="flex flex-col items-center justify-center py-32">
-            {/* Preview image during loading */}
-            {editPreviewImageUrl && (
-              <div className="relative w-full max-w-md mb-6">
-                <img
-                  src={editPreviewImageUrl}
-                  alt="Generation preview"
-                  className="w-full rounded-xl shadow-lg border border-slate-200"
-                />
-                <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                  Processing...
-                </div>
-              </div>
-            )}
-            <Loader2 className="h-12 w-12 animate-spin text-[#f44336] mb-4" />
-            <p className="text-slate-600">Preparing your model…</p>
+            <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200">
+              <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
+            </div>
+            <div className="mt-5 max-w-md w-full">
+              {pendingGeneration?.endpoint === 'llmToBricks'
+                ? <LlmGenerationOutput generationId={pendingGeneration.generation_id} active />
+                : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
+            </div>
+            {pendingGeneration && isGenerationActive(pendingGeneration.status) && <CancelGenerationButton
+              generationId={pendingGeneration.generation_id} isEdit={!!pendingGeneration.source_generation_id}
+              onCancelled={() => {
+                modelLoadAbortRef.current?.abort();
+                refreshNotifications();
+                navigate(pendingGeneration.source_generation_id
+                  ? `/generated-model?id=${encodeURIComponent(pendingGeneration.source_generation_id)}&exact=1` : '/', { replace: true });
+              }} />}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
           </div>

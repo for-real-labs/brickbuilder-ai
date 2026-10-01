@@ -143,6 +143,7 @@ export class TextToBricksApiService {
     onEvent?: (event: StreamEvent) => void,
     stream3d: boolean = true,
     voxelizer: string = 'trimesh',
+    signal?: AbortSignal,
   ): Promise<TextToBricksResponse> {
     console.log('[stream] Sending streaming text-to-bricks request');
 
@@ -161,6 +162,7 @@ export class TextToBricksApiService {
 
     const response = await apiFetch(API_URLS.textToBricks, {
       method: 'POST',
+      signal,
       headers,
       body: JSON.stringify({
         prompt: prompt,

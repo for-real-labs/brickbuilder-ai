@@ -1,14 +1,16 @@
 import React from 'react';
-import { Box, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import { Box, CheckCircle2, Loader2, AlertCircle, Square } from 'lucide-react';
+import { CancelGenerationButton } from './CancelGenerationButton';
 import posthog from 'posthog-js';
 import { GenerationActivity, isGenerationActive, isPreviewPending } from '../hooks/useGenerationActivity';
 import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
 
-export function GenerationActivityList({ generations, error, onOpen }: {
+export function GenerationActivityList({ generations, error, onOpen, onCancelled }: {
   generations: GenerationActivity[];
   error: string | null;
   onOpen: (id: string) => void;
+  onCancelled?: (id: string) => void;
 }) {
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
@@ -23,17 +25,18 @@ export function GenerationActivityList({ generations, error, onOpen }: {
         {generations.map(generation => {
           const active = isGenerationActive(generation.status);
           const failed = generation.status === 'failed';
+          const cancelled = generation.status === 'cancelled';
           const previewPending = isPreviewPending(generation);
           const label = generation.status === 'queued' ? 'Queued'
             : generation.status === 'completed' ? 'Ready to build'
-            : failed ? 'Generation failed'
+            : cancelled ? 'Generation cancelled' : failed ? 'Generation failed'
             : generation.endpoint === 'llmToBricks' ? 'Designing bricks' : 'Building your model';
           return (
             <article key={generation.id} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="relative h-36 overflow-hidden bg-slate-50">
                 {previewPending
                   ? <div role="status" aria-label="Loading model preview" className="flex h-full items-center justify-center"><Loader2 aria-hidden="true" className="h-9 w-9 animate-spin text-slate-400" /></div>
-                  : active && generation.endpoint === 'llmToBricks'
+                  : active && (generation.endpoint === 'llmToBricks' || !generation.imageUrl)
                   ? <LlmPreviewLoader previewImageUrl={generation.imageUrl} compact />
                   : generation.imageUrl
                     ? <img src={generation.imageUrl} alt="" className="h-full w-full object-contain" />
@@ -41,16 +44,18 @@ export function GenerationActivityList({ generations, error, onOpen }: {
               </div>
               <div className="p-4">
                 <h3 className="break-words text-sm font-semibold text-slate-900">{generation.prompt || 'Image reference'}</h3>
-                <p className={`mt-2 flex items-center gap-2 text-sm ${failed ? 'text-red-600' : 'text-slate-600'}`}>
+                {!(active && generation.endpoint === 'llmToBricks') && <p className={`mt-2 flex items-center gap-2 text-sm ${failed ? 'text-red-600' : 'text-slate-600'}`}>
                   {active ? <Loader2 aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin" />
+                    : cancelled ? <Square aria-hidden="true" className="h-4 w-4 shrink-0" />
                     : failed ? <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
                     : <CheckCircle2 aria-hidden="true" className="h-4 w-4 shrink-0 text-green-600" />}
                   {label}
-                </p>
+                </p>}
                 {previewPending && <p className="mt-2 text-xs text-slate-500">Preparing preview…</p>}
                 {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
-                {generation.endpoint === 'llmToBricks' && <LlmGenerationOutput generationId={generation.id} active={active} />}
+                {active && generation.endpoint === 'llmToBricks' && <LlmGenerationOutput generationId={generation.id} active />}
+                {active && <CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} />}
                 {generation.status === 'completed' && <button type="button"
                   className="mt-3 min-h-10 w-full rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   onClick={() => {

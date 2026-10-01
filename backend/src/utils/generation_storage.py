@@ -574,13 +574,23 @@ class GenerationStorage:
             if prompt_enhancement:
                 update_data["prompt_enhancement"] = prompt_enhancement
                 
-            result = self.client.table("generations").update(update_data).eq("id", generation_id).execute()
-            # logger.info(f"Updated generation {generation_id} status to: {status}")
+            result = self.client.table("generations").update(update_data).eq("id", generation_id).neq("status", "cancelled").execute()
+            # A cancelled job stays cancelled even if an executor finishes later.
             
         except Exception as e:
             logger.error(f"Failed to update status for generation {generation_id}: {e}")
             # Don't raise - this shouldn't break the main flow
     
+    async def cancel_generation(self, generation_id: str) -> bool:
+        from .generation_tasks import ACTIVE_STATUSES
+
+        result = self.client.table("generations").update({
+            "status": "cancelled",
+            "updated_at": datetime.utcnow().isoformat(),
+            "error_message": None,
+        }).eq("id", generation_id).in_("status", list(ACTIVE_STATUSES)).execute()
+        return bool(result.data)
+
     async def update_detail_level(self, generation_id: str, detail_level: float) -> None:
         """Record the model's actual size so the resize slider starts at it."""
         try:

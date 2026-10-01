@@ -29,7 +29,7 @@ async def list_generation_notifications(auth_info: dict) -> dict:
               .eq("notification_seen", False).order("updated_at", desc=True).execute().data or [])
     recent = (_owned_query(auth_info).eq("status", "completed")
               .order("updated_at", desc=True).limit(30).execute().data or [])
-    active = (_owned_query(auth_info).in_("status", ["queued", "started", "processing", "ldr_processing"])
+    active = (_owned_query(auth_info).in_("status", ["queued", "started", "processing", "ldr_processing", "resizing"])
               .order("created_at", desc=True).execute().data or [])
     rows = {row["id"]: row for row in [*unread, *recent]}
     return {"notifications": [_summary(row) for row in sorted(rows.values(),
@@ -55,6 +55,6 @@ async def latest_generation_edit(generation_id: str, auth_info: dict) -> dict:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(row, auth_info)
     edits = (_owned_query(auth_info).eq("source_generation_id", generation_id)
-             .in_("status", ["queued", "started", "processing", "ldr_processing", "completed"])
+             .in_("status", ["queued", "started", "processing", "ldr_processing", "resizing", "completed"])
              .order("created_at", desc=True).limit(1).execute().data or [])
     return {"generation_id": edits[0]["id"] if edits else None}

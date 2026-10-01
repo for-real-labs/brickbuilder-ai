@@ -485,9 +485,9 @@ def test_direct_mode_sends_audit_feedback_and_uses_the_corrected_model(monkeypat
 
 
 def test_direct_mode_streams_visible_thinking_text(monkeypatch):
-    _scripted(monkeypatch, [
+    _, opened = _scripted(monkeypatch, [
         Turn(
-            text="I'll use a single brick while I verify the placement.",
+            text="Checking the brick placement",
             tool_calls=[ToolCall("d1", "submit_ldr_model", {"ldr_content": VALID_PART})],
         ),
     ])
@@ -498,13 +498,21 @@ def test_direct_mode_streams_visible_thinking_text(monkeypatch):
 
     asyncio.run(module._generate_ldr_direct(LlmToBricksRequest(prompt="brick"), on_thinking))
 
-    assert notes == ["I'll use a single brick while I verify the placement.\n\n"]
+    assert notes == ["Checking the brick placement\n\n"]
+    assert "1-8 words" in opened["system"]
 
 
 def test_background_generation_survives_request_cancellation(monkeypatch):
     from unittest.mock import AsyncMock
+    from types import SimpleNamespace
+    from src.utils import generation_storage as storage_module
 
-    monkeypatch.setattr(module.generation_storage, "create_generation", AsyncMock(return_value="background-1"))
+    storage = SimpleNamespace(
+        create_generation=AsyncMock(return_value="background-1"),
+        get_generation=AsyncMock(return_value={"status": "processing"}),
+    )
+    monkeypatch.setattr(module, "generation_storage", storage)
+    monkeypatch.setattr(storage_module, "generation_storage", storage)
     monkeypatch.setattr(module, "handle_auth_and_tracking", lambda **kwargs: {
         "is_anonymous": True, "is_developer": False, "user_email": "anon",
     })

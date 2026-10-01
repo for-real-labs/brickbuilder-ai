@@ -163,7 +163,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
 
         # Get generations for the user (authenticated or anonymous)
         # Apply status filter at database level if processing filter is requested
-        status_filter = ["processing", "queued", "started", "ldr_processing"] if request.processing else None
+        status_filter = ["processing", "queued", "started", "ldr_processing", "resizing"] if request.processing else None
         
         # Fetch generations in batches until we have enough unique processed_image_url generations
         # or we run out of generations to fetch

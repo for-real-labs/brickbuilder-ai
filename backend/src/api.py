@@ -47,6 +47,7 @@ from .requests.updateImagePreview import update_image_preview, UpdateImagePrevie
 from .requests.updateUsername import update_username, UpdateUsernameRequest, UpdateUsernameResponse
 
 from .requests.generationNotifications import list_generation_notifications, mark_generation_viewed, latest_generation_edit
+from .requests.cancelGeneration import cancel_generation
 
 # Import utilities
 from .utils.pack_ldraw_model import LDrawPacker
@@ -70,6 +71,11 @@ app = FastAPI(
     description="Convert text or images to brick building instructions",
     version="1.0.0"
 )
+
+
+@app.post("/generation/{generation_id}/cancel")
+async def cancel_generation_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
+    return await cancel_generation(str(generation_id), auth_info)
 
 ALLOWED_ORIGINS = [
     "http://localhost:3000",

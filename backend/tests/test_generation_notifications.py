@@ -82,3 +82,14 @@ def test_old_unread_notifications_are_kept_outside_recent_history(storage):
     feed = asyncio.run(module.list_generation_notifications({'user_id': 'one', 'authenticated': True}))
     assert feed['unread_count'] == 1
     assert any(row['id'] == 'old' for row in feed['notifications'])
+
+
+def test_cancelled_edits_do_not_resume_and_resizes_remain_cancellable(storage):
+    storage.extend([model('source'), model('cancelled', status='cancelled', source_generation_id='source')])
+    auth = {'user_id': 'one', 'authenticated': True}
+    assert asyncio.run(module.latest_generation_edit('source', auth)) == {'generation_id': None}
+    storage.append(model('resize', status='resizing', source_generation_id='source'))
+    assert asyncio.run(module.latest_generation_edit('source', auth)) == {'generation_id': 'resize'}
+    feed = asyncio.run(module.list_generation_notifications(auth))
+    assert [row['id'] for row in feed['active']] == ['resize']
+    assert all(row['id'] != 'cancelled' for row in feed['notifications'])

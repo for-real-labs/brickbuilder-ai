@@ -19,10 +19,12 @@ const getApiUrl = () => {
 const API_BASE_URL = getApiUrl();
 
 // Generation status types
-export type GenerationStatus = 'queued' | 'started' | 'processing' | 'ldr_processing' | 'completed' | 'failed';
+export type GenerationStatus = 'queued' | 'started' | 'processing' | 'ldr_processing' | 'resizing' | 'completed' | 'failed' | 'cancelled';
 
 // Response type for polling endpoint
 export interface GetGenerationResponse {
+  source_generation_id?: string | null;
+  endpoint?: string;
   generation_id: string;
   status: GenerationStatus;
   prompt: string | null;
@@ -50,6 +52,14 @@ export interface CompletedGeneration {
 }
 
 export class GetGenerationApiService {
+  static async cancelGeneration(generationId: string): Promise<void> {
+    const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/cancel`, { method: 'POST' });
+    if (!response.ok) {
+      const message = response.status === 409 ? 'This build has already finished. Refresh to see its result.'
+        : 'Unable to cancel this build. Please try again.';
+      throw new Error(message);
+    }
+  }
   /**
    * Poll the generation status endpoint.
    * Returns the current status of the generation.
@@ -110,6 +120,7 @@ export class GetGenerationApiService {
       }
       const response = await this.getGeneration(generationId, signal);
       
+      if (signal?.aborted) throw new DOMException('Polling aborted', 'AbortError');
       // Call status update callback if provided
       if (onStatusUpdate) {
         onStatusUpdate(response);
@@ -133,13 +144,23 @@ export class GetGenerationApiService {
         throw new Error(response.error_message || 'Generation failed');
       }
 
+      if (response.status === 'cancelled') {
+        throw new DOMException('Generation cancelled', 'AbortError');
+      }
+
       // Still processing, wait and try again
       await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(resolve, pollInterval);
-        signal?.addEventListener('abort', () => {
+        const onAbort = () => {
           clearTimeout(timer);
+          signal?.removeEventListener('abort', onAbort);
           reject(new DOMException('Polling aborted', 'AbortError'));
-        }, { once: true });
+        };
+        const timer = setTimeout(() => {
+          signal?.removeEventListener('abort', onAbort);
+          resolve();
+        }, pollInterval);
+        signal?.addEventListener('abort', onAbort, { once: true });
+        if (signal?.aborted) onAbort();
       });
       attempts++;
     }
