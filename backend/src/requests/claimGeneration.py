@@ -66,7 +66,7 @@ async def claim_generation(
         result = (
             generation_storage.client
             .table("generations")
-            .select("id, user_id, user_type")
+            .select("id, generation_id, user_id, user_type")
             .eq("id", request.generation_id)
             .execute()
         )
@@ -109,7 +109,7 @@ async def claim_generation(
                 "user_id": authenticated_user_id,
                 "user_type": "authenticated",
             })
-            .eq("id", request.generation_id)
+            .eq("generation_id", row.get("generation_id", request.generation_id))
             .eq("user_type", "anonymous")
             .eq("user_id", auth_info["guest_user_id"])
             .execute()

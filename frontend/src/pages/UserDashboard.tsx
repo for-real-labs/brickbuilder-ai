@@ -131,7 +131,7 @@ const StatsCard: React.FC<{icon:any; label:string; value:string|number; onClick?
 );
 
 // Simple card that just displays an image
-const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; authToken?: string}> = ({g, onView, authToken}) => {
+export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; authToken?: string}> = ({g, onView, authToken}) => {
   const navigate = useNavigate();
   const [showEdits, setShowEdits] = useState(false);
   const [edits, setEdits] = useState<GenerationIteration[]>([]);
@@ -156,30 +156,19 @@ const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; auth
   const mainImage = g.preview_image_url || sourceImage;
   const showOverlay = Boolean(g.preview_image_url && sourceImage);
   
-  // Use processed_image_url from backend for fetching edits
-  const processedImageUrl = g.processed_image_url;
-  
-  console.log('Processed image URL for edits:', { 
-    id: g.id,
-    processed_image_url: g.processed_image_url,
-    external_image_url: g.external_image_url,
-    image_url: g.image_url,
-    thumbnail_url: g.thumbnail_url
-  });
-  
   const handleViewEdits = async () => {
-    if (!showEdits && edits.length === 0 && processedImageUrl) {
+    if (!showEdits && edits.length === 0 && g.id) {
       setLoadingEdits(true);
       setEditsError(null);
       
       try {
         const response = await GetGenerationsByImageApiService.getGenerationsByImage(
           authToken,
-          processedImageUrl
+          g.id
         );
-        // Sort by created_at descending (newest first)
+        // Sort by saved version rather than image or timestamp
         const sortedEdits = response.generations.sort((a, b) => {
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+          return b.version - a.version;
         });
         setEdits(sortedEdits);
       } catch (error) {
@@ -267,17 +256,17 @@ const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; auth
                 </button>
                 <button 
                   onClick={handleViewEdits}
-                  disabled={!processedImageUrl}
+                  disabled={!g.id}
                   className={`inline-flex items-center gap-2 rounded-lg border px-3 h-9 text-xs ${
-                    processedImageUrl 
+                    g.id
                       ? 'border-slate-300 bg-white hover:bg-slate-50 cursor-pointer' 
                       : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
                   }`}
-                  title={!processedImageUrl ? 'No edit history available' : 'View edit history'}
+                  title={!g.id ? 'No edit history available' : 'View edit history'}
                 >
                   <History className="w-4 h-4"/> 
                   View Edits
-                  {processedImageUrl && (showEdits ? <ChevronUp className="w-3 h-3"/> : <ChevronDown className="w-3 h-3"/>)}
+                  {g.id && (showEdits ? <ChevronUp className="w-3 h-3"/> : <ChevronDown className="w-3 h-3"/>)}
                 </button>
               </>
             )}
@@ -301,7 +290,7 @@ const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; auth
             <div className="text-xs text-slate-500 py-2">No edit history available for this model.</div>
           ) : (
             <div className="space-y-2 max-h-96 overflow-y-auto">
-              {edits.map((edit, index) => {
+              {edits.map((edit) => {
                 const isCurrentGeneration = edit.id === g.id;
                 return (
                   <div 
@@ -314,7 +303,7 @@ const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; auth
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] font-medium text-slate-500">
-                            VERSION {edits.length - index}
+                            VERSION {edit.version}
                           </span>
                           {isCurrentGeneration && (
                             <span className="text-[10px] font-medium text-[#f44336] bg-red-100 px-2 py-0.5 rounded">
@@ -336,7 +325,7 @@ const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; auth
                       </div>
                       {edit.status === 'completed' ? (
                         <button 
-                          onClick={() => navigate(`/generated-model?id=${edit.id}`)}
+                          onClick={() => navigate(`/generated-model?id=${encodeURIComponent(edit.id)}&exact=1`)}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] hover:bg-slate-50 cursor-pointer flex-shrink-0"
                         >
                           <Eye className="w-3.5 h-3.5"/> View Model

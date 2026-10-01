@@ -35,6 +35,8 @@ export interface OrderInfo {
 
 export interface GenerationWithOrder {
   id: string;
+  generation_id?: string;
+  version?: number;
   user_id: string;
   user_type: string;
   prompt: string;

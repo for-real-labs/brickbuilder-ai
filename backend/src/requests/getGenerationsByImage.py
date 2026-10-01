@@ -5,19 +5,22 @@ from pydantic import BaseModel
 from fastapi import HTTPException
 
 from ..utils.generation_storage import generation_storage
+from ..utils.authorization import require_generation_access
 from ..utils.posthog_client import track_api_call, track_error
 
 logger = logging.getLogger(__name__)
 
 
 class GetGenerationsByImageRequest(BaseModel):
-    processed_image_url: str
+    generation_id: str  # Row ID of any revision of the model
     user_id: Optional[str] = None  # Optional - if not provided, uses auth_info
 
 
 class GenerationInfo(BaseModel):
     """Basic generation information"""
     id: str
+    generation_id: str
+    version: int
     user_id: str
     user_type: str
     prompt: str
@@ -50,11 +53,11 @@ async def get_generations_by_image(
     auth_info: dict
 ) -> GetGenerationsByImageResponse:
     """
-    Get all generations for a specific processed_image_url and user_id.
-    This is useful for retrieving all edit iterations of a model.
+    Get all versions of the model containing the requested revision.
+    The legacy endpoint name is retained; image URLs no longer group models.
     
     Args:
-        request: GetGenerationsByImageRequest containing processed_image_url and optional user_id
+        request: GetGenerationsByImageRequest containing a revision ID
         auth_info: Authentication information
         
     Returns:
@@ -78,22 +81,24 @@ async def get_generations_by_image(
             endpoint="/getGenerationsByImage",
             user_id=user_email,
             request_data={
-                "processed_image_url": request.processed_image_url,
+                "generation_id": request.generation_id,
                 "user_id": user_id,
                 "user_type": user_type
             }
         )
         
-        # Fetch generations with matching processed_image_url and user_id
-        generations = await generation_storage.get_generations_by_image_url(
-            processed_image_url=request.processed_image_url,
+        source = await generation_storage.get_generation(request.generation_id)
+        if not source:
+            raise HTTPException(status_code=404, detail="Generation not found")
+        require_generation_access(source, auth_info)
+        generations = await generation_storage.get_generation_versions(
+            generation_id=source["generation_id"],
             user_id=user_id,
             user_type=user_type
         )
         
         logger.info(
-            f"Retrieved {len(generations)} generations for processed_image_url "
-            f"'{request.processed_image_url}' and user {user_email}"
+            f"Retrieved {len(generations)} versions for user {user_email}"
         )
         
         # Convert to response model

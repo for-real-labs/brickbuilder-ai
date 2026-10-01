@@ -4,6 +4,7 @@ import { GetGenerationApiService, type GetGenerationResponse } from '../src/serv
 import { GlbToBricksApiService } from '../src/services/glbToBricksApi';
 import { ImageToBricksApiService } from '../src/services/imageToBricksApi';
 import { TextToBricksApiService } from '../src/services/textToBricksApi';
+import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 
 const response = (data: unknown, ok = true, body?: ReadableStream) => ({
   ok, status: ok ? 200 : 400, statusText: ok ? 'OK' : 'Bad Request',
@@ -21,6 +22,16 @@ const sse = (events: unknown[], options?: { crlf?: boolean; trailingDelimiter?: 
 
 describe('generation services', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
+
+  it('requests history by revision ID, including image-free LLM models', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({generations: [{id: 'edit', generation_id: 'root', version: 3}], total_count: 1}) as unknown as Response);
+    const history = await GetGenerationsByImageApiService.getGenerationsByImage('token', 'revision');
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(JSON.parse(init?.body as string)).toEqual({generation_id: 'revision'});
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
+    expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
+    expect(history.generations[0].version).toBe(3);
+  });
 
   it('posts cancellation with owner credentials and reports completed-job conflicts', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(response({ status: 'cancelled' }) as unknown as Response);
@@ -73,7 +84,7 @@ describe('generation services', () => {
     await LlmToBricksApiService.generate({ sourceGenerationId: 'source', prompt: '  red roof  ' }, 'token');
     const [url, init] = vi.mocked(fetch).mock.calls[0];
     expect(String(url)).toContain('/llmToBricks');
-    expect(JSON.parse(init?.body as string)).toMatchObject({ source_generation_id: 'source', prompt: 'red roof' });
+    expect(JSON.parse(init?.body as string)).toMatchObject({ generation_id: 'source', prompt: 'red roof' });
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
     expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
   });
