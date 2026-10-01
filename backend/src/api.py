@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from uuid import UUID
 from contextlib import asynccontextmanager
@@ -91,6 +92,14 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+
+
+@app.get("/.well-known/openai-apps-challenge", include_in_schema=False)
+async def openai_apps_challenge():
+    token = os.getenv("OPENAI_APPS_CHALLENGE", "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{20,200}", token):
+        raise HTTPException(status_code=404, detail="Not found")
+    return Response(content=token, media_type="text/plain", headers={"Cache-Control": "no-store"})
 
 
 @app.post("/generation/{generation_id}/cancel")

@@ -58,6 +58,12 @@ class BrickBuilderMcp(FastMCP):
     async def list_tools(self) -> list[Tool]:
         tools = await super().list_tools()
         for tool in tools:
+            tool.annotations = tool.annotations.model_copy(update={"title": tool.title})
+            model_parameter = tool.inputSchema.get("properties", {}).get("model")
+            if model_parameter is not None:
+                # Directory scanners require the primitive type on the parameter,
+                # even though the enum's $ref already constrains it to a string.
+                model_parameter["type"] = "string"
             # OpenAI's auth declaration is an MCP extension. Advertise it at
             # the top level and in _meta for clients using the compatibility form.
             tool.securitySchemes = SECURITY_SCHEMES
