@@ -15,6 +15,7 @@ from .conversions.glb2brick import glb2brick
 from .conversions.voxel_utils import downsample_xyzrgb
 from .color_conversions import convert_xyzrgb_to_ldr_colors
 from .pack_ldraw_model import LDrawPacker
+from .generation_tasks import start_generation_task
 from .generation_storage import generation_storage
 from .auth import deduct_credits
 from .image_processing import remove_background_from_url
@@ -842,7 +843,7 @@ async def run_streaming_pipeline(
     queue: asyncio.Queue = asyncio.Queue()
 
     # Spawn pipeline as a fire-and-forget background task
-    task = asyncio.create_task(
+    task = start_generation_task(generation_id,
         _pipeline_worker(
             queue=queue,
             image_url=image_url,
@@ -863,6 +864,9 @@ async def run_streaming_pipeline(
         )
     )
 
+    # Also close the observer if the job is cancelled before its worker starts.
+    task.add_done_callback(lambda _: queue.put_nowait(None))
+    yield _sse({"type": "pipeline", "stage": "started", "generation_id": generation_id})
     try:
         while True:
             event = await queue.get()

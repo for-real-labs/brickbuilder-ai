@@ -17,6 +17,7 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from ..utils.auth import require_paid_auth, handle_auth_and_tracking, deduct_credits
 from ..utils.posthog_client import track_api_call, track_image_conversion, track_error
 from ..utils.pack_ldraw_model import LDrawPacker
+from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import generation_storage
 from ..utils.authorization import get_owned_generation_or_403
 from ..utils.generate_image import generate_image_from_image
@@ -380,18 +381,19 @@ async def prompt_edit_model(
         
         # Create new generation record immediately (status: queued)
         new_generation_id = await generation_storage.create_generation(
-            user_id=user_id,
+            user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=f"Edited from {request.generation_id}: {request.edit_prompt}",
             detail_level=detail_level,
             endpoint="promptEditModel",
-            model_3d=model_3d
+            model_3d=model_3d,
+            edit_generation_id=request.generation_id
         )
         
         logger.info(f"Created new generation record: {new_generation_id}")
         
         # Spawn background task to process the generation
-        asyncio.create_task(process_prompt_edit_task(
+        start_generation_task(new_generation_id, process_prompt_edit_task(
             new_generation_id=new_generation_id,
             original_generation_id=request.generation_id,
             edit_prompt=request.edit_prompt,

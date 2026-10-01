@@ -82,7 +82,7 @@ export interface InputProcessedEvent {
 // Phase 2: Brick pipeline events
 export interface PipelineEvent {
   type: 'pipeline';
-  stage: 'image_generation' | 'background_removal' | 'input_processed' | 'brick_conversion' | 'brick_packing' | 'storage' | 'pipeline_complete' | 'error';
+  stage: 'started' | 'image_generation' | 'background_removal' | 'input_processed' | 'brick_conversion' | 'brick_packing' | 'storage' | 'pipeline_complete' | 'error';
   message?: string;
   progress?: number;
   brick_count?: number;
@@ -244,6 +244,7 @@ export class ImageToBricksApiService {
     stream3d: boolean = true,
     voxelizer: string = 'trimesh',
     prompt?: string,
+    signal?: AbortSignal,
   ): Promise<ImageToBricksResponse> {
     console.log('[stream] Sending streaming image-to-bricks request');
 
@@ -264,6 +265,7 @@ export class ImageToBricksApiService {
 
     const response = await apiFetch(API_URLS.imageToBricks, {
       method: 'POST',
+      signal,
       headers,
       body: JSON.stringify({
         image_base64: imageBase64,

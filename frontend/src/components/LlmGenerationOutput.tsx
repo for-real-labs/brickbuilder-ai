@@ -4,6 +4,7 @@ import { LlmDesignNotes } from './LlmDesignNotes';
 
 export function LlmGenerationOutput({ generationId, active }: { generationId: string; active: boolean }) {
   const [notes, setNotes] = useState('');
+  const [summary, setSummary] = useState<string | undefined>('');
   const [reconnecting, setReconnecting] = useState(false);
   const [finished, setFinished] = useState(false);
 
@@ -12,6 +13,7 @@ export function LlmGenerationOutput({ generationId, active }: { generationId: st
     let timer: ReturnType<typeof setTimeout>;
     let retryDelay = 1_000;
     setNotes('');
+    setSummary('');
     setFinished(false);
     setReconnecting(false);
     const connect = async () => {
@@ -21,7 +23,8 @@ export function LlmGenerationOutput({ generationId, active }: { generationId: st
           if (controller.signal.aborted) return;
           // Each event is a full snapshot, so reconnecting cannot duplicate text.
           setNotes(output.text);
-          setFinished(output.status === 'completed' || output.status === 'failed');
+          setSummary(typeof output.summary === 'string' ? output.summary : undefined);
+          setFinished(['completed', 'failed', 'cancelled'].includes(output.status));
           setReconnecting(false);
           retryDelay = 1_000;
         }, controller.signal);
@@ -42,7 +45,7 @@ export function LlmGenerationOutput({ generationId, active }: { generationId: st
   }, [generationId]);
 
   return <div className="mt-3 min-w-0">
-    <LlmDesignNotes notes={notes} isThinking={active && !finished} />
+    <LlmDesignNotes notes={notes} summary={summary} isThinking={active && !finished} />
     {reconnecting && <p role="status" className="mt-2 text-xs text-slate-500">Reconnecting to live output… Your build keeps running.</p>}
   </div>;
 }

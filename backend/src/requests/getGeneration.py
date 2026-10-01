@@ -17,10 +17,16 @@ class GetGenerationRequest(BaseModel):
 
 
 class GetGenerationResponse(BaseModel):
+    model_generation_id: Optional[str] = None
+    version: int = 1
+    previous_completed_generation_id: Optional[str] = None
+    endpoint: Optional[str] = None
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
     prompt: Optional[str] = None
     name: Optional[str] = None
+    created_at: Optional[str] = None
+    generation_duration_seconds: Optional[float] = None
     detail_level: Optional[float] = None
     ldr_content: Optional[str] = None  # Only available when completed
     mpd_url: Optional[str] = None  # Only available when completed
@@ -38,7 +44,8 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
     Get generation status and data by generation ID.
     
     This endpoint is used for polling to check generation progress.
-    Private jobs require their owner; completed community models remain public.
+    Completed model links are public. Unfinished jobs require their owner.
+    Reasoning output and ownership operations use separate, private endpoints.
     
     Returns:
         - status: "started" | "queued" | "processing" | "ldr_processing" | "completed" | "failed"
@@ -61,7 +68,11 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
         if not generation:
             raise HTTPException(status_code=404, detail=f"Generation {request.generation_id} not found")
 
-        require_generation_access(generation, auth_info, allow_community=True)
+        # Sharing a finished model must not grant access to its owner's live
+        # output, generation history, or editing/claiming permissions. Keep this
+        # exception on the model-read endpoint instead of the shared auth helper.
+        if generation.get("status") != "completed":
+            require_generation_access(generation, auth_info)
 
         # Extract fields
         status = generation.get("status", "started")
@@ -108,12 +119,23 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
                 except Exception as e:
                     logger.warning(f"Failed to check timeout for {request.generation_id}: {e}")
 
+        previous_id = None
+        if generation.get("version", 1) > 1 and status != "completed":
+            previous = await generation_storage.get_previous_completed_generation(generation)
+            previous_id = previous["id"] if previous else None
+
         # Build response based on status
         response = GetGenerationResponse(
+            model_generation_id=generation.get("generation_id", request.generation_id),
+            version=generation.get("version", 1),
+            previous_completed_generation_id=previous_id,
+            endpoint=generation.get("endpoint"),
             generation_id=request.generation_id,
             status=status,
             prompt=prompt,
             name=name,
+            created_at=generation.get("created_at"),
+            generation_duration_seconds=generation.get("generation_duration_seconds"),
             detail_level=detail_level,
             external_image_url=external_image_url,
             processed_image_url=processed_image_url,

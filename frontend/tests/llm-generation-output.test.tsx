@@ -50,3 +50,28 @@ it('shows a reconnect state for a failed output connection without failing the j
   expect(container.textContent).not.toContain('Generation Failed');
   act(() => root.unmount());
 });
+
+it('swaps successive generated summaries on the card while new raw output arrives', async () => {
+  let update: Parameters<typeof LlmToBricksApiService.watchOutput>[1];
+  vi.spyOn(LlmToBricksApiService, 'watchOutput').mockImplementation(async (_id, onOutput, signal) => {
+    update = onOutput;
+    return new Promise(resolve => signal.addEventListener('abort', () => resolve(true)));
+  });
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LlmGenerationOutput generationId="job" active />));
+    expect(container.textContent).not.toContain('Planning your brick build');
+    expect(container.textContent).not.toContain('Preparing the brick design');
+    act(() => update({ text: 'Long reasoning about the tail radius.', summary: 'Shaping the lizard tail', status: 'processing' }));
+    expect(container.textContent).toBe('Shaping the lizard tail');
+    act(() => update({ text: 'Long reasoning about the tail radius. Next evaluate the feet.', summary: 'Shaping the lizard tail', status: 'processing' }));
+    expect(container.textContent).toBe('Shaping the lizard tail');
+    act(() => update({ text: 'Long reasoning about the tail radius. Next evaluate the feet.', summary: 'Checking the feet', status: 'processing' }));
+    expect(container.textContent).toBe('Checking the feet');
+    expect(container.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(container.querySelector('span')?.className).toContain('build-thinking-shimmer');
+    act(() => update({ text: 'Done', summary: 'Checking the feet', status: 'completed' }));
+    expect(container.querySelector('span')?.className).not.toContain('build-thinking-shimmer');
+  } finally { act(() => root.unmount()); }
+});

@@ -8,6 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from fastapi import HTTPException, Depends
 
+from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import RESIZE_SOURCE_KEYS, generation_storage
 from ..utils.authorization import get_generation_or_404
 from ..utils.posthog_client import track_api_call, track_error
@@ -253,12 +254,13 @@ async def update_model(request: UpdateModelRequest, auth_info: dict) -> UpdateMo
 
         # Create a new generation record with status="ldr_processing"
         new_generation_id = await generation_storage.create_generation(
-            user_id=user_id,
+            user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=f"Updated model from {request.generation_id}",
             detail_level=generation.get('detail_level', 1.6),
             endpoint="updateModel",
-            model_3d=generation.get('model_used_3d', 'unknown')
+            model_3d=generation.get('model_used_3d', 'unknown'),
+            edit_generation_id=request.generation_id
         )
         
         logger.info(f"Created new generation record: {new_generation_id}")
@@ -273,7 +275,7 @@ async def update_model(request: UpdateModelRequest, auth_info: dict) -> UpdateMo
         await generation_storage.update_status(new_generation_id, "ldr_processing")
         
         # Spawn background task to process LDR/MPD generation
-        asyncio.create_task(process_update_model_task(
+        start_generation_task(new_generation_id, process_update_model_task(
             generation_id=new_generation_id,
             original_generation_id=request.generation_id,
             xyzrgb_content=request.xyzrgb_content,

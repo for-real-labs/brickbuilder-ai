@@ -19,6 +19,7 @@ from ..utils.posthog_client import track_api_call, track_image_conversion, track
 from ..utils.pack_ldraw_model import LDrawPacker
 
 # Import shared utilities
+from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import generation_storage
 from ..utils.generate_image import generate_image_from_text
 from ..utils.generate_3d_model_from_image import generate_3d_model_from_image
@@ -394,7 +395,7 @@ async def text_to_bricks(
         )
         
         # Spawn background task to process the generation
-        asyncio.create_task(process_text_to_bricks_task(
+        start_generation_task(generation_id, process_text_to_bricks_task(
             generation_id=generation_id,
             prompt=request.prompt,
             model_3d=model_3d,

@@ -208,7 +208,7 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
     async def start(request: LlmToBricksRequest) -> CallToolResult:
         try:
             identity = _identity()
-            track_api_call(endpoint="mcp/generate_lego_model" if not request.source_generation_id else "mcp/edit_lego_model",
+            track_api_call(endpoint="mcp/generate_lego_model" if not request.generation_id else "mcp/edit_lego_model",
                            user_id=identity["user_id"], model=request.model)
             result = await llm_to_bricks(request, identity)
             return _result({
@@ -233,7 +233,7 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
         """Apply requested changes to your existing saved voxel model while preserving untouched cells.
         Creates a new generation and keeps the original. Costs one credit; poll the returned job ID.
         """
-        return await start(LlmToBricksRequest(source_generation_id=str(generation_id), prompt=prompt, model=model.value))
+        return await start(LlmToBricksRequest(generation_id=str(generation_id), prompt=prompt, model=model.value))
 
     @server.tool(title="Get LEGO model progress and files", annotations=read, meta=security)
     async def get_lego_model(generation_id: UUID) -> CallToolResult:

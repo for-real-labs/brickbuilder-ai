@@ -810,7 +810,7 @@ def _dot(a, b) -> float:
 
 def render_ldraw_preview_png(ldr: str, palette: Optional[Dict[int, Tuple[str, str]]] = None,
                              size: int = PREVIEW_SIZE) -> bytes:
-    """The model page's saved preview of an LDraw model: square, white, from the same camera."""
+    """The model page's saved preview: square, transparent, from the same camera."""
     from PIL import Image, ImageDraw
 
     palette = palette or load_palette()
@@ -907,7 +907,7 @@ def render_ldraw_preview_png(ldr: str, palette: Optional[Dict[int, Tuple[str, st
         polygons.append((distance(cap), screen, shade(code, normal),
                          list(zip(screen, screen[1:] + screen[:1])), shade(code, normal, _EDGE_SHADE)))
 
-    image = Image.new("RGB", (canvas_size, canvas_size), (255, 255, 255))
+    image = Image.new("RGBA", (canvas_size, canvas_size), (0, 0, 0, 0))
     draw = ImageDraw.Draw(image)
     for _, screen, fill, edges, edge_color in sorted(polygons, key=lambda polygon: -polygon[0]):
         draw.polygon(screen, fill=fill, outline=fill)

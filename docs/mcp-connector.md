@@ -45,6 +45,10 @@ remote image URLs through MCP.
    Google, or email sign-in, then displays the client, permissions, and cost.
    Approval and denial use Supabase's OAuth methods; the app does not implement
    its own authorization codes or refresh tokens.
+   If staging and production share one Supabase project, preserve the existing
+   production Site URL and deploy the consent route there before connecting
+   platform accounts. The OAuth authorization path is project-wide; separate
+   client registrations and resource bindings still isolate the two backends.
 3. Register separate OAuth clients for ChatGPT and Claude. Use the exact
    callback URI shown by each platform, authorization-code + PKCE (`S256`),
    refresh tokens, and the `email` scope. Enter the issued client ID and secret
@@ -113,6 +117,10 @@ with OAuth and the predefined client credentials, connect an account, and
 enable the connector for a test conversation. Follow the current
 [OpenAI connection guide](https://developers.openai.com/plugins/deploy/connect-chatgpt).
 The same server is usable through the OpenAI API's remote MCP integration.
+Public predefined clients can use PKCE with token endpoint authentication
+`none`, without a client secret. If the project still signs with HS256,
+disable optional OpenID Connect in ChatGPT's advanced OAuth settings and
+request `email`; Supabase requires asymmetric signing for the `openid` scope.
 
 For Claude, add a custom connector with the same endpoint and its own OAuth
 client credentials, connect an account, and enable it for a conversation.

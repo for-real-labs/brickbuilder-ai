@@ -20,12 +20,14 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false }));
+
 vi.mock('../src/contexts/AuthContext', () => ({
   useAuth: () => ({
     session: null,
     loading: false,
     user: null,
-    isSupabaseConfigured: false,
+    isSupabaseConfigured: authSettings.isSupabaseConfigured,
   }),
 }));
 
@@ -57,7 +59,7 @@ vi.mock('../src/components/ProfileMenu', () => ({
   ProfileMenu: () => null,
 }));
 
-import LandingPage, { DEFAULT_GENERATION_METHOD, DEFAULT_THREE_D_MODEL, GenerationMethodSelector } from '../src/pages/LandingPage';
+import LandingPage, { DEFAULT_GENERATION_METHOD, DEFAULT_THREE_D_MODEL, GenerationMethodSelector, FeaturedStrip } from '../src/pages/LandingPage';
 import { DEFAULT_LLM_MODEL } from '../src/services/llmToBricksApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
@@ -130,6 +132,7 @@ describe('LandingPage', () => {
       .mockResolvedValueOnce({ generation_id: 'two', message: 'Started' });
     const stream = vi.spyOn(LlmToBricksApiService, 'generateStream');
     const poll = vi.spyOn(GetGenerationApiService, 'pollUntilComplete');
+    const cancel = vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue();
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -158,6 +161,11 @@ describe('LandingPage', () => {
       expect(stream).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
+      await act(async () => container.querySelector('[aria-label="Your generations"] article button')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+      expect(cancel).toHaveBeenCalledWith('two');
+      expect(container.textContent).toContain('Generation cancelled');
+      expect(container.textContent).toContain('1 in progress');
+      expect(input.value).toBe('Red castle');
     } finally {
       act(() => root.unmount());
       container.remove();
@@ -442,4 +450,78 @@ describe('LandingPage', () => {
       delete window.__BRICKBUILDER_NATIVE_APP__;
     }
   });
+});
+
+it('labels the top-right auth action Sign up', async () => {
+  authSettings.isSupabaseConfigured = true;
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
+  vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+  vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    const buttons = Array.from(container.querySelectorAll('header button'));
+    expect(buttons.some(button => button.textContent?.trim() === 'Sign up')).toBe(true);
+    expect(buttons.some(button => button.textContent?.trim() === 'Login')).toBe(false);
+  } finally { act(() => root.unmount()); authSettings.isSupabaseConfigured = false; vi.unstubAllGlobals(); }
+});
+
+it.each([3, 8])('centers the first community model and wraps %s models in their original order', count => {
+  const items = Array.from({ length: count }, (_, index) => ({
+    id: `model-${index}`, title: `Model ${index}`, imageUrl: null,
+    creator: null, createdAt: '2026-10-01', likeCount: count - index,
+  }));
+  const loopCount = Math.ceil(8 / count) * count;
+  const loopWidth = loopCount * 144;
+  let viewportWidth = 600;
+  let resize!: () => void;
+  const disconnect = vi.fn();
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(callback: () => void) { resize = callback; }
+    observe() {}
+    disconnect = disconnect;
+  });
+  const geometry = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
+    const width = this.tagName === 'ARTICLE' ? 120 : this.hasAttribute('data-featured-copy') ? loopWidth : viewportWidth;
+    return { width, height: 200, top: 0, left: 0, bottom: 200, right: width, x: 0, y: 0, toJSON() {} } as DOMRect;
+  });
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const transform = () => container.querySelector<HTMLElement>('[data-featured-track]')!.style.transform;
+  try {
+    act(() => root.render(<FeaturedStrip items={items} />));
+    const initialOffset = loopWidth - (viewportWidth - 120) / 2;
+    expect(transform()).toBe(`translate3d(${-initialOffset}px, 0, 0)`);
+    const titles = Array.from(container.querySelectorAll('h3')).map(title => title.textContent);
+    expect(titles).toEqual(Array.from({ length: loopCount * 2 }, (_, index) => `Model ${index % count}`));
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Scroll community models right"]')!.click());
+    expect(transform()).toBe(`translate3d(${-((initialOffset + 144) % loopWidth)}px, 0, 0)`);
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Scroll community models right"]')!.click());
+    expect(transform()).toBe(`translate3d(${-((initialOffset + 288) % loopWidth)}px, 0, 0)`);
+    viewportWidth = 390;
+    act(() => resize());
+    expect(transform()).toBe(`translate3d(${-(loopWidth - (390 - 120) / 2)}px, 0, 0)`);
+  } finally {
+    act(() => root.unmount());
+    geometry.mockRestore();
+    vi.unstubAllGlobals();
+  }
+  expect(disconnect).toHaveBeenCalledOnce();
+});
+
+it('positions the render-model chevron inside the select without intercepting input', () => {
+  const markup = renderToStaticMarkup(<GenerationMethodSelector value="llm" llmModel={DEFAULT_LLM_MODEL} onChange={() => {}} />);
+  const container = document.createElement('div');
+  container.innerHTML = markup;
+  const select = container.querySelector('select')!;
+  const chevron = select.parentElement!.querySelector('svg')!;
+  expect(select.classList.contains('appearance-none')).toBe(true);
+  expect(select.classList.contains('pr-10')).toBe(true);
+  expect(select.parentElement!.classList.contains('relative')).toBe(true);
+  expect(chevron.getAttribute('aria-hidden')).toBe('true');
+  expect(chevron.classList.contains('pointer-events-none')).toBe(true);
+  expect(chevron.classList.contains('top-1/2')).toBe(true);
+  expect(chevron.classList.contains('right-3')).toBe(true);
 });

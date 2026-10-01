@@ -33,15 +33,15 @@ def test_resize_rescales_llm_design_voxels(monkeypatch):
     async def fake_generation(_generation_id, _auth):
         return {"design_voxels_url": "https://example.com/design.xyzrgb", "model_used_3d": "claude-opus-5-5"}
 
-    def fake_create_task(coro):
-        spawned.append(coro)
+    def fake_start_task(generation_id, coro):
+        spawned.append(generation_id)
         coro.close()
 
     monkeypatch.setattr(module, "generation_storage", storage)
     monkeypatch.setattr(module, "get_generation_or_404", fake_generation)
     monkeypatch.setattr(module, "handle_auth_and_tracking", lambda **_kwargs: {
         "user_email": "anon", "is_anonymous": True, "is_developer": False})
-    monkeypatch.setattr(module.asyncio, "create_task", fake_create_task)
+    monkeypatch.setattr(module, "start_generation_task", fake_start_task)
 
     response = asyncio.run(module.resize_model(
         ResizeModelRequest(generation_id="llm-1", detail_level=8), {"user_id": "anon-1"}))
@@ -51,8 +51,9 @@ def test_resize_rescales_llm_design_voxels(monkeypatch):
     assert max(c[0] for c in cells) == 7 and max(c[2] for c in cells) == 3  # grown 2x on every axis
     assert ("resized-1", "xyzrgb", response.xyzrgb_content) in storage.stored
     assert ("resized-1", "resizing") in storage.statuses
+    assert storage.created["edit_generation_id"] == "llm-1"
     assert storage.created["model_3d"] == "claude-opus-5-5"
-    assert len(spawned) == 1
+    assert spawned == ["resized-1"]
 
 
 def test_resize_sources_are_carried_to_derived_generations():
