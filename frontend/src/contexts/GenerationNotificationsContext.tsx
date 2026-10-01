@@ -7,7 +7,7 @@ import { GenerationNotificationsApi, NotificationFeed, NotificationApiError } fr
 
 const empty: NotificationFeed = { notifications: [], active: [], unread_count: 0 };
 const Context = createContext({ ...empty, error: null as string | null, browserPermission: 'unsupported',
-  enableBrowserNotifications: async () => {}, markViewed: async (_id: string) => {}, refresh: () => {} });
+  enableBrowserNotifications: async () => {}, markViewed: async (_id: string) => {}, markAllRead: async () => {}, refresh: () => {} });
 const readIds = (key: string): Set<string> => {
   try { const ids = JSON.parse(localStorage.getItem(key) || '[]'); return new Set(Array.isArray(ids) ? ids.filter(id => typeof id === 'string') : []); }
   catch { return new Set(); }
@@ -98,7 +98,21 @@ export function GenerationNotificationsProvider({ children }: { children: React.
       try { setPermission(await Notification.requestPermission()); refresh(); } catch { setPermission('unsupported'); }
     }
   };
+  const markAllRead = useCallback(async () => {
+    if (state.owner !== owner) return;
+    const ids = state.feed.notifications.filter(model => !model.seen).map(model => model.id);
+    if (!ids.length) return;
+    const { seen_ids } = await GenerationNotificationsApi.markAllRead(ids);
+    if (ownerRef.current !== owner) return;
+    const seen = new Set(seen_ids);
+    seen_ids.forEach(id => viewed.current.add(id));
+    setState(previous => {
+      if (previous.owner !== owner) return previous;
+      const notifications = previous.feed.notifications.map(model => seen.has(model.id) ? { ...model, seen: true } : model);
+      return { ...previous, feed: { ...previous.feed, notifications, unread_count: notifications.filter(model => !model.seen).length } };
+    });
+  }, [owner, state]);
   return <Context.Provider value={{ ...(state.owner === owner ? state.feed : empty), error: state.owner === owner ? state.error : null,
-    browserPermission: permission, enableBrowserNotifications, markViewed, refresh }}>{children}</Context.Provider>;
+    browserPermission: permission, enableBrowserNotifications, markViewed, markAllRead, refresh }}>{children}</Context.Provider>;
 }
 export const useGenerationNotifications = () => useContext(Context);

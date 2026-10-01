@@ -20,12 +20,14 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false }));
+
 vi.mock('../src/contexts/AuthContext', () => ({
   useAuth: () => ({
     session: null,
     loading: false,
     user: null,
-    isSupabaseConfigured: false,
+    isSupabaseConfigured: authSettings.isSupabaseConfigured,
   }),
 }));
 
@@ -448,6 +450,22 @@ describe('LandingPage', () => {
       delete window.__BRICKBUILDER_NATIVE_APP__;
     }
   });
+});
+
+it('labels the top-right auth action Sign up', async () => {
+  authSettings.isSupabaseConfigured = true;
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
+  vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+  vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    const buttons = Array.from(container.querySelectorAll('header button'));
+    expect(buttons.some(button => button.textContent?.trim() === 'Sign up')).toBe(true);
+    expect(buttons.some(button => button.textContent?.trim() === 'Login')).toBe(false);
+  } finally { act(() => root.unmount()); authSettings.isSupabaseConfigured = false; vi.unstubAllGlobals(); }
 });
 
 it.each([3, 8])('centers the first community model and wraps %s models in their original order', count => {

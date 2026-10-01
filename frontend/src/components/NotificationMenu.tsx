@@ -7,6 +7,8 @@ import { useGenerationNotifications } from '../contexts/GenerationNotificationsC
 export function NotificationMenu({ onNavigate }: { onNavigate?: (path: string) => void }) {
   const feed = useGenerationNotifications();
   const [open, setOpen] = useState(false);
+  const [markingRead, setMarkingRead] = useState(false);
+  const [readError, setReadError] = useState<string | null>(null);
   const ref = useRef<HTMLDivElement>(null);
   const button = useRef<HTMLButtonElement>(null);
   const navigate = useNavigate();
@@ -26,7 +28,23 @@ export function NotificationMenu({ onNavigate }: { onNavigate?: (path: string) =
       {feed.unread_count > 0 && <span data-testid="notification-badge" className="absolute -right-1 -top-1 flex min-h-4 min-w-4 items-center justify-center rounded-full bg-[#f44336] px-1 text-[10px] font-bold text-white ring-2 ring-white">{feed.unread_count > 99 ? '99+' : feed.unread_count}</span>}
     </button>
     {open && <section id="model-notifications" aria-label="Model notifications" className="fixed left-4 right-4 top-24 z-[70] w-auto sm:absolute sm:left-auto sm:top-auto sm:mt-3 sm:w-[22rem] overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-xl">
-      <div className="border-b border-slate-100 px-4 py-3"><h2 className="text-sm font-semibold text-slate-900">Notifications</h2><p className="mt-1 text-xs text-slate-500">Completed models are unread until you view them.</p></div>
+      <div className="border-b border-slate-100 px-4 py-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-slate-900">Notifications</h2>
+          <button type="button" disabled={markingRead || feed.unread_count === 0} onClick={async () => {
+            if (markingRead) return;
+            setMarkingRead(true); setReadError(null);
+            posthog.capture('generation_notifications_mark_all_read_clicked', { unread_count: feed.unread_count });
+            try { await feed.markAllRead(); }
+            catch { setReadError('Unable to mark notifications as read. Please try again.'); }
+            finally { setMarkingRead(false); }
+          }} className="min-h-9 rounded-lg px-2 text-xs font-medium text-[#f44336] hover:bg-red-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 disabled:cursor-default disabled:text-slate-400 disabled:hover:bg-transparent">
+            {markingRead ? 'Marking as read…' : 'Mark all as read'}
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-slate-500">Completed models stay unread until you view them or mark them as read.</p>
+        {readError && <p role="alert" className="mt-2 text-xs text-red-600">{readError}</p>}
+      </div>
       <div className="max-h-80 overflow-y-auto">
         {feed.error && <p role="status" className="px-4 py-3 text-xs text-red-600">{feed.error}</p>}
         {!feed.error && !feed.active.length && !feed.notifications.length && <p className="px-4 py-8 text-center text-sm text-slate-500">No notifications yet</p>}
