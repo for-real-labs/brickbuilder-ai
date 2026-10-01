@@ -510,3 +510,18 @@ it.each([3, 8])('centers the first community model and wraps %s models in their 
   }
   expect(disconnect).toHaveBeenCalledOnce();
 });
+
+it('positions the render-model chevron inside the select without intercepting input', () => {
+  const markup = renderToStaticMarkup(<GenerationMethodSelector value="llm" llmModel={DEFAULT_LLM_MODEL} onChange={() => {}} />);
+  const container = document.createElement('div');
+  container.innerHTML = markup;
+  const select = container.querySelector('select')!;
+  const chevron = select.parentElement!.querySelector('svg')!;
+  expect(select.classList.contains('appearance-none')).toBe(true);
+  expect(select.classList.contains('pr-10')).toBe(true);
+  expect(select.parentElement!.classList.contains('relative')).toBe(true);
+  expect(chevron.getAttribute('aria-hidden')).toBe('true');
+  expect(chevron.classList.contains('pointer-events-none')).toBe(true);
+  expect(chevron.classList.contains('top-1/2')).toBe(true);
+  expect(chevron.classList.contains('right-3')).toBe(true);
+});
