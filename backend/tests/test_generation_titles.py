@@ -16,11 +16,34 @@ from fastapi import HTTPException
 
 def test_fallback_titles_are_short_and_do_not_reuse_instruction_prefixes():
     assert titles.fallback_title('Please create me a dachshund in sunglasses. Use 300 bricks.') == 'Dachshund in sunglasses'
-    assert titles.fallback_title('Image reference') == 'Custom Brick Model'
-    assert titles.fallback_title(None) == 'Custom Brick Model'
-    assert len(titles.fallback_title('long ' * 50).split()) <= 8
+    assert titles.fallback_title('Image reference') == 'Custom Model'
+    assert titles.fallback_title(None) == 'Custom Model'
+    assert titles.fallback_title('Image to bricks conversion') == 'Custom Model'
+    assert len(titles.fallback_title('long ' * 50).split()) <= 3
     assert len(titles.clean_title('abcdefghij ' * 20)) <= 80
     assert titles.clean_title('  "Moon   Rover"\n ') == 'Moon Rover'
+
+
+@pytest.mark.parametrize('response, expected', [
+    ('Brick-Built Lizard with Long Tail', 'Lizard'),
+    ('Brick‑Built Lizard with Long Tail', 'Lizard'),
+    ('LEGO model of a Lizard', 'Lizard'),
+    ('Lightning McQueen', 'Lightning McQueen'),
+    ('Ford Model T', 'Ford Model T'),
+    ('Model T', 'Model T'),
+    ('Model of a Lizard', 'Lizard'),
+    ('Red Porsche 911 Turbo', 'Red Porsche 911'),
+    ('A LEGO Rocket Ship', 'Rocket Ship'),
+    ('Moon Rover Brick Model', 'Moon Rover'),
+    ('Brick-Built', ''),
+])
+def test_names_describe_the_subject_in_at_most_three_words(response, expected):
+    assert titles.clean_title(response) == expected
+
+
+def test_provider_construction_terms_are_removed_before_saving(monkeypatch):
+    monkeypatch.setattr(titles, '_request_title', AsyncMock(return_value='Brick-Built Lizard with Long Tail'))
+    assert asyncio.run(titles.generate_title({'prompt': 'a lizard'}, None)) == 'Lizard'
 
 
 @pytest.mark.parametrize('response', ['', '  "Sunny Dachshund"  '])

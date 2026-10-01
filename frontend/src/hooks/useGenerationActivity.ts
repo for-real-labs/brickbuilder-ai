@@ -9,6 +9,7 @@ export interface GenerationActivity {
   name?: string | null;
   status: string;
   endpoint?: string;
+  createdAt?: string;
   imageUrl?: string;
   errorMessage?: string;
   previewWaitUntil?: number;
@@ -92,6 +93,7 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
           const previewWaitUntil = status.status === 'completed' && !status.preview_image_url
             ? row.previewWaitUntil ?? Date.now() + PREVIEW_WAIT_MS : undefined;
           return { ...row, status: status.status, prompt: status.prompt || row.prompt, name: status.name || row.name,
+            createdAt: status.created_at || row.createdAt,
             previewWaitUntil,
             imageUrl: status.preview_image_url || status.processed_image_url || status.external_image_url || row.imageUrl,
             errorMessage: status.error_message || undefined };
@@ -99,6 +101,7 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
         if (controller.signal.aborted) return;
         const updates = new Map<string, GenerationActivity>(active.map(row => [row.id, {
           id: row.id, prompt: row.prompt, name: row.name, status: row.status, endpoint: row.endpoint,
+          createdAt: row.created_at || rows.current.find(saved => saved.id === row.id)?.createdAt,
           imageUrl: row.preview_image_url || row.processed_image_url || row.external_image_url,
         }]));
         for (const result of settled) {

@@ -107,10 +107,16 @@ async def post_stream_json(client, url, headers, payload, provider, on_text):
                 if kind in {"error", "response.failed"}:
                     raise HTTPException(status_code=502, detail=f"{provider} stream failed")
                 if provider == "OpenAI":
-                    if kind == "response.output_text.delta":
+                    if kind in {"response.output_text.delta", "response.reasoning_summary_text.delta"}:
                         await on_text(event.get("delta", ""))
                     elif kind == "response.output_item.added" and event.get("item", {}).get("type") == "function_call":
-                        await on_text("\nPreparing the brick design…\n")
+                        await on_text(f"\n\nDesign output ({event['item'].get('name', 'design')}):\n")
+                    elif kind == "response.function_call_arguments.delta":
+                        await on_text(event.get("delta", ""))
+                    elif kind == "response.function_call_arguments.done":
+                        await on_text("\n\n")
+                    elif kind == "response.reasoning_summary_text.done":
+                        await on_text("\n\n")
                     elif kind in {"response.completed", "response.incomplete"}:
                         result = event.get("response", {})
                         completed = True
@@ -121,22 +127,26 @@ async def post_stream_json(client, url, headers, payload, provider, on_text):
                     content[index] = dict(event["content_block"])
                     if content[index].get("type") == "tool_use":
                         tool_json[index] = ""
-                        await on_text("\nPreparing the brick design…\n")
+                        await on_text(f"\n\nDesign output ({content[index].get('name', 'design')}):\n")
                 elif kind == "content_block_delta":
                     index = event["index"]
                     delta = event["delta"]
                     delta_type = delta.get("type")
                     if delta_type == "input_json_delta":
                         tool_json[index] = tool_json.get(index, "") + delta.get("partial_json", "")
+                        await on_text(delta.get("partial_json", ""))
                     else:
                         field = {"text_delta": "text", "thinking_delta": "thinking", "signature_delta": "signature"}.get(delta_type)
                         if field:
                             content[index][field] = content[index].get(field, "") + delta.get(field, "")
                             if field in {"text", "thinking"}:
                                 await on_text(delta.get(field, ""))
+                elif kind == "content_block_stop" and event["index"] not in tool_json:
+                    await on_text("\n\n")
                 elif kind == "content_block_stop" and event["index"] in tool_json:
                     index = event["index"]
                     content[index]["input"] = json.loads(tool_json[index] or "{}")
+                    await on_text("\n\n")
                 elif kind == "message_delta":
                     result.update(event.get("delta", {}))
                 elif kind == "message_stop":
@@ -212,9 +222,12 @@ class AnthropicToolConversation(ToolConversation):
             "model": self.settings.model,
             "max_tokens": self.settings.max_tokens,
             "system": self.settings.system,
-            "thinking": {"type": "adaptive"},
+            "thinking": {"type": "adaptive", "display": "summarized"},
             "messages": self.messages,
-            "tools": [{"name": t.name, "description": t.description, "input_schema": t.schema}
+            # Shape arrays can take most of a turn to write. Stream fragments
+            # immediately rather than buffering each complete tool parameter.
+            "tools": [{"name": t.name, "description": t.description, "input_schema": t.schema,
+                       **({"eager_input_streaming": True} if self.on_text else {})}
                       for t in self.settings.tools],
             # Opus 5.5 rejects forced tool use; the system prompt asks for the tool.
             "tool_choice": {"type": "auto"},
@@ -275,7 +288,7 @@ class OpenAIToolConversation(ToolConversation):
             "tools": [{"type": "function", "name": t.name, "description": t.description,
                        "parameters": t.schema} for t in self.settings.tools],
             "tool_choice": "auto",
-            "reasoning": {"effort": self.settings.reasoning_effort},
+            "reasoning": {"effort": self.settings.reasoning_effort, "summary": "auto"},
             "max_output_tokens": self.settings.max_tokens,
         }
         if self.previous_response_id:

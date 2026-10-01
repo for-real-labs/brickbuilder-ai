@@ -29,6 +29,8 @@ export interface GetGenerationResponse {
   status: GenerationStatus;
   prompt: string | null;
   name?: string | null;
+  created_at?: string | null;
+  generation_duration_seconds?: number | null;
   external_image_url: string | null;
   processed_image_url: string | null;
   preview_image_url?: string | null;

@@ -18,6 +18,46 @@ describe('LlmDesignNotes', () => {
     expect(renderToStaticMarkup(<LlmDesignNotes notes="" />)).toBe('');
     expect(renderToStaticMarkup(<LlmDesignNotes notes="Adding red roof bricks" />)).not.toContain('build-thinking-shimmer');
   });
+  it('uses the generated summary instead of truncating raw reasoning', () => {
+    const markup = renderToStaticMarkup(<LlmDesignNotes
+      notes="I need to figure out whether the radius allows the long tail to connect. Preparing the brick design…"
+      summary="Shaping the lizard tail" isThinking />);
+    expect(markup).toContain('Shaping the lizard tail');
+    expect(markup).not.toContain('Preparing');
+    expect(markup).not.toContain('radius');
+  });
+  it('waits for a generated summary without displaying partial reasoning', () => {
+    const markup = renderToStaticMarkup(<LlmDesignNotes notes="I should think about" summary="" isThinking />);
+    expect(markup).toContain('Waiting for design output');
+    expect(markup).not.toContain('I should think');
+  });
+  it.each([
+    ['Painting tortoise shell details', 'paintbrush'],
+    ['Verifying the neck-shell connection', 'shield-check'],
+    ['Shaping the lizard tail', 'shapes'],
+    ['Adjusting the wheel spacing', 'ruler'],
+    ['Bridging the snout gap', 'link'],
+    ['Reviewing the model from two angles', 'eye'],
+    ['Packing the finished model', 'package'],
+    ['Saving model files', 'save'],
+    ['Adding the tortoise feet', 'blocks'],
+  ])('matches the icon to the current activity: %s', (summary, icon) => {
+    const markup = renderToStaticMarkup(<LlmDesignNotes notes="" summary={summary} isThinking />);
+    expect(markup).toContain(`lucide-${icon}`);
+    expect(markup).toContain('aria-hidden="true"');
+  });
+  it('replaces the icon together with the current summary', () => {
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      act(() => root.render(<LlmDesignNotes notes="" summary="Painting the shell" isThinking />));
+      expect(container.querySelector('svg')?.classList.contains('lucide-paintbrush')).toBe(true);
+      act(() => root.render(<LlmDesignNotes notes="" summary="Checking the connections" isThinking />));
+      expect(container.querySelector('svg')?.classList.contains('lucide-shield-check')).toBe(true);
+      expect(container.querySelectorAll('svg')).toHaveLength(1);
+      expect(container.textContent).toBe('Checking the connections');
+    } finally { act(() => root.unmount()); }
+  });
   it('replaces the previous activity without a scrolling log', () => {
     const container = document.createElement('div');
     const root = createRoot(container);

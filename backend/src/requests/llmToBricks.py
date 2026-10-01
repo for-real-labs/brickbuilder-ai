@@ -485,6 +485,8 @@ async def _generate_ldr_with_design(
                     results.append(ToolResult(call.id, message, is_error=True))
                     continue
                 try:
+                    if on_thinking:
+                        await on_thinking("\n\nChecking the model's connections and stability.\n\n")
                     result = await loop.run_in_executor(None, build, call.input, False)
                 except DesignError as exc:
                     failures += 1
@@ -507,6 +509,8 @@ async def _generate_ldr_with_design(
                     done = True
                     break
                 reviews += 1
+                if on_thinking:
+                    await on_thinking("\n\nReviewing the model from two angles.\n\n")
                 preview = await loop.run_in_executor(None, render_preview_png, result.grid, result.unit, palette)
                 results.append(ToolResult(
                     call.id,
@@ -642,6 +646,8 @@ async def _generate_ldr(
         return LlmBuild(ldr=await _generate_ldr_direct(request, on_thinking))
     try:
         result = await _generate_ldr_with_design(request, on_thinking)
+        if on_thinking:
+            await on_thinking("\n\nTurning the voxel design into connected bricks.\n\n")
         return await asyncio.get_running_loop().run_in_executor(None, _convert_design_voxels, result.xyzrgb())
     except ValueError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
@@ -678,6 +684,8 @@ async def process_llm_to_bricks_task(
         )
 
         with tempfile.TemporaryDirectory(prefix="llm-ldr-") as temp_dir:
+            if on_thinking:
+                await on_thinking("\n\nPacking the finished brick model.\n\n")
             ldr_path = Path(temp_dir) / "model.ldr"
             ldr_path.write_text(ldr_content, encoding="utf-8")
             packer = LDrawPacker()
@@ -696,6 +704,8 @@ async def process_llm_to_bricks_task(
                 processed_image_url=image_data_url,
             )
 
+        if on_thinking:
+            await on_thinking("\n\nSaving model files and build instructions.\n\n")
         await generation_storage.store_model_file(
             generation_id, ldr_content, "ldr", raise_on_error=True
         )
@@ -717,6 +727,8 @@ async def process_llm_to_bricks_task(
                 generation_id, build.problematic_xyzrgb, "problematic_xyzrgb", raise_on_error=True
             )
         try:
+            if on_thinking:
+                await on_thinking("\n\nRendering the finished model preview.\n\n")
             preview = await asyncio.get_running_loop().run_in_executor(
                 None, render_ldraw_preview_png, ldr_content
             )
