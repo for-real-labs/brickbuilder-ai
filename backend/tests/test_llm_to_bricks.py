@@ -436,7 +436,11 @@ def test_design_mode_streams_visible_thinking_text(monkeypatch):
     asyncio.run(module._generate_ldr_with_design(LlmToBricksRequest(prompt="a tower"), on_thinking))
 
     assert conversation.sent == 2
-    assert notes == ["I am blocking out the tower silhouette.\n\n"]
+    assert notes == [
+        "I am blocking out the tower silhouette.\n\n",
+        "\n\nChecking the model's connections and stability.\n\n",
+        "\n\nReviewing the model from two angles.\n\n",
+    ]
 
 
 def test_design_mode_answers_every_tool_call_and_nudges_text_only_turns(monkeypatch):

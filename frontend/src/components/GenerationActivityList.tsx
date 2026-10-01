@@ -5,6 +5,7 @@ import posthog from 'posthog-js';
 import { GenerationActivity, isGenerationActive, isPreviewPending } from '../hooks/useGenerationActivity';
 import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
+import { GenerationElapsedTime } from './GenerationElapsedTime';
 
 export function GenerationActivityList({ generations, error, onOpen, onCancelled }: {
   generations: GenerationActivity[];
@@ -55,6 +56,7 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
                 {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
                 {active && generation.endpoint === 'llmToBricks' && <LlmGenerationOutput generationId={generation.id} active />}
+                {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
                 {active && <CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} />}
                 {generation.status === 'completed' && <button type="button"
                   className="mt-3 min-h-10 w-full rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"

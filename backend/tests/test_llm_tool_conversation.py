@@ -60,6 +60,7 @@ def test_anthropic_conversation_round_trips_tool_calls_results_and_images(monkey
     assert first["headers"]["x-api-key"] == "a-key" and first["headers"]["anthropic-workspace-id"] == "ws"
     payload = first["payload"]
     assert payload["system"] == "be a builder" and payload["tool_choice"] == {"type": "auto"}
+    assert payload["thinking"] == {"type": "adaptive", "display": "summarized"}
     assert payload["tools"] == [{"name": "submit", "description": "Submit a design.",
                                  "input_schema": {"type": "object", "properties": {}}}]
     image, text = payload["messages"][0]["content"]
@@ -98,7 +99,7 @@ def test_openai_conversation_chains_responses_and_sends_function_outputs(monkeyp
     assert sent[0]["url"] == module.OPENAI_URL
     assert sent[0]["headers"]["Authorization"] == "Bearer o-key"
     assert first["instructions"] == "be a builder" and "previous_response_id" not in first
-    assert first["reasoning"] == {"effort": "high"} and first["max_output_tokens"] == 1000
+    assert first["reasoning"] == {"effort": "high", "summary": "auto"} and first["max_output_tokens"] == 1000
     assert first["tools"] == [{"type": "function", "name": "submit", "description": "Submit a design.",
                                "parameters": {"type": "object", "properties": {}}}]
     image, text = first["input"][0]["content"]
@@ -145,7 +146,12 @@ def test_streaming_text_and_claude_thinking_reassemble_tools_without_signatures(
     else:
         events = [
             {'type': 'response.output_text.delta', 'delta': 'Building'},
+            {'type': 'response.reasoning_summary_text.delta', 'delta': 'Shaping the castle towers'},
+            {'type': 'response.reasoning_summary_text.done', 'text': 'Shaping the castle towers'},
             {'type': 'response.reasoning_text.delta', 'delta': 'private'},
+            {'type': 'response.output_item.added', 'item': {'type': 'function_call'}},
+            {'type': 'response.function_call_arguments.delta', 'delta': '{"grid":1}'},
+            {'type': 'response.function_call_arguments.done', 'arguments': '{"grid":1}'},
             {'type': 'response.completed', 'response': {'id': 'r1', 'status': 'completed', 'output': [
                 {'type': 'message', 'content': [{'type': 'output_text', 'text': 'Building'}]},
                 {'type': 'function_call', 'call_id': 't1', 'name': 'submit', 'arguments': '{"grid":1}'},
@@ -155,8 +161,13 @@ def test_streaming_text_and_claude_thinking_reassemble_tools_without_signatures(
         chunks = []
         async def on_text(text):
             chunks.append(text)
-        transport = httpx.MockTransport(lambda request: httpx.Response(200, text=''.join(
-            'data: ' + json.dumps(event) + '\n\n' for event in events)))
+        def respond(request):
+            if provider == 'Anthropic':
+                payload = json.loads(request.content)
+                assert payload['tools'][0]['eager_input_streaming'] is True
+            return httpx.Response(200, text=''.join(
+                'data: ' + json.dumps(event) + '\n\n' for event in events))
+        transport = httpx.MockTransport(respond)
         async with httpx.AsyncClient(transport=transport) as client:
             cls = AnthropicToolConversation if provider == 'Anthropic' else OpenAIToolConversation
             conversation = cls(client, SETTINGS, USER)
@@ -166,9 +177,14 @@ def test_streaming_text_and_claude_thinking_reassemble_tools_without_signatures(
             assert 'Building' in ''.join(chunks)
             assert 'private' not in ''.join(chunks)
             assert 'signature' not in ''.join(chunks)
+            assert '{"grid":1}' in ''.join(chunks)
+            assert 'Design output (' in ''.join(chunks)
+            assert 'Preparing the brick design' not in ''.join(chunks)
             if provider == 'Anthropic':
                 assert 'Planning a sturdy base' in ''.join(chunks)
                 assert conversation.messages[-1]['content'][1]['signature'] == 'signature'
+            else:
+                assert ''.join(chunks).count('Shaping the castle towers') == 1
     asyncio.run(run())
 
 

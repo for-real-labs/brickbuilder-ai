@@ -25,6 +25,8 @@ class GetGenerationResponse(BaseModel):
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
     prompt: Optional[str] = None
     name: Optional[str] = None
+    created_at: Optional[str] = None
+    generation_duration_seconds: Optional[float] = None
     detail_level: Optional[float] = None
     ldr_content: Optional[str] = None  # Only available when completed
     mpd_url: Optional[str] = None  # Only available when completed
@@ -127,6 +129,8 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             status=status,
             prompt=prompt,
             name=name,
+            created_at=generation.get("created_at"),
+            generation_duration_seconds=generation.get("generation_duration_seconds"),
             detail_level=detail_level,
             external_image_url=external_image_url,
             processed_image_url=processed_image_url,

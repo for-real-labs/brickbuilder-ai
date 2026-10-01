@@ -613,6 +613,7 @@ export default function LandingPage() {
     const controller = new AbortController();
     generationAbortRef.current = controller;
     setActiveGenerationId(null);
+    const generationStartedAt = new Date().toISOString();
     
     try {
       // Convert size to voxelSize (similar to BrickBuilder component)
@@ -753,7 +754,7 @@ export default function LandingPage() {
       if (!session) recordAnonymousGeneration(generationId);
       
       if (generationMethod === 'llm') {
-        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: 'llmToBricks' });
+        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: 'llmToBricks', createdAt: generationStartedAt });
         setLoading(false);
         setActiveLoadingMethod(null);
         setGenerationStatus(null);

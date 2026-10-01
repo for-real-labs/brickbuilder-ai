@@ -70,6 +70,32 @@ def test_extract_last_step_handles_explicit_implicit_and_no_steps():
     assert extract_last_step_from_ldr(f"{first}\n0 STEP") == first + "\n"
 
 
+def test_generation_status_returns_the_original_creation_timestamp(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from src.requests import getGeneration as module
+    started = '2026-10-01T18:00:00+00:00'
+    row = {'id': 'g', 'user_id': 'owner', 'user_type': 'authenticated', 'status': 'completed', 'created_at': started, 'generation_duration_seconds': 32.5}
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value=row)))
+    result = asyncio.run(module.get_generation(module.GetGenerationRequest(generation_id='g'),
+        {'authenticated': True, 'user_id': 'owner'}))
+    assert result.created_at == started
+    assert result.generation_duration_seconds == 32.5
+
+
+def test_generation_timestamp_does_not_bypass_ownership(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from fastapi import HTTPException
+    from src.requests import getGeneration as module
+    row = {'id': 'g', 'user_id': 'owner', 'user_type': 'authenticated', 'status': 'processing', 'created_at': '2026-10-01T18:00:00Z'}
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value=row)))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(module.get_generation(module.GetGenerationRequest(generation_id='g'),
+            {'authenticated': True, 'user_id': 'other'}))
+    assert error.value.status_code == 404
+
+
 @pytest.mark.parametrize("bad", ["", "   "])
 def test_ldr_request_rejects_empty_content(bad):
     with pytest.raises(ValidationError):

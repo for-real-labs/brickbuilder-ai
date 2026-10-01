@@ -41,6 +41,7 @@ export interface LlmToBricksResponse {
 
 export interface LlmGenerationOutput {
   text: string;
+  summary?: string;
   status: string;
   error?: string | null;
 }

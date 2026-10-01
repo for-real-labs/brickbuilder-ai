@@ -24,6 +24,22 @@ function Harness({ owner = 'user', enabled = true }: { owner?: string; enabled?:
 const job = (id: string) => ({ id, prompt: `Build ${id}`, status: 'processing', endpoint: 'llmToBricks' });
 const page = (generations: unknown[], has_more = false) => ({ generations, has_more, total_count: generations.length });
 
+it('restores the server start timestamp and persists it across leaving and returning', async () => {
+  vi.setSystemTime(new Date('2026-10-01T18:00:30Z'));
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([
+    { ...job('timed'), created_at: '2026-10-01T18:00:00+00:00' },
+  ] as never);
+  await act(async () => root.render(<Harness />));
+  expect(container.textContent).toContain('Building for 30s');
+  expect(activity.generations[0].createdAt).toBe('2026-10-01T18:00:00+00:00');
+  expect(JSON.parse(localStorage.getItem('pending_generations:v2:user')!)[0].createdAt).toBe('2026-10-01T18:00:00+00:00');
+  act(() => root.unmount());
+  vi.setSystemTime(new Date('2026-10-01T18:01:30Z'));
+  root = createRoot(container);
+  await act(async () => root.render(<Harness />));
+  expect(container.textContent).toContain('Building for 1m 30s');
+});
+
 beforeEach(() => {
   vi.useFakeTimers();
   open.mockReset();
