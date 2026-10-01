@@ -41,6 +41,7 @@ export interface LlmToBricksResponse {
 
 export interface LlmGenerationOutput {
   text: string;
+  summary?: string;
   status: string;
   error?: string | null;
 }
@@ -89,7 +90,7 @@ export class LlmToBricksApiService {
           const event = JSON.parse(data);
           if (event.type !== 'output' || typeof event.text !== 'string' || typeof event.status !== 'string') continue;
           onOutput(event);
-          if (event.status === 'completed' || event.status === 'failed') return true;
+          if (['completed', 'failed', 'cancelled'].includes(event.status)) return true;
         }
         if (done) return false;
       }
@@ -110,7 +111,7 @@ export class LlmToBricksApiService {
     }
 
     return {
-      source_generation_id: request.sourceGenerationId,
+      generation_id: request.sourceGenerationId,
       prompt: prompt || undefined,
       image_base64: request.imageBase64,
       image_media_type: request.imageMediaType || 'image/png',

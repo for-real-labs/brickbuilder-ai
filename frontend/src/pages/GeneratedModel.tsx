@@ -1,3 +1,7 @@
+import { GenerationTitle } from '../components/GenerationTitle';
+import { CancelGenerationButton } from '../components/CancelGenerationButton';
+import { LlmPreviewLoader } from '../components/LlmPreviewLoader';
+import { LlmGenerationOutput } from '../components/LlmGenerationOutput';
 import { GenerationNotificationsApi } from "../services/generationNotificationsApi";
 import { useGenerationNotifications } from "../contexts/GenerationNotificationsContext";
 import { isGenerationActive } from "../hooks/useGenerationActivity";
@@ -212,6 +216,8 @@ export default function GeneratedModel() {
   const { markViewed, refresh: refreshNotifications } = useGenerationNotifications();
   const [displayedGenerationId, setDisplayedGenerationId] = useState<string | null>(null);
   const [generationLoading, setGenerationLoading] = React.useState(false);
+  const [pendingGeneration, setPendingGeneration] = React.useState<GetGenerationResponse | null>(null);
+  const modelLoadAbortRef = React.useRef<AbortController | null>(null);
   const [generationError, setGenerationError] = React.useState<string | null>(null);
   const [currentGenerationId, setCurrentGenerationId] = React.useState<string | null>(null);
   const [screenshots, setScreenshots] = React.useState<{ angle1: string; angle2: string } | null>(null);
@@ -261,6 +267,7 @@ export default function GeneratedModel() {
   // Community toggle state
   const [isCommunity, setIsCommunity] = React.useState<boolean>(false);
   const [generationOwnerId, setGenerationOwnerId] = React.useState<string | null>(null);
+  const [ownershipGenerationId, setOwnershipGenerationId] = React.useState<string | null>(null);
   const [communityToggleLoading, setCommunityToggleLoading] = React.useState<boolean>(false);
   const [communityToggleError, setCommunityToggleError] = React.useState<string | null>(null);
   const [likeCount, setLikeCount] = React.useState<number>(0);
@@ -312,7 +319,7 @@ export default function GeneratedModel() {
 
   // Only the owner of the generation (when logged in) can post / unpost to community
   const canToggleCommunity = Boolean(
-    currentUser?.id && generationOwnerId && currentUser.id === generationOwnerId
+    currentUser?.id && ownershipGenerationId === currentGenerationId && generationOwnerId && currentUser.id === generationOwnerId
   );
   // Show the community button to the owner, or to any logged-out visitor (who
   // will be prompted to log in when they click it). Also keep it visible while
@@ -393,6 +400,8 @@ export default function GeneratedModel() {
   // Initialize model data on component mount - check URL id param first, then fetch from backend, fall back to localStorage
   React.useEffect(() => {
     const controller = new AbortController();
+    modelLoadAbortRef.current = controller;
+    setPendingGeneration(null);
     setDisplayedGenerationId(null);
     setSceneReady(false);
     const initializeModelData = async () => {
@@ -407,6 +416,7 @@ export default function GeneratedModel() {
           // First check the current status
           const statusResponse = await GetGenerationApiService.getGeneration(urlGenerationId, controller.signal);
           if (controller.signal.aborted) return;
+          setPendingGeneration(statusResponse);
           // Returning to the original model resumes its latest edit, even from another device.
           try {
             const edit = await GenerationNotificationsApi.latestEdit(urlGenerationId, controller.signal);
@@ -429,6 +439,13 @@ export default function GeneratedModel() {
             const generationData = await GetGenerationApiService.pollUntilComplete(
               urlGenerationId,
               (response: GetGenerationResponse) => {
+                if (controller.signal.aborted) return;
+                setPendingGeneration(response);
+                if (response.status === 'cancelled') {
+                  controller.abort();
+                  navigate(response.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(response.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
+                  return;
+                }
                 if (response.external_image_url) {
                   setEditPreviewImageUrl(response.external_image_url);
                 }
@@ -449,6 +466,10 @@ export default function GeneratedModel() {
           }
           
           // If failed, show error
+          if (statusResponse.status === 'cancelled') {
+            navigate(statusResponse.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
+            return;
+          }
           if (statusResponse.status === 'failed') {
             throw new Error(statusResponse.error_message || 'Generation failed');
           }
@@ -471,6 +492,7 @@ export default function GeneratedModel() {
             
             await processCompletedGeneration(urlGenerationId, {
               generation_id: statusResponse.generation_id,
+              name: statusResponse.name,
               prompt: statusResponse.prompt || 'Your Model',
               ldr_content: statusResponse.ldr_content,
               mpd_url: statusResponse.mpd_url,
@@ -505,6 +527,7 @@ export default function GeneratedModel() {
             }
             await processCompletedGeneration(stateGenerationId, {
               generation_id: statusResponse.generation_id,
+              name: statusResponse.name,
               prompt: statusResponse.prompt || stateData?.modelName || 'Your Model',
               ldr_content: statusResponse.ldr_content,
               mpd_url: statusResponse.mpd_url,
@@ -514,6 +537,10 @@ export default function GeneratedModel() {
             return;
           }
           
+          if (statusResponse.status === 'cancelled') {
+            navigate(statusResponse.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
+            return;
+          }
           if (statusResponse.status === 'failed') {
             throw new Error(statusResponse.error_message || 'Generation failed');
           }
@@ -563,7 +590,7 @@ export default function GeneratedModel() {
             setLdrContent(statusResponse.ldr_content);
             
             // Set model name from backend prompt
-            const freshModelName = statusResponse.prompt || localStorage.getItem('lastModelName') || "Your Model";
+            const freshModelName = statusResponse.name || statusResponse.prompt || localStorage.getItem('lastModelName') || "Your Model";
             setModelName(freshModelName);
             localStorage.setItem('lastModelName', freshModelName);
             
@@ -619,6 +646,7 @@ export default function GeneratedModel() {
       data: { 
         generation_id: string; 
         prompt: string; 
+        name?: string | null;
         ldr_content: string; 
         mpd_url: string | null;
         xyzrgb_url: string | null; 
@@ -642,7 +670,7 @@ export default function GeneratedModel() {
       setLdrContent(data.ldr_content);
       
       // Set model name from prompt
-      const fetchedModelName = data.prompt || "Your Model";
+      const fetchedModelName = data.name || data.prompt || "Your Model";
       setModelName(fetchedModelName);
       
       // Get MPD content from URL or convert LDR to MPD
@@ -721,6 +749,7 @@ export default function GeneratedModel() {
         setNeedsPreviewUpload(false);
         return;
       }
+      setGenerationOwnerId(null);
       try {
         const { data, error } = await supabase
           .from('generations')
@@ -742,6 +771,7 @@ export default function GeneratedModel() {
         } | null;
         setIsCommunity(Boolean(row?.is_community));
         setGenerationOwnerId(row?.user_id ?? null);
+        setOwnershipGenerationId(currentGenerationId);
         setNeedsPreviewUpload(!row?.preview_image_url);
       } catch (e) {
         if (!cancelled) {
@@ -791,7 +821,7 @@ export default function GeneratedModel() {
   // Whether the signed-in user owns the current generation. Required to
   // upload a preview image (and matches the backend's authorization check).
   const isGenerationOwner = Boolean(
-    currentUser?.id && generationOwnerId && currentUser.id === generationOwnerId
+    currentUser?.id && ownershipGenerationId === currentGenerationId && generationOwnerId && currentUser.id === generationOwnerId
   );
 
   // Called once after ThreeLDRViewer finishes loading the model. Stores the
@@ -1016,7 +1046,7 @@ export default function GeneratedModel() {
     setEditHistoryOpen(false);
     setEditHistory([]);
     setEditHistoryError(null);
-  }, [processedImageUrl]);
+  }, [currentGenerationId]);
 
   React.useEffect(() => {
     if (!editHistoryOpen) return;
@@ -1042,17 +1072,17 @@ export default function GeneratedModel() {
     }
 
     setEditHistoryOpen(true);
-    if (!processedImageUrl) return;
+    if (!currentGenerationId) return;
 
     setEditHistoryLoading(true);
     setEditHistoryError(null);
     try {
       const response = await GetGenerationsByImageApiService.getGenerationsByImage(
         accessToken || undefined,
-        processedImageUrl,
+        currentGenerationId,
       );
       setEditHistory([...response.generations].sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+        (a, b) => b.version - a.version,
       ));
     } catch (error) {
       console.error('Failed to load edit history:', error);
@@ -1060,7 +1090,7 @@ export default function GeneratedModel() {
     } finally {
       setEditHistoryLoading(false);
     }
-  }, [accessToken, editHistoryOpen, processedImageUrl]);
+  }, [accessToken, currentGenerationId, editHistoryOpen]);
 
   const handleToggleCommunity = async () => {
     if (!currentGenerationId || communityToggleLoading) return;
@@ -1176,6 +1206,7 @@ export default function GeneratedModel() {
       } | null;
       setIsCommunity(Boolean(row?.is_community));
       setGenerationOwnerId(row?.user_id ?? null);
+      setOwnershipGenerationId(currentGenerationId);
       setNeedsPreviewUpload(!row?.preview_image_url);
     } catch (e) {
       console.warn('Failed to refresh generation ownership:', e);
@@ -1789,21 +1820,22 @@ export default function GeneratedModel() {
         {/* Loading state when fetching generation by ID */}
         {generationLoading && (
           <div className="flex flex-col items-center justify-center py-32">
-            {/* Preview image during loading */}
-            {editPreviewImageUrl && (
-              <div className="relative w-full max-w-md mb-6">
-                <img
-                  src={editPreviewImageUrl}
-                  alt="Generation preview"
-                  className="w-full rounded-xl shadow-lg border border-slate-200"
-                />
-                <div className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-                  Processing...
-                </div>
-              </div>
-            )}
-            <Loader2 className="h-12 w-12 animate-spin text-[#f44336] mb-4" />
-            <p className="text-slate-600">Preparing your model…</p>
+            <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200">
+              <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
+            </div>
+            <div className="mt-5 max-w-md w-full">
+              {pendingGeneration?.endpoint === 'llmToBricks'
+                ? <LlmGenerationOutput generationId={pendingGeneration.generation_id} active />
+                : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
+            </div>
+            {pendingGeneration && isGenerationActive(pendingGeneration.status) && <CancelGenerationButton
+              generationId={pendingGeneration.generation_id} isEdit={(pendingGeneration.version ?? 1) > 1}
+              onCancelled={() => {
+                modelLoadAbortRef.current?.abort();
+                refreshNotifications();
+                navigate(pendingGeneration.previous_completed_generation_id
+                  ? `/generated-model?id=${encodeURIComponent(pendingGeneration.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
+              }} />}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
           </div>
@@ -1840,22 +1872,20 @@ export default function GeneratedModel() {
         {/* Main content - only show when not loading and no error */}
         {!generationLoading && !generationError && (
           <>
-        {/* Centered Title - hide when in edit mode */}
-        {!showVoxelEditor && (
-          <section className="relative mt-2 mb-2 md:mb-3 landing-fade-in landing-delay-2">
-            {/* <h2 className="text-lg sm:text-xl lg:text-2xl font-semibold text-center break-words px-4">
-              Successfully Generated Model 🎉
-            </h2> */}
-            {currentGenerationId && (
-              <p className="text-xs text-slate-400 text-center mt-1">
-                {/* id: {currentGenerationId} */}
-              </p>
-            )}
-            {/* <p className="text-sm text-slate-500 text-center italic mt-3 px-4">
-              Generations offer a starting point, but it's up to you to resize, recolor, and reshape your model to perfection!
-            </p> */}
-          </section>
-        )}
+        <section className="mt-3 mb-5 sm:mb-6">
+          <GenerationTitle
+            key={currentGenerationId || 'local'}
+            generationId={currentGenerationId || undefined}
+            name={modelName}
+            canEdit={canToggleCommunity && !isSavePolling}
+            accessToken={accessToken || undefined}
+            onSaved={name => {
+              setModelName(name);
+              localStorage.setItem('lastModelName', name);
+              refreshNotifications();
+            }}
+          />
+        </section>
 
 {/* Voxel Editor - shown when edit mode is active */}
 {showVoxelEditor && xyzrgbContent ? (
@@ -2031,7 +2061,7 @@ export default function GeneratedModel() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {editHistory.map((edit, index) => {
+                      {editHistory.map((edit) => {
                         const isCurrentGeneration = edit.id === currentGenerationId;
                         const isCompleted = edit.status === 'completed';
 
@@ -2048,7 +2078,7 @@ export default function GeneratedModel() {
                               <div className="min-w-0 flex-1">
                                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
                                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                    Version {editHistory.length - index}
+                                    Version {edit.version}
                                   </span>
                                   {isCurrentGeneration && (
                                     <span className="rounded-full bg-[#f44336] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
@@ -2073,7 +2103,7 @@ export default function GeneratedModel() {
 
                               {isCompleted && !isCurrentGeneration ? (
                                 <a
-                                  href={getGeneratedModelPath(edit.id)}
+                                  href={`${getGeneratedModelPath(edit.id)}&exact=1`}
                                   className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-[11px] font-medium text-slate-700 transition-colors hover:border-[#f44336]/60 hover:text-[#f44336]"
                                 >
                                   <Eye size={13} />
@@ -2106,9 +2136,9 @@ export default function GeneratedModel() {
               type="button"
               aria-controls="edit-history-menu"
               aria-expanded={editHistoryOpen}
-              disabled={!processedImageUrl || isSavePolling}
+              disabled={!currentGenerationId || isSavePolling}
               onClick={() => { void handleToggleEditHistory(); }}
-              title={!processedImageUrl ? 'No edit history is available for this model' : 'View previous edits'}
+              title={!currentGenerationId ? 'No edit history is available for this model' : 'View previous edits'}
               className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-150 hover:scale-[1.03] hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100 sm:px-4"
             >
               <History size={14} />

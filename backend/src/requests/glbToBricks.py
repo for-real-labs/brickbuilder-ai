@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from ..utils.auth import get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.posthog_client import track_image_conversion, track_error
 from ..utils.pack_ldraw_model import LDrawPacker
+from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import generation_storage
 from ..utils.conversions.glb2brick import glb2brick
 
@@ -251,7 +252,7 @@ async def glb_to_bricks(
             model_3d=f"upload:{voxelizer}",
         )
 
-        asyncio.create_task(
+        start_generation_task(generation_id,
             process_glb_to_bricks_task(
                 generation_id=generation_id,
                 glb_path=glb_path,

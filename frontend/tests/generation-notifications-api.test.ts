@@ -11,6 +11,10 @@ it('uses authenticated transport for feeds, read receipts, and edit recovery', a
   expect(authenticatedApiFetch).toHaveBeenLastCalledWith(expect.stringContaining('/generation-notifications'), { signal: controller.signal });
   await GenerationNotificationsApi.markViewed('model');
   expect(authenticatedApiFetch).toHaveBeenLastCalledWith(expect.stringContaining('/generation/model/viewed'), { method: 'POST' });
+  await GenerationNotificationsApi.markAllRead(['model']);
+  expect(authenticatedApiFetch).toHaveBeenLastCalledWith(expect.stringContaining('/generation-notifications/read'), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ generation_ids: ['model'] }),
+  });
   await GenerationNotificationsApi.latestEdit('source', controller.signal);
   expect(authenticatedApiFetch).toHaveBeenLastCalledWith(expect.stringContaining('/generation/source/latest-edit'), { signal: controller.signal });
 });

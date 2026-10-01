@@ -111,9 +111,69 @@ def test_existing_stream_stops_when_guest_job_is_claimed(monkeypatch):
     asyncio.run(run())
 
 
+@pytest.mark.parametrize('owner_type,owner_id', [
+    ('anonymous', 'legacy-fingerprint'),
+    ('anonymous', 'guest_' + 'a' * 64),
+    ('authenticated', 'account-owner'),
+])
+def test_completed_model_links_are_public_but_reasoning_and_ownership_stay_private(
+    monkeypatch, owner_type, owner_id,
+):
+    from src.utils import authorization
+
+    job_id = '7c1326b2-890a-4fb8-9750-d3aa15cdc8e4'
+    row = {
+        'id': job_id, 'user_id': owner_id, 'user_type': owner_type,
+        'status': 'completed', 'is_community': False, 'prompt': 'A little dinosaur',
+        'ldr_url': 'https://storage.example.test/model.ldr',
+    }
+    ldr = b'0 Dinosaur\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n'
+    storage = SimpleNamespace(
+        get_generation=AsyncMock(return_value=row),
+        download_file_from_storage=AsyncMock(return_value=ldr),
+    )
+    monkeypatch.setattr(api, 'generation_storage', storage)
+    monkeypatch.setattr(getGeneration, 'generation_storage', storage)
+    monkeypatch.setattr(authorization, 'generation_storage', storage)
+    output = Mock()
+    monkeypatch.setattr(api, 'output_events', output)
+    client = TestClient(api.app)
+    for caller in [identity(None), identity('b' * 64), {'authenticated': True, 'user_id': 'other-account'}]:
+        api.app.dependency_overrides[auth.get_optional_identity] = lambda: caller
+        try:
+            model_response = client.get(f'/generation/{job_id}')
+            assert model_response.headers['cache-control'] == 'private, no-store'
+            for response in [model_response,
+                             client.post('/getGeneration', json={'generation_id': job_id})]:
+                assert response.status_code == 200
+                assert response.json()['ldr_content'] == ldr.decode()
+                assert 'user_id' not in response.json()
+            assert client.get(f'/generation/{job_id}/output').status_code == 404
+            with pytest.raises(HTTPException) as denied:
+                asyncio.run(authorization.get_generation_or_404(job_id, caller))
+            assert denied.value.status_code == 404
+        finally:
+            api.app.dependency_overrides.clear()
+    output.assert_not_called()
+
+
+@pytest.mark.parametrize('status', ['queued', 'started', 'processing', 'ldr_processing', 'failed', 'cancelled'])
+def test_unfinished_and_failed_models_remain_private(monkeypatch, status):
+    job_id = '7c1326b2-890a-4fb8-9750-d3aa15cdc8e4'
+    row = {'id': job_id, 'user_id': 'legacy-owner', 'user_type': 'anonymous',
+           'status': status, 'is_community': True, 'prompt': 'Private prompt'}
+    monkeypatch.setattr(getGeneration, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value=row)))
+    client = TestClient(api.app)
+    api.app.dependency_overrides[auth.get_optional_identity] = lambda: identity(None)
+    try:
+        assert client.get(f'/generation/{job_id}').status_code == 404
+    finally:
+        api.app.dependency_overrides.clear()
+
+
 def test_claim_requires_guest_proof_and_scopes_update(monkeypatch):
     guest = identity('a' * 64)
-    row = {'id': 'job', 'user_type': 'anonymous', 'user_id': guest['user_id']}
+    row = {'id': 'job', 'generation_id': 'model', 'user_type': 'anonymous', 'user_id': guest['user_id']}
     query = Mock()
     query.select.return_value = query
     query.eq.return_value = query
@@ -128,13 +188,14 @@ def test_claim_requires_guest_proof_and_scopes_update(monkeypatch):
     query.update.assert_not_called()
     result = asyncio.run(claimGeneration.claim_generation(claimGeneration.ClaimGenerationRequest(generation_id='job'), {**logged_in, 'guest_user_id': guest['user_id']}))
     assert result.claimed
+    query.eq.assert_any_call('generation_id', 'model')
     query.eq.assert_any_call('user_id', guest['user_id'])
 
 
 def test_image_history_cannot_override_owner():
     with pytest.raises(HTTPException) as error:
         asyncio.run(getGenerationsByImage.get_generations_by_image(
-            getGenerationsByImage.GetGenerationsByImageRequest(processed_image_url='https://example.test/image.png', user_id='victim'), identity('a' * 64)))
+            getGenerationsByImage.GetGenerationsByImageRequest(generation_id='model', user_id='victim'), identity('a' * 64)))
     assert error.value.status_code == 403
 
 

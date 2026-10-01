@@ -4,6 +4,7 @@ import { GetGenerationApiService, type GetGenerationResponse } from '../src/serv
 import { GlbToBricksApiService } from '../src/services/glbToBricksApi';
 import { ImageToBricksApiService } from '../src/services/imageToBricksApi';
 import { TextToBricksApiService } from '../src/services/textToBricksApi';
+import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 
 const response = (data: unknown, ok = true, body?: ReadableStream) => ({
   ok, status: ok ? 200 : 400, statusText: ok ? 'OK' : 'Bad Request',
@@ -22,12 +23,68 @@ const sse = (events: unknown[], options?: { crlf?: boolean; trailingDelimiter?: 
 describe('generation services', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
 
+  it('requests history by revision ID, including image-free LLM models', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({generations: [{id: 'edit', generation_id: 'root', version: 3}], total_count: 1}) as unknown as Response);
+    const history = await GetGenerationsByImageApiService.getGenerationsByImage('token', 'revision');
+    const [, init] = vi.mocked(fetch).mock.calls[0];
+    expect(JSON.parse(init?.body as string)).toEqual({generation_id: 'revision'});
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
+    expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
+    expect(history.generations[0].version).toBe(3);
+  });
+
+  it('posts cancellation with owner credentials and reports completed-job conflicts', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(response({ status: 'cancelled' }) as unknown as Response);
+    await GetGenerationApiService.cancelGeneration('job/one');
+    const [url, init] = vi.mocked(fetch).mock.calls[0];
+    expect(String(url)).toContain('/generation/job%2Fone/cancel');
+    expect(init?.method).toBe('POST');
+    expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
+    vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 409 } as Response);
+    await expect(GetGenerationApiService.cancelGeneration('job')).rejects.toThrow('already finished');
+  });
+
+  it('explains network cancellation failures and allows a successful retry', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce(new TypeError('Failed to fetch'));
+    await expect(GetGenerationApiService.cancelGeneration('job')).rejects.toThrow(
+      'Unable to reach the server to cancel this build. Please try again.',
+    );
+    vi.mocked(fetch).mockResolvedValueOnce(response({ status: 'cancelled' }) as unknown as Response);
+    await expect(GetGenerationApiService.cancelGeneration('job')).resolves.toBeUndefined();
+  });
+
+  it('stops polling a server-cancelled job and does not return a late result after abort', async () => {
+    const base = { generation_id: 'g', status: 'cancelled', prompt: 'Castle', ldr_content: 'ldr' } as GetGenerationResponse;
+    vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(base);
+    await expect(GetGenerationApiService.pollUntilComplete('g')).rejects.toMatchObject({ name: 'AbortError' });
+    const controller = new AbortController();
+    vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async () => {
+      controller.abort();
+      return { ...base, status: 'completed' };
+    });
+    const update = vi.fn();
+    await expect(GetGenerationApiService.pollUntilComplete('g', update, 0, 1, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  it('aborts polling during the wait and removes abort listeners', async () => {
+    vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'g', status: 'processing' } as GetGenerationResponse);
+    const controller = new AbortController();
+    const removed = vi.spyOn(controller.signal, 'removeEventListener');
+    const update = vi.fn();
+    const pending = GetGenerationApiService.pollUntilComplete('g', update, 10000, 120, controller.signal);
+    await Promise.resolve();
+    controller.abort();
+    await expect(pending).rejects.toMatchObject({ name: 'AbortError' });
+    expect(removed).toHaveBeenCalled();
+  });
+
   it('sends the source generation and prompt for voxel edits with owner credentials', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(response({ generation_id: 'edited', message: 'ok' }) as unknown as Response);
     await LlmToBricksApiService.generate({ sourceGenerationId: 'source', prompt: '  red roof  ' }, 'token');
     const [url, init] = vi.mocked(fetch).mock.calls[0];
     expect(String(url)).toContain('/llmToBricks');
-    expect(JSON.parse(init?.body as string)).toMatchObject({ source_generation_id: 'source', prompt: 'red roof' });
+    expect(JSON.parse(init?.body as string)).toMatchObject({ generation_id: 'source', prompt: 'red roof' });
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
     expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
   });
@@ -91,4 +148,11 @@ describe('generation services', () => {
     const controller = new AbortController(); controller.abort();
     await expect(GetGenerationApiService.pollUntilComplete('g', undefined, 0, 1, controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
   });
+});
+
+it('preserves the saved model title when returning a completed polling result', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    generation_id: 'g', status: 'completed', name: 'Moon Rover', prompt: 'please make a rover', ldr_content: 'ldr',
+  } as GetGenerationResponse);
+  expect(await GetGenerationApiService.pollUntilComplete('g')).toMatchObject({name: 'Moon Rover', prompt: 'please make a rover'});
 });

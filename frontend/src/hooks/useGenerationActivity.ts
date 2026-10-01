@@ -6,8 +6,10 @@ import { GetUserGenerationsApiService } from '../services/getUserGenerationsApi'
 export interface GenerationActivity {
   id: string;
   prompt: string;
+  name?: string | null;
   status: string;
   endpoint?: string;
+  createdAt?: string;
   imageUrl?: string;
   errorMessage?: string;
   previewWaitUntil?: number;
@@ -19,7 +21,7 @@ export const isPreviewPending = (row: GenerationActivity) =>
 const PREVIEW_WAIT_MS = 60_000;
 
 export const isGenerationActive = (status: string) =>
-  ['queued', 'started', 'processing', 'ldr_processing'].includes(status);
+  ['queued', 'started', 'processing', 'ldr_processing', 'resizing'].includes(status);
 
 const storageKey = (owner: string) => `pending_generations:${owner}`;
 
@@ -90,18 +92,24 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
           const status = await GetGenerationApiService.getGeneration(row.id, controller.signal);
           const previewWaitUntil = status.status === 'completed' && !status.preview_image_url
             ? row.previewWaitUntil ?? Date.now() + PREVIEW_WAIT_MS : undefined;
-          return { ...row, status: status.status, prompt: status.prompt || row.prompt,
+          return { ...row, status: status.status, prompt: status.prompt || row.prompt, name: status.name || row.name,
+            createdAt: status.created_at || row.createdAt,
             previewWaitUntil,
             imageUrl: status.preview_image_url || status.processed_image_url || status.external_image_url || row.imageUrl,
             errorMessage: status.error_message || undefined };
         }));
         if (controller.signal.aborted) return;
         const updates = new Map<string, GenerationActivity>(active.map(row => [row.id, {
-          id: row.id, prompt: row.prompt, status: row.status, endpoint: row.endpoint,
+          id: row.id, prompt: row.prompt, name: row.name, status: row.status, endpoint: row.endpoint,
+          createdAt: row.created_at || rows.current.find(saved => saved.id === row.id)?.createdAt,
           imageUrl: row.preview_image_url || row.processed_image_url || row.external_image_url,
         }]));
         for (const result of settled) {
           if (result.status === 'fulfilled') updates.set(result.value.id, result.value);
+        }
+        // A refresh started before cancellation must not revive a stopped card.
+        for (const row of rows.current) {
+          if (row.status === 'cancelled') updates.set(row.id, row);
         }
         // Read the latest rows here so a job submitted during a refresh isn't lost.
         rows.current = [...updates.values(), ...rows.current.filter(row => !updates.has(row.id))];

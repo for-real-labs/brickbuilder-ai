@@ -16,6 +16,7 @@ from .auth import supabase_client
 from .community_likes import is_community_likes_schema_error
 from .image_processing import convert_base64_to_png
 from .brickowl_utils import parse_ldr_file, generate_parts_list_csv
+from .generation_titles import generate_title
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class GenerationStorage:
         endpoint: str = "textToBricks",
         image_model: Optional[str] = None,
         model_3d: Optional[str] = None,
-        source_generation_id: Optional[str] = None
+        edit_generation_id: Optional[str] = None
     ) -> str:
         """
         Create a new generation record and return the generation ID
@@ -65,7 +66,7 @@ class GenerationStorage:
             generation_data = {
                 "id": generation_id,
                 "notification_seen": False,
-                "source_generation_id": source_generation_id,
+                "generation_id": generation_id,
                 "user_id": user_id,
                 "user_type": user_type,
                 "prompt": prompt,
@@ -74,7 +75,19 @@ class GenerationStorage:
                 "created_at": datetime.utcnow().isoformat(),
                 "status": "started"
             }
-            
+            # The input revision is needed to inherit model identity and title,
+            # but is not stored as a parent link on the new revision.
+            if edit_generation_id:
+                source = await self.get_generation(edit_generation_id)
+                if not source:
+                    raise ValueError("Source generation not found")
+                if source.get("user_id") == user_id and source.get("user_type") == user_type:
+                    generation_data["generation_id"] = source.get("generation_id") or source["id"]
+                elif not (source.get("is_community") and source.get("status") == "completed"):
+                    raise ValueError("Source generation belongs to another owner")
+                if source.get("name"):
+                    generation_data["name"] = source["name"]
+
             # Add model information if provided
             if image_model:
                 generation_data["model_used_image"] = image_model
@@ -563,6 +576,8 @@ class GenerationStorage:
             prompt_enhancement: Optional prompt enhancement text that was used
         """
         try:
+            if status == "completed":
+                await self.ensure_generation_name(generation_id)
             update_data = {
                 "status": status,
                 "updated_at": datetime.utcnow().isoformat()
@@ -574,13 +589,36 @@ class GenerationStorage:
             if prompt_enhancement:
                 update_data["prompt_enhancement"] = prompt_enhancement
                 
-            result = self.client.table("generations").update(update_data).eq("id", generation_id).execute()
-            # logger.info(f"Updated generation {generation_id} status to: {status}")
+            result = self.client.table("generations").update(update_data).eq("id", generation_id).neq("status", "cancelled").execute()
+            # A cancelled job stays cancelled even if an executor finishes later.
             
         except Exception as e:
             logger.error(f"Failed to update status for generation {generation_id}: {e}")
             # Don't raise - this shouldn't break the main flow
+
+    async def ensure_generation_name(self, generation_id: str) -> None:
+        """Save an automatic title before publishing completion; never replace an owner name."""
+        try:
+            row = await self.get_generation(generation_id)
+            if not row or row.get("name") or row.get("status") == "cancelled":
+                return
+            name = await generate_title(row, self.client.storage)
+            (self.client.table("generations").update({"name": name})
+             .eq("id", generation_id).is_("name", "null").neq("status", "cancelled").execute())
+        except Exception:
+            # Naming must never prevent a completed build from being delivered.
+            logger.warning("Unable to save model title for %s", generation_id)
     
+    async def cancel_generation(self, generation_id: str) -> bool:
+        from .generation_tasks import ACTIVE_STATUSES
+
+        result = self.client.table("generations").update({
+            "status": "cancelled",
+            "updated_at": datetime.utcnow().isoformat(),
+            "error_message": None,
+        }).eq("id", generation_id).in_("status", list(ACTIVE_STATUSES)).execute()
+        return bool(result.data)
+
     async def update_detail_level(self, generation_id: str, detail_level: float) -> None:
         """Record the model's actual size so the resize slider starts at it."""
         try:
@@ -704,7 +742,7 @@ class GenerationStorage:
         offset: int = 0
     ) -> list[Dict[str, Any]]:
         """
-        Retrieve generations for a specific user
+        Retrieve the latest version per model, or every job for an activity filter
         
         Args:
             user_id: User ID to filter by
@@ -717,7 +755,7 @@ class GenerationStorage:
             List of generation data dictionaries
         """
         try:
-            query = (self.client.table("generations")
+            query = (self.client.table("generations" if status_filter else "latest_generations")
                      .select("*")
                      .eq("user_id", user_id)
                      .eq("user_type", user_type))
@@ -726,7 +764,7 @@ class GenerationStorage:
             if status_filter:
                 query = query.in_("status", status_filter)
             
-            result = (query.order("created_at", desc=True)
+            result = (query.order("created_at", desc=True).order("id", desc=True)
                      .range(offset, offset + limit - 1)
                      .execute())
             
@@ -743,7 +781,7 @@ class GenerationStorage:
         status_filter: Optional[List[str]] = None,
     ) -> int:
         """
-        Count total generations for a specific user.
+        Count models for a user, or individual jobs for an activity filter.
 
         Args:
             user_id: User ID to filter by
@@ -754,7 +792,7 @@ class GenerationStorage:
             Total number of generations matching the filters (0 on error)
         """
         try:
-            query = (self.client.table("generations")
+            query = (self.client.table("generations" if status_filter else "latest_generations")
                      .select("id", count="exact")
                      .eq("user_id", user_id)
                      .eq("user_type", user_type))
@@ -822,38 +860,32 @@ class GenerationStorage:
             logger.error(f"Failed to retrieve community generations: {e}")
             return []
 
-    async def get_generations_by_image_url(
-        self,
-        processed_image_url: str,
-        user_id: str,
-        user_type: str
+    async def get_previous_completed_generation(self, generation: dict) -> Optional[dict]:
+        """Find a usable earlier version after an edit is cancelled or fails."""
+        rows = (self.client.table("generations").select("*")
+                .eq("generation_id", generation["generation_id"])
+                .eq("user_id", generation["user_id"]).eq("user_type", generation["user_type"])
+                .eq("status", "completed").lt("version", generation["version"])
+                .order("version", desc=True).limit(1).execute().data or [])
+        return rows[0] if rows else None
+
+    async def get_generation_versions(
+        self, generation_id: str, user_id: str, user_type: str,
     ) -> List[Dict[str, Any]]:
-        """
-        Retrieve all generations for a specific processed_image_url and user
-        Ordered by created_at descending (newest first)
-        
-        Args:
-            processed_image_url: The processed image URL to filter by
-            user_id: User ID to filter by
-            user_type: "authenticated" or "anonymous"
-            
-        Returns:
-            List of generation data dictionaries
-        """
-        try:
-            result = (self.client.table("generations")
-                     .select("*")
-                     .eq("processed_image_url", processed_image_url)
-                     .eq("user_id", user_id)
-                     .eq("user_type", user_type)
-                     .order("created_at", desc=True)
-                     .execute())
-            
-            return result.data or []
-            
-        except Exception as e:
-            logger.error(f"Failed to retrieve generations for processed_image_url {processed_image_url}: {e}")
-            return []
+        """List an owner's model revisions, including models with no image."""
+        rows = []
+        offset = 0
+        # PostgREST caps individual responses; preserve history beyond that cap.
+        while True:
+            batch = (self.client.table("generations").select("*")
+                     .eq("generation_id", generation_id)
+                     .eq("user_id", user_id).eq("user_type", user_type)
+                     .order("version", desc=True).range(offset, offset + 499)
+                     .execute().data or [])
+            rows.extend(batch)
+            if len(batch) < 500:
+                return rows
+            offset += len(batch)
 
     async def get_parts_list(self, generation_id: str) -> Optional[Dict[str, Any]]:
         """

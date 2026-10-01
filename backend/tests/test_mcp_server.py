@@ -135,7 +135,8 @@ def test_creation_and_edit_use_existing_pipeline_with_verified_identity(client, 
         schema = next(tool for tool in asyncio.run(server.list_tools()) if tool.name == name).outputSchema
         validate(data, schema)
     request, identity = start.call_args.args
-    assert request.source_generation_id == GENERATION_ID
+    assert start.await_args_list[0].args[0].generation_id is None
+    assert request.generation_id == GENERATION_ID
     assert identity["user_id"] == USER_ID
     assert identity["is_developer"] is False
     assert identity["is_anonymous"] is False

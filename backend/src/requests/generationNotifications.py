@@ -1,8 +1,37 @@
 """Owner-scoped completion notifications and resumable edit links."""
+import logging
+
 from fastapi import HTTPException
+from pydantic import BaseModel, Field
+from uuid import UUID
 
 from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
+
+logger = logging.getLogger(__name__)
+
+
+class MarkNotificationsReadRequest(BaseModel):
+    generation_ids: list[UUID] = Field(max_length=10000)
+
+
+async def mark_notifications_read(request: MarkNotificationsReadRequest, auth_info: dict) -> dict:
+    user_id = auth_info.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Account or guest session required")
+    if not request.generation_ids:
+        return {"seen_ids": []}
+    # Only acknowledge the displayed snapshot, preserving new completions and
+    # never changing another owner's receipts or in-progress models.
+    try:
+        result = (generation_storage.client.table("generations").update({"notification_seen": True})
+                  .eq("user_id", user_id)
+                  .eq("user_type", "authenticated" if auth_info.get("authenticated") else "anonymous")
+                  .eq("status", "completed").in_("id", [str(id) for id in request.generation_ids]).execute())
+    except Exception as error:
+        logger.error("Unable to mark notifications read (%s)", type(error).__name__)
+        raise HTTPException(status_code=503, detail="Unable to mark notifications as read. Please try again.") from error
+    return {"seen_ids": [row["id"] for row in result.data or []]}
 
 
 def _owned_query(auth_info: dict):
@@ -19,8 +48,7 @@ def _summary(row: dict) -> dict:
             "status": row.get("status"), "seen": bool(row.get("notification_seen", True)),
             "updated_at": row.get("updated_at") or row.get("created_at"),
             "image_url": row.get("preview_image_url") or row.get("processed_image_url"),
-            "is_edit": bool(row.get("source_generation_id")) or row.get("endpoint") in
-            ("updateModel", "promptEditModel", "resizeModel")}
+            "is_edit": row.get("version", 1) > 1}
 
 
 async def list_generation_notifications(auth_info: dict) -> dict:
@@ -29,7 +57,7 @@ async def list_generation_notifications(auth_info: dict) -> dict:
               .eq("notification_seen", False).order("updated_at", desc=True).execute().data or [])
     recent = (_owned_query(auth_info).eq("status", "completed")
               .order("updated_at", desc=True).limit(30).execute().data or [])
-    active = (_owned_query(auth_info).in_("status", ["queued", "started", "processing", "ldr_processing"])
+    active = (_owned_query(auth_info).in_("status", ["queued", "started", "processing", "ldr_processing", "resizing"])
               .order("created_at", desc=True).execute().data or [])
     rows = {row["id"]: row for row in [*unread, *recent]}
     return {"notifications": [_summary(row) for row in sorted(rows.values(),
@@ -54,7 +82,8 @@ async def latest_generation_edit(generation_id: str, auth_info: dict) -> dict:
     if not row:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(row, auth_info)
-    edits = (_owned_query(auth_info).eq("source_generation_id", generation_id)
-             .in_("status", ["queued", "started", "processing", "ldr_processing", "completed"])
-             .order("created_at", desc=True).limit(1).execute().data or [])
+    edits = (_owned_query(auth_info).eq("generation_id", row.get("generation_id", generation_id))
+             .gt("version", row.get("version", 1))
+             .in_("status", ["queued", "started", "processing", "ldr_processing", "resizing", "completed"])
+             .order("version", desc=True).limit(1).execute().data or [])
     return {"generation_id": edits[0]["id"] if edits else None}

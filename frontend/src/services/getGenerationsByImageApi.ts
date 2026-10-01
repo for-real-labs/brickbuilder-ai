@@ -21,6 +21,8 @@ const API_BASE_URL = getApiUrl();
 // Types for the API response
 export interface GenerationIteration {
   id: string;
+  generation_id: string;
+  version: number;
   user_id: string;
   prompt: string;
   created_at: string;
@@ -36,7 +38,7 @@ export interface GenerationIteration {
 }
 
 export interface GetGenerationsByImageRequest {
-  processed_image_url: string;
+  generation_id: string;
   user_id?: string;
 }
 
@@ -48,12 +50,12 @@ export interface GetGenerationsByImageResponse {
 export class GetGenerationsByImageApiService {
   static async getGenerationsByImage(
     authToken: string | undefined,
-    processedImageUrl: string
+    generationId: string
   ): Promise<GetGenerationsByImageResponse> {
     const url = `${API_BASE_URL}/getGenerationsByImage`;
 
     const requestBody: GetGenerationsByImageRequest = {
-      processed_image_url: processedImageUrl,
+      generation_id: generationId,
     };
 
     // Build headers conditionally - only add Authorization if token exists
@@ -83,7 +85,7 @@ export class GetGenerationsByImageApiService {
       if (error instanceof Error) {
         throw error;
       }
-      throw new Error(`Failed to fetch generations by image: ${String(error)}`);
+      throw new Error(`Failed to fetch model versions: ${String(error)}`);
     }
   }
 }

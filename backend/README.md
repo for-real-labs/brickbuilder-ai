@@ -151,6 +151,33 @@ Responses API. Both go through the same provider-neutral tool conversation in
 `65536`), `LLM_TO_BRICKS_TIMEOUT_SECONDS` (default `600`, per model call) and
 `LLM_TO_BRICKS_OPENAI_REASONING_EFFORT` (default `medium`).
 
+Generation cards display a single 1–8 word activity summary of newly streamed
+text, provider-exposed reasoning summaries, and streamed design arguments. Claude
+uses `thinking.display=summarized` so its thinking text is actually delivered.
+Claude tool arguments also use `eager_input_streaming` to deliver shapes as they
+are written instead of waiting for the complete shape array.
+A separate worker requests an update when new output forms a useful thought or
+shape specification, without a fixed refresh interval or blocking the design stream.
+The latest summary is saved in the private output snapshot and replayed on reconnect.
+Server reads use fresh, short-lived signed downloads to bypass stale CDN upsert
+caches; these URLs are never sent to browser clients. Failures retain
+the last summary; cancellation stops the summary worker. `GENERATION_PROGRESS_MODEL`
+overrides the summary model: by default it uses `gpt-5.6-terra` with reasoning off
+when an OpenAI key is configured, otherwise `claude-fable-5` with low effort and
+the Anthropic key. Each request uses at most the latest 4,000 characters of new
+output, 1,500 characters of subject/design context, and an eight-second deadline.
+Automatic model names use 1–3 words describing the subject, without construction
+terms such as “brick-built.” Existing saved and user-edited names are preserved.
+Active cards calculate “Building for …” from the generation's stored `created_at`
+timestamp, so the elapsed time continues through navigation and page reloads.
+The activity icon follows the current summary (painting, shaping, measuring,
+checking, connecting, rendering, packing or saving).
+Apply `20261001000001_generation_duration.sql` to store
+`generations.generation_duration_seconds` at the first successful completion.
+The database trigger covers all pipelines and preserves the recorded duration
+through later metadata updates or resizing. Historical completed rows remain
+null because their original completion time cannot be inferred from `updated_at`.
+
 By default (`LLM_TO_BRICKS_MODE=design`) the model does not write LDraw
 coordinates. It submits a voxel design (boxes, ellipsoids, cylinders and
 per-layer pixel maps on a stud grid, in brick or plate layers, using only colors

@@ -1,7 +1,9 @@
+import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
 import { NotificationMenu } from "../components/NotificationMenu";
+import { CancelGenerationButton } from '../components/CancelGenerationButton';
 
-import React, { useEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight } from "lucide-react";
+import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
+import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -162,26 +164,16 @@ export function GenerationMethodSelector({
         <label htmlFor={modelSelectId} className="shrink-0 text-sm font-medium text-slate-600 sm:w-36">
           Render model:
         </label>
-        <select
-          id={modelSelectId}
-          value={value === "3d" ? threeDModel : llmModel}
-          onChange={(event) => handleModelChange(event.target.value)}
-          disabled={disabled}
-          className="min-h-10 w-full min-w-0 cursor-pointer rounded-full border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed sm:w-56"
-        >
-          <optgroup label={IMAGE_TO_GLB_GROUP_LABEL}>
-            {THREE_D_MODEL_OPTIONS.map((option) => (
-              <option
-                key={option.id}
-                value={option.id}
-              >
-                {option.label}
-              </option>
-            ))}
-          </optgroup>
-          {LLM_PROVIDER_GROUPS.map((group) => (
-            <optgroup key={group.provider} label={group.label}>
-              {LLM_MODEL_OPTIONS.filter((option) => option.provider === group.provider).map((option) => (
+        <div className="relative w-full min-w-0 sm:w-56">
+          <select
+            id={modelSelectId}
+            value={value === "3d" ? threeDModel : llmModel}
+            onChange={(event) => handleModelChange(event.target.value)}
+            disabled={disabled}
+            className="min-h-10 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-300 bg-white pl-4 pr-10 py-2 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed"
+          >
+            <optgroup label={IMAGE_TO_GLB_GROUP_LABEL}>
+              {THREE_D_MODEL_OPTIONS.map((option) => (
                 <option
                   key={option.id}
                   value={option.id}
@@ -190,8 +182,21 @@ export function GenerationMethodSelector({
                 </option>
               ))}
             </optgroup>
-          ))}
-        </select>
+            {LLM_PROVIDER_GROUPS.map((group) => (
+              <optgroup key={group.provider} label={group.label}>
+                {LLM_MODEL_OPTIONS.filter((option) => option.provider === group.provider).map((option) => (
+                  <option
+                    key={option.id}
+                    value={option.id}
+                  >
+                    {option.label}
+                  </option>
+                ))}
+              </optgroup>
+            ))}
+          </select>
+          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+        </div>
         {modelDescription && (
           <p className="text-xs leading-5 text-slate-500 sm:ml-auto sm:max-w-40">{modelDescription}</p>
         )}
@@ -252,61 +257,6 @@ function ScrollRevealContent({ children }: { children: React.ReactNode }) {
   }, []);
 
   return <div ref={ref} className="landing-scroll-reveal contents">{children}</div>;
-}
-
-// ---- Typewriter placeholder logic ----
-const EXAMPLE_PHRASES = [
-  "a unicorn",
-  "a red fire hydrant",
-  "a 3‑story lakeside cabin",
-  "baby yoda with a scarf",
-  "a retro space rover",
-  "a dachshund in sunglasses",
-];
-
-function useTypewriter(enabled: boolean) {
-  const [idx, setIdx] = useState(0);
-  const [text, setText] = useState("");
-  const [deleting, setDeleting] = useState(false);
-  const [pause, setPause] = useState(false);
-  const [showCaret, setShowCaret] = useState(true);
-
-  // Caret blinking - separate from text updates
-  useEffect(() => {
-    if (!enabled) return;
-    const interval = setInterval(() => {
-      setShowCaret(prev => !prev);
-    }, 400);
-    return () => clearInterval(interval);
-  }, [enabled]);
-
-  useEffect(() => {
-    if (!enabled) return;               // stop updating when user is typing/focused
-    if (pause) {
-      const t = setTimeout(() => setPause(false), 900);
-      return () => clearTimeout(t);
-    }
-
-    const phrase = EXAMPLE_PHRASES[idx % EXAMPLE_PHRASES.length];
-    const speed = deleting ? 35 : 70;   // typing speed
-    const nextTimer = setTimeout(() => {
-      const nextLen = deleting ? text.length - 1 : text.length + 1;
-      const next = phrase.slice(0, Math.max(0, nextLen));
-      setText(next);
-      if (!deleting && next === phrase) {
-        setPause(true);
-        setDeleting(true);
-      } else if (deleting && next.length === 0) {
-        setDeleting(false);
-        setIdx((i) => (i + 1) % EXAMPLE_PHRASES.length);
-      }
-    }, speed);
-
-    return () => clearTimeout(nextTimer);
-  }, [enabled, text, deleting, pause, idx]);
-
-  const caret = enabled && showCaret ? "|" : "";
-  return (text + caret).trim();
 }
 
 // ---- In‑place loading: progress + messages ----
@@ -375,6 +325,8 @@ export default function LandingPage() {
 
   // NEW: in‑place loading state
   const [loading, setLoading] = useState(false);
+  const generationAbortRef = useRef<AbortController | null>(null);
+  const [activeGenerationId, setActiveGenerationId] = useState<string | null>(null);
   const [activeLoadingMethod, setActiveLoadingMethod] = useState<GenerationMethod | null>(null);
   const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
   const [generationStatus, setGenerationStatus] = useState<string | null>(null);
@@ -658,6 +610,10 @@ export default function LandingPage() {
     // Start loading
     setActiveLoadingMethod(generationMethod);
     setLoading(true);
+    const controller = new AbortController();
+    generationAbortRef.current = controller;
+    setActiveGenerationId(null);
+    const generationStartedAt = new Date().toISOString();
     
     try {
       // Convert size to voxelSize (similar to BrickBuilder component)
@@ -684,9 +640,11 @@ export default function LandingPage() {
       
       // Shared stream-event handler used by both image and text streaming calls.
       const handleStreamEvent = (event: StreamEvent) => {
+        if (controller.signal.aborted) return;
         // Update UI based on streaming events
         if ('type' in event && event.type === 'pipeline') {
           const pe = event as PipelineEvent;
+          if (pe.generation_id) setActiveGenerationId(pe.generation_id);
           if (pe.stage === 'image_generation') {
             const queueInfo = pe.queue_position != null ? ` (position ${pe.queue_position})` : '';
             setGenerationStatus(pe.message ? `${pe.message}${queueInfo}` : `Generating…${queueInfo}`);
@@ -764,6 +722,7 @@ export default function LandingPage() {
           stream3d,
           'trimesh',
           prompt.trim(),
+          controller.signal,
         );
         modelName = prompt.trim() || imgFile.name.replace(/\.[^/.]+$/, ''); // Remove file extension
       } else {
@@ -776,11 +735,15 @@ export default function LandingPage() {
           promptOption,
           handleStreamEvent,
           stream3d,
+          'trimesh',
+          controller.signal,
         );
         modelName = prompt.trim();
       }
       
+      if (controller.signal.aborted) return;
       const generationId = postResponse.generation_id;
+      setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
       
       // Save generation ID immediately so page reload can resume polling
@@ -791,7 +754,7 @@ export default function LandingPage() {
       if (!session) recordAnonymousGeneration(generationId);
       
       if (generationMethod === 'llm') {
-        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: 'llmToBricks' });
+        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: 'llmToBricks', createdAt: generationStartedAt });
         setLoading(false);
         setActiveLoadingMethod(null);
         setGenerationStatus(null);
@@ -802,6 +765,7 @@ export default function LandingPage() {
       const completedGeneration = await GetGenerationApiService.pollUntilComplete(
         generationId,
         (statusResponse: GetGenerationResponse) => {
+          if (controller.signal.aborted) return;
           // Update status display
           setGenerationStatus(statusResponse.status);
           
@@ -809,7 +773,8 @@ export default function LandingPage() {
           if (statusResponse.external_image_url) {
             setPreviewImageUrl(statusResponse.external_image_url);
           }
-        }
+        },
+        2500, 120, controller.signal
       );
       
       console.log('Generation completed:', completedGeneration.generation_id);
@@ -841,6 +806,7 @@ export default function LandingPage() {
         }
       }
       
+      if (controller.signal.aborted) return;
       setGeneratedMpdContent(mpdContent);
       setLoading(false);
       setActiveLoadingMethod(null);
@@ -860,6 +826,17 @@ export default function LandingPage() {
       navigate(`/generated-model?id=${completedGeneration.generation_id}`);
       
     } catch (error) {
+      if (controller.signal.aborted) return;
+      if (error instanceof DOMException && error.name === 'AbortError') {
+        setLoading(false);
+        setActiveLoadingMethod(null);
+        setActiveGenerationId(null);
+        setGenerationStatus(null);
+        setPreviewImageUrl(null);
+        setVoxelData(null);
+        localStorage.removeItem('recently_prompted_generation_id');
+        return;
+      }
       console.error('Generation failed:', error);
       // Check if error is a network error - if user is online but fetch failed, backend is likely not running
       const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
@@ -1188,7 +1165,23 @@ export default function LandingPage() {
           </div>
 
             <GenerationActivityList generations={generations} error={activityError}
-              onOpen={id => navigate(`/generated-model?id=${id}`)} />
+              onOpen={id => navigate(`/generated-model?id=${id}`)}
+              onCancelled={id => {
+                const row = generations.find(generation => generation.id === id);
+                if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
+              }} />
+          {loading && activeGenerationId && <div className="flex justify-center mb-4">
+            <CancelGenerationButton generationId={activeGenerationId} onCancelled={() => {
+              generationAbortRef.current?.abort();
+              setLoading(false);
+              setActiveLoadingMethod(null);
+              setActiveGenerationId(null);
+              setGenerationStatus(null);
+              setPreviewImageUrl(null);
+              setVoxelData(null);
+              localStorage.removeItem('recently_prompted_generation_id');
+            }} />
+          </div>}
           {lowerContentReady && <ScrollRevealContent>
           {/* Featured horizontal marquee OR in‑place progress UI */}
           <section className="mt-4 w-full relative landing-fade-in landing-delay-4" style={{ zIndex: 15 }}>
@@ -1508,7 +1501,7 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
               className="h-8 rounded-full border-none bg-[#f44336] px-3 text-xs font-medium text-white cursor-pointer transition-all duration-200 hover:-translate-y-px hover:bg-[#ff6b6b] sm:h-9 sm:px-4 sm:text-sm"
               onClick={onLoginClick}
             >
-              Login
+              Sign up
             </button>
           </>
         )}
@@ -1522,11 +1515,12 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
 export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: FeaturedItem[] }) {
   const navigate = useNavigate();
   const trackRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(0);
   const pausedRef = useRef(false);
   // Fill even a short list before duplicating it for a seamless loop.
   const loopItems = items.length > 0
-    ? Array.from({ length: Math.max(items.length, 8) }, (_, index) => items[index % items.length])
+    ? Array.from({ length: Math.ceil(8 / items.length) * items.length }, (_, index) => items[index % items.length])
     : [];
 
   const move = (distance: number) => {
@@ -1536,6 +1530,23 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
     positionRef.current = ((positionRef.current + distance) % width + width) % width;
     track.style.transform = `translate3d(${-positionRef.current}px, 0, 0)`;
   };
+
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const track = trackRef.current;
+    if (!viewport || !track || !items.length) return;
+    const centerFirstModel = () => {
+      const loopWidth = track.firstElementChild?.getBoundingClientRect().width || 0;
+      const cardWidth = track.querySelector('article')?.getBoundingClientRect().width || 0;
+      if (!loopWidth || !cardWidth) return;
+      positionRef.current = 0;
+      move(loopWidth - (viewport.getBoundingClientRect().width - cardWidth) / 2);
+    };
+    centerFirstModel();
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(centerFirstModel) : null;
+    observer?.observe(viewport);
+    return () => observer?.disconnect();
+  }, [items]);
 
   useEffect(() => {
     let frame: number;
@@ -1573,7 +1584,7 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
         className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
         <ChevronLeft className="h-5 w-5" />
       </button>
-      <div className="overflow-hidden">
+      <div ref={viewportRef} className="overflow-hidden">
         <div ref={trackRef} data-featured-track className="flex w-max" style={{ willChange: 'transform' }}>
           {[0, 1].map((copy) => (
             <div key={copy} data-featured-copy={copy} className="flex w-max gap-6 py-1 pr-6">

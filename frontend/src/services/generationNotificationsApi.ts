@@ -30,5 +30,8 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 export const GenerationNotificationsApi = {
   list: (signal?: AbortSignal) => request<NotificationFeed>('/generation-notifications', { signal }),
   markViewed: (id: string) => request(`/generation/${encodeURIComponent(id)}/viewed`, { method: 'POST' }),
+  markAllRead: (ids: string[]) => request<{ seen_ids: string[] }>('/generation-notifications/read', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ generation_ids: ids }),
+  }),
   latestEdit: (id: string, signal?: AbortSignal) => request<{ generation_id: string | null }>(`/generation/${encodeURIComponent(id)}/latest-edit`, { signal }),
 };

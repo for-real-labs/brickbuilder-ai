@@ -19,13 +19,20 @@ const getApiUrl = () => {
 const API_BASE_URL = getApiUrl();
 
 // Generation status types
-export type GenerationStatus = 'queued' | 'started' | 'processing' | 'ldr_processing' | 'completed' | 'failed';
+export type GenerationStatus = 'queued' | 'started' | 'processing' | 'ldr_processing' | 'resizing' | 'completed' | 'failed' | 'cancelled';
 
 // Response type for polling endpoint
 export interface GetGenerationResponse {
+  previous_completed_generation_id?: string | null;
+  model_generation_id?: string;
+  version?: number;
+  endpoint?: string;
   generation_id: string;
   status: GenerationStatus;
   prompt: string | null;
+  name?: string | null;
+  created_at?: string | null;
+  generation_duration_seconds?: number | null;
   external_image_url: string | null;
   processed_image_url: string | null;
   preview_image_url?: string | null;
@@ -43,6 +50,7 @@ export interface GetGenerationResponse {
 export interface CompletedGeneration {
   generation_id: string;
   prompt: string;
+  name?: string | null;
   ldr_content: string;
   mpd_url: string | null;
   xyzrgb_url: string | null;
@@ -50,6 +58,19 @@ export interface CompletedGeneration {
 }
 
 export class GetGenerationApiService {
+  static async cancelGeneration(generationId: string): Promise<void> {
+    let response: Response;
+    try {
+      response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/cancel`, { method: 'POST' });
+    } catch {
+      throw new Error('Unable to reach the server to cancel this build. Please try again.');
+    }
+    if (!response.ok) {
+      const message = response.status === 409 ? 'This build has already finished. Refresh to see its result.'
+        : 'Unable to cancel this build. Please try again.';
+      throw new Error(message);
+    }
+  }
   /**
    * Poll the generation status endpoint.
    * Returns the current status of the generation.
@@ -110,6 +131,7 @@ export class GetGenerationApiService {
       }
       const response = await this.getGeneration(generationId, signal);
       
+      if (signal?.aborted) throw new DOMException('Polling aborted', 'AbortError');
       // Call status update callback if provided
       if (onStatusUpdate) {
         onStatusUpdate(response);
@@ -122,6 +144,7 @@ export class GetGenerationApiService {
         return {
           generation_id: response.generation_id,
           prompt: response.prompt,
+          name: response.name,
           ldr_content: response.ldr_content,
           mpd_url: response.mpd_url,
           xyzrgb_url: response.xyzrgb_url,
@@ -133,13 +156,23 @@ export class GetGenerationApiService {
         throw new Error(response.error_message || 'Generation failed');
       }
 
+      if (response.status === 'cancelled') {
+        throw new DOMException('Generation cancelled', 'AbortError');
+      }
+
       // Still processing, wait and try again
       await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(resolve, pollInterval);
-        signal?.addEventListener('abort', () => {
+        const onAbort = () => {
           clearTimeout(timer);
+          signal?.removeEventListener('abort', onAbort);
           reject(new DOMException('Polling aborted', 'AbortError'));
-        }, { once: true });
+        };
+        const timer = setTimeout(() => {
+          signal?.removeEventListener('abort', onAbort);
+          resolve();
+        }, pollInterval);
+        signal?.addEventListener('abort', onAbort, { once: true });
+        if (signal?.aborted) onAbort();
       });
       attempts++;
     }
