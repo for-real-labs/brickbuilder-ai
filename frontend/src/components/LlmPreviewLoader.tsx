@@ -1,9 +1,9 @@
 import React from 'react';
 
-import { BRICK_BUILD_SCENES } from './brickBuildScenes';
+import { useBrickBuildScene } from '../hooks/useBrickBuildScene';
 
 export function LlmPreviewLoader({ previewImageUrl, compact = false }: { previewImageUrl?: string | null; compact?: boolean }) {
-  const [scene] = React.useState(() => BRICK_BUILD_SCENES[Math.floor(Math.random() * BRICK_BUILD_SCENES.length)]);
+  const scene = useBrickBuildScene(!previewImageUrl);
 
   return (
     <div className={`llm-preview-loader ${compact ? 'llm-preview-loader-compact' : ''}`} style={compact ? { height: '100%' } : undefined}>
