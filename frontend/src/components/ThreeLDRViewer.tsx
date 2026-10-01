@@ -6,6 +6,7 @@ import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import { LDrawLoader } from 'three/addons/loaders/LDrawLoader.js';
 import { LDrawConditionalLineMaterial } from 'three/addons/materials/LDrawConditionalLineMaterial.js';
 import { RotateCcw, Ruler } from 'lucide-react';
+import { captureTransparentPreview } from '../utils/captureTransparentPreview';
 
 // Build a simple stylized room with a table, sized to fit the model.
 const buildRoom = (
@@ -331,10 +332,10 @@ const buildRulerGrid = (
   scene.add(group);
 };
 
-// Capture a clean preview of just the model on a pure white background.
+// Capture a clean preview of just the model on a transparent background.
 // Hides the display room (floor, walls, table) and the baseplate, renders one
 // frame from a flattering front-left angle, then restores all original state.
-const captureCleanPreview = (
+export const captureCleanPreview = (
   camera: THREE.PerspectiveCamera,
   controls: any,
   renderer: THREE.WebGLRenderer,
@@ -367,9 +368,6 @@ const captureCleanPreview = (
     if (baseplate) baseplate.visible = false;
     if (rulerGrid) rulerGrid.visible = false;
 
-    // Pure white background.
-    scene.background = new THREE.Color(0xffffff);
-
     // Render to a square so the result isn't mostly empty horizontal space.
     // updateStyle=false leaves the on-screen canvas CSS size untouched.
     const previewSize = 1024;
@@ -398,8 +396,7 @@ const captureCleanPreview = (
     controls.target.copy(center);
     controls.update();
 
-    renderer.render(scene, camera);
-    return renderer.domElement.toDataURL('image/png');
+    return captureTransparentPreview(renderer, scene, camera);
   } catch (err) {
     console.warn('Failed to capture clean preview:', err);
     return null;
@@ -1554,7 +1551,7 @@ export function ThreeLDRViewer({
         camera.position.set(150, 200, 250);
 
         // Renderer setup
-        const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(width, height);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;

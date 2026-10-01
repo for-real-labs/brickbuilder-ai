@@ -173,9 +173,28 @@ def test_ldraw_preview_matches_the_model_page_capture():
     image = Image.open(BytesIO(render_ldraw_preview_png(build_design(castle_design()).ldr)))
     assert image.format == "PNG"
     assert image.size == (1024, 1024)
-    assert image.getpixel((0, 0)) == (255, 255, 255)
+    assert image.mode == "RGBA"
+    assert image.getpixel((0, 0))[3] == 0
+    assert image.getchannel("A").getextrema() == (0, 255)
     assert image.getbbox() is not None
     assert len(image.getcolors(maxcolors=1 << 20)) > 10
+
+
+def test_ldraw_preview_preserves_white_bricks_and_antialiased_edges():
+    from io import BytesIO
+
+    from PIL import Image
+
+    image = Image.open(BytesIO(render_ldraw_preview_png(
+        "1 15 0 -24 0 1 0 0 0 1 0 0 0 1 3001.dat\n",
+        palette={15: ("White", "FFFFFF")}, size=128,
+    )))
+    pixels = list(image.getdata())
+    assert any(a == 255 and min(r, g, b) > 180 for r, g, b, a in pixels)
+    assert any(0 < a < 255 for _, _, _, a in pixels)
+    assert all(image.getpixel(corner)[3] == 0 for corner in (
+        (0, 0), (127, 0), (0, 127), (127, 127),
+    ))
 
 
 def test_ldraw_preview_requires_drawable_parts():
