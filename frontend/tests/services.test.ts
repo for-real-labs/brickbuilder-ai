@@ -1,3 +1,4 @@
+import { saveAiConsent } from '../src/utils/aiConsent';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClaimGenerationApiService } from '../src/services/claimGenerationApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
@@ -28,6 +29,9 @@ const sse = (chunks: string[]) => new ReadableStream({
     controller.close();
   },
 });
+
+// These service contracts run after the user has granted AI permission.
+beforeEach(() => saveAiConsent(true));
 
 describe('JSON API service contracts', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));

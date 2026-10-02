@@ -1,3 +1,4 @@
+import { AiConsentDialog } from "./components/AiConsentDialog";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import { GenerationNotificationsProvider } from "./contexts/GenerationNotificationsContext";
@@ -34,6 +35,7 @@ function ExternalRedirect({ to }: { to: string }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <AiConsentDialog />
       <GenerationNotificationsProvider>
       <ChangeRequestProvider>
         {/* <ProtectedRoute> */}
