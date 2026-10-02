@@ -68,6 +68,22 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 
 describe('LandingPage', () => {
+  it('describes the physical builds at the Brickworld Chicago LEGO convention', async () => {
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      expect(container.textContent).toContain('BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.');
+      expect(container.querySelector('img[src="/assets/blog/brickworld26/brickbuilderai-models.jpg"]')?.getAttribute('alt')).toContain('the Brickworld Chicago LEGO convention');
+      expect(container.innerHTML).not.toContain('Meme World');
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
   it.each(['stats', 'community'])('waits for %s before mounting lower content', async delayed => {
     let finish!: () => void;
     const pending = new Promise<void>(resolve => { finish = resolve; });

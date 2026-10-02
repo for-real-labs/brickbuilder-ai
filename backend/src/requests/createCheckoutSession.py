@@ -1,7 +1,7 @@
 import os
 import logging
 import asyncio
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel
 from fastapi import HTTPException
@@ -20,11 +20,13 @@ class CreateCheckoutSessionRequest(BaseModel):
     quantity: Optional[int] = 1
     generationId: Optional[str] = None
     brickowlCartId: Optional[str] = None
+    uiMode: Literal["hosted", "embedded", "elements"] = "hosted"
 
 
 class CreateCheckoutSessionResponse(BaseModel):
     session_id: str
-    checkout_url: str
+    checkout_url: Optional[str] = None
+    client_secret: Optional[str] = None
 
 # Stripe Documentation: https://docs.stripe.com/payments/accept-a-payment?platform=web&ui=stripe-hosted
 async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_info: dict):
@@ -78,12 +80,31 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
             if parts_list_csv_url:
                 metadata["partsListCsvUrl"] = parts_list_csv_url
             
+            # Elements uses the current Checkout API while existing hosted and
+            # embedded callers retain their previous API behavior.
+            if request.uiMode == "elements":
+                checkout_options = {
+                    "ui_mode": "elements",
+                    "stripe_version": "2026-09-30.endive",
+                    "return_url": f"{site_url.rstrip('/')}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                }
+            elif request.uiMode == "embedded":
+                checkout_options = {
+                    "ui_mode": "embedded",
+                    "return_url": f"{site_url.rstrip('/')}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                    "redirect_on_completion": "if_required",
+                }
+            else:
+                checkout_options = {
+                    "success_url": f"{site_url.rstrip('/')}/success?session_id={{CHECKOUT_SESSION_ID}}",
+                    "cancel_url": f"{site_url.rstrip('/')}/order",
+                }
             return stripe.checkout.Session.create(
                 line_items=[
                     {
                         "price_data": {
                             "currency": "usd",
-                            "product_data": {"name": f"Brick Builder Model: {request.generationId}"},
+                            "product_data": {"name": (request.name or "").strip()[:220] or "BrickBuilder Model Kit"},
                             "unit_amount": request.priceCents or 4999,
                         },
                         "quantity": request.quantity or 1,
@@ -91,16 +112,16 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
                 ],
                 mode="payment",
                 shipping_address_collection={"allowed_countries": ["US", "CA"]},
-                success_url=f"{site_url.rstrip('/')}/success?session_id={{CHECKOUT_SESSION_ID}}",
-                cancel_url=f"{site_url.rstrip('/')}/order",
                 metadata=metadata,
+                **checkout_options,
             )
 
         session = await asyncio.get_event_loop().run_in_executor(None, _create_session)
 
         return CreateCheckoutSessionResponse(
             session_id=session.id,
-            checkout_url=session.url
+            checkout_url=session.url if request.uiMode == "hosted" else None,
+            client_secret=session.client_secret if request.uiMode in ("embedded", "elements") else None,
         )
 
     except HTTPException:

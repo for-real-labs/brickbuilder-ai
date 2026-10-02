@@ -7,11 +7,13 @@ export interface CreateCheckoutSessionRequest {
   quantity?: number;
   generationId?: string;
   brickowlCartId?: string;
+  uiMode?: 'hosted' | 'embedded' | 'elements';
 }
 
 export interface CreateCheckoutSessionResponse {
   session_id: string;
-  checkout_url: string;
+  checkout_url?: string | null;
+  client_secret?: string | null;
 }
 
 // API Configuration

@@ -1,5 +1,6 @@
 // OrderKit.tsx
 import React from "react";
+import { ArrowLeft, ArrowRight, BookOpen, Package } from "lucide-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { CreateCheckoutSessionApiService } from "../services/createCheckoutSessionApi";
 import { PartListItem } from "../services/estimatePriceApi";
@@ -11,6 +12,10 @@ import { SiteFooter } from "../components/SiteFooter";
 import { supabase } from "../lib/supabase";
 import posthog from "posthog-js";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
+import { GenerationTitle } from "../components/GenerationTitle";
+import { useAuth } from "../contexts/AuthContext";
+import { EmbeddedOrderCheckout } from "../components/EmbeddedOrderCheckout";
+import { CreateCheckoutSessionResponse } from "../services/createCheckoutSessionApi";
 
 type LocationState = {
   name?: string;
@@ -50,6 +55,7 @@ function formatUSD(cents: number) {
 export default function OrderKit() {
   const location = useLocation() as { state: LocationState };
   const navigate = useNavigate();
+  const { user } = useAuth();
   
   // Try to get state from navigation, otherwise restore from localStorage
   const getState = (): LocationState => {
@@ -70,12 +76,39 @@ export default function OrderKit() {
     return {};
   };
   
-  const state = getState();
+  const state = React.useMemo(getState, [location.state]);
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
 
   const [resolvedName, setResolvedName] = React.useState<string | null>(null);
   const name = resolvedName || state?.name || "Your Model";
+  const [renameAccess, setRenameAccess] = React.useState<{
+    generationId: string;
+    userId: string;
+    accessToken: string;
+  } | null>(null);
+  const canRename = !!renameAccess && renameAccess.generationId === generationId && renameAccess.userId === user?.id;
+
+  React.useEffect(() => {
+    let cancelled = false;
+    setRenameAccess(null);
+    if (!generationId || !user) return;
+    const resolveRenameAccess = async () => {
+      try {
+        const [{ data, error }, { data: { session } }] = await Promise.all([
+          supabase.from('generations').select('user_id').eq('id', generationId).maybeSingle(),
+          supabase.auth.getSession(),
+        ]);
+        if (!cancelled && !error && data?.user_id === user.id && session?.access_token) {
+          setRenameAccess({ generationId, userId: user.id, accessToken: session.access_token });
+        }
+      } catch {
+        // Keep the title read-only when ownership cannot be verified.
+      }
+    };
+    void resolveRenameAccess();
+    return () => { cancelled = true; };
+  }, [generationId, user?.id]);
   const size = "Regular"; // Default size since it's not passed in navigation state
   
   // Get model image from navigation state screenshots
@@ -133,7 +166,7 @@ export default function OrderKit() {
       const weightKg = state.priceData.total_weight;
       const fullShippingCents = Math.round((weightKg * 18 * 100) + 400);
       // total_price already includes shipping, so back it out to get the parts
-      // subtotal. Summer sale: 50% off everything (parts + shipping, 6/22-7/22).
+      // subtotal. The launch discount applies to both parts and shipping.
       const fullPartsCents = Math.max(Math.round(state.priceData.total_price * 100) - fullShippingCents, 0);
       const partSubtotalCents = Math.round(fullPartsCents * 0.5);
       const shippingCents = Math.round(fullShippingCents * 0.5);
@@ -153,14 +186,13 @@ export default function OrderKit() {
   
   const pricing = getActualPricing();
   const pricingError = !pricing;
-  const partSubtotalCents = pricing?.partSubtotalCents ?? 0;
-  const shippingCents = pricing?.shippingCents ?? 0;
   const totalCents = pricing?.totalCents ?? 0;
   const fullPartSubtotalCents = pricing?.fullPartSubtotalCents ?? 0;
   const fullShippingCents = pricing?.fullShippingCents ?? 0;
   const fullTotalCents = pricing?.fullTotalCents ?? 0;
 
   const [loading, setLoading] = React.useState(false);
+  const [checkoutSession, setCheckoutSession] = React.useState<CreateCheckoutSessionResponse | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [mpdContent, setMpdContent] = React.useState<string | null>(null);
   const [modelLoading, setModelLoading] = React.useState(false);
@@ -237,6 +269,7 @@ export default function OrderKit() {
   }, [generationId, state.name]);
 
   const handleCheckout = async () => {
+  if (loading || checkoutSession) return;
   try {
     setLoading(true);
     setError(null);
@@ -258,13 +291,12 @@ export default function OrderKit() {
       quantity: 1,
       generationId,
       brickowlCartId,
+      uiMode: 'elements',
     });
 
-    console.log('Checkout session payload:', data);
-
-    if (!data?.checkout_url) throw new Error('No checkout URL returned');
-    const url = data.checkout_url.includes('?') ? `${data.checkout_url}&locale=en` : `${data.checkout_url}?locale=en`;
-    window.location.href = data.checkout_url; // ✅ redirect to hosted checkout
+    if (!data?.client_secret) throw new Error('Could not load the payment form. Please try again.');
+    setCheckoutSession(data);
+    posthog.capture('order_embedded_checkout_opened', { generation_id: generationId });
   } catch (e: any) {
     console.error(e);
     setError(e?.message || 'Could not start checkout. Please try again.');
@@ -276,214 +308,105 @@ export default function OrderKit() {
 
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-[#f8fafc] text-slate-900">
       <SEO title={`Order Kit — ${name}`} description="Review and order your custom brick kit." url="https://brickbuilder.ai/order" />
-      {/* Top nav with logo */}
-      <header className="w-full border-b border-slate-200 landing-fade-in landing-delay-1">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 sm:px-6 md:px-8 lg:px-10 py-4">
-          <a href="/" className="flex items-center gap-3">
-            <img
-              src="/logo.svg"
-              alt="BrickBuilder"
-              className="h-7 w-auto"
-              onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-            />
-            <span className="text-xl font-extrabold tracking-tight">
-              <span className="text-[#ff4b4b]">BRICK</span>
-              <span className="text-slate-900">BUILDER</span>
-            </span>
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-5 sm:px-6 lg:px-10">
+          <a href="/" className="flex items-center gap-2" onClick={() => posthog.capture('order_logo_clicked', { generation_id: generationId })}>
+            <img src="/brickbuilder-logo.PNG" alt="" className="h-7 w-7 object-contain" />
+            <span className="text-lg font-extrabold tracking-tight sm:text-xl"><span className="text-[#ff4b4b]">BRICK</span>BUILDER</span>
           </a>
+          <span className="text-sm text-slate-500">Your cart</span>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
-        {/* Back to model link under logo */}
-        <button
-          type="button"
-          onClick={() => navigate(getOrderReturnModelPath(state.generation_id, lastGenerationId))}
-          className="mt-2 mb-4 inline-flex items-center gap-2 text-sm text-slate-700 hover:underline landing-fade-in landing-delay-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Model
+      <main className="mx-auto w-full max-w-6xl px-4 pb-16 pt-6 sm:px-6 lg:px-10">
+        <button type="button" onClick={() => {
+          posthog.capture('order_back_to_model_clicked', { generation_id: generationId });
+          navigate(getOrderReturnModelPath(state.generation_id, lastGenerationId));
+        }} className="mb-7 inline-flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-slate-900">
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to Model
         </button>
 
-        <h1 className="mb-6 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
+        <div className="mb-7 text-center">
+          <p className="mb-2 text-xs font-bold uppercase tracking-[0.18em] text-[#e4443c]">Your custom brick kit</p>
+          <GenerationTitle
+            key={generationId || 'local'} name={name} generationId={generationId}
+            canEdit={canRename && !modelLoading && !checkoutSession}
+            accessToken={canRename ? renameAccess?.accessToken : undefined}
+            onSaved={savedName => {
+              setResolvedName(savedName);
+              localStorage.setItem('lastModelName', savedName);
+              localStorage.setItem('orderState', JSON.stringify({ ...state, name: savedName }));
+            }}
+          />
+          <p className="mt-3 text-base leading-relaxed text-slate-500">Your custom brick kit, ready to build.</p>
+        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 landing-fade-in landing-delay-3">
-          {/* LEFT: model hero + BOM list */}
-          <section className="lg:col-span-2">
-            {/* 3D Model Preview */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm mb-6">
-              <div
-                className="relative w-full overflow-hidden rounded-xl bg-slate-50"
-                style={{ paddingTop: "66%" }}
-              >
+        <div className="grid w-full grid-cols-1 items-start gap-6 lg:grid-cols-[1.05fr_1fr] lg:gap-8">
+          <section className="min-w-0 space-y-5" aria-label="Your kit and price">
+            <div className="overflow-hidden rounded-2xl bg-white p-3 sm:p-4">
+              <div className="relative w-full overflow-hidden rounded-2xl bg-slate-50" style={{ paddingTop: "66%" }}>
                 <div className="absolute inset-0">
                   {modelLoading ? (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-slate-200 border-t-[#f44336] rounded-full animate-spin"></div>
-                    </div>
+                    <div className="flex h-full items-center justify-center" role="status" aria-label="Loading model preview"><div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-[#f44336]" /></div>
                   ) : mpdContent ? (
-                    <ThreeLDRViewer
-                      modelContent={mpdContent}
-                      modelName={name}
-                    />
+                    <ThreeLDRViewer modelContent={mpdContent} modelName={name} showExplodeControl={false} />
+                  ) : img ? (
+                    <img src={img} alt={name} className="h-full w-full object-contain" />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400">
-                      No preview available
-                    </div>
+                    <div className="flex h-full items-center justify-center text-sm text-slate-500">No preview available</div>
                   )}
                 </div>
               </div>
-              <p className="text-center text-slate-500 mt-3">3D Preview - {size} size kit</p>
             </div>
 
-            {/* Shipping Info Card */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-              <div className="flex items-center gap-3">
-                {/* shipping icon */}
-                <div className="h-12 w-12 rounded-full bg-[#f44336]/10 flex items-center justify-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f44336]" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20 8h-3V4H3v13h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-3-4Zm-3 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM7 19a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm11-7h-4V6h2v2h2l2 3v1Z" />
-                  </svg>
+            <div aria-label="Pricing summary" className="rounded-2xl bg-white p-5 sm:p-6">
+              <h2 className="mb-5 text-lg font-semibold">Pricing Summary</h2>
+              <div className="space-y-4 text-sm">
+                <div className="flex items-start justify-between gap-3">
+                  <span className="text-slate-600">Parts Subtotal</span>
+                  <span className="shrink-0 font-medium">{pricingError ? '—' : formatUSD(fullPartSubtotalCents)}</span>
                 </div>
-                <div>
-                  <div className="font-semibold text-slate-900">Estimated Shipping</div>
-                  <div className="text-sm text-slate-600">8 business days</div>
+                <div className="flex items-start justify-between gap-3">
+                  <span className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-slate-600"><span>Shipping</span><span className="text-xs text-slate-500">(8-12 business days)</span></span>
+                  <span className="shrink-0 font-medium">{pricingError ? '—' : formatUSD(fullShippingCents)}</span>
+                </div>
+                <div className="flex items-start justify-between gap-3 text-emerald-700">
+                  <span>BrickBuilder Launch Discount -50%</span>
+                  <span className="shrink-0 font-medium">{pricingError ? '—' : `-${formatUSD(fullTotalCents - totalCents)}`}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
+                  <span className="font-semibold">Total <span className="ml-1 text-xs font-normal text-slate-500">USD</span></span>
+                  <span className="flex items-baseline gap-2">{!pricingError && <span className="text-sm text-slate-400 line-through">{formatUSD(fullTotalCents)}</span>}<span className="text-2xl font-bold tracking-tight">{pricingError ? '—' : formatUSD(totalCents)}</span></span>
                 </div>
               </div>
             </div>
-
-            {/* BOM card - COMMENTED OUT FOR NOW */}
-            {/* <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-                <div className="font-semibold">Bill of Materials</div>
-                <div className="flex items-center gap-2 text-slate-500 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20 8h-3V4H3v13h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-3-4Zm-3 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM7 19a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm11-7h-4V6h2v2h2l2 3v1Z" />
-                  </svg>
-                  <span>Est. ship: 12-18 business days</span>
-                </div>
-              </div>
-
-              <div className="px-6 py-3 text-xs font-semibold text-slate-500">
-                <div
-                  className="grid items-center"
-                  style={{ gridTemplateColumns: "70% 20% 10%" }}
-                >
-                  <div>Part</div>
-                  <div>Color</div>
-                  <div className="text-right">Qty</div>
-                </div>
-              </div>
-
-              <div>
-                {BOM.map((it) => {
-                  return (
-                    <div key={it.id} className="px-6 py-4 border-t border-slate-100">
-                      <div
-                        className="grid items-center gap-2"
-                        style={{ gridTemplateColumns: "70% 20% 10%" }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded-md border border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
-                            {it.img ? (
-                              <img src={it.img} alt={it.name} className="h-full w-full object-contain" />
-                            ) : (
-                              <div className="h-6 w-8 rounded-sm" style={{ background: it.colorChip || "#e5e7eb" }} />
-                            )}
-                          </div>
-                          <div className="text-sm font-medium truncate">{it.name}</div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 rounded-full border border-slate-300 shrink-0"
-                            style={{ background: it.colorChip || "#e5e7eb" }}
-                            aria-hidden
-                          />
-                          <span className="text-sm whitespace-nowrap">{it.color}</span>
-                        </div>
-
-                        <div className="text-sm text-right whitespace-nowrap">{it.qty}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            */}
           </section>
 
-          {/* RIGHT: sticky pricing summary + checkout */}
-          <aside className="lg:col-span-1 self-start">
-            <div className="sticky top-24">
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Pricing Summary</h3>
-                <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                        <span>Parts Subtotal</span>
-                        <span className="flex items-baseline gap-2">
-                          <span className="text-slate-400 line-through">{formatUSD(fullPartSubtotalCents)}</span>
-                          <span>{formatUSD(partSubtotalCents)}</span>
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span>Shipping</span>
-                        <span className={pricingError ? "text-red-500 font-medium" : "flex items-baseline gap-2"}>
-                          {pricingError ? "Error calculating shipping" : (
-                            <>
-                              <span className="text-slate-400 line-through">{formatUSD(fullShippingCents)}</span>
-                              <span>{formatUSD(shippingCents)}</span>
-                            </>
-                          )}
-                        </span>
-                    </div>
-                    <div className="h-px bg-slate-200 my-2" />
-                    <div className="flex items-center justify-between text-base font-bold">
-                        <span>Total</span>
-                        <span className="flex items-baseline gap-2">
-                          <span className="text-slate-400 line-through font-normal">{formatUSD(fullTotalCents)}</span>
-                          <span>{formatUSD(totalCents)}</span>
-                        </span>
-                    </div>
-                </div>
-                {/* Checkout button */}
-                <button
-                  type="button"
-                  disabled={loading || pricingError}
-                  onClick={handleCheckout}
-                  className={`mt-6 w-full h-12 rounded-full text-white font-semibold shadow-md transition-all disabled:opacity-50 ${
-                    pricingError ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f44336] hover:bg-[#ff6b6b] hover:scale-[1.02]'
-                  }`}
-                >
-                  {loading ? "Redirecting…" : pricingError ? "Cannot Checkout" : "Checkout"}
-                </button>
-
-                {/* Download instructions - COMMENTED OUT FOR NOW */}
-                {/* <div className="mt-6 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-[#ff4b4b]/15 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 3a1 1 0 0 1 1 1v8l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L11 12V4a1 1 0 0 1 1-1ZM5 20a1 1 0 0 1 0-2h14a1 1 0 1 1 0 2H5Z" />
-                    </svg>
-                  </div>
-                  <button
-                    className="text-sm font-medium text-slate-800 hover:underline"
-                    onClick={() => alert("Download available after purchase")}
-                  >
-                    Download Instructions
-                  </button>
-                </div> */}
-
-                {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}
+          <aside className="min-w-0 border-t border-slate-200 pt-6 lg:sticky lg:top-6 lg:border-l lg:border-t-0 lg:pl-8 lg:pt-0" aria-label="Checkout">
+            <h2 className="text-2xl font-semibold tracking-tight">{checkoutSession ? 'Shipping & payment' : 'Your order'}</h2>
+            {!checkoutSession && <>
+              <div className="mt-6 divide-y divide-slate-200">
+                <div className="flex items-center gap-3 py-4"><Package className="h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" /><span className="text-sm font-medium">Custom brick kit</span><span className="ml-auto text-sm text-slate-500">Qty 1</span></div>
+                <div className="flex flex-wrap items-center gap-3 py-4"><BookOpen className="h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" /><span className="text-sm font-medium">Building instructions</span><a href={generationId ? `/instructions?id=${encodeURIComponent(generationId)}` : '/instructions'} onClick={() => posthog.capture('order_instructions_clicked', { generation_id: generationId })} className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-slate-600 underline underline-offset-4 hover:text-slate-900">View instructions <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" /></a></div>
               </div>
-            </div>
+              <div className="mt-6 flex items-baseline justify-between gap-3 border-t border-slate-200 pt-6"><span className="text-lg font-medium">Total</span><span className="text-2xl font-semibold tracking-tight">{pricingError ? '—' : formatUSD(totalCents)} <span className="text-xs font-normal text-slate-500">USD</span></span></div>
+              {pricingError && <p role="alert" className="mt-4 text-sm leading-5 text-amber-900">We couldn't load your price. Go back to your model and estimate the price again to continue.</p>}
+              <button type="button" disabled={loading || pricingError} onClick={handleCheckout} className="mt-6 flex min-h-14 w-full items-center justify-center gap-2 rounded-xl bg-[#ef493f] px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-[#d83930] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[#ef493f] disabled:cursor-not-allowed disabled:bg-slate-300">
+                {loading ? 'Loading checkout…' : pricingError ? 'Price unavailable' : 'Continue to checkout'}
+                {!loading && !pricingError && <ArrowRight className="h-4 w-4" aria-hidden="true" />}
+              </button>
+            </>}
+            {error && <p role="alert" className="mt-4 rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</p>}
+            {checkoutSession?.client_secret && <EmbeddedOrderCheckout clientSecret={checkoutSession.client_secret} generationId={generationId} onComplete={() => {
+              posthog.capture('order_embedded_checkout_completed', { generation_id: generationId });
+              navigate(`/success?session_id=${encodeURIComponent(checkoutSession.session_id)}`);
+            }} />}
+            <p className="mt-5 text-center text-xs text-slate-500"><a href="mailto:support@brickbuilder.ai" onClick={() => posthog.capture('order_support_clicked', { generation_id: generationId })} className="underline underline-offset-4 hover:text-slate-900">Need help? Contact us</a></p>
           </aside>
         </div>
       </main>
-
       <SiteFooter />
     </div>
   );

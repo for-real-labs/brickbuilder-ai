@@ -1373,11 +1373,11 @@ function RealLifeBuilds() {
         </h2>
         <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
           Every model comes with real, orderable LEGO parts and instructions. Here's a display of
-          BrickBuilder AI creations physically built at BrickWorld Chicago 2026's Meme World exhibit.
+          BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.
         </p>
         <img
           src="/assets/blog/brickworld26/brickbuilderai-models.jpg"
-          alt="BrickBuilder AI models built with real LEGO bricks, on display at BrickWorld Chicago 2026's Meme World exhibit"
+          alt="BrickBuilder AI models built with real LEGO bricks, on display at the Brickworld Chicago LEGO convention"
           className="mt-8 w-full rounded-2xl border border-slate-200 shadow-sm"
         />
       </div>

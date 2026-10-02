@@ -10,19 +10,21 @@ import { GetGenerationLikeStatusApiService } from '../src/services/getGeneration
 import { UpdateGenerationNameApiService } from '../src/services/updateGenerationNameApi';
 import GeneratedModel from '../src/pages/GeneratedModel';
 import OrderKit from '../src/pages/OrderKit';
+import { CreateCheckoutSessionApiService } from '../src/services/createCheckoutSessionApi';
 import { GenerationCard } from '../src/pages/UserDashboard';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 import { getGeneratedModelPath } from '../src/utils/generationRoutes';
 import posthog from 'posthog-js';
 
-const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
+const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'} as {id: string} | null, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, userProfile: null, isSupabaseConfigured: true})}));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({useGenerationNotifications: () => ({refresh: mocks.refresh, markViewed: mocks.markViewed})}));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName, onModelLoaded, topLeftOverlay}: {modelName: string; onModelLoaded?: () => void; topLeftOverlay?: React.ReactNode}) => {
+vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName, onModelLoaded, topLeftOverlay, showExplodeControl = true}: {modelName: string; onModelLoaded?: () => void; topLeftOverlay?: React.ReactNode; showExplodeControl?: boolean}) => {
   React.useEffect(() => { onModelLoaded?.(); }, [modelName]);
-  return <><div data-testid="viewer">{modelName}</div>{topLeftOverlay}</>;
+  return <><div data-testid="viewer" data-show-explode={showExplodeControl}>{modelName}</div>{topLeftOverlay}</>;
 }}));
+vi.mock('../src/components/EmbeddedOrderCheckout', () => ({EmbeddedOrderCheckout: ({onComplete}: {onComplete: () => void}) => <section aria-label="Payment and shipping"><button onClick={onComplete}>Complete test payment</button></section>}));
 vi.mock('../src/components/VoxelViewer', () => ({VoxelViewer: () => null}));
 vi.mock('../src/components/SEO', () => ({SEO: () => null}));
 vi.mock('../src/components/SiteFooter', () => ({SiteFooter: () => null}));
@@ -37,6 +39,7 @@ vi.mock('../src/lib/supabase', () => ({supabase: {
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
+  mocks.owner = 'owner';
   mocks.user = {id: 'owner'};
   mocks.query.mockImplementation(async () => ({data: {user_id: mocks.owner, is_community: true, preview_image_url: '/preview.png'}, error: null}));
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({generation_id: 'g', status: 'completed', name: 'Sunny Dachshund', prompt: 'please create a dachshund in sunglasses, with lots of details', ldr_content: 'ldr'} as never);
@@ -374,4 +377,122 @@ it('keeps the full generation loader for a first build without a completed sourc
   expect(container.textContent).toContain('Continue browsing');
   expect(container.textContent).toContain('Cancel generation');
 
+});
+
+it('hides the explode control and preview caption on /order', async () => {
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state: {generation_id:'g'}}]}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-show-explode')).toBe('false');
+  expect(container.textContent).not.toContain('3D Preview - Regular size kit');
+});
+
+it.each(['owner', 'other', 'guest'])('gates renaming on /order for %s', async viewer => {
+  mocks.user = viewer === 'guest' ? null : {id: viewer};
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state: {generation_id:'g'}}]}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('h1')?.textContent).toBe('Sunny Dachshund');
+  expect(!!container.querySelector('button[aria-label="Rename model"]')).toBe(viewer === 'owner');
+});
+
+it('keeps /order read-only when ownership cannot be verified', async () => {
+  mocks.query.mockRejectedValue(new Error('Unavailable'));
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state: {generation_id:'g'}}]}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('button[aria-label="Rename model"]')).toBeNull();
+});
+
+it('persists an order rename and uses the saved name for the preview and checkout', async () => {
+  const save = vi.spyOn(UpdateGenerationNameApiService, 'updateGenerationName').mockResolvedValue({generation_id:'g', name:'My Order Model'});
+  const checkout = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockRejectedValue(new Error('Stop before redirect'));
+  const orderState = {generation_id:'g', name:'Old Title', cart_id:'cart', priceData:{total_weight:1, total_price:30}};
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state:orderState}]}><OrderKit /></MemoryRouter>));
+  act(() => (container.querySelector('button[aria-label="Rename model"]') as HTMLButtonElement).click());
+  act(() => {
+    const input = container.querySelector('#model-name')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '  My Order Model  ');
+    input.dispatchEvent(new Event('input', {bubbles:true}));
+  });
+  await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', {bubbles:true, cancelable:true})));
+  expect(save).toHaveBeenCalledWith('g', 'My Order Model', 'token');
+  expect(container.querySelector('h1')?.textContent).toBe('My Order Model');
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('My Order Model');
+  expect(localStorage.getItem('lastModelName')).toBe('My Order Model');
+  const checkoutButton = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Continue to checkout')!;
+  await act(async () => checkoutButton.click());
+  expect(checkout).toHaveBeenCalledWith(expect.objectContaining({name:'My Order Model – Regular Kit', generationId:'g', brickowlCartId:'cart'}));
+  expect(JSON.parse(localStorage.getItem('orderState')!)).toEqual({...orderState, name:'My Order Model'});
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({generation_id:'g', status:'completed', name:'My Order Model', ldr_content:'ldr'} as never);
+  await act(async () => root.render(<MemoryRouter key="restored" initialEntries={['/order']}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('h1')?.textContent).toBe('My Order Model');
+});
+
+
+it('opens embedded checkout on the order page and navigates to success on completion', async () => {
+  const checkout = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({session_id:'cs_test_order', client_secret:'cs_test_order_secret_test'});
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state:{generation_id:'g', priceData:{total_weight:1, total_price:30}}}]}><Routes><Route path="/order" element={<OrderKit />} /><Route path="/success" element={<div>Payment complete</div>} /></Routes></MemoryRouter>));
+  const button = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Continue to checkout')!;
+  await act(async () => button.click());
+  expect(checkout).toHaveBeenCalledWith(expect.objectContaining({uiMode:'elements', generationId:'g'}));
+  expect(container.querySelector('[aria-label="Payment and shipping"]')).not.toBeNull();
+  expect(container.textContent).not.toContain('cs_test_order_secret_test');
+  expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent === 'Continue to checkout')).toBe(false);
+  expect(posthog.capture).toHaveBeenCalledWith('order_embedded_checkout_opened', {generation_id:'g'});
+  await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Complete test payment')!.click());
+  expect(container.textContent).toBe('Payment complete');
+});
+
+it('allows retrying when an embedded checkout session has no client secret', async () => {
+  const checkout = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValueOnce({session_id:'bad'}).mockResolvedValueOnce({session_id:'good', client_secret:'secret'});
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state:{generation_id:'g', priceData:{total_weight:1, total_price:30}}}]}><OrderKit /></MemoryRouter>));
+  const button = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Continue to checkout')!;
+  await act(async () => button().click());
+  expect(container.textContent).toContain('Could not load the payment form');
+  expect(container.querySelector('[aria-label="Payment and shipping"]')).toBeNull();
+  await act(async () => button().click());
+  expect(container.querySelector('[aria-label="Payment and shipping"]')).not.toBeNull();
+});
+
+
+it('places pricing below the preview and includes the shipping estimate in the shipping row', async () => {
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state:{generation_id:'g', priceData:{total_weight:1, total_price:30}}}]}><OrderKit /></MemoryRouter>));
+  const summary = container.querySelector('[aria-label="Pricing summary"]')!;
+  const preview = container.querySelector('[data-testid="viewer"]')!;
+  expect(summary.closest('section')).toBe(preview.closest('section'));
+  expect(preview.compareDocumentPosition(summary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const estimate = Array.from(summary.querySelectorAll('span')).find(span => span.textContent === '(8-12 business days)')!;
+  expect(estimate.parentElement?.textContent).toContain('Shipping');
+  expect(summary.textContent).not.toContain('Estimated shipping');
+  expect(summary.querySelectorAll('.line-through')).toHaveLength(1);
+  const rows = summary.querySelector('.space-y-4')!.children;
+  expect(rows[0].textContent).toBe('Parts Subtotal$8.00');
+  expect(rows[1].textContent).toBe('Shipping(8-12 business days)$22.00');
+  expect(rows[2].textContent).toBe('BrickBuilder Launch Discount -50%-$15.00');
+  expect(rows[3].textContent).toContain('$15.00');
+  expect(rows[3].querySelector('.line-through')?.textContent).toBe('$30.00');
+  expect(rows[0].querySelector('.line-through')).toBeNull();
+  expect(rows[1].querySelector('.line-through')).toBeNull();
+});
+
+it('explains checkout and keeps the action in the checkout panel', async () => {
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state:{generation_id:'g', priceData:{total_weight:1, total_price:30}}}]}><OrderKit /></MemoryRouter>));
+  const panel = container.querySelector('aside[aria-label="Checkout"]')!;
+  expect(container.textContent).not.toContain('Stripe');
+  expect(container.textContent).not.toContain('Secure checkout');
+  expect(panel.textContent).toContain('Building instructions');
+  const instructions = panel.querySelector('a[href="/instructions?id=g"]')!;
+  expect(instructions.textContent).toContain('View instructions');
+  instructions.addEventListener('click', event => event.preventDefault());
+  act(() => (instructions as HTMLAnchorElement).click());
+  expect(posthog.capture).toHaveBeenCalledWith('order_instructions_clicked', {generation_id:'g'});
+  expect(panel.querySelector('button')?.textContent).toBe('Continue to checkout');
+  expect(container.querySelector('[aria-label="Pricing summary"] button')).toBeNull();
+  const support = panel.querySelector('a[href="mailto:support@brickbuilder.ai"]')!;
+  expect(support.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
+  support.addEventListener('click', event => event.preventDefault());
+  act(() => support.click());
+  expect(posthog.capture).toHaveBeenCalledWith('order_support_clicked', {generation_id:'g'});
+});
+
+it('shows price recovery guidance instead of a misleading zero-dollar total', async () => {
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state:{generation_id:'g'}}]}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('[role="alert"]')?.textContent).toContain('estimate the price again');
+  expect(container.querySelector('[aria-label="Pricing summary"]')?.textContent).not.toContain('$0.00');
+  expect(container.querySelector('aside button')?.getAttribute('disabled')).not.toBeNull();
 });
