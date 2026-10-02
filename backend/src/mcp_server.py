@@ -230,14 +230,14 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
     async def generate_lego_model(prompt: Prompt, detail_level: Detail = 40, model: Model = Model(DEFAULT_MODEL)) -> CallToolResult:
         """Create a LEGO/brick model from a description using BrickBuilder's AI design, preview feedback,
         geometry checks, and voxel-to-brick pipeline. Returns a job ID immediately. Costs one account
-        credit on successful AI generation. Use get_lego_model to obtain the finished model and parts list.
+        free usage allowance on successful AI generation. Completed jobs include a model and parts list.
         """
         return await start(LlmToBricksRequest(prompt=prompt, detail_level=detail_level, model=model.value))
 
     @server.tool(title="Edit a LEGO model", annotations=write, meta=security)
     async def edit_lego_model(generation_id: UUID, prompt: Prompt, model: Model = Model(DEFAULT_MODEL)) -> CallToolResult:
         """Apply requested changes to your existing saved voxel model while preserving untouched cells.
-        Creates a new generation and keeps the original. Costs one credit; poll the returned job ID.
+        Creates a new generation and keeps the original. Uses one free usage allowance and returns a job ID.
         """
         return await start(LlmToBricksRequest(generation_id=str(generation_id), prompt=prompt, model=model.value))
 
@@ -245,7 +245,7 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
     async def get_lego_model(generation_id: UUID) -> CallToolResult:
         """Check a BrickBuilder generation for this account. Returns status; once completed, returns
         the preview image, brick count, LDraw download and parts-list CSV. No generation or credit charge.
-        Open model_url for the interactive 3D viewer, editing and instructions.
+        The model URL links to the interactive 3D viewer, editing and instructions.
         """
         try:
             row = await generation_storage.get_generation(str(generation_id))
