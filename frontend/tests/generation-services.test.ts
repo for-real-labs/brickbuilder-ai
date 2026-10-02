@@ -1,4 +1,3 @@
-import { saveAiConsent } from '../src/utils/aiConsent';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GetGenerationApiService, type GetGenerationResponse } from '../src/services/getGenerationApi';
@@ -21,8 +20,6 @@ const sse = (events: unknown[], options?: { crlf?: boolean; trailingDelimiter?: 
   },
 });
 
-// These service contracts run after the user has granted AI permission.
-beforeEach(() => saveAiConsent(true));
 
 describe('generation services', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));

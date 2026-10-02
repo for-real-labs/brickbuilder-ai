@@ -1,3 +1,4 @@
+import { isNativeMobileShell } from '../utils/mobileShellAnalytics';
 import { openAiConsentSettings } from '../utils/aiConsent';
 import React from "react";
 import { Link } from "react-router-dom";
@@ -80,11 +81,11 @@ export function SiteFooter() {
           <Link to="/community" className="hover:text-[#f44336] transition-colors">
             Community Models
           </Link>
-          <button type="button" className="hover:text-[#f44336] transition-colors"
+          {isNativeMobileShell() && <button type="button" className="hover:text-[#f44336] transition-colors"
             onClick={() => {
               posthog.capture('footer_ai_privacy_clicked');
               void openAiConsentSettings().catch(() => undefined);
-            }}>AI privacy</button>
+            }}>AI privacy</button>}
           <Link
             to="/privacy"
             onClick={() => posthog.capture("footer_privacy_policy_clicked")}

@@ -1,4 +1,7 @@
 import React, { act } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { MemoryRouter } from 'react-router-dom';
+import { SiteFooter } from '../src/components/SiteFooter';
 import { createRoot, Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { apiFetch } from '../src/services/apiFetch';
@@ -12,6 +15,7 @@ let host: HTMLDivElement | undefined;
 
 beforeEach(() => {
   localStorage.clear();
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '1.0' };
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
 });
@@ -21,10 +25,31 @@ afterEach(async () => {
   if (root) await act(async () => root?.unmount());
   root = undefined;
   host?.remove();
+  delete window.__BRICKBUILDER_NATIVE_APP__;
   vi.unstubAllGlobals();
 });
 
 describe('AI sharing permission', () => {
+  it('leaves ordinary desktop and mobile websites ungated and hides consent controls', async () => {
+    delete window.__BRICKBUILDER_NATIVE_APP__;
+    const prompt = vi.fn().mockResolvedValue(false);
+    unregister = registerAiConsentPrompt(prompt);
+    await apiFetch('/llmToBricks/stream', { method: 'POST' });
+    await apiFetch('/imageToBricks', { method: 'POST' });
+    await ensureAiConsent();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(prompt).not.toHaveBeenCalled();
+    expect(renderToStaticMarkup(<AiConsentDialog />)).toBe('');
+    expect(renderToStaticMarkup(<MemoryRouter><SiteFooter /></MemoryRouter>)).not.toContain('AI privacy');
+  });
+
+  it('retains mobile permission controls only with a valid Expo shell marker', () => {
+    expect(renderToStaticMarkup(<MemoryRouter><SiteFooter /></MemoryRouter>)).toContain('AI privacy');
+    window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'other', version: '1.0' } as never;
+    expect(requiresAiConsent('/llmToBricks', 'POST')).toBe(false);
+    expect(renderToStaticMarkup(<AiConsentDialog />)).toBe('');
+  });
+
   it.each(['llmToBricks', 'llmToBricks/stream', 'llmRender/stream', 'textToBricks', 'imageToBricks', 'promptEditModel', 'glbToBricks', 'resizeModel', 'updateModel'])('protects %s', endpoint => {
     expect(requiresAiConsent(`https://backend.test/${endpoint}`, 'POST')).toBe(true);
     expect(requiresAiConsent(`/${endpoint}`, 'GET')).toBe(false);

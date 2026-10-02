@@ -1,8 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { isNativeMobileShell } from '../utils/mobileShellAnalytics';
 import posthog from 'posthog-js';
 import { AI_CONSENT_VERSION, AI_PROVIDERS, AI_SHARED_DATA, hasAiConsent, registerAiConsentPrompt, saveAiConsent } from '../utils/aiConsent';
 
 export function AiConsentDialog() {
+  return isNativeMobileShell() ? <NativeAiConsentDialog /> : null;
+}
+
+function NativeAiConsentDialog() {
   const dialog = useRef<HTMLDialogElement>(null);
   const resolve = useRef<((allowed: boolean) => void)[]>([]);
   const [open, setOpen] = useState(false);

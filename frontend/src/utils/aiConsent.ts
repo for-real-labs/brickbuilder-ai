@@ -1,3 +1,5 @@
+import { isNativeMobileShell } from './mobileShellAnalytics';
+
 export const AI_CONSENT_VERSION = '2026-10-02';
 export const AI_CONSENT_KEY = 'brickbuilder.ai-consent';
 export const AI_PROVIDERS = 'OpenAI, Anthropic, fal.ai, and RunPod';
@@ -36,13 +38,13 @@ export async function openAiConsentSettings(): Promise<boolean> {
 }
 
 export function requiresAiConsent(url: string, method = 'GET'): boolean {
-  if (method.toUpperCase() !== 'POST') return false;
+  if (!isNativeMobileShell() || method.toUpperCase() !== 'POST') return false;
   const path = new URL(url, window.location.origin).pathname.split('/').filter(Boolean);
   return path.some(segment => AI_ENDPOINTS.has(segment));
 }
 
 export async function ensureAiConsent(): Promise<void> {
-  if (hasAiConsent()) return;
+  if (!isNativeMobileShell() || hasAiConsent()) return;
   if (!pending) {
     pending = openAiConsentSettings().then(allowed => {
       if (!allowed) throw new Error('AI sharing was not allowed. Your content was not sent for this request.');

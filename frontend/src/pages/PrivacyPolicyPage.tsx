@@ -200,8 +200,8 @@ export default function PrivacyPolicyPage() {
 
             <PolicySection title="AI processing and your permission">
               <p>
-                Before a generation, AI edit, or model conversion request that uses AI processing,
-                BrickBuilder asks for your permission inside the app. We send your text prompts and
+                In the Expo mobile app, before a generation, AI edit, or model conversion request
+                that uses AI processing, BrickBuilder asks for your permission. We send your text prompts and
                 edit instructions, reference images or photos you select, and model data and previews
                 needed for the request to OpenAI, Anthropic, fal.ai, and RunPod, depending on the feature and
                 selected model. Model content may also be used to suggest a title. Any personal
@@ -214,7 +214,7 @@ export default function PrivacyPolicyPage() {
                 sensitive personal information that you do not want these providers to process.
               </p>
               <p>
-                Permission is saved on this device. You can decline and continue browsing or ordering
+                In the Expo mobile app, permission is saved on this device. You can decline and continue browsing or ordering
                 physical bricks, or withdraw permission using AI privacy in the app footer. Withdrawal
                 stops future AI requests; it does not reverse processing already started. After
                 withdrawal, we ask again before another AI request. For deletion requests, contact

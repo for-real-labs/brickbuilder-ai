@@ -1,11 +1,8 @@
-import { saveAiConsent } from '../src/utils/aiConsent';
-import { beforeEach, afterEach, expect, it, vi } from 'vitest';
+import { afterEach, expect, it, vi } from 'vitest';
 import { getGuestSession } from '../src/utils/guestSession';
 import { apiFetch, authenticatedApiFetch } from '../src/services/apiFetch';
 import { getAnonymousGenerationIds } from '../src/utils/anonGenerations';
 
-// Transport assertions exercise the already-consented state.
-beforeEach(() => saveAiConsent(true));
 
 afterEach(() => vi.unstubAllGlobals());
 
