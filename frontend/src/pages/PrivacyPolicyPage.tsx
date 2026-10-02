@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { SEO } from "../components/SEO";
 import { SiteFooter } from "../components/SiteFooter";
 
-const LAST_UPDATED = "September 22, 2026";
+const LAST_UPDATED = "October 2, 2026";
 
 const trackPrivacyInteraction = (action: string) => {
   posthog.capture("privacy_policy_interaction", { action });
@@ -168,7 +168,7 @@ export default function PrivacyPolicyPage() {
                   databases, and file storage;
                 </li>
                 <li>
-                  <strong className="text-slate-800">OpenAI, Anthropic, and fal.ai</strong> for AI
+                  <strong className="text-slate-800">OpenAI, Anthropic, fal.ai, and RunPod</strong> for AI
                   and model-processing features;
                 </li>
                 <li>
@@ -195,6 +195,30 @@ export default function PrivacyPolicyPage() {
                 the services they provide to us and to provide protections consistent with this
                 policy and applicable law. We may also disclose information in a business transfer
                 or to protect rights, safety, and service integrity.
+              </p>
+            </PolicySection>
+
+            <PolicySection title="AI processing and your permission">
+              <p>
+                Before a generation, AI edit, or model conversion request that uses AI processing,
+                BrickBuilder asks for your permission inside the app. We send your text prompts and
+                edit instructions, reference images or photos you select, and model data and previews
+                needed for the request to OpenAI, Anthropic, fal.ai, and RunPod, depending on the feature and
+                selected model. Model content may also be used to suggest a title. Any personal
+                information included in your submitted content is included in that processing.
+              </p>
+              <p>
+                These providers process the content to create or edit your model, generate previews,
+                or suggest titles. We require third parties receiving personal information to provide
+                the same or equal protection described in this policy. Do not submit confidential or
+                sensitive personal information that you do not want these providers to process.
+              </p>
+              <p>
+                Permission is saved on this device. You can decline and continue browsing or ordering
+                physical bricks, or withdraw permission using AI privacy in the app footer. Withdrawal
+                stops future AI requests; it does not reverse processing already started. After
+                withdrawal, we ask again before another AI request. For deletion requests, contact
+                support@brickbuilder.ai.
               </p>
             </PolicySection>
 
