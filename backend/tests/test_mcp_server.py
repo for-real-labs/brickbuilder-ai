@@ -81,6 +81,19 @@ def test_protocol_initialization_and_tool_contracts(client):
     assert next(tool for tool in tools if tool["name"] == "get_lego_model")["annotations"]["readOnlyHint"] is True
 
 
+def test_tool_descriptions_are_self_contained_capability_descriptions(client):
+    http, _, _ = client
+    tools = rpc(http, "tools/list").json()["result"]["tools"]
+    for tool in tools:
+        # Directory tool descriptions must describe their own function rather
+        # than issue instructions about other tools or external instructions.
+        for other in tools:
+            if other["name"] != tool["name"]:
+                assert other["name"] not in tool["description"]
+        assert "Open model_url" not in tool["description"]
+        assert "poll the returned" not in tool["description"]
+
+
 def test_discovery_and_unauthenticated_challenge(client):
     http, _, _ = client
     http.headers.pop("Authorization")

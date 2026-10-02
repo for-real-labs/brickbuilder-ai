@@ -86,6 +86,9 @@ export function SiteFooter() {
           >
             Privacy Policy
           </Link>
+          <Link to="/terms" onClick={() => posthog.capture("footer_terms_of_service_clicked")} className="hover:text-[#f44336] transition-colors">
+            Terms of Service
+          </Link>
         </div>
         <div className="text-xs text-slate-400">
           © 2026 BrickBuilder
