@@ -2,7 +2,9 @@
 Authentication and authorization middleware for the Mesh2Brick API
 """
 import os
+import asyncio
 import jwt
+from functools import lru_cache
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, Header, Depends, Request
 from supabase import create_client, Client
@@ -80,17 +82,33 @@ class AuthError(Exception):
         self.status_code = status_code
         super().__init__(self.message)
 
+@lru_cache(maxsize=1)
+def _get_jwks_client(issuer: str) -> jwt.PyJWKClient:
+    """Cache public signing keys from the configured Supabase project only."""
+    return jwt.PyJWKClient(issuer + "/.well-known/jwks.json", timeout=5)
+
+
 def extract_user_from_token(token: str) -> Dict[str, Any]:
     """
     Extract user information from Supabase JWT token
     """
     try:
-        # Decode the JWT token
+        algorithm = jwt.get_unverified_header(token).get("alg")
+        issuer = SUPABASE_URL.rstrip("/") + "/auth/v1" if SUPABASE_URL else None
+        if algorithm == "HS256" and SUPABASE_JWT_SECRET:
+            key = SUPABASE_JWT_SECRET
+        elif algorithm in {"ES256", "RS256"} and issuer:
+            key = _get_jwks_client(issuer).get_signing_key_from_jwt(token).key
+        else:
+            raise AuthError("Unsupported token signing algorithm", 401)
+
         decoded_token = jwt.decode(
-            token, 
-            SUPABASE_JWT_SECRET, 
-            algorithms=["HS256"],
-            audience="authenticated"
+            token,
+            key,
+            algorithms=[algorithm],
+            audience="authenticated",
+            issuer=issuer,
+            options={"require": ["exp", "sub", "aud", "iss"]},
         )
         
         return {
@@ -101,7 +119,7 @@ def extract_user_from_token(token: str) -> Dict[str, Any]:
         }
     except jwt.ExpiredSignatureError:
         raise AuthError("Token has expired", 401)
-    except jwt.InvalidTokenError as e:
+    except jwt.PyJWTError as e:
         raise AuthError(f"Invalid token: {str(e)}", 401)
 
 async def verify_authentication(
@@ -142,7 +160,7 @@ async def verify_authentication(
     token = authorization.replace("Bearer ", "")
     
     try:
-        user_info = extract_user_from_token(token)
+        user_info = await asyncio.to_thread(extract_user_from_token, token)
         logger.info(f"Request authenticated for user: {user_info['email']}")
         
         return {
@@ -416,7 +434,7 @@ async def get_optional_identity(
         
         try:
             if supabase_client:
-                user_info = extract_user_from_token(token)
+                user_info = await asyncio.to_thread(extract_user_from_token, token)
                 logger.info(f"Request authenticated for user: {user_info['email']}")
                 
                 return {
