@@ -495,6 +495,10 @@ export default function LandingPage() {
   };
 
   const onPickImage = () => fileInputRef.current?.click();
+  const clearSelectedImage = () => {
+    setImgFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
   const onFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
     if (e.target.files?.length) setInputValidationMessage(null);
     const file = e.target.files?.[0] ?? null;
@@ -655,7 +659,10 @@ export default function LandingPage() {
         // Update UI based on streaming events
         if ('type' in event && event.type === 'pipeline') {
           const pe = event as PipelineEvent;
-          if (pe.generation_id) setActiveGenerationId(pe.generation_id);
+          if (pe.generation_id) {
+            setActiveGenerationId(pe.generation_id);
+            clearSelectedImage();
+          }
           if (pe.stage === 'image_generation') {
             const queueInfo = pe.queue_position != null ? ` (position ${pe.queue_position})` : '';
             setGenerationStatus(pe.message ? `${pe.message}${queueInfo}` : `Generating…${queueInfo}`);
@@ -754,6 +761,7 @@ export default function LandingPage() {
       
       if (controller.signal.aborted) return;
       const generationId = postResponse.generation_id;
+      clearSelectedImage();
       setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
       
@@ -875,6 +883,19 @@ export default function LandingPage() {
     }
   };
 
+  const submitGeneration = () => {
+    if (loading) return;
+    posthog.capture('landing_generate_clicked', {
+      generation_method: generationMethod,
+      model: generationMethod === 'llm' ? llmModel : threeDModel,
+      has_prompt: Boolean(prompt.trim()),
+      has_image: Boolean(imgFile),
+      size,
+      is_authenticated: Boolean(session),
+    });
+    void onGenerate();
+  };
+
   // After a successful login from the modal, automatically continue generation
   useEffect(() => {
     if (pendingGenerateAfterLogin && session && !authLoading && !loading) {
@@ -967,6 +988,12 @@ export default function LandingPage() {
                     setPrompt(e.target.value);
                     if (e.target.value.trim()) setInputValidationMessage(null);
                   }}
+                  onKeyDown={(event) => {
+                    if (event.key !== 'Enter' || event.repeat || event.nativeEvent.isComposing
+                      || event.nativeEvent.keyCode === 229 || showGlbUpload) return;
+                    event.preventDefault();
+                    submitGeneration();
+                  }}
                   placeholder={imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
                   className="input w-full h-12 rounded-full pr-64 pl-4 text-base shadow-sm border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   disabled={loading}
@@ -1018,17 +1045,7 @@ export default function LandingPage() {
                   <div className="flex items-center justify-center gap-2 mt-3 landing-fade-in landing-delay-3">
                     <button
                       type="button"
-                      onClick={() => {
-                        posthog.capture('landing_generate_clicked', {
-                          generation_method: generationMethod,
-                          model: generationMethod === 'llm' ? llmModel : threeDModel,
-                          has_prompt: Boolean(prompt.trim()),
-                          has_image: Boolean(imgFile),
-                          size,
-                          is_authenticated: Boolean(session),
-                        });
-                        void onGenerate();
-                      }}
+                      onClick={submitGeneration}
                       className="inline-flex items-center justify-center h-12 rounded-full px-6 min-w-36 text-white transition-colors bg-[#f44336] cursor-pointer hover:bg-[#ff6b6b]"
                     >
                       <Sparkles className="mr-2 h-5 w-5" />
@@ -1063,10 +1080,7 @@ export default function LandingPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setImgFile(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
+                  onClick={clearSelectedImage}
                   className="text-slate-400 hover:text-red-500 transition-colors"
                   aria-label="Remove image"
                 >

@@ -68,6 +68,103 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 
 describe('LandingPage', () => {
+  it.each(['accepted', 'failed'])('submits an image with Enter and clears it only when %s', async outcome => {
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    const BrowserURL = URL;
+    vi.stubGlobal('URL', class extends BrowserURL {
+      static createObjectURL = vi.fn(() => 'blob:uploaded-image');
+      static revokeObjectURL = vi.fn();
+    });
+    let accept!: (response: { generation_id: string; message: string }) => void;
+    let reject!: (error: Error) => void;
+    const pending = new Promise<{ generation_id: string; message: string }>((resolve, fail) => {
+      accept = resolve;
+      reject = fail;
+    });
+    const start = vi.spyOn(LlmToBricksApiService, 'generate')
+      .mockImplementationOnce(() => pending)
+      .mockResolvedValue({ generation_id: 'next', message: 'Started' });
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const prompt = container.querySelector('[aria-label="Describe your brick model"]') as HTMLInputElement;
+      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'Anime girl');
+        prompt.dispatchEvent(new Event('input', { bubbles: true }));
+        Object.defineProperty(fileInput, 'files', { configurable: true, value: [new File(['image'], 'girl.png', { type: 'image/png' })] });
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
+      await act(async () => {
+        prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+        await vi.waitFor(() => expect(start).toHaveBeenCalledTimes(1));
+      });
+      expect(start).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: expect.any(String) }), undefined);
+      expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
+      expect(prompt.disabled).toBe(true);
+      await act(async () => {
+        prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      });
+      expect(start).toHaveBeenCalledTimes(1);
+      await act(async () => {
+        if (outcome === 'accepted') accept({ generation_id: 'submitted', message: 'Started' });
+        else reject(new Error('Submission failed'));
+      });
+      if (outcome === 'accepted') {
+        expect(container.querySelector('[alt="Uploaded preview"]')).toBeNull();
+        expect(container.querySelector('[aria-label="Remove image"]')).toBeNull();
+        expect(fileInput.value).toBe('');
+        expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:uploaded-image');
+        await act(async () => {
+          prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+        });
+        expect(start).toHaveBeenLastCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: undefined }), undefined);
+      } else {
+        expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
+        expect(container.textContent).toContain('Submission failed');
+        expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+      }
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ has_image: true, has_prompt: true }));
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it('ignores Enter during text composition or key repeats, and validates an empty Enter submission', async () => {
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    const start = vi.spyOn(LlmToBricksApiService, 'generate');
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const prompt = container.querySelector('[aria-label="Describe your brick model"]') as HTMLInputElement;
+      for (const options of [{ isComposing: true }, { repeat: true }, { keyCode: 229 }]) {
+        await act(async () => {
+          prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, ...options }));
+        });
+      }
+      expect(container.querySelector('#generation-input-help')).toBeNull();
+      await act(async () => {
+        prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      });
+      expect(container.querySelector('#generation-input-help')?.textContent).toContain('Describe what you’d like to build');
+      expect(start).not.toHaveBeenCalled();
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
   it('guides empty submissions at the input without showing a generation failure or starting AI', async () => {
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
