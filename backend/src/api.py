@@ -219,13 +219,17 @@ async def serve_local_storage(bucket: str, file_path: str):
     if root is None:
         raise HTTPException(status_code=404, detail="Local storage not enabled")
 
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", bucket):
+        raise HTTPException(status_code=404, detail="File not found")
+    root = root.resolve()
     safe = os.path.normpath(file_path).lstrip("/")
-    target = (root / bucket / safe).resolve()
     bucket_root = (root / bucket).resolve()
-    if not str(target).startswith(str(bucket_root)) or not target.is_file():
+    target = (bucket_root / safe).resolve()
+    if (not bucket_root.is_relative_to(root) or not target.is_relative_to(bucket_root)
+            or not target.is_file()):
         raise HTTPException(status_code=404, detail="File not found")
 
-    if bucket == "generation-output" or target.name == "llm-output.json":
+    if target.is_relative_to((root / "generation-output").resolve()) or target.name == "llm-output.json":
         raise HTTPException(status_code=404, detail="File not found")
     return FileResponse(target)
 

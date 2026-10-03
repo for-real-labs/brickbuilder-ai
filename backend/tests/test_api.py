@@ -13,6 +13,42 @@ from src import api
 AUTH = {"user_id": "user"}
 
 
+@pytest.mark.parametrize("bucket, path", [
+    ("generation-output", "job/nova-source.zip"),
+    ("generation", "../generation-output/job/nova-source.zip"),
+    ("..", ".env"),
+    ("generations", "../../.env"),
+    ("generations", "job/llm-output.json"),
+])
+def test_local_storage_blocks_private_archives_and_path_escape(monkeypatch, tmp_path, bucket, path):
+    from src.utils import local_db
+    root = tmp_path / "storage"
+    (root / "generation-output" / "job").mkdir(parents=True)
+    (root / "generation-output" / "job" / "nova-source.zip").write_bytes(b"private model")
+    (root / "generations" / "job").mkdir(parents=True)
+    (root / "generations" / "job" / "llm-output.json").write_text("private output")
+    (tmp_path / ".env").write_text("private project credentials")
+    monkeypatch.setattr(local_db, "STORAGE_ROOT", root)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(api.serve_local_storage(bucket, path))
+    assert error.value.status_code == 404
+
+
+def test_local_storage_serves_public_models_but_blocks_symlink_escape(monkeypatch, tmp_path):
+    from src.utils import local_db
+    root = tmp_path / "storage"
+    public = root / "generations" / "model.ldr"
+    public.parent.mkdir(parents=True)
+    public.write_text("public model")
+    outside = tmp_path / ".env"
+    outside.write_text("private project credentials")
+    (public.parent / "escape.ldr").symlink_to(outside)
+    monkeypatch.setattr(local_db, "STORAGE_ROOT", root)
+    assert asyncio.run(api.serve_local_storage("generations", "model.ldr")).path == public
+    with pytest.raises(HTTPException):
+        asyncio.run(api.serve_local_storage("generations", "escape.ldr"))
+
+
 def test_nova_endpoint_enforces_native_local_guard_and_delegates(monkeypatch):
     handler = AsyncMock(return_value={"ok": True})
     guarded = []

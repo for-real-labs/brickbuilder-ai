@@ -13,7 +13,7 @@ from .llm_tool_conversation import (
     ConversationSettings, ToolCall, ToolConversation, ToolResult, ToolSpec, Turn, UserInput,
     create_conversation,
 )
-from .nova_toolkit import MAX_REPORT_CHARS, NovaBuild, NovaToolkit
+from .nova_toolkit import MAX_REPORT_CHARS, NovaBuild, NovaToolkit, serialize_feedback
 
 SYSTEM_PROMPT = """You design complete LEGO-compatible sets using real official LDraw parts and modular assemblies.
 You have the separately installed ldraw-nova toolkit, with measured part bounds, connector evidence,
@@ -29,7 +29,9 @@ WORKFLOW
    FTS fallback is available; use short specific search terms and refine empty results. Read the actual
    source examples/manuals returned by discovery.
 2. Read ldraw_tools/data/plan.schema.json
-   and docs/agent/tooling.md using read_resource. Read applicable geometry/construction documents.
+   and docs/agent/tooling.md using read_resource. Resource responses include next_offset; follow it with
+   the same path until it is null so you read the complete schema/manual/example. Read applicable
+   geometry/construction documents.
 3. Submit a self-contained hierarchical plan using submit_plan. The first section is the complete set;
    other named .ldr sections are subassemblies. Use repeated placements for recurring elements and
    shared subassemblies for recurring assemblies. Split construction into meaningful steps.
@@ -86,11 +88,12 @@ TOOLS = [
           {"family": {"type": "string", "enum": ["design", "vehicle", "technic", "discover"]}, "name": {"type": "string"}}, ["family"]),
     _tool("catalog", "Search descriptive part symbols and available colours, with actual dimensions.",
           {"kind": {"type": "string", "enum": ["parts", "categories", "colours"]}, "query": {"type": "string"}}),
-    _tool("read_resource", "Read a toolkit manual, schema or source example. Paths are relative to the toolkit repository.",
-          {"path": {"type": "string"}}, ["path"]),
+    _tool("read_resource", "Read a paged toolkit manual, schema or source example. Paths are relative to the toolkit repository. Follow next_offset with the same path until null to read the full resource.",
+          {"path": {"type": "string"}, "offset": {"type": "integer", "minimum": 0}}, ["path"]),
     _tool("submit_plan", "Compile a complete self-contained hierarchical assembly plan and return geometry feedback and two actual-mesh review views.",
           {"plan": {"type": "object", "description": "JSON matching ldraw_tools/data/plan.schema.json, without includes/assets."}}, ["plan"]),
-    _tool("inspect_build", "Inspect the current build or one section for detailed geometry/contact evidence.", {"section": {"type": "string"}}),
+    _tool("inspect_build", "Inspect the current build or one section for diagnostic groups and placement transforms. Use offset to page through more than 60 placements.",
+          {"section": {"type": "string"}, "offset": {"type": "integer", "minimum": 0}}),
     _tool("accept_model", "Accept the latest successful build only after reviewing its renders in a previous turn.",
           {"review": {"type": "string", "description": "Visual assessment and any unresolved buildability limitations."},
            "independent_assemblies": {"type": "string", "description": "Only for explicitly requested independent objects: explain which vehicles/accessories/scene elements form the disconnected groups. Otherwise repair them."}}, ["review"]),
@@ -278,8 +281,7 @@ async def build_set(request, provider: str, workspace: Path, on_output=None) -> 
                                        if isinstance(report, dict) and report.get("accepted")
                                        else "Checking the placement issues before rebuilding.")
                             await on_output(message + "\n\n")
-                        result = json.dumps(report, default=str, allow_nan=False)
-                        results.append(ToolResult(call.id, result[:MAX_REPORT_CHARS], preview))
+                        results.append(ToolResult(call.id, serialize_feedback(report), preview))
                 except (ValueError, FileNotFoundError, asyncio.TimeoutError) as exc:
                     results.append(ToolResult(call.id, str(exc), is_error=True))
             conversation.add_tool_results(results)
