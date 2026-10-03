@@ -21,6 +21,10 @@ import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity } from "../hooks/useGenerationActivity";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
+import { NovaBuilderOptions } from "../components/NovaBuilderOptions";
+import { LocalProviderSettings } from "../components/LocalProviderSettings";
+import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
+import { isLocalDevelopment } from "../services/localProvidersApi";
 import { GenerationStats, GetGenerationStatsApiService } from "../services/getGenerationStatsApi";
 import { CommunityGeneration, GetCommunityGenerationsApiService } from "../services/getCommunityGenerationsApi";
 import {
@@ -62,7 +66,7 @@ const MODEL_QUALITY_PRESETS: { label: string; value: ModelQuality; modelOption: 
 ];
 const DEFAULT_PROMPT_OPTION = "a";
 
-type GenerationMethod = "3d" | "llm";
+type GenerationMethod = "3d" | "llm" | "nova";
 export const DEFAULT_GENERATION_METHOD: GenerationMethod = "llm";
 const GENERATION_METHOD_PRESETS: Array<{
   label: string;
@@ -315,6 +319,8 @@ export default function LandingPage() {
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
+  const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
+  const localDevelopment = isLocalDevelopment();
   const [imgFile, setImgFile] = useState<File | null>(null);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -435,17 +441,21 @@ export default function LandingPage() {
         generationMethod?: string;
         threeDModel?: string;
         llmModel?: string;
+        novaOptions?: NovaOptions;
         areOptionsHidden?: boolean;
         image?: { name: string; type: string; base64: string } | null;
       };
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      if (payload.generationMethod === '3d' || payload.generationMethod === 'llm') {
+      if (payload.generationMethod === '3d' || payload.generationMethod === 'llm' || payload.generationMethod === 'nova') {
         setGenerationMethod(payload.generationMethod);
       }
       if (isThreeDModel(payload.threeDModel)) setThreeDModel(payload.threeDModel);
       if (payload.llmModel && getLlmModelOption(payload.llmModel)) setLlmModel(payload.llmModel);
+      if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
+        setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
+      }
       if (typeof payload.areOptionsHidden === 'boolean') setAreOptionsHidden(payload.areOptionsHidden);
       if (payload.image && payload.image.base64) {
         try {
@@ -567,6 +577,7 @@ export default function LandingPage() {
         generationMethod,
         threeDModel,
         llmModel,
+        novaOptions,
         areOptionsHidden,
         image: imageData,
       };
@@ -694,7 +705,19 @@ export default function LandingPage() {
       // Trellis (non-streamed).
       const stream3d = threeDModel === 'sam3d';
 
-      if (generationMethod === 'llm') {
+      if (generationMethod === 'nova') {
+        const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
+        setGenerationStatus('Starting the full set agent…');
+        postResponse = await NovaToBricksApiService.generate({
+          ...novaOptions,
+          authMode: localDevelopment ? novaOptions.authMode : 'api_key',
+          prompt: prompt.trim() || undefined,
+          imageBase64,
+          imageMediaType: imgFile?.type || 'image/png',
+          detailLevel: getVoxelSize(size),
+        }, authToken);
+        modelName = prompt.trim() || imgFile?.name.replace(/\.[^/.]+$/, '') || 'full-set-model';
+      } else if (generationMethod === 'llm') {
         const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
         const llmLabel = getLlmModelOption(llmModel)?.label ?? 'The AI model';
         setGenerationStatus(`${llmLabel} is designing your brick model…`);
@@ -753,8 +776,8 @@ export default function LandingPage() {
       // If created while logged out, remember it so it can be claimed on login.
       if (!session) recordAnonymousGeneration(generationId);
       
-      if (generationMethod === 'llm') {
-        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: 'llmToBricks', createdAt: generationStartedAt });
+      if (generationMethod === 'llm' || generationMethod === 'nova') {
+        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks', createdAt: generationStartedAt });
         setLoading(false);
         setActiveLoadingMethod(null);
         setGenerationStatus(null);
@@ -943,24 +966,53 @@ export default function LandingPage() {
               </div>
             </div>
 
+            <div role="group" aria-label="Builder mode" className="flex w-full max-w-xl flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 sm:flex-row">
+              {([{ value: 'llm', label: 'Model builder', description: 'Design a single model' }, { value: 'nova', label: 'Full set agent', description: 'Nova · plan, assemble, refine' }] as const).map(option => {
+                const active = option.value === 'nova' ? generationMethod === 'nova' : generationMethod !== 'nova';
+                return <button key={option.value} type="button" aria-pressed={active} disabled={loading} onClick={() => {
+                  if (active) return;
+                  posthog.capture('landing_generation_method_selected', { generation_method: option.value });
+                  setGenerationMethod(option.value); setShowGlbUpload(false);
+                }} className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-4 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:opacity-50 ${active ? 'bg-red-50 text-red-700' : 'text-slate-600 hover:bg-slate-50'}`}>
+                  <span className="text-sm font-semibold">{option.label}</span><span className={`mt-0.5 text-xs ${active ? 'text-red-600' : 'text-slate-400'}`}>{option.description}</span>
+                </button>;
+              })}
+            </div>
+
             <div className="w-full relative z-20 landing-fade-in landing-delay-3">
               <div className="w-full" style={{ position: 'relative' }}>
-                <input
+                {generationMethod === 'nova' ? <textarea
+                  aria-label="Full set description"
+                  value={prompt}
+                  onFocus={() => {
+                    setFocused(true);
+                    posthog.capture('landing_nova_prompt_focused');
+                  }}
+                  onBlur={() => {
+                    setFocused(false);
+                    posthog.capture('landing_nova_prompt_changed', { character_count: prompt.length });
+                  }}
+                  onChange={event => setPrompt(event.target.value)}
+                  placeholder={imgFile ? 'Describe how the set should follow your reference image' : 'Describe your full set: scenes, structures, colors, scale, and details'}
+                  className="min-h-36 w-full resize-y rounded-2xl border border-gray-200 bg-white px-4 pt-4 pb-14 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
+                  disabled={loading}
+                /> : <input
                   value={prompt}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrompt(e.target.value)}
                   placeholder={imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
-                  className="input w-full h-12 rounded-full pr-64 pl-4 text-base shadow-sm border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                  className="input w-full h-12 rounded-full pr-40 pl-4 text-base shadow-sm border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   disabled={loading}
-                />
+                />}
                 <div
                   className="flex items-center gap-1.5"
                   style={{
                     position: 'absolute',
                     right: '6px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    top: generationMethod === 'nova' ? undefined : '50%',
+                    bottom: generationMethod === 'nova' ? '14px' : undefined,
+                    transform: generationMethod === 'nova' ? undefined : 'translateY(-50%)',
                     zIndex: 2,
                   }}
                 >
@@ -998,7 +1050,7 @@ export default function LandingPage() {
                       onClick={() => {
                         posthog.capture('landing_generate_clicked', {
                           generation_method: generationMethod,
-                          model: generationMethod === 'llm' ? llmModel : threeDModel,
+                          model: generationMethod === 'nova' ? novaOptions.model : generationMethod === 'llm' ? llmModel : threeDModel,
                           has_prompt: Boolean(prompt.trim()),
                           has_image: Boolean(imgFile),
                           size,
@@ -1013,7 +1065,10 @@ export default function LandingPage() {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setAreOptionsHidden(prev => !prev)}
+                      onClick={() => {
+                        posthog.capture('landing_settings_toggled', { expanded: areOptionsHidden });
+                        setAreOptionsHidden(prev => !prev);
+                      }}
                       className="inline-flex items-center justify-center h-10 w-10 rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
                       aria-label="Toggle settings"
                     >
@@ -1054,6 +1109,8 @@ export default function LandingPage() {
               </div>
             )}
 
+            {generationMethod === 'nova' && <NovaBuilderOptions options={novaOptions} onChange={setNovaOptions} local={localDevelopment} disabled={loading} />}
+
             {/* Size chips - hidden during loading */}
             {/* {!loading && !areOptionsHidden && (
               <div className="flex items-center gap-3 relative" style={{ zIndex: 25 }}>
@@ -1086,7 +1143,7 @@ export default function LandingPage() {
             )} */}
 
             {/* Generation method selector - hidden during loading */}
-            {!loading && !areOptionsHidden && (
+            {!loading && !areOptionsHidden && generationMethod !== 'nova' && (
               <GenerationMethodSelector
                 value={generationMethod}
                 threeDModel={threeDModel}
@@ -1099,7 +1156,7 @@ export default function LandingPage() {
             )}
 
             {/* Upload GLB toggle - lives in settings */}
-            {!loading && !areOptionsHidden && (
+            {!loading && !areOptionsHidden && generationMethod !== 'nova' && (
               <div className="flex items-center gap-3 relative" style={{ zIndex: 25 }}>
                 <span className="text-sm text-slate-500">Upload GLB:</span>
                 <button
@@ -1118,6 +1175,8 @@ export default function LandingPage() {
                 </button>
               </div>
             )}
+
+            {localDevelopment && !loading && <LocalProviderSettings />}
 
             {!loading && (
               <>
@@ -1194,7 +1253,7 @@ export default function LandingPage() {
                     <div style={{ height: 340 }}>
                       <StreamingMeshViewer voxelData={voxelData} />
                     </div>
-                  ) : activeLoadingMethod === 'llm' ? (
+                  ) : activeLoadingMethod === 'llm' || activeLoadingMethod === 'nova' ? (
                     <LlmPreviewLoader previewImageUrl={previewImageUrl} />
                   ) : previewImageUrl ? (
                     <img

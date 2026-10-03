@@ -66,6 +66,7 @@ import { GetUserGenerationsApiService } from '../src/services/getUserGenerations
 import { GetGenerationStatsApiService } from '../src/services/getGenerationStatsApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
+import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
 
 describe('LandingPage', () => {
   it.each(['stats', 'community'])('waits for %s before mounting lower content', async delayed => {
@@ -170,6 +171,39 @@ describe('LandingPage', () => {
       act(() => root.unmount());
       container.remove();
     }
+  });
+
+  it('keeps Nova optional and starts a full set job through the existing generation activity flow', async () => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'full-set', message: 'Started' });
+    const llm = vi.spyOn(LlmToBricksApiService, 'generate');
+    const poll = vi.spyOn(GetGenerationApiService, 'pollUntilComplete');
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    const findButton = (text: string) => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes(text))!;
+    try {
+      await act(async () => root.render(<LandingPage />));
+      expect(findButton('Model builder').getAttribute('aria-pressed')).toBe('true');
+      expect(findButton('Full set agent').getAttribute('aria-pressed')).toBe('false');
+      expect(container.querySelector('[aria-label="Full set agent options"]')).toBeNull();
+      act(() => findButton('Full set agent').click());
+      expect(container.querySelector('[aria-label="Full set agent options"]')).not.toBeNull();
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'nova' });
+      const input = container.querySelector('textarea[aria-label="Full set description"]') as HTMLTextAreaElement;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Spaceport with launch tower, rover, and research lab');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await act(async () => findButton('Generate').click());
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, prompt: input.value }), undefined);
+      expect(llm).not.toHaveBeenCalled();
+      expect(poll).not.toHaveBeenCalled();
+      expect(container.textContent).toContain('1 in progress');
+      expect(input.disabled).toBe(false);
+      expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
+    } finally { act(() => root.unmount()); }
   });
 
   it('shows the top eight community models with chevron controls', async () => {

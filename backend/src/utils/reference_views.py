@@ -5,8 +5,9 @@ import logging
 import os
 from typing import Dict, Iterable, List
 
-import fal_client
 from fastapi import HTTPException
+
+from .fal_provider_client import get_fal_client
 
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ def _generate_reference_view(view_name: str, image_urls: Iterable[str]) -> str:
             detail="FAL_KEY not configured; it is required to generate missing reference views.",
         )
 
-    result = fal_client.subscribe(
+    result = get_fal_client().subscribe(
         NANO_BANANA_LITE_EDIT_MODEL,
         arguments={
             "prompt": _view_prompt(view_name),
