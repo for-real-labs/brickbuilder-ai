@@ -198,7 +198,7 @@ it('uses the new revision preview and regular navigation once the edit completes
   expect(onView).toHaveBeenCalledWith('pending', false);
 });
 
-it('places Manually Edit inside the edit form, opens the block editor, and pulses the Order action', async () => {
+it('places editing and ordering beside the preview and preserves the block editor', async () => {
   vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({
     generation_id: 'g', status: 'completed', name: 'Sunny Dachshund', ldr_content: 'ldr', xyzrgb_url: '/voxels.xyzrgb',
   } as never);
@@ -209,16 +209,21 @@ it('places Manually Edit inside the edit form, opens the block editor, and pulse
   expect(manualButtons).toHaveLength(1);
   expect(editForm.contains(manualButtons[0])).toBe(true);
   const order = container.querySelector('[aria-label="Order my kit"]') as HTMLButtonElement;
-  expect(order.disabled).toBe(false);
-  expect(order.classList.contains('attention-pulse')).toBe(true);
+  expect(order.disabled).toBe(true);
+  expect(order.closest('aside')).toBe(editForm.closest('aside'));
+  expect(container.textContent).toContain('Price unavailable right now.');
   const instructions = container.querySelector('[aria-label="View instructions"]')!;
   const community = container.querySelector('[aria-label="Remove from community"], [aria-label="Post to community"]')!;
   expect(instructions.textContent).toBe('View Instructions');
-  expect(order.parentElement).toBe(instructions.parentElement);
-  expect(order.parentElement).toBe(community.parentElement);
-  expect(order.compareDocumentPosition(instructions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(instructions.closest('.model-workspace-secondary')).not.toBeNull();
+  expect(community.closest('.model-workspace-secondary')).not.toBeNull();
   expect(instructions.compareDocumentPosition(community) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(container.textContent).not.toContain('Not what you were expecting?');
+  act(() => (editForm.querySelector('.model-edit-suggestions button') as HTMLButtonElement).click());
+  expect((container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement).value).toBe('Use a brighter, more vibrant color palette.');
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_edit_suggestion_clicked', {
+    generation_id: 'g', is_demo_model: false, suggestion: 'colors',
+  });
   await act(async () => (manualButtons[0] as HTMLButtonElement).click());
   expect(fetch).toHaveBeenCalledWith('/voxels.xyzrgb');
   expect(container.querySelector('#voxel-edit-prompt')).toBeNull();
@@ -228,12 +233,12 @@ it('places Manually Edit inside the edit form, opens the block editor, and pulse
   });
 });
 
-it('does not pulse Order while its price is loading', async () => {
+it('disables both purchase controls while the price is loading', async () => {
   vi.mocked(GetPriceApiService.getPrice).mockImplementation(() => new Promise(() => {}));
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
   const order = container.querySelector('[aria-label="Order my kit"]') as HTMLButtonElement;
   expect(order.disabled).toBe(true);
-  expect(order.classList.contains('attention-pulse')).toBe(false);
+  expect((container.querySelector('[aria-label="Order this model"]') as HTMLButtonElement).disabled).toBe(true);
 });
 
 const completedEditSource = {
@@ -283,7 +288,7 @@ it('keeps the complete page visible on a resumed edit and locks only model chang
   expect(modelButton('View instructions').disabled).toBe(false);
   expect(modelButton('Export model').disabled).toBe(false);
   expect(modelButton('Like community model').disabled).toBe(false);
-  expect(container.querySelector('[data-testid="viewer"]')?.closest('section')?.nextElementSibling?.getAttribute('style')).not.toContain('opacity: 0');
+  expect(container.querySelector('aside')?.getAttribute('style') || '').not.toContain('opacity: 0');
 });
 
 it('keeps the mounted viewer when submitting an edit and while the edit request starts', async () => {
@@ -382,4 +387,22 @@ it('hides model controls and keeps the resolved order title visible', async () =
   expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-controls')).toBe('false');
   expect(container.querySelector('.checkout-summary h2')?.textContent).toBe('Sunny Dachshund');
   expect(container.textContent).not.toContain('Regular size kit');
+});
+
+
+it.each(['Order my kit', 'Order this model'])('opens checkout for the displayed model from %s with the same quote', async label => {
+  const quote = {generation_id: 'g', total_price: 44.77, total_parts: 370, total_weight: .5263, currency: 'USD', parts_breakdown: []};
+  vi.mocked(GetPriceApiService.getPrice).mockResolvedValue(quote as never);
+  const Location = () => { const location = useLocation(); return <output>{JSON.stringify({path: location.pathname, state: location.state})}</output>; };
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
+  expect(container.querySelector('.model-order-total')?.textContent).toBe('$22.39');
+  await act(async () => modelButton(label).click());
+  const result = JSON.parse(container.querySelector('output')!.textContent!);
+  expect(result.path).toBe('/order');
+  expect(result.state.generation_id).toBe('g');
+  expect(result.state.name).toBe('Sunny Dachshund');
+  expect(result.state.priceData).toEqual(quote);
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_order_clicked', {
+    generation_id: 'g', is_demo_model: false, source: label === 'Order my kit' ? 'card' : 'mobile_bar',
+  });
 });

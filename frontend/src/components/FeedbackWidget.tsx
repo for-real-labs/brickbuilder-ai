@@ -8,6 +8,7 @@ import { MAX_FEEDBACK_LENGTH, sendFeedback } from '../services/feedbackApi';
 export function FeedbackWidget() {
   const { user, loading: authLoading } = useAuth();
   const { pathname } = useLocation();
+  const hasPurchaseControls = pathname === '/order' || pathname === '/generated-model';
   const [open, setOpen] = useState(false);
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
@@ -23,12 +24,12 @@ export function FeedbackWidget() {
   }, []);
 
   useEffect(() => {
-    if (!open || pathname === '/order') return;
+    if (!open || hasPurchaseControls) return;
     dialog.current?.showModal();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
-  }, [open, pathname]);
+  }, [open, hasPurchaseControls]);
 
   const close = () => dialog.current?.close();
   const submit = async (event: React.FormEvent) => {
@@ -59,8 +60,8 @@ export function FeedbackWidget() {
     }
   };
 
-  // Keep checkout actions clear of the floating feedback trigger.
-  if (pathname === '/order') return null;
+  // Keep kit purchase controls clear of the floating feedback trigger.
+  if (hasPurchaseControls) return null;
 
   return <>
     <button ref={button} type="button" aria-haspopup="dialog" aria-expanded={open}

@@ -48,18 +48,16 @@ import { UpdateModelApiService, UpdateModelResponse } from "../services/updateMo
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import { ModelEditControls } from "../components/ModelEditControls";
-import { StatCard } from "../components/StatCard";
+import { ModelOrderCard } from "../components/ModelOrderCard";
+import "./GeneratedModel.css";
 import { UpdateGenerationNameApiService } from "../services/updateGenerationNameApi";
 import { UpdateImagePreviewApiService } from "../services/updateImagePreviewApi";
 import { supabase } from "../lib/supabase";
 import posthog from "posthog-js";
 import { useAuth } from "../contexts/AuthContext";
 import {
-  HandCoins,
-  Package,
   Hammer,
   Mail,
-  Boxes,
   Star,
   Heart,
   Loader2,
@@ -72,7 +70,6 @@ import {
   FileText,
   Video,
   BookOpen,
-  ShoppingCart,
   X,
   LayoutDashboard,
   History,
@@ -131,7 +128,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="View BrickBuilder on GitHub"
-      className="inline-flex h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
+      className="hidden sm:inline-flex h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white sm:h-6 sm:w-6">
         <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -156,7 +153,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
       </a>
 
       {/* Login / Sign Up OR Account Menu */}
-      <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:gap-3">
+      <div className="flex w-auto items-center justify-end gap-2 sm:gap-3">
         <button
           className="hidden sm:inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
           onClick={() => onGuardedNavigate("/community")}
@@ -1820,12 +1817,8 @@ export default function GeneratedModel() {
     }, [downloadBlob, getSafeExportName, isExportingVideo]);
 
 
-  // Summer sale: 50% off everything (parts + shipping). The price returned by
-  // the API already includes shipping, so we simply halve the total.
-  const saleDiscountedPrice = priceData ? priceData.total_price * 0.5 : 0;
-
   return (
-    <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
+    <div className="generated-model-page min-h-screen text-slate-900" style={{ backgroundColor: "#f7f8fa" }}>
       <SEO
         title={`Generated Model — ${modelName}`}
         description="View your generated model, pricing, steps, and pieces."
@@ -1842,13 +1835,13 @@ export default function GeneratedModel() {
         onSuccess={() => { void handleCommunityLoginSuccess(); }}
       />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-3">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-28 lg:pb-16 pt-3">
         <Header onGuardedNavigate={(path) => guardUnsavedChanges(() => navigate(path))} />
         
         {/* Generate Another Button */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mt-4 mb-2 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mt-3 mb-1 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Generate Another
@@ -1904,7 +1897,8 @@ export default function GeneratedModel() {
         {/* Keep the completed model page visible while its edit runs. */}
         {showModelPage && (
           <>
-        <section className="mt-3 mb-5 sm:mb-6">
+        <section className="model-workspace-title mt-2 mb-4">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Your brick model</p>
           <GenerationTitle
             key={currentGenerationId || 'local'}
             generationId={currentGenerationId || undefined}
@@ -1919,9 +1913,11 @@ export default function GeneratedModel() {
           />
         </section>
 
+<div className={`model-workspace ${showVoxelEditor ? "model-workspace-manual" : ""}`}>
+<div className="model-workspace-preview">
 {/* Voxel Editor - shown when edit mode is active */}
 {showVoxelEditor && xyzrgbContent ? (
-  <section className="mt-6 md:mt-8 lg:mt-10">
+  <section className="model-preview-section">
     <div className="space-y-4">
       {/* Voxel editor */}
       <figure className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
@@ -1957,7 +1953,7 @@ export default function GeneratedModel() {
   </section>
 ) : (
   /* Angle gallery with extra vertical spacing - hidden when voxel editor is shown */
-  <section className="mt-2 md:mt-3">
+  <section className="model-preview-section">
     <div className="grid grid-cols-1 gap-4">
       {/* View angle screenshots disabled
       {angles.slice(0, 2).map((a, idx) => {
@@ -2000,8 +1996,7 @@ export default function GeneratedModel() {
       {/* 3D viewer - always visible */}
       <figure className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
         <div
-          className="relative w-full overflow-hidden rounded-xl bg-slate-50"
-          style={{ aspectRatio: '3 / 2', maxHeight: '50vh' }}
+          className="model-preview-canvas relative w-full overflow-hidden rounded-xl bg-slate-50"
         >
           <div ref={exportMenuRef} className="absolute right-3 top-3 z-20">
             <button
@@ -2214,33 +2209,28 @@ export default function GeneratedModel() {
           </div>
         </div>
         <figcaption className="mt-1 text-xs text-slate-500 text-center">
-          {/* Click/touch and drag to rotate, scroll/pinch to zoom */}
+          Drag to rotate · Pinch or scroll to zoom
         </figcaption>
       </figure>
     </div>
   </section>
 )}
 
-        {/* Sections below the 3D preview fade in once the scene is ready */}
-        <div
-          className={sceneReady ? "below-preview-sequence" : ""}
-          style={sceneReady ? undefined : { opacity: 0 }}
-        >
-        {/* Resize Scaler - shown outside edit mode */}
-        {!showVoxelEditor && showResizeScaler && mpdContent && (
-          <section className="mt-12 max-w-md mx-auto space-y-6">
-            <ResizeScaler
-              onResize={handleResizeModel}
-              disabled={!mpdContent || isModelEditing}
-              isResizing={isResizing}
-              scaler={currentScaler}
-              onScalerChange={setCurrentScaler}
-            />
-          </section>
-        )}
+
+</div>
+<aside className="model-workspace-sidebar" aria-label="Refine and order your model">
+            {(showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
+              isManualEditorOpen={showVoxelEditor}
+              manualLoading={xyzrgbLoading}
+              disabled={isModelEditing}
+              onManualEdit={() => { void handleEditModelClick(); }}
+            />}
 
         {!showVoxelEditor && mpdContent && xyzrgbUrl && currentGenerationId && (
           <VoxelPromptEditor
+            onSuggestionSelected={suggestion => posthog.capture('generated_model_edit_suggestion_clicked', {
+              generation_id: currentGenerationId, is_demo_model: isDemoModel, suggestion,
+            })}
             prompt={editPrompt}
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}
@@ -2256,39 +2246,61 @@ export default function GeneratedModel() {
           />
         )}
 
+          <ModelOrderCard
+            quote={priceData}
+            loading={priceLoading || isSavePolling}
+            updating={isModelEditing || isResizing}
+            error={priceError}
+            onOrder={source => {
+              posthog.capture('generated_model_order_clicked', {
+                generation_id: currentGenerationId, is_demo_model: isDemoModel, source,
+              });
+              posthog.capture('generated_model_stat_action_clicked', {
+                action: 'order', generation_id: currentGenerationId, is_demo_model: isDemoModel, source,
+              });
+              navigateToOrder();
+            }}
+            onResize={priceData && !isDemoModel ? () => {
+              posthog.capture('generated_model_resize_price_clicked', {
+                generation_id: currentGenerationId, is_demo_model: isDemoModel,
+              });
+              setShowPriceResize(prev => !prev);
+            } : undefined}
+          />
+          {showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
+            <section className="model-refine-card" aria-label="Adjust kit size">
+              <ResizeScaler
+                onResize={handleResizeModel}
+                disabled={!mpdContent || isModelEditing}
+                isResizing={isResizing}
+                scaler={currentScaler}
+                onScalerChange={setCurrentScaler}
+              />
+            </section>
+          )}
+</aside>
+        {/* Sections below the 3D preview fade in once the scene is ready */}
+        <div
+          className={`model-workspace-secondary ${sceneReady ? "below-preview-sequence" : ""}`}
+          style={sceneReady ? undefined : { opacity: 0 }}
+        >
+        {/* Resize Scaler - shown outside edit mode */}
+        {!showVoxelEditor && showResizeScaler && mpdContent && (
+          <section className="mt-12 max-w-md mx-auto space-y-6">
+            <ResizeScaler
+              onResize={handleResizeModel}
+              disabled={!mpdContent || isModelEditing}
+              isResizing={isResizing}
+              scaler={currentScaler}
+              onScalerChange={setCurrentScaler}
+            />
+          </section>
+        )}
+
+
         {/* Centered model actions */}
         <section className="relative z-40 mt-4 mb-4 flex flex-col items-center gap-3 px-4">
-            {(showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
-              isManualEditorOpen={showVoxelEditor}
-              manualLoading={xyzrgbLoading}
-              disabled={isModelEditing}
-              onManualEdit={() => { void handleEditModelClick(); }}
-            />}
           <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
-            {/* Order is the primary model action. */}
-            <button
-              type="button"
-              aria-label="Order my kit"
-              disabled={priceLoading || isSavePolling || isModelEditing}
-              onClick={navigateToOrder}
-              className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold text-white shadow-lg shadow-[#f44336]/25 transition-all duration-150 sm:w-auto sm:min-w-44 ${
-                priceLoading || isSavePolling || isModelEditing
-                  ? 'cursor-not-allowed border-red-300 bg-red-300 opacity-70'
-                  : 'attention-pulse cursor-pointer border-[#f44336] bg-[#f44336] hover:scale-[1.03] hover:border-[#ff6b6b] hover:bg-[#ff6b6b]'
-              }`}
-            >
-              {priceLoading || isSavePolling ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white"></div>
-                  Order my Kit!
-                </>
-              ) : (
-                <>
-                  <ShoppingCart size={16} />
-                  Order
-                </>
-              )}
-            </button>
             {/* Instructions button — white with grey border, turns red on hover */}
             <button
               type="button"
@@ -2388,159 +2400,8 @@ export default function GeneratedModel() {
           )}
         </section>
 
-        {/* Congrats line */}
-        <section className="mt-12">
-          {/* <p className="text-base text-center md:text-left">
-            <span className="font-semibold">Congratulations:</span>{" "}
-            <span className="text-slate-700">your model is generated.</span>
-          </p> */}
-        </section>
-
-        {/* Resize panel — shown above the stats badges when "Try resizing!" is pressed */}
-        {showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
-          <section className="mt-6 max-w-xs mx-auto">
-            <ResizeScaler
-              onResize={handleResizeModel}
-              disabled={!mpdContent || isModelEditing}
-              isResizing={isResizing}
-              scaler={currentScaler}
-              onScalerChange={setCurrentScaler}
-            />
-          </section>
-        )}
-
-        {/* Stats grid with hover animation */}
-        <section className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          <div className="flex flex-col">
-            <StatCard
-              icon={(priceLoading || isSavePolling) ? (
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-              ) : (
-                <HandCoins className="h-5 w-5 text-black" />
-              )}
-              title={
-                (priceLoading || isSavePolling)
-                  ? "Estimating Price..." 
-                  : priceError 
-                    ? "Price Unavailable"
-                    : priceData 
-                      ? (
-                        <span className="flex items-baseline gap-2">
-                          <span className="text-slate-400 line-through">${priceData.total_price.toFixed(2)}</span>
-                          <span>${saleDiscountedPrice.toFixed(2)} {priceData.currency}</span>
-                        </span>
-                      )
-                      : ""
-              }
-              sub={
-                (priceLoading || isSavePolling)
-                  ? "Loading price estimate..."
-                  : priceError
-                    ? "Unable to calculate pricing"
-                    : priceData
-                      ? "Total cost + shipping"
-                      : ""
-              }
-              actionLabel="Order this model"
-              disabled={priceLoading || isSavePolling || !priceData || isModelEditing}
-              onClick={() => {
-                posthog.capture('generated_model_stat_action_clicked', {
-                  action: 'order',
-                  generation_id: currentGenerationId,
-                  is_demo_model: isDemoModel,
-                });
-                navigateToOrder();
-              }}
-            />
-            {/* Too expensive? Try resizing! */}
-            {priceData && !priceLoading && !isSavePolling && !isDemoModel && (
-              <div className="mt-2 text-center">
-                <p className="text-sm text-slate-500">
-                  Too expensive?{' '}
-                  <button
-                    type="button"
-                    disabled={isModelEditing}
-                    onClick={() => setShowPriceResize(prev => !prev)}
-                    className="text-[#f44336] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0 text-sm disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    Try resizing!
-                  </button>
-                </p>
-              </div>
-            )}
-          </div>
-          <StatCard
-            icon={(priceLoading || isSavePolling) ? (
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            ) : (
-              <Package className="h-5 w-5 text-black" />
-            )}
-            title={
-              (priceLoading || isSavePolling)
-                ? "Counting Pieces..."
-                : priceData 
-                  ? `${priceData.total_parts} Pieces`
-                  : ""
-            }
-            sub={
-              (priceLoading || isSavePolling)
-                ? "Loading piece count..."
-                : priceData 
-                  ? ""
-                  : ""
-            }
-            actionLabel="View building instructions"
-            disabled={!currentGenerationId || isSavePolling || !priceData}
-            onClick={() => {
-              posthog.capture('generated_model_stat_action_clicked', {
-                action: 'view_instructions',
-                generation_id: currentGenerationId,
-                is_demo_model: isDemoModel,
-                source: 'pieces',
-              });
-              navigateToInstructions();
-            }}
-          />
-          <StatCard
-            icon={(priceLoading || isSavePolling) ? (
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            ) : (
-              <Boxes className="h-5 w-5 text-black" />
-            )}
-            title={
-              (priceLoading || isSavePolling)
-                ? "Calculating Weight..."
-                : priceData
-                  ? `${priceData.total_weight.toFixed(2)} kg`
-                  : ""
-            }
-            sub={
-              (priceLoading || isSavePolling)
-                ? "Loading weight..."
-                : priceData
-                  ? "Total weight"
-                  : ""
-            }
-            actionLabel="View building instructions"
-            disabled={!currentGenerationId || isSavePolling || !priceData}
-            onClick={() => {
-              posthog.capture('generated_model_stat_action_clicked', {
-                action: 'view_instructions',
-                generation_id: currentGenerationId,
-                is_demo_model: isDemoModel,
-                source: 'weight',
-              });
-              navigateToInstructions();
-            }}
-          />
-        </section>
-
-        {/* Footer action bar */}
-        <section className="mt-12 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-          </div>
-        </section>
         </div>
+</div>
           </>
         )}
 
