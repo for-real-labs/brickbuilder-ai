@@ -109,3 +109,17 @@ def test_missing_parts_list_never_creates_a_payment(setup):
         run()
     assert error.value.status_code == 400
     create.assert_not_called()
+
+@pytest.mark.parametrize('mode', ['embedded', 'elements'])
+def test_previous_checkout_clients_survive_the_deployment(setup, mode):
+    _, create, _ = setup
+    result = run(uiMode=mode)
+    params = create.call_args.kwargs
+    assert params['ui_mode'] == mode
+    assert params['return_url'] == 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}'
+    assert params['payment_method_types'] == ['card']
+    assert result.client_secret == 'client-secret'
+    if mode == 'embedded':
+        assert params['redirect_on_completion'] == 'if_required'
+    else:
+        assert params['stripe_version'] == '2026-09-30.endive'

@@ -1383,6 +1383,7 @@ interface ThreeLDRViewerProps {
   generationId?: string;
   className?: string;
   autoRotate?: boolean;
+  showExplodeControl?: boolean;
   initialCameraState?: CameraState;
   onCameraChange?: (cameraState: CameraState) => void;
   preserveOrientation?: boolean;
@@ -1435,6 +1436,7 @@ export function ThreeLDRViewer({
   generationId,
   className = '',
   autoRotate = true,
+  showExplodeControl = true,
   initialCameraState,
   onCameraChange,
   preserveOrientation = false,
@@ -1487,7 +1489,7 @@ export function ThreeLDRViewer({
     animationId: null
   });
 
-  const canExplodeModel = !loading && !error && currentStepIndex === undefined;
+  const canExplodeModel = showExplodeControl && !loading && !error && currentStepIndex === undefined;
 
   const updateCollisionCount = (nextCount: number) => {
     if (collisionCountRef.current === nextCount) return;

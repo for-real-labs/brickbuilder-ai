@@ -23,7 +23,7 @@ class CreateCheckoutSessionRequest(BaseModel):
     quantity: int = Field(default=1, ge=1, le=1)
     generationId: Optional[str] = Field(default=None, max_length=100)
     brickowlCartId: Optional[str] = Field(default=None, max_length=100)
-    uiMode: Literal["hosted", "custom"] = "hosted"
+    uiMode: Literal["hosted", "custom", "embedded", "elements"] = "hosted"
     customerEmail: Optional[EmailStr] = None
 
 
@@ -82,10 +82,14 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
             "metadata": metadata,
         }
         return_url = f"{site_url.rstrip('/')}/success?session_id={{CHECKOUT_SESSION_ID}}"
-        if request.uiMode == "custom":
+        if request.uiMode != "hosted":
             # Apple Pay and Google Pay use the card rail. PayPal needs a separate US integration.
             params["payment_method_types"] = ["card"]
             params["return_url"] = return_url
+            if request.uiMode == "embedded":
+                params["redirect_on_completion"] = "if_required"
+            elif request.uiMode == "elements":
+                params["stripe_version"] = "2026-09-30.endive"
         else:
             params["success_url"] = return_url
             params["cancel_url"] = f"{site_url.rstrip('/')}/order"
@@ -94,7 +98,7 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         session = await asyncio.to_thread(stripe.checkout.Session.create, **params, api_key=stripe_key)
         return CreateCheckoutSessionResponse(
             session_id=session.id, checkout_url=session.url,
-            client_secret=session.client_secret if request.uiMode == "custom" else None,
+            client_secret=session.client_secret if request.uiMode != "hosted" else None,
             price_data=quote,
         )
     except HTTPException:

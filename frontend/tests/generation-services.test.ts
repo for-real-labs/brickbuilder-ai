@@ -20,6 +20,7 @@ const sse = (events: unknown[], options?: { crlf?: boolean; trailingDelimiter?: 
   },
 });
 
+
 describe('generation services', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
 

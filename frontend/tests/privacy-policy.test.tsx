@@ -17,10 +17,13 @@ describe('PrivacyPolicyPage', () => {
     );
 
     expect(markup).toContain('Privacy Policy');
-    expect(markup).toContain('September 22, 2026');
+    expect(markup).toContain('October 2, 2026');
     expect(markup).toContain('Camera and photo library access');
-    expect(markup).toContain('OpenAI, Anthropic, and fal.ai');
+    expect(markup).toContain('OpenAI, Anthropic, fal.ai, and RunPod');
     expect(markup).toContain('Retention and deletion');
+    expect(markup).toContain('AI processing and your permission');
+    expect(markup).toContain('withdraw permission');
+    expect(markup).toContain('same or equal protection');
     expect(markup).toContain('support@brickbuilder.ai');
     expect(markup).toContain('do not sell your personal information');
   });

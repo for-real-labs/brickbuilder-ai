@@ -13,7 +13,7 @@ describe('directory legal pages', () => {
   it('makes full policy disclosures accessible without executing JavaScript', () => {
     const privacy = renderLegalDocument(shell, 'privacy');
     expect(privacy).toContain('Retention and deletion');
-    expect(privacy).toContain('OpenAI, Anthropic, and fal.ai');
+    expect(privacy).toContain('OpenAI, Anthropic, fal.ai, and RunPod');
     expect(privacy).toContain('href="https://brickbuilder.ai/privacy"');
     expect(privacy).toContain('src="/assets/app.js"');
     expect(privacy).not.toContain('<div id="root"></div>');

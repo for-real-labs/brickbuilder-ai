@@ -16,12 +16,12 @@ import { GetGenerationsByImageApiService } from '../src/services/getGenerationsB
 import { getGeneratedModelPath } from '../src/utils/generationRoutes';
 import posthog from 'posthog-js';
 
-const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
+const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'} as {id: string} | null, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, userProfile: null, isSupabaseConfigured: true})}));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({useGenerationNotifications: () => ({refresh: mocks.refresh, markViewed: mocks.markViewed})}));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName, onModelLoaded, topLeftOverlay}: {modelName: string; onModelLoaded?: () => void; topLeftOverlay?: React.ReactNode}) => {
+vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName, onModelLoaded, topLeftOverlay, showModelControls = true}: {modelName: string; onModelLoaded?: () => void; topLeftOverlay?: React.ReactNode; showModelControls?: boolean}) => {
   React.useEffect(() => { onModelLoaded?.(); }, [modelName]);
-  return <><div data-testid="viewer">{modelName}</div>{topLeftOverlay}</>;
+  return <><div data-testid="viewer" data-controls={showModelControls}>{modelName}</div>{topLeftOverlay}</>;
 }}));
 vi.mock('../src/components/VoxelViewer', () => ({VoxelViewer: () => null}));
 vi.mock('../src/components/SEO', () => ({SEO: () => null}));
@@ -37,6 +37,7 @@ vi.mock('../src/lib/supabase', () => ({supabase: {
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
+  mocks.owner = 'owner';
   mocks.user = {id: 'owner'};
   mocks.query.mockImplementation(async () => ({data: {user_id: mocks.owner, is_community: true, preview_image_url: '/preview.png'}, error: null}));
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({generation_id: 'g', status: 'completed', name: 'Sunny Dachshund', prompt: 'please create a dachshund in sunglasses, with lots of details', ldr_content: 'ldr'} as never);
@@ -374,4 +375,11 @@ it('keeps the full generation loader for a first build without a completed sourc
   expect(container.textContent).toContain('Continue browsing');
   expect(container.textContent).toContain('Cancel generation');
 
+});
+
+it('hides model controls and keeps the resolved order title visible', async () => {
+  await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state:{generation_id:'g'}}]}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-controls')).toBe('false');
+  expect(container.querySelector('.checkout-summary h2')?.textContent).toBe('Sunny Dachshund');
+  expect(container.textContent).not.toContain('Regular size kit');
 });

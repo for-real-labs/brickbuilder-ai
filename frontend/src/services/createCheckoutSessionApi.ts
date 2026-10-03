@@ -8,7 +8,7 @@ export interface CreateCheckoutSessionRequest {
   quantity?: number;
   generationId?: string;
   brickowlCartId?: string;
-  uiMode?: 'hosted' | 'custom';
+  uiMode?: 'hosted' | 'custom' | 'embedded' | 'elements';
   customerEmail?: string;
 }
 

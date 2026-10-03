@@ -29,6 +29,7 @@ const sse = (chunks: string[]) => new ReadableStream({
   },
 });
 
+
 describe('JSON API service contracts', () => {
   beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
 

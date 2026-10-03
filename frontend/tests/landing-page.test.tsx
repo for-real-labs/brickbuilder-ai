@@ -68,6 +68,52 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 
 describe('LandingPage', () => {
+  it('guides empty submissions at the input without showing a generation failure or starting AI', async () => {
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    const generateAi = vi.spyOn(LlmToBricksApiService, 'generate');
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const generate = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Generate')!;
+      await act(async () => generate.click());
+      expect(container.querySelector('#generation-input-help')?.textContent).toContain('Describe what you’d like to build');
+      expect(container.textContent).not.toContain('Generation Failed');
+      expect(container.textContent).not.toContain('Try Again');
+      expect(generateAi).not.toHaveBeenCalled();
+      const input = container.querySelector('[aria-label="Describe your brick model"]') as HTMLInputElement;
+      expect(document.activeElement).toBe(input);
+      expect(input.getAttribute('aria-describedby')).toBe('generation-input-help');
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red cube');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(container.querySelector('#generation-input-help')).toBeNull();
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
+  it('describes the physical builds at the Brickworld Chicago LEGO convention', async () => {
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      expect(container.textContent).toContain('BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.');
+      expect(container.querySelector('img[src="/assets/blog/brickworld26/brickbuilderai-models.jpg"]')?.getAttribute('alt')).toContain('the Brickworld Chicago LEGO convention');
+      expect(container.innerHTML).not.toContain('Meme World');
+    } finally {
+      act(() => root.unmount());
+    }
+  });
+
   it.each(['stats', 'community'])('waits for %s before mounting lower content', async delayed => {
     let finish!: () => void;
     const pending = new Promise<void>(resolve => { finish = resolve; });

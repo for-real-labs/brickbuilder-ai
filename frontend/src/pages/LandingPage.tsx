@@ -310,12 +310,17 @@ export default function LandingPage() {
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
   const [prompt, setPrompt] = useState("");
+  const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
+  const promptInputRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [imgFile, setImgFile] = useState<File | null>(null);
+  useEffect(() => {
+    if (imgFile) setInputValidationMessage(null);
+  }, [imgFile]);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -491,6 +496,7 @@ export default function LandingPage() {
 
   const onPickImage = () => fileInputRef.current?.click();
   const onFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    if (e.target.files?.length) setInputValidationMessage(null);
     const file = e.target.files?.[0] ?? null;
     setImgFile(file);
   };
@@ -582,9 +588,14 @@ export default function LandingPage() {
 
     // Validate input: either text prompt or image required
     if (!imgFile && !prompt.trim()) {
-      setGenerationError("Please enter a text prompt or upload an image");
+      setGenerationError(null);
+      setInputValidationMessage("Describe what you’d like to build, or upload an image to get started.");
+      promptInputRef.current?.focus();
+      posthog.capture("landing_generation_input_required");
       return;
     }
+
+    setInputValidationMessage(null);
 
     if (REQUIRE_LOGIN_FOR_GENERATION && authLoading) {
       return;
@@ -946,10 +957,16 @@ export default function LandingPage() {
             <div className="w-full relative z-20 landing-fade-in landing-delay-3">
               <div className="w-full" style={{ position: 'relative' }}>
                 <input
+                  ref={promptInputRef}
+                  aria-label="Describe your brick model"
+                  aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
                   value={prompt}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrompt(e.target.value)}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                    setPrompt(e.target.value);
+                    if (e.target.value.trim()) setInputValidationMessage(null);
+                  }}
                   placeholder={imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
                   className="input w-full h-12 rounded-full pr-64 pl-4 text-base shadow-sm border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                   disabled={loading}
@@ -985,6 +1002,12 @@ export default function LandingPage() {
                   disabled={loading}
                 />
               </div>
+
+              {inputValidationMessage && (
+                <p id="generation-input-help" role="status" className="mt-3 text-center text-sm leading-6 text-slate-600">
+                  {inputValidationMessage}
+                </p>
+              )}
 
               {!loading && (
                 showGlbUpload ? (
@@ -1373,11 +1396,11 @@ function RealLifeBuilds() {
         </h2>
         <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
           Every model comes with real, orderable LEGO parts and instructions. Here's a display of
-          BrickBuilder AI creations physically built at BrickWorld Chicago 2026's Meme World exhibit.
+          BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.
         </p>
         <img
           src="/assets/blog/brickworld26/brickbuilderai-models.jpg"
-          alt="BrickBuilder AI models built with real LEGO bricks, on display at BrickWorld Chicago 2026's Meme World exhibit"
+          alt="BrickBuilder AI models built with real LEGO bricks, on display at the Brickworld Chicago LEGO convention"
           className="mt-8 w-full rounded-2xl border border-slate-200 shadow-sm"
         />
       </div>
