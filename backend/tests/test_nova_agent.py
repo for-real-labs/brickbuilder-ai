@@ -123,10 +123,21 @@ class FakeConversation:
         pass
 
 
+class PreparedToolkit:
+    async def prepare_capabilities(self):
+        pass
+
+    def agent_tools(self, core_tools):
+        return core_tools
+
+    def runtime_provenance(self):
+        return {"toolkit_revision": "a" * 40}
+
+
 def test_agent_requires_visual_review_in_a_later_turn(monkeypatch, tmp_path):
     build = NovaBuild("ldr", "mpd", {}, {}, b"preview")
 
-    class FakeToolkit:
+    class FakeToolkit(PreparedToolkit):
         last_build = None
         last_build_turn = -1
 
@@ -150,7 +161,7 @@ def test_agent_requires_visual_review_in_a_later_turn(monkeypatch, tmp_path):
     request = SimpleNamespace(model="gpt-5.5", auth_mode="api_key", prompt="castle", image_base64=None,
                               image_media_type="image/png", max_parts=5000, max_iterations=4, use_jev=False)
     result = asyncio.run(build_set(request, "openai", tmp_path))
-    assert result is build
+    assert result.ldr == build.ldr and result.runtime["toolkit_revision"] == "a" * 40
     assert any(response.call_id == "a" and response.is_error for response in conversation.results)
     assert build.report["agent_review"] == review["review"]
 
@@ -163,7 +174,7 @@ def test_agent_studies_rendered_reference_retains_source_and_reports_actual_sear
     build = NovaBuild("ldr", "mpd", {}, {}, b"build-preview")
     activity = []
 
-    class Toolkit:
+    class Toolkit(PreparedToolkit):
         last_build = None
         last_build_turn = -1
 

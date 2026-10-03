@@ -1,7 +1,7 @@
 """A constrained process boundary to the separately installed AGPL Nova toolkit.
 
 This module does not vendor Nova source or execute model-authored Python. Its
-JSON plans are compiled by the pinned external dependency, then independently
+JSON plans are compiled by the selected external runtime, then independently
 expanded and rendered with BrickBuilder's geometry adapter.
 """
 from __future__ import annotations
@@ -193,15 +193,15 @@ class NovaBuild:
     report: dict
     preview_png: bytes
     references: tuple[NovaReference, ...] = ()
+    runtime: dict | None = None
 
 
 class NovaToolkit:
     def __init__(self, workspace: Path, max_parts: int = 5_000, use_jev: bool = True):
+        from .nova_runtime import resolve_nova_runtime
         self.workspace = workspace.resolve()
-        self.root = Path(os.getenv("NOVA_TOOLKIT_ROOT", BACKEND_ROOT / ".nova" / "toolkit")).expanduser().resolve()
-        # Preserve the virtualenv executable path: resolving its symlink would
-        # run the base interpreter without the isolated toolkit dependencies.
-        self.python = Path(os.getenv("NOVA_PYTHON", self.root / ".venv" / "bin" / "python")).expanduser().absolute()
+        self.runtime = resolve_nova_runtime(BACKEND_ROOT)
+        self.root, self.python = self.runtime.root, self.runtime.python
         self.library = Path(os.getenv("LDRAW_DIR", os.getenv("LDRAWDIR", Path.home() / "ldraw"))).expanduser().resolve()
         self.max_parts = max_parts
         self.use_jev = use_jev and bool(os.getenv("TYPESAFE_API_KEY"))
@@ -210,6 +210,10 @@ class NovaToolkit:
         self.last_build_turn = -1
         self.references: dict[str, NovaReference] = {}
         self.reference_inspections = 0
+        self.capabilities = None
+        self.capability_tools: dict[str, str] = {}
+        self.capability_manifest: dict | None = None
+        self.used_capabilities: set[str] = set()
 
     def require_ready(self) -> None:
         if not (self.root / "ldraw_tools" / "cli.py").is_file() or not self.python.is_file():
@@ -220,9 +224,74 @@ class NovaToolkit:
     async def run(self, arguments: list[str], timeout: int = 240) -> Any:
         return await self._run_process([str(self.python), "-m", "ldraw_tools.cli", "--library", str(self.library), *arguments], arguments[0], timeout)
 
-    async def _run_process(self, command: list[str], operation: str, timeout: int = 240) -> Any:
+    async def prepare_capabilities(self) -> None:
+        """Bind the actual upstream signatures once, before model reasoning."""
+        from .nova_capabilities import CapabilityRegistry
+        if self.capabilities is not None:
+            return
+        manifest = await self._run_process(
+            [str(self.python), str(Path(__file__).with_name("nova_runtime_bridge.py")),
+             "--toolkit-root", str(self.root), "--library", str(self.library), "--operation", "manifest"],
+            "capabilities")
+        self.capabilities = CapabilityRegistry.from_manifest(manifest)
+        self.capability_manifest = manifest
+
+    def agent_tools(self, core_tools):
+        """Generate provider-neutral tools from this snapshot's live parser."""
+        from .llm_tool_conversation import ToolSpec
+        if self.capabilities is None:
+            raise ValueError("Prepare the upstream capabilities before starting an agent")
+        available = self.capabilities.available
+        if len(available) > 100:
+            raise ValueError("Nova exposes too many capabilities for one agent context")
+        tools = list(core_tools)
+        self.capability_tools.clear()
+        for capability in available:
+            identity = capability["id"]
+            name = "nova_" + identity.replace(".", "_").replace("-", "_")
+            if len(name) > 64 or name in self.capability_tools:
+                name = name[:45] + "_" + hashlib.sha256(identity.encode()).hexdigest()[:16]
+            self.capability_tools[name] = identity
+            description = (capability.get("description") or "Use this upstream construction or inspection feature.")
+            tools.append(ToolSpec(name, description + " Runs the installed Nova implementation; outputs stay in the private job workspace.",
+                                  capability["parameters"]))
+        return tools
+
+    def runtime_provenance(self) -> dict:
+        capabilities = self.capability_manifest
+        capability_hash = hashlib.sha256(json.dumps(capabilities["capabilities"], sort_keys=True).encode()).hexdigest() if capabilities else None
+        result = self.runtime.provenance(capability_hash)
+        if capabilities:
+            result["plan_schema_sha256"] = capabilities.get("contract", {}).get("schema_sha256")
+        result["used_capabilities"] = sorted(self.used_capabilities)
+        return result
+
+    async def invoke_capability(self, identity: str, arguments: dict) -> tuple[dict, None]:
+        if self.capabilities is None:
+            raise ValueError("Prepare the upstream capabilities before invoking a feature")
+        capability = self.capabilities.get(identity)
+        from jsonschema import Draft202012Validator
+        if list(Draft202012Validator(capability["parameters"]).iter_errors(arguments)):
+            raise ValueError("Arguments do not match this runtime's upstream capability schema")
+        if identity == "discover.search" and not self.use_jev:
+            arguments = {**arguments, "engine": "fts"}
+        request = json.dumps({"capability": identity, "arguments": arguments}, allow_nan=False).encode()
+        self.workspace.mkdir(parents=True, exist_ok=True)
+        response = await self._run_process(
+            [str(self.python), str(Path(__file__).with_name("nova_runtime_bridge.py")),
+             "--toolkit-root", str(self.root), "--library", str(self.library), "--operation", "invoke",
+             "--workspace", str(self.workspace), "--max-parts", str(self.max_parts)],
+            "capability", input_data=request)
+        if not isinstance(response, dict) or response.get("capability") != identity:
+            raise ValueError("Upstream returned an inconsistent capability response")
+        self.used_capabilities.add(identity)
+        return response, None
+
+    async def _run_process(self, command: list[str], operation: str, timeout: int = 240, input_data: bytes | None = None) -> Any:
         """Run only a fixed app/toolkit adapter, with the same bounded boundary."""
         self.require_ready()
+        if input_data is not None and (not isinstance(input_data, bytes) or len(input_data) > 65_536):
+            raise ValueError("Upstream capability request exceeds its size limit")
         environment = {name: value for name, value in os.environ.items() if name in TOOLKIT_ENVIRONMENT_KEYS}
         environment.update({"LDRAW_DIR": str(self.library),
                             "PATH": str(self.python.parent) + os.pathsep + os.environ.get("PATH", "")})
@@ -231,7 +300,8 @@ class NovaToolkit:
         process = await asyncio.create_subprocess_exec(
             *command,
             cwd=str(self.root), env=environment, stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE, start_new_session=True,
+            stderr=asyncio.subprocess.PIPE, stdin=asyncio.subprocess.PIPE if input_data is not None else asyncio.subprocess.DEVNULL,
+            start_new_session=True,
         )
 
         async def read_bounded(stream, limit):
@@ -243,10 +313,20 @@ class NovaToolkit:
                 chunks.append(chunk)
             return b"".join(chunks)
 
+        async def send_input():
+            if input_data is not None:
+                process.stdin.write(input_data)
+                try:
+                    await process.stdin.drain()
+                except (BrokenPipeError, ConnectionResetError):
+                    pass
+                finally:
+                    process.stdin.close()
+
         output_task = asyncio.gather(read_bounded(process.stdout, MAX_TOOLKIT_STDOUT_BYTES),
-                                     read_bounded(process.stderr, MAX_TOOLKIT_STDERR_BYTES), process.wait())
+                                     read_bounded(process.stderr, MAX_TOOLKIT_STDERR_BYTES), process.wait(), send_input())
         try:
-            stdout, _stderr, _returncode = await asyncio.wait_for(output_task, timeout=timeout)
+            stdout, _stderr, _returncode, _input = await asyncio.wait_for(output_task, timeout=timeout)
         except BaseException:
             # Drain both pipes concurrently, and terminate the whole process
             # group on cancellation, timeout, output overflow or a pipe error.
@@ -273,16 +353,19 @@ class NovaToolkit:
         return result
 
     def read_resource_page(self, path: str, offset: int = 0) -> dict:
-        if not isinstance(path, str) or len(path) > 250:
+        if not isinstance(path, str) or len(path) > 500:
             raise ValueError("Invalid toolkit resource path")
-        target = ((self.workspace if path.startswith("references/") else self.root) / path).resolve()
-        allowed = (self.root / "docs" / "agent", self.root / "examples", self.root / "ldraw_tools" / "data",
-                   self.root / "data" / "models-annotated", self.workspace / "references")
-        if not any(target.is_relative_to(directory) for directory in allowed) or target.suffix not in {".md", ".json", ".py", ".ldr", ".mpd"}:
+        job_resource = path.startswith(("references/", "upstream/"))
+        target = ((self.workspace if job_resource else self.root) / path).resolve()
+        allowed = (self.root / "docs", self.root / "examples", self.root / "ldraw_tools" / "data",
+                   self.root / "data" / "models-annotated", self.workspace / "references", self.workspace / "upstream")
+        instruction = target == self.root / "instructions.md"
+        suffixes = {".md", ".json", ".py", ".ldr", ".mpd"} | ({".txt"} if job_resource else set())
+        if not (instruction or any(target.is_relative_to(directory) for directory in allowed)) or target.suffix not in suffixes:
             raise ValueError("Only toolkit manuals, schemas and example sources are readable")
         if not target.is_file():
             raise ValueError("Toolkit resource not found")
-        size_limit = 4_000_000 if target.is_relative_to(self.workspace / "references") else MAX_PLAN_BYTES
+        size_limit = 4_000_000 if job_resource else MAX_PLAN_BYTES
         if target.stat().st_size > size_limit:
             raise ValueError("Resource is too large; choose a smaller subassembly example")
         content = target.read_text(encoding="utf-8", errors="replace")
@@ -349,7 +432,7 @@ class NovaToolkit:
         mpd = mpd_path.read_text(encoding="utf-8")
         ldr = flatten_mpd(mpd, self.max_parts)
         preview = await asyncio.to_thread(self.renderer.render, ldr)
-        self.last_build = NovaBuild(ldr, mpd, plan, report, preview)
+        self.last_build = NovaBuild(ldr, mpd, plan, report, preview, runtime=self.runtime_provenance())
         self.last_build_turn = turn_number
         return {"accepted": True, "report": report, "part_count": sum(line.startswith("1 ") for line in ldr.splitlines()),
                 "instruction": "Review both rendered views against the request. Check proportions, details and attachment evidence. Submit repairs or accept_model on your next turn. Physical validity is not proven by these checks."}, preview
@@ -429,6 +512,8 @@ class NovaToolkit:
         return report, preview
 
     async def dispatch(self, name: str, arguments: dict, turn_number: int) -> tuple[Any, bytes | None]:
+        if name in self.capability_tools:
+            return await self.invoke_capability(self.capability_tools[name], arguments)
         if name == "search_references":
             return await self.search(arguments.get("kind", "parts"), arguments.get("query", ""), arguments.get("limit", 8)), None
         if name == "inspect_part":

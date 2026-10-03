@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import signal
 import sys
@@ -54,6 +55,21 @@ def test_oversized_output_terminates_the_process_group(monkeypatch, tmp_path, st
     with pytest.raises(ValueError, match="output exceeds"):
         asyncio.run(toolkit.run(["inspect"], timeout=3))
     assert len(stopped) == 1 and stopped[0][1] == signal.SIGKILL
+
+
+def test_bridge_request_is_json_stdin_without_shell_execution(monkeypatch, tmp_path):
+    toolkit = fixture_runtime(monkeypatch, tmp_path,
+        "import sys,json\nprint(json.dumps(json.load(sys.stdin)))\n")
+    request = {"capability": "matrix", "arguments": {"axis": "y", "degrees": 90}}
+    command = [str(toolkit.python), "-m", "ldraw_tools.cli"]
+    result = asyncio.run(toolkit._run_process(command, "capability", input_data=json.dumps(request).encode()))
+    assert result == request
+
+
+def test_bridge_refuses_oversized_input_before_spawning(monkeypatch, tmp_path):
+    toolkit = fixture_runtime(monkeypatch, tmp_path, "raise RuntimeError('must not run')\n")
+    with pytest.raises(ValueError, match="request exceeds"):
+        asyncio.run(toolkit._run_process([str(toolkit.python)], "capability", input_data=b"x" * 65_537))
 
 
 @pytest.mark.parametrize("cancel", [False, True])

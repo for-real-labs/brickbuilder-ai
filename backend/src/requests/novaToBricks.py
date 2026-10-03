@@ -65,6 +65,8 @@ def _source_archive(build, packed_mpd: str | None = None) -> bytes:
         archive.writestr("model.ldr", build.ldr)
         archive.writestr("inspection.json", json.dumps(build.report, indent=2, allow_nan=False))
         archive.writestr("review.png", build.preview_png)
+        if build.runtime:
+            archive.writestr("runtime.json", json.dumps(build.runtime, indent=2, allow_nan=False))
         if build.references:
             if len(build.references) > 8:
                 raise ValueError("Too many retained reference studies")

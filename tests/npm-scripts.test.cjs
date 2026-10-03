@@ -52,3 +52,10 @@ for (const exitCode of [0, 1]) {
     }
   });
 }
+
+
+test('Nova commands separate initial setup, latest update, and local status inspection', () => {
+  assert.equal(scripts['setup:nova'], 'node scripts/nova.cjs setup');
+  assert.equal(scripts['update:nova'], 'node scripts/nova.cjs update');
+  assert.equal(scripts['nova:status'], 'node scripts/nova.cjs status');
+});

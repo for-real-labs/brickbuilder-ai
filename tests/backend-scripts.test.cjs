@@ -65,5 +65,21 @@ test('startup requires the environment and propagates server failure', () => {
     assert.deepEqual(args, ['local_run.py']);
     assert.equal(options.cwd, path.resolve(__dirname, '../backend'));
     return { status: 2 };
-  }, () => true), /failed \(2\)/);
+  }, () => true, () => {}), /failed \(2\)/);
+});
+
+
+test('local startup checks optional Nova updates before launching the backend', () => {
+  const order = [];
+  const env = { NOVA_AUTO_UPDATE: 'false' };
+  start((command, args) => {
+    order.push('server');
+    assert.deepEqual(args, ['local_run.py']);
+    return { status: 0 };
+  }, () => true, options => {
+    order.push('update');
+    assert.equal(options.env, env);
+    assert.equal(typeof options.run, 'function');
+  }, env);
+  assert.deepEqual(order, ['update', 'server']);
 });

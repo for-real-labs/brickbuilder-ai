@@ -36,6 +36,14 @@ def test_source_archive_contains_rebuildable_plan_hierarchy_and_review():
         assert archive.read("model.mpd") == b"hierarchy-mpd"
 
 
+def test_source_archive_records_selected_upstream_revision_and_used_features():
+    provenance = {"schema_version": 1, "toolkit_revision": "a" * 40, "jev_revision": "b" * 40,
+                  "used_capabilities": ["vehicle.plan"], "capability_sha256": "c" * 64}
+    build = NovaBuild("ldr", "mpd", {}, {}, b"png", runtime=provenance)
+    with zipfile.ZipFile(io.BytesIO(module._source_archive(build))) as archive:
+        assert json.loads(archive.read("runtime.json")) == provenance
+
+
 def test_source_archive_keeps_original_reference_licence_geometry_and_provenance():
     identity = "submodel-" + "a" * 24
     metadata = {"model": "75954-1.mpd", "section": "75954 - Tower Roof Top.ldr", "source_sha256": "source-hash",
