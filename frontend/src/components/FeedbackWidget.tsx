@@ -23,12 +23,12 @@ export function FeedbackWidget() {
   }, []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open || pathname === '/order') return;
     dialog.current?.showModal();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
-  }, [open]);
+  }, [open, pathname]);
 
   const close = () => dialog.current?.close();
   const submit = async (event: React.FormEvent) => {
@@ -58,6 +58,9 @@ export function FeedbackWidget() {
       submitting.current = false;
     }
   };
+
+  // Keep checkout actions clear of the floating feedback trigger.
+  if (pathname === '/order') return null;
 
   return <>
     <button ref={button} type="button" aria-haspopup="dialog" aria-expanded={open}

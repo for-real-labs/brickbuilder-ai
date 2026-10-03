@@ -46,6 +46,12 @@ async function submit() {
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 }
 
+it('keeps the checkout clear of the floating feedback trigger', () => {
+  render('/order');
+  expect(container.querySelector('[aria-haspopup="dialog"]')).toBeNull();
+  expect(document.body.style.overflow).not.toBe('hidden');
+});
+
 it.each(['/','/community','/generated-model','/login'])('opens and closes feedback on %s and restores focus', path => {
   render(path);
   const trigger = container.querySelector<HTMLButtonElement>('[aria-haspopup="dialog"]')!;

@@ -72,13 +72,13 @@ it('updates the model title after an owner rename and uses it on the order page'
   expect(localStorage.getItem('lastModelName')).toBe('My Sunny Dog');
   vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({generation_id:'g', status:'completed', name:'My Sunny Dog', prompt:'original prompt', ldr_content:'ldr'} as never);
   await act(async () => root.render(<MemoryRouter key="order" initialEntries={[{pathname:'/order', state: {generation_id:'g', name:'Stale Name'}}]}><OrderKit /></MemoryRouter>));
-  expect(container.querySelector('h1')?.textContent).toBe('My Sunny Dog');
+  expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('My Sunny Dog');
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('My Sunny Dog');
 });
 
 it('shows the saved server title on /order even when navigation contains an old name', async () => {
   await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state: {generation_id:'g', name:'Old Title'}}]}><OrderKit /></MemoryRouter>));
-  expect(container.querySelector('h1')?.textContent).toBe('Sunny Dachshund');
+  expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('Sunny Dachshund');
   expect(LdrToMpdApiService.convertLdrToMpd).toHaveBeenCalledWith('ldr', 'Sunny Dachshund', 'token');
 });
 

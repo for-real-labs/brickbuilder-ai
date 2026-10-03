@@ -1403,6 +1403,7 @@ interface ThreeLDRViewerProps {
   totalSteps?: number;        // Total number of steps in model
   showBaseplate?: boolean;    // Whether to show baseplate with studs
   topLeftOverlay?: React.ReactNode;
+  showModelControls?: boolean; // Whether to show ruler and explode controls
   animateModelBuild?: boolean; // Whether to drop parts into place on load
 }
 
@@ -1449,6 +1450,7 @@ export function ThreeLDRViewer({
   showBaseplate = false,
   animateModelBuild = false,
   topLeftOverlay,
+  showModelControls = true,
 }: ThreeLDRViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -2165,7 +2167,7 @@ export function ThreeLDRViewer({
               {topLeftOverlay}
             </div>
           )}
-          <button
+          {showModelControls && <button
             type="button"
             onClick={() => setShowRulerGrid((visible) => !visible)}
             disabled={loading || !!error}
@@ -2176,8 +2178,8 @@ export function ThreeLDRViewer({
           >
             <Ruler size={14} />
             <span className="hidden sm:inline">{showRulerGrid ? 'Hide ruler' : 'Show ruler'}</span>
-          </button>
-          {canExplodeModel && (
+          </button>}
+          {showModelControls && canExplodeModel && (
             <button
               type="button"
               onClick={handleToggleExplode}
