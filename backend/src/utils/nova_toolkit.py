@@ -21,6 +21,7 @@ from .nova_geometry import LDrawMeshRenderer, REFERENCE_RE, flatten_mpd
 BACKEND_ROOT = Path(__file__).resolve().parents[2]
 MAX_PLAN_BYTES = 1_500_000
 MAX_REPORT_CHARS = 42_000
+MAX_RESOURCE_PAGE_CHARS = 18_000
 MAX_TOOLKIT_STDOUT_BYTES = 4_000_000
 MAX_TOOLKIT_STDERR_BYTES = 65_536
 TOOLKIT_ENVIRONMENT_KEYS = {
@@ -29,6 +30,78 @@ TOOLKIT_ENVIRONMENT_KEYS = {
     "SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE", "CURL_CA_BUNDLE",
 }
 SYMBOL_RE = re.compile(r"^@[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)+$")
+
+
+def _compact_feedback(value: Any) -> Any:
+    if isinstance(value, list):
+        return [_compact_feedback(item) for item in value]
+    if not isinstance(value, dict):
+        return value
+    result = {key: _compact_feedback(item) for key, item in value.items() if key != "geometry"}
+    geometry = value.get("geometry")
+    if isinstance(geometry, dict):
+        priority = ("complete", "physical_validity", "occurrence_count", "connection_coverage", "contacts_checked",
+                    "optimistic_component_count", "confirmed_component_count", "contact_count", "bounds", "diagnostics", "limitations")
+        compact = {key: geometry[key] for key in priority if key in geometry}
+        for key in ("optimistic_components", "confirmed_components"):
+            groups = geometry.get(key)
+            if isinstance(groups, list):
+                compact[key] = [group[:100] if isinstance(group, list) else group for group in groups[:30]]
+                compact[key + "_sizes"] = [len(group) if isinstance(group, list) else None for group in groups[:30]]
+                compact[key + "_omitted"] = len(groups) > 30 or any(isinstance(group, list) and len(group) > 100 for group in groups)
+            elif key in geometry:
+                compact[key] = groups
+        instances = geometry.get("instances", [])
+        if isinstance(instances, list):
+            compact["instances"] = [{key: instance[key] for key in ("index", "part", "position", "matrix", "section", "line_number") if key in instance}
+                                    for instance in instances[:60] if isinstance(instance, dict)]
+            compact["instances_omitted"] = len(instances) > 60 or bool(geometry.get("instances_truncated"))
+            compact["instance_offset"] = geometry.get("instance_offset", 0)
+        compact["overlaps"] = geometry.get("overlaps", [])[:20]
+        compact["overlaps_omitted"] = len(geometry.get("overlaps", [])) > 20 or bool(geometry.get("overlaps_truncated"))
+        compact["feedback_note"] = ("Detailed contact arrays and bulky instance metadata are omitted. Component lists contain at most 30 groups and 100 indices per group; instances contain at most 60 rows. "
+                                    "Use inspect_build with a section or offset for remaining placements, and inspect_part to check stud positions and connector dimensions.")
+        result["geometry"] = compact
+    if isinstance(result.get("stud_positions"), list):
+        count = len(result["stud_positions"])
+        result["stud_positions"] = result["stud_positions"][:100]
+        result["stud_positions_total"] = count
+        result["stud_positions_omitted"] = count > 100
+    if isinstance(result.get("connectors"), list):
+        count = len(result["connectors"])
+        result["connectors"] = result["connectors"][:20]
+        result["connector_rows_omitted"] = count > 20 or bool(result.get("connectors_truncated"))
+    return result
+
+
+def serialize_feedback(report: Any) -> str:
+    """Keep useful diagnostics first and always return bounded, complete JSON."""
+    compact = _compact_feedback(report)
+    encoded = json.dumps(compact, default=str, allow_nan=False)
+    if len(encoded) <= MAX_REPORT_CHARS:
+        return encoded
+
+    def shrink(value, list_limit, text_limit):
+        if isinstance(value, dict):
+            return {key: shrink(item, list_limit, text_limit) for key, item in value.items()}
+        if isinstance(value, list):
+            return [shrink(item, list_limit, text_limit) for item in value[:list_limit]]
+        if isinstance(value, str) and len(value) > text_limit:
+            return value[:text_limit] + " [Content omitted for feedback size limit.]"
+        return value
+
+    for list_limit, text_limit in ((30, 20_000), (15, 8_000), (8, 2_000), (4, 500)):
+        bounded = shrink(compact, list_limit, text_limit)
+        if not isinstance(bounded, dict):
+            bounded = {"results": bounded}
+        bounded["feedback_truncated"] = True
+        bounded["feedback_note"] = "Some rows/text are omitted for size. Inspect a smaller section or use an offset for further placements."
+        encoded = json.dumps(bounded, default=str, allow_nan=False)
+        if len(encoded) <= MAX_REPORT_CHARS:
+            return encoded
+    # Unusual deeply nested upstream metadata must not produce malformed JSON
+    # or monopolize the model context. Ordinary geometry uses the paths above.
+    return json.dumps({"feedback_truncated": True, "error": "This report is too large. Inspect a smaller assembly section or a single part."})
 
 
 def validate_plan_boundary(plan: dict, max_parts: int) -> None:
@@ -181,7 +254,7 @@ class NovaToolkit:
             raise ValueError(f"Nova {arguments[0]}: {message}")
         return result
 
-    def read_resource(self, path: str) -> str:
+    def read_resource_page(self, path: str, offset: int = 0) -> dict:
         if not isinstance(path, str) or len(path) > 250:
             raise ValueError("Invalid toolkit resource path")
         target = (self.root / path).resolve()
@@ -194,7 +267,25 @@ class NovaToolkit:
         if target.stat().st_size > MAX_PLAN_BYTES:
             raise ValueError("Resource is too large; choose a smaller subassembly example")
         content = target.read_text(encoding="utf-8", errors="replace")
-        return content[:MAX_REPORT_CHARS] + ("\n[Resource truncated; choose a smaller section.]" if len(content) > MAX_REPORT_CHARS else "")
+        if type(offset) is not int or not 0 <= offset <= len(content):
+            raise ValueError("Resource offset must be an integer character position within the file")
+        page = content[offset:offset + MAX_RESOURCE_PAGE_CHARS]
+
+        def result():
+            next_offset = offset + len(page)
+            return {"source": path, "content": page, "offset": offset, "total_chars": len(content),
+                    "next_offset": next_offset if next_offset < len(content) else None,
+                    "note": "Offsets count characters. Read the next page with the same path and next_offset until next_offset is null."}
+
+        # Escape-heavy Unicode can expand in JSON. Adapt the page itself before
+        # returning its cursor so later serialization never skips source text.
+        while len(json.dumps(result(), allow_nan=False)) > MAX_REPORT_CHARS:
+            page = page[:len(page) // 2]
+        return result()
+
+    def read_resource(self, path: str, offset: int = 0) -> str:
+        """Convenience text reader; tools use read_resource_page for cursors."""
+        return self.read_resource_page(path, offset)["content"]
 
     async def search(self, kind: str, query: str, limit: int = 8) -> Any:
         if kind not in {"parts", "models", "submodels"}:
@@ -272,7 +363,7 @@ class NovaToolkit:
                 command.append("--measure")
             return await self.run(command), None
         if name == "read_resource":
-            return {"source": arguments.get("path"), "content": self.read_resource(arguments.get("path", ""))}, None
+            return self.read_resource_page(arguments.get("path", ""), arguments.get("offset", 0)), None
         if name == "construction_recipe":
             family = arguments.get("family", "design")
             if family not in {"design", "vehicle", "technic", "discover"}:
@@ -294,7 +385,8 @@ class NovaToolkit:
             if not self.last_build:
                 raise ValueError("Submit a successful plan first")
             section = arguments.get("section")
-            command = ["inspect", str(self.workspace / "model.mpd"), "--detail", "full", "--limit", "60", "--max-instances", str(self.max_parts)]
+            offset = _bounded_integer(arguments.get("offset", 0), 0, self.max_parts)
+            command = ["inspect", str(self.workspace / "model.mpd"), "--detail", "full", "--limit", "60", "--offset", str(offset), "--max-instances", str(self.max_parts)]
             if section:
                 if not isinstance(section, str) or not REFERENCE_RE.fullmatch(section):
                     raise ValueError("Invalid assembly section")

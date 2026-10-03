@@ -10,7 +10,7 @@ from PIL import Image
 from src.utils import nova_agent, nova_toolkit
 from src.utils.llm_tool_conversation import ToolCall, ToolResult, Turn, ConversationSettings, UserInput
 from src.utils.nova_agent import NativeToolConversation, build_set, validate_connection_acceptance
-from src.utils.nova_toolkit import NovaBuild, NovaToolkit, validate_plan_boundary
+from src.utils.nova_toolkit import MAX_REPORT_CHARS, NovaBuild, NovaToolkit, serialize_feedback, validate_plan_boundary
 
 
 def plan_for(reference="3001.dat", repeat=None):
@@ -246,3 +246,76 @@ def test_negated_and_single_object_contexts_cannot_excuse_disconnected_parts(pro
 ])
 def test_affirmative_multi_object_set_intent_remains_available(prompt, explanation):
     validate_connection_acceptance(disconnected_build(), prompt, explanation)
+
+
+def test_large_inspection_feedback_preserves_connection_groups_and_placement_mapping():
+    instances = [{"index": index, "part": "3005.dat", "position": [40, -24 * index, 0],
+                  "matrix": [[1, 0, 0], [0, 1, 0], [0, 0, 1]], "section": "tower.ldr",
+                  "description": "bulky metadata " * 200, "connection_metadata": {"coverage": "complete"}}
+                 for index in range(52)]
+    report = {"checks_passed": True, "diagnostics": [], "geometry": {
+        "complete": True, "occurrence_count": 52, "connection_coverage": {"complete": 52, "partial": 0, "none": 0},
+        "contacts_checked": True, "optimistic_component_count": 3, "confirmed_component_count": 3,
+        "diagnostics": [{"code": "assembly.disconnected_evidence", "component_count": 3}],
+        "instances": instances, "contacts": [{"feature_ids": ["large-contact-data" * 200]}] * 100,
+        "optimistic_components": [list(range(50)), [50], [51]],
+        "confirmed_components": [list(range(50)), [50], [51]], "overlaps": [],
+    }}
+    raw = json.dumps(report)
+    assert raw.index('"optimistic_components"') > MAX_REPORT_CHARS
+    serialized = serialize_feedback(report)
+    assert len(serialized) <= MAX_REPORT_CHARS
+    feedback = json.loads(serialized)
+    geometry = feedback["geometry"]
+    assert geometry["optimistic_components"][-2:] == [[50], [51]]
+    assert geometry["diagnostics"][0]["code"] == "assembly.disconnected_evidence"
+    assert geometry["instances"][51]["position"] == [40, -1224, 0]
+    assert "contacts" not in geometry and "description" not in geometry["instances"][0]
+    assert "omitted" in geometry["feedback_note"]
+
+
+def test_oversized_resource_feedback_stays_valid_json_and_reports_omission():
+    encoded = serialize_feedback({"source": "examples/large.plan.json", "content": '"source"\n' * 12_000})
+    assert len(encoded) <= MAX_REPORT_CHARS
+    result = json.loads(encoded)
+    assert result["feedback_truncated"] is True and result["source"] == "examples/large.plan.json"
+
+
+def test_resource_pagination_preserves_every_character_and_validates_offsets(monkeypatch, tmp_path):
+    root = tmp_path / "toolkit"
+    directory = root / "docs" / "agent"
+    directory.mkdir(parents=True)
+    source = "page-one " * 2000 + "SECOND-PAGE-MARKER\n" + "page-two " * 2100
+    (directory / "large.md").write_text(source)
+    monkeypatch.setenv("NOVA_TOOLKIT_ROOT", str(root))
+    toolkit = NovaToolkit(tmp_path)
+    first, image = asyncio.run(toolkit.dispatch("read_resource", {"path": "docs/agent/large.md"}, 0))
+    assert image is None and len(first["content"]) == 18_000
+    assert first["next_offset"] == 18_000 and first["total_chars"] == len(source)
+    second, _ = asyncio.run(toolkit.dispatch("read_resource", {"path": "docs/agent/large.md", "offset": first["next_offset"]}, 0))
+    assert second["content"].startswith("SECOND-PAGE-MARKER\n")
+    third = toolkit.read_resource_page("docs/agent/large.md", second["next_offset"])
+    assert third["next_offset"] is None
+    assert first["content"] + second["content"] + third["content"] == source
+    for offset in (-1, len(source) + 1, True, "18000", 1.5):
+        with pytest.raises(ValueError, match="offset"):
+            toolkit.read_resource_page("docs/agent/large.md", offset)
+
+
+def test_escape_heavy_resource_pages_keep_correct_cursors_after_serialization(monkeypatch, tmp_path):
+    root = tmp_path / "toolkit"
+    directory = root / "docs" / "agent"
+    directory.mkdir(parents=True)
+    source = "\u2603" * 25_000
+    (directory / "unicode.md").write_text(source)
+    monkeypatch.setenv("NOVA_TOOLKIT_ROOT", str(root))
+    toolkit = NovaToolkit(tmp_path)
+    pages, offset = [], 0
+    while offset is not None:
+        page = toolkit.read_resource_page("docs/agent/unicode.md", offset)
+        encoded = serialize_feedback(page)
+        assert len(encoded) <= MAX_REPORT_CHARS
+        assert json.loads(encoded)["content"] == page["content"]
+        pages.append(page["content"])
+        offset = page["next_offset"]
+    assert "".join(pages) == source
