@@ -7,6 +7,8 @@ import base64
 from io import BytesIO
 from PIL import Image, ImageOps
 
+from .fal_provider_client import get_fal_client
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -37,7 +39,6 @@ def remove_background_from_url(image_url: str, temp_dir: str, model_name: str = 
         temp_dir: Temporary directory for processing
         model_name: rembg model to use when backend is 'rembg'
     """
-    import fal_client
     import numpy as np
 
     try:
@@ -58,10 +59,10 @@ def remove_background_from_url(image_url: str, temp_dir: str, model_name: str = 
         if BACKGROUND_REMOVAL_BACKEND == "fal":
             # Upload data: URIs to fal.ai storage so BiRefNet can access them
             if image_url.startswith("data:"):
-                image_url = fal_client.upload(image_bytes, "image/png")
+                image_url = get_fal_client().upload(image_bytes, "image/png")
 
             logger.info(f"Calling fal.ai BiRefNet v2 for background removal: {image_url[:80]}...")
-            result = fal_client.subscribe(
+            result = get_fal_client().subscribe(
                 "fal-ai/birefnet/v2",
                 arguments={"image_url": image_url},
             )
@@ -99,7 +100,7 @@ def remove_background_from_url(image_url: str, temp_dir: str, model_name: str = 
             img_bytes = f.read()
         for attempt in range(max_retries):
             try:
-                processed_url = fal_client.upload(img_bytes, "image/png")
+                processed_url = get_fal_client().upload(img_bytes, "image/png")
                 break
             except Exception as upload_err:
                 if attempt < max_retries - 1:

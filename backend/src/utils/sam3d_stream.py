@@ -36,7 +36,7 @@ RUNPOD_TIMEOUT_S = float(os.environ.get("RUNPOD_TIMEOUT_S", "600"))
 if not RUNPOD_ENABLED:
     logger.info(
         "RunPod is not configured (RUNPOD_API_KEY or RUNPOD_ENDPOINT_ID missing). "
-        "SAM-3D streaming will be unavailable."
+        "SAM-3D will use fal.ai mesh generation with progress updates."
     )
 
 async def stream_sam3d_raw(
@@ -269,6 +269,7 @@ async def _run_trellis_3d_branch(
     image_url: str,
     prompt_enhancement: Optional[str],
     model_option: Optional[str],
+    model_3d: Optional[str] = None,
 ) -> None:
     """
     Non-streamed 3D path used when stream_3d is False. The flux-2 image frames
@@ -290,7 +291,7 @@ async def _run_trellis_3d_branch(
         except Exception:
             pass
 
-    model_3d = "trellis-2" if (model_option or "a").lower() == "b" else "trellis"
+    model_3d = model_3d or ("trellis-2" if (model_option or "a").lower() == "b" else "trellis")
     source_image = processed_image_url or image_url
 
     await queue.put(_sse({"type": "pipeline", "stage": "brick_conversion", "message": "Generating 3D model...", "progress": 0}))
@@ -313,7 +314,7 @@ async def _run_trellis_3d_branch(
         user_info=user_info,
         auth_info=auth_info,
         credits_to_deduct=credits_to_deduct,
-        operation_description="Trellis API call",
+        operation_description=f"{model_3d} API call",
     )
 
     # Pack LDR -> MPD
@@ -498,7 +499,12 @@ async def _pipeline_worker(
         # --- 3D generation: Trellis (non-streamed) when stream_3d is False ---
         # Image frames have already streamed above; here we only choose how the
         # 3D step runs. SAM3D streams live voxels, Trellis does not.
-        if not stream_3d:
+        if not stream_3d or not RUNPOD_ENABLED:
+            if stream_3d:
+                await queue.put(_sse({
+                    "type": "pipeline", "stage": "brick_conversion",
+                    "message": "Generating SAM3D through fal.ai (mesh preview when ready)…",
+                }))
             await _run_trellis_3d_branch(
                 queue=queue,
                 generation_id=generation_id,
@@ -511,6 +517,7 @@ async def _pipeline_worker(
                 image_url=image_url,
                 prompt_enhancement=prompt_enhancement,
                 model_option=model_option,
+                model_3d="sam3d" if stream_3d else None,
             )
             return
 

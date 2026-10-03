@@ -1,4 +1,5 @@
 import asyncio
+from types import SimpleNamespace
 
 from src.utils import reference_views
 from src.utils.generation_storage import GenerationStorage
@@ -64,7 +65,7 @@ def test_generate_reference_view_uses_nano_banana_lite_edit(monkeypatch):
         captured.update(kwargs)
         return {"images": [{"url": "https://example.com/generated.png"}]}
 
-    monkeypatch.setattr(reference_views.fal_client, "subscribe", fake_subscribe)
+    monkeypatch.setattr(reference_views, "get_fal_client", lambda: SimpleNamespace(subscribe=fake_subscribe))
 
     result = reference_views._generate_reference_view(
         "back",

@@ -29,6 +29,9 @@ from .requests.resizeModel import resize_model, ResizeModelRequest, ResizeModelR
 from .requests.promptEditModel import prompt_edit_model, PromptEditModelRequest
 from .requests.llmRender import llm_render, llm_render_stream, LlmRenderRequest, LlmRenderResponse
 from .requests.llmToBricks import llm_to_bricks, llm_to_bricks_stream, LlmToBricksRequest
+from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
+from .requests.localProviders import router as local_providers_router
+from .utils.local_provider_connections import local_provider_connections, require_local_development
 from .requests.createCheckoutSession import create_checkout_session, CreateCheckoutSessionRequest, CreateCheckoutSessionResponse
 from .requests.stripeWebhook import stripe_webhook, StripeWebhookRequest, StripeWebhookResponse
 from .requests.getGeneration import get_generation, GetGenerationRequest, GetGenerationResponse
@@ -78,11 +81,14 @@ if os.getenv("MCP_ENABLED", "false").lower() == "true":
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    if brick_mcp:
-        async with brick_mcp.session_manager.run():
+    try:
+        if brick_mcp:
+            async with brick_mcp.session_manager.run():
+                yield
+        else:
             yield
-    else:
-        yield
+    finally:
+        await local_provider_connections.shutdown()
 
 
 app = FastAPI(
@@ -91,6 +97,23 @@ app = FastAPI(
     version="1.0.0",
     lifespan=lifespan,
 )
+app.include_router(local_providers_router)
+
+
+@app.post("/novaToBricks", response_model=ImageToBricksResponse)
+async def nova_to_bricks_endpoint(
+    request: NovaToBricksRequest,
+    http_request: Request,
+    auth_info: dict = Depends(get_user_with_optional_auth),
+) -> ImageToBricksResponse:
+    if request.auth_mode == "native":
+        require_local_development(http_request)
+    return await nova_to_bricks(request, auth_info)
+
+
+@app.get("/generation/{generation_id}/nova-source")
+async def nova_source_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
+    return await get_nova_source(str(generation_id), auth_info)
 
 
 @app.post("/generation/{generation_id}/cancel")
@@ -159,10 +182,10 @@ if not OPENAI_API_KEY:
 
 def require_fal_key():
     """Dependency that checks if FAL_KEY is configured."""
-    if not FAL_KEY:
+    if not os.getenv("FAL_KEY"):
         raise HTTPException(
             status_code=503,
-            detail="FAL_KEY not configured. Set FAL_KEY in .env file and restart the backend server."
+            detail="Connect fal.ai in Local providers, or set FAL_KEY in the backend environment."
         )
 
 # Validate authentication configuration at startup

@@ -20,6 +20,7 @@ import fal_client
 import httpx
 
 from .falApiClient import FalApiClient
+from .fal_provider_client import get_fal_client
 from .image_processing import remove_background_from_url
 
 # Configure logging
@@ -163,7 +164,7 @@ async def generate_image_from_text_simple_streaming(
         try:
             header, b64_data = original_image_url.split(",", 1)
             image_bytes = base64.b64decode(b64_data)
-            uploaded_url = fal_client.upload(image_bytes, "image/png")
+            uploaded_url = get_fal_client().upload(image_bytes, "image/png")
             logger.info(f"Uploaded data-URI image to fal.ai: {uploaded_url[:80]}...")
             original_image_url = uploaded_url
         except Exception as e:
@@ -315,7 +316,7 @@ def generate_image_from_image(image_input: str, is_base64: bool = False, edit_pr
         img_buffer.seek(0)
         
         # Upload resized image to fal.ai storage
-        resized_image_url = fal_client.upload(img_buffer.read(), "image/jpeg")
+        resized_image_url = get_fal_client().upload(img_buffer.read(), "image/jpeg")
         
         # Step 2: Call fal.ai nano banana edit endpoint with shared prompt enhancement
         def on_queue_update(update):
@@ -356,7 +357,7 @@ def generate_image_from_image(image_input: str, is_base64: bool = False, edit_pr
         
         logger.info(f"Submitting image to nano banana edit API with prompt: {prompt}")
         
-        result = fal_client.subscribe(
+        result = get_fal_client().subscribe(
             "fal-ai/nano-banana/edit",
             arguments={
                 "prompt": prompt,
@@ -405,7 +406,7 @@ def generate_image_from_text_with_reference_image(prompt: str) -> str:
         
         # Upload reference image to fal.ai storage
         with open(reference_image_path, 'rb') as img_file:
-            reference_image_url = fal_client.upload(img_file.read(), "image/png")
+            reference_image_url = get_fal_client().upload(img_file.read(), "image/png")
         
         # Call fal.ai nano banana edit endpoint with reference image enhancement
         def on_queue_update(update):
@@ -417,7 +418,7 @@ def generate_image_from_text_with_reference_image(prompt: str) -> str:
         
         logger.info(f"Submitting text prompt with reference image to nano banana edit API with prompt: {enhanced_prompt}")
         
-        result = fal_client.subscribe(
+        result = get_fal_client().subscribe(
             "fal-ai/nano-banana/edit",
             arguments={
                 "prompt": enhanced_prompt,
@@ -574,7 +575,7 @@ async def generate_image_from_text_streaming(
             # Strip the data:image/...;base64, prefix
             header, b64_data = original_image_url.split(",", 1)
             image_bytes = base64.b64decode(b64_data)
-            uploaded_url = fal_client.upload(image_bytes, "image/png")
+            uploaded_url = get_fal_client().upload(image_bytes, "image/png")
             logger.info(f"Uploaded data-URI image to fal.ai: {uploaded_url[:80]}...")
             original_image_url = uploaded_url
         except Exception as e:

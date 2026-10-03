@@ -6,6 +6,7 @@ import { GenerationActivity, isGenerationActive, isPreviewPending } from '../hoo
 import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
+import { isAgentGeneration } from '../utils/agentGeneration';
 
 export function GenerationActivityList({ generations, error, onOpen, onCancelled }: {
   generations: GenerationActivity[];
@@ -28,16 +29,18 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
           const failed = generation.status === 'failed';
           const cancelled = generation.status === 'cancelled';
           const previewPending = isPreviewPending(generation);
+          const agentGeneration = isAgentGeneration(generation.endpoint);
           const label = generation.status === 'queued' ? 'Queued'
             : generation.status === 'completed' ? 'Ready to build'
             : cancelled ? 'Generation cancelled' : failed ? 'Generation failed'
-            : generation.endpoint === 'llmToBricks' ? 'Designing bricks' : 'Building your model';
+            : generation.endpoint === 'novaToBricks' ? 'Building your full set'
+            : agentGeneration ? 'Designing bricks' : 'Building your model';
           return (
             <article key={generation.id} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
               <div className="relative h-36 overflow-hidden bg-slate-50">
                 {previewPending
                   ? <div role="status" aria-label="Loading model preview" className="flex h-full items-center justify-center"><Loader2 aria-hidden="true" className="h-9 w-9 animate-spin text-slate-400" /></div>
-                  : active && (generation.endpoint === 'llmToBricks' || !generation.imageUrl)
+                  : active && (agentGeneration || !generation.imageUrl)
                   ? <LlmPreviewLoader previewImageUrl={generation.imageUrl} compact />
                   : generation.imageUrl
                     ? <img src={generation.imageUrl} alt="" className="h-full w-full object-contain" />
@@ -45,7 +48,7 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
               </div>
               <div className="p-4">
                 <h3 className="break-words text-sm font-semibold text-slate-900">{generation.name || generation.prompt || 'Image reference'}</h3>
-                {!(active && generation.endpoint === 'llmToBricks') && <p className={`mt-2 flex items-center gap-2 text-sm ${failed ? 'text-red-600' : 'text-slate-600'}`}>
+                {!(active && agentGeneration) && <p className={`mt-2 flex items-center gap-2 text-sm ${failed ? 'text-red-600' : 'text-slate-600'}`}>
                   {active ? <Loader2 aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin" />
                     : cancelled ? <Square aria-hidden="true" className="h-4 w-4 shrink-0" />
                     : failed ? <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -55,7 +58,7 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
                 {previewPending && <p className="mt-2 text-xs text-slate-500">Preparing preview…</p>}
                 {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
-                {active && generation.endpoint === 'llmToBricks' && <LlmGenerationOutput generationId={generation.id} active />}
+                {active && agentGeneration && <LlmGenerationOutput generationId={generation.id} active />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
                 {active && <CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} />}
                 {generation.status === 'completed' && <button type="button"
