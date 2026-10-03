@@ -167,3 +167,7 @@
   .checkout-payment-option .checkout-method-note { padding-left: 48px; }
   .checkout-method-mark { font-size: 9px; }
 }
+
+/* Keep a measurable wallet mount while checking browser eligibility.
+   display:none prevents Express Checkout from laying out its buttons. */
+.checkout-wallet-payment.is-inactive, .checkout-wallet-payment > .is-inactive { position: fixed; left: -10000px; top: 0; width: min(520px, calc(100vw - 40px)); visibility: hidden; pointer-events: none; }

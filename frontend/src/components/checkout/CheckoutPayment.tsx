@@ -179,9 +179,9 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         {loading ? 'Processing…' : `Pay ${formatOrderPrice(totalCents)}`}
       </button>
     </div>
-    <div hidden={selectedMethod === 'card'} className="checkout-wallet-payment">
+    <div className={`checkout-wallet-payment ${selectedMethod === 'card' ? 'is-inactive' : ''}`} aria-hidden={selectedMethod === 'card'}>
       {!accepted && <p className="checkout-method-note">Agree to the Terms of Service to continue with your wallet.</p>}
-      <div hidden={!accepted || loading} ref={walletMountRef} />
+      <div className={!accepted || loading ? 'is-inactive' : undefined} aria-hidden={!accepted || loading} ref={walletMountRef} />
       {loading && <p role="status">Processing…</p>}
     </div>
     <p className="checkout-secure-note"><LockKeyhole size={14} />Secure, encrypted payment</p>

@@ -264,6 +264,8 @@ it('orders card, Apple Pay, PayPal, Google Pay and marks unconfigured PayPal una
   await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
   const options = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
   ['Card payment', 'Apple Pay', 'PayPal', 'Google Pay'].forEach((name, index) => expect(options[index].textContent).toContain(name));
+  expect(container.querySelector('.checkout-wallet-payment')!.hasAttribute('hidden')).toBe(false);
+  expect(container.querySelector('.checkout-wallet-payment > div')!.hasAttribute('hidden')).toBe(false);
   expect(options[2].disabled).toBe(true);
   expect(container.textContent).toContain('PayPal is not available yet.');
   await click('Apple Pay');
