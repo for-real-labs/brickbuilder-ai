@@ -9,7 +9,7 @@ import { CreateCheckoutSessionApiService } from '../src/services/createCheckoutS
 import { GetPriceApiService } from '../src/services/getPriceApi';
 import posthog from 'posthog-js';
 
-const mocks = vi.hoisted(() => ({ confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckout: vi.fn(), walletUpdate: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
+const mocks = vi.hoisted(() => ({ confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
 vi.mock('@stripe/stripe-js/pure', () => ({ loadStripe: mocks.loadStripe }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ showModelControls }: { showModelControls?: boolean }) => <div data-testid="model-preview" data-controls={String(showModelControls)}>Model preview</div> }));
 vi.mock('../src/services/ldrToMpdApi', () => ({ LdrToMpdApiService: { convertLdrToMpd: async () => ({ mpd_content: '0 Frog' }) } }));
@@ -28,15 +28,15 @@ beforeEach(() => {
   mocks.paymentEvents = {}; mocks.walletEvents = {}; mocks.walletUpdate.mockReset();
   mocks.mount.mockImplementation(() => mocks.paymentEvents.ready?.());
   mocks.loadActions.mockResolvedValue({ type: 'success', actions: { confirm: mocks.confirm } });
-  mocks.initCheckout.mockReset();
-  mocks.initCheckout.mockImplementation(() => ({ loadActions: mocks.loadActions, createPaymentElement: () => ({
+  mocks.initCheckoutElementsSdk.mockReset();
+  mocks.initCheckoutElementsSdk.mockImplementation(() => ({ loadActions: mocks.loadActions, createPaymentElement: () => ({
     on: (event: string, callback: (event?: unknown) => void) => { mocks.paymentEvents[event] = callback; }, mount: mocks.mount, destroy: mocks.destroy,
   }), createExpressCheckoutElement: () => ({
     on: (event: string, callback: (event?: unknown) => void) => { mocks.walletEvents[event] = callback; },
     mount: () => mocks.walletEvents.ready?.({ availablePaymentMethods: { applePay: true, googlePay: true } }),
     update: mocks.walletUpdate, destroy: vi.fn(),
   }) }));
-  mocks.loadStripe.mockResolvedValue({ initCheckout: mocks.initCheckout });
+  mocks.loadStripe.mockResolvedValue({ initCheckoutElementsSdk: mocks.initCheckoutElementsSdk });
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllEnvs(); });
@@ -151,8 +151,8 @@ it('progresses contact → payment, sends auth, retains details when editing, an
   await renderOrder();
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
   await submitContact();
-  expect(mocks.initCheckout).toHaveBeenCalledWith(expect.objectContaining({ elementsOptions: expect.objectContaining({ appearance: expect.objectContaining({ variables: expect.objectContaining({ colorPrimary: '#f44336' }) }) }) }));
-  expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frog', generationId: 'g', uiMode: 'custom', priceCents: 2500 }), 'auth-token');
+  expect(mocks.initCheckoutElementsSdk).toHaveBeenCalledWith(expect.objectContaining({ elementsOptions: expect.objectContaining({ appearance: expect.objectContaining({ variables: expect.objectContaining({ colorPrimary: '#f44336' }) }) }) }));
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frog', generationId: 'g', uiMode: 'elements', priceCents: 2500 }), 'auth-token');
   expect(container.querySelector('.checkout-payment-element')).not.toBeNull();
   expect(mocks.mount).toHaveBeenCalled();
   expect(container.textContent).not.toContain('Continue to secure payment');
@@ -211,10 +211,10 @@ it('rejects a hosted session instead of switching to a separate checkout', async
   await renderOrder();
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
   await submitContact();
-  expect(create).toHaveBeenCalledWith(expect.objectContaining({ uiMode: 'custom' }), 'auth-token');
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ uiMode: 'elements' }), 'auth-token');
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('We couldn’t start payment');
   expect(container.querySelector('#checkout-step-2')?.hasAttribute('hidden')).toBe(true);
-  expect(mocks.initCheckout).not.toHaveBeenCalled();
+  expect(mocks.initCheckoutElementsSdk).not.toHaveBeenCalled();
 });
 
 it('locks completed steps during confirmation and releases them after a recoverable error', async () => {

@@ -46,3 +46,5 @@ Payment methods appear as Card, Apple Pay, PayPal, Google Pay. The 2025 North Am
 Apple Pay and Google Pay use a Checkout Express Checkout Element and the existing session confirmation and fulfillment path. Card wallets are suppressed in the Payment Element to avoid duplication. HTTPS, registered payment domains, and supported browsers/devices are required. Unavailable wallets remain disabled with an explanation; card payment remains usable on local HTTP.
 
 PayPal is explicitly disabled pending a separate PayPal integration: the current Stripe account is US based, while native Stripe PayPal processing supports European merchant accounts only (https://docs.stripe.com/payments/paypal). Do not enable the option without a real processing and fulfillment integration. Custom Checkout sessions restrict payment_method_types to card, which also covers Apple Pay and Google Pay, preventing unrelated installment methods from appearing.
+
+Stripe.js v10 uses initCheckoutElementsSdk with ui_mode elements. Backend pins 2026-09-30.endive for this mode and retains hosted, embedded, and custom compatibility for older clients.

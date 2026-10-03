@@ -61,7 +61,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         const stripe = await loadStripe(publishableKey);
         if (disposed) return;
         if (!stripe) throw new Error('Stripe unavailable');
-        const checkout = stripe.initCheckout({ clientSecret: session.client_secret, elementsOptions: { appearance: checkoutAppearance } });
+        const checkout = stripe.initCheckoutElementsSdk({ clientSecret: session.client_secret, elementsOptions: { appearance: checkoutAppearance } });
         const result = await checkout.loadActions();
         if (disposed) return;
         if (result.type === 'error') throw new Error(result.error.message);
@@ -114,7 +114,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   const confirmPayment = async (walletEvent?: StripeExpressCheckoutElementConfirmEvent) => {
     if (!ready || loading || !accepted) return;
     setLoading(true); onBusyChange?.(true); setError(null);
-    posthog.capture('order_checkout_clicked', { generation_id: generationId, total_cents: totalCents, currency: 'USD', checkout_mode: 'custom' });
+    posthog.capture('order_checkout_clicked', { generation_id: generationId, total_cents: totalCents, currency: 'USD', checkout_mode: 'elements' });
     try {
       if (!actionsRef.current) throw new Error('Payment unavailable');
       const result = await actionsRef.current.confirm({

@@ -182,7 +182,7 @@ export default function OrderKit() {
       const data = await CreateCheckoutSessionApiService.createCheckoutSession({
         name, priceCents: pricing.totalCents, quantity: 1,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
-        uiMode: 'custom',
+        uiMode: 'elements',
       }, token);
       if (!data.client_secret) throw new Error('Embedded payment unavailable');
       if (data.price_data) setQuote(data.price_data);
