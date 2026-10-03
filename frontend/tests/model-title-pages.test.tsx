@@ -13,6 +13,7 @@ import OrderKit from '../src/pages/OrderKit';
 import { CreateCheckoutSessionApiService } from '../src/services/createCheckoutSessionApi';
 import { GenerationCard } from '../src/pages/UserDashboard';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
+import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 import { getGeneratedModelPath } from '../src/utils/generationRoutes';
 import posthog from 'posthog-js';
@@ -57,6 +58,35 @@ it.each(['owner', 'other'])('renders the saved title on the model page and gates
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
   expect(container.querySelector('h1')?.textContent).toBe('Sunny Dachshund');
   expect(!!container.querySelector('[aria-label="Rename model"]')).toBe(viewer === 'owner');
+});
+
+it('downloads the editable agent source archive for a completed Nova model and cleans up the temporary URL', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'novaToBricks', status: 'completed', name: 'Spaceport', prompt: 'spaceport', ldr_content: 'ldr' } as never);
+  const archive = new Blob(['zip'], { type: 'application/zip' });
+  const download = vi.spyOn(NovaToBricksApiService, 'downloadSource').mockResolvedValue(archive);
+  const create = vi.fn().mockReturnValue('blob:archive');
+  const revoke = vi.fn();
+  vi.stubGlobal('URL', class extends URL { static createObjectURL = create; static revokeObjectURL = revoke; });
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Export model"]')!.click());
+  const button = Array.from(container.querySelectorAll('button')).find(button => button.textContent === ' Download agent source' || button.textContent?.trim() === 'Download agent source')!;
+  expect(button).toBeTruthy();
+  await act(async () => button.click());
+  expect(download).toHaveBeenCalledWith('g');
+  expect(create).toHaveBeenCalledWith(archive);
+  expect(click).toHaveBeenCalledOnce();
+  expect(revoke).toHaveBeenCalledWith('blob:archive');
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_nova_source_download_clicked', { generation_id: 'g' });
+});
+
+it('shows an owner permission error when the agent source cannot be downloaded', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'novaToBricks', status: 'completed', name: 'Spaceport', prompt: 'spaceport', ldr_content: 'ldr' } as never);
+  vi.spyOn(NovaToBricksApiService, 'downloadSource').mockRejectedValue(new Error('Only the owner can download this agent source.'));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Export model"]')!.click());
+  await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Download agent source')!.click());
+  expect(container.textContent).toContain('Only the owner can download this agent source.');
 });
 
 it('updates the model title after an owner rename and uses it on the order page', async () => {

@@ -36,6 +36,8 @@ import { GetPriceApiService, GetPriceResponse } from "../services/getPriceApi";
 import { ResizeScaler } from "../components/ResizeScaler";
 import { ResizeModelApiService } from "../services/resizeModelApi";
 import { LlmToBricksApiService } from "../services/llmToBricksApi";
+import { isAgentGeneration } from "../utils/agentGeneration";
+import { NovaToBricksApiService } from "../services/novaToBricksApi";
 import { VoxelPromptEditor } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
@@ -306,6 +308,8 @@ export default function GeneratedModel() {
   const activeSavePreviewUploadRef = React.useRef<Promise<void> | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = React.useState(false);
   const [isExportingVideo, setIsExportingVideo] = React.useState(false);
+  const [isDownloadingNovaSource, setIsDownloadingNovaSource] = React.useState(false);
+  const [novaSourceError, setNovaSourceError] = React.useState('');
   const exportCaptureApiRef = React.useRef<ExportCaptureApi | null>(null);
   const exportMenuRef = React.useRef<HTMLDivElement | null>(null);
   const [editHistoryOpen, setEditHistoryOpen] = React.useState(false);
@@ -345,6 +349,10 @@ export default function GeneratedModel() {
   } | null;
 
   const isDemoModel = !!currentGenerationId && DEMO_MODEL_IDS.has(currentGenerationId);
+  const hasNovaSource = pendingGeneration?.endpoint === 'novaToBricks' && pendingGeneration.status === 'completed'
+    && pendingGeneration.generation_id === currentGenerationId;
+
+  React.useEffect(() => { setNovaSourceError(''); }, [currentGenerationId]);
   
   const retainedEditSourceId = stateData?.editSourceGenerationId;
   const canKeepModelVisible = Boolean(mpdContent && (
@@ -569,6 +577,7 @@ export default function GeneratedModel() {
         
         try {
           const statusResponse = await GetGenerationApiService.getGeneration(stateGenerationId);
+          setPendingGeneration(statusResponse);
           
           if (statusResponse.status === 'completed' && statusResponse.ldr_content) {
             if (statusResponse.processed_image_url) {
@@ -608,6 +617,7 @@ export default function GeneratedModel() {
       if (generationId) {
         try {
           const statusResponse = await GetGenerationApiService.getGeneration(generationId);
+          setPendingGeneration(statusResponse);
           
           // If completed, use the data
           if (statusResponse.status === 'completed' && statusResponse.ldr_content) {
@@ -1819,6 +1829,18 @@ export default function GeneratedModel() {
       }
     }, [downloadBlob, getSafeExportName, isExportingVideo]);
 
+    const handleDownloadNovaSource = React.useCallback(async () => {
+      if (!currentGenerationId || !hasNovaSource || isDownloadingNovaSource) return;
+      posthog.capture('generated_model_nova_source_download_clicked', { generation_id: currentGenerationId });
+      setExportMenuOpen(false); setIsDownloadingNovaSource(true); setNovaSourceError('');
+      try {
+        const archive = await NovaToBricksApiService.downloadSource(currentGenerationId);
+        downloadBlob(archive, `${getSafeExportName()}_agent_source.zip`);
+      } catch (reason) {
+        setNovaSourceError(reason instanceof Error ? reason.message : 'Unable to download the agent source. Please try again.');
+      } finally { setIsDownloadingNovaSource(false); }
+    }, [currentGenerationId, hasNovaSource, isDownloadingNovaSource, downloadBlob, getSafeExportName]);
+
 
   // Summer sale: 50% off everything (parts + shipping). The price returned by
   // the API already includes shipping, so we simply halve the total.
@@ -1861,7 +1883,7 @@ export default function GeneratedModel() {
               <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
             </div>
             <div className="mt-5 max-w-md w-full">
-              {pendingGeneration?.endpoint === 'llmToBricks'
+              {pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
                 ? <LlmGenerationOutput generationId={pendingGeneration.generation_id} active />
                 : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
             </div>
@@ -2007,16 +2029,16 @@ export default function GeneratedModel() {
             <button
               type="button"
               aria-label="Export model"
-                disabled={isSavePolling || isExportingVideo || (!ldrContent && !previewPngDataUrl)}
+                disabled={isSavePolling || isExportingVideo || isDownloadingNovaSource || (!ldrContent && !previewPngDataUrl)}
               onClick={() => setExportMenuOpen((prev) => !prev)}
               className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 bg-slate-900/85 px-2.5 py-2 sm:px-4 text-xs font-semibold tracking-wide text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-150 hover:bg-slate-800 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-45"
             >
-                {isExportingVideo ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                {isExportingVideo || isDownloadingNovaSource ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
               <span className="hidden sm:inline">Export</span>
             </button>
 
             {exportMenuOpen && (
-              <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+              <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                 <button
                   type="button"
                   onClick={handleExportLdr}
@@ -2026,6 +2048,10 @@ export default function GeneratedModel() {
                   <FileText size={14} />
                   LDraw (.ldr)
                 </button>
+                {hasNovaSource && <button type="button" onClick={() => { void handleDownloadNovaSource(); }} disabled={isDownloadingNovaSource}
+                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-45">
+                  <Download aria-hidden="true" size={14} className="shrink-0" /> Download agent source
+                </button>}
                 <button
                   type="button"
                   onClick={handleExportPng}
@@ -2200,7 +2226,7 @@ export default function GeneratedModel() {
                 animateModelBuild
                 topLeftOverlay={isModelEditing ? (
                   <div className="w-fit max-w-full rounded-xl bg-white/90 px-3 pb-3 shadow-sm backdrop-blur-sm">
-                    {editGenerationId && pendingGeneration?.endpoint === 'llmToBricks'
+                    {editGenerationId && isAgentGeneration(pendingGeneration?.endpoint)
                       ? <LlmGenerationOutput generationId={editGenerationId} active />
                       : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
                     {editGenerationId && <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />}
@@ -2213,6 +2239,7 @@ export default function GeneratedModel() {
             )}
           </div>
         </div>
+        {novaSourceError && <p role="alert" className="mt-2 break-words px-2 text-center text-xs text-red-600">{novaSourceError}</p>}
         <figcaption className="mt-1 text-xs text-slate-500 text-center">
           {/* Click/touch and drag to rotate, scroll/pinch to zoom */}
         </figcaption>

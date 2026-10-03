@@ -1,5 +1,6 @@
 import asyncio
 from unittest.mock import AsyncMock
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -10,6 +11,36 @@ from src import api
 
 
 AUTH = {"user_id": "user"}
+
+
+def test_nova_endpoint_enforces_native_local_guard_and_delegates(monkeypatch):
+    handler = AsyncMock(return_value={"ok": True})
+    guarded = []
+    monkeypatch.setattr(api, "nova_to_bricks", handler)
+    monkeypatch.setattr(api, "require_local_development", guarded.append)
+    body = SimpleNamespace(auth_mode="native")
+    request = object()
+    assert asyncio.run(api.nova_to_bricks_endpoint(body, request, AUTH)) == {"ok": True}
+    assert guarded == [request]
+    handler.assert_awaited_once_with(body, AUTH)
+
+
+def test_nova_api_key_mode_works_without_native_local_guard(monkeypatch):
+    handler = AsyncMock(return_value={"ok": True})
+    monkeypatch.setattr(api, "nova_to_bricks", handler)
+    monkeypatch.setattr(api, "require_local_development", lambda _: pytest.fail("API mode must not require local native sessions"))
+    body = SimpleNamespace(auth_mode="api_key")
+    asyncio.run(api.nova_to_bricks_endpoint(body, object(), AUTH))
+    handler.assert_awaited_once_with(body, AUTH)
+
+
+def test_fal_credentials_become_available_without_restart(monkeypatch):
+    monkeypatch.delenv("FAL_KEY", raising=False)
+    with pytest.raises(HTTPException, match="") as error:
+        api.require_fal_key()
+    assert error.value.status_code == 503
+    monkeypatch.setenv("FAL_KEY", "test-id:test-secret")
+    assert api.require_fal_key() is None
 
 
 @pytest.mark.parametrize(
@@ -165,11 +196,11 @@ def test_unprotected_one_argument_endpoints(monkeypatch):
 def test_health_and_fal_key_dependency(monkeypatch):
     monkeypatch.setattr(api, "track_api_call", lambda **_kwargs: None)
     assert asyncio.run(api.health_check()) == {"message": "brickai API is running"}
-    monkeypatch.setattr(api, "FAL_KEY", None)
+    monkeypatch.delenv("FAL_KEY", raising=False)
     with pytest.raises(HTTPException) as exc_info:
         api.require_fal_key()
     assert exc_info.value.status_code == 503
-    monkeypatch.setattr(api, "FAL_KEY", "configured")
+    monkeypatch.setenv("FAL_KEY", "configured")
     assert api.require_fal_key() is None
 
 

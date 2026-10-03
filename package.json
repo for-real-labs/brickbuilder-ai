@@ -8,6 +8,7 @@
     "start": "concurrently --kill-others --success first --names backend,frontend \"npm run start:backend\" \"npm run start:frontend\"",
     "start:backend": "node scripts/backend.cjs start",
     "start:frontend": "npm --prefix frontend run dev",
+    "setup:nova": "node scripts/nova.cjs",
     "test": "node --test tests/*.test.cjs"
   },
   "engines": {

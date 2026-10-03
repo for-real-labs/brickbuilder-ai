@@ -7,6 +7,7 @@ import { GenerationActivityList } from '../src/components/GenerationActivityList
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
+import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 
@@ -64,6 +65,19 @@ it('loads all pages of active generations and forwards auth and cancellation', a
   expect(jobs.map(row => row.id)).toEqual(['one', 'two']);
   expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ processing: true, limit: 50, offset: 1 });
   expect(fetch.mock.calls[0][1]).toMatchObject({ headers: { authorization: 'Bearer token' }, signal: controller.signal });
+});
+
+it('uses live agent output for Nova full set jobs', async () => {
+  const output = vi.spyOn(LlmToBricksApiService, 'watchOutput').mockImplementation(async (_id, onOutput) => {
+    onOutput({ text: 'Searching LDraw parts and validating the launch tower', status: 'processing' });
+    return true;
+  });
+  await act(async () => root.render(<GenerationActivityList generations={[
+    { id: 'nova', prompt: 'Spaceport', status: 'processing', endpoint: 'novaToBricks' },
+  ]} error={null} onOpen={open} />));
+  expect(output).toHaveBeenCalledWith('nova', expect.any(Function), expect.any(AbortSignal));
+  expect(container.textContent).toContain('Searching LDraw parts and validating the launch tower');
+  expect(container.querySelector('.brick-build-scene')).not.toBeNull();
 });
 
 it('restores every active job and retains completed and failed outcomes independently', async () => {
