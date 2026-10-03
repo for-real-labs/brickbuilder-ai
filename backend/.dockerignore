@@ -3,6 +3,9 @@
 .env
 .python-version
 .venv
+.nova
+.local_storage
+.local_postgres
 __pycache__
 *.pyc
 *.pyo

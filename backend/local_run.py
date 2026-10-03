@@ -19,13 +19,16 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
 def configure_local_runtime(environment=None, backend_dir=None, home_dir=None):
     """Attach the isolated Nova runtime and enable loopback-only provider setup."""
+    from src.utils.nova_runtime import resolve_nova_runtime
     environment = os.environ if environment is None else environment
     backend_dir = Path(backend_dir or Path(__file__).parent).resolve()
     environment.setdefault("BRICKBUILDER_LOCAL_PROVIDERS", "true")
-    toolkit = backend_dir / ".nova" / "toolkit"
-    environment.setdefault("NOVA_TOOLKIT_ROOT", str(toolkit))
-    bin_dir = toolkit / ".venv" / ("Scripts" if os.name == "nt" else "bin")
-    environment.setdefault("NOVA_PYTHON", str(bin_dir / ("python.exe" if os.name == "nt" else "python")))
+    selected = resolve_nova_runtime(backend_dir, environment)
+    if selected.source != "explicit":
+        environment["NOVA_MANAGED_RUNTIME"] = "true"
+    environment.setdefault("NOVA_TOOLKIT_ROOT", str(selected.root))
+    environment.setdefault("NOVA_PYTHON", str(selected.python))
+    bin_dir = selected.python.parent
     environment["PATH"] = str(bin_dir) + os.pathsep + environment.get("PATH", "")
     library = Path(home_dir or Path.home()) / "ldraw"
     if (library / "LDConfig.ldr").is_file():

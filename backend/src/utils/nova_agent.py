@@ -22,6 +22,11 @@ construction recipes, source reference discovery and a deterministic JSON-plan c
 requested subject using diverse suitable parts (slopes, tiles, arches, hinges, wheels, Technic fittings,
 windows and other specialized elements where useful), rather than turning everything into voxels.
 
+Tools named nova_* come from this build's installed upstream runtime. Their options and recipes
+are discovered from Nova's current parser, so use these tools for additional construction features.
+Read any returned upstream/... resource with read_resource before adapting its plan. These commands
+study or export techniques; only submit_plan creates a candidate eligible for accept_model.
+
 WORKFLOW
 1. Briefly describe the visual concept, approximate scale, colour palette, structural interfaces and
    meaningful subassemblies. Use search_references for real parts and useful models/submodels;
@@ -32,7 +37,7 @@ WORKFLOW
    For a useful model/submodel, call inspect_reference with its discovered ID. Study its actual geometry
    views, BOM, dependency-closed source_resource and attribution before adapting the technique. This
    also supports a bundled FTS source path and optional section. Preserve source attribution when reused.
-2. Read ldraw_tools/data/plan.schema.json
+2. Read instructions.md, ldraw_tools/data/plan.schema.json
    and docs/agent/tooling.md using read_resource. Resource responses include next_offset; follow it with
    the same path until it is null so you read the complete schema/manual/example. Read applicable
    geometry/construction documents.
@@ -93,7 +98,7 @@ TOOLS = [
           {"family": {"type": "string", "enum": ["design", "vehicle", "technic", "discover"]}, "name": {"type": "string"}}, ["family"]),
     _tool("catalog", "Search descriptive part symbols and available colours, with actual dimensions.",
           {"kind": {"type": "string", "enum": ["parts", "categories", "colours"]}, "query": {"type": "string"}}),
-    _tool("read_resource", "Read a paged toolkit manual, schema, source example or inspect_reference source_resource. Follow next_offset with the same path until null to read the full resource.",
+    _tool("read_resource", "Read a paged current toolkit manual, schema, source example, reference source or upstream output resource. Follow next_offset with the same path until null to read the full resource.",
           {"path": {"type": "string"}, "offset": {"type": "integer", "minimum": 0}}, ["path"]),
     _tool("submit_plan", "Compile a complete self-contained hierarchical assembly plan and return geometry feedback and two actual-mesh review views.",
           {"plan": {"type": "object", "description": "JSON matching ldraw_tools/data/plan.schema.json, without includes/assets."}}, ["plan"]),
@@ -240,7 +245,9 @@ class NativeToolConversation(ToolConversation):
 async def build_set(request, provider: str, workspace: Path, on_output=None) -> NovaBuild:
     toolkit = NovaToolkit(workspace, request.max_parts, request.use_jev)
     toolkit.require_ready()
-    settings = ConversationSettings(request.model, SYSTEM_PROMPT + f"\nPart cap: {request.max_parts}. Tool-turn budget: {request.max_iterations}.", TOOLS,
+    await toolkit.prepare_capabilities()
+    tools = toolkit.agent_tools(TOOLS)
+    settings = ConversationSettings(request.model, SYSTEM_PROMPT + f"\nPart cap: {request.max_parts}. Tool-turn budget: {request.max_iterations}.", tools,
                                     max_tokens=65_536, reasoning_effort="high")
     user_input = UserInput(request.prompt or "Create a complete brick set from the reference image.",
                            request.image_base64, request.image_media_type)
@@ -308,5 +315,5 @@ async def build_set(request, provider: str, workspace: Path, on_output=None) -> 
             conversation.add_tool_results(results)
             if accepted and toolkit.last_build:
                 references = tuple(getattr(toolkit, "references", {}).values())
-                return replace(toolkit.last_build, references=references) if references else toolkit.last_build
+                return replace(toolkit.last_build, references=references, runtime=toolkit.runtime_provenance())
     raise ValueError("The Nova agent reached its iteration limit before accepting a complete model. Increase the turn budget or simplify the request.")

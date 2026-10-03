@@ -20,10 +20,56 @@ http://127.0.0.1:8002. Nova setup requires Git and either Python 3.12+ or
 Nova and Jev use a separate environment under the ignored `backend/.nova/`
 directory. Set `NOVA_SETUP_PYTHON` to choose an installed Nova interpreter.
 
-`setup:nova` downloads immutable upstream revisions, installs their tooling,
+`setup:nova` discovers the current upstream default branches, installs their tooling,
 reuses or downloads the official LDraw parts library, and indexes it. It does
 not install LeoCAD. Previews use actual LDraw triangle geometry rendered by
 BrickBuilder's own software renderer, so special parts remain visible.
+
+## Upstream updates and wrappers
+
+An installed managed runtime checks for upstream updates when the backend starts.
+Both Nova and Jev follow their repositories' actual default branches, including
+`main` or `master`; neither requires a commit edit in BrickBuilder. You can update
+or inspect the installed runtime directly:
+
+```sh
+npm run update:nova
+npm run nova:status
+```
+
+New versions are installed in separate directories under `backend/.nova/snapshots/`.
+Downloads reuse Git objects from retained clean snapshots. HEAD checks default to
+15 seconds; source downloads have a separate 10-minute limit, configurable with
+`NOVA_GIT_TIMEOUT_SECONDS` and `NOVA_GIT_FETCH_TIMEOUT_SECONDS` respectively.
+Before activation, the installer checks the live CLI contract and plan schema,
+Jev installation, reference search and extraction, and LDraw compilation. It
+atomically switches the ignored `backend/.nova/runtime.json` selector after those
+checks pass. Offline or incompatible automatic updates retain the working runtime.
+Existing checkouts and active generations are preserved. Set
+`NOVA_AUTO_UPDATE=false` to disable startup checks; an explicit `NOVA_TOOLKIT_ROOT`
+or `NOVA_PYTHON` configuration uses a custom runtime outside managed updates.
+`setup:nova` also revalidates an unchanged installation.
+
+Each generation binds one runtime and discovers its current command signatures.
+The generated `nova_*` agent tools call upstream functions through one structured
+adapter. Compatible new construction commands, recipes, choices and options are
+available without adding individual wrappers. This includes new construction
+families whose command signatures fit the approved query and recipe contract.
+Commands requiring new filesystem permissions, arbitrary code or desktop CAD
+need an explicit adapter change. Breaking changes retain the previously validated
+runtime rather than interrupting a generation.
+
+The application owns provider connections, private storage, preview rendering,
+resource and part limits, and final model acceptance. Upstream plan exports stay
+in separate private resources; they cannot replace the candidate being reviewed.
+The source ZIP records exact upstream revisions, capability and plan-schema hashes,
+and which upstream features were used, so a completed build can be traced to its
+runtime. New jobs read the updated selector while existing jobs keep their version.
+
+Backend-only Docker deployments use the same updater, install a validated runtime
+during the image build, and check for compatible updates in the background at startup.
+The API serves the baked-in version until a replacement passes validation. Local provider
+sign-in remains restricted to the local launcher.
 
 ## Provider connections
 
@@ -64,10 +110,11 @@ Provider account access and usage limits still apply. Official documentation:
 ## Parts search and build loop
 
 1. Read toolkit manuals and the assembly-plan schema, then plan subassemblies,
-   visual features, materials and construction order.
+   visual features, materials and construction order. Additional `nova_*` tools
+   expose the selected upstream runtime's construction and inspection functions.
 2. Search installed parts, annotated models, submodels, examples and the
    construction catalog. Inspect dimensions and connector metadata.
-3. Submit a self-contained JSON assembly plan. The pinned Nova compiler emits
+3. Submit a self-contained JSON assembly plan. The selected Nova compiler emits
    an MPD and runs geometry/connection checks. The agent cannot execute
    arbitrary generated Python or access arbitrary paths.
 4. Inspect diagnostics and rendered review views, repair the plan, and repeat
@@ -76,7 +123,7 @@ Provider account access and usage limits still apply. Official documentation:
    and parts CSV through existing generation storage. Existing activity,
    cancellation, output, viewer and downloads are reused.
 
-The pinned runtime bundles an annotated snapshot of the LDraw Official Model
+The currently validated runtime bundles an annotated snapshot of the LDraw Official Model
 Repository: 1,821 model files, 28,451 indexed submodel descriptions, and 35,257
 indexed part descriptions. These counts describe the bundled corpus; reference
 eligibility also depends on available geometry, part accounting and the search
@@ -119,7 +166,8 @@ progress updates while the mesh is being generated.
 ## Runtime and attribution
 
 The installer retains upstream source, licenses, references and attribution in
-the external runtime. Source revisions are pinned in `scripts/nova.cjs`:
+the external runtime. Exact installed revisions are recorded by `npm run nova:status`.
+The versions validated when this integration was introduced are:
 
 - [ldraw-nova](https://github.com/anteloc/ldraw-nova),
   `c4ba6c4913e0975ee7e34e647c26129137657d5e`, AGPL-3.0.
@@ -134,6 +182,8 @@ source. Distribution or hosting of the combined integration must respect upstrea
 license and corresponding-source obligations. Preserve toolkit licenses and
 `ATTRIBUTION.md` with the runtime.
 
-For deployment, install the same pinned runtime, set `NOVA_TOOLKIT_ROOT`,
-`NOVA_PYTHON`, and `LDRAW_DIR`, and provide API keys on the server. Native
+The supplied Docker build installs the latest compatible runtime automatically.
+For other deployments, run the shared installer at
+`backend/scripts/nova-runtime.cjs` or configure an explicit `NOVA_TOOLKIT_ROOT`,
+`NOVA_PYTHON`, and `LDRAW_DIR`. Provide provider API keys on the server. Native
 subscription connections are reserved for local development.

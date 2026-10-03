@@ -9,6 +9,8 @@ RUN apt-get update && \
         xvfb \
         curl \
         unzip \
+        git \
+        nodejs \
         && rm -rf /var/lib/apt/lists/* \
         && apt-get clean
 
@@ -31,6 +33,9 @@ COPY . .
 
 # Install Python dependencies
 RUN uv sync --frozen
+
+# Install and validate the current upstream runtime in its own Python env.
+RUN node scripts/nova-runtime.cjs setup
 
 # Note: Background removal now uses fal.ai BiRefNet v2 (GPU) instead of local rembg.
 # rembg is kept as a fallback dependency but the u2net model is no longer pre-downloaded.
