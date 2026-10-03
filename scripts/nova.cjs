@@ -60,6 +60,7 @@ function setup(run = spawnSync, env = process.env, platform = process.platform, 
   const library = execute(backendPython, ['-c',
     'import os; from src.utils.pack_ldraw_model import LDrawPacker; p=LDrawPacker(os.environ.get("LDRAW_DIR")); assert (p.ldraw_path/"LDConfig.ldr").is_file(); print(p.ldraw_path.resolve())'], backend, run, true).split(/\r?\n/).at(-1);
   execute(executable, ['-m', 'ldraw_tools.cli', '--library', library, 'index'], toolkit, run);
+  execute(executable, ['-m', 'ldraw_tools.cli', '--library', library, 'discover', 'index'], toolkit, run);
   console.log('Nova and Jev are ready. Run npm start, then choose Full set agent on the landing page.');
 }
 

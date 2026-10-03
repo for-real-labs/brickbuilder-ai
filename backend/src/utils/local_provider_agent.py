@@ -20,16 +20,22 @@ from .local_provider_connections import (
 
 MAX_OUTPUT_BYTES = 8_000_000
 MAX_IMAGE_BYTES = 6_000_000
+MAX_IMAGES_PER_TURN = 13  # User reference plus all twelve possible tool previews.
+MAX_TOTAL_IMAGE_BYTES = 32_000_000
 CLI_TURN_TIMEOUT_SECONDS = 600
 OutputCallback = Callable[[str], Awaitable[None]]
 
 
 def _image_content(image_paths: Sequence[Path]) -> list[dict]:
     content = []
+    total_bytes = 0
     for path in image_paths:
         data = Path(path).read_bytes()
         if len(data) > MAX_IMAGE_BYTES:
             raise ValueError("The native agent reference image is too large")
+        total_bytes += len(data)
+        if total_bytes > MAX_TOTAL_IMAGE_BYTES:
+            raise ValueError("The native agent images exceed the total image size limit")
         suffix = Path(path).suffix.lower()
         media_type = {".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp"}.get(suffix)
         if media_type is None:
@@ -77,7 +83,7 @@ async def run_cli_agent(
         raise ValueError("Native agent inference supports ChatGPT and Claude")
     if model and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", model):
         raise ValueError("Invalid native model ID")
-    if len(prompt.encode("utf-8")) > MAX_OUTPUT_BYTES or len(image_paths) > 8:
+    if len(prompt.encode("utf-8")) > MAX_OUTPUT_BYTES or len(image_paths) > MAX_IMAGES_PER_TURN:
         raise ValueError("The native agent context is too large")
     if not await cli_connected(provider):
         raise ValueError("Sign in to the provider before starting a native agent build")

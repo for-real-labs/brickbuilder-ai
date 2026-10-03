@@ -11,6 +11,7 @@ import json
 import os
 import re
 import signal
+import hashlib
 from contextlib import suppress
 from dataclasses import dataclass
 from pathlib import Path
@@ -40,7 +41,8 @@ def _compact_feedback(value: Any) -> Any:
     result = {key: _compact_feedback(item) for key, item in value.items() if key != "geometry"}
     geometry = value.get("geometry")
     if isinstance(geometry, dict):
-        priority = ("complete", "physical_validity", "occurrence_count", "connection_coverage", "contacts_checked",
+        priority = ("complete", "part_count", "triangle_count", "source_instance_count", "rendered_colours", "renderer",
+                    "physical_validity", "occurrence_count", "connection_coverage", "contacts_checked",
                     "optimistic_component_count", "confirmed_component_count", "contact_count", "bounds", "diagnostics", "limitations")
         compact = {key: geometry[key] for key in priority if key in geometry}
         for key in ("optimistic_components", "confirmed_components"):
@@ -175,12 +177,22 @@ def validate_plan_boundary(plan: dict, max_parts: int) -> None:
 
 
 @dataclass(frozen=True)
+class NovaReference:
+    id: str
+    source_mpd: str
+    preview_mpd: str
+    metadata: dict
+    preview_png: bytes | None
+
+
+@dataclass(frozen=True)
 class NovaBuild:
     ldr: str
     mpd: str
     plan: dict
     report: dict
     preview_png: bytes
+    references: tuple[NovaReference, ...] = ()
 
 
 class NovaToolkit:
@@ -196,6 +208,8 @@ class NovaToolkit:
         self.renderer = LDrawMeshRenderer(self.library)
         self.last_build: NovaBuild | None = None
         self.last_build_turn = -1
+        self.references: dict[str, NovaReference] = {}
+        self.reference_inspections = 0
 
     def require_ready(self) -> None:
         if not (self.root / "ldraw_tools" / "cli.py").is_file() or not self.python.is_file():
@@ -204,6 +218,10 @@ class NovaToolkit:
             raise ValueError("Nova requires an official LDraw library; run npm run setup:nova.")
 
     async def run(self, arguments: list[str], timeout: int = 240) -> Any:
+        return await self._run_process([str(self.python), "-m", "ldraw_tools.cli", "--library", str(self.library), *arguments], arguments[0], timeout)
+
+    async def _run_process(self, command: list[str], operation: str, timeout: int = 240) -> Any:
+        """Run only a fixed app/toolkit adapter, with the same bounded boundary."""
         self.require_ready()
         environment = {name: value for name, value in os.environ.items() if name in TOOLKIT_ENVIRONMENT_KEYS}
         environment.update({"LDRAW_DIR": str(self.library),
@@ -211,7 +229,7 @@ class NovaToolkit:
         if self.use_jev and os.getenv("TYPESAFE_API_KEY"):
             environment["TYPESAFE_API_KEY"] = os.environ["TYPESAFE_API_KEY"]
         process = await asyncio.create_subprocess_exec(
-            str(self.python), "-m", "ldraw_tools.cli", "--library", str(self.library), *arguments,
+            *command,
             cwd=str(self.root), env=environment, stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE, start_new_session=True,
         )
@@ -244,27 +262,28 @@ class NovaToolkit:
         except (json.JSONDecodeError, UnicodeDecodeError) as exc:
             # Error output can contain upstream process details; keep it bounded
             # and never forward provider credentials or environment values.
-            raise ValueError(f"Nova toolkit could not complete {arguments[0]} (exit {process.returncode})") from exc
+            raise ValueError(f"Nova toolkit could not complete {operation} (exit {process.returncode})") from exc
         if process.returncode not in {0, 1}:
             message = str(result.get("error", "Invalid toolkit request"))[:4000] if isinstance(result, dict) else "Invalid toolkit request"
             for key in ("TYPESAFE_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "FAL_KEY"):
                 secret = os.getenv(key)
                 if secret:
                     message = message.replace(secret, "[redacted]")
-            raise ValueError(f"Nova {arguments[0]}: {message}")
+            raise ValueError(f"Nova {operation}: {message}")
         return result
 
     def read_resource_page(self, path: str, offset: int = 0) -> dict:
         if not isinstance(path, str) or len(path) > 250:
             raise ValueError("Invalid toolkit resource path")
-        target = (self.root / path).resolve()
+        target = ((self.workspace if path.startswith("references/") else self.root) / path).resolve()
         allowed = (self.root / "docs" / "agent", self.root / "examples", self.root / "ldraw_tools" / "data",
-                   self.root / "data" / "models-annotated")
+                   self.root / "data" / "models-annotated", self.workspace / "references")
         if not any(target.is_relative_to(directory) for directory in allowed) or target.suffix not in {".md", ".json", ".py", ".ldr", ".mpd"}:
             raise ValueError("Only toolkit manuals, schemas and example sources are readable")
         if not target.is_file():
             raise ValueError("Toolkit resource not found")
-        if target.stat().st_size > MAX_PLAN_BYTES:
+        size_limit = 4_000_000 if target.is_relative_to(self.workspace / "references") else MAX_PLAN_BYTES
+        if target.stat().st_size > size_limit:
             raise ValueError("Resource is too large; choose a smaller subassembly example")
         content = target.read_text(encoding="utf-8", errors="replace")
         if type(offset) is not int or not 0 <= offset <= len(content):
@@ -298,17 +317,24 @@ class NovaToolkit:
             # Its ordinary FTS command uses existing data directly, avoiding a
             # minutes-long cold start when semantic ranking is not configured.
             return {"engine": "fts", "results": await self.run(["search", kind, query, "--limit", str(limit)]),
+                    "fallback_reason": "semantic_disabled_or_unconfigured",
                     "note": "For offline full-text searches use short specific terms, such as 'brick 2 x 4' or 'steering'. Refine or split queries with no matches."}
         arguments = ["discover", "search", kind, query, "--engine", engine, "--limit", str(limit), "--all-families"]
+        fallback_reason = None
         try:
             results = await self.run(arguments)
-            if engine == "jev" and isinstance(results, dict) and results.get("error"):
+            # Semantic discovery reports identify the engine and typed corpus.
+            # Do not relabel a successful lexical/malformed response as Jev.
+            if (not isinstance(results, dict) or results.get("error")
+                    or results.get("engine") != "jev" or results.get("kind") != kind
+                    or not isinstance(results.get("results"), list)):
                 raise ValueError("Semantic search unavailable")
         except (ValueError, asyncio.TimeoutError):
             # FTS remains usable during Jev outages and with no TypeSafe key.
             results = await self.run(["search", kind, query, "--limit", str(limit)])
             engine = "fts"
-        return {"engine": engine, "results": results}
+            fallback_reason = "semantic_unavailable"
+        return {"engine": engine, "results": results, **({"fallback_reason": fallback_reason} if fallback_reason else {})}
 
     async def build(self, plan: dict, turn_number: int) -> tuple[dict, bytes | None]:
         self.last_build = None
@@ -328,6 +354,80 @@ class NovaToolkit:
         return {"accepted": True, "report": report, "part_count": sum(line.startswith("1 ") for line in ldr.splitlines()),
                 "instruction": "Review both rendered views against the request. Check proportions, details and attachment evidence. Submit repairs or accept_model on your next turn. Physical validity is not proven by these checks."}, preview
 
+    async def inspect_reference(self, reference: str, section: str | None = None, colour: int | None = None) -> tuple[dict, bytes | None]:
+        """Extract canonical bundled source and independently render its mesh."""
+        reference = _bounded_text(reference, 400)
+        if self.reference_inspections >= 16:
+            raise ValueError("At most sixteen reference inspections are available per build; adapt the references already studied")
+        if len(self.references) >= 8 and reference not in self.references:
+            raise ValueError("At most eight reference studies are retained per build; choose the most useful techniques")
+        if section is not None:
+            section = _bounded_text(section, 400)
+        if colour is not None:
+            colour = _bounded_integer(colour, 0, 0x3FFFFFF)
+            if colour in {16, 24}:
+                raise ValueError("Choose an explicit preview colour")
+        key = hashlib.sha256(json.dumps([reference, section]).encode()).hexdigest()[:20]
+        directory = self.workspace / "references" / key
+        command = [str(self.python), str(Path(__file__).with_name("nova_reference_bridge.py")),
+                   "--toolkit-root", str(self.root), "--library", str(self.library),
+                   "--reference", reference, "--max-instances", "10000", "--output", str(directory)]
+        if section is not None:
+            command += ["--section", section]
+        if colour is not None:
+            command += ["--colour", str(colour)]
+        self.reference_inspections += 1
+        result = await self._run_process(command, "inspect_reference")
+        if not isinstance(result, dict) or result.get("written") is not True or not re.fullmatch(r"(?:model|submodel)-[a-f0-9]{24}", str(result.get("id", ""))):
+            raise ValueError("Reference extraction did not return a canonical model identity")
+        source_path, preview_path, metadata_path = (directory / name for name in ("source.mpd", "preview.mpd", "metadata.json"))
+        for path in (source_path, preview_path, metadata_path):
+            if not path.resolve().is_relative_to(directory) or not path.is_file() or path.stat().st_size > 4_000_000:
+                raise ValueError("Invalid or oversized extracted reference resource")
+        source, preview_source = source_path.read_text(encoding="utf-8"), preview_path.read_text(encoding="utf-8")
+        metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+        if not isinstance(metadata, dict) or metadata.get("id") != result["id"]:
+            raise ValueError("Reference extraction metadata has an inconsistent identity")
+        if len(self.references) >= 8 and metadata["id"] not in self.references:
+            raise ValueError("At most eight reference studies are retained per build; choose the most useful techniques")
+        metadata["source_resource"] = str(source_path.relative_to(self.workspace))
+        metadata["preview_resource"] = str(preview_path.relative_to(self.workspace))
+        metadata["metadata_resource"] = str(metadata_path.relative_to(self.workspace))
+        preview = None
+        try:
+            preview, geometry = await asyncio.to_thread(self.renderer.render_mpd, preview_source, max_parts=10_000)
+            metadata["geometry"] = {"complete": True, **geometry,
+                                    "renderer": "actual LDraw triangles, opposite-angle software views"}
+        except ValueError as exc:
+            metadata["geometry"] = {"complete": False, "diagnostics": [{"code": "reference_preview_unavailable", "message": str(exc)[:1000]}]}
+        retained_bytes = len(source.encode()) + len(preview_source.encode()) + len(preview or b"") + len(json.dumps(metadata).encode())
+        retained_bytes += sum(len(item.source_mpd.encode()) + len(item.preview_mpd.encode()) + len(item.preview_png or b"") + len(json.dumps(item.metadata).encode())
+                              for identity, item in self.references.items() if identity != metadata["id"])
+        if retained_bytes > 16_000_000:
+            raise ValueError("Reference studies exceed the retained source budget; inspect a smaller submodel")
+        metadata_path.write_text(json.dumps(metadata, allow_nan=False), encoding="utf-8")
+        if preview:
+            (directory / "review.png").write_bytes(preview)
+        self.references[metadata["id"]] = NovaReference(metadata["id"], source, preview_source, metadata, preview)
+        report = dict(metadata)
+        inventory = dict(metadata.get("inventory") or {})
+        for name, limit in (("bom", 120), ("dependencies", 40), ("parents", 12), ("nonphysical_or_unresolved_leaves", 20)):
+            rows = inventory.get(name)
+            if isinstance(rows, list):
+                inventory[name] = rows[:limit]
+                inventory[name + "_total_rows"] = len(rows)
+                inventory[name + "_omitted"] = len(rows) > limit
+        report["inventory"] = inventory
+        report["attribution"] = metadata.get("attribution", [])[:40]
+        report["attribution_total_rows"] = len(metadata.get("attribution", []))
+        report["attribution_omitted"] = report["attribution_total_rows"] > 40
+        report["instruction"] = ("Study the two actual-geometry views and BOM. Read source_resource with read_resource and follow next_offset for the complete extracted technique. "
+                                 "If BOM, dependencies or attribution rows are omitted, read metadata_resource with read_resource for the full inventory and provenance. "
+                                 "Adapt the construction into your own plan, retain attribution where source is reused, and inspect its real parts before changing dimensions. Full provenance and reference previews are retained in the private source archive.")
+        if not preview:
+            report["instruction"] += " Preview geometry could not be completed. Choose a smaller discovered submodel, or use this model's source path with a section to inspect a bounded assembly."
+        return report, preview
+
     async def dispatch(self, name: str, arguments: dict, turn_number: int) -> tuple[Any, bytes | None]:
         if name == "search_references":
             return await self.search(arguments.get("kind", "parts"), arguments.get("query", ""), arguments.get("limit", 8)), None
@@ -342,13 +442,7 @@ class NovaToolkit:
                 preview = await asyncio.to_thread(self.renderer.render, ldr, 360, False)
             return report, preview
         if name == "inspect_reference":
-            reference = _bounded_text(arguments.get("id", ""), 400)
-            path = (self.root / reference).resolve()
-            if path.suffix.lower() in {".ldr", ".mpd"} and any(path.is_relative_to(directory) for directory in
-                    (self.root / "data" / "models-annotated", self.root / "examples")):
-                return await self.run(["study", str(path), "--detail", "summary", "--limit", "30",
-                                       "--max-instances", str(max(self.max_parts, 10_000))]), None
-            return await self.run(["discover", "show", reference]), None
+            return await self.inspect_reference(arguments.get("id", ""), arguments.get("section"), arguments.get("colour"))
         if name == "search_examples":
             family = arguments.get("family", "building")
             if family not in {"building", "vehicle", "reference", "technic", "mechanism", "spaceship"}:

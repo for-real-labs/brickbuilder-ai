@@ -1,5 +1,6 @@
 import asyncio
 import io
+import json
 import zipfile
 from types import SimpleNamespace
 
@@ -8,7 +9,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from src.requests import novaToBricks as module
-from src.utils.nova_toolkit import NovaBuild
+from src.utils.nova_toolkit import NovaBuild, NovaReference
 
 
 def test_nova_request_preserves_inputs_and_enforces_limits():
@@ -33,6 +34,48 @@ def test_source_archive_contains_rebuildable_plan_hierarchy_and_review():
     with zipfile.ZipFile(io.BytesIO(module._source_archive(build))) as archive:
         assert set(archive.namelist()) == {"model.plan.json", "model.mpd", "model.ldr", "inspection.json", "review.png", "README.txt"}
         assert archive.read("model.mpd") == b"hierarchy-mpd"
+
+
+def test_source_archive_keeps_original_reference_licence_geometry_and_provenance():
+    identity = "submodel-" + "a" * 24
+    metadata = {"model": "75954-1.mpd", "section": "75954 - Tower Roof Top.ldr", "source_sha256": "source-hash",
+                "attribution": [{"author": "Stefan Frenz [smf]", "license": "CCAL version 2.0"}]}
+    source = "0 FILE Original roof.ldr\n0 Author: Stefan Frenz [smf]\n"
+    reference = NovaReference(identity, source, "preview-mpd", metadata, b"reference-png")
+    build = NovaBuild("ldr", "mpd", {}, {}, b"png", (reference,))
+    with zipfile.ZipFile(io.BytesIO(module._source_archive(build))) as archive:
+        prefix = f"references/{identity}/"
+        assert archive.read(prefix + "source.mpd").decode() == source
+        assert archive.read(prefix + "review.png") == b"reference-png"
+        assert archive.read(prefix + "preview.mpd") == b"preview-mpd"
+        provenance = json.loads(archive.read(prefix + "provenance.json"))
+        assert provenance["attribution"] == metadata["attribution"]
+        assert provenance["source_resource"] == prefix + "source.mpd"
+        assert provenance["metadata_resource"] == prefix + "provenance.json"
+        assert json.loads(archive.read("references/index.json"))[0]["source_sha256"] == "source-hash"
+
+
+def test_source_archive_rejects_reference_filename_escape_count_and_size_bombs():
+    def build(references):
+        return NovaBuild("ldr", "mpd", {}, {}, b"png", tuple(references))
+    bad = NovaReference("../../secret", "source", "preview", {}, None)
+    with pytest.raises(ValueError, match="identity"):
+        module._source_archive(build([bad]))
+    reference = NovaReference("submodel-" + "a" * 24, "source", "preview", {}, None)
+    with pytest.raises(ValueError, match="Too many"):
+        module._source_archive(build([reference] * 9))
+    huge = NovaReference(reference.id, "x" * 32_000_001, "", {}, None)
+    with pytest.raises(ValueError, match="budget"):
+        module._source_archive(build([huge]))
+
+
+def test_reference_archive_size_budget_includes_index_provenance(monkeypatch):
+    monkeypatch.setattr(module, "MAX_REFERENCE_ARCHIVE_BYTES", 1000)
+    reference = NovaReference("submodel-" + "a" * 24, "s", "p",
+                              {"attribution": [{"author": "a" * 300}]}, None)
+    build = NovaBuild("ldr", "mpd", {}, {}, b"png", (reference,))
+    with pytest.raises(ValueError, match="budget"):
+        module._source_archive(build)
 
 
 def test_nova_source_rechecks_generation_ownership(monkeypatch):

@@ -5,6 +5,7 @@ import asyncio
 import json
 import re
 from pathlib import Path
+from dataclasses import replace
 from typing import Sequence
 
 import httpx
@@ -28,6 +29,9 @@ WORKFLOW
    before relying on uncertain sizes or connection assumptions. Jev semantic reranking is optional;
    FTS fallback is available; use short specific search terms and refine empty results. Read the actual
    source examples/manuals returned by discovery.
+   For a useful model/submodel, call inspect_reference with its discovered ID. Study its actual geometry
+   views, BOM, dependency-closed source_resource and attribution before adapting the technique. This
+   also supports a bundled FTS source path and optional section. Preserve source attribution when reused.
 2. Read ldraw_tools/data/plan.schema.json
    and docs/agent/tooling.md using read_resource. Resource responses include next_offset; follow it with
    the same path until it is null so you read the complete schema/manual/example. Read applicable
@@ -81,14 +85,15 @@ TOOLS = [
     _tool("search_references", "Discover real parts and source models/submodels with optional Jev reranking and FTS fallback.",
           {"kind": {"type": "string", "enum": ["parts", "models", "submodels"]}, "query": {"type": "string"}, "limit": {"type": "integer", "minimum": 1, "maximum": 20}}, ["kind", "query"]),
     _tool("inspect_part", "Measure a real part's bounds, studs and connectors and view its mesh.", {"part": {"type": "string"}}, ["part"]),
-    _tool("inspect_reference", "Resolve a discovered reference ID, source sections, dependencies and bill of materials.", {"id": {"type": "string"}}, ["id"]),
+    _tool("inspect_reference", "Extract and render a discovered model/submodel's actual geometry from two angles, with source attribution, dependencies and BOM. Also accepts a bundled source path and optional section.",
+          {"id": {"type": "string"}, "section": {"type": "string"}, "colour": {"type": "integer", "minimum": 0, "maximum": 67108863, "description": "Optional explicit preview colour for inherited 16; source colours remain unchanged."}}, ["id"]),
     _tool("search_examples", "Find editable example models and generator sources by construction family.",
           {"query": {"type": "string"}, "family": {"type": "string", "enum": ["building", "vehicle", "reference", "technic", "mechanism", "spaceship"]}}),
     _tool("construction_recipe", "List or retrieve a deterministic construction plan. Omit name to list available recipes.",
           {"family": {"type": "string", "enum": ["design", "vehicle", "technic", "discover"]}, "name": {"type": "string"}}, ["family"]),
     _tool("catalog", "Search descriptive part symbols and available colours, with actual dimensions.",
           {"kind": {"type": "string", "enum": ["parts", "categories", "colours"]}, "query": {"type": "string"}}),
-    _tool("read_resource", "Read a paged toolkit manual, schema or source example. Paths are relative to the toolkit repository. Follow next_offset with the same path until null to read the full resource.",
+    _tool("read_resource", "Read a paged toolkit manual, schema, source example or inspect_reference source_resource. Follow next_offset with the same path until null to read the full resource.",
           {"path": {"type": "string"}, "offset": {"type": "integer", "minimum": 0}}, ["path"]),
     _tool("submit_plan", "Compile a complete self-contained hierarchical assembly plan and return geometry feedback and two actual-mesh review views.",
           {"plan": {"type": "object", "description": "JSON matching ldraw_tools/data/plan.schema.json, without includes/assets."}}, ["plan"]),
@@ -169,6 +174,7 @@ class NativeToolConversation(ToolConversation):
         self.provider, self.workspace = provider, workspace
         self.history = [{"role": "user", "text": user_input.text}]
         self.images = []
+        self.pending_preview_count = 0
         self.reference_image = None
         if user_input.image_base64:
             import base64
@@ -187,10 +193,14 @@ class NativeToolConversation(ToolConversation):
                   "Attached images contain the reference and most recent tool previews in order.\nTOOLS:\n" +
                   json.dumps([{ "name": tool.name, "description": tool.description, "schema": tool.schema}
                               for tool in self.settings.tools]) + "\nCONVERSATION:\n" + json.dumps(self.history))
-        preview_limit = 4 if self.reference_image else 5
+        # A turn may inspect a reference and several parts together. Deliver
+        # every new preview once before trimming older visual context, so an
+        # early reference study cannot disappear before the model sees it.
+        preview_limit = max(4 if self.reference_image else 5, self.pending_preview_count)
         images = ([self.reference_image] if self.reference_image else []) + self.images[-preview_limit:]
         raw = await run_cli_agent(self.provider, self.workspace, prompt, model=self.settings.model,
                                   on_output=self.on_text, image_paths=images)
+        self.pending_preview_count = 0
         cleaned = raw.strip()
         if cleaned.startswith("```"):
             cleaned = cleaned.partition("\n")[2].rsplit("```", 1)[0].strip()
@@ -220,6 +230,7 @@ class NativeToolConversation(ToolConversation):
                 path = self.workspace / f"tool-preview-{len(self.history)}-{len(blocks)}.png"
                 path.write_bytes(result.image_png)
                 self.images.append(path)
+                self.pending_preview_count += 1
         self.history.append({"role": "tool", "results": blocks})
 
     def add_user_text(self, text: str) -> None:
@@ -276,6 +287,16 @@ async def build_set(request, provider: str, workspace: Path, on_output=None) -> 
                             }.get(call.name, "Reviewing the next building step")
                             await on_output(activity + ".\n\n")
                         report, preview = await toolkit.dispatch(call.name, call.input, turn_number)
+                        if on_output and call.name == "search_references" and isinstance(report, dict):
+                            if report.get("engine") == "jev":
+                                await on_output("Jev ranked the real reference results.\n\n")
+                            else:
+                                reason = ("Semantic ranking is unavailable." if report.get("fallback_reason") == "semantic_unavailable"
+                                          else "Semantic ranking is disabled or no TypeSafe key is configured.")
+                                await on_output("Using local keyword search. " + reason + "\n\n")
+                        if on_output and call.name == "inspect_reference" and isinstance(report, dict):
+                            await on_output(("Rendered the reference's actual parts from two angles." if preview
+                                             else "Reference source is available; some preview geometry is missing.") + "\n\n")
                         if on_output and call.name == "submit_plan":
                             message = (f"Rendered {report.get('part_count', 0):,} parts for visual review."
                                        if isinstance(report, dict) and report.get("accepted")
@@ -286,5 +307,6 @@ async def build_set(request, provider: str, workspace: Path, on_output=None) -> 
                     results.append(ToolResult(call.id, str(exc), is_error=True))
             conversation.add_tool_results(results)
             if accepted and toolkit.last_build:
-                return toolkit.last_build
+                references = tuple(getattr(toolkit, "references", {}).values())
+                return replace(toolkit.last_build, references=references) if references else toolkit.last_build
     raise ValueError("The Nova agent reached its iteration limit before accepting a complete model. Increase the turn budget or simplify the request.")
