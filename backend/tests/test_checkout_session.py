@@ -117,7 +117,7 @@ def test_previous_checkout_clients_survive_the_deployment(setup, mode):
     params = create.call_args.kwargs
     assert params['ui_mode'] == mode
     assert params['return_url'] == 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}'
-    assert params['payment_method_types'] == ['card']
+    assert params['allowed_payment_method_types' if mode == 'elements' else 'payment_method_types'] == ['card']
     assert result.client_secret == 'client-secret'
     if mode == 'embedded':
         assert params['redirect_on_completion'] == 'if_required'

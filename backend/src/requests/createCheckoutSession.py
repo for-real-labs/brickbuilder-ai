@@ -84,7 +84,7 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         return_url = f"{site_url.rstrip('/')}/success?session_id={{CHECKOUT_SESSION_ID}}"
         if request.uiMode != "hosted":
             # Apple Pay and Google Pay use the card rail. PayPal needs a separate US integration.
-            params["payment_method_types"] = ["card"]
+            params["allowed_payment_method_types" if request.uiMode == "elements" else "payment_method_types"] = ["card"]
             params["return_url"] = return_url
             if request.uiMode == "embedded":
                 params["redirect_on_completion"] = "if_required"

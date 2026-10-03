@@ -47,4 +47,4 @@ Apple Pay and Google Pay use a Checkout Express Checkout Element and the existin
 
 PayPal is explicitly disabled pending a separate PayPal integration: the current Stripe account is US based, while native Stripe PayPal processing supports European merchant accounts only (https://docs.stripe.com/payments/paypal). Do not enable the option without a real processing and fulfillment integration. Custom Checkout sessions restrict payment_method_types to card, which also covers Apple Pay and Google Pay, preventing unrelated installment methods from appearing.
 
-Stripe.js v10 uses initCheckoutElementsSdk with ui_mode elements. Backend pins 2026-09-30.endive for this mode and retains hosted, embedded, and custom compatibility for older clients.
+Stripe.js v10 uses initCheckoutElementsSdk with ui_mode elements. Backend pins 2026-09-30.endive and uses allowed_payment_method_types for this mode and retains hosted, embedded, and custom compatibility for older clients.
