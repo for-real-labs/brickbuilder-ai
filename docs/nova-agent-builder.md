@@ -76,8 +76,29 @@ Provider account access and usage limits still apply. Official documentation:
    and parts CSV through existing generation storage. Existing activity,
    cancellation, output, viewer and downloads are reused.
 
-Set `TYPESAFE_API_KEY` in the backend environment to enable
-[Jev semantic reranking](https://github.com/anteloc/jev-rerank). Without it,
+The pinned runtime bundles an annotated snapshot of the LDraw Official Model
+Repository: 1,821 model files, 28,451 indexed submodel descriptions, and 35,257
+indexed part descriptions. These counts describe the bundled corpus; reference
+eligibility also depends on available geometry, part accounting and the search
+filters. For example, `75954-1.mpd` includes the Hogwarts Great Hall tower-roof
+sections, credited in the source to Stefan Frenz [smf].
+
+The agent can inspect a search result's canonical identity or choose a section
+from a bundled model. It extracts the section with its dependencies, reads its
+real part numbers and quantities, and receives actual-geometry views from two
+angles. Reference studies retain author and licence information and are included
+under `references/` in the private agent-source ZIP. Activity output identifies
+whether Jev ranked the results or keyword fallback was used.
+
+Add your TypeSafe key to the ignored `backend/.env` file:
+
+```dotenv
+TYPESAFE_API_KEY=your_key_here
+```
+
+Restart the backend after saving, and leave **Use Jev semantic part search**
+enabled under **Full set agent → Agent limits and part search**. This enables
+[Jev semantic reranking](https://github.com/anteloc/jev-rerank). Without the key,
 or if reranking is unavailable, full-text search remains available. Jev's key
 is separate from OpenAI, Anthropic and fal credentials.
 

@@ -7,6 +7,7 @@ import json
 import logging
 import math
 import os
+import re
 import tempfile
 import zipfile
 from pathlib import Path
@@ -30,6 +31,7 @@ from ..utils.posthog_client import track_error, track_image_conversion
 
 logger = logging.getLogger(__name__)
 _background_tasks: set[asyncio.Task] = set()
+MAX_REFERENCE_ARCHIVE_BYTES = 32_000_000
 
 
 def _generation_timeout() -> float:
@@ -63,9 +65,38 @@ def _source_archive(build, packed_mpd: str | None = None) -> bytes:
         archive.writestr("model.ldr", build.ldr)
         archive.writestr("inspection.json", json.dumps(build.report, indent=2, allow_nan=False))
         archive.writestr("review.png", build.preview_png)
+        if build.references:
+            if len(build.references) > 8:
+                raise ValueError("Too many retained reference studies")
+            index = []
+            reference_bytes = 0
+            for reference in build.references:
+                # Canonical identity is the only filename component; virtual
+                # MPD section names remain data inside the source document.
+                if not re.fullmatch(r"(?:model|submodel)-[a-f0-9]{24}", reference.id):
+                    raise ValueError("Invalid retained reference identity")
+                prefix = f"references/{reference.id}/"
+                metadata = {**reference.metadata, "source_resource": prefix + "source.mpd", "preview_resource": prefix + "preview.mpd",
+                            "metadata_resource": prefix + "provenance.json"}
+                provenance = json.dumps(metadata, indent=2, allow_nan=False)
+                reference_bytes += len(reference.source_mpd.encode()) + len(reference.preview_mpd.encode()) + len(provenance.encode()) + len(reference.preview_png or b"")
+                if reference_bytes > MAX_REFERENCE_ARCHIVE_BYTES:
+                    raise ValueError("Retained reference archive exceeds the source budget")
+                archive.writestr(prefix + "source.mpd", reference.source_mpd)
+                archive.writestr(prefix + "preview.mpd", reference.preview_mpd)
+                archive.writestr(prefix + "provenance.json", provenance)
+                if reference.preview_png:
+                    archive.writestr(prefix + "review.png", reference.preview_png)
+                index.append({"id": reference.id, "model": reference.metadata.get("model"), "section": reference.metadata.get("section"),
+                              "source_sha256": reference.metadata.get("source_sha256"), "attribution": reference.metadata.get("attribution")})
+            reference_index = json.dumps(index, indent=2, allow_nan=False)
+            if reference_bytes + len(reference_index.encode()) > MAX_REFERENCE_ARCHIVE_BYTES:
+                raise ValueError("Retained reference archive exceeds the source budget")
+            archive.writestr("references/index.json", reference_index)
         archive.writestr("README.txt", "Created with BrickBuilder AI's optional Nova agent.\n"
                          "The deterministic plan can be rebuilt with the separately installed ldraw-nova toolkit.\n"
                          "Geometry and connection evidence does not prove physical buildability.\n"
+                         "Reference studies, when present, retain their original source authors and licences in references/.\n"
                          "Toolkit: https://github.com/anteloc/ldraw-nova (AGPL-3.0).\n")
     return output.getvalue()
 

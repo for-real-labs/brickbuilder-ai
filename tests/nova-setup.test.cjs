@@ -40,5 +40,6 @@ test('uv setup installs isolated pinned sources and indexes the actual parts lib
   }, {}, 'linux', () => true, () => {});
   assert.ok(calls.some(call => call.command === 'uv' && call.args.includes('--frozen')));
   assert.ok(calls.some(call => call.args.at(-1) === 'index' && call.args.includes('/path with spaces/ldraw')));
+  assert.ok(calls.some(call => call.args.slice(-2).join(' ') === 'discover index' && call.args.includes('/path with spaces/ldraw')));
   assert.ok(calls.every(call => !call.args.includes('leocad')));
 });

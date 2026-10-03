@@ -133,3 +133,39 @@ def test_native_inference_cancellation_terminates_the_process(runtime, monkeypat
             await task
     asyncio.run(cancel())
     assert len(terminated) == 1
+
+
+def test_native_turn_can_deliver_original_reference_and_all_twelve_tool_previews(runtime, monkeypatch, tmp_path):
+    captured = []
+    async def spawn(*command, **kwargs):
+        process = Process([{"type": "result", "result": "reviewed all views", "is_error": False}])
+        captured.append(process)
+        return process
+    monkeypatch.setattr(module.asyncio, "create_subprocess_exec", spawn)
+    images = []
+    for index in range(module.MAX_IMAGES_PER_TURN):
+        path = tmp_path / f"view-{index}.png"
+        path.write_bytes(b"image-pixels")
+        images.append(path)
+    assert asyncio.run(module.run_cli_agent("anthropic", tmp_path, "Review", image_paths=images)) == "reviewed all views"
+    content = json.loads(captured[0].stdin.payload)["message"]["content"]
+    assert len([block for block in content if block["type"] == "image"]) == 13
+
+
+def test_native_turn_rejects_more_than_thirteen_images_before_spawning(runtime, monkeypatch, tmp_path):
+    async def unexpected_spawn(*_args, **_kwargs):
+        raise AssertionError("oversized native context must not spawn a CLI")
+    monkeypatch.setattr(module.asyncio, "create_subprocess_exec", unexpected_spawn)
+    with pytest.raises(ValueError, match="context is too large"):
+        asyncio.run(module.run_cli_agent("openai", tmp_path, "Review", image_paths=[tmp_path / "unused.png"] * 14))
+
+
+def test_native_turn_bounds_total_image_bytes_before_spawning(runtime, monkeypatch, tmp_path):
+    monkeypatch.setattr(module, "MAX_TOTAL_IMAGE_BYTES", 5)
+    image = tmp_path / "view.png"
+    image.write_bytes(b"1234")
+    async def unexpected_spawn(*_args, **_kwargs):
+        raise AssertionError("oversized images must not spawn a CLI")
+    monkeypatch.setattr(module.asyncio, "create_subprocess_exec", unexpected_spawn)
+    with pytest.raises(ValueError, match="total image size limit"):
+        asyncio.run(module.run_cli_agent("openai", tmp_path, "Review", image_paths=[image, image]))

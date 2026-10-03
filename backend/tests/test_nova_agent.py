@@ -10,7 +10,7 @@ from PIL import Image
 from src.utils import nova_agent, nova_toolkit
 from src.utils.llm_tool_conversation import ToolCall, ToolResult, Turn, ConversationSettings, UserInput
 from src.utils.nova_agent import NativeToolConversation, build_set, validate_connection_acceptance
-from src.utils.nova_toolkit import MAX_REPORT_CHARS, NovaBuild, NovaToolkit, serialize_feedback, validate_plan_boundary
+from src.utils.nova_toolkit import MAX_REPORT_CHARS, NovaBuild, NovaReference, NovaToolkit, serialize_feedback, validate_plan_boundary
 
 
 def plan_for(reference="3001.dat", repeat=None):
@@ -155,6 +155,59 @@ def test_agent_requires_visual_review_in_a_later_turn(monkeypatch, tmp_path):
     assert build.report["agent_review"] == review["review"]
 
 
+@pytest.mark.parametrize("engine,reason,expected", [("jev", None, "Jev ranked"),
+                                                   ("fts", "semantic_unavailable", "Semantic ranking is unavailable"),
+                                                   ("fts", "semantic_disabled_or_unconfigured", "no TypeSafe key")])
+def test_agent_studies_rendered_reference_retains_source_and_reports_actual_search_engine(monkeypatch, tmp_path, engine, reason, expected):
+    reference = NovaReference("submodel-" + "a" * 24, "original-source", "preview-source", {"attribution": [{"author": "source author"}]}, b"reference-preview")
+    build = NovaBuild("ldr", "mpd", {}, {}, b"build-preview")
+    activity = []
+
+    class Toolkit:
+        last_build = None
+        last_build_turn = -1
+
+        def __init__(self, *args):
+            self.references = {}
+
+        def require_ready(self):
+            pass
+
+        async def dispatch(self, name, arguments, turn_number):
+            if name == "search_references":
+                return {"engine": engine, "fallback_reason": reason, "results": [{"id": reference.id}]}, None
+            if name == "inspect_reference":
+                self.references[reference.id] = reference
+                return {"id": reference.id, "geometry": {"complete": True}, "source_resource": "references/source.mpd"}, reference.preview_png
+            self.last_build, self.last_build_turn = build, turn_number
+            return {"accepted": True, "part_count": 7}, build.preview_png
+
+    class StreamingConversation(FakeConversation):
+        async def send_stream(self, on_output):
+            return await self.send()
+
+    conversation = StreamingConversation([
+        Turn([ToolCall("search", "search_references", {"kind": "submodels", "query": "conical tower roof"})]),
+        Turn([ToolCall("reference", "inspect_reference", {"id": reference.id})]),
+        Turn([ToolCall("build", "submit_plan", {"plan": {}})]),
+        Turn([ToolCall("accept", "accept_model", {"review": "Both views match the requested tower. Physical stability is not proven."})]),
+    ])
+    monkeypatch.setattr(nova_agent, "NovaToolkit", Toolkit)
+    monkeypatch.setattr(nova_agent, "create_conversation", lambda *args: conversation)
+    request = SimpleNamespace(model="gpt-5.5", auth_mode="api_key", prompt="tower", image_base64=None,
+                              image_media_type="image/png", max_parts=5000, max_iterations=4, use_jev=True)
+
+    async def output(message):
+        activity.append(message)
+
+    accepted = asyncio.run(build_set(request, "openai", tmp_path, output))
+    assert accepted.references == (reference,)
+    assert any(expected in message for message in activity)
+    assert any("reference's actual parts" in message for message in activity)
+    study = next(result for result in conversation.results if result.call_id == "reference")
+    assert study.image_png == b"reference-preview" and json.loads(study.text)["id"] == reference.id
+
+
 def test_native_cli_returns_tool_protocol_without_executing_model_code(monkeypatch, tmp_path):
     from src.utils import local_provider_agent
     prompts = []
@@ -172,7 +225,8 @@ def test_native_cli_returns_tool_protocol_without_executing_model_code(monkeypat
     assert prompts[0][2]["model"] == "gpt-5.5"
 
 
-def test_native_conversation_keeps_the_reference_image_and_reports_real_activity(monkeypatch, tmp_path):
+@pytest.mark.parametrize("with_reference", [False, True])
+def test_native_conversation_delivers_all_new_previews_then_bounds_old_images_and_reports_activity(monkeypatch, tmp_path, with_reference):
     from src.utils import local_provider_agent
     images, activity = [], []
     png = io.BytesIO()
@@ -187,11 +241,20 @@ def test_native_conversation_keeps_the_reference_image_and_reports_real_activity
 
     monkeypatch.setattr(local_provider_agent, "run_cli_agent", fake_run)
     settings = ConversationSettings("gpt-5.5", "system", nova_agent.TOOLS, 1000)
-    conversation = NativeToolConversation(None, settings, UserInput("car", base64.b64encode(png.getvalue()).decode()), "openai", tmp_path)
-    for index in range(7):
+    conversation = NativeToolConversation(None, settings, UserInput("car", base64.b64encode(png.getvalue()).decode() if with_reference else None), "openai", tmp_path)
+    for index in range(12):
         conversation.add_tool_results([ToolResult(str(index), "view", png.getvalue())])
     asyncio.run(conversation.send_stream(output))
-    assert len(images) == 5 and images[0].name == "reference.png"
+    assert len(images) == 12 + int(with_reference)
+    assert any(image.name == "tool-preview-1-1.png" for image in images)
+    if with_reference:
+        assert images[0].name == "reference.png"
+    images.clear()
+    asyncio.run(conversation.send_stream(output))
+    assert len(images) == 5
+    if with_reference:
+        assert images[0].name == "reference.png"
+    assert all(image.name != "tool-preview-1-1.png" for image in images)
     assert "Refining the red roof\n\n" in activity
 
 
