@@ -58,7 +58,7 @@ def test_nova_endpoint_enforces_native_local_guard_and_delegates(monkeypatch):
     request = object()
     assert asyncio.run(api.nova_to_bricks_endpoint(body, request, AUTH)) == {"ok": True}
     assert guarded == [request]
-    handler.assert_awaited_once_with(body, AUTH)
+    handler.assert_awaited_once_with(body, AUTH, request)
 
 
 def test_nova_api_key_mode_works_without_native_local_guard(monkeypatch):
@@ -66,8 +66,9 @@ def test_nova_api_key_mode_works_without_native_local_guard(monkeypatch):
     monkeypatch.setattr(api, "nova_to_bricks", handler)
     monkeypatch.setattr(api, "require_local_development", lambda _: pytest.fail("API mode must not require local native sessions"))
     body = SimpleNamespace(auth_mode="api_key")
-    asyncio.run(api.nova_to_bricks_endpoint(body, object(), AUTH))
-    handler.assert_awaited_once_with(body, AUTH)
+    request = object()
+    asyncio.run(api.nova_to_bricks_endpoint(body, request, AUTH))
+    handler.assert_awaited_once_with(body, AUTH, request)
 
 
 def test_fal_credentials_become_available_without_restart(monkeypatch):

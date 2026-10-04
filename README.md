@@ -32,9 +32,9 @@ Upload a photo or type a prompt, and BrickBuilder turns it into a real brick bui
 Generation time is typically under 30 seconds when SAM3D is used.
 
 The landing page also offers an optional **Full set agent** powered by
-[LDraw Nova](https://github.com/anteloc/ldraw-nova). It plans subassemblies,
-searches real parts with Jev, validates placements and reviews previews to
-create complex LDR/MPD models with varied parts. The existing builder remains
+[LDraw Nova](https://github.com/anteloc/ldraw-nova). It runs the installed upstream
+Nova agent and tools in a private service; BrickBuilder saves its models and
+continues follow-up edits in the same Nova session. The existing builder remains
 the default. See [Nova setup and provider connections](docs/nova-agent-builder.md).
 The managed runtime checks upstream default branches at backend startup. Use
 `npm run update:nova` to refresh it or `npm run nova:status` to inspect it;

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Bot, ChevronDown } from 'lucide-react';
+import React from 'react';
+import { Bot } from 'lucide-react';
 import posthog from 'posthog-js';
 import { LLM_MODEL_OPTIONS, getLlmModelOption, type LlmProvider } from '../services/llmToBricksApi';
 import type { NovaBuilderOptions as NovaOptions } from '../services/novaToBricksApi';
@@ -10,7 +10,6 @@ export function NovaBuilderOptions({ options, onChange, local, disabled = false 
   local: boolean;
   disabled?: boolean;
 }) {
-  const [advanced, setAdvanced] = useState(false);
   const provider = getLlmModelOption(options.model)?.provider || 'anthropic';
   const update = <K extends keyof NovaOptions>(key: K, value: NovaOptions[K]) => {
     posthog.capture('landing_nova_option_changed', { option: key, value, provider });
@@ -20,7 +19,7 @@ export function NovaBuilderOptions({ options, onChange, local, disabled = false 
     <div className="flex items-start gap-3">
       <div className="rounded-xl bg-red-50 p-2"><Bot aria-hidden="true" className="h-5 w-5 text-red-500" /></div>
       <div className="min-w-0"><h2 className="text-sm font-semibold text-slate-900">Nova full set agent</h2>
-        <p className="mt-1 text-xs leading-5 text-slate-500">Plan a complete set, search real LDraw parts with Jev, assemble submodels, then validate and refine. Describe the scale, features, colors, and sections you want, or add a reference image.</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">Uses Nova’s own agent, tools, rendering, and build workflow. Describe your model or add a reference image. Results and follow-up edits are saved in BrickBuilder.</p>
       </div>
     </div>
     <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -42,18 +41,6 @@ export function NovaBuilderOptions({ options, onChange, local, disabled = false 
         <span className="mt-1.5 block font-normal leading-5 text-slate-500">Connect your account or attach a key in Local provider connections below.</span>
       </label>}
     </div>
-    <button type="button" disabled={disabled} aria-expanded={advanced} onClick={() => {
-      posthog.capture('landing_nova_advanced_toggled', { expanded: !advanced }); setAdvanced(current => !current);
-    }} className="mt-3 flex min-h-10 items-center gap-2 text-xs text-slate-500 hover:text-slate-800"><ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 ${advanced ? 'rotate-180' : ''}`} /> Agent limits and part search</button>
-    {advanced && <div className="grid grid-cols-1 gap-3 border-t border-slate-100 pt-3 sm:grid-cols-2">
-      <label htmlFor="nova-max-parts" className="text-xs font-medium text-slate-600">Maximum parts
-        <input id="nova-max-parts" type="number" min={50} max={10000} step={50} disabled={disabled} value={options.maxParts} onChange={event => update('maxParts', Number(event.target.value))} className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-300 px-3 text-sm font-normal" />
-      </label>
-      <label htmlFor="nova-max-iterations" className="text-xs font-medium text-slate-600">Agent step budget
-        <input id="nova-max-iterations" type="number" min={4} max={80} disabled={disabled} value={options.maxIterations} onChange={event => update('maxIterations', Number(event.target.value))} className="mt-1.5 min-h-10 w-full rounded-xl border border-slate-300 px-3 text-sm font-normal" />
-      </label>
-      <label className="flex min-h-10 items-start gap-2 text-xs leading-5 text-slate-600 sm:col-span-2"><input type="checkbox" className="mt-1 accent-red-500" checked={options.useJev} disabled={disabled} onChange={event => update('useJev', event.target.checked)} /><span>Use Jev semantic part search when configured. Local LDraw search remains available.</span></label>
-      <p className="text-xs leading-5 text-slate-500 sm:col-span-2">Complex sets take longer and can use more provider credits. The agent stops at these limits.</p>
-    </div>}
+    <p className="mt-3 text-xs leading-5 text-slate-500">Nova runs automatically and can execute build scripts in its isolated workspace. Search uses Jev when configured. Complex models can take several minutes.</p>
   </section>;
 }

@@ -1,8 +1,5 @@
 #!/bin/bash
 
-# Serve with the baked-in runtime while a compatible update validates.
-node "$(dirname "$0")/scripts/nova-runtime.cjs" auto &
-
 # Start virtual display in background
 Xvfb :99 -screen 0 1024x768x24 > /dev/null 2>&1 &
 

@@ -13,7 +13,7 @@ describe('Nova builder controls', () => {
   it('describes the set-building flow and keeps local subscription choices on localhost', () => {
     const render = (local: boolean) => renderToStaticMarkup(<NovaBuilderOptions options={DEFAULT_NOVA_OPTIONS} onChange={() => {}} local={local} />);
     expect(render(true)).toContain('Nova full set agent');
-    expect(render(true)).toContain('search real LDraw parts with Jev');
+    expect(render(true)).toContain('Nova’s own agent');
     expect(render(true)).toContain('Signed in to Claude');
     expect(render(true)).toContain('Project API key');
     expect(render(false)).not.toContain('Signed in to Claude');
@@ -22,7 +22,7 @@ describe('Nova builder controls', () => {
     expect(render(true)).toContain('sm:grid-cols-2');
   });
 
-  it('changes provider, model, account connection, and bounded agent options with analytics', () => {
+  it('changes provider, model, account connection, with Nova runtime settings with analytics', () => {
     const container = document.createElement('div');
     const root = createRoot(container);
     const change = vi.fn();
@@ -40,17 +40,8 @@ describe('Nova builder controls', () => {
       expect(change).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.5' }));
       select('nova-connection', 'native');
       expect(change).toHaveBeenCalledWith(expect.objectContaining({ authMode: 'native' }));
-      act(() => container.querySelector('button')!.click());
-      expect(container.querySelector('#nova-max-parts')).not.toBeNull();
-      expect(container.querySelector('#nova-max-iterations')?.getAttribute('max')).toBe('80');
-      const parts = container.querySelector<HTMLInputElement>('#nova-max-parts')!;
-      act(() => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(parts, '1200');
-        parts.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-      expect(change).toHaveBeenCalledWith(expect.objectContaining({ maxParts: 1200 }));
-      act(() => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
-      expect(change).toHaveBeenCalledWith(expect.objectContaining({ useJev: false }));
+      expect(container.querySelector('#nova-max-parts')).toBeNull();
+      expect(container.textContent).toContain('isolated workspace');
     } finally { act(() => root.unmount()); }
   });
 });

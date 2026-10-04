@@ -109,7 +109,7 @@ async def nova_to_bricks_endpoint(
 ) -> ImageToBricksResponse:
     if request.auth_mode == "native":
         require_local_development(http_request)
-    return await nova_to_bricks(request, auth_info)
+    return await nova_to_bricks(request, auth_info, http_request)
 
 
 @app.get("/generation/{generation_id}/nova-source")

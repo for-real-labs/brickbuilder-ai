@@ -347,7 +347,8 @@ export default function GeneratedModel() {
   } | null;
 
   const isDemoModel = !!currentGenerationId && DEMO_MODEL_IDS.has(currentGenerationId);
-  const hasNovaSource = pendingGeneration?.endpoint === 'novaToBricks' && pendingGeneration.status === 'completed'
+  const isNovaModel = pendingGeneration?.endpoint === 'novaToBricks';
+  const hasNovaSource = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
 
   React.useEffect(() => { setNovaSourceError(''); }, [currentGenerationId]);
@@ -1602,10 +1603,12 @@ export default function GeneratedModel() {
 
     try {
       // Start the async edit operation
-      const response = await LlmToBricksApiService.generate({
-        sourceGenerationId: currentGenerationId,
-        prompt: editPrompt.trim(),
-      }, accessToken || undefined);
+      const response = hasNovaSource
+        ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined)
+        : await LlmToBricksApiService.generate({
+          sourceGenerationId: currentGenerationId,
+          prompt: editPrompt.trim(),
+        }, accessToken || undefined);
 
       const newGenerationId = response.generation_id;
       localStorage.setItem('lastGenerationId', newGenerationId);
@@ -1621,7 +1624,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, isPromptEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isPromptEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -2214,7 +2217,7 @@ export default function GeneratedModel() {
           style={sceneReady ? undefined : { opacity: 0 }}
         >
         {/* Resize Scaler - shown outside edit mode */}
-        {!showVoxelEditor && showResizeScaler && mpdContent && (
+        {!isNovaModel && !showVoxelEditor && showResizeScaler && mpdContent && (
           <section className="mt-12 max-w-md mx-auto space-y-6">
             <ResizeScaler
               onResize={handleResizeModel}
@@ -2226,7 +2229,7 @@ export default function GeneratedModel() {
           </section>
         )}
 
-        {!showVoxelEditor && mpdContent && xyzrgbUrl && currentGenerationId && (
+        {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
           <VoxelPromptEditor
             prompt={editPrompt}
             onPromptChange={setEditPrompt}
@@ -2240,17 +2243,17 @@ export default function GeneratedModel() {
         {/* Centered model actions */}
         <section className="relative z-40 mt-4 mb-4 flex flex-col items-center gap-3 px-4">
           {/* Tip nudging users toward the Block Editor (hidden in edit mode) */}
-          {!showVoxelEditor && (
+          {!isNovaModel && !showVoxelEditor && (
             <p className="text-sm text-slate-500 text-center mb-2 max-w-2xl">
               Not what you were expecting? Try editing your model!
             </p>
           )}
           <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
-            <ModelEditControls
+            {!isNovaModel && <ModelEditControls
               isManualEditorOpen={showVoxelEditor}
               manualLoading={xyzrgbLoading || isPromptEditing}
               onManualEdit={() => { void handleEditModelClick(); }}
-            />
+            />}
             {/* Instructions button — white with grey border, turns red on hover */}
             <button
               type="button"
@@ -2386,7 +2389,7 @@ export default function GeneratedModel() {
         </section>
 
         {/* Resize panel — shown above the stats badges when "Try resizing!" is pressed */}
-        {showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
+        {!isNovaModel && showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
           <section className="mt-6 max-w-xs mx-auto">
             <ResizeScaler
               onResize={handleResizeModel}
@@ -2442,7 +2445,7 @@ export default function GeneratedModel() {
               }}
             />
             {/* Too expensive? Try resizing! */}
-            {priceData && !priceLoading && !isSavePolling && !isDemoModel && (
+            {!isNovaModel && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
               <div className="mt-2 text-center">
                 <p className="text-sm text-slate-500">
                   Too expensive?{' '}
