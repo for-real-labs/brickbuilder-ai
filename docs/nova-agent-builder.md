@@ -105,21 +105,33 @@ sandbox user and toolkit cache; immutable code/reference resources are shared.
 Native local sessions use a separate local tenant. Do not expose the upstream
 single-user backend directly to the internet.
 
+On Railway, add a `nova` service in the same environment, using the BrickBuilder
+repository and the `staging` branch. Set its Dockerfile path to
+`backend/nova-service/Dockerfile`, with the repository root as build context.
+Set `NOVA_BIND_HOST=::` for Railway's private IPv6 network and keep the service
+private. The generated Dockerfile fetches the two pinned forks and follows
+their build recipe; no separate deployment of either Nova repository or private
+registry credentials are needed. Add a `/data` volume and set
+`NOVA_CONFIG_ROOT=/data/provider-config`.
+
+The staging API already deploys automatically from its `staging` branch. This
+Nova service can do the same for changes to `backend/setup_nova.cjs` and
+`backend/nova-service/**`. After updating pins, run `node scripts/nova.cjs
+--prepare` and commit the regenerated Dockerfile before pushing.
+
 Build the deployment image with the same installer:
 
 ```sh
 node scripts/nova.cjs --prepare
 docker build --platform linux/amd64 \
   --build-context nova=backend/.nova/toolkit \
-  --build-arg MPD2GLB_SHA256=381fb275c9f974820620ef4e4ec8b5be84ea8306a9f1ccd95bc75beaa8139f34 \
   -f backend/.nova/Dockerfile.service -t your-registry/brickbuilder-nova:VERSION \
   backend/.nova/web
 ```
 
-The mpd2glb checksum build argument corrects the pinned upstream Dockerfile's
-v0.9.1 artifact checksum, verified against that release's GitHub digest. The
-upstream application source remains unchanged. The `Nova runtime image` GitHub
-workflow builds the same image and publishes commit-tagged images on main,
+The fork's Dockerfile supplies its dependency versions and checksums. The
+Nova application source remains unchanged. The `Nova runtime image` GitHub
+workflow builds the hosted recipe and publishes commit-tagged images on main,
 staging or explicit dispatch. PR builds validate without publishing.
 
 Set the selected provider API key on the BrickBuilder API. The adapter provisions
@@ -133,8 +145,12 @@ of bypassing the isolation boundary.
 
 The two repository pins are in `backend/setup_nova.cjs`:
 
-- https://github.com/anteloc/ldraw-nova, AGPL-3.0.
-- https://github.com/anteloc/ldraw-nova-docker, including its runtime dependencies.
+- https://github.com/jjohnson5253/ldraw-nova, AGPL-3.0, forked from anteloc/ldraw-nova.
+- https://github.com/jjohnson5253/ldraw-nova-docker, forked from anteloc/ldraw-nova-docker,
+  including its runtime dependencies.
+
+The pins select the current `master` versions of these forks. Updates are taken
+from the forks so changes merged there can flow into BrickBuilder.
 
 Update the compatible pins, run setup, verify the adapter contracts and a real
 Nova generation/edit, then rebuild and deploy the service image. Clean managed

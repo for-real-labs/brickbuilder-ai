@@ -6,10 +6,31 @@ const path = require('node:path');
 const runtime = path.join(__dirname, '.nova');
 // Upgrade both together, then run the adapter contract and real-runtime smoke tests.
 const SOURCES = Object.freeze([
-  { name: 'toolkit', url: 'https://github.com/anteloc/ldraw-nova.git', commit: '5919d2289e023eeacc2ffc03cbe750e447a024dd' },
-  { name: 'web', url: 'https://github.com/anteloc/ldraw-nova-docker.git', commit: '947a5a36e2e5d5f2a04b9da32d2ae6b8a364886f' },
+  { name: 'toolkit', url: 'https://github.com/jjohnson5253/ldraw-nova.git', commit: 'c4ba6c4913e0975ee7e34e647c26129137657d5e' },
+  { name: 'web', url: 'https://github.com/jjohnson5253/ldraw-nova-docker.git', commit: '65e8053e6407396f9d79b34416a9340314162832' },
 ]);
 const IMAGE = `brickbuilder-nova:${SOURCES[0].commit.slice(0, 12)}-${SOURCES[1].commit.slice(0, 12)}`;
+const SERVICE_CMD = 'CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]\n';
+
+function deploymentDockerfile(upstream) {
+  // Railway builds with one repository context. Import the pinned forks in
+  // source stages, then retain the fork's build recipe and runtime unchanged.
+  const sources = SOURCES.map(source => `FROM alpine:3.22 AS ${source.name === 'toolkit' ? 'nova' : 'nova_web'}\n` +
+    `RUN apk add --no-cache git && git init /source && cd /source && git remote add origin ${source.url} && git fetch --depth 1 origin ${source.commit} && git checkout --detach FETCH_HEAD\n`).join('\n');
+  const recipe = upstream.split('\n').map(line => {
+    if (!line.startsWith('COPY ')) return line;
+    if (line.endsWith('\\') || line.includes('[')) throw new Error('Review the new upstream COPY syntax before deploying Nova');
+    const args = line.split(/\s+/);
+    const fromToolkit = args[1] === '--from=nova';
+    if (args[1].startsWith('--') && !fromToolkit) return line;
+    const paths = args.slice(fromToolkit ? 2 : 1, -1).map(value => '/source/' + value);
+    return `COPY --from=${fromToolkit ? 'nova' : 'nova_web'} ${paths.join(' ')} ${args.at(-1)}`;
+  }).join('\n');
+  const versions = JSON.stringify(Object.fromEntries(SOURCES.map(s => [s.name, s.commit])));
+  return '# Generated from the pinned Nova forks by backend/setup_nova.cjs.\n' + sources + '\n' + recipe + '\n' +
+    'COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/\n' +
+    `RUN printf '%s' '${versions}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools\n` + SERVICE_CMD;
+}
 
 function execute(command, args, cwd, run = spawnSync, capture = false) {
   const result = run(command, args, { cwd, encoding: 'utf8', stdio: capture ? 'pipe' : 'inherit' });
@@ -22,10 +43,14 @@ function ensureSource(source, run = spawnSync, exists = existsSync, mkdir = mkdi
   const destination = path.join(runtime, source.name);
   if (exists(path.join(destination, '.git'))) {
     const revision = execute('git', ['rev-parse', 'HEAD'], destination, run, true);
-    if (revision === source.commit) return destination;
+    if (revision === source.commit) {
+      execute('git', ['remote', 'set-url', 'origin', source.url], destination, run);
+      return destination;
+    }
     if (execute('git', ['status', '--porcelain', '--untracked-files=no'], destination, run, true)) {
       throw new Error(`The managed ${source.name} checkout has changes. Preserve them before updating Nova.`);
     }
+    execute('git', ['remote', 'set-url', 'origin', source.url], destination, run);
   } else {
     if (exists(destination)) throw new Error(`${destination} exists without its source checkout. Move it aside and run setup:nova again.`);
     mkdir(destination, { recursive: true });
@@ -50,13 +75,14 @@ function prepare(run = spawnSync) {
   writeFileSync(dockerfile, readFileSync(path.join(web, 'Dockerfile'), 'utf8') + '\n' +
     'COPY brickbuilder-integration/ /app/web/backend/brickbuilder_integration/\n' +
     'RUN chmod -R a-w /opt/ldraw-nova/ldraw_tools\n' +
-    'CMD ["uvicorn", "brickbuilder_integration.gateway:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0", "--port", "8000"]\n');
+    SERVICE_CMD);
+  writeFileSync(path.join(__dirname, 'nova-service/Dockerfile'), deploymentDockerfile(readFileSync(path.join(web, 'Dockerfile'), 'utf8')));
   return { toolkit, web, dockerfile };
 }
 
 function setup(run = spawnSync, env = process.env) {
   const { toolkit, web, dockerfile } = prepare(run);
-  execute('docker', ['build', '--platform', 'linux/amd64', '--build-arg', 'MPD2GLB_SHA256=381fb275c9f974820620ef4e4ec8b5be84ea8306a9f1ccd95bc75beaa8139f34', '--build-context', `nova=${toolkit}`, '-f', dockerfile, '-t', IMAGE, web], runtime, run);
+  execute('docker', ['build', '--platform', 'linux/amd64', '--build-context', `nova=${toolkit}`, '-f', dockerfile, '-t', IMAGE, web], runtime, run);
   const port = Number(env.NOVA_SERVICE_PORT || '8778');
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Choose a valid NOVA_SERVICE_PORT');
   const connectionPath = path.join(runtime, 'connection.json');
@@ -79,4 +105,4 @@ if (require.main === module) {
   try { process.argv.includes('--prepare') ? prepare() : setup(); }
   catch (error) { console.error(error.message); process.exitCode = 1; }
 }
-module.exports = { SOURCES, IMAGE, ensureSource, execute, prepare, setup };
+module.exports = { SOURCES, IMAGE, ensureSource, execute, prepare, setup, deploymentDockerfile };

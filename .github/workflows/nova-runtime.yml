@@ -36,10 +36,8 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - uses: docker/build-push-action@v6
         with:
-          context: backend/.nova/web
-          file: backend/.nova/Dockerfile.service
-          build-contexts: nova=backend/.nova/toolkit
-          build-args: MPD2GLB_SHA256=381fb275c9f974820620ef4e4ec8b5be84ea8306a9f1ccd95bc75beaa8139f34
+          context: .
+          file: backend/nova-service/Dockerfile
           platforms: linux/amd64
           push: ${{ github.event_name != 'pull_request' }}
           tags: ghcr.io/${{ github.repository }}-nova:${{ github.sha }}
