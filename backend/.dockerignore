@@ -3,6 +3,7 @@
 .env
 .python-version
 .venv
+.nova
 __pycache__
 *.pyc
 *.pyo

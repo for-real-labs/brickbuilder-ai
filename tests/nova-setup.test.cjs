@@ -1,6 +1,35 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
+const { readFileSync } = require('node:fs');
+const path = require('node:path');
 const { SOURCES, ensureSource, findPython, setup } = require('../scripts/nova.cjs');
+
+test('local and hosted installers share source pins and the backend runtime directory', () => {
+  const hosted = require('../backend/setup_nova.cjs');
+  assert.equal(setup, hosted.setup);
+  assert.equal(SOURCES, hosted.SOURCES);
+  const directories = [];
+  ensureSource(SOURCES[0], (_command, _args, options) => {
+    directories.push(options.cwd);
+    return { status: 0 };
+  }, () => false, () => {});
+  assert.ok(directories.every(directory => directory === path.resolve(__dirname, '../backend/.nova/toolkit')));
+});
+
+test('Railway builds Nova after backend dependencies with the matching runtime paths', () => {
+  const dockerfile = readFileSync(path.resolve(__dirname, '../backend/Dockerfile'), 'utf8');
+  const install = dockerfile.indexOf('RUN node setup_nova.cjs');
+  assert.ok(install > dockerfile.indexOf('COPY . .'));
+  assert.ok(install > dockerfile.indexOf('RUN uv sync --frozen'));
+  for (const setting of ['NOVA_TOOLKIT_ROOT=/app/.nova/toolkit', 'NOVA_PYTHON=/app/.nova/toolkit/.venv/bin/python', 'LDRAW_DIR=/root/ldraw']) {
+    assert.ok(dockerfile.indexOf(`ENV ${setting}`) < install);
+    assert.ok(dockerfile.includes(`ENV ${setting}`));
+  }
+  assert.match(dockerfile, /\s+git\s+\\/);
+  assert.match(dockerfile, /\s+nodejs\s+\\/);
+  const ignored = readFileSync(path.resolve(__dirname, '../backend/.dockerignore'), 'utf8').split(/\r?\n/);
+  assert.ok(ignored.includes('.nova'), 'local toolkit checkouts must not replace the pinned image runtime');
+});
 
 test('Nova sources use immutable commits and argument-based git calls', () => {
   const calls = [];

@@ -9,6 +9,8 @@ RUN apt-get update && \
         xvfb \
         curl \
         unzip \
+        git \
+        nodejs \
         && rm -rf /var/lib/apt/lists/* \
         && apt-get clean
 
@@ -31,6 +33,13 @@ COPY . .
 
 # Install Python dependencies
 RUN uv sync --frozen
+
+# Nova has its own Python 3.14 environment; keep the API on Python 3.11.
+# Install and index the same immutable Nova/Jev revisions used locally.
+ENV NOVA_TOOLKIT_ROOT=/app/.nova/toolkit
+ENV NOVA_PYTHON=/app/.nova/toolkit/.venv/bin/python
+ENV LDRAW_DIR=/root/ldraw
+RUN node setup_nova.cjs
 
 # Note: Background removal now uses fal.ai BiRefNet v2 (GPU) instead of local rembg.
 # rembg is kept as a fallback dependency but the u2net model is no longer pre-downloaded.

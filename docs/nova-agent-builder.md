@@ -134,6 +134,13 @@ source. Distribution or hosting of the combined integration must respect upstrea
 license and corresponding-source obligations. Preserve toolkit licenses and
 `ATTRIBUTION.md` with the runtime.
 
-For deployment, install the same pinned runtime, set `NOVA_TOOLKIT_ROOT`,
-`NOVA_PYTHON`, and `LDRAW_DIR`, and provide API keys on the server. Native
-subscription connections are reserved for local development.
+Railway's backend Docker image runs `backend/setup_nova.cjs` during the build
+to install the same pinned runtime and prepare the parts and reference indexes.
+It sets `NOVA_TOOLKIT_ROOT`, `NOVA_PYTHON`, and `LDRAW_DIR` automatically. Nova
+uses an isolated Python 3.14 environment while the API remains on Python 3.11.
+Vercel hosts the frontend; its PR preview must point to the corresponding
+Railway preview backend. Provide the selected provider's API key on Railway.
+Native subscription connections are reserved for local development.
+
+For other backend hosts, run the same installer after installing the backend
+dependencies and official LDraw library, then set those three runtime paths.
