@@ -157,9 +157,17 @@ class LDrawPacker:
             raise Exception("Some files were not found, aborting.")
         
         # Obtain packed content
-        packed_content = materials_content + '\n'
+        packed_content = ''
         for i in range(len(self.objects_paths) - 1, -1, -1):
             packed_content += self.objects_contents[i]
+        # Three's LDraw loader treats any preamble before the first FILE as an
+        # anonymous root. Put colors inside an explicit MPD root, so hierarchy
+        # is rendered instead of leaving an empty configuration-only model.
+        if packed_content.startswith('0 FILE '):
+            header, _, body = packed_content.partition('\n')
+            packed_content = header + '\n' + materials_content + '\n' + body
+        else:
+            packed_content = materials_content + '\n' + packed_content
         
         packed_content += '\n'
         
