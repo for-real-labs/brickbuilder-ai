@@ -287,7 +287,7 @@ COPY --from=xr /src/dist/ /opt/web/xr/
 # /data/generated: the model collection; /data/chats: chat history;
 # /data/output: agents' work folders (one per chat) and the CLI's default output.
 RUN mkdir -p /data/generated /data/chats /data/output
-VOLUME ["/data", "/config"]
+# Persistent storage is supplied by the Railway /data volume.
 
 COPY --from=nova_web /source/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh

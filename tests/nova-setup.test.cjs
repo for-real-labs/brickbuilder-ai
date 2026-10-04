@@ -12,12 +12,13 @@ test('local setup delegates to the same two-repository runtime installer', () =>
 });
 
 test('hosted build imports fork sources without requiring registry credentials or secondary contexts', () => {
-  const recipe = deploymentDockerfile('FROM ubuntu:24.04\nCOPY web/backend/ /app/web/backend/\nCOPY --from=nova pyproject.toml uv.lock /opt/ldraw-nova/\nCOPY --from=frontend /src/dist/ /opt/web/static/');
+  const recipe = deploymentDockerfile('FROM ubuntu:24.04\nCOPY web/backend/ /app/web/backend/\nCOPY --from=nova pyproject.toml uv.lock /opt/ldraw-nova/\nCOPY --from=frontend /src/dist/ /opt/web/static/\nVOLUME ["/data", "/config"]');
   SOURCES.forEach(source => assert.ok(recipe.includes(source.url) && recipe.includes(source.commit)));
   assert.ok(recipe.includes('COPY --from=nova_web /source/web/backend/ /app/web/backend/'));
   assert.ok(recipe.includes('COPY --from=nova /source/pyproject.toml /source/uv.lock /opt/ldraw-nova/'));
   assert.ok(recipe.includes('COPY --from=frontend /src/dist/ /opt/web/static/'));
   assert.ok(recipe.includes('NOVA_BIND_HOST'));
+  assert.ok(!recipe.includes('\nVOLUME '));
 });
 
 test('managed checkout fetches immutable source with argument-based calls', () => {

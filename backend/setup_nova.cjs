@@ -18,6 +18,8 @@ function deploymentDockerfile(upstream) {
   const sources = SOURCES.map(source => `FROM alpine:3.22 AS ${source.name === 'toolkit' ? 'nova' : 'nova_web'}\n` +
     `RUN apk add --no-cache git && git init /source && cd /source && git remote add origin ${source.url} && git fetch --depth 1 origin ${source.commit} && git checkout --detach FETCH_HEAD\n`).join('\n');
   const recipe = upstream.split('\n').map(line => {
+    // Railway owns volume attachment and rejects Docker VOLUME declarations.
+    if (line.startsWith('VOLUME ')) return '# Persistent storage is supplied by the Railway /data volume.';
     if (!line.startsWith('COPY ')) return line;
     if (line.endsWith('\\') || line.includes('[')) throw new Error('Review the new upstream COPY syntax before deploying Nova');
     const args = line.split(/\s+/);
