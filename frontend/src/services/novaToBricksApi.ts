@@ -6,20 +6,15 @@ export type NovaAuthMode = 'api_key' | 'native';
 export interface NovaBuilderOptions {
   model: string;
   authMode: NovaAuthMode;
-  maxIterations: number;
-  maxParts: number;
-  useJev: boolean;
 }
 
 export const DEFAULT_NOVA_OPTIONS: NovaBuilderOptions = {
   model: DEFAULT_LLM_MODEL,
   authMode: 'api_key',
-  maxIterations: 30,
-  maxParts: 5000,
-  useJev: true,
 };
 
 export interface NovaToBricksRequest extends NovaBuilderOptions {
+  sourceGenerationId?: string;
   prompt?: string;
   imageBase64?: string;
   imageMediaType?: string;
@@ -44,30 +39,26 @@ export class NovaToBricksApiService {
     return response.blob();
   }
 
+  static async edit(generationId: string, prompt: string, authToken?: string): Promise<LlmToBricksResponse> {
+    return this.generate({ ...DEFAULT_NOVA_OPTIONS, sourceGenerationId: generationId, prompt }, authToken);
+  }
+
   static async generate(request: NovaToBricksRequest, authToken?: string): Promise<LlmToBricksResponse> {
     if (!request.prompt?.trim() && !request.imageBase64) throw new Error('A prompt or image is required');
     if (!getLlmModelOption(request.model)) throw new Error('Choose a supported agent model');
     if (!['api_key', 'native'].includes(request.authMode)) throw new Error('Choose a supported provider connection');
-    if (!Number.isInteger(request.maxIterations) || request.maxIterations < 4 || request.maxIterations > 80) {
-      throw new Error('Agent steps must be between 4 and 80');
-    }
-    if (!Number.isInteger(request.maxParts) || request.maxParts < 50 || request.maxParts > 10_000) {
-      throw new Error('Part limit must be between 50 and 10,000');
-    }
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = `Bearer ${authToken}`;
     const response = await apiFetch(`${API_BASE_URL}/novaToBricks`, {
       method: 'POST', headers,
       body: JSON.stringify({
+        source_generation_id: request.sourceGenerationId,
         prompt: request.prompt?.trim() || undefined,
         image_base64: request.imageBase64,
         image_media_type: request.imageMediaType || 'image/png',
         detail_level: request.detailLevel ?? 40,
         model: request.model,
         auth_mode: request.authMode,
-        max_iterations: request.maxIterations,
-        max_parts: request.maxParts,
-        use_jev: request.useJev,
       }),
     });
     if (!response.ok) {

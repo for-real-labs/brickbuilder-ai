@@ -11,6 +11,13 @@ from ..utils.local_provider_connections import (
     PROVIDERS, attach_api_key, local_provider_connections, require_local_development,
 )
 
+from ..utils.nova_provider_connections import nova_provider_connections, use_nova_connection
+
+
+def connections(provider):
+    return nova_provider_connections if use_nova_connection(provider) else local_provider_connections
+
+
 ProviderId = Literal["openai", "anthropic", "fal"]
 
 
@@ -48,35 +55,35 @@ class ProviderCodeRequest(BaseModel):
 @router.get("")
 async def local_providers(response: Response):
     response.headers["Cache-Control"] = "no-store"
-    statuses = await asyncio.gather(*(local_provider_connections.status(provider) for provider in PROVIDERS))
+    statuses = await asyncio.gather(*(connections(provider).status(provider) for provider in PROVIDERS))
     return {"enabled": True, "providers": statuses}
 
 
 @router.get("/{provider}")
 async def local_provider_status(provider: ProviderId, response: Response):
     response.headers["Cache-Control"] = "no-store"
-    return await local_provider_connections.status(provider)
+    return await connections(provider).status(provider)
 
 
 @router.post("/{provider}/login")
 async def local_provider_login(provider: ProviderId, body: ProviderLoginRequest = ProviderLoginRequest()):
     try:
-        return await local_provider_connections.start(provider, restart=body.restart, connection=body.connection)
+        return await connections(provider).start(provider, restart=body.restart, connection=body.connection)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from None
 
 
 @router.delete("/{provider}/login")
 async def cancel_local_provider_login(provider: ProviderId):
-    await local_provider_connections.cancel(provider)
-    return await local_provider_connections.status(provider)
+    await connections(provider).cancel(provider)
+    return await connections(provider).status(provider)
 
 
 @router.post("/{provider}/login/code")
 async def local_provider_login_code(provider: ProviderId, body: ProviderCodeRequest):
     try:
-        await local_provider_connections.submit_code(provider, body.code.get_secret_value())
-        return await local_provider_connections.status(provider)
+        await connections(provider).submit_code(provider, body.code.get_secret_value())
+        return await connections(provider).status(provider)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from None
 
@@ -85,7 +92,7 @@ async def local_provider_login_code(provider: ProviderId, body: ProviderCodeRequ
 async def local_provider_credentials(provider: ProviderId, body: ProviderCredentialRequest):
     try:
         attach_api_key(provider, body.api_key.get_secret_value())
-        return await local_provider_connections.status(provider)
+        return await connections(provider).status(provider)
     except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from None
     except OSError:
@@ -96,6 +103,6 @@ async def local_provider_credentials(provider: ProviderId, body: ProviderCredent
 async def remove_local_provider_credentials(provider: ProviderId):
     try:
         attach_api_key(provider, None)
-        return await local_provider_connections.status(provider)
+        return await connections(provider).status(provider)
     except (OSError, ValueError):
         raise HTTPException(status_code=500, detail="Could not remove the project API key") from None

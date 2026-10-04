@@ -157,9 +157,17 @@ class LDrawPacker:
             raise Exception("Some files were not found, aborting.")
         
         # Obtain packed content
-        packed_content = materials_content + '\n'
+        packed_content = ''
         for i in range(len(self.objects_paths) - 1, -1, -1):
             packed_content += self.objects_contents[i]
+        # Three's LDraw loader treats any preamble before the first FILE as an
+        # anonymous root. Put colors inside an explicit MPD root, so hierarchy
+        # is rendered instead of leaving an empty configuration-only model.
+        if packed_content.startswith('0 FILE '):
+            header, _, body = packed_content.partition('\n')
+            packed_content = header + '\n' + materials_content + '\n' + body
+        else:
+            packed_content = materials_content + '\n' + packed_content
         
         packed_content += '\n'
         
@@ -186,6 +194,10 @@ class LDrawPacker:
         """
         # print(f'Adding "{file_name}".')
         
+        if not is_root:
+            reference = file_name.replace('\\', '/')
+            if Path(reference).is_absolute() or '..' in Path(reference).parts or '\0' in reference:
+                raise ValueError("LDraw dependency must stay inside the parts library")
         original_file_name = file_name
         prefix = ''
         object_content = None
@@ -253,6 +265,14 @@ class LDrawPacker:
         processed_object_content = '' if is_root else f'0 FILE {object_path}\n'
         
         lines = object_content.split('\n')
+        # Resolve MPD assemblies before walking placements, including forward
+        # references. Keep their original namespace and root FILE directive.
+        for embedded in lines:
+            if embedded.strip().startswith('0 FILE '):
+                name = embedded.strip()[7:].strip().replace('\\', '/')
+                if name:
+                    self.path_map[name] = name
+                    self.path_map[name.lower()] = name
         
         for i, line in enumerate(lines):
             line_length = len(line)
@@ -267,12 +287,12 @@ class LDrawPacker:
             char_index = 0
             
             if line.startswith('0 FILE '):
-                if i == 0:
-                    # Ignore first line FILE meta directive
+                if i == 0 and not is_root:
+                    # Library parts already have the wrapper added above.
                     continue
                 
                 # Embedded object was found, add to path map
-                subobject_file_name = line[char_index:].strip().replace('\\', '/')
+                subobject_file_name = line[7:].strip().replace('\\', '/')
                 
                 if subobject_file_name:
                     # Find name in path cache
@@ -300,7 +320,7 @@ class LDrawPacker:
                 
                 if subobject_file_name:
                     # Find name in path cache
-                    subobject_path = self.path_map.get(subobject_file_name)
+                    subobject_path = self.path_map.get(subobject_file_name) or self.path_map.get(subobject_file_name.lower())
                     
                     if subobject_path is None:
                         # Add new object

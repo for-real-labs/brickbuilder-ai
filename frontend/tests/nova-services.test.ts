@@ -11,7 +11,7 @@ vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { getSession: async ()
 beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
 
 describe('Nova agent API', () => {
-  it('starts a native agent build with owner credentials and bounded agent settings', async () => {
+  it('starts a native agent build with owner credentials', async () => {
     vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'set', message: 'Started' }));
     await expect(NovaToBricksApiService.generate({ ...DEFAULT_NOVA_OPTIONS, prompt: '  orbital launch site  ', authMode: 'native', imageBase64: 'pixels' }, 'token')).resolves.toMatchObject({ generation_id: 'set' });
     const [url, init] = vi.mocked(fetch).mock.calls[0];
@@ -20,7 +20,7 @@ describe('Nova agent API', () => {
     expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
     expect(JSON.parse(init?.body as string)).toEqual({
       prompt: 'orbital launch site', image_base64: 'pixels', image_media_type: 'image/png', detail_level: 40,
-      model: DEFAULT_NOVA_OPTIONS.model, auth_mode: 'native', max_iterations: 30, max_parts: 5000, use_jev: true,
+      model: DEFAULT_NOVA_OPTIONS.model, auth_mode: 'native',
     });
   });
 
@@ -28,13 +28,18 @@ describe('Nova agent API', () => {
     { prompt: '', error: 'prompt or image' },
     { model: 'untrusted-model', error: 'supported agent model' },
     { authMode: 'unknown', error: 'supported provider connection' },
-    { maxParts: 10_001, error: 'Part limit' },
-    { maxParts: 49, error: 'Part limit' },
-    { maxIterations: 3, error: 'Agent steps' },
-    { maxIterations: 81, error: 'Agent steps' },
   ])('validates input before starting a job: $error', async ({ error, ...options }) => {
     await expect(NovaToBricksApiService.generate({ ...DEFAULT_NOVA_OPTIONS, prompt: 'castle', ...options } as never)).rejects.toThrow(error);
     expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('sends follow-up edits to Nova with the source generation identity', async () => {
+    vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'revision', message: 'Started' }));
+    await NovaToBricksApiService.edit('original', 'Make the roof red', 'owner-token');
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({
+      source_generation_id: 'original', prompt: 'Make the roof red',
+    });
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/novaToBricks');
   });
 
   it('allows image-only references and reports startup errors', async () => {
