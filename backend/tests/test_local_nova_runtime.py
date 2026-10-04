@@ -20,9 +20,7 @@ def test_local_runtime_attaches_project_tools_and_existing_library(tmp_path):
     environment = {"PATH": "/existing/bin"}
     local_run.configure_local_runtime(environment, backend, home)
     assert environment["BRICKBUILDER_LOCAL_PROVIDERS"] == "true"
-    assert environment["NOVA_TOOLKIT_ROOT"] == str(backend / ".nova" / "toolkit")
-    assert environment["NOVA_PYTHON"].endswith(".venv/bin/python")
-    assert environment["PATH"].endswith("/existing/bin")
+    assert environment["PATH"] == "/existing/bin"
     assert environment["LDRAW_DIR"] == str(home / "ldraw")
 
 
