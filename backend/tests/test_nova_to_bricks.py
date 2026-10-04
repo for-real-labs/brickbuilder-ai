@@ -82,7 +82,8 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
         {'user_email': 'test', 'is_developer': False}, {})) is None
     assert calls[1][1] == 'generation/nova-session.json'
     assert json.loads(calls[1][2]) == session
-    assert ('model', 'ldr', 'flat LDR') in calls and ('model', 'mpd', 'packed hierarchy') in calls
+    assert ('model', 'ldr', 'flat LDR') in calls
+    assert not any(call[:2] == ('model', 'mpd') for call in calls)
     assert calls[-2:] == [('charge', 1), ('status', 'completed')]
 
 

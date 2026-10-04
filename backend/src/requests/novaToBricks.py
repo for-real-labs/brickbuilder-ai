@@ -110,7 +110,9 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
             image = f"data:{request.image_media_type};base64,{request.image_base64}"
             await generation_storage.store_images(generation_id=generation_id, original_image_url=image, processed_image_url=image)
         await generation_storage.store_model_file(generation_id, result.ldr, "ldr", raise_on_error=True)
-        await generation_storage.store_model_file(generation_id, packed_mpd, "mpd", raise_on_error=True)
+        # Staging's shared schema stores ldr_url, without an mpd_url column.
+        # The viewer packs this display LDR through /ldrToMpd, as for other
+        # generations. Nova's original hierarchy remains in the source ZIP.
         # The display export has one root physical placement per line. Embedded
         # DAT definitions, if present, are retained for viewing but are not inventory.
         root = result.ldr.split("\n0 FILE ", 1)[0]
