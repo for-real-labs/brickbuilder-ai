@@ -42,6 +42,13 @@ describe('Substack content safety', () => {
 });
 
 describe('BrickBuilder Substack import', () => {
+  it('parses real RSS with content:encoded, creator, and publication date', async () => {
+    const root = await createSite();
+    const xml = `<?xml version="1.0"?><rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/"><channel><title>AI and LEGO</title><item><title>AI &amp; LEGO</title><link>${item.link}</link><guid>post-1</guid><dc:creator>Jake</dc:creator><pubDate>${item.pubDate}</pubDate><content:encoded><![CDATA[${item.contentEncoded}]]></content:encoded></item></channel></rss>`;
+    expect(await importSubstackPosts({ root, feedUrl: 'https://writer.substack.com/feed', fetchImpl: async () => new Response(xml) })).toHaveLength(1);
+    const posts = JSON.parse(await readFile(join(root, 'src/data/substack-posts.json'), 'utf8'));
+    expect(posts[0]).toMatchObject({ title: 'AI & LEGO', author: 'Jake', content: '<h2>Bricks</h2><p>Useful content.</p>', publishedAt: '2026-10-01T12:00:00.000Z' });
+  });
   it('imports and sanitizes new posts, updates the sitemap, and does not duplicate reruns', async () => {
     const root = await createSite();
     expect(await importSubstackPosts(options(root))).toHaveLength(1);

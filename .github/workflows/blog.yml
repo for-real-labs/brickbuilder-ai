@@ -44,6 +44,9 @@ jobs:
         run: |
           test -n "$SUBSTACK_FEED_URL" || { echo '::error::SUBSTACK_FEED_URL is not configured'; exit 1; }
           node frontend/scripts/import-substack-posts.mjs
+      - name: Build the journal with the imported content
+        run: npm run build
+        working-directory: frontend
       - name: Publish only the imported blog files
         id: publish
         run: |
