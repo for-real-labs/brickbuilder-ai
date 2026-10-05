@@ -69,6 +69,12 @@ import { GetCommunityGenerationsApiService } from '../src/services/getCommunityG
 import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
 import { TextToBricksApiService } from '../src/services/textToBricksApi';
 import { ImageToBricksApiService } from '../src/services/imageToBricksApi';
+import { LocalProvidersApiService, type LocalProviderStatus } from '../src/services/localProvidersApi';
+
+const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus => ({
+  id, label: id, api_key_configured: false, cli_available: true, cli_connected: true,
+  login: { status: 'connected' }, capabilities: ['browser_login'],
+});
 
 describe('LandingPage', () => {
   it.each(['sam3d', 'trellis'])('routes Other model %s to the 3D provider and returns to Basic bricks for LLM models', async selected => {
@@ -367,7 +373,7 @@ describe('LandingPage', () => {
       expect(stream).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
-      await act(async () => container.querySelector('[aria-label="Your generations"] article button')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+      await act(async () => Array.from(container.querySelectorAll('[aria-label="Your generations"] article button')).find(button => button.textContent?.includes('Cancel generation'))!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
       expect(cancel).toHaveBeenCalledWith('two');
       expect(container.textContent).toContain('Generation cancelled');
       expect(container.textContent).toContain('1 in progress');
@@ -379,6 +385,7 @@ describe('LandingPage', () => {
   });
 
   it('keeps the selected model when switching modes and routes All parts through Nova', async () => {
+    vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
@@ -395,7 +402,7 @@ describe('LandingPage', () => {
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
       expect(mode.value).toBe('llm');
       expect(Array.from(mode.options).map(option => option.text)).toEqual(['Basic bricks', 'All parts (beta)']);
-      act(() => {
+      await act(async () => {
         model.value = 'gpt-5.6-sol';
         model.dispatchEvent(new Event('change', { bubbles: true }));
         mode.value = 'nova';
@@ -409,7 +416,7 @@ describe('LandingPage', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await act(async () => findButton('Create').click());
-      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, model: 'gpt-5.6-sol', prompt: input.value }), undefined);
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: 'gpt-5.6-sol', prompt: input.value }), undefined);
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(container.textContent).toContain('1 in progress');
@@ -429,6 +436,7 @@ describe('LandingPage', () => {
   });
 
   it.each(['llm', 'nova'])('sends the uploaded reference to the %s workflow from the shared bar', async modeValue => {
+    vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
@@ -446,7 +454,7 @@ describe('LandingPage', () => {
       const choose = vi.spyOn(fileInput, 'click');
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
       expect(choose).toHaveBeenCalledOnce();
-      act(() => {
+      await act(async () => {
         const mode = container.querySelector('#landing-builder-mode') as HTMLSelectElement;
         mode.value = modeValue;
         mode.dispatchEvent(new Event('change', { bubbles: true }));
@@ -460,14 +468,39 @@ describe('LandingPage', () => {
       });
       const selected = modeValue === 'nova' ? nova : llm;
       const other = modeValue === 'nova' ? llm : nova;
-      expect(container.querySelector('[aria-label="Local provider connections"]')).toBeNull();
-      expect(container.querySelector('#nova-connection')).toBeNull();
       expect(selected).toHaveBeenCalledWith(expect.objectContaining({
         model: DEFAULT_LLM_MODEL, prompt: undefined, imageBase64: btoa('reference'), imageMediaType: 'image/png',
-        ...(modeValue === 'nova' ? { authMode: 'api_key' } : {}),
       }), undefined);
+      if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
     } finally { act(() => root.unmount()); container.remove(); }
+  });
+
+  it('waits for an explicit provider connection choice and preserves the prompt before starting Nova', async () => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({generation_count:12,brick_count:400});
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({generations:[],total_count:0,has_more:false});
+    vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => ({...connectedProvider(id),cli_connected:false,api_key_configured:true,login:{status:'disconnected'}}));
+    const nova=vi.spyOn(NovaToBricksApiService,'generate').mockResolvedValue({generation_id:'selected-key',message:'Started'});
+    const container=document.createElement('div');document.body.appendChild(container);const root=createRoot(container);
+    try {
+      await act(async()=>root.render(<LandingPage />));
+      const input=container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
+      await act(async()=>{
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'A red lighthouse');
+        input.dispatchEvent(new Event('input',{bubbles:true}));
+        const mode=container.querySelector<HTMLSelectElement>('#landing-builder-mode')!;
+        mode.value='nova';mode.dispatchEvent(new Event('change',{bubbles:true}));
+      });
+      expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Connect Claude');
+      expect(nova).not.toHaveBeenCalled();
+      const choice=Array.from(container.querySelectorAll('button')).find(button=>button.textContent==='Use project API key')!;
+      await act(async()=>choice.click());
+      expect(container.querySelector('[role="dialog"]')).toBeNull();
+      expect(input.value).toBe('A red lighthouse');
+      await act(async()=>container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({prompt:'A red lighthouse',authMode:'api_key'}),undefined);
+    } finally {act(()=>root.unmount());container.remove();}
   });
 
   it('shows the top eight community models with chevron controls', async () => {
@@ -583,7 +616,6 @@ describe('LandingPage', () => {
       expect(container.querySelector('[aria-label="Toggle settings"]')).toBeNull();
       expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
       expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
-      expect(container.querySelector('[aria-label="Local provider connections"]')).toBeNull();
       expect(Array.from(model.options).map(option => option.value)).toContain('sam3d');
       expect(Array.from(model.options).map(option => option.value)).toContain('trellis');
     };

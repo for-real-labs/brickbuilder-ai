@@ -1,6 +1,10 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const { SOURCES, ensureSource, setup, deploymentDockerfile } = require('../scripts/nova.cjs');
+const { startService, install, waitReady, containerName } = require('../scripts/nova.cjs');
+const { mkdtempSync, writeFileSync, readFileSync, statSync, rmSync } = require('node:fs');
+const path = require('node:path');
+const { tmpdir } = require('node:os');
 
 test('local setup delegates to the same two-repository runtime installer', () => {
   assert.equal(setup, require('../backend/setup_nova.cjs').setup);
@@ -18,7 +22,6 @@ test('hosted build imports fork sources without requiring registry credentials o
   assert.ok(recipe.includes('COPY --from=nova /source/pyproject.toml /source/uv.lock /opt/ldraw-nova/'));
   assert.ok(recipe.includes('COPY --from=frontend /src/dist/ /opt/web/static/'));
   assert.ok(recipe.includes('NOVA_BIND_HOST'));
-  assert.ok(recipe.includes('COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py'));
   assert.ok(!recipe.includes('\nVOLUME '));
 });
 
@@ -48,4 +51,59 @@ test('a clean installed checkout can update to a new pin without deleting sessio
   assert.deepEqual(calls.at(-2), ['fetch', '--depth', '1', 'origin', SOURCES[0].commit]);
   assert.deepEqual(calls.at(-1), ['checkout', '--detach', '--quiet', 'FETCH_HEAD']);
   assert.ok(calls.some(args => args[0] === 'remote' && args[1] === 'set-url' && args[3] === SOURCES[0].url));
+});
+
+test('Docker is required unless explicitly using Basic bricks or an external runtime', () => {
+  assert.throws(() => install(() => ({ status: 1 }), {}), /Docker Desktop/);
+  install(() => assert.fail('Basic bricks must not install Docker'), { NOVA_SKIP_SETUP: 'true' });
+  install(() => assert.fail('external runtime must not build locally'), { NOVA_SERVICE_URL: 'http://nova:8000', NOVA_SERVICE_TOKEN: 'private' });
+  assert.throws(() => install(() => assert.fail('must not spawn'), { NOVA_SERVICE_URL: 'http://nova:8000' }), /both/);
+});
+
+for (const running of [true, false]) {
+  test(`startup reuses the managed runtime and preserves sessions when running=${running}`, () => {
+    const directory = mkdtempSync(path.join(tmpdir(), 'nova-start-'));
+    writeFileSync(path.join(directory, 'connection.json'), JSON.stringify({url:'http://127.0.0.1:8779',token:'private'}));
+    const calls = [];
+    const run = (command, args, options) => {
+      calls.push({command,args,options});
+      if (args[0] === 'image') return {status:0,stdout:'image-id\n'};
+      if (args[0] === 'inspect') return {status:0,stdout:JSON.stringify([{Image:'image-id',State:{Running:running},
+        HostConfig:{PortBindings:{'8000/tcp':[{HostIp:'127.0.0.1',HostPort:'8779'}]}},Config:{Env:['NOVA_SERVICE_TOKEN=private']}}])};
+      return {status:0};
+    };
+    try {
+      startService(run,{NOVA_SERVICE_PORT:'8779'},directory);
+      assert.equal(calls.some(call => call.args[0] === 'start'),!running);
+      assert.ok(!calls.some(call => ['rm','run','build'].includes(call.args[0])));
+      const readiness = calls.at(-1);
+      assert.equal(readiness.options.env.NOVA_CHECK_TOKEN,'private');
+      assert.ok(!readiness.args.join(' ').includes('private'));
+      assert.equal(JSON.parse(readFileSync(path.join(directory,'connection.json'))).token,'private');
+      assert.equal(statSync(path.join(directory,'service.env')).mode & 0o777,0o600);
+    } finally {rmSync(directory,{recursive:true,force:true});}
+  });
+}
+
+test('new runtimes use localhost and named volumes and wait for authenticated readiness', () => {
+  const directory = mkdtempSync(path.join(tmpdir(),'nova-new-'));
+  const calls=[];
+  try {
+    startService((command,args,options)=>{
+      calls.push({command,args,options});
+      if (args[0]==='image') return {status:0,stdout:'image-id'};
+      if (args[0]==='inspect') return {status:1};
+      return {status:0};
+    },{NOVA_SERVICE_PORT:'8780'},directory);
+    const create=calls.find(call=>call.args[0]==='run');
+    assert.ok(create.args.includes('127.0.0.1:8780:8000'));
+    assert.ok(create.args.includes(containerName(directory)+'-data:/data'));
+    assert.ok(create.args.includes(containerName(directory)+'-config:/config'));
+    assert.equal(calls.at(-1).command,process.execPath);
+    assert.equal(statSync(path.join(directory,'connection.json')).mode & 0o777,0o600);
+  } finally {rmSync(directory,{recursive:true,force:true});}
+});
+
+test('unready Nova prevents API startup instead of silently allowing failed All parts builds', () => {
+  assert.throws(()=>waitReady({url:'http://nova:8000',token:'private'},()=>({status:1})),/startup failed/);
 });

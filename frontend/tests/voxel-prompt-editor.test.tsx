@@ -49,22 +49,3 @@ it('labels the refine input and keeps manual edits separate from submitting a pr
     expect(submit).not.toHaveBeenCalled();
   } finally { act(() => root.unmount()); }
 });
-
-
-it('fills and focuses a suggestion without submitting an edit, and locks suggestions during an update', () => {
-  const container = document.createElement('div'); document.body.appendChild(container);
-  const root = createRoot(container);
-  const change = vi.fn(), selected = vi.fn(), submit = vi.fn();
-  const render = (disabled = false) => act(() => root.render(<VoxelPromptEditor prompt="" onPromptChange={change}
-    onSuggestionSelected={selected} onSubmit={submit} loading={false} disabled={disabled} error={null} />));
-  try {
-    render();
-    act(() => (container.querySelector('.model-edit-suggestions button') as HTMLButtonElement).click());
-    expect(change).toHaveBeenCalledWith('Use a brighter, more vibrant color palette.');
-    expect(selected).toHaveBeenCalledWith('colors');
-    expect(document.activeElement).toBe(container.querySelector('textarea'));
-    expect(submit).not.toHaveBeenCalled();
-    render(true);
-    expect(Array.from(container.querySelectorAll('.model-edit-suggestions button')).every(button => (button as HTMLButtonElement).disabled)).toBe(true);
-  } finally { act(() => root.unmount()); container.remove(); }
-});

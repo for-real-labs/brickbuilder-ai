@@ -72,11 +72,12 @@ export function LocalProviderSettings() {
   </section>;
 }
 
-function ProviderConnection({ provider, disabled, busy, onAction }: {
+export function ProviderConnection({ provider, disabled, busy, onAction, onSelectConnection }: {
   provider: LocalProviderStatus;
   disabled: boolean;
   busy: boolean;
   onAction: (action: () => Promise<LocalProviderStatus>) => Promise<void>;
+  onSelectConnection?: (authMode: 'native' | 'api_key') => void;
 }) {
   const [keyFormOpen, setKeyFormOpen] = useState(false);
   const [apiKey, setApiKey] = useState('');
@@ -94,6 +95,10 @@ function ProviderConnection({ provider, disabled, busy, onAction }: {
       </span>
     </div>
     {provider.id !== 'fal' && provider.api_key_configured && connected && <p className="mt-1 text-xs text-slate-500">Project API key also attached</p>}
+    {onSelectConnection && <div className="mt-3 flex flex-wrap gap-2">
+      {connected && <button type="button" disabled={disabled} onClick={() => onSelectConnection('native')} className="min-h-10 rounded-full bg-slate-900 px-4 text-xs font-medium text-white disabled:opacity-50">Use connected account</button>}
+      {provider.api_key_configured && <button type="button" disabled={disabled} onClick={() => onSelectConnection('api_key')} className="min-h-10 rounded-full border border-slate-300 px-4 text-xs font-medium text-slate-700 disabled:opacity-50">Use project API key</button>}
+    </div>}
     <div className="mt-3 flex flex-wrap gap-2">
       <button type="button" disabled={disabled || pending || !provider.cli_available} onClick={() => {
         posthog.capture('landing_local_provider_login_clicked', { provider: provider.id });

@@ -57,6 +57,10 @@ export class LocalProvidersApiService {
     return this.request('', { signal });
   }
 
+  static getProviderStatus(provider: LocalProviderId, signal?: AbortSignal): Promise<LocalProviderStatus> {
+    return this.request(`/${provider}`, { signal });
+  }
+
   static login(provider: LocalProviderId): Promise<LocalProviderStatus> {
     return this.request(`/${provider}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
   }

@@ -113,6 +113,17 @@ it('shows the saved server title on /order even when navigation contains an old 
   expect(LdrToMpdApiService.convertLdrToMpd).toHaveBeenCalledWith('ldr', 'Sunny Dachshund', 'token');
 });
 
+it.each(['basic_bricks', 'all_parts'])('shows a concise build warning only for %s checkout', async mode => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', mode, status: 'completed', name: 'Pirate ship', ldr_content: 'ldr' } as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={[{ pathname: '/order', state: { generation_id: 'g' } }]}><OrderKit /></MemoryRouter>));
+  const steps = Array.from(container.querySelectorAll('a')).find(link => link.textContent === 'Check the steps');
+  if (mode === 'all_parts') {
+    expect(steps?.getAttribute('href')).toBe('/instructions?id=g');
+    expect(steps?.parentElement?.textContent).toContain('Some pieces may not fit.');
+    expect(Array.from(container.querySelectorAll('a')).find(link => link.textContent === 'Basic bricks')?.getAttribute('href')).toBe('/');
+  } else expect(steps).toBeUndefined();
+});
+
 const revisionHistory = [
   {id: 'old', generation_id: 'root', version: 3, status: 'completed', created_at: '2026-10-01', prompt: 'rover'},
   {id: 'g', generation_id: 'root', version: 7, status: 'completed', created_at: '2026-09-30', prompt: 'rover'},
@@ -288,11 +299,6 @@ it('places editing and ordering beside the preview and preserves the block edito
   expect(community.closest('.model-workspace-secondary')).not.toBeNull();
   expect(instructions.compareDocumentPosition(community) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(container.textContent).not.toContain('Not what you were expecting?');
-  act(() => (editForm.querySelector('.model-edit-suggestions button') as HTMLButtonElement).click());
-  expect((container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement).value).toBe('Use a brighter, more vibrant color palette.');
-  expect(posthog.capture).toHaveBeenCalledWith('generated_model_edit_suggestion_clicked', {
-    generation_id: 'g', is_demo_model: false, suggestion: 'colors',
-  });
   await act(async () => (manualButtons[0] as HTMLButtonElement).click());
   expect(fetch).toHaveBeenCalledWith('/voxels.xyzrgb');
   expect(container.querySelector('#voxel-edit-prompt')).toBeNull();

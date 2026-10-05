@@ -43,6 +43,7 @@ export default function OrderKit() {
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
   const [resolvedName, setResolvedName] = React.useState<string | null>(null);
+  const [allParts, setAllParts] = React.useState(false);
   const name = resolvedName || state.name || 'Your Model';
   const [mpdContent, setMpdContent] = React.useState<string | null>(null);
   const [modelLoading, setModelLoading] = React.useState(false);
@@ -97,6 +98,7 @@ export default function OrderKit() {
   React.useEffect(() => {
     const controller = new AbortController();
     setResolvedName(null);
+    setAllParts(false);
     const fetchModelContent = async () => {
       if (!generationId) {
         // Try to get from localStorage as fallback
@@ -113,6 +115,7 @@ export default function OrderKit() {
         if (controller.signal.aborted) return;
         const fetchedName = generationData.name || generationData.prompt || state.name || "Your Model";
         setResolvedName(fetchedName);
+        setAllParts(generationData.mode === 'all_parts' || generationData.endpoint === 'novaToBricks');
         
         // Get MPD content from URL or convert LDR to MPD (same as GeneratedModel)
         let mpdContent: string | null = null;
@@ -228,6 +231,7 @@ export default function OrderKit() {
             <h2 className="checkout-summary-heading">{name}</h2>
             <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
             <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
+            {allParts && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-slate-600">Using all parts mode is experimental. Some pieces may not fit. <Link className="underline underline-offset-2" to={`/instructions?id=${encodeURIComponent(generationId)}`}>Check the steps</Link> before you buy, or choose <Link className="underline underline-offset-2" to="/">Basic bricks</Link>.</p>}
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
               setSummaryExpanded(value => !value); posthog.capture('order_summary_toggled', { generation_id: generationId, expanded: !summaryExpanded });
             }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? formatOrderPrice(pricing.totalCents) : '—'}</strong></button>

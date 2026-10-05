@@ -12,33 +12,59 @@ Install Docker Desktop, then run:
 
 ```sh
 npm install
-npm run setup:nova
 npm start
 ```
 
-`setup:nova` fetches two immutable upstream revisions into ignored
+Both Nova repositories must be installed together, and the Nova runtime must be
+running for **All parts** generations and AI edits to work. The toolkit is a
+dependency of the Docker/web app; it is not a second server to start separately.
+This follows [Nova's installation instructions](https://github.com/jjohnson5253/ldraw-nova#installation):
+combine compatible repositories, build their Docker image, then run the app.
+
+The root `npm install` fetches two immutable fork revisions into ignored
 `backend/.nova/toolkit` and `backend/.nova/web`. It builds the upstream Dockerfile
 with the toolkit as its additional build context. The only additions are the
 private tenant gateway, generation cost guard, and artifact export adapter in `backend/nova-service`.
 LeoCAD, the official parts library, Jev, provider SDKs and Nova's sandbox come
 from the upstream image. The first build can take several minutes and several
-GB of disk space.
+GB of disk space. `npm start` starts or reuses the managed container, waits for
+its authenticated runtime endpoint, and then starts the BrickBuilder API. It
+does not rebuild or replace a healthy matching container on every API restart.
+`npm run install:nova` builds just Nova; `npm run start:nova` starts just its
+runtime. `npm run setup:nova` and `npm run update:nova` build and start the
+configured pins. `npm run nova:status` inspects status without rebuilding.
+Ctrl+C stops the BrickBuilder dev servers but leaves Nova running with its
+persistent sessions/settings, matching upstream's detached Docker startup.
 
-The runtime listens on `127.0.0.1:8778`; set `NOVA_SERVICE_PORT` before setup to
+The runtime listens on `127.0.0.1:8778`; set `NOVA_SERVICE_PORT` before install/start to
 choose another port. The generated `connection.json` and `service.env` contain
 a random server token and are owner-readable and ignored by Git. They are never
 sent to the browser. Setup preserves session data and the protected provider
 configuration across rebuilds. It replaces only this installation's managed
-container, whose name is derived from the installation directory.
+container, whose name is derived from the installation directory. Other Nova
+installations are never stopped. If using a remote service, set both
+`NOVA_SERVICE_URL` and `NOVA_SERVICE_TOKEN` in `backend/.env`; npm checks that
+service instead of building/starting another container. For Basic bricks only,
+set `NOVA_SKIP_SETUP=true` for both install and start.
 
 Choose **All parts (beta)** in the mode dropdown below the landing-page prompt.
 **Basic bricks** uses the standard BrickBuilder LLM-to-bricks workflow. The model
 dropdown applies to either mode, and **Upload image** adds a reference for either
 workflow. Press **Create** inside the prompt bar to start a build. The selected API key
 is forwarded from the backend to the private Nova provider configuration.
-The landing page uses the backend's project API keys in local and hosted runs.
-Set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `FAL_KEY` in the ignored backend
-environment for the providers you want to use.
+**Local provider connections** signs into Nova's own provider session once the
+runtime is installed. OpenAI uses Nova's device login; Claude uses Nova's SDK
+browser login and optional manual code. Native connections are localhost-only.
+No host provider credential directory is mounted into the runtime.
+
+On a local install, choosing **All parts** or another model checks that provider's
+connection. If no account is connected, a login modal opens using Nova's own
+ChatGPT/Claude login flow. Once connected, later builds reuse the saved session.
+An existing project API key can be selected explicitly instead. Basic bricks
+and hosted website builds retain their existing API-key flow. Nova stores OAuth
+sessions in its protected per-tenant configuration volume, not in browser storage
+or the Supabase generations table. Closing the modal preserves the model/prompt;
+press **Create** after connecting to start the build.
 
 The generation adapter selects Nova's **Agent** mode with **Full** tool
 permissions so builds run automatically in their isolated workspace. Nova's

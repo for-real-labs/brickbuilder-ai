@@ -2,12 +2,14 @@
   "name": "brickbuilderai",
   "private": true,
   "scripts": {
-    "postinstall": "npm run install:backend && npm run install:frontend",
+    "postinstall": "npm run install:backend && npm run install:frontend && npm run install:nova",
     "install:backend": "node scripts/backend.cjs install",
     "install:frontend": "npm --prefix frontend install",
     "start": "concurrently --kill-others --success first --names backend,frontend \"npm run start:backend\" \"npm run start:frontend\"",
     "start:backend": "node scripts/backend.cjs start",
     "start:frontend": "npm --prefix frontend run dev",
+    "install:nova": "node scripts/nova.cjs install",
+    "start:nova": "node scripts/nova.cjs start",
     "setup:nova": "node scripts/nova.cjs setup",
     "update:nova": "node scripts/nova.cjs update",
     "nova:status": "node scripts/nova.cjs status",
@@ -17,6 +19,7 @@
     "node": ">=18"
   },
   "devDependencies": {
-    "concurrently": "^9.2.4"
+    "concurrently": "^9.2.4",
+    "dotenv": "^17.2.3"
   }
 }
