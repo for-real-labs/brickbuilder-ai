@@ -43,8 +43,8 @@ def email_payload(row):
                  '</a></p>')
     return {'from': sender(), 'to': [row['email']], 'reply_to': 'support@brickbuilder.ai',
             'subject': f'{title} is ready!',
-            'text': f'{title} is ready!\n\nSee your model: {url}\n\nYou asked for this one email on BrickBuilder. No more reminders.',
-            'html': f'<p><strong>{html.escape(title)} is ready!</strong></p>{image}<p><a href="{html.escape(url, quote=True)}">See your model</a></p><p>You asked for this one email on BrickBuilder. No more reminders.</p>'}
+            'text': f'{title} is ready!\n\nSee your model: {url}',
+            'html': f'<p><strong>{html.escape(title)} is ready!</strong></p>{image}<p><a href="{html.escape(url, quote=True)}">See your model</a></p>'}
 
 
 async def deliver_one(client, transport=None):
