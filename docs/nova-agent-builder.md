@@ -40,8 +40,13 @@ No host provider credential directory is mounted into the runtime.
 
 The generation adapter selects Nova's **Agent** mode with **Full** tool
 permissions so builds run automatically in their isolated workspace. Nova's
-own step limit and model defaults apply. BrickBuilder retains its overall job
-time limit (`NOVA_TIMEOUT_SECONDS`, default 1800, allowed 60–7200 seconds).
+own step limit and model defaults apply. BrickBuilder has no default wall-clock
+cutoff for Nova; builds continue until Nova finishes or the owner cancels them.
+An operator can explicitly set `NOVA_TIMEOUT_SECONDS` (60–86400 seconds);
+unset or `0` disables that limit. Progress labels come directly from Nova,
+without additional Claude or OpenAI summarization calls. Failed or cancelled
+Nova cards offer **Resume build**, preserving the original conversation,
+workspace and provider settings instead of starting over.
 Describe scale and part preferences in the prompt. There are no separate
 BrickBuilder planning prompts, tool schemas, render loop or acceptance rules.
 
@@ -130,7 +135,7 @@ docker build --platform linux/amd64 \
 ```
 
 The fork's Dockerfile supplies its dependency versions and checksums. The
-Nova application source remains unchanged. The `Nova runtime image` GitHub
+Nova application source comes from the pinned fork. Hosted Claude API-key models select the fork's opt-in Claude Agent SDK path, matching browser-login Nova's agent loop while retaining API-key billing. OpenAI retains its upstream transport. The `Nova runtime image` GitHub
 workflow builds the hosted recipe and publishes commit-tagged images on main,
 staging or explicit dispatch. PR builds validate without publishing.
 

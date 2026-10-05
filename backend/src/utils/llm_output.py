@@ -79,6 +79,11 @@ class OutputRecorder:
             self.summary_ready.set()
         self.dirty = True
 
+    async def set_progress(self, phase: str) -> None:
+        # Nova already produces progress events; no extra model request is needed.
+        self.summary = " ".join(phase.split())[:200]
+        self.dirty = True
+
     async def flush(self, status: str = "processing", error: str | None = None) -> None:
         text = self.text
         summary = self.summary
@@ -120,14 +125,15 @@ class OutputRecorder:
                 pass
 
 
-async def run_with_output(generation_id: str, generate, *args) -> None:
+async def run_with_output(generation_id: str, generate, *args, native_progress: bool = False) -> None:
     recorder = OutputRecorder(generation_id, getattr(args[0], "prompt", "") or "" if args else "")
     writer = asyncio.create_task(recorder.run())
-    summarizer = asyncio.create_task(recorder.run_summaries())
+    summarizer = None if native_progress else asyncio.create_task(recorder.run_summaries())
     error = None
     cancelled = False
     try:
-        error = await generate(generation_id, *args, recorder.append)
+        kwargs = {"on_progress": recorder.set_progress} if native_progress else {}
+        error = await generate(generation_id, *args, recorder.append, **kwargs)
     except asyncio.CancelledError:
         cancelled = True
         raise
@@ -138,9 +144,10 @@ async def run_with_output(generation_id: str, generate, *args) -> None:
         # Let an in-flight upload finish before writing the final snapshot.
         recorder.stopped.set()
         recorder.summary_ready.set()
-        if cancelled:
-            summarizer.cancel()
-        await asyncio.gather(summarizer, return_exceptions=True)
+        if summarizer:
+            if cancelled:
+                summarizer.cancel()
+            await asyncio.gather(summarizer, return_exceptions=True)
         await writer
         await recorder.flush("cancelled" if cancelled else "failed" if error else "completed", error)
 

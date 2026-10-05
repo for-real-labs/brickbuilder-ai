@@ -24,12 +24,14 @@ export const isGenerationActive = (status: string) =>
   ['queued', 'started', 'processing', 'ldr_processing', 'resizing'].includes(status);
 
 const storageKey = (owner: string) => `pending_generations:${owner}`;
+const keepActivity = (row: GenerationActivity) => isGenerationActive(row.status) || isPreviewPending(row)
+  || (row.endpoint === 'novaToBricks' && ['failed', 'cancelled'].includes(row.status));
 
 function restore(owner: string): GenerationActivity[] {
   try {
     const value: unknown = JSON.parse(localStorage.getItem(storageKey(owner)) || '[]');
     return Array.isArray(value) ? value.filter((row): row is GenerationActivity =>
-      row && typeof row.id === 'string' && typeof row.prompt === 'string' && (isGenerationActive(row.status) || isPreviewPending(row)),
+      row && typeof row.id === 'string' && typeof row.prompt === 'string' && keepActivity(row),
     ) : [];
   } catch {
     return [];
@@ -38,7 +40,7 @@ function restore(owner: string): GenerationActivity[] {
 
 function persist(owner: string, rows: GenerationActivity[]) {
   try {
-    localStorage.setItem(storageKey(owner), JSON.stringify(rows.filter(row => isGenerationActive(row.status) || isPreviewPending(row))));
+    localStorage.setItem(storageKey(owner), JSON.stringify(rows.filter(keepActivity)));
   } catch { /* Status recovery through the API still works without browser storage. */ }
 }
 
@@ -62,9 +64,9 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
     return () => clearTimeout(timeout);
   }, [generations, owner, enabled]);
 
-  const trackGeneration = useCallback((generation: GenerationActivity) => {
+  const trackGeneration = useCallback((generation: GenerationActivity, replacesId?: string) => {
     if (currentOwner.current !== owner) return;
-    rows.current = [generation, ...rows.current.filter(row => row.id !== generation.id)];
+    rows.current = [generation, ...rows.current.filter(row => row.id !== generation.id && row.id !== replacesId)];
     persist(owner, rows.current);
     setGenerations(rows.current);
   }, [owner]);
@@ -72,6 +74,7 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
   useEffect(() => {
     const controller = new AbortController();
     let timer: ReturnType<typeof setTimeout>;
+    let recoveredResumable = false;
     if (currentOwner.current !== owner || rows.current.length === 0) {
       rows.current = restore(owner);
       currentOwner.current = owner;
@@ -82,7 +85,13 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
 
     const refresh = async () => {
       try {
-        const active = await GetUserGenerationsApiService.getProcessingGenerations(authToken, controller.signal);
+        const recovery = !recoveredResumable
+          ? GetUserGenerationsApiService.getResumableNovaGenerations(authToken, controller.signal).catch(() => [])
+          : Promise.resolve([]);
+        recoveredResumable = true;
+        const [active, resumable] = await Promise.all([
+          GetUserGenerationsApiService.getProcessingGenerations(authToken, controller.signal), recovery,
+        ]);
         if (controller.signal.aborted) return;
         const activeIds = new Set(active.map(row => row.id));
         // Jobs absent from the active list may have completed while this page
@@ -99,10 +108,11 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
             errorMessage: status.error_message || undefined };
         }));
         if (controller.signal.aborted) return;
-        const updates = new Map<string, GenerationActivity>(active.map(row => [row.id, {
+        const updates = new Map<string, GenerationActivity>([...resumable, ...active].map(row => [row.id, {
           id: row.id, prompt: row.prompt, name: row.name, status: row.status, endpoint: row.endpoint,
           createdAt: row.created_at || rows.current.find(saved => saved.id === row.id)?.createdAt,
           imageUrl: row.preview_image_url || row.processed_image_url || row.external_image_url,
+          errorMessage: row.error_message,
         }]));
         for (const result of settled) {
           if (result.status === 'fulfilled') updates.set(result.value.id, result.value);

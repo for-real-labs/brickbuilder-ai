@@ -49,7 +49,7 @@ export class NovaToBricksApiService {
     if (!['api_key', 'native'].includes(request.authMode)) throw new Error('Choose a supported provider connection');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = `Bearer ${authToken}`;
-    const response = await apiFetch(`${API_BASE_URL}/novaToBricks`, {
+    const response = await (authToken ? apiFetch : authenticatedApiFetch)(`${API_BASE_URL}/novaToBricks`, {
       method: 'POST', headers,
       body: JSON.stringify({
         source_generation_id: request.sourceGenerationId,

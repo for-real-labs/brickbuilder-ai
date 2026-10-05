@@ -158,14 +158,17 @@ def test_sse_reconnect_does_not_resubmit_messages():
 
 def test_upstream_activity_is_shown_without_repeating_heartbeat_phases():
     output = []
+    progress = []
     events = ('event: snapshot\ndata: {"running": true, "activity": {"phase": "Running LDraw Nova"}}\n\n'
               'event: activity\ndata: {"phase": "Running LDraw Nova"}\n\n'
               'event: activity\ndata: {"phase": "Reviewing a rendered image"}\n\n'
               'event: done\ndata: {}\n\n')
     async def run():
         async def emit(text): output.append(text)
+        async def report(phase): progress.append(phase)
         async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
                 lambda req: httpx.Response(200, text=events)))) as service:
-            await service.wait_for_turn('chat', emit)
+            await service.wait_for_turn('chat', emit, report)
     asyncio.run(run())
     assert output == ['Running LDraw Nova\n\n', 'Reviewing a rendered image\n\n']
+    assert progress[-1] == 'Reviewing a rendered image'

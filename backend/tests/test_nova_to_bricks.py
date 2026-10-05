@@ -19,10 +19,14 @@ def test_request_accepts_nova_continuation_and_validates_provider_input():
         module.NovaToBricksRequest(prompt='castle', auth_mode='oauth-token')
 
 
-def test_timeout_is_bounded(monkeypatch):
+def test_nova_has_no_default_wall_clock_cutoff_but_can_be_explicitly_limited(monkeypatch):
+    monkeypatch.delenv('NOVA_TIMEOUT_SECONDS', raising=False)
+    assert module._generation_timeout() is None
     for value in ('NaN', 'infinity', 'invalid', '-2', '999999'):
         monkeypatch.setenv('NOVA_TIMEOUT_SECONDS', value)
-        assert module._generation_timeout() == 1800
+        assert module._generation_timeout() is None
+    monkeypatch.setenv('NOVA_TIMEOUT_SECONDS', '0')
+    assert module._generation_timeout() is None
     monkeypatch.setenv('NOVA_TIMEOUT_SECONDS', '300')
     assert module._generation_timeout() == 300
 
@@ -62,7 +66,7 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     class Service:
         async def __aenter__(self): return self
         async def __aexit__(self, *args): pass
-        async def run(self, request, provider, save, on_output, previous):
+        async def run(self, request, provider, save, on_output, previous, **kwargs):
             await save(session)
             return result
     class Packer:
@@ -92,7 +96,7 @@ def test_failed_nova_turn_does_not_charge(monkeypatch):
     class Service:
         async def __aenter__(self): return self
         async def __aexit__(self, *args): pass
-        async def run(self, *args): raise ValueError('Nova did not publish a model')
+        async def run(self, *args, **kwargs): raise ValueError('Nova did not publish a model')
     charge = AsyncMock()
     monkeypatch.setattr(module, 'generation_storage', storage)
     monkeypatch.setattr(module, '_nova_service', lambda *args: Service())

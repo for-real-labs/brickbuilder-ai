@@ -35,12 +35,12 @@ logger = logging.getLogger(__name__)
 _background_tasks: set[asyncio.Task] = set()
 
 
-def _generation_timeout() -> float:
+def _generation_timeout() -> float | None:
     try:
-        seconds = float(os.getenv("NOVA_TIMEOUT_SECONDS", "1800"))
-        return seconds if math.isfinite(seconds) and 60 <= seconds <= 7200 else 1800
+        seconds = float(os.getenv("NOVA_TIMEOUT_SECONDS", "0"))
+        return seconds if math.isfinite(seconds) and 60 <= seconds <= 86400 else None
     except ValueError:
-        return 1800
+        return None
 
 
 class NovaToBricksRequest(LlmToBricksRequest):
@@ -80,7 +80,7 @@ async def _owned_session(generation_id: str, auth_info: dict) -> dict:
         raise HTTPException(status_code=409, detail="This generation predates the Nova runtime integration or its session is unavailable") from None
 
 
-async def process_nova_to_bricks_task(generation_id, request, user_info, auth_info, on_thinking=None):
+async def process_nova_to_bricks_task(generation_id, request, user_info, auth_info, on_thinking=None, on_progress=None):
     async def heartbeat():
         while True:
             await asyncio.sleep(5)
@@ -94,12 +94,15 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
         async with _nova_service(request, auth_info) as nova:
             try:
                 result = await asyncio.wait_for(nova.run(request, provider,
-                    lambda session: _save_session(generation_id, session), on_thinking, request._nova_session),
+                    lambda session: _save_session(generation_id, session), on_thinking, request._nova_session,
+                    on_progress=on_progress),
                     timeout=_generation_timeout())
             except asyncio.TimeoutError:
                 raise ValueError("Nova reached the build time limit. Its session is retained for continuation.") from None
         if on_thinking:
             await on_thinking("\n\nSaving Nova's model and source files.\n\n")
+        if on_progress:
+            await on_progress("Saving your model and source files")
         with tempfile.TemporaryDirectory(prefix="brickbuilder-nova-import-") as directory:
             model_path = Path(directory) / "model.mpd"
             model_path.write_text(result.mpd, encoding="utf-8")
@@ -173,7 +176,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,
         endpoint="novaToBricks", model_3d=request.model, edit_generation_id=request.generation_id,
     )
-    task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info))
+    task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info, native_progress=True))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
     return ImageToBricksResponse(generation_id=generation_id, message="Nova generation started. Poll /generation/{generation_id} for status.")

@@ -139,11 +139,12 @@ async def worker_url(tenant):
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
         env = {**os.environ, 'LDRAW_NOVA_AGENT_USER': account,
+               'LDRAW_NOVA_CLAUDE_API_RUNTIME': 'sdk',
                'LDRAW_NOVA_TOOLKIT_DIR': str(toolkit), 'LDRAW_NOVA_DATA_DIR': str(data), 'LDRAW_NOVA_WEB_CONFIG_DIR': str(config)}
         process = await asyncio.create_subprocess_exec(
             'python3', '-m', 'uvicorn', 'brickbuilder_integration.worker:app',
             '--app-dir', '/app/web/backend', '--host', '127.0.0.1', '--port', str(port),
-            env=env, start_new_session=True, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+            env=env, start_new_session=True)
         url = f'http://127.0.0.1:{port}'
         try:
             async with httpx.AsyncClient(headers={'Authorization': 'Bearer ' + TOKEN}) as client:

@@ -45,6 +45,7 @@ export interface GenerationWithOrder {
   endpoint: string;
   created_at: string;
   status: string;
+  error_message?: string;
   ldr_url?: string;
   xyzrgb_url?: string;
   image_url?: string;
@@ -74,6 +75,12 @@ export interface GetUserGenerationsResponse {
 }
 
 export class GetUserGenerationsApiService {
+  static async getResumableNovaGenerations(authToken?: string, signal?: AbortSignal): Promise<GenerationWithOrder[]> {
+    const page = await this.getUserGenerations(authToken, 50, 0, false, signal);
+    return page.generations.filter(row => row.endpoint === 'novaToBricks'
+      && ['failed', 'cancelled'].includes(row.status));
+  }
+
   static async getProcessingGenerations(authToken?: string, signal?: AbortSignal): Promise<GenerationWithOrder[]> {
     const generations = new Map<string, GenerationWithOrder>();
     let offset = 0;

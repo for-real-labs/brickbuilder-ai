@@ -1225,6 +1225,11 @@ export default function LandingPage() {
 
             <GenerationActivityList generations={generations} error={activityError}
               onOpen={id => navigate(`/generated-model?id=${id}`)}
+              onResumed={(sourceId, newId) => {
+                const row = generations.find(generation => generation.id === sourceId);
+                if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
+                  createdAt: new Date().toISOString(), previewWaitUntil: undefined }, sourceId);
+              }}
               onCancelled={id => {
                 const row = generations.find(generation => generation.id === id);
                 if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });

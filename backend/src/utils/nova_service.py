@@ -163,7 +163,7 @@ class NovaService:
             raise ValueError('Could not import the published Nova source archive') from None
         return await asyncio.to_thread(read_export, bytes(data), session)
 
-    async def run(self, request, provider: str, save_session, on_output=None, previous: dict | None = None) -> NovaResult:
+    async def run(self, request, provider: str, save_session, on_output=None, previous: dict | None = None, *, on_progress=None) -> NovaResult:
         versions = await self.ready()
         model_id = await self.configure_model(request.model, provider, request.auth_mode)
         if previous:
@@ -184,7 +184,7 @@ class NovaService:
             await self.request('POST', f'api/chats/{chat_id}/messages', json={
                 'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']})
             started = True
-            await self.wait_for_turn(chat_id, on_output)
+            await self.wait_for_turn(chat_id, on_output, on_progress)
             after = await self.chat(chat_id)
             published = [row for key, row in after['models'].items() if key not in before['models']]
             if not published:
@@ -205,7 +205,7 @@ class NovaService:
                     pass
             raise
 
-    async def wait_for_turn(self, chat_id: str, on_output):
+    async def wait_for_turn(self, chat_id: str, on_output, on_progress=None):
         last_phase = None
         while True:
             event, data = 'message', []
@@ -226,12 +226,14 @@ class NovaService:
                                 raise ValueError('Nova could not complete this turn. Check the runtime provider connection; the session is retained.')
                             if event == 'approval':
                                 raise ValueError('Nova requires an approval. Use automatic agent permissions for BrickBuilder generations.')
-                            if on_output:
-                                message = (payload.get('delta') if event == 'text' else
-                                           payload.get('summary') if event == 'progress' else
-                                           payload.get('phase') if event == 'activity' else
-                                           payload.get('activity', {}).get('phase') if event == 'snapshot' else None)
-                                if isinstance(message, str) and message:
+                            message = (payload.get('delta') if event == 'text' else
+                                       payload.get('summary') if event == 'progress' else
+                                       payload.get('phase') if event == 'activity' else
+                                       payload.get('activity', {}).get('phase') if event == 'snapshot' else None)
+                            if isinstance(message, str) and message:
+                                if on_progress and event != 'text':
+                                    await on_progress(message)
+                                if on_output:
                                     if event == 'text':
                                         await on_output(message)
                                     elif message != last_phase:
