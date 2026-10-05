@@ -2261,9 +2261,6 @@ export default function GeneratedModel() {
 
         {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
           <VoxelPromptEditor
-            onSuggestionSelected={suggestion => posthog.capture('generated_model_edit_suggestion_clicked', {
-              generation_id: currentGenerationId, is_demo_model: isDemoModel, suggestion,
-            })}
             prompt={editPrompt}
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}

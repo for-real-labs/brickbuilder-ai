@@ -299,11 +299,6 @@ it('places editing and ordering beside the preview and preserves the block edito
   expect(community.closest('.model-workspace-secondary')).not.toBeNull();
   expect(instructions.compareDocumentPosition(community) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(container.textContent).not.toContain('Not what you were expecting?');
-  act(() => (editForm.querySelector('.model-edit-suggestions button') as HTMLButtonElement).click());
-  expect((container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement).value).toBe('Use a brighter, more vibrant color palette.');
-  expect(posthog.capture).toHaveBeenCalledWith('generated_model_edit_suggestion_clicked', {
-    generation_id: 'g', is_demo_model: false, suggestion: 'colors',
-  });
   await act(async () => (manualButtons[0] as HTMLButtonElement).click());
   expect(fetch).toHaveBeenCalledWith('/voxels.xyzrgb');
   expect(container.querySelector('#voxel-edit-prompt')).toBeNull();

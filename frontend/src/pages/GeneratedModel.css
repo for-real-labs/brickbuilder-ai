@@ -9,10 +9,6 @@
 .model-preview-section figure { padding: 6px; border-radius: 24px; }
 .model-preview-section figcaption { padding: 7px 0 5px; color: #7b8391; font-size: 11px; }
 .model-refine-card, .model-order-card { border: 1px solid #e4e7ec; background: #fff; border-radius: 22px; padding: 22px; }
-.model-edit-suggestions { display: flex; flex-wrap: wrap; gap: 6px; margin: 15px 0 12px; }
-.model-edit-suggestions button { border: 1px solid #e5e7eb; background: #fff; border-radius: 8px; padding: 6px 9px; color: #596273; font-size: 12px; transition: border-color .15s, background .15s; }
-.model-edit-suggestions button:hover { border-color: #f44336; background: #fff5f4; }
-.model-edit-suggestions button:disabled { opacity: .5; cursor: not-allowed; }
 .model-manual-edit > button { height: 44px; min-width: 0; padding: 0 12px; border-width: 1px; border-radius: 12px; font-size: 12px; }
 .model-manual-edit > button svg { display: block; width: 14px; }
 .model-order-card { background: #fffaf9; border-color: #f6dfda; }
@@ -48,7 +44,6 @@
   .model-preview-canvas { height: clamp(420px, 61vh, 650px); }
   .model-refine-card, .model-order-card { padding: 18px; }
   .model-refine-card textarea { height: 82px; min-height: 82px; }
-  .model-edit-suggestions { margin-top: 12px; }
   .model-mobile-order { display: none; }
   .model-workspace-manual { grid-template-columns: minmax(0, 1fr) 320px; }
 }
