@@ -8,6 +8,7 @@ import { GetUserGenerationsApiService } from '../src/services/getUserGenerations
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
+import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 
@@ -17,7 +18,10 @@ let activity: ReturnType<typeof useGenerationActivity>;
 const open = vi.fn();
 function Harness({ owner = 'user', enabled = true }: { owner?: string; enabled?: boolean }) {
   activity = useGenerationActivity(owner, owner === 'user' ? 'token' : undefined, enabled);
-  return <GenerationActivityList {...activity} onOpen={open} onCancelled={id => {
+  return <GenerationActivityList {...activity} onOpen={open} onResumed={(sourceId, newId) => {
+    const row = activity.generations.find(row => row.id === sourceId);
+    if (row) activity.trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined }, sourceId);
+  }} onCancelled={id => {
     const row = activity.generations.find(row => row.id === id);
     if (row) activity.trackGeneration({ ...row, status: 'cancelled' });
   }} />;
@@ -47,6 +51,7 @@ beforeEach(() => {
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
+  vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -233,4 +238,30 @@ it('uses the saved title in preview cards when a processing job completes', asyn
   await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
   expect(container.querySelector('h3')?.textContent).toBe('Sunny Dachshund');
   expect(activity.generations[0].prompt).toContain('standing on a lawn');
+});
+
+it('recovers a failed Nova build and resumes the saved session without keeping a duplicate failed card', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  vi.mocked(GetUserGenerationsApiService.getResumableNovaGenerations).mockResolvedValue([
+    { ...job('cottage'), endpoint: 'novaToBricks', status: 'failed', error_message: 'Build time limit' },
+  ] as never);
+  const resume = vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'continued' } as never);
+  await act(async () => root.render(<Harness />));
+  expect(container.textContent).toContain('Build time limit');
+  const button = [...container.querySelectorAll('button')].find(b => b.textContent === 'Resume build')!;
+  await act(async () => button.click());
+  expect(resume).toHaveBeenCalledWith('cottage', expect.stringContaining('saved conversation and workspace'));
+  expect(activity.generations.map(row => row.id)).toEqual(['continued']);
+  expect(activity.generations[0].status).toBe('started');
+});
+
+it('keeps resumable Nova failures in the owner cache when leaving and returning', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  await act(async () => root.render(<Harness />));
+  act(() => activity.trackGeneration({ id: 'cottage', prompt: 'Cottage', endpoint: 'novaToBricks', status: 'failed' }));
+  expect(JSON.parse(localStorage.getItem('pending_generations:v2:user')!)[0].id).toBe('cottage');
+  act(() => root.unmount());
+  root = createRoot(container);
+  await act(async () => root.render(<Harness />));
+  expect(container.textContent).toContain('Resume build');
 });

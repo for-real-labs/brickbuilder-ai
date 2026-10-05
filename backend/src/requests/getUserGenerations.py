@@ -39,6 +39,7 @@ class GenerationWithOrder(BaseModel):
     endpoint: str
     created_at: str
     status: str
+    error_message: Optional[str] = None
     ldr_url: Optional[str] = None
     xyzrgb_url: Optional[str] = None
     parts_list_csv_url: Optional[str] = None  # Parts list CSV URL
@@ -184,6 +185,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
                 endpoint=gen.get("endpoint", ""),
                 created_at=gen.get("created_at", ""),
                 status=gen.get("status", ""),
+                error_message=gen.get("error_message"),
                 ldr_url=gen.get("ldr_url"),
                 xyzrgb_url=gen.get("xyzrgb_url"),
                 parts_list_csv_url=gen.get("parts_list_csv_url"),

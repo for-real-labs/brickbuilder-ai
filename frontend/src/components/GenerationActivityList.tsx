@@ -7,12 +7,14 @@ import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { isAgentGeneration } from '../utils/agentGeneration';
+import { ResumeNovaButton } from './ResumeNovaButton';
 
-export function GenerationActivityList({ generations, error, onOpen, onCancelled }: {
+export function GenerationActivityList({ generations, error, onOpen, onCancelled, onResumed }: {
   generations: GenerationActivity[];
   error: string | null;
   onOpen: (id: string) => void;
   onCancelled?: (id: string) => void;
+  onResumed?: (sourceId: string, newId: string) => void;
 }) {
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
@@ -61,6 +63,8 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
                 {active && agentGeneration && <LlmGenerationOutput generationId={generation.id} active />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
                 {active && <CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} />}
+                {(failed || cancelled) && generation.endpoint === 'novaToBricks' && onResumed &&
+                  <ResumeNovaButton generationId={generation.id} onResumed={id => onResumed(generation.id, id)} />}
                 {generation.status === 'completed' && <button type="button"
                   className="mt-3 min-h-10 w-full rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
                   onClick={() => {

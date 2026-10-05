@@ -26,6 +26,22 @@ def test_recorder_saves_text_and_finishes_after_background_work(monkeypatch):
     assert write.await_args.args == ('job', {'text': 'Building a castle', 'summary': '', 'status': 'completed', 'error': None})
 
 
+def test_native_nova_progress_is_persisted_without_any_progress_provider_requests(monkeypatch):
+    write = AsyncMock()
+    summarize = AsyncMock(side_effect=AssertionError('Nova must not invoke a summary model'))
+    monkeypatch.setattr(module, 'write_output', write)
+    monkeypatch.setattr(module, 'summarize_progress', summarize)
+    async def generate(id, on_text, *, on_progress):
+        await on_progress('Reading build instructions or reports')
+        await on_text('I am checking the cottage references.\n\n')
+        await on_progress('Reviewing a rendered image')
+    asyncio.run(module.run_with_output('nova-job', generate, native_progress=True))
+    summarize.assert_not_awaited()
+    assert write.await_args.args[1]['summary'] == 'Reviewing a rendered image'
+    assert write.await_args.args[1]['text'] == 'I am checking the cottage references.\n\n'
+    assert write.await_args.args[1]['status'] == 'completed'
+
+
 def test_failed_generation_is_recorded_and_storage_failure_does_not_fail_build(monkeypatch):
     write = AsyncMock()
     monkeypatch.setattr(module, 'write_output', write)
