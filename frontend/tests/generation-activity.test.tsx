@@ -80,7 +80,7 @@ it('uses live agent output for Nova full set jobs', async () => {
   await act(async () => root.render(<GenerationActivityList generations={[
     { id: 'nova', prompt: 'Spaceport', status: 'processing', endpoint: 'novaToBricks' },
   ]} error={null} onOpen={open} />));
-  expect(container.textContent).toContain('This will take up to 20 minutes. You can close this window safely.');
+  expect(container.textContent).toContain('This can take up to 30 min. You can close this window safely.');
   expect(output).toHaveBeenCalledWith('nova', expect.any(Function), expect.any(AbortSignal));
   expect(container.textContent).toContain('Searching LDraw parts and validating the launch tower');
   expect(container.querySelector('.brick-build-scene')).not.toBeNull();
