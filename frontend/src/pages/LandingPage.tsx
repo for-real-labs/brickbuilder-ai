@@ -983,7 +983,30 @@ export default function LandingPage() {
                   {inputValidationMessage}
                 </p>
               )}
+              {generationMethod === 'nova' && (
+                <p id="all-parts-warning" className="mt-2 text-left text-xs leading-relaxed text-slate-500">
+                  Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
+                <div id="landing-builder-mode" role="group" aria-label="Mode"
+                  aria-describedby={generationMethod === 'nova' ? 'all-parts-warning' : undefined}
+                  className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
+                  {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
+                    <button key={value} type="button" value={value}
+                      aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
+                      disabled={loading || checkingProvider || generationMethod === '3d'}
+                      onClick={() => {
+                        if (value === generationMethod) return;
+                        setGenerationMethod(value);
+                        if (localDevelopment && value === 'nova') void checkNovaConnection(llmModel);
+                        posthog.capture('landing_generation_method_selected', { generation_method: value });
+                      }}
+                      className={`min-h-9 flex-1 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
                 <GenerationModelSelector model={generationMethod === '3d' ? threeDModel : llmModel} mode={generationMethod} onChange={model => {
                   if (model === 'sam3d' || model === 'trellis') {
                     setThreeDModel(model);
@@ -994,26 +1017,6 @@ export default function LandingPage() {
                     if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
                   }
                 }} disabled={loading || checkingProvider} />
-                <div className="relative min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto">
-                  <label htmlFor="landing-builder-mode" className="sr-only">Mode</label>
-                  <select
-                    id="landing-builder-mode"
-                    value={generationMethod === '3d' ? 'llm' : generationMethod}
-                    disabled={loading || checkingProvider || generationMethod === '3d'}
-                    onChange={event => {
-                      const mode = event.target.value;
-                      if (mode !== 'llm' && mode !== 'nova') return;
-                      setGenerationMethod(mode);
-                      if (localDevelopment && mode === 'nova') void checkNovaConnection(llmModel);
-                      posthog.capture('landing_generation_method_selected', { generation_method: mode });
-                    }}
-                    className="min-h-11 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-44"
-                  >
-                    <option value="llm">Basic bricks</option>
-                    <option value="nova">All parts (beta)</option>
-                  </select>
-                  <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-                </div>
                 <button
                   type="button"
                   onClick={onPickImage}
