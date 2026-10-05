@@ -59,6 +59,30 @@ compatible construction features are exposed through generated upstream wrappers
 
 ## Project layout
 
+The blog also publishes articles from the **AI and LEGO** Substack. The
+`Import Substack posts` GitHub Action checks its RSS feed every half hour,
+sanitizes public HTML, runs the focused import tests, and merges a content-only
+PR into `main`. The publication branch starts from `main`, so unrelated work
+waiting in `staging` is not promoted. It then verifies the live import manifest
+and syncs `main` into `staging`.
+
+Configure repository variables `SUBSTACK_FEED_URL` and
+`SUBSTACK_FEED_PROXY_URL`, plus the secret `SUBSTACK_FEED_PROXY_SECRET`. The
+`substack-feed` Supabase function uses the matching secret and a fixed
+`SUBSTACK_FEED_URL` to relay RSS when Substack blocks GitHub runner IPs. No
+personal GitHub token is required: the workflow uses its short-lived repository
+token and runs its tests before merging. `BLOG_GITHUB_TOKEN` is an optional
+GitHub App or repository-scoped personal token for installations that need
+downstream GitHub workflows to trigger normally. GitHub branch rules remain in
+effect.
+
+Only `frontend/src/data/substack-posts.json`,
+`frontend/public/substack-imports.json`, and `frontend/public/sitemap.xml` may
+change in an automatic publication. Existing native posts retain their routes;
+their Substack copies are recorded in the public import manifest to prevent
+duplicates. Application and workflow changes still go through normal staging
+review.
+
 | Folder | What it is | Stack |
 | --- | --- | --- |
 | `frontend/` | Web app: upload, 3D viewer, instructions, checkout | React, Vite, TypeScript, Three.js, Tailwind, Supabase, Stripe |

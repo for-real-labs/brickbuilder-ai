@@ -1,0 +1,75 @@
+name: Import Substack posts
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: substack-blog-import
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ secrets.BLOG_GITHUB_TOKEN || github.token }}
+      SUBSTACK_FEED_URL: ${{ vars.SUBSTACK_FEED_URL }}
+      SUBSTACK_FEED_PROXY_URL: ${{ vars.SUBSTACK_FEED_PROXY_URL }}
+      SUBSTACK_FEED_PROXY_SECRET: ${{ secrets.SUBSTACK_FEED_PROXY_SECRET }}
+    steps:
+      # Only import into production's tree; staging may hold unrelated app work.
+      - name: Check out production
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.BLOG_GITHUB_TOKEN || github.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+        working-directory: frontend
+      - name: Test the importer and publication boundary
+        run: npx vitest run tests/import-substack-posts.test.js tests/blog-posts.test.tsx tests/blog-ranking-page.test.tsx tests/validate-blog-publish.test.js tests/verify-substack-deployment.test.js tests/substack-feed.test.js
+        working-directory: frontend
+      - name: Import new posts
+        run: |
+          test -n "$SUBSTACK_FEED_URL" || { echo '::error::SUBSTACK_FEED_URL is not configured'; exit 1; }
+          node frontend/scripts/import-substack-posts.mjs
+      - name: Publish only the imported blog files
+        id: publish
+        run: |
+          set -euo pipefail
+          if [ -z "$(git status --porcelain)" ]; then
+            echo 'No new Substack posts found.'
+            exit 0
+          fi
+          branch="automation/substack-${GITHUB_RUN_ID}"
+          git switch -c "$branch"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add --all
+          git commit -m 'Import new Substack posts'
+          node frontend/scripts/validate-blog-publish.mjs
+          sha="$(git rev-parse HEAD)"
+          git push --set-upstream origin "$branch"
+          url="$(gh pr create --base main --head "$branch" --title 'Publish new Substack posts' --body 'Automatic publication of sanitized Substack posts. Importer, relay, and publication-boundary tests passed in this workflow. Only the imported post data, public import manifest, and sitemap may change.')"
+          gh pr merge "$url" --squash --match-head-commit "$sha"
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Published $url" >> "$GITHUB_STEP_SUMMARY"
+      - name: Verify the public blog contains every imported post
+        run: node frontend/scripts/verify-substack-deployment.mjs frontend/public/substack-imports.json https://brickbuilder.ai/substack-imports.json
+      - name: Keep staging current without promoting its other changes
+        if: steps.publish.outputs.url != ''
+        run: |
+          # GITHUB_TOKEN merges don't trigger push workflows. Sync explicitly.
+          # Conflicts fail visibly and leave the published posts intact.
+          gh api "repos/$GITHUB_REPOSITORY/merges" -f base=staging -f head=main
