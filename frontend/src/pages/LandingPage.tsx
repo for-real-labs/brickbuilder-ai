@@ -19,6 +19,7 @@ import { SiteFooter } from "../components/SiteFooter";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity } from "../hooks/useGenerationActivity";
+import { useAnimatedGenerationStats } from "../hooks/useAnimatedGenerationStats";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
@@ -260,6 +261,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [isCardHidden, setIsCardHidden] = useState(false);
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
+  const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
   const [statsReady, setStatsReady] = useState(false);
   const [communityReady, setCommunityReady] = useState(false);
   const lowerContentReady = statsReady && communityReady;
@@ -881,14 +883,14 @@ export default function LandingPage() {
             >
               <div className="min-w-28">
                 <span className="block text-2xl font-bold text-slate-900">
-                  {generationStats ? generationStats.generation_count.toLocaleString() : "—"}
+                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
                 </span>
                 <span className="text-sm">models generated</span>
               </div>
               <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
               <div className="min-w-28">
                 <span className="block text-2xl font-bold text-slate-900">
-                  {generationStats ? generationStats.brick_count.toLocaleString() : "—"}
+                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
                 </span>
                 <span className="text-sm">bricks generated</span>
               </div>
