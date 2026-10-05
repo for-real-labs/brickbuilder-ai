@@ -1460,6 +1460,7 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
   const viewportRef = useRef<HTMLDivElement>(null);
   const positionRef = useRef(0);
   const pausedRef = useRef(false);
+  const [copyCount, setCopyCount] = useState(2);
   // Fill even a short list before duplicating it for a seamless loop.
   const loopItems = items.length > 0
     ? Array.from({ length: Math.ceil(8 / items.length) * items.length }, (_, index) => items[index % items.length])
@@ -1481,12 +1482,17 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
       const loopWidth = track.firstElementChild?.getBoundingClientRect().width || 0;
       const cardWidth = track.querySelector('article')?.getBoundingClientRect().width || 0;
       if (!loopWidth || !cardWidth) return;
+      const viewportWidth = viewport.getBoundingClientRect().width;
+      // Movement can consume one full copy. Keep enough copies after it to
+      // cover the viewport, including wide displays and browser zoom changes.
+      setCopyCount(Math.max(2, Math.ceil(viewportWidth / loopWidth) + 1));
       positionRef.current = 0;
-      move(loopWidth - (viewport.getBoundingClientRect().width - cardWidth) / 2);
+      move(loopWidth - (viewportWidth - cardWidth) / 2);
     };
     centerFirstModel();
     const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(centerFirstModel) : null;
     observer?.observe(viewport);
+    if (track.firstElementChild) observer?.observe(track.firstElementChild);
     return () => observer?.disconnect();
   }, [items]);
 
@@ -1528,8 +1534,8 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
       </button>
       <div ref={viewportRef} className="overflow-hidden">
         <div ref={trackRef} data-featured-track className="flex w-max" style={{ willChange: 'transform' }}>
-          {[0, 1].map((copy) => (
-            <div key={copy} data-featured-copy={copy} className="flex w-max gap-6 py-1 pr-6">
+          {Array.from({ length: copyCount }, (_, copy) => (
+            <div key={copy} data-featured-copy={copy} className="flex w-max shrink-0 gap-6 py-1 pr-6">
               {loopItems.map((item, index) => (
                   <article
                     key={`${item.id}-${index}`}
