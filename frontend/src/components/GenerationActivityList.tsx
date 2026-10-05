@@ -18,11 +18,14 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
 }) {
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
+  const hasActiveNovaBuild = generations.some(row => row.endpoint === 'novaToBricks' && isGenerationActive(row.status));
   return (
     <section aria-label="Your generations" className="mx-auto mb-6 w-full max-w-4xl text-left">
       <div className="mb-4 px-1">
         <h2 className="text-lg font-semibold text-slate-900">Your generations{activeCount > 0 ? ` · ${activeCount} in progress` : ''}</h2>
-        <p className="mt-1 text-sm text-slate-500">You can leave and come back. Your builds keep running.</p>
+        <p className="mt-1 text-sm text-slate-500">{hasActiveNovaBuild
+          ? "This will take up to 20 minutes. You can close this window safely."
+          : "You can leave and come back. Your builds keep running."}</p>
         {error && <p role="status" className="mt-2 text-sm text-amber-700">{error}</p>}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
