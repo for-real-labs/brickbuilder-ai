@@ -12,7 +12,12 @@ npm run start:backend
 
 The installer creates `backend/.venv` with Python's built-in `venv` and installs
 `requirements.txt` with pip. Set `PYTHON` to your Python executable path if needed.
-`npm start` runs both backend and frontend. uv is not required for local setup.
+`npm install` also installs the two pinned Nova forks and builds their Docker
+runtime. Git and running Docker Desktop are required. `npm start` starts Nova
+and waits for readiness before launching the backend and frontend. All parts
+generation/editing requires that Nova runtime to remain running; Basic bricks
+can use `NOVA_SKIP_SETUP=true`. uv is not required on the host. See the
+[Nova setup guide](../docs/nova-agent-builder.md).
 The uv lockfile remains available for the existing Docker and CI workflows.
 Keep `requirements.txt` in sync with `pyproject.toml` when changing dependencies.
 The direct Python examples below use `.venv/bin/python`; on Windows use
