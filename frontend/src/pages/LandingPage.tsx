@@ -983,6 +983,11 @@ export default function LandingPage() {
                   {inputValidationMessage}
                 </p>
               )}
+              {generationMethod === 'nova' && (
+                <p id="all-parts-warning" className="mt-2 text-left text-xs leading-relaxed text-slate-500">
+                  Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                 <div id="landing-builder-mode" role="group" aria-label="Mode"
                   aria-describedby={generationMethod === 'nova' ? 'all-parts-warning' : undefined}
@@ -1024,11 +1029,6 @@ export default function LandingPage() {
                 </button>
                 <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} disabled={loading} />
               </div>
-              {generationMethod === 'nova' && (
-                <p id="all-parts-warning" className="mt-2 text-left text-xs leading-relaxed text-slate-500">
-                  warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.
-                </p>
-              )}
               {localDevelopment && generationMethod === 'nova' && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                   <label htmlFor="nova-connection">Provider connection</label>
