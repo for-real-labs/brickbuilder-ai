@@ -96,7 +96,7 @@ describe('LandingPage', () => {
       await act(async () => root.render(<LandingPage />));
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
       expect(Array.from(model.querySelectorAll('optgroup')).map(group => group.label)).toEqual(['Claude', 'OpenAI', 'Other']);
-      const mode = container.querySelector('#landing-builder-mode') as HTMLSelectElement;
+      const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
       const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       act(() => {
         model.value = selected;
@@ -105,7 +105,7 @@ describe('LandingPage', () => {
         prompt.dispatchEvent(new Event('input', { bubbles: true }));
       });
       expect(model.value).toBe(selected);
-      expect(mode.disabled).toBe(true);
+      expect(Array.from(mode.querySelectorAll('button')).every(button => button.disabled)).toBe(true);
       const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
       await act(async () => create.click());
       expect(text.mock.calls[0][6]).toBe(selected === 'sam3d');
@@ -124,8 +124,8 @@ describe('LandingPage', () => {
         model.value = 'gpt-5.5';
         model.dispatchEvent(new Event('change', { bubbles: true }));
       });
-      expect(mode.disabled).toBe(false);
-      expect(mode.value).toBe('llm');
+      expect(Array.from(mode.querySelectorAll('button')).every(button => !button.disabled)).toBe(true);
+      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
       await act(async () => {
         create.click();
         await vi.waitFor(() => expect(llm).toHaveBeenCalledTimes(1));
@@ -398,17 +398,20 @@ describe('LandingPage', () => {
     const findButton = (text: string) => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes(text))!;
     try {
       await act(async () => root.render(<LandingPage />));
-      const mode = container.querySelector('#landing-builder-mode') as HTMLSelectElement;
+      const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
-      expect(mode.value).toBe('llm');
-      expect(Array.from(mode.options).map(option => option.text)).toEqual(['Basic bricks', 'All parts (beta)']);
+      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(Array.from(mode.querySelectorAll('button')).map(button => button.textContent)).toEqual(['Basic bricks', 'All parts']);
+      expect(container.querySelector('#all-parts-warning')).toBeNull();
+      expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       await act(async () => {
         model.value = 'gpt-5.6-sol';
         model.dispatchEvent(new Event('change', { bubbles: true }));
-        mode.value = 'nova';
-        mode.dispatchEvent(new Event('change', { bubbles: true }));
+        mode.querySelector<HTMLButtonElement>('button[value="nova"]')!.click();
       });
       expect(model.value).toBe('gpt-5.6-sol');
+      expect(container.querySelector('#all-parts-warning')?.textContent).toContain('warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.');
+      expect(mode.getAttribute('aria-describedby')).toBe('all-parts-warning');
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'nova' });
       const input = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
       act(() => {
@@ -424,10 +427,10 @@ describe('LandingPage', () => {
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
       act(() => {
-        mode.value = 'llm';
-        mode.dispatchEvent(new Event('change', { bubbles: true }));
+        mode.querySelector<HTMLButtonElement>('button[value="llm"]')!.click();
       });
       expect(model.value).toBe('gpt-5.6-sol');
+      expect(container.querySelector('#all-parts-warning')).toBeNull();
       await act(async () => findButton('Create').click());
       expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: input.value, model: 'gpt-5.6-sol' }), undefined);
       expect(nova).toHaveBeenCalledTimes(1);
@@ -455,9 +458,8 @@ describe('LandingPage', () => {
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
       expect(choose).toHaveBeenCalledOnce();
       await act(async () => {
-        const mode = container.querySelector('#landing-builder-mode') as HTMLSelectElement;
-        mode.value = modeValue;
-        mode.dispatchEvent(new Event('change', { bubbles: true }));
+        const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
+        mode.querySelector<HTMLButtonElement>(`button[value="${modeValue}"]`)!.click();
         Object.defineProperty(fileInput, 'files', { value: [new File(['reference'], 'reference.png', { type: 'image/png' })], configurable: true });
         fileInput.dispatchEvent(new Event('change', { bubbles: true }));
       });
@@ -489,8 +491,8 @@ describe('LandingPage', () => {
       await act(async()=>{
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'A red lighthouse');
         input.dispatchEvent(new Event('input',{bubbles:true}));
-        const mode=container.querySelector<HTMLSelectElement>('#landing-builder-mode')!;
-        mode.value='nova';mode.dispatchEvent(new Event('change',{bubbles:true}));
+        const mode=container.querySelector<HTMLDivElement>('#landing-builder-mode')!;
+        mode.querySelector<HTMLButtonElement>('button[value="nova"]')!.click();
       });
       expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Connect Claude');
       expect(nova).not.toHaveBeenCalled();
@@ -606,11 +608,13 @@ describe('LandingPage', () => {
       expect(create.textContent?.trim()).toBe('Create');
       expect(create.parentElement).toBe(input.parentElement);
       const model = form.querySelector('#landing-render-model') as HTMLSelectElement;
-      const mode = form.querySelector('#landing-builder-mode') as HTMLSelectElement;
+      const mode = form.querySelector('#landing-builder-mode') as HTMLDivElement;
       const upload = form.querySelector('[aria-label="Upload image"]')!;
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
-      expect(mode.value).toBe('llm');
-      expect(model.parentElement!.parentElement).toBe(mode.parentElement!.parentElement);
+      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(model.parentElement!.parentElement).toBe(mode.parentElement);
+      expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(mode.querySelector('select')).toBeNull();
       expect(upload.parentElement).toBe(model.parentElement!.parentElement);
       expect(input.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(container.querySelector('[aria-label="Toggle settings"]')).toBeNull();
