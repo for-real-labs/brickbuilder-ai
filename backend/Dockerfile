@@ -9,6 +9,8 @@ RUN apt-get update && \
         xvfb \
         curl \
         unzip \
+        git \
+        nodejs \
         && rm -rf /var/lib/apt/lists/* \
         && apt-get clean
 
@@ -31,6 +33,10 @@ COPY . .
 
 # Install Python dependencies
 RUN uv sync --frozen
+
+# Nova runs in its own pinned upstream container, reached via NOVA_SERVICE_URL.
+# The API image only needs the parts library to package imported MPDs.
+ENV LDRAW_DIR=/root/ldraw
 
 # Note: Background removal now uses fal.ai BiRefNet v2 (GPU) instead of local rembg.
 # rembg is kept as a fallback dependency but the u2net model is no longer pre-downloaded.

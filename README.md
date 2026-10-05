@@ -39,6 +39,15 @@ Configure `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in `backend/.env` for your sel
 
 The image-based pipeline uses Trellis to reconstruct a 3D mesh and voxelizes it, or takes colored voxels directly from the SAM-3D stream. Those voxels then enter the same brick optimizer and export flow. Generation time is typically under 30 seconds when SAM-3D is used.
 
+The landing page also offers an optional **Full set agent** powered by
+[LDraw Nova](https://github.com/jjohnson5253/ldraw-nova). It runs the installed Nova
+Nova agent and tools in a private service; BrickBuilder saves its models and
+continues follow-up edits in the same Nova session. The existing builder remains
+the default. See [Nova setup and provider connections](docs/nova-agent-builder.md).
+The managed runtime checks upstream default branches at backend startup. Use
+`npm run update:nova` to refresh it or `npm run nova:status` to inspect it;
+compatible construction features are exposed through generated upstream wrappers.
+
 ## Examples
 
 <p align="center">

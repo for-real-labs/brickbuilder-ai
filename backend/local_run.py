@@ -6,6 +6,7 @@ import sys
 import os
 import time
 import threading
+from pathlib import Path
 from contextlib import contextmanager
 from dotenv import load_dotenv
 
@@ -14,6 +15,16 @@ load_dotenv()
 
 # Add the src directory to the Python path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
+
+
+def configure_local_runtime(environment=None, backend_dir=None, home_dir=None):
+    """Attach the isolated Nova runtime and enable loopback-only provider setup."""
+    environment = os.environ if environment is None else environment
+    backend_dir = Path(backend_dir or Path(__file__).parent).resolve()
+    environment.setdefault("BRICKBUILDER_LOCAL_PROVIDERS", "true")
+    library = Path(home_dir or Path.home()) / "ldraw"
+    if (library / "LDConfig.ldr").is_file():
+        environment.setdefault("LDRAW_DIR", str(library))
 
 
 def log(message: str) -> None:
@@ -42,6 +53,7 @@ def heartbeat(message: str):
 
 
 if __name__ == "__main__":
+    configure_local_runtime()
     _start = time.perf_counter()
 
     log("Starting BrickBuilderAI backend...")
@@ -55,12 +67,13 @@ if __name__ == "__main__":
         from src.api import app
 
     log(f"Application loaded in {time.perf_counter() - _start:.1f}s")
-    log("Launching server on http://0.0.0.0:8002 ...")
+    log("Launching server on http://127.0.0.1:8002 ...")
 
     uvicorn.run(
         app,
-        host="0.0.0.0",
+        host="127.0.0.1",
         port=8002,
+        proxy_headers=False,  # Local provider guards must see the actual TCP peer.
         reload=False,  # Disable reload to avoid subprocess issues
         log_level="info"
     )

@@ -1,5 +1,6 @@
 import asyncio
 from unittest.mock import AsyncMock
+from types import SimpleNamespace
 
 import pytest
 from fastapi import HTTPException
@@ -10,6 +11,73 @@ from src import api
 
 
 AUTH = {"user_id": "user"}
+
+
+@pytest.mark.parametrize("bucket, path", [
+    ("generation-output", "job/nova-source.zip"),
+    ("generation", "../generation-output/job/nova-source.zip"),
+    ("..", ".env"),
+    ("generations", "../../.env"),
+    ("generations", "job/llm-output.json"),
+])
+def test_local_storage_blocks_private_archives_and_path_escape(monkeypatch, tmp_path, bucket, path):
+    from src.utils import local_db
+    root = tmp_path / "storage"
+    (root / "generation-output" / "job").mkdir(parents=True)
+    (root / "generation-output" / "job" / "nova-source.zip").write_bytes(b"private model")
+    (root / "generations" / "job").mkdir(parents=True)
+    (root / "generations" / "job" / "llm-output.json").write_text("private output")
+    (tmp_path / ".env").write_text("private project credentials")
+    monkeypatch.setattr(local_db, "STORAGE_ROOT", root)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(api.serve_local_storage(bucket, path))
+    assert error.value.status_code == 404
+
+
+def test_local_storage_serves_public_models_but_blocks_symlink_escape(monkeypatch, tmp_path):
+    from src.utils import local_db
+    root = tmp_path / "storage"
+    public = root / "generations" / "model.ldr"
+    public.parent.mkdir(parents=True)
+    public.write_text("public model")
+    outside = tmp_path / ".env"
+    outside.write_text("private project credentials")
+    (public.parent / "escape.ldr").symlink_to(outside)
+    monkeypatch.setattr(local_db, "STORAGE_ROOT", root)
+    assert asyncio.run(api.serve_local_storage("generations", "model.ldr")).path == public
+    with pytest.raises(HTTPException):
+        asyncio.run(api.serve_local_storage("generations", "escape.ldr"))
+
+
+def test_nova_endpoint_enforces_native_local_guard_and_delegates(monkeypatch):
+    handler = AsyncMock(return_value={"ok": True})
+    guarded = []
+    monkeypatch.setattr(api, "nova_to_bricks", handler)
+    monkeypatch.setattr(api, "require_local_development", guarded.append)
+    body = SimpleNamespace(auth_mode="native")
+    request = object()
+    assert asyncio.run(api.nova_to_bricks_endpoint(body, request, AUTH)) == {"ok": True}
+    assert guarded == [request]
+    handler.assert_awaited_once_with(body, AUTH, request)
+
+
+def test_nova_api_key_mode_works_without_native_local_guard(monkeypatch):
+    handler = AsyncMock(return_value={"ok": True})
+    monkeypatch.setattr(api, "nova_to_bricks", handler)
+    monkeypatch.setattr(api, "require_local_development", lambda _: pytest.fail("API mode must not require local native sessions"))
+    body = SimpleNamespace(auth_mode="api_key")
+    request = object()
+    asyncio.run(api.nova_to_bricks_endpoint(body, request, AUTH))
+    handler.assert_awaited_once_with(body, AUTH, request)
+
+
+def test_fal_credentials_become_available_without_restart(monkeypatch):
+    monkeypatch.delenv("FAL_KEY", raising=False)
+    with pytest.raises(HTTPException, match="") as error:
+        api.require_fal_key()
+    assert error.value.status_code == 503
+    monkeypatch.setenv("FAL_KEY", "test-id:test-secret")
+    assert api.require_fal_key() is None
 
 
 @pytest.mark.parametrize(
@@ -165,11 +233,11 @@ def test_unprotected_one_argument_endpoints(monkeypatch):
 def test_health_and_fal_key_dependency(monkeypatch):
     monkeypatch.setattr(api, "track_api_call", lambda **_kwargs: None)
     assert asyncio.run(api.health_check()) == {"message": "brickai API is running"}
-    monkeypatch.setattr(api, "FAL_KEY", None)
+    monkeypatch.delenv("FAL_KEY", raising=False)
     with pytest.raises(HTTPException) as exc_info:
         api.require_fal_key()
     assert exc_info.value.status_code == 503
-    monkeypatch.setattr(api, "FAL_KEY", "configured")
+    monkeypatch.setenv("FAL_KEY", "configured")
     assert api.require_fal_key() is None
 
 

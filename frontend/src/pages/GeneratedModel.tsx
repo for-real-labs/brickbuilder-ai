@@ -36,6 +36,8 @@ import { GetPriceApiService, GetPriceResponse } from "../services/getPriceApi";
 import { ResizeScaler } from "../components/ResizeScaler";
 import { ResizeModelApiService } from "../services/resizeModelApi";
 import { LlmToBricksApiService } from "../services/llmToBricksApi";
+import { isAgentGeneration } from "../utils/agentGeneration";
+import { NovaToBricksApiService } from "../services/novaToBricksApi";
 import { VoxelPromptEditor } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
@@ -303,6 +305,8 @@ export default function GeneratedModel() {
   const activeSavePreviewUploadRef = React.useRef<Promise<void> | null>(null);
   const [exportMenuOpen, setExportMenuOpen] = React.useState(false);
   const [isExportingVideo, setIsExportingVideo] = React.useState(false);
+  const [isDownloadingNovaSource, setIsDownloadingNovaSource] = React.useState(false);
+  const [novaSourceError, setNovaSourceError] = React.useState('');
   const exportCaptureApiRef = React.useRef<ExportCaptureApi | null>(null);
   const exportMenuRef = React.useRef<HTMLDivElement | null>(null);
   const [editHistoryOpen, setEditHistoryOpen] = React.useState(false);
@@ -330,8 +334,9 @@ export default function GeneratedModel() {
     ldrContent?: string,
     modelName?: string,
     voxelSize?: number,
-    generation_id?: string,
     editSourceGenerationId?: string,
+    editSourceEndpoint?: string,
+    generation_id?: string,
     storageKeys?: {
       LDR_CONTENT: string,
       MPD_CONTENT: string,
@@ -342,24 +347,27 @@ export default function GeneratedModel() {
   } | null;
 
   const isDemoModel = !!currentGenerationId && DEMO_MODEL_IDS.has(currentGenerationId);
-  
   const retainedEditSourceId = stateData?.editSourceGenerationId;
   const canKeepModelVisible = Boolean(mpdContent && (
-    searchParams.get('id') === currentGenerationId ||
-    retainedEditSourceId === currentGenerationId ||
+    searchParams.get('id') === currentGenerationId || retainedEditSourceId === currentGenerationId ||
     pendingGeneration?.previous_completed_generation_id === currentGenerationId
   ));
   const isModelEditing = isPromptEditing || Boolean(editGenerationId) ||
     (generationLoading && canKeepModelVisible && retainedEditSourceId === currentGenerationId);
   const showModelPage = !generationError && (!generationLoading || canKeepModelVisible);
-
   const handleEditCancelled = () => {
     modelLoadAbortRef.current?.abort();
     refreshNotifications();
     const previousId = pendingGeneration?.previous_completed_generation_id || retainedEditSourceId;
     navigate(previousId ? `/generated-model?id=${encodeURIComponent(previousId)}&exact=1` : '/', { replace: true });
   };
+  const isNovaModel = pendingGeneration?.endpoint === 'novaToBricks' ||
+    (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
+  const hasNovaSource = isNovaModel && pendingGeneration?.status === 'completed'
+    && pendingGeneration.generation_id === currentGenerationId;
 
+  React.useEffect(() => { setNovaSourceError(''); }, [currentGenerationId]);
+  
   // Function to load model data from various sources
   const getModelData = () => {
     if (stateData?.mpdContent && stateData?.ldrContent) {
@@ -424,6 +432,7 @@ export default function GeneratedModel() {
       setSceneReady(false);
     }
     const initializeModelData = async () => {
+      let previousCompletedGeneration: GetGenerationResponse | null = null;
       // Priority 1: Check for id parameter in URL (e.g., /generated-model?id=abc123)
       const urlGenerationId = searchParams.get('id');
       
@@ -453,21 +462,22 @@ export default function GeneratedModel() {
             const previousId = statusResponse.previous_completed_generation_id;
             if (previousId) {
               setEditGenerationId(urlGenerationId);
+              previousCompletedGeneration = await GetGenerationApiService.getGeneration(previousId, controller.signal);
+              if (controller.signal.aborted) return;
               if (currentGenerationId === previousId && mpdContent) {
                 setGenerationLoading(false);
               } else {
-                const previous = await GetGenerationApiService.getGeneration(previousId, controller.signal);
-                if (controller.signal.aborted) return;
-                if (previous.status !== 'completed' || !previous.ldr_content) {
-                  throw new Error('The previous model could not be loaded.');
-                }
+                const previous = previousCompletedGeneration;
                 setProcessedImageUrl(previous.processed_image_url);
                 setCurrentScaler(previous.detail_level ?? undefined);
+                if (controller.signal.aborted) return;
+                if (previous.status !== 'completed' || !previous.ldr_content) throw new Error('The previous model could not be loaded.');
                 await processCompletedGeneration(previousId, { ...previous, ldr_content: previous.ldr_content, prompt: previous.prompt || 'Your Model' });
                 if (controller.signal.aborted) return;
               }
               editingExistingModel = true;
             }
+
             // Show preview image if available
             if (statusResponse.external_image_url) {
               setEditPreviewImageUrl(statusResponse.external_image_url);
@@ -548,9 +558,9 @@ export default function GeneratedModel() {
           const message = error instanceof Error ? error.message : 'Unknown error';
           if (editingExistingModel) {
             setEditPromptError(message);
-          } else {
-            setGenerationError(`Failed to load generation: ${message}`);
+            if (previousCompletedGeneration) setPendingGeneration(previousCompletedGeneration);
           }
+          else setGenerationError(`Failed to load generation: ${message}`);
           setEditGenerationId(null);
           setGenerationLoading(false);
           return;
@@ -566,6 +576,7 @@ export default function GeneratedModel() {
         
         try {
           const statusResponse = await GetGenerationApiService.getGeneration(stateGenerationId);
+          setPendingGeneration(statusResponse);
           
           if (statusResponse.status === 'completed' && statusResponse.ldr_content) {
             if (statusResponse.processed_image_url) {
@@ -605,6 +616,7 @@ export default function GeneratedModel() {
       if (generationId) {
         try {
           const statusResponse = await GetGenerationApiService.getGeneration(generationId);
+          setPendingGeneration(statusResponse);
           
           // If completed, use the data
           if (statusResponse.status === 'completed' && statusResponse.ldr_content) {
@@ -1625,16 +1637,18 @@ export default function GeneratedModel() {
 
     try {
       // Start the async edit operation
-      const response = await LlmToBricksApiService.generate({
-        sourceGenerationId: currentGenerationId,
-        prompt: editPrompt.trim(),
-      }, accessToken || undefined);
+      const response = hasNovaSource
+        ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined)
+        : await LlmToBricksApiService.generate({
+          sourceGenerationId: currentGenerationId,
+          prompt: editPrompt.trim(),
+        }, accessToken || undefined);
 
       const newGenerationId = response.generation_id;
       localStorage.setItem('lastGenerationId', newGenerationId);
       if (!currentUser) recordAnonymousGeneration(newGenerationId);
       refreshNotifications();
-      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true, state: { editSourceGenerationId: currentGenerationId } });
+      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? 'novaToBricks' : 'llmToBricks' } });
       setEditPrompt('');
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
@@ -1644,7 +1658,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -1730,6 +1744,7 @@ export default function GeneratedModel() {
   };
 
   const handleEditModelClick = async () => {
+    if (isModelEditing || isNovaModel) return;
     posthog.capture('generated_model_edit_button_clicked', {
       generation_id: currentGenerationId,
       action: showVoxelEditor ? 'exit_editor' : 'enter_editor',
@@ -1816,6 +1831,18 @@ export default function GeneratedModel() {
       }
     }, [downloadBlob, getSafeExportName, isExportingVideo]);
 
+    const handleDownloadNovaSource = React.useCallback(async () => {
+      if (!currentGenerationId || !hasNovaSource || isDownloadingNovaSource) return;
+      posthog.capture('generated_model_nova_source_download_clicked', { generation_id: currentGenerationId });
+      setExportMenuOpen(false); setIsDownloadingNovaSource(true); setNovaSourceError('');
+      try {
+        const archive = await NovaToBricksApiService.downloadSource(currentGenerationId);
+        downloadBlob(archive, `${getSafeExportName()}_agent_source.zip`);
+      } catch (reason) {
+        setNovaSourceError(reason instanceof Error ? reason.message : 'Unable to download the agent source. Please try again.');
+      } finally { setIsDownloadingNovaSource(false); }
+    }, [currentGenerationId, hasNovaSource, isDownloadingNovaSource, downloadBlob, getSafeExportName]);
+
 
   return (
     <div className="generated-model-page min-h-screen text-slate-900" style={{ backgroundColor: "#f7f8fa" }}>
@@ -1854,7 +1881,7 @@ export default function GeneratedModel() {
               <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
             </div>
             <div className="mt-5 max-w-md w-full">
-              {pendingGeneration?.endpoint === 'llmToBricks'
+              {pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
                 ? <LlmGenerationOutput generationId={pendingGeneration.generation_id} active />
                 : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
             </div>
@@ -2002,16 +2029,16 @@ export default function GeneratedModel() {
             <button
               type="button"
               aria-label="Export model"
-                disabled={isSavePolling || isExportingVideo || (!ldrContent && !previewPngDataUrl)}
+                disabled={isSavePolling || isExportingVideo || isDownloadingNovaSource || (!ldrContent && !previewPngDataUrl)}
               onClick={() => setExportMenuOpen((prev) => !prev)}
               className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 bg-slate-900/85 px-2.5 py-2 sm:px-4 text-xs font-semibold tracking-wide text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-150 hover:bg-slate-800 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-45"
             >
-                {isExportingVideo ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                {isExportingVideo || isDownloadingNovaSource ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
               <span className="hidden sm:inline">Export</span>
             </button>
 
             {exportMenuOpen && (
-              <div className="absolute right-0 mt-2 w-44 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+              <div className="absolute right-0 mt-2 w-56 max-w-[calc(100vw-3rem)] rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
                 <button
                   type="button"
                   onClick={handleExportLdr}
@@ -2021,6 +2048,10 @@ export default function GeneratedModel() {
                   <FileText size={14} />
                   LDraw (.ldr)
                 </button>
+                {hasNovaSource && <button type="button" onClick={() => { void handleDownloadNovaSource(); }} disabled={isDownloadingNovaSource}
+                  className="flex min-h-10 w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-45">
+                  <Download aria-hidden="true" size={14} className="shrink-0" /> Download agent source
+                </button>}
                 <button
                   type="button"
                   onClick={handleExportPng}
@@ -2195,7 +2226,8 @@ export default function GeneratedModel() {
                 animateModelBuild
                 topLeftOverlay={isModelEditing ? (
                   <div className="w-fit max-w-full rounded-xl bg-white/90 px-3 pb-3 shadow-sm backdrop-blur-sm">
-                    {editGenerationId && pendingGeneration?.endpoint === 'llmToBricks'
+                    {isNovaModel && <p className="pt-3 text-sm text-slate-600">This can take up to 30 min. You can close this window safely.</p>}
+                    {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
                       ? <LlmGenerationOutput generationId={editGenerationId} active />
                       : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
                     {editGenerationId && <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />}
@@ -2208,6 +2240,7 @@ export default function GeneratedModel() {
             )}
           </div>
         </div>
+        {novaSourceError && <p role="alert" className="mt-2 break-words px-2 text-center text-xs text-red-600">{novaSourceError}</p>}
         <figcaption className="mt-1 text-xs text-slate-500 text-center">
           Drag to rotate · Pinch or scroll to zoom
         </figcaption>
@@ -2219,14 +2252,14 @@ export default function GeneratedModel() {
 
 </div>
 <aside className="model-workspace-sidebar" aria-label="Refine and order your model">
-            {(showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
+            {!isNovaModel && (showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
               isManualEditorOpen={showVoxelEditor}
               manualLoading={xyzrgbLoading}
               disabled={isModelEditing}
               onManualEdit={() => { void handleEditModelClick(); }}
             />}
 
-        {!showVoxelEditor && mpdContent && xyzrgbUrl && currentGenerationId && (
+        {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
           <VoxelPromptEditor
             onSuggestionSelected={suggestion => posthog.capture('generated_model_edit_suggestion_clicked', {
               generation_id: currentGenerationId, is_demo_model: isDemoModel, suggestion,
@@ -2234,10 +2267,10 @@ export default function GeneratedModel() {
             prompt={editPrompt}
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}
-            loading={isPromptEditing}
+            loading={isModelEditing}
             disabled={isResizing || isSavePolling || isModelEditing}
             error={editPromptError}
-            manualEditControl={<ModelEditControls
+            manualEditControl={isNovaModel ? undefined : <ModelEditControls
               isManualEditorOpen={false}
               manualLoading={xyzrgbLoading || isPromptEditing || isResizing || isSavePolling}
               disabled={isModelEditing}
@@ -2260,14 +2293,14 @@ export default function GeneratedModel() {
               });
               navigateToOrder();
             }}
-            onResize={priceData && !isDemoModel ? () => {
+            onResize={priceData && !isDemoModel && !isNovaModel ? () => {
               posthog.capture('generated_model_resize_price_clicked', {
                 generation_id: currentGenerationId, is_demo_model: isDemoModel,
               });
               setShowPriceResize(prev => !prev);
             } : undefined}
           />
-          {showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
+          {!isNovaModel && showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
             <section className="model-refine-card" aria-label="Adjust kit size">
               <ResizeScaler
                 onResize={handleResizeModel}
@@ -2285,7 +2318,7 @@ export default function GeneratedModel() {
           style={sceneReady ? undefined : { opacity: 0 }}
         >
         {/* Resize Scaler - shown outside edit mode */}
-        {!showVoxelEditor && showResizeScaler && mpdContent && (
+        {!isNovaModel && !showVoxelEditor && showResizeScaler && mpdContent && (
           <section className="mt-12 max-w-md mx-auto space-y-6">
             <ResizeScaler
               onResize={handleResizeModel}

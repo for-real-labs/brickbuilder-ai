@@ -11,6 +11,8 @@ from typing import Optional, Callable
 from fastapi import HTTPException
 import fal_client
 
+from .fal_provider_client import get_fal_client
+
 # Configure logging
 logger = logging.getLogger(__name__)
 
@@ -18,9 +20,9 @@ logger = logging.getLogger(__name__)
 class FalApiClient:
     """Client for interacting with fal.ai APIs (Flux for text-to-image and Trellis for image-to-3D)"""
     
-    def __init__(self):
-        # The fal_client will automatically use the FAL_KEY from environment
-        pass
+    @property
+    def client(self):
+        return get_fal_client()
         
     def upload_base64_image(self, base64_data: str) -> str:
         """Upload a base64 image to fal.ai storage and return the URL"""
@@ -29,7 +31,7 @@ class FalApiClient:
             image_bytes = base64.b64decode(base64_data)
             
             # Upload the image bytes to fal.ai storage
-            file_url = fal_client.upload(image_bytes, "image/jpeg")
+            file_url = self.client.upload(image_bytes, "image/jpeg")
             logger.info(f"Uploaded base64 image to fal.ai storage: {file_url}")
             return file_url
             
@@ -95,7 +97,7 @@ class FalApiClient:
                 arguments["guidance_scale"] = 2.5
                 arguments["acceleration"] = "regular"
             
-            result = fal_client.subscribe(
+            result = self.client.subscribe(
                 endpoint,
                 arguments=arguments,
                 with_logs=True,
@@ -195,7 +197,7 @@ class FalApiClient:
                 }
                 result_key = "model_glb"
             
-            result = fal_client.subscribe(
+            result = self.client.subscribe(
                 endpoint,
                 arguments=arguments,
                 with_logs=True,
@@ -227,7 +229,7 @@ class FalApiClient:
                     }
                     fallback_result_key = "model_mesh"
                     
-                    result = fal_client.subscribe(
+                    result = self.client.subscribe(
                         fallback_endpoint,
                         arguments=fallback_arguments,
                         with_logs=True,

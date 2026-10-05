@@ -75,8 +75,14 @@ export class LDrawParser {
     const steps: LDrawStep[] = [];
     let currentStepParts: LDrawPart[] = [];
     let stepNumber = 1;
+    let rootSeen = false;
     
     for (const line of lines) {
+      if (line.startsWith('0 FILE ')) {
+        if (rootSeen) break;
+        rootSeen = true;
+        continue;
+      }
       if (line.startsWith('0 STEP')) {
         // End current step and start new one
         if (currentStepParts.length > 0) {
@@ -158,6 +164,13 @@ export class LDrawParser {
   /**
    * Calculate the bounding box of all parts in the model
    */
+  static embeddedDefinitions(content: string): string {
+    const lines = content.split('\n');
+    let files = 0;
+    const index = lines.findIndex(line => line.trim().startsWith('0 FILE ') && ++files === 2);
+    return index < 0 ? '' : lines.slice(index).join('\n');
+  }
+
   static calculateBoundingBox(parts: LDrawPart[]): LDrawModel['boundingBox'] {
     if (parts.length === 0) {
       return {

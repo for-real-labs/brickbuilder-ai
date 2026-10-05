@@ -12,6 +12,7 @@ import GeneratedModel from '../src/pages/GeneratedModel';
 import OrderKit from '../src/pages/OrderKit';
 import { GenerationCard } from '../src/pages/UserDashboard';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
+import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 import { getGeneratedModelPath } from '../src/utils/generationRoutes';
 import posthog from 'posthog-js';
@@ -55,6 +56,35 @@ it.each(['owner', 'other'])('renders the saved title on the model page and gates
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
   expect(container.querySelector('h1')?.textContent).toBe('Sunny Dachshund');
   expect(!!container.querySelector('[aria-label="Rename model"]')).toBe(viewer === 'owner');
+});
+
+it('downloads the editable agent source archive for a completed Nova model and cleans up the temporary URL', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'novaToBricks', status: 'completed', name: 'Spaceport', prompt: 'spaceport', ldr_content: 'ldr' } as never);
+  const archive = new Blob(['zip'], { type: 'application/zip' });
+  const download = vi.spyOn(NovaToBricksApiService, 'downloadSource').mockResolvedValue(archive);
+  const create = vi.fn().mockReturnValue('blob:archive');
+  const revoke = vi.fn();
+  vi.stubGlobal('URL', class extends URL { static createObjectURL = create; static revokeObjectURL = revoke; });
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {});
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Export model"]')!.click());
+  const button = Array.from(container.querySelectorAll('button')).find(button => button.textContent === ' Download agent source' || button.textContent?.trim() === 'Download agent source')!;
+  expect(button).toBeTruthy();
+  await act(async () => button.click());
+  expect(download).toHaveBeenCalledWith('g');
+  expect(create).toHaveBeenCalledWith(archive);
+  expect(click).toHaveBeenCalledOnce();
+  expect(revoke).toHaveBeenCalledWith('blob:archive');
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_nova_source_download_clicked', { generation_id: 'g' });
+});
+
+it('shows an owner permission error when the agent source cannot be downloaded', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'novaToBricks', status: 'completed', name: 'Spaceport', prompt: 'spaceport', ldr_content: 'ldr' } as never);
+  vi.spyOn(NovaToBricksApiService, 'downloadSource').mockRejectedValue(new Error('Only the owner can download this agent source.'));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Export model"]')!.click());
+  await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Download agent source')!.click());
+  expect(container.textContent).toContain('Only the owner can download this agent source.');
 });
 
 it('updates the model title after an owner rename and uses it on the order page', async () => {
@@ -128,6 +158,45 @@ it('opens the earlier completed version after cancellation without a stored sour
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
   expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=old&exact=1');
   expect(container.querySelector('h1')?.textContent).toBe('Earlier Rover');
+});
+
+
+it('continues Nova AI edits while keeping the completed model, instructions, and progress overlay usable', async () => {
+  const original = { generation_id: 'g', endpoint: 'novaToBricks', status: 'completed', name: 'Garden cottage', prompt: 'cottage', ldr_content: 'ldr' };
+  vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id => (id === 'g' ? original : {
+    generation_id: 'edit', endpoint: 'novaToBricks', status: 'processing', previous_completed_generation_id: 'g', version: 2,
+  }) as never);
+  let finish!: (value: never) => void;
+  const polling = new Promise<never>(resolve => { finish = resolve; });
+  vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockReturnValue(polling);
+  const novaEdit = vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'edit', message: 'Started' });
+  const llm = vi.spyOn(LlmToBricksApiService, 'generate');
+  vi.spyOn(LlmToBricksApiService, 'watchOutput').mockImplementation(async (_id, output) => {
+    output({ text: 'Nova is refining the roof', status: 'processing' });
+    return true;
+  });
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  const input = container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement;
+  expect(input).not.toBeNull();
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Make the roof red');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => input.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(novaEdit).toHaveBeenCalledWith('g', 'Make the roof red', 'token');
+  expect(llm).not.toHaveBeenCalled();
+  const viewer = container.querySelector('[data-testid="viewer"]')!;
+  expect(viewer.textContent).toContain('Garden cottage');
+  expect(viewer.closest('figure')?.textContent).toContain('This can take up to 30 min. You can close this window safely.');
+  expect(viewer.closest('figure')?.textContent).toContain('Refining the roof');
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="View instructions"]')!.disabled).toBe(false);
+  expect(container.querySelector('[aria-label="Manually edit model"]')).toBeNull();
+  await act(async () => {
+    finish({ ...original, generation_id: 'edit', name: 'Red-roof cottage' } as never);
+    await polling;
+  });
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('Red-roof cottage');
+  expect(container.textContent).not.toContain('This can take up to 30 min.');
 });
 
 const pendingDashboardEdit = {

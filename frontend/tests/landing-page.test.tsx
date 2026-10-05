@@ -59,13 +59,14 @@ vi.mock('../src/components/ProfileMenu', () => ({
   ProfileMenu: () => null,
 }));
 
-import LandingPage, { DEFAULT_GENERATION_METHOD, DEFAULT_THREE_D_MODEL, GenerationMethodSelector, FeaturedStrip } from '../src/pages/LandingPage';
+import LandingPage, { DEFAULT_GENERATION_METHOD, GenerationModelSelector, FeaturedStrip } from '../src/pages/LandingPage';
 import { DEFAULT_LLM_MODEL } from '../src/services/llmToBricksApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
 import { GetGenerationStatsApiService } from '../src/services/getGenerationStatsApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
+import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
 
 describe('LandingPage', () => {
   it.each(['accepted', 'failed'])('submits an image with Enter and clears it only when %s', async outcome => {
@@ -91,7 +92,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      const prompt = container.querySelector('[aria-label="Describe your brick model"]') as HTMLInputElement;
+      const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
       await act(async () => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'Anime girl');
@@ -147,7 +148,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      const prompt = container.querySelector('[aria-label="Describe your brick model"]') as HTMLInputElement;
+      const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       for (const options of [{ isComposing: true }, { repeat: true }, { keyCode: 229 }]) {
         await act(async () => {
           prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, ...options }));
@@ -175,13 +176,13 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      const generate = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Generate')!;
+      const generate = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
       await act(async () => generate.click());
       expect(container.querySelector('#generation-input-help')?.textContent).toContain('Describe what you’d like to build');
       expect(container.textContent).not.toContain('Generation Failed');
       expect(container.textContent).not.toContain('Try Again');
       expect(generateAi).not.toHaveBeenCalled();
-      const input = container.querySelector('[aria-label="Describe your brick model"]') as HTMLInputElement;
+      const input = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       expect(document.activeElement).toBe(input);
       expect(input.getAttribute('aria-describedby')).toBe('generation-input-help');
       await act(async () => {
@@ -228,7 +229,7 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<LandingPage />));
       expect(container.querySelector('#how-it-works')).toBeNull();
-      expect(container.textContent).toContain('Generate');
+      expect(container.textContent).toContain('Create');
       await act(async () => { finish(); await pending; });
       expect(container.querySelector('#how-it-works')).toBeTruthy();
       expect(container.querySelector('.landing-scroll-reveal .landing-visible')).toBeTruthy();
@@ -281,7 +282,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Generate')!.click());
+      await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!.click());
       expect(start).not.toHaveBeenCalled();
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ has_prompt: false, has_image: false }));
       const input = container.querySelector('input:not([type="file"])') as HTMLInputElement;
@@ -289,7 +290,7 @@ describe('LandingPage', () => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Red castle');
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      const generate = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Generate')!;
+      const generate = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
       await act(async () => generate().click());
       expect(container.textContent).toContain('1 in progress');
       expect(input.disabled).toBe(false);
@@ -313,6 +314,95 @@ describe('LandingPage', () => {
       act(() => root.unmount());
       container.remove();
     }
+  });
+
+  it('keeps the selected model when switching modes and routes All parts through Nova', async () => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'full-set', message: 'Started' });
+    const llm = vi.spyOn(LlmToBricksApiService, 'generate');
+    const poll = vi.spyOn(GetGenerationApiService, 'pollUntilComplete');
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const findButton = (text: string) => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes(text))!;
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const mode = container.querySelector('#landing-builder-mode') as HTMLSelectElement;
+      const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
+      expect(mode.value).toBe('llm');
+      expect(Array.from(mode.options).map(option => option.text)).toEqual(['Basic bricks', 'All parts (beta)']);
+      act(() => {
+        model.value = 'gpt-5.6-sol';
+        model.dispatchEvent(new Event('change', { bubbles: true }));
+        mode.value = 'nova';
+        mode.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(model.value).toBe('gpt-5.6-sol');
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'nova' });
+      const input = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Spaceport with launch tower, rover, and research lab');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await act(async () => findButton('Create').click());
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, model: 'gpt-5.6-sol', prompt: input.value }), undefined);
+      expect(llm).not.toHaveBeenCalled();
+      expect(poll).not.toHaveBeenCalled();
+      expect(container.textContent).toContain('1 in progress');
+      expect(input.disabled).toBe(false);
+      expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
+      vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
+      act(() => {
+        mode.value = 'llm';
+        mode.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(model.value).toBe('gpt-5.6-sol');
+      await act(async () => findButton('Create').click());
+      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: input.value, model: 'gpt-5.6-sol' }), undefined);
+      expect(nova).toHaveBeenCalledTimes(1);
+
+    } finally { act(() => root.unmount()); container.remove(); }
+  });
+
+  it.each(['llm', 'nova'])('sends the uploaded reference to the %s workflow from the shared bar', async modeValue => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'image-basic', message: 'Started' });
+    const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'image-nova', message: 'Started' });
+    const createUrl = vi.fn(() => 'blob:reference-image');
+    Object.defineProperty(URL, 'createObjectURL', { value: createUrl, configurable: true });
+    Object.defineProperty(URL, 'revokeObjectURL', { value: vi.fn(), configurable: true });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+      const choose = vi.spyOn(fileInput, 'click');
+      act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
+      expect(choose).toHaveBeenCalledOnce();
+      act(() => {
+        const mode = container.querySelector('#landing-builder-mode') as HTMLSelectElement;
+        mode.value = modeValue;
+        mode.dispatchEvent(new Event('change', { bubbles: true }));
+        Object.defineProperty(fileInput, 'files', { value: [new File(['reference'], 'reference.png', { type: 'image/png' })], configurable: true });
+        fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(container.querySelector('img[alt="Uploaded preview"]')).not.toBeNull();
+      await act(async () => {
+        container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
+        await new Promise(resolve => setTimeout(resolve, 20));
+      });
+      const selected = modeValue === 'nova' ? nova : llm;
+      const other = modeValue === 'nova' ? llm : nova;
+      expect(selected).toHaveBeenCalledWith(expect.objectContaining({
+        model: DEFAULT_LLM_MODEL, prompt: undefined, imageBase64: btoa('reference'), imageMediaType: 'image/png',
+      }), undefined);
+      expect(other).not.toHaveBeenCalled();
+    } finally { act(() => root.unmount()); container.remove(); }
   });
 
   it('shows the top eight community models with chevron controls', async () => {
@@ -406,192 +496,62 @@ describe('LandingPage', () => {
     expect(markup).not.toContain('Create and Build');
   });
 
-  it('defaults to LLM Render with Claude Opus 5.5, and SAM3D for image-to-glb', () => {
+  it('shows the compact controls in the browser and native shell', () => {
     expect(DEFAULT_GENERATION_METHOD).toBe('llm');
-    expect(DEFAULT_THREE_D_MODEL).toBe('sam3d');
     expect(DEFAULT_LLM_MODEL).toBe('claude-opus-5-5');
-
-    const markup = renderToStaticMarkup(
-      <GenerationMethodSelector value="3d" onChange={() => undefined} />,
-    );
-    expect(markup).toContain('Render model:');
-    expect(markup).not.toContain('3D Render');
-    expect(markup).not.toContain('LLM Render');
-    expect(markup).not.toContain('Generation method:');
-    expect(markup).not.toMatch(/>image-to-glb<\/button>/);
-    expect(markup).toContain('<optgroup label="image-to-glb">');
-    expect(markup).toMatch(/<option value="sam3d"[^>]*selected="">SAM3D<\/option>/);
-    expect(markup).toContain('Claude Opus 5.5');
-    expect(markup).toContain('Trellis');
+    const verify = () => {
+      const container = document.createElement('div');
+      container.innerHTML = renderToStaticMarkup(<LandingPage />);
+      const form = container.querySelector('form[aria-label="Create a brick model"]')!;
+      const input = form.querySelector('input[aria-label="Describe your model"]')!;
+      const create = form.querySelector('button[type="submit"]')!;
+      expect(create.textContent?.trim()).toBe('Create');
+      expect(create.parentElement).toBe(input.parentElement);
+      const model = form.querySelector('#landing-render-model') as HTMLSelectElement;
+      const mode = form.querySelector('#landing-builder-mode') as HTMLSelectElement;
+      const upload = form.querySelector('[aria-label="Upload image"]')!;
+      expect(model.value).toBe(DEFAULT_LLM_MODEL);
+      expect(mode.value).toBe('llm');
+      expect(model.parentElement!.parentElement).toBe(mode.parentElement!.parentElement);
+      expect(upload.parentElement).toBe(model.parentElement!.parentElement);
+      expect(input.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(container.querySelector('[aria-label="Toggle settings"]')).toBeNull();
+      expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
+      expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
+      expect(Array.from(model.options).map(option => option.value)).not.toContain('sam3d');
+      expect(Array.from(model.options).map(option => option.value)).not.toContain('trellis');
+    };
+    verify();
+    window.__BRICKBUILDER_NATIVE_APP__ = Object.freeze({ platform: 'ios', version: '0.1.0' });
+    try { verify(); } finally { delete window.__BRICKBUILDER_NATIVE_APP__; }
   });
 
-  it('offers SAM3D and Trellis in the image-to-glb optgroup without old 3D style controls', () => {
-    const markup = renderToStaticMarkup(
-      <GenerationMethodSelector value="3d" threeDModel="trellis" onChange={() => undefined} />,
-    );
-
-    expect(markup).not.toContain('Generation method:');
-    expect(markup).toContain('Render model:');
-    expect(markup).not.toMatch(/>image-to-glb<\/button>/);
-    expect(markup).toContain('<optgroup label="image-to-glb">');
-    expect(markup).toMatch(/<option value="trellis"[^>]*selected="">Trellis<\/option>/);
-    expect(markup).not.toContain('3D model:');
-  });
-
-  it('offers grouped image-to-glb, Claude, and OpenAI models for LLM Render, defaulting to Opus 5.5', () => {
-    const markup = renderToStaticMarkup(
-      <GenerationMethodSelector value="llm" onChange={() => undefined} />,
-    );
-
-    expect(markup).toContain('Render model:');
-    expect(markup).toContain('<optgroup label="image-to-glb">');
-    expect(markup).toContain('<optgroup label="Claude">');
-    expect(markup).toContain('<optgroup label="OpenAI">');
-    expect(markup).toMatch(/<option value="claude-opus-5-5"[^>]*selected="">Claude Opus 5.5<\/option>/);
-    expect(markup).toMatch(/<option value="gpt-5.6-sol"[^>]*>GPT-5.6 Sol<\/option>/);
-    expect(markup).toContain('SAM3D');
-    expect(markup).not.toContain('Generation method:');
-  });
-
-  it('reports method changes and model selections through the shared controls', async () => {
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const root = createRoot(container);
+  it('model selection preserves Nova mode and ignores disabled controls', async () => {
     const onChange = vi.fn();
-    const onThreeDModelChange = vi.fn();
-    const onLlmModelChange = vi.fn();
+    const container = document.createElement('div');
+    const root = createRoot(container);
     const capture = (await import('posthog-js')).default.capture;
-
     try {
+      act(() => root.render(<GenerationModelSelector mode="nova" onChange={onChange} />));
+      const select = container.querySelector('select')!;
       act(() => {
-        root.render(
-          <GenerationMethodSelector
-            value="llm"
-            onChange={onChange}
-            onThreeDModelChange={onThreeDModelChange}
-            onLlmModelChange={onLlmModelChange}
-          />,
-        );
+        select.value = 'gpt-5.6-sol';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
       });
-
-      const renderModelSelect = container.querySelector('select') as HTMLSelectElement;
-      act(() => {
-        renderModelSelect.value = 'trellis';
-        renderModelSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      expect(onChange).toHaveBeenCalledWith('3d');
-      expect(onThreeDModelChange).toHaveBeenCalledWith('trellis');
-      expect(capture).toHaveBeenCalledWith('landing_generation_method_selected', {
-        generation_method: '3d',
-      });
+      expect(onChange).toHaveBeenCalledWith('gpt-5.6-sol');
       expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
-        generation_method: '3d',
-        model: 'trellis',
-        provider: '3d',
+        generation_method: 'nova', model: 'gpt-5.6-sol', provider: 'openai',
       });
-
-      const llmSelect = container.querySelector('select') as HTMLSelectElement;
-      act(() => {
-        llmSelect.value = 'gpt-5.6-sol';
-        llmSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      expect(onLlmModelChange).toHaveBeenCalledWith('gpt-5.6-sol');
-      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
-        generation_method: 'llm',
-        model: 'gpt-5.6-sol',
-        provider: 'openai',
-      });
-
-      act(() => {
-        root.render(
-          <GenerationMethodSelector
-            value="3d"
-            threeDModel="sam3d"
-            onChange={onChange}
-            onThreeDModelChange={onThreeDModelChange}
-            onLlmModelChange={onLlmModelChange}
-          />,
-        );
-      });
+      expect(capture).not.toHaveBeenCalledWith('landing_generation_method_selected', expect.anything());
       onChange.mockClear();
-      onThreeDModelChange.mockClear();
-      onLlmModelChange.mockClear();
-      vi.mocked(capture).mockClear();
-
-      const threeDSelect = container.querySelector('select') as HTMLSelectElement;
+      act(() => root.render(<GenerationModelSelector mode="nova" disabled onChange={onChange} />));
       act(() => {
-        threeDSelect.value = 'sam3d';
-        threeDSelect.dispatchEvent(new Event('change', { bubbles: true }));
+        select.value = 'gpt-5.5';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
       });
+      expect(select.disabled).toBe(true);
       expect(onChange).not.toHaveBeenCalled();
-      expect(onThreeDModelChange).not.toHaveBeenCalled();
-      expect(onLlmModelChange).not.toHaveBeenCalled();
-      expect(capture).not.toHaveBeenCalled();
-
-      vi.mocked(capture).mockClear();
-
-      act(() => {
-        threeDSelect.value = 'trellis';
-        threeDSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      expect(onChange).not.toHaveBeenCalled();
-      expect(onThreeDModelChange).toHaveBeenCalledWith('trellis');
-      expect(capture).not.toHaveBeenCalledWith('landing_generation_method_selected', {
-        generation_method: '3d',
-      });
-      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
-        generation_method: '3d',
-        model: 'trellis',
-        provider: '3d',
-      });
-
-      onChange.mockClear();
-      onLlmModelChange.mockClear();
-      vi.mocked(capture).mockClear();
-
-      act(() => {
-        threeDSelect.value = 'claude-opus-5-5';
-        threeDSelect.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      expect(onChange).toHaveBeenCalledWith('llm');
-      expect(onLlmModelChange).toHaveBeenCalledWith('claude-opus-5-5');
-      expect(capture).toHaveBeenCalledWith('landing_generation_method_selected', {
-        generation_method: 'llm',
-      });
-      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
-        generation_method: 'llm',
-        model: 'claude-opus-5-5',
-        provider: 'anthropic',
-      });
-    } finally {
-      act(() => root.unmount());
-      container.remove();
-    }
-  });
-
-  it('expands the shared method and model controls by default in the native shell', () => {
-    window.__BRICKBUILDER_NATIVE_APP__ = Object.freeze({
-      platform: 'ios',
-      version: '0.1.0',
-    });
-
-    try {
-      const markup = renderToStaticMarkup(<LandingPage />);
-
-      expect(markup).not.toContain('Generation method:');
-      expect(markup).toContain('<optgroup label="image-to-glb">');
-      expect(markup).not.toMatch(/>image-to-glb<\/button>/);
-      expect(markup).not.toContain('3D Render');
-      expect(markup).not.toContain('LLM Render');
-      expect(markup).toContain('Render model:');
-      expect(markup).toContain('Claude Opus 5.5');
-      expect(markup).toContain('GPT-5.6 Sol');
-      expect(markup).not.toContain('Style:');
-      expect(markup).not.toContain('Plush');
-      expect(markup).not.toContain('Block');
-    } finally {
-      delete window.__BRICKBUILDER_NATIVE_APP__;
-    }
+    } finally { act(() => root.unmount()); }
   });
 });
 
@@ -655,7 +615,7 @@ it.each([3, 8])('centers the first community model and wraps %s models in their 
 });
 
 it('positions the render-model chevron inside the select without intercepting input', () => {
-  const markup = renderToStaticMarkup(<GenerationMethodSelector value="llm" llmModel={DEFAULT_LLM_MODEL} onChange={() => {}} />);
+  const markup = renderToStaticMarkup(<GenerationModelSelector model={DEFAULT_LLM_MODEL} onChange={() => {}} />);
   const container = document.createElement('div');
   container.innerHTML = markup;
   const select = container.querySelector('select')!;

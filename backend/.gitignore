@@ -18,6 +18,7 @@ ldr-viewer
 # Local embedded Postgres + file storage (used when Supabase is not configured)
 .local_postgres/
 .local_storage/
+.nova/
 
 # Temporary voxelization build artifacts
 tmp/

@@ -1,0 +1,7 @@
+# The hosted build fetches both fork sources itself. Send only the adapter.
+**
+!backend/
+!backend/nova-service/
+!backend/nova-service/**
+**/__pycache__/
+**/*.pyc
