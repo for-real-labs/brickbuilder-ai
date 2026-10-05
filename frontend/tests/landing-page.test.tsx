@@ -571,14 +571,14 @@ it('labels the top-right auth action Sign up', async () => {
   } finally { act(() => root.unmount()); authSettings.isSupabaseConfigured = false; vi.unstubAllGlobals(); }
 });
 
-it.each([3, 8])('centers the first community model and wraps %s models in their original order', count => {
+it.each([2, 3, 8].flatMap(count => [390, 1440, 3714, 5120].map(width => ({ count, width }))))('fills a $width px viewport and centers $count models through scrolling and resizing', ({ count, width }) => {
   const items = Array.from({ length: count }, (_, index) => ({
     id: `model-${index}`, title: `Model ${index}`, imageUrl: null,
     creator: null, createdAt: '2026-10-01', likeCount: count - index,
   }));
   const loopCount = Math.ceil(8 / count) * count;
   const loopWidth = loopCount * 144;
-  let viewportWidth = 600;
+  let viewportWidth = width;
   let resize!: () => void;
   const disconnect = vi.fn();
   vi.stubGlobal('ResizeObserver', class {
@@ -595,17 +595,36 @@ it.each([3, 8])('centers the first community model and wraps %s models in their 
   const transform = () => container.querySelector<HTMLElement>('[data-featured-track]')!.style.transform;
   try {
     act(() => root.render(<FeaturedStrip items={items} />));
-    const initialOffset = loopWidth - (viewportWidth - 120) / 2;
+    const initialOffset = ((loopWidth - (viewportWidth - 120) / 2) % loopWidth + loopWidth) % loopWidth;
     expect(transform()).toBe(`translate3d(${-initialOffset}px, 0, 0)`);
     const titles = Array.from(container.querySelectorAll('h3')).map(title => title.textContent);
-    expect(titles).toEqual(Array.from({ length: loopCount * 2 }, (_, index) => `Model ${index % count}`));
+    expect(titles).toEqual(Array.from({ length: loopCount * Math.max(2, Math.ceil(viewportWidth / loopWidth) + 1) }, (_, index) => `Model ${index % count}`));
     act(() => container.querySelector<HTMLButtonElement>('[aria-label="Scroll community models right"]')!.click());
     expect(transform()).toBe(`translate3d(${-((initialOffset + 144) % loopWidth)}px, 0, 0)`);
     act(() => container.querySelector<HTMLButtonElement>('[aria-label="Scroll community models right"]')!.click());
     expect(transform()).toBe(`translate3d(${-((initialOffset + 288) % loopWidth)}px, 0, 0)`);
-    viewportWidth = 390;
-    act(() => resize());
-    expect(transform()).toBe(`translate3d(${-(loopWidth - (390 - 120) / 2)}px, 0, 0)`);
+    const expectFilled = () => {
+      const copies = container.querySelectorAll('[data-featured-copy]').length;
+      const offset = -Number(transform().match(/translate3d\(([-\d.]+)px/)![1]);
+      expect(offset).toBeGreaterThanOrEqual(0);
+      expect(offset).toBeLessThan(loopWidth);
+      expect(copies * loopWidth - offset).toBeGreaterThanOrEqual(viewportWidth);
+    };
+    expectFilled();
+    // Sweep beyond a full loop in both directions, including its wrap boundary.
+    for (const direction of ['right', 'left']) {
+      for (let step = 0; step < loopCount * 2; step++) {
+        act(() => container.querySelector<HTMLButtonElement>(`[aria-label="Scroll community models ${direction}"]`)!.click());
+        expectFilled();
+      }
+    }
+    for (const resizedWidth of [390, 5120, 1440]) {
+      viewportWidth = resizedWidth;
+      act(() => resize());
+      const centeredOffset = ((loopWidth - (viewportWidth - 120) / 2) % loopWidth + loopWidth) % loopWidth;
+      expect(transform()).toBe(`translate3d(${-centeredOffset}px, 0, 0)`);
+      expectFilled();
+    }
   } finally {
     act(() => root.unmount());
     geometry.mockRestore();
