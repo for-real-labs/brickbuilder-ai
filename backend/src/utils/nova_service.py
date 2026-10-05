@@ -103,7 +103,10 @@ class NovaService:
             raise ValueError('Cannot reach the Nova runtime. Check that it is running and the private connection is configured.') from None
 
     async def ready(self) -> dict:
-        return await self.request('GET', 'integration/runtime')
+        info = await self.request('GET', 'integration/runtime')
+        if info.get('generation_cost_limit_usd') != 10:
+            raise ValueError('Nova must be rebuilt with the $10 generation cost limit before All parts can run.')
+        return info
 
     @staticmethod
     def session_id(value: str) -> str:
@@ -197,6 +200,11 @@ class NovaService:
             started = True
             await self.wait_for_turn(chat_id, on_output, on_progress)
             after = await self.chat(chat_id)
+            from .generation_budget import BUDGET_ERROR
+            previous_message_id = max((item.get('id', 0) for item in before.get('messages', [])), default=0)
+            if any(message.get('_error') and message.get('id', 0) > previous_message_id
+                   and message.get('content') == BUDGET_ERROR for message in after.get('messages', [])):
+                raise ValueError(BUDGET_ERROR)
             published = [row for key, row in after['models'].items() if key not in before['models']]
             if not published:
                 raise ValueError('Nova finished this turn without publishing a model. The session and source files have been retained.')
@@ -234,6 +242,9 @@ class NovaService:
                             payload = json.loads('\n'.join(data))
                             data = []
                             if event == 'turn_error':
+                                from .generation_budget import BUDGET_ERROR
+                                if payload.get('message') == BUDGET_ERROR:
+                                    raise ValueError(BUDGET_ERROR)
                                 raise ValueError('Nova could not complete this turn. Check the runtime provider connection; the session is retained.')
                             if event == 'approval':
                                 raise ValueError('Nova requires an approval. Use automatic agent permissions for BrickBuilder generations.')

@@ -374,6 +374,31 @@ def _create_schema(conn) -> None:
                 f'ON "{table}" USING gin (doc jsonb_path_ops)'
             )
     _create_local_generation_versions(conn)
+    _create_local_generation_limit(conn)
+
+
+def _create_local_generation_limit(conn) -> None:
+    conn.execute("""
+        CREATE OR REPLACE FUNCTION enforce_local_generation_limit() RETURNS trigger
+        LANGUAGE plpgsql AS $$
+        BEGIN
+            IF new.doc->>'endpoint' IN ('llmToBricks', 'novaToBricks')
+               AND new.doc->>'status' IN ('queued', 'started', 'processing', 'ldr_processing', 'resizing') THEN
+                PERFORM pg_advisory_xact_lock(hashtextextended(
+                    'generation-limit:' || (new.doc->>'user_type') || ':' || (new.doc->>'user_id'), 0));
+                IF (SELECT count(*) FROM generations
+                    WHERE doc->>'user_id' = new.doc->>'user_id'
+                      AND doc->>'user_type' = new.doc->>'user_type'
+                      AND doc->>'status' IN ('queued', 'started', 'processing', 'ldr_processing', 'resizing')) >= 10 THEN
+                    RAISE EXCEPTION 'BB_GENERATION_CONCURRENCY_LIMIT';
+                END IF;
+            END IF;
+            RETURN new;
+        END; $$;
+        DROP TRIGGER IF EXISTS generations_concurrency_limit ON generations;
+        CREATE TRIGGER generations_concurrency_limit BEFORE INSERT ON generations
+        FOR EACH ROW EXECUTE FUNCTION enforce_local_generation_limit();
+    """)
 
 
 def _backfill_local_generation_versions(conn) -> None:

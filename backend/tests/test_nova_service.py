@@ -10,7 +10,27 @@ import pytest
 from src.utils.nova_service import NovaService, read_export
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10}
+
+
+def test_older_nova_runtime_is_rejected_before_provider_calls():
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
+                lambda req: httpx.Response(200, json={'toolkit': 'old', 'web': 'old'})))) as service:
+            with pytest.raises(ValueError, match='cost limit'):
+                await service.ready()
+    asyncio.run(run())
+
+
+def test_budget_stream_error_is_visible_and_stops_the_turn():
+    from src.utils.generation_budget import BUDGET_ERROR
+    async def run():
+        data = 'event: turn_error\ndata: ' + json.dumps({'message': BUDGET_ERROR}) + '\n\n'
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
+                lambda req: httpx.Response(200, text=data)))) as service:
+            with pytest.raises(ValueError, match=r'\$10'):
+                await service.wait_for_turn('chat', None)
+    asyncio.run(run())
 
 
 def archive(files=None):

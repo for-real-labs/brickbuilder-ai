@@ -19,6 +19,7 @@ import { SiteFooter } from "../components/SiteFooter";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity } from "../hooks/useGenerationActivity";
+import { useAnimatedGenerationStats } from "../hooks/useAnimatedGenerationStats";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
 import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/NovaProviderLoginModal';
@@ -93,10 +94,12 @@ export function GenerationModelSelector({
         disabled={disabled}
         onChange={event => {
           const option = getLlmModelOption(event.target.value);
-          if (!option || option.id === model || disabled) return;
-          onChange(option.id);
+          const selected = event.target.value;
+          const other = selected === 'sam3d' || selected === 'trellis';
+          if ((!option && !other) || selected === model || disabled) return;
+          onChange(selected);
           posthog.capture('landing_render_model_selected', {
-            generation_method: mode, model: option.id, provider: option.provider,
+            generation_method: other ? '3d' : mode === '3d' ? 'llm' : mode, model: selected, provider: option?.provider ?? 'fal',
           });
         }}
         className="min-h-11 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-52"
@@ -108,6 +111,10 @@ export function GenerationModelSelector({
             ))}
           </optgroup>
         ))}
+        <optgroup label="Other">
+          <option value="sam3d">SAM3D</option>
+          <option value="trellis">Trellis</option>
+        </optgroup>
       </select>
       <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
     </div>
@@ -224,7 +231,7 @@ export default function LandingPage() {
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
-  const [threeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
+  const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
   const localDevelopment = isLocalDevelopment();
@@ -283,6 +290,7 @@ export default function LandingPage() {
   const navigate = useNavigate();
   const [isCardHidden, setIsCardHidden] = useState(false);
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
+  const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
   const [statsReady, setStatsReady] = useState(false);
   const [communityReady, setCommunityReady] = useState(false);
   const lowerContentReady = statsReady && communityReady;
@@ -375,7 +383,8 @@ export default function LandingPage() {
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      setGenerationMethod(payload.generationMethod === 'nova' ? 'nova' : 'llm');
+      setGenerationMethod(payload.generationMethod === '3d' ? '3d' : payload.generationMethod === 'nova' ? 'nova' : 'llm');
+      if (payload.threeDModel === 'sam3d' || payload.threeDModel === 'trellis') setThreeDModel(payload.threeDModel);
       if (payload.llmModel && getLlmModelOption(payload.llmModel)) setLlmModel(payload.llmModel);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
         setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
@@ -836,7 +845,7 @@ export default function LandingPage() {
     if (loading) return;
     posthog.capture('landing_generate_clicked', {
       generation_method: generationMethod,
-      model: llmModel,
+      model: generationMethod === '3d' ? threeDModel : llmModel,
       has_prompt: Boolean(prompt.trim()),
       has_image: Boolean(imgFile),
       size,
@@ -916,14 +925,14 @@ export default function LandingPage() {
             >
               <div className="min-w-28">
                 <span className="block text-2xl font-bold text-slate-900">
-                  {generationStats ? generationStats.generation_count.toLocaleString() : "—"}
+                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
                 </span>
                 <span className="text-sm">models generated</span>
               </div>
               <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
               <div className="min-w-28">
                 <span className="block text-2xl font-bold text-slate-900">
-                  {generationStats ? generationStats.brick_count.toLocaleString() : "—"}
+                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
                 </span>
                 <span className="text-sm">bricks generated</span>
               </div>
@@ -975,16 +984,22 @@ export default function LandingPage() {
                 </p>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
-                <GenerationModelSelector model={llmModel} mode={generationMethod} onChange={model => {
-                  setLlmModel(model);
-                  if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
+                <GenerationModelSelector model={generationMethod === '3d' ? threeDModel : llmModel} mode={generationMethod} onChange={model => {
+                  if (model === 'sam3d' || model === 'trellis') {
+                    setThreeDModel(model);
+                    setGenerationMethod('3d');
+                  } else {
+                    setLlmModel(model);
+                    if (generationMethod === '3d') setGenerationMethod('llm');
+                    if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
+                  }
                 }} disabled={loading || checkingProvider} />
                 <div className="relative min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto">
                   <label htmlFor="landing-builder-mode" className="sr-only">Mode</label>
                   <select
                     id="landing-builder-mode"
-                    value={generationMethod}
-                    disabled={loading || checkingProvider}
+                    value={generationMethod === '3d' ? 'llm' : generationMethod}
+                    disabled={loading || checkingProvider || generationMethod === '3d'}
                     onChange={event => {
                       const mode = event.target.value;
                       if (mode !== 'llm' && mode !== 'nova') return;

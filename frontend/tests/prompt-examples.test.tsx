@@ -6,11 +6,16 @@ import { usePromptTypewriter } from '../src/hooks/usePromptTypewriter';
 
 afterEach(() => vi.useRealTimers());
 
-it('offers 1,000 additional unique, concise examples and keeps the originals', () => {
-  expect(PROMPT_EXAMPLES).toHaveLength(1006);
-  expect(new Set(PROMPT_EXAMPLES).size).toBe(1006);
-  expect(PROMPT_EXAMPLES).toContain('a dachshund in sunglasses');
-  expect(PROMPT_EXAMPLES.every(phrase => phrase.length < 100 && !phrase.includes('undefined'))).toBe(true);
+it('offers unique, short ideas across recognizable subjects and varied formats', () => {
+  expect(PROMPT_EXAMPLES.length).toBeGreaterThan(200);
+  expect(new Set(PROMPT_EXAMPLES).size).toBe(PROMPT_EXAMPLES.length);
+  expect(PROMPT_EXAMPLES.every(phrase => phrase.trim() === phrase && phrase.length > 0 && phrase.length <= 40)).toBe(true);
+  for (const subject of ['Mario', 'Pikachu', 'Taylor Swift', 'the Eiffel Tower', 'a Porsche 911', 'Darth Vader', 'the Nike swoosh']) {
+    expect(PROMPT_EXAMPLES).toContain(subject);
+  }
+  expect(PROMPT_EXAMPLES).toContain('Messi scoring a goal');
+  expect(PROMPT_EXAMPLES).toContain('a rocket launch');
+  expect(PROMPT_EXAMPLES.filter(phrase => !phrase.includes(' ')).length).toBeGreaterThan(30);
 });
 
 it('can select every example and skips the previous example at both random boundaries', () => {
@@ -22,7 +27,7 @@ it('can select every example and skips the previous example at both random bound
   random.mockReturnValue(0);
   expect(pickPromptExampleIndex(0)).toBe(1);
   random.mockReturnValue(0.99999);
-  expect(pickPromptExampleIndex(1005)).toBe(1004);
+  expect(pickPromptExampleIndex(PROMPT_EXAMPLES.length - 1)).toBe(PROMPT_EXAMPLES.length - 2);
 });
 
 it('types a random example, pauses when disabled, then picks another after deletion', async () => {
@@ -33,17 +38,17 @@ it('types a random example, pauses when disabled, then picks another after delet
   const root = createRoot(container);
   try {
     act(() => root.render(<Harness enabled />));
-    for (let i = 0; i < 'a unicorn'.length; i++) {
+    for (let i = 0; i < PROMPT_EXAMPLES[0].length; i++) {
       await act(async () => { await vi.advanceTimersByTimeAsync(70); });
     }
-    expect(container.textContent?.replace('|', '')).toBe('a unicorn');
+    expect(container.textContent?.replace('|', '')).toBe(PROMPT_EXAMPLES[0]);
     act(() => root.render(<Harness enabled={false} />));
     await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
-    expect(container.textContent).toBe('a unicorn');
+    expect(container.textContent).toBe(PROMPT_EXAMPLES[0]);
     random.mockReturnValue(0.5);
     act(() => root.render(<Harness enabled />));
     await act(async () => { await vi.advanceTimersByTimeAsync(900); });
-    for (let i = 0; i < 'a unicorn'.length; i++) {
+    for (let i = 0; i < PROMPT_EXAMPLES[0].length; i++) {
       await act(async () => { await vi.advanceTimersByTimeAsync(35); });
     }
     const selected = PROMPT_EXAMPLES[pickPromptExampleIndex(0)];

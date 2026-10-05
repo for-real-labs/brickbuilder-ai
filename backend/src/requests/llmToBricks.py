@@ -206,6 +206,7 @@ def _open_conversation(
         system=system,
         tools=tools,
         max_tokens=MAX_OUTPUT_TOKENS,
+        enforce_cost_limit=True,
         reasoning_effort=OPENAI_REASONING_EFFORT,
     )
     provider = SUPPORTED_MODELS[request.model].provider
@@ -824,14 +825,15 @@ async def process_llm_to_bricks_task(
         return None
     except Exception as exc:
         logger.exception("LLM-to-bricks generation failed for %s", generation_id)
-        await generation_storage.update_status(generation_id, "failed", str(exc))
+        message = str(getattr(exc, "detail", None) or exc) or "LLM generation failed"
+        await generation_storage.update_status(generation_id, "failed", message)
         track_error(
             error_type=type(exc).__name__,
             error_message=str(exc),
             endpoint="/llmToBricks",
             user_id=user_info.get("user_email", "anonymous"),
         )
-        return str(exc)
+        return message
     finally:
         if heartbeat_task:
             heartbeat_task.cancel()

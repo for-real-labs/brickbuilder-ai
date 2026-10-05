@@ -297,5 +297,6 @@ ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["uvicorn", "main:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0", "--port", "8000"]
 
 COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/
+COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py
 RUN printf '%s' '{"toolkit":"c4ba6c4913e0975ee7e34e647c26129137657d5e","web":"46a6ffd35d9bb342d43a687b8c614b4a873f79e4"}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools
 CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]
