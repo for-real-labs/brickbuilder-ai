@@ -1,5 +1,5 @@
 import { NotificationMenu } from "../components/NotificationMenu";
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import * as THREE from 'three';
 import { LDrawParser, LDrawModel } from '../utils/ldrawParser';
@@ -8,6 +8,7 @@ import { MpdImageRenderer } from '../components/MpdImageRenderer';
 import { supabase } from '../lib/supabase';
 import { parseLDrawColors, getColorNameWithFallback, type LDrawColor } from '../utils/colorParser';
 import { LdrToMpdApiService } from '../services/ldrToMpdApi';
+import { NovaToBricksApiService } from '../services/novaToBricksApi';
 import { GetGenerationApiService } from '../services/getGenerationApi';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Upload, Coins, X, Palette, ArrowLeft, LayoutDashboard } from 'lucide-react';
@@ -332,7 +333,10 @@ export function InstructionsPage() {
           setError(null);
           
           const generationData = await GetGenerationApiService.getGeneration(generationId);
-          const { prompt, ldr_content, xyzrgb_url } = generationData;
+          const { prompt, xyzrgb_url } = generationData;
+          const ldr_content = generationData.endpoint === 'novaToBricks'
+            ? await NovaToBricksApiService.instructions(generationId)
+            : generationData.ldr_content;
           
           if (!ldr_content) {
             throw new Error('No LDR content found in generation data');
@@ -463,7 +467,8 @@ export function InstructionsPage() {
       lines.push('0 STEP');
     }
     
-    return lines.join('\n');
+    const definitions = ldrContent ? LDrawParser.embeddedDefinitions(ldrContent) : '';
+    return lines.join('\n') + (definitions ? '\n' + definitions : '');
   }
 
   // Parse MPD structure once when content loads (fast - just finds indices)
@@ -1156,6 +1161,7 @@ export function InstructionsPage() {
     );
   }
 
+
   if (!model || model.steps.length === 0) {
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
@@ -1445,7 +1451,7 @@ export function InstructionsPage() {
                     </div>
                     <div className="pt-2">
                     {(() => {
-                      const stepParts = extractPartInfo(currentLastStepMpd);
+                      const stepParts = LDrawParser.getPartsListForStep(model.steps[currentStepIndex]).map(part => ({ ...part, count: part.quantity }));
                       return (
                         <div className="space-y-2">
                           {stepParts.map((part, index) => {

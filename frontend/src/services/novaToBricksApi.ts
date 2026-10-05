@@ -29,6 +29,12 @@ const API_BASE_URL = API_MODE === 'local'
     : import.meta.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
 
 export class NovaToBricksApiService {
+  static async instructions(generationId: string): Promise<string> {
+    const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-instructions.ldr`);
+    if (!response.ok) throw new Error('Unable to load Nova construction steps. Please try again.');
+    return response.text();
+  }
+
   static async downloadSource(generationId: string): Promise<Blob> {
     const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-source`);
     if (!response.ok) {

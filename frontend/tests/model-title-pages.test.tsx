@@ -11,6 +11,7 @@ import { UpdateGenerationNameApiService } from '../src/services/updateGeneration
 import GeneratedModel from '../src/pages/GeneratedModel';
 import OrderKit from '../src/pages/OrderKit';
 import { GenerationCard } from '../src/pages/UserDashboard';
+import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import posthog from 'posthog-js';
 import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
@@ -18,7 +19,7 @@ import { GetGenerationsByImageApiService } from '../src/services/getGenerationsB
 const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, userProfile: null, isSupabaseConfigured: true})}));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({useGenerationNotifications: () => ({refresh: mocks.refresh, markViewed: mocks.markViewed})}));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName}: {modelName: string}) => <div data-testid="viewer">{modelName}</div>}));
+vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName, topLeftOverlay, onModelLoaded}: {modelName: string; topLeftOverlay?: React.ReactNode; onModelLoaded?: () => void}) => { React.useEffect(() => { onModelLoaded?.(); }, []); return <div data-testid="viewer">{modelName}{topLeftOverlay}</div>; }}));
 vi.mock('../src/components/VoxelViewer', () => ({VoxelViewer: () => null}));
 vi.mock('../src/components/SEO', () => ({SEO: () => null}));
 vi.mock('../src/components/SiteFooter', () => ({SiteFooter: () => null}));
@@ -152,4 +153,43 @@ it('opens the earlier completed version after cancellation without a stored sour
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
   expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=old&exact=1');
   expect(container.querySelector('h1')?.textContent).toBe('Earlier Rover');
+});
+
+
+it('continues Nova AI edits while keeping the completed model, instructions, and progress overlay usable', async () => {
+  const original = { generation_id: 'g', endpoint: 'novaToBricks', status: 'completed', name: 'Garden cottage', prompt: 'cottage', ldr_content: 'ldr' };
+  vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id => (id === 'g' ? original : {
+    generation_id: 'edit', endpoint: 'novaToBricks', status: 'processing', previous_completed_generation_id: 'g', version: 2,
+  }) as never);
+  let finish!: (value: never) => void;
+  const polling = new Promise<never>(resolve => { finish = resolve; });
+  vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockReturnValue(polling);
+  const novaEdit = vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'edit', message: 'Started' });
+  const llm = vi.spyOn(LlmToBricksApiService, 'generate');
+  vi.spyOn(LlmToBricksApiService, 'watchOutput').mockImplementation(async (_id, output) => {
+    output({ text: 'Nova is refining the roof', status: 'processing' });
+    return true;
+  });
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  const input = container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement;
+  expect(input).not.toBeNull();
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Make the roof red');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => input.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(novaEdit).toHaveBeenCalledWith('g', 'Make the roof red', 'token');
+  expect(llm).not.toHaveBeenCalled();
+  const viewer = container.querySelector('[data-testid="viewer"]')!;
+  expect(viewer.textContent).toContain('Garden cottage');
+  expect(viewer.textContent).toContain('This can take up to 30 min. You can close this window safely.');
+  expect(viewer.textContent).toContain('Refining the roof');
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="View instructions"]')!.disabled).toBe(false);
+  expect(container.querySelector('[aria-label="Edit model manually"]')).toBeNull();
+  await act(async () => {
+    finish({ ...original, generation_id: 'edit', name: 'Red-roof cottage' } as never);
+    await polling;
+  });
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('Red-roof cottage');
+  expect(container.textContent).not.toContain('This can take up to 30 min.');
 });

@@ -230,6 +230,7 @@ export default function GeneratedModel() {
   const [isResizing, setIsResizing] = React.useState(false);
   const [showResizeScaler, setShowResizeScaler] = React.useState(false);
   const [showPriceResize, setShowPriceResize] = React.useState(false);
+  const [editGenerationId, setEditGenerationId] = React.useState<string | null>(null);
   const [isPromptEditing, setIsPromptEditing] = React.useState(false);
   const [editPrompt, setEditPrompt] = React.useState("");
   const [editPreviewImageUrl, setEditPreviewImageUrl] = React.useState<string | null>(null);
@@ -336,6 +337,8 @@ export default function GeneratedModel() {
     ldrContent?: string,
     modelName?: string,
     voxelSize?: number,
+    editSourceGenerationId?: string,
+    editSourceEndpoint?: string,
     generation_id?: string,
     storageKeys?: {
       LDR_CONTENT: string,
@@ -347,7 +350,22 @@ export default function GeneratedModel() {
   } | null;
 
   const isDemoModel = !!currentGenerationId && DEMO_MODEL_IDS.has(currentGenerationId);
-  const isNovaModel = pendingGeneration?.endpoint === 'novaToBricks';
+  const retainedEditSourceId = stateData?.editSourceGenerationId;
+  const canKeepModelVisible = Boolean(mpdContent && (
+    searchParams.get('id') === currentGenerationId || retainedEditSourceId === currentGenerationId ||
+    pendingGeneration?.previous_completed_generation_id === currentGenerationId
+  ));
+  const isModelEditing = isPromptEditing || Boolean(editGenerationId) ||
+    (generationLoading && canKeepModelVisible && retainedEditSourceId === currentGenerationId);
+  const showModelPage = !generationError && (!generationLoading || canKeepModelVisible);
+  const handleEditCancelled = () => {
+    modelLoadAbortRef.current?.abort();
+    refreshNotifications();
+    const previousId = pendingGeneration?.previous_completed_generation_id || retainedEditSourceId;
+    navigate(previousId ? `/generated-model?id=${encodeURIComponent(previousId)}&exact=1` : '/', { replace: true });
+  };
+  const isNovaModel = pendingGeneration?.endpoint === 'novaToBricks' ||
+    (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
   const hasNovaSource = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
 
@@ -411,9 +429,14 @@ export default function GeneratedModel() {
     const controller = new AbortController();
     modelLoadAbortRef.current = controller;
     setPendingGeneration(null);
-    setDisplayedGenerationId(null);
-    setSceneReady(false);
+    setEditGenerationId(null);
+    if (!canKeepModelVisible) {
+      setDisplayedGenerationId(null);
+      setSceneReady(false);
+    }
     const initializeModelData = async () => {
+      let editingExistingModel = false;
+      let previousCompletedGeneration: GetGenerationResponse | null = null;
       // Priority 1: Check for id parameter in URL (e.g., /generated-model?id=abc123)
       const urlGenerationId = searchParams.get('id');
       
@@ -439,6 +462,23 @@ export default function GeneratedModel() {
           
           // If still processing, poll until complete
           if (isGenerationActive(statusResponse.status)) {
+            const previousId = statusResponse.previous_completed_generation_id;
+            if (previousId) {
+              setEditGenerationId(urlGenerationId);
+              previousCompletedGeneration = await GetGenerationApiService.getGeneration(previousId, controller.signal);
+              if (controller.signal.aborted) return;
+              if (currentGenerationId === previousId && mpdContent) {
+                setGenerationLoading(false);
+              } else {
+                const previous = previousCompletedGeneration;
+                if (controller.signal.aborted) return;
+                if (previous.status !== 'completed' || !previous.ldr_content) throw new Error('The previous model could not be loaded.');
+                await processCompletedGeneration(previousId, { ...previous, ldr_content: previous.ldr_content, prompt: previous.prompt || 'Your Model' });
+                if (controller.signal.aborted) return;
+              }
+              editingExistingModel = true;
+            }
+
             // Show preview image if available
             if (statusResponse.external_image_url) {
               setEditPreviewImageUrl(statusResponse.external_image_url);
@@ -471,6 +511,7 @@ export default function GeneratedModel() {
             
             // Process completed generation
             await processCompletedGeneration(urlGenerationId, generationData);
+            setEditGenerationId(null);
             return;
           }
           
@@ -514,7 +555,13 @@ export default function GeneratedModel() {
         } catch (error) {
           if (controller.signal.aborted) return;
           console.error('Failed to fetch generation data from URL id:', error);
-          setGenerationError(`Failed to load generation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          if (editingExistingModel) {
+            setEditPromptError(message);
+            if (previousCompletedGeneration) setPendingGeneration(previousCompletedGeneration);
+          }
+          else setGenerationError(`Failed to load generation: ${message}`);
+          setEditGenerationId(null);
           setGenerationLoading(false);
           return;
         }
@@ -1581,7 +1628,7 @@ export default function GeneratedModel() {
   }, [mpdContent, accessToken, currentGenerationId, modelName]);
 
   const handlePromptEditModel = React.useCallback(async () => {
-    if (isPromptEditing || isResizing || isSavePolling) return;
+    if (isModelEditing || isResizing || isSavePolling) return;
     if (!editPrompt.trim()) {
       console.error('No prompt provided for editing');
       return;
@@ -1614,7 +1661,7 @@ export default function GeneratedModel() {
       localStorage.setItem('lastGenerationId', newGenerationId);
       if (!currentUser) recordAnonymousGeneration(newGenerationId);
       refreshNotifications();
-      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true });
+      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? 'novaToBricks' : 'llmToBricks' } });
       setEditPrompt('');
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
@@ -1624,7 +1671,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isPromptEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -1709,6 +1756,7 @@ export default function GeneratedModel() {
   };
 
   const handleEditModelClick = async () => {
+    if (isModelEditing || isNovaModel) return;
     posthog.capture('generated_model_edit_button_clicked', {
       generation_id: currentGenerationId,
       action: showVoxelEditor ? 'exit_editor' : 'enter_editor',
@@ -1843,7 +1891,7 @@ export default function GeneratedModel() {
         </button>
 
         {/* Loading state when fetching generation by ID */}
-        {generationLoading && (
+        {generationLoading && !canKeepModelVisible && (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200">
               <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
@@ -1895,14 +1943,14 @@ export default function GeneratedModel() {
         )}
 
         {/* Main content - only show when not loading and no error */}
-        {!generationLoading && !generationError && (
+        {showModelPage && (
           <>
         <section className="mt-3 mb-5 sm:mb-6">
           <GenerationTitle
             key={currentGenerationId || 'local'}
             generationId={currentGenerationId || undefined}
             name={modelName}
-            canEdit={canToggleCommunity && !isSavePolling}
+            canEdit={canToggleCommunity && !isSavePolling && !isModelEditing}
             accessToken={accessToken || undefined}
             onSaved={name => {
               setModelName(name);
@@ -2195,6 +2243,15 @@ export default function GeneratedModel() {
                 onModelLoaded={() => setSceneReady(true)}
                 onExportCaptureReady={handleExportCaptureReady}
                 animateModelBuild
+                topLeftOverlay={isModelEditing ? (
+                  <div className="w-fit max-w-full rounded-xl bg-white/90 px-3 pb-3 shadow-sm backdrop-blur-sm">
+                    {isNovaModel && <p className="pt-3 text-sm text-slate-600">This can take up to 30 min. You can close this window safely.</p>}
+                    {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
+                      ? <LlmGenerationOutput generationId={editGenerationId} active />
+                      : <p role="status" className="pt-3 text-sm text-slate-500">Starting your edit…</p>}
+                    {editGenerationId && <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />}
+                  </div>
+                ) : undefined}
                 /* onScreenshotsReady={setScreenshots} — disabled */
               />
             ) : (
@@ -2221,7 +2278,7 @@ export default function GeneratedModel() {
           <section className="mt-12 max-w-md mx-auto space-y-6">
             <ResizeScaler
               onResize={handleResizeModel}
-              disabled={!mpdContent || isPromptEditing}
+              disabled={!mpdContent || isModelEditing}
               isResizing={isResizing}
               scaler={currentScaler}
               onScalerChange={setCurrentScaler}
@@ -2234,8 +2291,8 @@ export default function GeneratedModel() {
             prompt={editPrompt}
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}
-            loading={isPromptEditing}
-            disabled={isResizing || isSavePolling}
+            loading={isModelEditing}
+            disabled={isResizing || isSavePolling || isModelEditing}
             error={editPromptError}
           />
         )}
@@ -2251,7 +2308,7 @@ export default function GeneratedModel() {
           <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
             {!isNovaModel && <ModelEditControls
               isManualEditorOpen={showVoxelEditor}
-              manualLoading={xyzrgbLoading || isPromptEditing}
+              manualLoading={xyzrgbLoading || isModelEditing}
               onManualEdit={() => { void handleEditModelClick(); }}
             />}
             {/* Instructions button — white with grey border, turns red on hover */}
@@ -2259,7 +2316,7 @@ export default function GeneratedModel() {
               type="button"
               aria-label="View instructions"
               onClick={navigateToInstructions}
-              disabled={!currentGenerationId || isSavePolling || isPromptEditing}
+              disabled={!currentGenerationId || isSavePolling}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-300 bg-white px-7 font-semibold text-black transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-44"
             >
               {isSavePolling ? (
@@ -2313,7 +2370,7 @@ export default function GeneratedModel() {
               <button
                 type="button"
                 aria-label={isCommunity ? 'Remove from community' : 'Post to community'}
-                disabled={!currentGenerationId || communityToggleLoading || isSavePolling}
+                disabled={!currentGenerationId || communityToggleLoading || isSavePolling || isModelEditing}
                 onClick={() => {
                   if (!currentUser) {
                     setPendingCommunityPost(true);
@@ -2393,7 +2450,7 @@ export default function GeneratedModel() {
           <section className="mt-6 max-w-xs mx-auto">
             <ResizeScaler
               onResize={handleResizeModel}
-              disabled={!mpdContent || isPromptEditing}
+              disabled={!mpdContent || isModelEditing}
               isResizing={isResizing}
               scaler={currentScaler}
               onScalerChange={setCurrentScaler}

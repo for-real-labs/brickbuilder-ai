@@ -73,8 +73,23 @@ does not send Nova models through the voxel builder.
 Request size changes in that composer too; the voxel resize controls are hidden
 for Nova models so subsequent edits keep using their original Nova workspace.
 
+**Building Instructions** uses BrickBuilder's existing step-by-step viewer,
+including Previous/Next, highlighting new parts, the per-step parts panel and
+PDF exports. The installed Nova parser expands the original MPD hierarchy into
+physical placements while retaining the subassemblies' authored steps, world
+transforms and inherited colors. Embedded part definitions remain available
+but are not counted as building placements. Existing Nova models recover their
+instructions from the saved source archive on first use; completed instruction
+geometry can be shared while conversations and provider configuration stay private.
+
+**Edit with AI** continues the original Nova conversation. The completed model
+stays visible during the edit; progress, cancellation and “This can take up to
+30 min. You can close this window safely.” appear in the top-left corner of the
+3D view. Manual voxel editing is unavailable for All parts models.
+
 The private `generation-output` bucket retains:
 
+- `nova-instructions.ldr`: cached physical placements with construction steps.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
 - `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,

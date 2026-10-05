@@ -78,3 +78,18 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401
+
+
+def test_instruction_export_uses_only_model_data_and_does_not_start_an_owner_worker(tmp_path):
+    module = gateway(tmp_path)
+    calls = []
+    module.export_instruction_placements = lambda source: calls.append(source) or b'physical placements\n0 STEP'
+    module.worker_url = AsyncMock()
+    with TestClient(module.app) as client:
+        url = '/integration/instructions'
+        assert client.post(url, content='model').status_code == 401
+        result = client.post(url, content=b'model', headers={'Authorization': 'Bearer runtime-secret'})
+        assert result.status_code == 200 and result.text == 'physical placements\n0 STEP'
+        assert client.post(url, content=b'\xff', headers={'Authorization': 'Bearer runtime-secret'}).status_code == 502
+    assert calls == [b'model']
+    module.worker_url.assert_not_called()
