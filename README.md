@@ -23,13 +23,21 @@
 
 Upload a photo or type a prompt, and BrickBuilder turns it into a real brick build:
 
-1. **Image or text in** — start from any picture, or describe what you want.
-2. **3D reconstruction** — a Trellis or SAM-3D model converts the subject into a solid shape.
-3. **Voxelization** - 3D model is voxelized if using Trellis, or gotten directly from the SAM3D stream.
-4. **Brick optimization** — an optimizer packs the voxels into real LEGO®-compatible parts.
+### LLM-to-bricks
+
+1. **Image or text in** — start from a reference picture, a prompt, or both.
+2. **LLM design** — a Claude or OpenAI model describes colored shapes on a stud grid: boxes, ellipsoids, cylinders, and per-layer maps.
+3. **Design and review** — Python turns those shapes into colored voxels, checks the draft's connections, and renders previews so the LLM can review and revise it.
+4. **Brick optimization** — the accepted voxels go through the shared `glb2brick` / `voxel2brick` converter to produce the final brick model.
 5. **Build it** — explore the model in 3D, follow the instructions, download the LDR/MPD, or order the parts.
 
-Generation time is typically under 30 seconds when SAM3D is used.
+This pipeline skips 3D reconstruction and mesh voxelization. It still uses voxels internally: the LLM designs the geometry instead of reconstructing a 3D mesh from an image. The final brick packing uses the same optimizer as image-based builds.
+
+Configure `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in `backend/.env` for your selected model. See the [backend README](backend/README.md) for `/llmToBricks`, model options, and design settings.
+
+### Image reconstruction and voxelization
+
+The image-based pipeline uses Trellis to reconstruct a 3D mesh and voxelizes it, or takes colored voxels directly from the SAM-3D stream. Those voxels then enter the same brick optimizer and export flow. Generation time is typically under 30 seconds when SAM-3D is used.
 
 ## Examples
 
