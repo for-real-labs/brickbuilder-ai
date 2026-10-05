@@ -77,7 +77,7 @@ remote image URLs through MCP.
    ```dotenv
    MCP_ENABLED=true
    MCP_PUBLIC_URL=https://brickai-backend-staging.up.railway.app/mcp
-   MCP_WEBSITE_URL=https://brickbuilderai-staging.vercel.app
+   MCP_WEBSITE_URL=https://brickbuilderai-git-staging-jjohnson3700team.vercel.app
    MCP_OAUTH_CLIENT_IDS=<chatgpt-oauth-client-id>,<claude-oauth-client-id>
    ```
 

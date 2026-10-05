@@ -54,6 +54,8 @@ export interface GenerationWithOrder {
   external_image_url?: string;
   processed_image_url?: string;
   preview_image_url?: string;
+  previous_completed_generation_id?: string | null;
+  previous_completed_preview_image_url?: string | null;
   model_used_image?: string;
   model_used_3d?: string;
   ordered?: boolean;

@@ -3,6 +3,7 @@ import { getGuestSession } from '../src/utils/guestSession';
 import { apiFetch, authenticatedApiFetch } from '../src/services/apiFetch';
 import { getAnonymousGenerationIds } from '../src/utils/anonGenerations';
 
+
 afterEach(() => vi.unstubAllGlobals());
 
 it('keeps a high-entropy session across reloads and separates fresh browsers', async () => {

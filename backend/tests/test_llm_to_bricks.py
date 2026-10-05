@@ -312,6 +312,101 @@ def test_design_tool_uses_brick_height_voxels_and_discourages_bases():
     assert "Do not add a display base" in module.DESIGN_SYSTEM_PROMPT
 
 
+def test_image_input_encourages_stylization_and_preserves_explicit_prompt():
+    encoded = base64.b64encode(b"reference image").decode()
+    image_only = module._user_input(LlmToBricksRequest(image_base64=encoded))
+    assert "distinctive features" in image_only.text
+    assert "creative liberty with stylization" in image_only.text
+    assert "prominent upper eyelids or eyelashes" in image_only.text
+    assert "200-250" in image_only.text
+    assert image_only.image_base64 == encoded
+
+    explicit = module._user_input(LlmToBricksRequest(
+        image_base64=encoded, prompt="Keep realistic proportions and the exact pose",
+    ))
+    assert explicit.text == "Keep realistic proportions and the exact pose"
+    assert explicit.image_base64 == encoded
+
+
+@pytest.mark.parametrize("prompt_builder", [module._design_system_prompt, module._direct_system_prompt])
+@pytest.mark.parametrize("prompt", [None, "Keep realistic proportions and the exact pose"])
+def test_reference_guidance_allows_stylization_without_forcing_character_style(prompt_builder, prompt):
+    request = LlmToBricksRequest(
+        image_base64=base64.b64encode(b"reference image").decode(), prompt=prompt,
+    )
+    system = prompt_builder(request)
+    assert "distinctive silhouette" in system
+    assert "take creative liberty with proportions" in system
+    assert "do not force every subject into the same style" in system
+    assert "particular style take precedence" in system
+    assert "large expressive head" in system
+    assert "a compact body and short legs" in system
+    assert "inset and projecting features" in system
+    assert "prominent upper eyelids or eyelashes" in system
+    assert "200-250 finished bricks" in system
+    assert "at most 299" in system
+
+
+@pytest.mark.parametrize("prompt_builder", [module._design_system_prompt, module._direct_system_prompt])
+def test_reference_stylization_does_not_change_text_only_or_edit_requests(prompt_builder):
+    text_request = LlmToBricksRequest(prompt="Pink-Haired Anime Girl")
+    edit_request = LlmToBricksRequest(
+        generation_id="existing-model", prompt="Recolor the hat",
+        image_base64=base64.b64encode(b"reference image").decode(),
+    )
+    for request in (text_request, edit_request):
+        assert "REFERENCE IMAGE DESIGN" not in prompt_builder(request)
+
+
+@pytest.mark.parametrize("mode", ["design", "direct"])
+@pytest.mark.parametrize("subject", ["a person", "a cartoon character", "a mug", None])
+def test_generation_receives_compact_brick_budget(monkeypatch, mode, subject):
+    request = LlmToBricksRequest(
+        prompt=subject,
+        image_base64=base64.b64encode(b"reference image").decode() if subject is None else None,
+    )
+    turns = ([_call("submit_brick_design", GOOD_DESIGN, "s1")]
+             if mode == "design" else [_call("submit_ldr_model", {"ldr_content": VALID_PART}, "s1")])
+    _, opened = _scripted(monkeypatch, turns)
+    monkeypatch.setattr(module, "DESIGN_REVIEW_ROUNDS", 0)
+    generate = module._generate_ldr_with_design if mode == "design" else module._generate_ldr_direct
+
+    asyncio.run(generate(request))
+
+    assert "at most 299" in opened["system"]
+    assert "actual bricks after packing, not voxel cells" in opened["system"]
+    assert "Use more bricks only" in opened["system"]
+    assert "explicit large-scale request" in opened["system"]
+    assert "150-500" not in opened["system"]
+    if mode == "design":
+        assert "detail reference, not a required size" in opened["system"]
+        assert "aim for about 40 studs" not in opened["system"]
+    if subject is None:
+        assert "REFERENCE IMAGE DESIGN" in opened["system"]
+
+
+@pytest.mark.parametrize("mode", ["design", "direct"])
+@pytest.mark.parametrize("instruction", ["Make it bigger with 600 bricks", "Recolor the hat"])
+def test_edit_preserves_scale_and_can_exceed_new_model_budget(monkeypatch, mode, instruction):
+    request = LlmToBricksRequest(generation_id="existing-model", prompt=instruction)
+    request._source_voxels = "0 0 0 201 26 9\n"
+    turns = ([_call("submit_brick_design", GOOD_DESIGN, "e1"), _call("accept_design", {}, "e2")]
+             if mode == "design" else [_call("submit_ldr_model", {"ldr_content": VALID_PART}, "e1")])
+    conversation, opened = _scripted(monkeypatch, turns)
+    monkeypatch.setattr(module, "DESIGN_REVIEW_ROUNDS", 1)
+    generate = module._generate_ldr_with_design if mode == "design" else module._generate_ldr_direct
+
+    asyncio.run(generate(request))
+
+    assert "Preserve the existing model's scale" in opened["system"]
+    assert "allow the brick count to grow as needed" in opened["system"]
+    assert "at most 299" not in opened["system"]
+    if mode == "design":
+        feedback = conversation.tool_results[0][0].text
+        assert "allow the brick count to grow as needed" in feedback
+        assert "at most 299" not in feedback
+
+
 def test_start_records_the_selected_model_and_llm_endpoint(monkeypatch):
     created = {}
 
@@ -395,6 +490,28 @@ def _scripted(monkeypatch, turns):
     return conversation, opened
 
 
+def test_design_review_uses_final_converter_count_instead_of_draft_count(monkeypatch):
+    conversation, _ = _scripted(monkeypatch, [
+        _call("submit_brick_design", GOOD_DESIGN, "r1"),
+        _call("accept_design", {}, "r2"),
+    ])
+    converted = []
+
+    def convert(xyzrgb):
+        converted.append(xyzrgb)
+        return module.LlmBuild("\n".join([VALID_PART] * 346))
+
+    monkeypatch.setattr(module, "_convert_design_voxels", convert)
+    monkeypatch.setattr(module, "DESIGN_REVIEW_ROUNDS", 1)
+    result = asyncio.run(module._generate_ldr_with_design(LlmToBricksRequest(prompt="a girl")))
+
+    assert result.piece_count < 300
+    assert converted == [result.xyzrgb()]
+    feedback = conversation.tool_results[0][0].text
+    assert "final voxel-to-brick converter produces 346 bricks" in feedback
+    assert "Simplify or reduce an oversized design" in feedback
+
+
 def test_design_mode_feeds_build_errors_back_then_reviews_then_accepts(monkeypatch):
     conversation, opened = _scripted(monkeypatch, [
         _call("submit_brick_design", FLOATING_DESIGN, "t1"),
@@ -414,6 +531,8 @@ def test_design_mode_feeds_build_errors_back_then_reviews_then_accepts(monkeypat
     review_result = conversation.tool_results[1][0]
     assert review_result.image_png[:8] == b"\x89PNG\r\n\x1a\n"
     assert "Built" in review_result.text
+    assert "at most 299" in review_result.text
+    assert "actual final count" in review_result.text
     validated = validate_ldr_content(ldr)
     assert module.audit_ldraw(validated).ok
     assert "0 STEP" in validated

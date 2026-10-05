@@ -218,6 +218,8 @@ export default function LandingPage() {
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
   const [prompt, setPrompt] = useState("");
+  const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
+  const promptInputRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
@@ -226,6 +228,9 @@ export default function LandingPage() {
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
   const localDevelopment = isLocalDevelopment();
   const [imgFile, setImgFile] = useState<File | null>(null);
+  useEffect(() => {
+    if (imgFile) setInputValidationMessage(null);
+  }, [imgFile]);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -396,7 +401,12 @@ export default function LandingPage() {
   };
 
   const onPickImage = () => fileInputRef.current?.click();
+  const clearSelectedImage = () => {
+    setImgFile(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
   const onFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
+    if (e.target.files?.length) setInputValidationMessage(null);
     const file = e.target.files?.[0] ?? null;
     setImgFile(file);
   };
@@ -488,9 +498,14 @@ export default function LandingPage() {
 
     // Validate input: either text prompt or image required
     if (!imgFile && !prompt.trim()) {
-      setGenerationError("Please enter a text prompt or upload an image");
+      setGenerationError(null);
+      setInputValidationMessage("Describe what you’d like to build, or upload an image to get started.");
+      promptInputRef.current?.focus();
+      posthog.capture("landing_generation_input_required");
       return;
     }
+
+    setInputValidationMessage(null);
 
     if (REQUIRE_LOGIN_FOR_GENERATION && authLoading) {
       return;
@@ -550,7 +565,10 @@ export default function LandingPage() {
         // Update UI based on streaming events
         if ('type' in event && event.type === 'pipeline') {
           const pe = event as PipelineEvent;
-          if (pe.generation_id) setActiveGenerationId(pe.generation_id);
+          if (pe.generation_id) {
+            setActiveGenerationId(pe.generation_id);
+            clearSelectedImage();
+          }
           if (pe.stage === 'image_generation') {
             const queueInfo = pe.queue_position != null ? ` (position ${pe.queue_position})` : '';
             setGenerationStatus(pe.message ? `${pe.message}${queueInfo}` : `Generating…${queueInfo}`);
@@ -662,6 +680,7 @@ export default function LandingPage() {
       
       if (controller.signal.aborted) return;
       const generationId = postResponse.generation_id;
+      clearSelectedImage();
       setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
       
@@ -783,6 +802,19 @@ export default function LandingPage() {
     }
   };
 
+  const submitGeneration = () => {
+    if (loading) return;
+    posthog.capture('landing_generate_clicked', {
+      generation_method: generationMethod,
+      model: llmModel,
+      has_prompt: Boolean(prompt.trim()),
+      has_image: Boolean(imgFile),
+      size,
+      is_authenticated: Boolean(session),
+    });
+    void onGenerate();
+  };
+
   // After a successful login from the modal, automatically continue generation
   useEffect(() => {
     if (pendingGenerateAfterLogin && session && !authLoading && !loading) {
@@ -867,27 +899,26 @@ export default function LandingPage() {
               className="relative z-20 w-full landing-fade-in landing-delay-3"
               onSubmit={event => {
                 event.preventDefault();
-                if (loading) return;
-                posthog.capture('landing_generate_clicked', {
-                  generation_method: generationMethod,
-                  model: llmModel,
-                  has_prompt: Boolean(prompt.trim()),
-                  has_image: Boolean(imgFile),
-                  size,
-                  is_authenticated: Boolean(session),
-                });
-                void onGenerate();
+                submitGeneration();
               }}
             >
               <div className="relative w-full">
                 <input
+                  ref={promptInputRef}
                   aria-label="Describe your model"
+                  aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
                   value={prompt}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPrompt(event.target.value)}
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                    setPrompt(event.target.value);
+                    if (event.target.value.trim()) setInputValidationMessage(null);
+                  }}
                   onKeyDown={event => {
-                    if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault();
+                    if (event.key !== 'Enter') return;
+                    event.preventDefault();
+                    if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+                    event.currentTarget.form?.requestSubmit();
                   }}
                   placeholder={imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
                   className="h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
@@ -903,6 +934,11 @@ export default function LandingPage() {
                 </button>
               </div>
 
+              {inputValidationMessage && (
+                <p id="generation-input-help" role="status" className="mt-3 text-center text-sm leading-6 text-slate-600">
+                  {inputValidationMessage}
+                </p>
+              )}
               <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                 <GenerationModelSelector model={llmModel} mode={generationMethod} onChange={setLlmModel} disabled={loading} />
                 <div className="relative min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto">
@@ -963,10 +999,7 @@ export default function LandingPage() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setImgFile(null);
-                    if (fileInputRef.current) fileInputRef.current.value = '';
-                  }}
+                  onClick={clearSelectedImage}
                   className="text-slate-400 hover:text-red-500 transition-colors"
                   aria-label="Remove image"
                 >
@@ -1238,11 +1271,11 @@ function RealLifeBuilds() {
         </h2>
         <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
           Every model comes with real, orderable LEGO parts and instructions. Here's a display of
-          BrickBuilder AI creations physically built at BrickWorld Chicago 2026's Meme World exhibit.
+          BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.
         </p>
         <img
           src="/assets/blog/brickworld26/brickbuilderai-models.jpg"
-          alt="BrickBuilder AI models built with real LEGO bricks, on display at BrickWorld Chicago 2026's Meme World exhibit"
+          alt="BrickBuilder AI models built with real LEGO bricks, on display at the Brickworld Chicago LEGO convention"
           className="mt-8 w-full rounded-2xl border border-slate-200 shadow-sm"
         />
       </div>

@@ -266,3 +266,48 @@ it('keeps resumable Nova failures in the owner cache when leaving and returning'
   await act(async () => root.render(<Harness />));
   expect(container.textContent).toContain('Resume build');
 });
+
+it.each(['processing', 'completed'])('opens the %s model from the card link and records the interaction', async status => {
+  await act(async () => root.render(<GenerationActivityList generations={[
+    {id: 'card/id', name: 'Sunny Dog', prompt: 'Dog', status, imageUrl: '/dog.png'},
+  ]} error={null} onOpen={open} />));
+  const link = container.querySelector('article a') as HTMLAnchorElement;
+  expect(link.textContent).toBe('Sunny Dog');
+  expect(link.getAttribute('href')).toBe('/generated-model?id=card%2Fid');
+  expect(link.className).toContain('after:inset-0');
+  act(() => link.click());
+  expect(open).toHaveBeenCalledOnce();
+  expect(open).toHaveBeenCalledWith('card/id');
+  expect(posthog.capture).toHaveBeenCalledWith('landing_generation_opened', {generation_id: 'card/id', status});
+});
+
+it('keeps the pulsing View model button usable without opening the model twice', async () => {
+  await act(async () => root.render(<GenerationActivityList generations={[
+    {id: 'ready', prompt: 'Sunny Dog', status: 'completed'},
+  ]} error={null} onOpen={open} />));
+  const button = container.querySelector('button')!;
+  expect(button.textContent).toBe('View model');
+  expect(button.classList.contains('generation-view-model-pulse')).toBe(true);
+  act(() => button.click());
+  expect(open).toHaveBeenCalledOnce();
+});
+
+it('cancels an active card without navigating to its model', async () => {
+  const cancelled = vi.fn();
+  const cancel = vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue();
+  await act(async () => root.render(<GenerationActivityList generations={[
+    {id: 'cancel-card', prompt: 'Sunny Dog', status: 'processing'},
+  ]} error={null} onOpen={open} onCancelled={cancelled} />));
+  await act(async () => container.querySelector('button')!.click());
+  expect(cancel).toHaveBeenCalledWith('cancel-card');
+  expect(cancelled).toHaveBeenCalledWith('cancel-card');
+  expect(open).not.toHaveBeenCalled();
+});
+
+it.each(['failed', 'cancelled'])('does not link a %s card to an unavailable model', async status => {
+  await act(async () => root.render(<GenerationActivityList generations={[
+    {id: 'unavailable', prompt: 'Sunny Dog', status},
+  ]} error={null} onOpen={open} />));
+  expect(container.querySelector('a')).toBeNull();
+  expect(container.querySelector('button')).toBeNull();
+});

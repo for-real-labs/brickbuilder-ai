@@ -4,7 +4,6 @@ Authentication and authorization middleware for the Mesh2Brick API
 import os
 import asyncio
 import jwt
-from functools import lru_cache
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, Header, Depends, Request
 from supabase import create_client, Client
@@ -39,10 +38,13 @@ SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 SUPABASE_JWT_SECRET = os.getenv("SUPABASE_JWT_SECRET")
 DEVELOPER_API_KEY = os.getenv("DEVELOPER_API_KEY")
 
-# Supabase is optional. It is only enabled when the URL and its required keys
-# are present. When disabled, the API runs in anonymous mode without
-# Supabase-backed authentication.
-SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY and SUPABASE_JWT_SECRET)
+# Asymmetric Supabase signing keys are verified through the project's JWKS;
+# the legacy JWT secret is only needed for HS256 tokens.
+SUPABASE_ENABLED = bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
+SUPABASE_ISSUER = SUPABASE_URL.rstrip('/') + '/auth/v1' if SUPABASE_URL else None
+supabase_jwks_client = jwt.PyJWKClient(
+    SUPABASE_ISSUER + '/.well-known/jwks.json', timeout=5
+) if SUPABASE_ISSUER else None
 supabase_client: Optional[Client] = None
 # When True, storage is backed by a local embedded Postgres instead of Supabase.
 LOCAL_DB_ENABLED = False
@@ -82,34 +84,30 @@ class AuthError(Exception):
         self.status_code = status_code
         super().__init__(self.message)
 
-@lru_cache(maxsize=1)
-def _get_jwks_client(issuer: str) -> jwt.PyJWKClient:
-    """Cache public signing keys from the configured Supabase project only."""
-    return jwt.PyJWKClient(issuer + "/.well-known/jwks.json", timeout=5)
-
-
 def extract_user_from_token(token: str) -> Dict[str, Any]:
     """
     Extract user information from Supabase JWT token
     """
     try:
-        algorithm = jwt.get_unverified_header(token).get("alg")
-        issuer = SUPABASE_URL.rstrip("/") + "/auth/v1" if SUPABASE_URL else None
-        if algorithm == "HS256" and SUPABASE_JWT_SECRET:
+        algorithm = jwt.get_unverified_header(token).get('alg')
+        if algorithm == 'HS256' and SUPABASE_JWT_SECRET:
             key = SUPABASE_JWT_SECRET
-        elif algorithm in {"ES256", "RS256"} and issuer:
-            key = _get_jwks_client(issuer).get_signing_key_from_jwt(token).key
+        elif algorithm in {'ES256', 'RS256'} and supabase_jwks_client:
+            # The key endpoint comes only from configured SUPABASE_URL, never
+            # an untrusted token's jku/issuer header.
+            key = supabase_jwks_client.get_signing_key_from_jwt(token).key
         else:
-            raise AuthError("Unsupported token signing algorithm", 401)
-
+            raise AuthError('Unsupported authentication token', 401)
+        if not SUPABASE_ISSUER:
+            raise AuthError('Authentication is not configured', 401)
         decoded_token = jwt.decode(
-            token,
-            key,
-            algorithms=[algorithm],
-            audience="authenticated",
-            issuer=issuer,
-            options={"require": ["exp", "sub", "aud", "iss"]},
+            token, key, algorithms=[algorithm], audience="authenticated",
+            issuer=SUPABASE_ISSUER,
+            options={"require": ["exp", "iss", "aud", "sub"]},
         )
+        if (not isinstance(decoded_token['sub'], str) or not decoded_token['sub'].strip()
+                or decoded_token.get('role') != 'authenticated'):
+            raise AuthError('Invalid account identity', 401)
         
         return {
             "user_id": decoded_token.get("sub"),
@@ -119,8 +117,8 @@ def extract_user_from_token(token: str) -> Dict[str, Any]:
         }
     except jwt.ExpiredSignatureError:
         raise AuthError("Token has expired", 401)
-    except jwt.PyJWTError as e:
-        raise AuthError(f"Invalid token: {str(e)}", 401)
+    except (jwt.PyJWTError, ValueError, TypeError) as e:
+        raise AuthError("Invalid authentication token", 401) from e
 
 async def verify_authentication(
     authorization: Optional[str] = Header(None),

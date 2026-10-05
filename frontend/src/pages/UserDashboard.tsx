@@ -13,6 +13,9 @@ import { GetUserGenerationsApiService, GenerationWithOrder, OrderInfo } from "..
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
 import { SEO } from "../components/SEO";
 import { SiteFooter } from "../components/SiteFooter";
+import { isGenerationActive } from "../hooks/useGenerationActivity";
+import { getGeneratedModelPath } from "../utils/generationRoutes";
+import posthog from "posthog-js";
 
 type TabKey = "dashboard" | "generations" | "orders" | "settings";
 
@@ -131,7 +134,7 @@ const StatsCard: React.FC<{icon:any; label:string; value:string|number; onClick?
 );
 
 // Simple card that just displays an image
-export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => void; authToken?: string}> = ({g, onView, authToken}) => {
+export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generationId: string, exact: boolean) => void; authToken?: string}> = ({g, onView, authToken}) => {
   const navigate = useNavigate();
   const [showEdits, setShowEdits] = useState(false);
   const [edits, setEdits] = useState<GenerationIteration[]>([]);
@@ -150,11 +153,23 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => voi
     preview_image_url: g.preview_image_url,
   });
   
+  const isProcessing = isGenerationActive(g.status);
+  const completedGenerationId = isProcessing ? g.previous_completed_generation_id : null;
+  const canView = (!isProcessing && g.status !== 'failed') || Boolean(completedGenerationId);
+  const previewImage = completedGenerationId ? g.previous_completed_preview_image_url : g.preview_image_url;
+  const handleView = () => {
+    const viewedGenerationId = completedGenerationId || g.id;
+    posthog.capture('dashboard_generation_viewed', {
+      generation_id: g.id, viewed_generation_id: viewedGenerationId, status: g.status,
+    });
+    onView(viewedGenerationId, Boolean(completedGenerationId));
+  };
+
   // Source image (the user-provided/original image), matches community page logic
   const sourceImage = g.external_image_url || g.image_url || g.thumbnail_url || g.processed_image_url;
   // Main image is the rendered preview when available, falling back to the source
-  const mainImage = g.preview_image_url || sourceImage;
-  const showOverlay = Boolean(g.preview_image_url && sourceImage);
+  const mainImage = previewImage || sourceImage;
+  const showOverlay = Boolean(previewImage && sourceImage);
   
   const handleViewEdits = async () => {
     if (!showEdits && edits.length === 0 && g.id) {
@@ -184,7 +199,13 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => voi
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow transition-shadow">
       <div className="p-3 sm:p-4 flex gap-3 sm:gap-4">
-        <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-slate-100 border flex-shrink-0">
+        <button
+          type="button"
+          onClick={handleView}
+          disabled={!canView}
+          aria-label="View model preview"
+          className={`relative w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden bg-slate-100 border flex-shrink-0 ${canView ? 'cursor-pointer' : 'cursor-default'}`}
+        >
           {mainImage ? (
             <img
               src={mainImage}
@@ -210,7 +231,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => voi
               />
             </div>
           )}
-        </div>
+        </button>
 
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
@@ -234,22 +255,23 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: () => voi
           </div>
 
           <div className="mt-2 sm:mt-3 flex gap-2 flex-wrap">
-            {g.status === 'processing' || g.status === 'queued' || g.status === 'started' ? (
-              <button 
-                disabled
-                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 h-9 text-xs text-slate-400 cursor-not-allowed"
+            {isProcessing ? (
+              <span
+                role="status"
+                className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 h-9 text-xs text-slate-500"
               >
                 <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-500 rounded-full animate-spin" />
                 Processing...
-              </button>
+              </span>
             ) : g.status === 'failed' ? (
               <div className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-3 h-9 text-xs text-red-600">
                 <span>Generation failed</span>
               </div>
-            ) : (
+            ) : null}
+            {canView && (
               <>
                 <button 
-                  onClick={onView}
+                  onClick={handleView}
                   className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
                 >
                   <Eye className="w-4 h-4"/> View Model
@@ -723,9 +745,9 @@ const UserDashboard: React.FC = () => {
     }
   }, [user, loading, navigate, isSupabaseConfigured]);
 
-  const handleViewGeneration = (generationId: string) => {
+  const handleViewGeneration = (generationId: string, exact = false) => {
     // Navigate to view with generation ID in URL
-    navigate(`/generated-model?id=${generationId}`);
+    navigate(getGeneratedModelPath(generationId, exact));
   };
 
   const handleLogout = async () => {
@@ -768,7 +790,7 @@ const UserDashboard: React.FC = () => {
           {/* Header */}
           <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200">
             <div className="mx-auto max-w-6xl px-4 sm:px-6 py-3">
-              <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center justify-between gap-2 sm:gap-4">
                 {/* Mobile menu button */}
                 <button
                   onClick={() => setMobileMenuOpen(true)}
@@ -778,8 +800,8 @@ const UserDashboard: React.FC = () => {
                   <Menu className="w-5 h-5" />
                 </button>
                 
-                <div className="flex-1 flex items-center justify-end gap-4">
-                  <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0 flex items-center justify-end gap-2 sm:gap-4">
+                  <div className="flex flex-wrap items-center justify-end gap-2 sm:gap-3">
                     <button
                       className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
                       onClick={() => navigate('/community')}
@@ -842,7 +864,7 @@ const UserDashboard: React.FC = () => {
                   ) : (
                     <div className="grid gap-3">
                       {generations.slice(0, 5).map(g => (
-                        <GenerationCard key={g.id} g={g} onView={() => handleViewGeneration(g.id)} authToken={session?.access_token} />
+                        <GenerationCard key={g.id} g={g} onView={handleViewGeneration} authToken={session?.access_token} />
                       ))}
                     </div>
                   )}
@@ -864,7 +886,7 @@ const UserDashboard: React.FC = () => {
                     <>
                       <div className="grid gap-3">
                         {generations.map(g => (
-                          <GenerationCard key={g.id} g={g} onView={() => handleViewGeneration(g.id)} authToken={session?.access_token} />
+                          <GenerationCard key={g.id} g={g} onView={handleViewGeneration} authToken={session?.access_token} />
                         ))}
                       </div>
                       {hasMore && (

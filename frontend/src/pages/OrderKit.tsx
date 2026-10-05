@@ -1,169 +1,97 @@
-// OrderKit.tsx
 import React from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { CreateCheckoutSessionApiService } from "../services/createCheckoutSessionApi";
-import { PartListItem } from "../services/estimatePriceApi";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, LockKeyhole, Package, Truck } from "lucide-react";
+import posthog from "posthog-js";
+import { CreateCheckoutSessionApiService, type CreateCheckoutSessionResponse } from "../services/createCheckoutSessionApi";
+import { GetPriceApiService } from "../services/getPriceApi";
 import { ThreeLDRViewer } from "../components/ThreeLDRViewer";
 import { GetGenerationApiService } from "../services/getGenerationApi";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { SEO } from "../components/SEO";
-import { SiteFooter } from "../components/SiteFooter";
+import { CheckoutStep } from "../components/checkout/CheckoutStep";
+import { CheckoutPayment } from "../components/checkout/CheckoutPayment";
 import { supabase } from "../lib/supabase";
-import posthog from "posthog-js";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
+import { getOrderPricing, formatOrderPrice, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
+import "./OrderKit.css";
 
 type LocationState = {
   name?: string;
-  parts_list?: PartListItem[];
-  screenshots?: { angle1: string; angle2: string };
+  parts_list?: { quantity: number }[];
+  screenshots?: { angle1: string; angle2?: string };
   generation_id?: string;
   cart_id?: string;
-  priceData?: any; // EstimatePriceResponse type
+  priceData?: OrderQuote;
 };
 
-type BomItem = {
-  id: string;
-  name: string;
-  color: string;
-  colorChip?: string;
-  unitCents: number;
-  qty: number;
-  img?: string;
-};
-
-// --- Mock BOM using your provided assets ---
-const MOCK_BOM: BomItem[] = [
-  { id: "grey-2x4", name: "Brick 2x4", color: "Grey", colorChip: "#9ca3af", unitCents: 15, qty: 24, img: "/assets/Grey 2x4 Brick.png" },
-  { id: "yellow-slope", name: "Curved Slope 2x2", color: "Yellow", colorChip: "#f59e0b", unitCents: 15, qty: 48, img: "/assets/Yellow Curved Slope.png" },
-  { id: "grey-slope-1x1", name: "Curved Slope 1x1", color: "Light Grey", colorChip: "#cbd5e1", unitCents: 15, qty: 36, img: "/assets/Grey Curved Slope 1x1.png" },
-  { id: "tan-1x2", name: "Brick 1x2", color: "Tan", colorChip: "#eab676", unitCents: 15, qty: 12, img: "/assets/Tan Brick 1x2.png" },
-  { id: "turq-1x4", name: "Brick 1x4", color: "Turquoise", colorChip: "#14b8a6", unitCents: 12, qty: 30, img: "/assets/Turquoise Brick 1x4.png" },
-  { id: "blue-stud-1x1", name: "Stud 1x1", color: "Blue", colorChip: "#3b82f6", unitCents: 10, qty: 90, img: "/assets/Blue Stud 1x1.png" },
-  { id: "black-axle-pin", name: "Axle Pin", color: "Black", colorChip: "#111827", unitCents: 18, qty: 16, img: "/assets/Black Axle Pin.png" },
-  { id: "brown-wheel", name: "Pirate Wheel", color: "Brown", colorChip: "#8b5e34", unitCents: 75, qty: 1, img: "/assets/Brown Pirate Wheel.png" },
-];
-
-function formatUSD(cents: number) {
-  return (cents / 100).toLocaleString(undefined, { style: "currency", currency: "USD" });
+function restoreOrderState(navigationState: LocationState | null): LocationState {
+  if (navigationState) return navigationState;
+  try {
+    const saved = JSON.parse(localStorage.getItem('orderState') || '{}');
+    return saved && typeof saved === 'object' && !Array.isArray(saved) ? saved : {};
+  }
+  catch { return {}; }
 }
 
+const emptyDelivery: DeliveryDetails = { email: '', name: '', line1: '', line2: '', city: '', region: '', postalCode: '' };
+const stepNames = ['Contact & delivery', 'Payment'];
+
 export default function OrderKit() {
-  const location = useLocation() as { state: LocationState };
+  const location = useLocation();
   const navigate = useNavigate();
-  
-  // Try to get state from navigation, otherwise restore from localStorage
-  const getState = (): LocationState => {
-    if (location.state) {
-      // Save to localStorage for when user returns from Stripe
-      localStorage.setItem('orderState', JSON.stringify(location.state));
-      return location.state;
-    }
-    // Try to restore from localStorage (e.g., when returning from Stripe)
-    const savedState = localStorage.getItem('orderState');
-    if (savedState) {
-      try {
-        return JSON.parse(savedState);
-      } catch {
-        return {};
-      }
-    }
-    return {};
-  };
-  
-  const state = getState();
+  const state = React.useMemo(() => restoreOrderState(location.state as LocationState | null), [location.state]);
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
-
   const [resolvedName, setResolvedName] = React.useState<string | null>(null);
-  const name = resolvedName || state?.name || "Your Model";
-  const size = "Regular"; // Default size since it's not passed in navigation state
-  
-  // Get model image from navigation state screenshots
-  const getModelImage = () => {
-    if (state?.screenshots?.angle1) {
-      return state.screenshots.angle1; // Use View angle 01
-    }
-    return null; // Show nothing if no screenshot available
-  };  const img = getModelImage();
-
-  // Function to convert parts_list to BOM format
-  const createBOMFromPartsList = React.useCallback((partsList: PartListItem[]): BomItem[] => {
-    return partsList.map((part, index) => ({
-      id: `part-${index}`,
-      name: part.design_id,
-      color: part.color_id,
-      colorChip: "#9ca3af", // Default gray color
-      unitCents: 0, // Placeholder $0 as requested
-      qty: part.quantity,
-      img: "/assets/Grey 2x4 Brick.png" // Placeholder image as requested
-    }));
-  }, []);
-
-  // Get parts list from state or localStorage, fallback to mock data
-  const getPartsList = React.useCallback((): BomItem[] => {
-    // First try state from navigation
-    if (state?.parts_list && Array.isArray(state.parts_list)) {
-      return createBOMFromPartsList(state.parts_list);
-    }
-    
-    // Then try localStorage
-    try {
-      const storedPartsList = localStorage.getItem('current_parts_list');
-      if (storedPartsList) {
-        const partsList = JSON.parse(storedPartsList);
-        if (Array.isArray(partsList)) {
-          return createBOMFromPartsList(partsList);
-        }
-      }
-    } catch (error) {
-      console.error('Failed to parse stored parts list:', error);
-    }
-    
-    // Fallback to mock data
-    return MOCK_BOM;
-  }, [state?.parts_list, createBOMFromPartsList]);
-
-  const BOM = getPartsList();
-  
-  // Use actual price data if available, otherwise return null (error state)
-  const getActualPricing = (): { partSubtotalCents: number; shippingCents: number; totalCents: number; fullPartSubtotalCents: number; fullShippingCents: number; fullTotalCents: number } | null => {
-    if (state?.priceData && state.priceData.total_weight !== undefined && state.priceData.total_weight !== null) {
-      // Shipping formula: (weight * $18) + $4.00
-      // conservative estimate found from https://www.webrick.com/shipping-fee
-      const weightKg = state.priceData.total_weight;
-      const fullShippingCents = Math.round((weightKg * 18 * 100) + 400);
-      // total_price already includes shipping, so back it out to get the parts
-      // subtotal. Summer sale: 50% off everything (parts + shipping, 6/22-7/22).
-      const fullPartsCents = Math.max(Math.round(state.priceData.total_price * 100) - fullShippingCents, 0);
-      const partSubtotalCents = Math.round(fullPartsCents * 0.5);
-      const shippingCents = Math.round(fullShippingCents * 0.5);
-      return {
-        partSubtotalCents,
-        shippingCents,
-        totalCents: partSubtotalCents + shippingCents,
-        fullPartSubtotalCents: fullPartsCents,
-        fullShippingCents,
-        fullTotalCents: fullPartsCents + fullShippingCents
-      };
-    }
-    
-    // Return null when price/weight data is unavailable
-    return null;
-  };
-  
-  const pricing = getActualPricing();
-  const pricingError = !pricing;
-  const partSubtotalCents = pricing?.partSubtotalCents ?? 0;
-  const shippingCents = pricing?.shippingCents ?? 0;
-  const totalCents = pricing?.totalCents ?? 0;
-  const fullPartSubtotalCents = pricing?.fullPartSubtotalCents ?? 0;
-  const fullShippingCents = pricing?.fullShippingCents ?? 0;
-  const fullTotalCents = pricing?.fullTotalCents ?? 0;
-
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
+  const name = resolvedName || state.name || 'Your Model';
   const [mpdContent, setMpdContent] = React.useState<string | null>(null);
   const [modelLoading, setModelLoading] = React.useState(false);
+  const [quote, setQuote] = React.useState<OrderQuote | null>(state.priceData || null);
+  const [quoteLoading, setQuoteLoading] = React.useState(false);
+  const [quoteError, setQuoteError] = React.useState(false);
+  const [quoteAttempt, setQuoteAttempt] = React.useState(0);
+  const pricing = getOrderPricing(quote);
+  const [step, setStep] = React.useState(0);
+  const [country, setCountry] = React.useState<'US' | 'CA'>('US');
+  const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
+  const [session, setSession] = React.useState<CreateCheckoutSessionResponse | null>(null);
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [showApartment, setShowApartment] = React.useState(false);
+  const [summaryExpanded, setSummaryExpanded] = React.useState(false);
+  const stepFocusRef = React.useRef<HTMLDivElement>(null);
+  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
+  const partsCount = quote?.total_parts ?? (Array.isArray(state.parts_list) ? state.parts_list.reduce((sum, part) => sum + (Number.isFinite(part.quantity) ? part.quantity : 0), 0) : undefined);
+
+  React.useEffect(() => {
+    // Only cache model/order data. Contact details and payment secrets stay in memory.
+    try { localStorage.setItem('orderState', JSON.stringify({ ...state, priceData: quote || undefined, generation_id: generationId })); } catch { /* Checkout still works without storage. */ }
+  }, [state, quote, generationId]);
+
+  React.useEffect(() => {
+    if (getOrderPricing(state.priceData)) { setQuote(state.priceData!); return; }
+    if (!generationId) return;
+    let disposed = false;
+    setQuoteLoading(true); setQuoteError(false);
+    void (async () => {
+      try {
+        const token = (await supabase.auth.getSession()).data.session?.access_token;
+        const data = await GetPriceApiService.getPrice(generationId, token);
+        if (!getOrderPricing(data)) throw new Error('No valid quote');
+        if (!disposed) setQuote(data);
+      } catch {
+        if (!disposed) { setQuoteError(true); posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'pricing' }); }
+      } finally { if (!disposed) setQuoteLoading(false); }
+    })();
+    return () => { disposed = true; };
+  }, [generationId, state.priceData, quoteAttempt]);
+
+  React.useEffect(() => {
+    if (step > 0) {
+      stepFocusRef.current?.focus({ preventScroll: true });
+      stepFocusRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    }
+  }, [step]);
 
   // Fetch model content for 3D preview
   React.useEffect(() => {
@@ -191,7 +119,7 @@ export default function OrderKit() {
         
         if (generationData.mpd_url) {
           try {
-            const mpdResponse = await fetch(generationData.mpd_url);
+            const mpdResponse = await fetch(generationData.mpd_url, { signal: controller.signal });
             if (mpdResponse.ok) {
               mpdContent = await mpdResponse.text();
             }
@@ -236,255 +164,108 @@ export default function OrderKit() {
     return () => controller.abort();
   }, [generationId, state.name]);
 
-  const handleCheckout = async () => {
-  try {
-    setLoading(true);
-    setError(null);
 
-    // Get generation_id and cart_id from state or localStorage
-    const brickowlCartId = state?.cart_id || localStorage.getItem('current_cart_id') || undefined;
+  const goToStep = (next: number) => {
+    if (loading) return;
+    setError(null); setSession(null); setStep(next);
+    posthog.capture('order_step_changed', { generation_id: generationId, step: stepNames[next], direction: next > step ? 'forward' : 'back' });
+  };
 
-    posthog.capture('order_checkout_clicked', {
-      generation_id: generationId,
-      total_cents: totalCents,
-      currency: 'USD',
-      parts_quantity: BOM.reduce((total, part) => total + part.qty, 0),
-      distinct_parts: BOM.length,
-    });
+  const startPayment = async (event?: React.FormEvent) => {
+    event?.preventDefault();
+    if (loading || !pricing || !generationId) return;
+    setLoading(true); setError(null);
+    posthog.capture('order_delivery_completed', { generation_id: generationId, country });
+    try {
+      if (!publishableKey) throw new Error('Payment configuration unavailable');
+      const token = (await supabase.auth.getSession()).data.session?.access_token;
+      const data = await CreateCheckoutSessionApiService.createCheckoutSession({
+        name, priceCents: pricing.totalCents, quantity: 1,
+        generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
+        uiMode: 'elements',
+      }, token);
+      if (!data.client_secret) throw new Error('Embedded payment unavailable');
+      if (data.price_data) setQuote(data.price_data);
+      setSession(data); setStep(1);
+      posthog.capture('order_step_changed', { generation_id: generationId, step: 'Payment', direction: 'forward' });
+    } catch {
+      setError('We couldn’t start payment. Your details are still here — please try again.');
+      posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'session' });
+    } finally { setLoading(false); }
+  };
 
-    const data = await CreateCheckoutSessionApiService.createCheckoutSession({
-      name: `${name} – ${size} Kit`,
-      priceCents: totalCents,
-      quantity: 1,
-      generationId,
-      brickowlCartId,
-    });
+  const field = (key: keyof DeliveryDetails, label: string, autoComplete: string, optional = false) =>
+    <label className={`checkout-field ${['email', 'name', 'line1', 'line2'].includes(key) ? 'checkout-field-full' : ''}`}>
+      <span>{label}{optional && <span className="checkout-optional"> (optional)</span>}</span>
+      <input name={key} type={key === 'email' ? 'email' : 'text'} autoComplete={autoComplete}
+        required={!optional} maxLength={key === 'email' ? 254 : 200} disabled={loading}
+        value={delivery[key]} onChange={event => setDelivery(current => ({ ...current, [key]: event.target.value }))}
+        onBlur={event => setDelivery(current => ({ ...current, [key]: event.target.value.trim() }))} />
+    </label>;
 
-    console.log('Checkout session payload:', data);
-
-    if (!data?.checkout_url) throw new Error('No checkout URL returned');
-    const url = data.checkout_url.includes('?') ? `${data.checkout_url}&locale=en` : `${data.checkout_url}?locale=en`;
-    window.location.href = data.checkout_url; // ✅ redirect to hosted checkout
-  } catch (e: any) {
-    console.error(e);
-    setError(e?.message || 'Could not start checkout. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-
-  return (
-    <div className="min-h-screen bg-white">
-      <SEO title={`Order Kit — ${name}`} description="Review and order your custom brick kit." url="https://brickbuilder.ai/order" />
-      {/* Top nav with logo */}
-      <header className="w-full border-b border-slate-200 landing-fade-in landing-delay-1">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-4 sm:px-6 md:px-8 lg:px-10 py-4">
-          <a href="/" className="flex items-center gap-3">
-            <img
-              src="/logo.svg"
-              alt="BrickBuilder"
-              className="h-7 w-auto"
-              onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-            />
-            <span className="text-xl font-extrabold tracking-tight">
-              <span className="text-[#ff4b4b]">BRICK</span>
-              <span className="text-slate-900">BUILDER</span>
-            </span>
-          </a>
+  return <div className="order-checkout">
+    <SEO title={`Order Kit — ${name}`} description="Review and order your custom brick kit." url="https://brickbuilder.ai/order" noIndex />
+    <header className="checkout-header"><div className="checkout-header-inner">
+      <Link to="/" aria-label="BrickBuilder home" className="checkout-brand"><span><b>BRICK</b>BUILDER</span></Link>
+      <span className="checkout-header-secure"><LockKeyhole size={16} />Secure checkout</span>
+    </div></header>
+    <main className="checkout-main">
+      <button type="button" className="checkout-model-back" onClick={() => {
+        posthog.capture('order_back_to_model_clicked', { generation_id: generationId });
+        navigate(getOrderReturnModelPath(state.generation_id, lastGenerationId));
+      }}><ArrowLeft size={16} />Back to model</button>
+      <div className="checkout-intro"><div><h1>Checkout</h1></div>
+        <nav className="checkout-progress" aria-label="Checkout progress">{stepNames.map((title, index) =>
+          <span key={title} className={index <= step ? 'is-current' : ''} aria-current={index === step ? 'step' : undefined}>
+            <i>{index < step ? <Check size={12} /> : index + 1}</i>{title}
+          </span>)}</nav>
+      </div>
+      {!generationId ? <section className="checkout-empty"><Package size={40} /><h2>Your kit starts with a model</h2><p>Choose or create a model to see your kit price and check out.</p><Link to="/" className="checkout-primary">Create a model<ArrowRight size={18} /></Link></section> :
+      <div className="checkout-layout">
+        <aside className="checkout-summary" aria-label="Order summary">
+          <div className="checkout-summary-body">
+            <p className="checkout-kit-eyebrow">YOUR CUSTOM KIT</p>
+            <h2 className="checkout-summary-heading">{name}</h2>
+            <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
+            <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
+            <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
+              setSummaryExpanded(value => !value); posthog.capture('order_summary_toggled', { generation_id: generationId, expanded: !summaryExpanded });
+            }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? formatOrderPrice(pricing.totalCents) : '—'}</strong></button>
+            <div id="checkout-price-breakdown" className={`checkout-price-breakdown ${summaryExpanded ? 'is-expanded' : ''}`}>
+            {pricing ? <>
+              <dl className="checkout-price-list">
+                <div><dt>Parts subtotal</dt><dd>{formatOrderPrice(pricing.fullPartSubtotalCents)}</dd></div>
+                <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.fullShippingCents)}</dd></div>
+                <div className="checkout-discount"><dt>BrickBuilder Launch Discount</dt><dd>−{formatOrderPrice(pricing.fullTotalCents - pricing.totalCents)}</dd></div>
+                <div className="checkout-total"><dt>Total</dt><dd><s>{formatOrderPrice(pricing.fullTotalCents)}</s><span>USD</span>{formatOrderPrice(pricing.totalCents)}</dd></div>
+              </dl>
+              <p className="checkout-savings"><Check size={14} />You save {formatOrderPrice(pricing.fullTotalCents - pricing.totalCents)}</p>
+            </> : <p className="checkout-section-note">{quoteLoading ? 'Calculating your kit price…' : 'Kit price unavailable'}</p>}
+            </div>
+            <div className="checkout-summary-benefits"><p><Truck size={16} />Estimated delivery: 8–12 business days</p></div>
+          </div>
+        </aside>
+        <div className="checkout-flow" ref={stepFocusRef} tabIndex={-1}>
+          {quoteError && <div className="checkout-error" role="alert">We couldn’t load your kit price.<button type="button" onClick={() => { posthog.capture('order_price_retry_clicked', { generation_id: generationId }); setQuoteAttempt(value => value + 1); }}>Try again</button></div>}
+          <CheckoutStep title="Contact & delivery" number={1} active={step === 0} complete={step > 0} disabled={loading} onEdit={() => goToStep(0)}>
+            <form onSubmit={startPayment}>
+              <p className="checkout-section-note">Your kit is almost yours. Where should we send it?</p>
+              <div className="checkout-field-grid">{field('email', 'Email address', 'email')}{field('name', 'Full name', 'shipping name')}{field('line1', 'Street address', 'shipping address-line1')}{showApartment ? field('line2', 'Apartment, suite, etc.', 'shipping address-line2', true) : <button type="button" className="checkout-add-apartment checkout-field-full" onClick={() => { setShowApartment(true); posthog.capture('order_apartment_field_opened', { generation_id: generationId }); }}>+ Add apartment, suite, etc.</button>}{field('city', 'City', 'shipping address-level2')}{field('region', country === 'US' ? 'State' : 'Province', 'shipping address-level1')}{field('postalCode', country === 'US' ? 'ZIP code' : 'Postal code', 'shipping postal-code')}
+                <label className="checkout-field"><span>Country</span><select value={country} autoComplete="shipping country" disabled={loading} onChange={event => {
+                  setCountry(event.target.value as 'US' | 'CA');
+                  posthog.capture('order_shipping_country_changed', { generation_id: generationId, country: event.target.value });
+                }}><option value="US">United States</option><option value="CA">Canada</option></select></label>
+              </div>
+              {error && <p className="checkout-error" role="alert">{error}</p>}
+              <div className="checkout-actions"><button type="submit" className="checkout-primary" disabled={loading || !pricing || quoteLoading}>{loading ? 'Preparing payment…' : 'Continue to payment'}{loading ? <span className="checkout-spinner" /> : <ArrowRight size={19} />}</button></div>
+            </form>
+          </CheckoutStep>
+          <CheckoutStep title="Payment" number={2} active={step === 1} complete={false} disabled={loading} onEdit={() => {}}>
+            {session && pricing && <CheckoutPayment key={session.session_id} session={session} publishableKey={publishableKey} details={delivery} country={country} totalCents={pricing.totalCents} generationId={generationId} onBack={() => goToStep(0)} onRetry={() => { goToStep(0); void startPayment(); }} onBusyChange={setLoading} />}
+          </CheckoutStep>
         </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-6xl px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
-        {/* Back to model link under logo */}
-        <button
-          type="button"
-          onClick={() => navigate(getOrderReturnModelPath(state.generation_id, lastGenerationId))}
-          className="mt-2 mb-4 inline-flex items-center gap-2 text-sm text-slate-700 hover:underline landing-fade-in landing-delay-2"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-          </svg>
-          Back to Model
-        </button>
-
-        <h1 className="mb-6 break-words text-2xl font-semibold tracking-tight sm:text-3xl">{name}</h1>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 landing-fade-in landing-delay-3">
-          {/* LEFT: model hero + BOM list */}
-          <section className="lg:col-span-2">
-            {/* 3D Model Preview */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm mb-6">
-              <div
-                className="relative w-full overflow-hidden rounded-xl bg-slate-50"
-                style={{ paddingTop: "66%" }}
-              >
-                <div className="absolute inset-0">
-                  {modelLoading ? (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <div className="w-8 h-8 border-4 border-slate-200 border-t-[#f44336] rounded-full animate-spin"></div>
-                    </div>
-                  ) : mpdContent ? (
-                    <ThreeLDRViewer
-                      modelContent={mpdContent}
-                      modelName={name}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-slate-400">
-                      No preview available
-                    </div>
-                  )}
-                </div>
-              </div>
-              <p className="text-center text-slate-500 mt-3">3D Preview - {size} size kit</p>
-            </div>
-
-            {/* Shipping Info Card */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-              <div className="flex items-center gap-3">
-                {/* shipping icon */}
-                <div className="h-12 w-12 rounded-full bg-[#f44336]/10 flex items-center justify-center shrink-0">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-[#f44336]" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20 8h-3V4H3v13h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-3-4Zm-3 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM7 19a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm11-7h-4V6h2v2h2l2 3v1Z" />
-                  </svg>
-                </div>
-                <div>
-                  <div className="font-semibold text-slate-900">Estimated Shipping</div>
-                  <div className="text-sm text-slate-600">8 business days</div>
-                </div>
-              </div>
-            </div>
-
-            {/* BOM card - COMMENTED OUT FOR NOW */}
-            {/* <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-              <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-                <div className="font-semibold">Bill of Materials</div>
-                <div className="flex items-center gap-2 text-slate-500 text-sm">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20 8h-3V4H3v13h2a3 3 0 0 0 6 0h4a3 3 0 0 0 6 0h2v-5l-3-4Zm-3 7a1 1 0 1 1 2 0 1 1 0 0 1-2 0ZM7 19a1 1 0 1 1 0-2 1 1 0 0 1 0 2Zm11-7h-4V6h2v2h2l2 3v1Z" />
-                  </svg>
-                  <span>Est. ship: 12-18 business days</span>
-                </div>
-              </div>
-
-              <div className="px-6 py-3 text-xs font-semibold text-slate-500">
-                <div
-                  className="grid items-center"
-                  style={{ gridTemplateColumns: "70% 20% 10%" }}
-                >
-                  <div>Part</div>
-                  <div>Color</div>
-                  <div className="text-right">Qty</div>
-                </div>
-              </div>
-
-              <div>
-                {BOM.map((it) => {
-                  return (
-                    <div key={it.id} className="px-6 py-4 border-t border-slate-100">
-                      <div
-                        className="grid items-center gap-2"
-                        style={{ gridTemplateColumns: "70% 20% 10%" }}
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="h-10 w-10 rounded-md border border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
-                            {it.img ? (
-                              <img src={it.img} alt={it.name} className="h-full w-full object-contain" />
-                            ) : (
-                              <div className="h-6 w-8 rounded-sm" style={{ background: it.colorChip || "#e5e7eb" }} />
-                            )}
-                          </div>
-                          <div className="text-sm font-medium truncate">{it.name}</div>
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span
-                            className="h-3 w-3 rounded-full border border-slate-300 shrink-0"
-                            style={{ background: it.colorChip || "#e5e7eb" }}
-                            aria-hidden
-                          />
-                          <span className="text-sm whitespace-nowrap">{it.color}</span>
-                        </div>
-
-                        <div className="text-sm text-right whitespace-nowrap">{it.qty}</div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-            */}
-          </section>
-
-          {/* RIGHT: sticky pricing summary + checkout */}
-          <aside className="lg:col-span-1 self-start">
-            <div className="sticky top-24">
-              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm p-6">
-                <h3 className="text-lg font-semibold mb-4">Pricing Summary</h3>
-                <div className="space-y-2 text-sm">
-                    <div className="flex items-center justify-between">
-                        <span>Parts Subtotal</span>
-                        <span className="flex items-baseline gap-2">
-                          <span className="text-slate-400 line-through">{formatUSD(fullPartSubtotalCents)}</span>
-                          <span>{formatUSD(partSubtotalCents)}</span>
-                        </span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                        <span>Shipping</span>
-                        <span className={pricingError ? "text-red-500 font-medium" : "flex items-baseline gap-2"}>
-                          {pricingError ? "Error calculating shipping" : (
-                            <>
-                              <span className="text-slate-400 line-through">{formatUSD(fullShippingCents)}</span>
-                              <span>{formatUSD(shippingCents)}</span>
-                            </>
-                          )}
-                        </span>
-                    </div>
-                    <div className="h-px bg-slate-200 my-2" />
-                    <div className="flex items-center justify-between text-base font-bold">
-                        <span>Total</span>
-                        <span className="flex items-baseline gap-2">
-                          <span className="text-slate-400 line-through font-normal">{formatUSD(fullTotalCents)}</span>
-                          <span>{formatUSD(totalCents)}</span>
-                        </span>
-                    </div>
-                </div>
-                {/* Checkout button */}
-                <button
-                  type="button"
-                  disabled={loading || pricingError}
-                  onClick={handleCheckout}
-                  className={`mt-6 w-full h-12 rounded-full text-white font-semibold shadow-md transition-all disabled:opacity-50 ${
-                    pricingError ? 'bg-gray-400 cursor-not-allowed' : 'bg-[#f44336] hover:bg-[#ff6b6b] hover:scale-[1.02]'
-                  }`}
-                >
-                  {loading ? "Redirecting…" : pricingError ? "Cannot Checkout" : "Checkout"}
-                </button>
-
-                {/* Download instructions - COMMENTED OUT FOR NOW */}
-                {/* <div className="mt-6 flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-[#ff4b4b]/15 flex items-center justify-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-black" viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 3a1 1 0 0 1 1 1v8l2.293-2.293a1 1 0 1 1 1.414 1.414l-4 4a1 1 0 0 1-1.414 0l-4-4a1 1 0 1 1 1.414-1.414L11 12V4a1 1 0 0 1 1-1ZM5 20a1 1 0 0 1 0-2h14a1 1 0 1 1 0 2H5Z" />
-                    </svg>
-                  </div>
-                  <button
-                    className="text-sm font-medium text-slate-800 hover:underline"
-                    onClick={() => alert("Download available after purchase")}
-                  >
-                    Download Instructions
-                  </button>
-                </div> */}
-
-                {error && <p className="text-red-500 mt-4 text-sm">{error}</p>}
-              </div>
-            </div>
-          </aside>
-        </div>
-      </main>
-
-      <SiteFooter />
-    </div>
-  );
+      </div>}
+    </main>
+    <footer className="checkout-footer"><a href="mailto:support@brickbuilder.ai">Need help?</a><Link to="/privacy">Privacy Policy</Link><Link to="/terms">Terms of Service</Link></footer>
+  </div>;
 }
