@@ -16,7 +16,7 @@ from src.utils import generation_email as mail
 
 @pytest.fixture
 def email_config(monkeypatch):
-    monkeypatch.setenv('GENERATION_NOTIFICATION_FROM', 'BrickBuilder <models@notifications.brickbuilder.ai>')
+    monkeypatch.setenv('GENERATION_NOTIFICATION_FROM', 'BrickBuilder <no-reply@info.brickbuilder.ai>')
     monkeypatch.setenv('RESEND_API_KEY', 'test-only-key')
     monkeypatch.setenv('GENERATION_NOTIFICATION_ORIGIN', 'https://brickbuilder.ai')
 

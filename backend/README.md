@@ -330,7 +330,7 @@ to the backend service role; public model responses never include the address.
 Set these on the BrickBuilder **API service**, not the Nova service:
 
 - `RESEND_API_KEY`: existing Resend sending key.
-- `GENERATION_NOTIFICATION_FROM`: e.g. `BrickBuilder <models@info.brickbuilder.ai>`.
+- `GENERATION_NOTIFICATION_FROM`: `BrickBuilder <no-reply@info.brickbuilder.ai>`.
 - `GENERATION_NOTIFICATION_ORIGIN`: `https://brickbuilder.ai` in production; the staging frontend URL in staging.
 - `GENERATION_NOTIFICATION_WORKER=true` on hosted API instances. Local previews
   default to disabled so they cannot consume shared staging/production mail.
