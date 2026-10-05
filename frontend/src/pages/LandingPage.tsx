@@ -21,8 +21,9 @@ import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity } from "../hooks/useGenerationActivity";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
+import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/NovaProviderLoginModal';
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
-import { isLocalDevelopment } from "../services/localProvidersApi";
+import { isLocalDevelopment, LocalProvidersApiService } from "../services/localProvidersApi";
 import { GenerationStats, GetGenerationStatsApiService } from "../services/getGenerationStatsApi";
 import { CommunityGeneration, GetCommunityGenerationsApiService } from "../services/getCommunityGenerationsApi";
 import {
@@ -227,6 +228,28 @@ export default function LandingPage() {
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
   const localDevelopment = isLocalDevelopment();
+  const [providerLogin, setProviderLogin] = useState<NovaLoginProvider | null>(null);
+  const [checkingProvider, setCheckingProvider] = useState(false);
+  const providerChoices = useRef<Partial<Record<NovaLoginProvider, 'native' | 'api_key'>>>({});
+  const checkingProviderRef = useRef(false);
+
+  const checkNovaConnection = async (model: string): Promise<'native' | 'api_key' | null> => {
+    if (!localDevelopment) return 'api_key';
+    const provider = getLlmModelOption(model)?.provider as NovaLoginProvider | undefined;
+    if (!provider || checkingProviderRef.current) return null;
+    checkingProviderRef.current = true; setCheckingProvider(true);
+    try {
+      const status = await LocalProvidersApiService.getProviderStatus(provider);
+      const mode = providerChoices.current[provider] === 'api_key' && status.api_key_configured
+        ? 'api_key' : status.cli_connected ? 'native' : null;
+      if (mode) { setNovaOptions(current => ({ ...current, authMode: mode })); return mode; }
+      setProviderLogin(provider);
+      return null;
+    } catch {
+      setProviderLogin(provider);
+      return null;
+    } finally { checkingProviderRef.current = false; setCheckingProvider(false); }
+  };
   const [imgFile, setImgFile] = useState<File | null>(null);
   useEffect(() => {
     if (imgFile) setInputValidationMessage(null);
@@ -494,7 +517,7 @@ export default function LandingPage() {
 
   const onGenerate = async () => {
     // Prevent multiple simultaneous calls
-    if (loading) return;
+    if (loading || checkingProviderRef.current || providerLogin) return;
 
     // Validate input: either text prompt or image required
     if (!imgFile && !prompt.trim()) {
@@ -506,6 +529,13 @@ export default function LandingPage() {
     }
 
     setInputValidationMessage(null);
+
+    let novaAuthMode = novaOptions.authMode;
+    if (generationMethod === 'nova' && localDevelopment) {
+      const mode = await checkNovaConnection(llmModel);
+      if (!mode) return;
+      novaAuthMode = mode;
+    }
 
     if (REQUIRE_LOGIN_FOR_GENERATION && authLoading) {
       return;
@@ -624,7 +654,7 @@ export default function LandingPage() {
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
           model: llmModel,
-          authMode: localDevelopment ? novaOptions.authMode : 'api_key',
+          authMode: localDevelopment ? novaAuthMode : 'api_key',
           prompt: prompt.trim() || undefined,
           imageBase64,
           imageMediaType: imgFile?.type || 'image/png',
@@ -863,6 +893,11 @@ export default function LandingPage() {
         redirectTo="/"
         onBeforeOAuthRedirect={savePendingLandingState}
       />
+      <NovaProviderLoginModal provider={providerLogin} onClose={() => setProviderLogin(null)} onConnected={mode => {
+        if (providerLogin) providerChoices.current[providerLogin] = mode;
+        setNovaOptions(current => ({ ...current, authMode: mode }));
+        setProviderLogin(null);
+      }} />
 
       <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6 relative" style={{ zIndex: 10 }}>
         <LandingHeader onLoginClick={() => setShowLoginModal(true)} />
@@ -940,17 +975,21 @@ export default function LandingPage() {
                 </p>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
-                <GenerationModelSelector model={llmModel} mode={generationMethod} onChange={setLlmModel} disabled={loading} />
+                <GenerationModelSelector model={llmModel} mode={generationMethod} onChange={model => {
+                  setLlmModel(model);
+                  if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
+                }} disabled={loading || checkingProvider} />
                 <div className="relative min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto">
                   <label htmlFor="landing-builder-mode" className="sr-only">Mode</label>
                   <select
                     id="landing-builder-mode"
                     value={generationMethod}
-                    disabled={loading}
+                    disabled={loading || checkingProvider}
                     onChange={event => {
                       const mode = event.target.value;
                       if (mode !== 'llm' && mode !== 'nova') return;
                       setGenerationMethod(mode);
+                      if (localDevelopment && mode === 'nova') void checkNovaConnection(llmModel);
                       posthog.capture('landing_generation_method_selected', { generation_method: mode });
                     }}
                     className="min-h-11 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-44"
@@ -975,12 +1014,17 @@ export default function LandingPage() {
               {localDevelopment && generationMethod === 'nova' && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                   <label htmlFor="nova-connection">Provider connection</label>
-                  <select id="nova-connection" value={novaOptions.authMode} disabled={loading} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => setNovaOptions({ ...novaOptions, authMode: event.target.value as NovaOptions['authMode'] })}>
+                  <select id="nova-connection" value={novaOptions.authMode} disabled={loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
+                    const provider = getLlmModelOption(llmModel)?.provider as NovaLoginProvider;
+                    if (event.target.value === 'native') { delete providerChoices.current[provider]; void checkNovaConnection(llmModel); }
+                    else { providerChoices.current[provider] = 'api_key'; setNovaOptions(current => ({ ...current, authMode: 'api_key' })); }
+                  }}>
                     <option value="api_key">Project API key</option>
                     <option value="native">{getLlmModelOption(llmModel)?.provider === 'openai' ? 'Signed in to ChatGPT' : 'Signed in to Claude'} · local account</option>
                   </select>
                 </div>
               )}
+              {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form>
 
             {/* Image thumbnail preview */}
