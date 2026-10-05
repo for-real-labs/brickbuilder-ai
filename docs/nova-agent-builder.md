@@ -57,6 +57,15 @@ runtime is installed. OpenAI uses Nova's device login; Claude uses Nova's SDK
 browser login and optional manual code. Native connections are localhost-only.
 No host provider credential directory is mounted into the runtime.
 
+On a local install, choosing **All parts** or another model checks that provider's
+connection. If no account is connected, a login modal opens using Nova's own
+ChatGPT/Claude login flow. Once connected, later builds reuse the saved session.
+An existing project API key can be selected explicitly instead. Basic bricks
+and hosted website builds retain their existing API-key flow. Nova stores OAuth
+sessions in its protected per-tenant configuration volume, not in browser storage
+or the Supabase generations table. Closing the modal preserves the model/prompt;
+press **Create** after connecting to start the build.
+
 The generation adapter selects Nova's **Agent** mode with **Full** tool
 permissions so builds run automatically in their isolated workspace. Nova's
 own step limit and model defaults apply. BrickBuilder has no default wall-clock
