@@ -330,7 +330,7 @@ to the backend service role; public model responses never include the address.
 Set these on the BrickBuilder **API service**, not the Nova service:
 
 - `RESEND_API_KEY`: existing Resend sending key.
-- `GENERATION_NOTIFICATION_FROM`: e.g. `BrickBuilder <models@notifications.brickbuilder.ai>`.
+- `GENERATION_NOTIFICATION_FROM`: e.g. `BrickBuilder <models@info.brickbuilder.ai>`.
 - `GENERATION_NOTIFICATION_ORIGIN`: `https://brickbuilder.ai` in production; the staging frontend URL in staging.
 - `GENERATION_NOTIFICATION_WORKER=true` on hosted API instances. Local previews
   default to disabled so they cannot consume shared staging/production mail.
@@ -343,3 +343,9 @@ leases delivery across API replicas, retries transient errors, and uses one
 Resend idempotency key per generation. Retries stop before Resend's 24-hour
 idempotency window expires. Permanent errors/suppressions stop retries. Requests
 are limited to three generations per recipient per rolling day.
+
+Completion emails display the saved finished-model preview, linked to the exact
+generation. Apply `20261005140000_generation_email_preview.sql` after deploying
+the image-aware worker: it freezes the preview URL on the first delivery attempt
+so subsequent model edits cannot change retry payloads. When a preview is
+unavailable, the email still includes the model link.
