@@ -59,7 +59,7 @@ compatible construction features are exposed through generated upstream wrappers
 
 ## Project layout
 
-The blog also publishes articles from the **AI and LEGO** Substack. The
+The blog also publishes articles from the **[AI and LEGO](https://legoai.substack.com)** Substack ([RSS feed](https://legoai.substack.com/feed)). The
 `Import Substack posts` GitHub Action checks its RSS feed every half hour,
 sanitizes public HTML, runs the focused import tests, and merges a content-only
 PR into `main`. The publication branch starts from `main`, so unrelated work
