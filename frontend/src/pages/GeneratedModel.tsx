@@ -1925,7 +1925,7 @@ export default function GeneratedModel() {
         {showModelPage && (
           <>
         <section className="model-workspace-title mt-2 mb-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Your brick model</p>
+          <p className="mb-1 text-xs font-normal text-slate-500">Your brick model</p>
           <GenerationTitle
             key={currentGenerationId || 'local'}
             generationId={currentGenerationId || undefined}
@@ -2261,9 +2261,6 @@ export default function GeneratedModel() {
 
         {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
           <VoxelPromptEditor
-            onSuggestionSelected={suggestion => posthog.capture('generated_model_edit_suggestion_clicked', {
-              generation_id: currentGenerationId, is_demo_model: isDemoModel, suggestion,
-            })}
             prompt={editPrompt}
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}

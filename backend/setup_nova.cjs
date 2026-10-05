@@ -82,29 +82,117 @@ function prepare(run = spawnSync) {
   return { toolkit, web, dockerfile };
 }
 
-function setup(run = spawnSync, env = process.env) {
+function externalRuntime(env) {
+  if (env.NOVA_SKIP_SETUP === 'true') {
+    console.log('Local Nova setup skipped; All parts needs a running Nova service.');
+    return true;
+  }
+  if (env.NOVA_SERVICE_URL || env.NOVA_SERVICE_TOKEN) {
+    if (!env.NOVA_SERVICE_URL || !env.NOVA_SERVICE_TOKEN) throw new Error('Set both NOVA_SERVICE_URL and NOVA_SERVICE_TOKEN for an external runtime.');
+    console.log('Using the configured external Nova runtime.');
+    return true;
+  }
+  return false;
+}
+
+function requireDocker(run) {
+  const result = run('docker', ['info'], { encoding: 'utf8', stdio: 'pipe' });
+  if (result.error || result.status !== 0) throw new Error('Nova requires Git and Docker Desktop running. Start Docker Desktop, then run npm install again. For Basic bricks only, set NOVA_SKIP_SETUP=true.');
+}
+
+function install(run = spawnSync, env = process.env) {
+  if (externalRuntime(env)) return;
+  requireDocker(run);
   const { toolkit, web, dockerfile } = prepare(run);
   execute('docker', ['build', '--platform', 'linux/amd64', '--build-context', `nova=${toolkit}`, '-f', dockerfile, '-t', IMAGE, web], runtime, run);
+  console.log('Nova fork repositories and Docker dependencies installed. npm start will start the runtime.');
+}
+
+function containerName(installation = runtime) {
+  return 'brickbuilder-nova-' + require('node:crypto').createHash('sha256').update(installation).digest('hex').slice(0, 8);
+}
+
+function waitReady(connection, run = spawnSync, env = process.env) {
+  // Pass the private token through the child environment, never command arguments.
+  const script = `
+    (async () => {
+      const deadline = Date.now() + 120000;
+      while (Date.now() < deadline) {
+        try {
+          const response = await fetch(process.env.NOVA_CHECK_URL + '/integration/runtime', {
+            headers: {Authorization: 'Bearer ' + process.env.NOVA_CHECK_TOKEN, 'X-Nova-Tenant': '0'.repeat(64)},
+            signal: AbortSignal.timeout(3000)
+          });
+          if (response.ok) { const versions = await response.json();
+            if (versions.toolkit && versions.web) { console.log('Nova runtime is ready.'); return; }
+          }
+        } catch {}
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+      console.error('Nova runtime did not become ready. Check Docker logs and the service connection.');
+      process.exitCode = 1;
+    })();`;
+  const result = run(process.execPath, ['-e', script], { cwd: __dirname, stdio: 'inherit',
+    env: { ...env, NOVA_CHECK_URL: connection.url.replace(/\/$/, ''), NOVA_CHECK_TOKEN: connection.token } });
+  if (result.error) throw result.error;
+  if (result.status !== 0) throw new Error('Nova runtime startup failed.');
+}
+
+function startService(run = spawnSync, env = process.env, installation = runtime) {
+  if (externalRuntime(env)) {
+    if (env.NOVA_SKIP_SETUP !== 'true') waitReady({ url: env.NOVA_SERVICE_URL, token: env.NOVA_SERVICE_TOKEN }, run, env);
+    return;
+  }
+  requireDocker(run);
+  let image = run('docker', ['image', 'inspect', IMAGE, '--format', '{{.Id}}'], { encoding: 'utf8', stdio: 'pipe' });
+  if (image.error || image.status !== 0) {
+    install(run, env);
+    image = run('docker', ['image', 'inspect', IMAGE, '--format', '{{.Id}}'], { encoding: 'utf8', stdio: 'pipe' });
+    if (image.error || image.status !== 0) throw new Error('Nova image is unavailable. Run npm install again.');
+  }
   const port = Number(env.NOVA_SERVICE_PORT || '8778');
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Choose a valid NOVA_SERVICE_PORT');
-  const connectionPath = path.join(runtime, 'connection.json');
+  mkdirSync(installation, { recursive: true });
+  const connectionPath = path.join(installation, 'connection.json');
   const previous = existsSync(connectionPath) ? JSON.parse(readFileSync(connectionPath, 'utf8')) : {};
   const token = previous.token || randomBytes(32).toString('hex');
   const connection = { url: `http://127.0.0.1:${port}`, token };
-  writeFileSync(connectionPath, JSON.stringify(connection), { mode: 0o600 });
-  const envFile = path.join(runtime, 'service.env');
+  const envFile = path.join(installation, 'service.env');
   writeFileSync(envFile, `NOVA_SERVICE_TOKEN=${token}\n`, { mode: 0o600 });
-  const container = 'brickbuilder-nova-' + require('node:crypto').createHash('sha256').update(runtime).digest('hex').slice(0, 8);
-  // Stop only the container owned by this managed installation; retain its volumes.
-  run('docker', ['rm', '-f', container], { stdio: 'ignore' });
-  execute('docker', ['run', '-d', '--init', '--name', container, '--restart', 'unless-stopped',
-    '-p', `127.0.0.1:${port}:8000`, '--env-file', envFile,
-    '-v', `${container}-data:/data`, '-v', `${container}-config:/config`, IMAGE], runtime, run);
-  console.log('Nova runtime installed. Run npm start and choose Nova mode.');
+  const container = containerName(installation);
+  const inspected = run('docker', ['inspect', container], { encoding: 'utf8', stdio: 'pipe' });
+  const existing = inspected.status === 0 ? JSON.parse(inspected.stdout)[0] : null;
+  const binding = existing?.HostConfig?.PortBindings?.['8000/tcp']?.[0];
+  const reusable = existing?.Image === image.stdout.trim() && binding?.HostIp === '127.0.0.1' && binding?.HostPort === String(port)
+    && existing?.Config?.Env?.includes('NOVA_SERVICE_TOKEN=' + token);
+  if (reusable) {
+    if (!existing.State.Running) execute('docker', ['start', container], runtime, run);
+  } else {
+    // Replace only this checkout's managed container; preserve both named volumes.
+    if (existing) execute('docker', ['rm', '-f', container], runtime, run);
+    execute('docker', ['run', '-d', '--platform', 'linux/amd64', '--init', '--name', container, '--restart', 'unless-stopped',
+      '-p', `127.0.0.1:${port}:8000`, '--env-file', envFile,
+      '--add-host', 'host.docker.internal:host-gateway',
+      '-v', `${container}-data:/data`, '-v', `${container}-config:/config`, IMAGE], runtime, run);
+  }
+  writeFileSync(connectionPath, JSON.stringify(connection), { mode: 0o600 });
+  waitReady(connection, run, env);
+}
+
+function setup(run = spawnSync, env = process.env) {
+  install(run, env);
+  startService(run, env);
+}
+
+function status(run = spawnSync, env = process.env) {
+  console.log('Nova fork revisions:', JSON.stringify(Object.fromEntries(SOURCES.map(source => [source.name, source.commit]))));
+  if (externalRuntime(env)) return;
+  const result = run('docker', ['inspect', containerName(), '--format', '{{.State.Status}}'], { encoding: 'utf8', stdio: 'pipe' });
+  console.log('Local Nova runtime:', result.status === 0 ? result.stdout.trim() : 'not installed or Docker is unavailable');
 }
 
 if (require.main === module) {
   try { process.argv.includes('--prepare') ? prepare() : setup(); }
   catch (error) { console.error(error.message); process.exitCode = 1; }
 }
-module.exports = { SOURCES, IMAGE, ensureSource, execute, prepare, setup, deploymentDockerfile };
+module.exports = { SOURCES, IMAGE, ensureSource, execute, prepare, install, startService, setup, status, externalRuntime, waitReady, containerName, deploymentDockerfile };

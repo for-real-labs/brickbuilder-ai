@@ -1,7 +1,7 @@
 const { spawnSync } = require('node:child_process');
 const { existsSync } = require('node:fs');
 const path = require('node:path');
-const { autoUpdate } = require('./nova.cjs');
+const { ensureRuntime } = require('./nova.cjs');
 
 const backend = path.resolve(__dirname, '../backend');
 
@@ -38,10 +38,10 @@ function install(run = spawnSync, env = process.env, platform = process.platform
   execute(executable, ['-m', 'pip', 'install', '--no-deps', '-e', '.'], run);
 }
 
-function start(run = spawnSync, exists = existsSync, updateNova = autoUpdate, env = process.env) {
+function start(run = spawnSync, exists = existsSync, startNova = ensureRuntime, env = process.env) {
   const executable = environmentPython();
   if (!exists(executable)) throw new Error('Backend environment is missing. Run npm install first.');
-  updateNova({ run, env });
+  startNova({ run, env });
   execute(executable, ['local_run.py'], run);
 }
 

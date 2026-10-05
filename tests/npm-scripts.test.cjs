@@ -6,15 +6,17 @@ const { tmpdir } = require('node:os');
 const path = require('node:path');
 const { scripts } = require('../package.json');
 
-test('install prepares backend before installing frontend', () => {
-  assert.equal(scripts.postinstall, 'npm run install:backend && npm run install:frontend');
+test('install prepares backend, frontend and the Nova forks', () => {
+  assert.equal(scripts.postinstall, 'npm run install:backend && npm run install:frontend && npm run install:nova');
   assert.equal(scripts['install:backend'], 'node scripts/backend.cjs install');
   assert.equal(scripts['install:frontend'], 'npm --prefix frontend install');
+  assert.equal(scripts['install:nova'], 'node scripts/nova.cjs install');
 });
 
 test('servers run in their project directories', () => {
   assert.equal(scripts['start:backend'], 'node scripts/backend.cjs start');
   assert.equal(scripts['start:frontend'], 'npm --prefix frontend run dev');
+  assert.equal(scripts['start:nova'], 'node scripts/nova.cjs start');
 });
 
 for (const exitCode of [0, 1]) {

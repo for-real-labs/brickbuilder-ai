@@ -69,9 +69,9 @@ test('startup requires the environment and propagates server failure', () => {
 });
 
 
-test('local startup checks optional Nova updates before launching the backend', () => {
+test('local startup ensures Nova is ready before launching the backend', () => {
   const order = [];
-  const env = { NOVA_AUTO_UPDATE: 'false' };
+  const env = { NOVA_SERVICE_PORT: '8779' };
   start((command, args) => {
     order.push('server');
     assert.deepEqual(args, ['local_run.py']);

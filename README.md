@@ -39,14 +39,21 @@ Configure `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` in `backend/.env` for your sel
 
 The image-based pipeline uses Trellis to reconstruct a 3D mesh and voxelizes it, or takes colored voxels directly from the SAM-3D stream. Those voxels then enter the same brick optimizer and export flow. Generation time is typically under 30 seconds when SAM-3D is used.
 
-The landing page also offers an optional **Full set agent** powered by
-[LDraw Nova](https://github.com/jjohnson5253/ldraw-nova). It runs the installed Nova
-Nova agent and tools in a private service; BrickBuilder saves its models and
-continues follow-up edits in the same Nova session. The existing builder remains
-the default. See [Nova setup and provider connections](docs/nova-agent-builder.md).
-The managed runtime checks upstream default branches at backend startup. Use
-`npm run update:nova` to refresh it or `npm run nova:status` to inspect it;
-compatible construction features are exposed through generated upstream wrappers.
+The landing page offers **All parts (beta)** powered by
+[LDraw Nova](https://github.com/jjohnson5253/ldraw-nova) and its
+[Docker/web repository](https://github.com/jjohnson5253/ldraw-nova-docker).
+**All parts requires both repositories installed together and their Nova Docker
+runtime running alongside the BrickBuilder backend.** BrickBuilder saves the
+models and continues follow-up edits in the same Nova session. **Basic bricks**
+uses the existing builder and does not require Nova.
+
+`npm install` installs the backend/frontend and builds both pinned Nova forks
+using Nova's documented two-repository Docker build. `npm start` starts or
+reuses the managed Nova container and waits for it to respond before starting
+the API. Install Git and Docker Desktop, and have Docker Desktop running first.
+Use `npm run update:nova` to rebuild the configured pins, or
+`npm run nova:status` to inspect the runtime. See
+[Nova setup and provider connections](docs/nova-agent-builder.md).
 
 ## Examples
 
@@ -105,8 +112,8 @@ Prerequisites I need installed:
 Steps:
 1. Copy backend/.env-example to backend/.env and frontend/.env-example to frontend/.env
 2. Ask me for my fal.ai API key and set FAL_KEY in backend/.env
-3. Run `npm install` to install dependencies (uses Python venv/pip for backend, npm for frontend)
-4. Run `npm start` to start both the backend API (port 8002) and frontend dev server. The backend server will take a minute to start the first run as it builds c++ executables.
+3. Install Git and Docker Desktop, start Docker Desktop, then run `npm install`. This installs backend/frontend dependencies and builds the two Nova fork repositories.
+4. Run `npm start` to start Nova, the backend API (port 8002), and the frontend dev server. The first Nova image build takes several minutes and about 5 GB; the backend also builds C++ executables on its first start.
 
 The backend is a FastAPI server, frontend is React+Vite. Let me know if any dependencies are missing.
 ```
@@ -142,7 +149,11 @@ The backend is a FastAPI server, frontend is React+Vite. Let me know if any depe
 npm install
 npm start
 ```
-Run these commands from the repository root. `npm install` creates `backend/.venv` and installs the pinned Python dependencies with pip, then installs the frontend dependencies. `npm start` launches both dev servers; Ctrl+C stops both, and if either server exits the other is stopped too. Python 3.10+ must be installed; if needed, set `PYTHON` to the path of your Python executable. uv is not required for local setup. You can also run just one server with `npm run start:backend` or `npm run start:frontend`.
+Run these commands from the repository root. `npm install` creates `backend/.venv`, installs the pinned Python dependencies and frontend packages, clones both Nova forks into ignored `backend/.nova` directories, and builds their upstream Docker image with BrickBuilder's private gateway. `npm start` starts or reuses that runtime, checks authenticated readiness, then runs both dev servers. Ctrl+C stops the dev servers; Nova remains running in Docker, as in Nova's documented `docker compose up -d` workflow, so its sessions and provider settings survive restarts.
+
+Python 3.10+, Git, and running Docker Desktop are required for the complete local workflow. If needed, set `PYTHON` to the Python executable. uv is installed inside Nova's image and is not required on the host. Use `npm run start:backend`, `npm run start:frontend`, or `npm run start:nova` to start services individually. Set `NOVA_SERVICE_PORT` to use another local Nova port (default 8778). Set `PORT` for another API port and update `VITE_LOCAL_API_URL` to match.
+
+For Basic bricks only, run `NOVA_SKIP_SETUP=true npm install` and `NOVA_SKIP_SETUP=true npm start`. When using an already-running remote Nova service, configure both `NOVA_SERVICE_URL` and `NOVA_SERVICE_TOKEN` in the ignored `backend/.env`; npm uses that service instead of building a local container. The service must remain running for All parts generations and AI edits to work.
 
 Voxelization with SAM-3D produces better results than Trellis, but it runs as a separate worker that you host on RunPod. To enable it, deploy the SAM-3D image on [RunPod](https://www.runpod.io/)
 

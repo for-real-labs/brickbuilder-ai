@@ -16,7 +16,7 @@ from src.utils import generation_email as mail
 
 @pytest.fixture
 def email_config(monkeypatch):
-    monkeypatch.setenv('GENERATION_NOTIFICATION_FROM', 'BrickBuilder <models@notifications.brickbuilder.ai>')
+    monkeypatch.setenv('GENERATION_NOTIFICATION_FROM', 'BrickBuilder <no-reply@info.brickbuilder.ai>')
     monkeypatch.setenv('RESEND_API_KEY', 'test-only-key')
     monkeypatch.setenv('GENERATION_NOTIFICATION_ORIGIN', 'https://brickbuilder.ai')
 
@@ -86,6 +86,26 @@ def test_local_preview_does_not_deliver_shared_database_mail(monkeypatch,email_c
     assert mail.start_email_worker(Mock()) is None
 
 
+@pytest.mark.parametrize('preview', [None, '', 'javascript:alert(1)', 'http://example.com/model.png', 'https://[invalid'])
+def test_missing_or_unsafe_preview_keeps_completion_link(email_config, preview):
+    payload = mail.email_payload({'generation_id': str(uuid4()), 'email': 'delivered@resend.dev',
+                                 'origin': 'https://brickbuilder.ai', 'title': 'Pirate ship',
+                                 'preview_image_url': preview})
+    assert '<img' not in payload['html']
+    assert 'See your model' in payload['html']
+
+
+def test_preview_is_responsive_escaped_and_links_to_exact_generation(email_config):
+    id = str(uuid4())
+    payload = mail.email_payload({'generation_id': id, 'email': 'delivered@resend.dev',
+                                 'origin': 'https://brickbuilder.ai', 'title': 'Ship "Red" <roof>',
+                                 'preview_image_url': 'https://example.com/model.png?size=560&view="front"'})
+    assert '<img src="https://example.com/model.png?size=560&amp;view=&quot;front&quot;"' in payload['html']
+    assert 'alt="Preview of Ship &quot;Red&quot; &lt;roof&gt;"' in payload['html']
+    assert 'max-width:560px;height:auto' in payload['html']
+    assert payload['html'].count(f'id={id}&amp;exact=1') == 2
+
+
 def test_database_completion_race_privacy_limits_and_lease_recovery(tmp_path):
     server=pgserver.get_server(tmp_path/'mail-db',cleanup_mode='delete')
     try:
@@ -93,11 +113,12 @@ def test_database_completion_race_privacy_limits_and_lease_recovery(tmp_path):
             for role in ['anon','authenticated','service_role']:
                 db.execute(f'CREATE ROLE {role}')
             db.execute('CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid,email text)')
-            db.execute("CREATE TABLE public.generations(id uuid PRIMARY KEY,user_id text,status text,name text,updated_at timestamptz DEFAULT now())")
+            db.execute("CREATE TABLE public.generations(id uuid PRIMARY KEY,user_id text,status text,name text,preview_image_url text,updated_at timestamptz DEFAULT now())")
             db.execute('GRANT SELECT,INSERT,UPDATE ON public.generations TO anon,authenticated')
             # Supabase grants new functions explicitly to API roles by default.
             db.execute('ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO anon,authenticated')
             db.execute((Path(__file__).resolve().parents[2]/'supabase/migrations/20261005010000_generation_notification_email.sql').read_text())
+            db.execute((Path(__file__).resolve().parents[2]/'supabase/migrations/20261005140000_generation_email_preview.sql').read_text())
             id=uuid4()
             db.execute("INSERT INTO generations(id,user_id,status,name) VALUES (%s,'owner','processing','Pirate ship')",(id,))
             assert db.execute("SELECT subscribe_generation_email(%s,'guest@example.com','https://brickbuilder.ai')",(id,)).fetchone()[0]
@@ -109,10 +130,14 @@ def test_database_completion_race_privacy_limits_and_lease_recovery(tmp_path):
             db.execute("SELECT subscribe_generation_email(%s,'other@example.com','https://brickbuilder.ai')",(id,))
             assert db.execute('SELECT notification_email FROM generations').fetchone()[0]=='guest@example.com'
             assert db.execute("SELECT count(*) FROM claim_generation_email('other-origin')").fetchone()[0]==0
-            assert db.execute("SELECT attempts FROM claim_generation_email('https://brickbuilder.ai')").fetchone()[0]==1
+            # The preview can arrive after completion, before the first worker claim.
+            db.execute("UPDATE generations SET preview_image_url='https://example.com/finished.png' WHERE id=%s",(id,))
+            claimed=db.execute("SELECT attempts,preview_image_url FROM claim_generation_email('https://brickbuilder.ai')").fetchone()
+            assert claimed==(1,'https://example.com/finished.png')
             assert db.execute("SELECT count(*) FROM claim_generation_email('https://brickbuilder.ai')").fetchone()[0]==0
             db.execute("UPDATE generation_email_outbox SET available_at=now()-interval '1 minute'")
-            assert db.execute("SELECT attempts FROM claim_generation_email('https://brickbuilder.ai')").fetchone()[0]==2
+            db.execute("UPDATE generations SET preview_image_url='https://example.com/edited.png' WHERE id=%s",(id,))
+            assert db.execute("SELECT attempts,preview_image_url FROM claim_generation_email('https://brickbuilder.ai')").fetchone()==(2,'https://example.com/finished.png')
             for status in ['completed','cancelled','failed']:
                 next_id=uuid4()
                 db.execute('INSERT INTO generations(id,user_id,status,name) VALUES (%s,%s,%s,%s)',(next_id,'owner',status,'Other model'))

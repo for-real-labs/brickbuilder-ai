@@ -67,12 +67,13 @@ if __name__ == "__main__":
         from src.api import app
 
     log(f"Application loaded in {time.perf_counter() - _start:.1f}s")
-    log("Launching server on http://127.0.0.1:8002 ...")
+    port = int(os.environ.get("PORT", "8002"))
+    log(f"Launching server on http://127.0.0.1:{port} ...")
 
     uvicorn.run(
         app,
         host="127.0.0.1",
-        port=8002,
+        port=port,
         proxy_headers=False,  # Local provider guards must see the actual TCP peer.
         reload=False,  # Disable reload to avoid subprocess issues
         log_level="info"

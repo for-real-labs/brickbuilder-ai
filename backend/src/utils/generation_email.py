@@ -4,7 +4,7 @@ import html
 import logging
 import os
 from datetime import datetime, timedelta, timezone
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 import httpx
 
@@ -28,10 +28,23 @@ def sender():
 def email_payload(row):
     title = ' '.join(row['title'].split())[:120] or 'Your brick model'
     url = row['origin'] + '/generated-model?' + urlencode({'id': row['generation_id'], 'exact': '1'})
+    preview = row.get('preview_image_url')
+    # Only embed a public web image; older jobs and unavailable previews still send.
+    image = ''
+    try:
+        preview_url = urlsplit(preview or '')
+    except ValueError:
+        preview_url = urlsplit('')
+    if preview_url.scheme == 'https' and preview_url.netloc:
+        image = (f'<p><a href="{html.escape(url, quote=True)}">'
+                 f'<img src="{html.escape(preview, quote=True)}" '
+                 f'alt="Preview of {html.escape(title, quote=True)}" width="560" '
+                 'style="display:block;width:100%;max-width:560px;height:auto;border-radius:12px;border:0;">'
+                 '</a></p>')
     return {'from': sender(), 'to': [row['email']], 'reply_to': 'support@brickbuilder.ai',
             'subject': f'{title} is ready!',
-            'text': f'{title} is ready!\n\nSee your model: {url}\n\nYou asked for this one email on BrickBuilder. No more reminders.',
-            'html': f'<p><strong>{html.escape(title)} is ready!</strong></p><p><a href="{html.escape(url, quote=True)}">See your model</a></p><p>You asked for this one email on BrickBuilder. No more reminders.</p>'}
+            'text': f'{title} is ready!\n\nSee your model: {url}',
+            'html': f'<p><strong>{html.escape(title)} is ready!</strong></p>{image}<p><a href="{html.escape(url, quote=True)}">See your model</a></p>'}
 
 
 async def deliver_one(client, transport=None):
