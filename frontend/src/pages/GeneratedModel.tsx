@@ -1925,7 +1925,7 @@ export default function GeneratedModel() {
         {showModelPage && (
           <>
         <section className="model-workspace-title mt-2 mb-4">
-          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Your brick model</p>
+          <p className="mb-1 text-xs font-normal text-slate-500">Your brick model</p>
           <GenerationTitle
             key={currentGenerationId || 'local'}
             generationId={currentGenerationId || undefined}
