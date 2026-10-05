@@ -18,6 +18,7 @@ import GlbToLegoPage from "./pages/GlbToLegoPage";
 import BlogIndexPage from "./pages/BlogIndexPage";
 import UsingAiToDesignLego2026Page from "./pages/UsingAiToDesignLego2026Page";
 import BestAiLegoDesignTools2026Page from "./pages/BestAiLegoDesignTools2026Page";
+import SubstackPostPage from "./pages/SubstackPostPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/blog" element={<BlogIndexPage />} />
           <Route path="/blog/using-ai-to-design-lego-in-2026" element={<UsingAiToDesignLego2026Page />} />
           <Route path="/blog/best-ai-lego-design-tools-2026" element={<BestAiLegoDesignTools2026Page />} />
+          <Route path="/blog/:slug" element={<SubstackPostPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
 

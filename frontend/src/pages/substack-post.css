@@ -1,0 +1,13 @@
+.substack-article { overflow-wrap: anywhere; }
+.substack-article > * + * { margin-top: 1.5rem; }
+.substack-article h2, .substack-article h3, .substack-article h4 { font-weight: 700; line-height: 1.3; color: #0f172a; }
+.substack-article h2 { font-size: 1.75rem; }
+.substack-article h3, .substack-article h4 { font-size: 1.4rem; }
+.substack-article img { max-width: 100%; height: auto; border-radius: .5rem; }
+.substack-article a { color: #f44336; text-decoration: underline; }
+.substack-article ul, .substack-article ol { padding-left: 1.5rem; }
+.substack-article ul { list-style: disc; }
+.substack-article ol { list-style: decimal; }
+.substack-article blockquote { border-left: 3px solid #f44336; padding-left: 1rem; }
+.substack-article figcaption { font-size: .875rem; line-height: 1.5; color: #64748b; }
+.substack-article pre { overflow-x: auto; padding: 1rem; background: #f1f5f9; }
