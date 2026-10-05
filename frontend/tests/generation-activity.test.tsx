@@ -9,8 +9,11 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
+import { GenerationEmailApi } from '../src/services/generationEmailApi';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null }) }));
+vi.mock('../src/services/generationEmailApi', () => ({ GenerationEmailApi: { status: vi.fn().mockResolvedValue({ subscribed: false }), subscribe: vi.fn() } }));
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -46,6 +49,7 @@ it('restores the server start timestamp and persists it across leaving and retur
 });
 
 beforeEach(() => {
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: false });
   vi.useFakeTimers();
   open.mockReset();
   container = document.createElement('div');
@@ -123,7 +127,7 @@ it('cancels a card and preserves cancellation when an older refresh finishes', a
   vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue();
   await act(async () => root.render(<Harness />));
   await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
-  await act(async () => container.querySelector('button')!.click());
+  await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Cancel generation'))!.click());
   expect(container.textContent).toContain('Generation cancelled');
   expect(container.querySelector('button')).toBeNull();
   await act(async () => finish([job('stop')] as never));
@@ -298,7 +302,7 @@ it('cancels an active card without navigating to its model', async () => {
   await act(async () => root.render(<GenerationActivityList generations={[
     {id: 'cancel-card', prompt: 'Sunny Dog', status: 'processing'},
   ]} error={null} onOpen={open} onCancelled={cancelled} />));
-  await act(async () => container.querySelector('button')!.click());
+  await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Cancel generation'))!.click());
   expect(cancel).toHaveBeenCalledWith('cancel-card');
   expect(cancelled).toHaveBeenCalledWith('cancel-card');
   expect(open).not.toHaveBeenCalled();

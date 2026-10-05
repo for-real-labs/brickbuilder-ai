@@ -317,3 +317,29 @@ The optional authenticated `/mcp` endpoint exposes the existing LLM generation
 and edit pipeline to remote AI clients. See [deployment, OAuth, and client setup](../docs/mcp-connector.md).
 It is disabled until `MCP_ENABLED=true` and the documented Supabase/Railway
 configuration is complete.
+
+## Generation completion emails
+
+Landing cards let each owner request one email for an active generation. Signed-in
+owners use their account email; guests enter an address without signing in or
+joining a newsletter. Apply
+`supabase/migrations/20261005010000_generation_notification_email.sql` before
+deploying the API. The new notification columns and durable outbox are private
+to the backend service role; public model responses never include the address.
+
+Set these on the BrickBuilder **API service**, not the Nova service:
+
+- `RESEND_API_KEY`: existing Resend sending key.
+- `GENERATION_NOTIFICATION_FROM`: e.g. `BrickBuilder <models@notifications.brickbuilder.ai>`.
+- `GENERATION_NOTIFICATION_ORIGIN`: `https://brickbuilder.ai` in production; the staging frontend URL in staging.
+- `GENERATION_NOTIFICATION_WORKER=true` on hosted API instances. Local previews
+  default to disabled so they cannot consume shared staging/production mail.
+
+Verify the notification subdomain in Resend with its requested DNS records and
+disable open/link tracking for that domain. Keep links on the real BrickBuilder
+frontend domain. No emails are sent until the sender and key are configured.
+The outbox snapshots the recipient, title and frontend origin on completion,
+leases delivery across API replicas, retries transient errors, and uses one
+Resend idempotency key per generation. Retries stop before Resend's 24-hour
+idempotency window expires. Permanent errors/suppressions stop retries. Requests
+are limited to three generations per recipient per rolling day.

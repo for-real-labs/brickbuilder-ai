@@ -9,6 +9,7 @@ import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { isAgentGeneration } from '../utils/agentGeneration';
 import { ResumeNovaButton } from './ResumeNovaButton';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
+import { GetNotifiedButton } from './GetNotifiedButton';
 
 export function GenerationActivityList({ generations, error, onOpen, onCancelled, onResumed }: {
   generations: GenerationActivity[];
@@ -82,6 +83,7 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
                 {active && agentGeneration && <LlmGenerationOutput generationId={generation.id} active />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
+                {active && <GetNotifiedButton generationId={generation.id} />}
                 {active && <div className="relative z-20 w-fit"><CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} /></div>}
                 {(failed || cancelled) && generation.endpoint === 'novaToBricks' && onResumed &&
                   <div className="relative z-20 w-fit"><ResumeNovaButton generationId={generation.id} onResumed={id => onResumed(generation.id, id)} /></div>}
