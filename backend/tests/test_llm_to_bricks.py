@@ -91,6 +91,21 @@ def test_extract_ldr_content_accepts_text_fallback_for_auto_tool_choice():
         _extract_ldr_content(Turn())
 
 
+def test_cost_limit_failure_is_persisted_without_charging_credits(monkeypatch):
+    from unittest.mock import AsyncMock
+    from types import SimpleNamespace
+    from src.utils.generation_budget import GenerationBudgetExceeded, BUDGET_ERROR
+    storage = SimpleNamespace(update_status=AsyncMock())
+    charge = AsyncMock()
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    monkeypatch.setattr(module, '_generate_ldr', AsyncMock(side_effect=GenerationBudgetExceeded()))
+    monkeypatch.setattr(module, 'deduct_credits', charge)
+    monkeypatch.setattr(module, 'track_error', lambda **kwargs: None)
+    assert asyncio.run(process_llm_to_bricks_task('generation', LlmToBricksRequest(prompt='cube'), {}, {})) == BUDGET_ERROR
+    storage.update_status.assert_awaited_with('generation', 'failed', BUDGET_ERROR)
+    charge.assert_not_awaited()
+
+
 def test_background_task_stores_standard_generation_artifacts(monkeypatch, tmp_path):
     calls = []
 

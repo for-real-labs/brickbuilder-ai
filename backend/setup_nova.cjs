@@ -31,6 +31,7 @@ function deploymentDockerfile(upstream) {
   const versions = JSON.stringify(Object.fromEntries(SOURCES.map(s => [s.name, s.commit])));
   return '# Generated from the pinned Nova forks by backend/setup_nova.cjs.\n' + sources + '\n' + recipe + '\n' +
     'COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/\n' +
+    'COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py\n' +
     `RUN printf '%s' '${versions}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools\n` + SERVICE_CMD;
 }
 
@@ -70,6 +71,7 @@ function prepare(run = spawnSync) {
   const web = ensureSource(SOURCES[1], run);
   const integration = path.join(web, 'brickbuilder-integration');
   cpSync(path.join(__dirname, 'nova-service'), integration, { recursive: true });
+  cpSync(path.join(__dirname, 'src/utils/generation_budget.py'), path.join(integration, 'generation_budget.py'));
   writeFileSync(path.join(integration, 'versions.json'), JSON.stringify(Object.fromEntries(SOURCES.map(s => [s.name, s.commit]))));
   // Build upstream's actual Dockerfile, including its renderer, sandbox and SDKs.
   // Append only the private gateway; no copies of upstream app/toolkit code live here.

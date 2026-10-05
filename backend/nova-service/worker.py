@@ -18,11 +18,17 @@ from fastapi.responses import JSONResponse, Response
 from main import app
 import agent
 import settings
+import llm_config
+import litellm
+import claude_agent
+from brickbuilder_integration.cost_limits import install_cost_limits
 from store import get_store
 from leocad_render import bom_path_for, snapshot_path_for
 
 MAX_EXPORT_BYTES = 64 * 1024 * 1024
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
+install_cost_limits(agent, llm_config, litellm, claude_agent)
+VERSIONS['generation_cost_limit_usd'] = 10
 
 
 @app.middleware('http')

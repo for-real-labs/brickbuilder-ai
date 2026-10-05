@@ -67,8 +67,70 @@ import { GetGenerationStatsApiService } from '../src/services/getGenerationStats
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
+import { TextToBricksApiService } from '../src/services/textToBricksApi';
+import { ImageToBricksApiService } from '../src/services/imageToBricksApi';
 
 describe('LandingPage', () => {
+  it.each(['sam3d', 'trellis'])('routes Other model %s to the 3D provider and returns to Basic bricks for LLM models', async selected => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const text = vi.spyOn(TextToBricksApiService, 'generateBricksFromTextStream').mockRejectedValue(new Error('Test 3D request'));
+    const image = vi.spyOn(ImageToBricksApiService, 'generateBricksFromImageStream').mockRejectedValue(new Error('Test image request'));
+    const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
+    const BrowserURL = URL;
+    vi.stubGlobal('URL', class extends BrowserURL {
+      static createObjectURL = vi.fn(() => 'blob:test-image');
+      static revokeObjectURL = vi.fn();
+    });
+    const container = document.createElement('div');
+    document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
+      expect(Array.from(model.querySelectorAll('optgroup')).map(group => group.label)).toEqual(['Claude', 'OpenAI', 'Other']);
+      const mode = container.querySelector('#landing-builder-mode') as HTMLSelectElement;
+      const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
+      act(() => {
+        model.value = selected;
+        model.dispatchEvent(new Event('change', { bubbles: true }));
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'Blue car');
+        prompt.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(model.value).toBe(selected);
+      expect(mode.disabled).toBe(true);
+      const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
+      await act(async () => create.click());
+      expect(text.mock.calls[0][6]).toBe(selected === 'sam3d');
+      expect(llm).not.toHaveBeenCalled();
+      const upload = container.querySelector('input[type=file]') as HTMLInputElement;
+      act(() => {
+        Object.defineProperty(upload, 'files', { configurable: true, value: [new File(['image'], 'car.png', { type: 'image/png' })] });
+        upload.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      await act(async () => {
+        create.click();
+        await vi.waitFor(() => expect(image).toHaveBeenCalledTimes(1));
+      });
+      expect(image.mock.calls[0][6]).toBe(selected === 'sam3d');
+      act(() => {
+        model.value = 'gpt-5.5';
+        model.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(mode.disabled).toBe(false);
+      expect(mode.value).toBe('llm');
+      await act(async () => {
+        create.click();
+        await vi.waitFor(() => expect(llm).toHaveBeenCalledTimes(1));
+      });
+      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.5' }), undefined);
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_render_model_selected', {
+        generation_method: '3d', model: selected, provider: 'fal',
+      });
+    } finally { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); }
+  });
+
   it.each(['accepted', 'failed'])('submits an image with Enter and clears it only when %s', async outcome => {
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
@@ -398,8 +460,11 @@ describe('LandingPage', () => {
       });
       const selected = modeValue === 'nova' ? nova : llm;
       const other = modeValue === 'nova' ? llm : nova;
+      expect(container.querySelector('[aria-label="Local provider connections"]')).toBeNull();
+      expect(container.querySelector('#nova-connection')).toBeNull();
       expect(selected).toHaveBeenCalledWith(expect.objectContaining({
         model: DEFAULT_LLM_MODEL, prompt: undefined, imageBase64: btoa('reference'), imageMediaType: 'image/png',
+        ...(modeValue === 'nova' ? { authMode: 'api_key' } : {}),
       }), undefined);
       expect(other).not.toHaveBeenCalled();
     } finally { act(() => root.unmount()); container.remove(); }
@@ -518,8 +583,9 @@ describe('LandingPage', () => {
       expect(container.querySelector('[aria-label="Toggle settings"]')).toBeNull();
       expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
       expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
-      expect(Array.from(model.options).map(option => option.value)).not.toContain('sam3d');
-      expect(Array.from(model.options).map(option => option.value)).not.toContain('trellis');
+      expect(container.querySelector('[aria-label="Local provider connections"]')).toBeNull();
+      expect(Array.from(model.options).map(option => option.value)).toContain('sam3d');
+      expect(Array.from(model.options).map(option => option.value)).toContain('trellis');
     };
     verify();
     window.__BRICKBUILDER_NATIVE_APP__ = Object.freeze({ platform: 'ios', version: '0.1.0' });

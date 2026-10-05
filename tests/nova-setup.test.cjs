@@ -18,6 +18,7 @@ test('hosted build imports fork sources without requiring registry credentials o
   assert.ok(recipe.includes('COPY --from=nova /source/pyproject.toml /source/uv.lock /opt/ldraw-nova/'));
   assert.ok(recipe.includes('COPY --from=frontend /src/dist/ /opt/web/static/'));
   assert.ok(recipe.includes('NOVA_BIND_HOST'));
+  assert.ok(recipe.includes('COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py'));
   assert.ok(!recipe.includes('\nVOLUME '));
 });
 

@@ -18,6 +18,8 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
 import httpx
 from fastapi import HTTPException
 
+from .generation_budget import GenerationBudget, input_token_bound
+
 logger = logging.getLogger(__name__)
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
@@ -67,6 +69,7 @@ class ConversationSettings:
     system: str
     tools: Sequence[ToolSpec]
     max_tokens: int
+    enforce_cost_limit: bool = False
     reasoning_effort: str = "medium"  # OpenAI only; Anthropic uses adaptive thinking
 
 
@@ -147,8 +150,11 @@ async def post_stream_json(client, url, headers, payload, provider, on_text):
                     index = event["index"]
                     content[index]["input"] = json.loads(tool_json[index] or "{}")
                     await on_text("\n\n")
+                elif kind == "message_start":
+                    result["usage"] = dict(event.get("message", {}).get("usage", {}))
                 elif kind == "message_delta":
                     result.update(event.get("delta", {}))
+                    result.setdefault("usage", {}).update(event.get("usage", {}))
                 elif kind == "message_stop":
                     result["content"] = content
                     completed = True
@@ -175,7 +181,22 @@ class ToolConversation(ABC):
     def __init__(self, client: httpx.AsyncClient, settings: ConversationSettings):
         self.client = client
         self.settings = settings
+        self.budget = GenerationBudget(settings.model) if settings.enforce_cost_limit else None
+        self.context_tokens = 0
         self.on_text: Optional[Callable[[str], Awaitable[None]]] = None
+
+    def budget_payload(self, payload, output_key):
+        if self.budget:
+            bound = input_token_bound(payload) + self.context_tokens
+            payload[output_key] = self.budget.output_limit(bound, payload[output_key])
+        return payload
+
+    def account_response(self, response, provider):
+        if self.budget:
+            usage = response.get('usage')
+            self.budget.record_usage(usage, provider)
+            if provider == 'openai':
+                self.context_tokens = usage['input_tokens'] + usage['output_tokens']
 
     async def send_stream(self, on_text: Callable[[str], Awaitable[None]]) -> Turn:
         self.on_text = on_text
@@ -234,8 +255,9 @@ class AnthropicToolConversation(ToolConversation):
         }
 
     async def send(self) -> Turn:
-        response = (await post_stream_json(self.client, ANTHROPIC_URL, self._headers, self.payload(), "Anthropic", self.on_text)
-                    if self.on_text else await post_json(self.client, ANTHROPIC_URL, self._headers, self.payload(), "Anthropic"))
+        response = (await post_stream_json(self.client, ANTHROPIC_URL, self._headers, self.budget_payload(self.payload(), "max_tokens"), "Anthropic", self.on_text)
+                    if self.on_text else await post_json(self.client, ANTHROPIC_URL, self._headers, self.budget_payload(self.payload(), "max_tokens"), "Anthropic"))
+        self.account_response(response, "anthropic")
         content = response.get("content", [])
         self.messages.append({"role": "assistant", "content": content})
         calls = [ToolCall(id=b.get("id", ""), name=b.get("name", ""),
@@ -296,8 +318,9 @@ class OpenAIToolConversation(ToolConversation):
         return payload
 
     async def send(self) -> Turn:
-        response = (await post_stream_json(self.client, OPENAI_URL, self._headers, self.payload(), "OpenAI", self.on_text)
-                    if self.on_text else await post_json(self.client, OPENAI_URL, self._headers, self.payload(), "OpenAI"))
+        response = (await post_stream_json(self.client, OPENAI_URL, self._headers, self.budget_payload(self.payload(), "max_output_tokens"), "OpenAI", self.on_text)
+                    if self.on_text else await post_json(self.client, OPENAI_URL, self._headers, self.budget_payload(self.payload(), "max_output_tokens"), "OpenAI"))
+        self.account_response(response, "openai")
         self.pending = []
         self.previous_response_id = response.get("id")
         calls: List[ToolCall] = []

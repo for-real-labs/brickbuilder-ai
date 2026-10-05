@@ -91,12 +91,13 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     assert calls[-2:] == [('charge', 1), ('status', 'completed')]
 
 
-def test_failed_nova_turn_does_not_charge(monkeypatch):
+@pytest.mark.parametrize('message', ['Nova did not publish a model', 'Generation stopped because it would exceed the $10 AI cost limit.'])
+def test_failed_nova_turn_does_not_charge(monkeypatch, message):
     storage = SimpleNamespace(update_status=AsyncMock())
     class Service:
         async def __aenter__(self): return self
         async def __aexit__(self, *args): pass
-        async def run(self, *args, **kwargs): raise ValueError('Nova did not publish a model')
+        async def run(self, *args, **kwargs): raise ValueError(message)
     charge = AsyncMock()
     monkeypatch.setattr(module, 'generation_storage', storage)
     monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
@@ -105,4 +106,4 @@ def test_failed_nova_turn_does_not_charge(monkeypatch):
     request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5')
     asyncio.run(module.process_nova_to_bricks_task('generation', request, {'user_email': 'test'}, {}))
     charge.assert_not_awaited()
-    storage.update_status.assert_awaited_with('generation', 'failed', 'Nova did not publish a model')
+    storage.update_status.assert_awaited_with('generation', 'failed', message)

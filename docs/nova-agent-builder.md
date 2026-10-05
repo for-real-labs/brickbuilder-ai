@@ -19,7 +19,7 @@ npm start
 `setup:nova` fetches two immutable upstream revisions into ignored
 `backend/.nova/toolkit` and `backend/.nova/web`. It builds the upstream Dockerfile
 with the toolkit as its additional build context. The only additions are the
-private tenant gateway and artifact export adapter in `backend/nova-service`.
+private tenant gateway, generation cost guard, and artifact export adapter in `backend/nova-service`.
 LeoCAD, the official parts library, Jev, provider SDKs and Nova's sandbox come
 from the upstream image. The first build can take several minutes and several
 GB of disk space.
@@ -36,10 +36,9 @@ Choose **All parts (beta)** in the mode dropdown below the landing-page prompt.
 dropdown applies to either mode, and **Upload image** adds a reference for either
 workflow. Press **Create** inside the prompt bar to start a build. The selected API key
 is forwarded from the backend to the private Nova provider configuration.
-**Local provider connections** signs into Nova's own provider session once the
-runtime is installed. OpenAI uses Nova's device login; Claude uses Nova's SDK
-browser login and optional manual code. Native connections are localhost-only.
-No host provider credential directory is mounted into the runtime.
+The landing page uses the backend's project API keys in local and hosted runs.
+Set `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `FAL_KEY` in the ignored backend
+environment for the providers you want to use.
 
 The generation adapter selects Nova's **Agent** mode with **Full** tool
 permissions so builds run automatically in their isolated workspace. Nova's
@@ -56,6 +55,34 @@ BrickBuilder planning prompts, tool schemas, render loop or acceptance rules.
 Set `TYPESAFE_API_KEY` in the ignored backend environment to configure Jev in
 Nova's protected settings. Nova chooses its own search workflow and fallback.
 Other BrickBuilder generation modes and fal connections remain available.
+
+## Generation limits
+
+OpenAI and Claude generations in Basic bricks and All parts share an owner limit
+of 10 running generations. Admission is serialized in PostgreSQL across API workers;
+completed, failed, and cancelled jobs free their slots. An eleventh request receives
+HTTP 429 with a message to wait or cancel a running job. Apply
+`20261005000001_generation_concurrency_limit.sql` before deploying the backend.
+Local embedded PostgreSQL installs the matching trigger automatically.
+
+Each generation, including each follow-up edit or resumed Nova turn, has a $10 USD
+AI budget across all provider/tool rounds. Direct API calls reserve conservative
+input costs and cap output tokens before each call, then account for reported
+input, cached input, cache writes, and output (including reasoning). Missing usage
+or unknown pricing fails closed. Nova's API bridge uses the same accounting and
+disables automatic provider retries; its Claude SDK receives `max_budget_usd=10`
+and rejects over-budget results. SDK budget checks can stop a turn after its final
+provider response, so any already-incurred provider charges cannot be reversed.
+Over-budget generations fail and do not deduct the user's generation credit.
+
+Rebuild Nova with `npm run setup:nova` after upgrading the cost guard, and deploy
+the rebuilt Nova image alongside the API. The API refuses to start All parts
+generations on an older runtime without the $10 guard. Prices in
+`backend/src/utils/generation_budget.py` are the standard API rates verified on
+October 5, 2026 and need updating when provider prices change.
+
+The model dropdown also exposes **SAM3D** and **Trellis** under **Other**. Those
+models use the existing image/text-to-3D pipeline rather than an LLM mode.
 
 ## Saved generations and edits
 
