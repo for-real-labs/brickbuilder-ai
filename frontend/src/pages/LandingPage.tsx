@@ -3,7 +3,7 @@ import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, Settings, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -16,12 +16,10 @@ import StreamingMeshViewer from "../components/StreamingMeshViewer";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { useAuth } from "../contexts/AuthContext";
 import { SiteFooter } from "../components/SiteFooter";
-import { GlbUploadCard } from "../components/GlbUploadCard";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity } from "../hooks/useGenerationActivity";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
-import { NovaBuilderOptions } from "../components/NovaBuilderOptions";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
 import { isLocalDevelopment } from "../services/localProvidersApi";
@@ -34,7 +32,6 @@ import {
   LlmToBricksApiService,
   getLlmModelOption,
 } from "../services/llmToBricksApi";
-import { isNativeMobileShell } from "../utils/mobileShellAnalytics";
 import posthog from "posthog-js";
 
 // Toggle whether users must be logged in before starting a generation.
@@ -68,143 +65,50 @@ const DEFAULT_PROMPT_OPTION = "a";
 
 type GenerationMethod = "3d" | "llm" | "nova";
 export const DEFAULT_GENERATION_METHOD: GenerationMethod = "llm";
-const GENERATION_METHOD_PRESETS: Array<{
-  label: string;
-  value: GenerationMethod;
-  description: string;
-}> = [
-  {
-    label: "image-to-glb",
-    value: "3d",
-    description: "Convert an image into a 3D model",
-  },
-  {
-    label: "LLM Render",
-    value: "llm",
-    description: "Have an AI model design the brick model directly",
-  },
-];
-
 export type ThreeDModel = "sam3d" | "trellis";
 export const DEFAULT_THREE_D_MODEL: ThreeDModel = "sam3d";
-const THREE_D_MODEL_OPTIONS: Array<{ id: ThreeDModel; label: string; description: string }> = [
-  { id: "sam3d", label: "SAM3D", description: "Live 3D preview while it generates" },
-  { id: "trellis", label: "Trellis", description: "No live preview" },
-];
-
 const LLM_PROVIDER_GROUPS: Array<{ provider: LlmProvider; label: string }> = [
   { provider: "anthropic", label: "Claude" },
   { provider: "openai", label: "OpenAI" },
 ];
 
-const IMAGE_TO_GLB_GROUP_LABEL = "image-to-glb";
-
-const isThreeDModel = (value: unknown): value is ThreeDModel =>
-  THREE_D_MODEL_OPTIONS.some((option) => option.id === value);
-
-export function GenerationMethodSelector({
-  value,
-  threeDModel = DEFAULT_THREE_D_MODEL,
-  llmModel = DEFAULT_LLM_MODEL,
+export function GenerationModelSelector({
+  model = DEFAULT_LLM_MODEL,
+  mode = DEFAULT_GENERATION_METHOD,
   disabled = false,
   onChange,
-  onThreeDModelChange = () => undefined,
-  onLlmModelChange = () => undefined,
 }: {
-  value: GenerationMethod;
-  threeDModel?: ThreeDModel;
-  llmModel?: string;
+  model?: string;
+  mode?: GenerationMethod;
   disabled?: boolean;
-  onChange: (value: GenerationMethod) => void;
-  onThreeDModelChange?: (value: ThreeDModel) => void;
-  onLlmModelChange?: (value: string) => void;
+  onChange: (model: string) => void;
 }) {
-  const modelSelectId = "landing-render-model";
-  const modelDescription = value === "3d"
-    ? THREE_D_MODEL_OPTIONS.find((option) => option.id === threeDModel)?.description
-    : GENERATION_METHOD_PRESETS.find((method) => method.value === value)?.description;
-
-  const handleModelChange = (modelId: string) => {
-    if (disabled) return;
-    if (isThreeDModel(modelId)) {
-      if (value === "3d" && threeDModel === modelId) return;
-      if (value !== "3d") {
-        onChange("3d");
-        posthog.capture('landing_generation_method_selected', {
-          generation_method: '3d',
-        });
-      }
-      onThreeDModelChange(modelId);
-      posthog.capture('landing_render_model_selected', {
-        generation_method: '3d',
-        model: modelId,
-        provider: '3d',
-      });
-      return;
-    }
-    const llmOption = getLlmModelOption(modelId);
-    if (!llmOption) return;
-    if (value === "llm" && llmModel === modelId) return;
-    if (value !== "llm") {
-      onChange("llm");
-      posthog.capture('landing_generation_method_selected', {
-        generation_method: 'llm',
-      });
-    }
-    onLlmModelChange(modelId);
-    posthog.capture('landing_render_model_selected', {
-      generation_method: 'llm',
-      model: modelId,
-      provider: llmOption.provider,
-    });
-  };
-
   return (
-    <div
-      className="flex w-full max-w-xl flex-col gap-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm"
-      style={{ zIndex: 25 }}
-    >
-      <div className="flex w-full flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <label htmlFor={modelSelectId} className="shrink-0 text-sm font-medium text-slate-600 sm:w-36">
-          Render model:
-        </label>
-        <div className="relative w-full min-w-0 sm:w-56">
-          <select
-            id={modelSelectId}
-            value={value === "3d" ? threeDModel : llmModel}
-            onChange={(event) => handleModelChange(event.target.value)}
-            disabled={disabled}
-            className="min-h-10 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-300 bg-white pl-4 pr-10 py-2 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed"
-          >
-            <optgroup label={IMAGE_TO_GLB_GROUP_LABEL}>
-              {THREE_D_MODEL_OPTIONS.map((option) => (
-                <option
-                  key={option.id}
-                  value={option.id}
-                >
-                  {option.label}
-                </option>
-              ))}
-            </optgroup>
-            {LLM_PROVIDER_GROUPS.map((group) => (
-              <optgroup key={group.provider} label={group.label}>
-                {LLM_MODEL_OPTIONS.filter((option) => option.provider === group.provider).map((option) => (
-                  <option
-                    key={option.id}
-                    value={option.id}
-                  >
-                    {option.label}
-                  </option>
-                ))}
-              </optgroup>
+    <div className="relative min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto">
+      <label htmlFor="landing-render-model" className="sr-only">Model</label>
+      <select
+        id="landing-render-model"
+        value={model}
+        disabled={disabled}
+        onChange={event => {
+          const option = getLlmModelOption(event.target.value);
+          if (!option || option.id === model || disabled) return;
+          onChange(option.id);
+          posthog.capture('landing_render_model_selected', {
+            generation_method: mode, model: option.id, provider: option.provider,
+          });
+        }}
+        className="min-h-11 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-52"
+      >
+        {LLM_PROVIDER_GROUPS.map(group => (
+          <optgroup key={group.provider} label={group.label}>
+            {LLM_MODEL_OPTIONS.filter(option => option.provider === group.provider).map(option => (
+              <option key={option.id} value={option.id}>{option.label}</option>
             ))}
-          </select>
-          <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-        </div>
-        {modelDescription && (
-          <p className="text-xs leading-5 text-slate-500 sm:ml-auto sm:max-w-40">{modelDescription}</p>
-        )}
-      </div>
+          </optgroup>
+        ))}
+      </select>
+      <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
     </div>
   );
 }
@@ -317,7 +221,7 @@ export default function LandingPage() {
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
-  const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
+  const [threeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
   const localDevelopment = isLocalDevelopment();
@@ -350,10 +254,6 @@ export default function LandingPage() {
 
   const navigate = useNavigate();
   const [isCardHidden, setIsCardHidden] = useState(false);
-  const [areOptionsHidden, setAreOptionsHidden] = useState(
-    () => !isNativeMobileShell(),
-  );
-  const [showGlbUpload, setShowGlbUpload] = useState(false);
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
   const [statsReady, setStatsReady] = useState(false);
   const [communityReady, setCommunityReady] = useState(false);
@@ -442,21 +342,17 @@ export default function LandingPage() {
         threeDModel?: string;
         llmModel?: string;
         novaOptions?: NovaOptions;
-        areOptionsHidden?: boolean;
         image?: { name: string; type: string; base64: string } | null;
       };
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      if (payload.generationMethod === '3d' || payload.generationMethod === 'llm' || payload.generationMethod === 'nova') {
-        setGenerationMethod(payload.generationMethod);
-      }
-      if (isThreeDModel(payload.threeDModel)) setThreeDModel(payload.threeDModel);
+      setGenerationMethod(payload.generationMethod === 'nova' ? 'nova' : 'llm');
       if (payload.llmModel && getLlmModelOption(payload.llmModel)) setLlmModel(payload.llmModel);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
         setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
+        if (payload.generationMethod === 'nova') setLlmModel(payload.novaOptions.model);
       }
-      if (typeof payload.areOptionsHidden === 'boolean') setAreOptionsHidden(payload.areOptionsHidden);
       if (payload.image && payload.image.base64) {
         try {
           const binary = atob(payload.image.base64);
@@ -577,8 +473,7 @@ export default function LandingPage() {
         generationMethod,
         threeDModel,
         llmModel,
-        novaOptions,
-        areOptionsHidden,
+        novaOptions: { ...novaOptions, model: llmModel },
         image: imageData,
       };
       sessionStorage.setItem(PENDING_LANDING_STATE_KEY, JSON.stringify(payload));
@@ -710,6 +605,7 @@ export default function LandingPage() {
         setGenerationStatus('Starting the full set agent…');
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
+          model: llmModel,
           authMode: localDevelopment ? novaOptions.authMode : 'api_key',
           prompt: prompt.trim() || undefined,
           imageBase64,
@@ -966,118 +862,90 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div role="group" aria-label="Builder mode" className="flex w-full max-w-xl flex-col gap-2 rounded-2xl border border-slate-200 bg-white p-1.5 sm:flex-row">
-              {([{ value: 'llm', label: 'Model builder', description: 'Design a single model' }, { value: 'nova', label: 'Full set agent', description: 'Nova · plan, assemble, refine' }] as const).map(option => {
-                const active = option.value === 'nova' ? generationMethod === 'nova' : generationMethod !== 'nova';
-                return <button key={option.value} type="button" aria-pressed={active} disabled={loading} onClick={() => {
-                  if (active) return;
-                  posthog.capture('landing_generation_method_selected', { generation_method: option.value });
-                  setGenerationMethod(option.value); setShowGlbUpload(false);
-                }} className={`flex min-h-12 min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-4 py-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:opacity-50 ${active ? 'bg-red-50 text-red-700' : 'text-slate-600 hover:bg-slate-50'}`}>
-                  <span className="text-sm font-semibold">{option.label}</span><span className={`mt-0.5 text-xs ${active ? 'text-red-600' : 'text-slate-400'}`}>{option.description}</span>
-                </button>;
-              })}
-            </div>
-
-            <div className="w-full relative z-20 landing-fade-in landing-delay-3">
-              <div className="w-full" style={{ position: 'relative' }}>
-                {generationMethod === 'nova' ? <textarea
-                  aria-label="Full set description"
-                  value={prompt}
-                  onFocus={() => {
-                    setFocused(true);
-                    posthog.capture('landing_nova_prompt_focused');
-                  }}
-                  onBlur={() => {
-                    setFocused(false);
-                    posthog.capture('landing_nova_prompt_changed', { character_count: prompt.length });
-                  }}
-                  onChange={event => setPrompt(event.target.value)}
-                  placeholder={imgFile ? 'Describe how the set should follow your reference image' : 'Describe your full set: scenes, structures, colors, scale, and details'}
-                  className="min-h-36 w-full resize-y rounded-2xl border border-gray-200 bg-white px-4 pt-4 pb-14 text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50"
-                  disabled={loading}
-                /> : <input
+            <form
+              aria-label="Create a brick model"
+              className="relative z-20 w-full landing-fade-in landing-delay-3"
+              onSubmit={event => {
+                event.preventDefault();
+                if (loading) return;
+                posthog.capture('landing_generate_clicked', {
+                  generation_method: generationMethod,
+                  model: llmModel,
+                  has_prompt: Boolean(prompt.trim()),
+                  has_image: Boolean(imgFile),
+                  size,
+                  is_authenticated: Boolean(session),
+                });
+                void onGenerate();
+              }}
+            >
+              <div className="relative w-full">
+                <input
+                  aria-label="Describe your model"
                   value={prompt}
                   onFocus={() => setFocused(true)}
                   onBlur={() => setFocused(false)}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPrompt(e.target.value)}
-                  placeholder={imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
-                  className="input w-full h-12 rounded-full pr-40 pl-4 text-base shadow-sm border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                  disabled={loading}
-                />}
-                <div
-                  className="flex items-center gap-1.5"
-                  style={{
-                    position: 'absolute',
-                    right: '6px',
-                    top: generationMethod === 'nova' ? undefined : '50%',
-                    bottom: generationMethod === 'nova' ? '14px' : undefined,
-                    transform: generationMethod === 'nova' ? undefined : 'translateY(-50%)',
-                    zIndex: 2,
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => setPrompt(event.target.value)}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' && (event.nativeEvent.isComposing || event.keyCode === 229)) event.preventDefault();
                   }}
-                >
-                  <button
-                    type="button"
-                    onClick={onPickImage}
-                    className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-white hover:bg-slate-100 px-3 py-1.5 text-sm text-slate-600 transition-colors"
-                    aria-label="Upload image"
-                    title="Upload image"
-                    disabled={loading}
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                    Upload Image
-                  </button>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={onFileChange}
+                  placeholder={imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
+                  className="h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
                   disabled={loading}
                 />
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="absolute right-2 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-base"
+                >
+                  <Sparkles aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
+                  Create
+                </button>
               </div>
 
-              {!loading && (
-                showGlbUpload ? (
-                  <div className="mt-3 w-full max-w-xl mx-auto landing-fade-in landing-delay-3">
-                    <GlbUploadCard autoOpen />
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center gap-2 mt-3 landing-fade-in landing-delay-3">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        posthog.capture('landing_generate_clicked', {
-                          generation_method: generationMethod,
-                          model: generationMethod === 'nova' ? novaOptions.model : generationMethod === 'llm' ? llmModel : threeDModel,
-                          has_prompt: Boolean(prompt.trim()),
-                          has_image: Boolean(imgFile),
-                          size,
-                          is_authenticated: Boolean(session),
-                        });
-                        void onGenerate();
-                      }}
-                      className="inline-flex items-center justify-center h-12 rounded-full px-6 min-w-36 text-white transition-colors bg-[#f44336] cursor-pointer hover:bg-[#ff6b6b]"
-                    >
-                      <Sparkles className="mr-2 h-5 w-5" />
-                      Generate
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        posthog.capture('landing_settings_toggled', { expanded: areOptionsHidden });
-                        setAreOptionsHidden(prev => !prev);
-                      }}
-                      className="inline-flex items-center justify-center h-10 w-10 rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 cursor-pointer"
-                      aria-label="Toggle settings"
-                    >
-                      <Settings className="h-5 w-5" />
-                    </button>
-                  </div>
-                )
+              <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
+                <GenerationModelSelector model={llmModel} mode={generationMethod} onChange={setLlmModel} disabled={loading} />
+                <div className="relative min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto">
+                  <label htmlFor="landing-builder-mode" className="sr-only">Mode</label>
+                  <select
+                    id="landing-builder-mode"
+                    value={generationMethod}
+                    disabled={loading}
+                    onChange={event => {
+                      const mode = event.target.value;
+                      if (mode !== 'llm' && mode !== 'nova') return;
+                      setGenerationMethod(mode);
+                      posthog.capture('landing_generation_method_selected', { generation_method: mode });
+                    }}
+                    className="min-h-11 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-44"
+                  >
+                    <option value="llm">Basic bricks</option>
+                    <option value="nova">All parts (beta)</option>
+                  </select>
+                  <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+                </div>
+                <button
+                  type="button"
+                  onClick={onPickImage}
+                  className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition-colors hover:border-red-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  aria-label="Upload image"
+                  disabled={loading}
+                >
+                  <ImageIcon aria-hidden="true" className="h-4 w-4" />
+                  Upload image
+                </button>
+                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} disabled={loading} />
+              </div>
+              {localDevelopment && generationMethod === 'nova' && (
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
+                  <label htmlFor="nova-connection">Provider connection</label>
+                  <select id="nova-connection" value={novaOptions.authMode} disabled={loading} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => setNovaOptions({ ...novaOptions, authMode: event.target.value as NovaOptions['authMode'] })}>
+                    <option value="api_key">Project API key</option>
+                    <option value="native">{getLlmModelOption(llmModel)?.provider === 'openai' ? 'Signed in to ChatGPT' : 'Signed in to Claude'} · local account</option>
+                  </select>
+                </div>
               )}
-            </div>
+            </form>
 
             {/* Image thumbnail preview */}
             {imagePreviewUrl && (
@@ -1105,73 +973,6 @@ export default function LandingPage() {
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                </button>
-              </div>
-            )}
-
-            {generationMethod === 'nova' && <NovaBuilderOptions options={novaOptions} onChange={setNovaOptions} local={localDevelopment} disabled={loading} />}
-
-            {/* Size chips - hidden during loading */}
-            {/* {!loading && !areOptionsHidden && (
-              <div className="flex items-center gap-3 relative" style={{ zIndex: 25 }}>
-                <span className="text-sm text-slate-500">Size:</span>
-                {SIZE_PRESETS.map((s) => {
-                  const active = s.value === size;
-                  return (
-                    <button
-                      key={s.value}
-                      onClick={() => !loading && setSize(s.value)}
-                      className={`rounded-full px-4 py-1 text-sm transition-all duration-150 ${
-                        active
-                          ? "bg-[#f44336] text-white border border-transparent"
-                          : "bg-white text-slate-700 border border-slate-300 hover:opacity-70"
-                      } ${loading ? "cursor-not-allowed" : "cursor-pointer"}`}
-                      disabled={loading}
-                    >
-                      {s.label}
-                    </button>
-                  );
-                })}
-                <button
-                  onClick={() => setAreOptionsHidden(true)}
-                  className="ml-2 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                  aria-label="Hide options"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            )} */}
-
-            {/* Generation method selector - hidden during loading */}
-            {!loading && !areOptionsHidden && generationMethod !== 'nova' && (
-              <GenerationMethodSelector
-                value={generationMethod}
-                threeDModel={threeDModel}
-                llmModel={llmModel}
-                disabled={loading}
-                onChange={setGenerationMethod}
-                onThreeDModelChange={setThreeDModel}
-                onLlmModelChange={setLlmModel}
-              />
-            )}
-
-            {/* Upload GLB toggle - lives in settings */}
-            {!loading && !areOptionsHidden && generationMethod !== 'nova' && (
-              <div className="flex items-center gap-3 relative" style={{ zIndex: 25 }}>
-                <span className="text-sm text-slate-500">Upload GLB:</span>
-                <button
-                  type="button"
-                  onClick={() => setShowGlbUpload(prev => !prev)}
-                  className={`flex items-center gap-1.5 rounded-full px-4 py-1 text-sm transition-all duration-150 ${
-                    showGlbUpload
-                      ? "bg-[#f44336] text-white border border-transparent"
-                      : "bg-white text-slate-700 border border-slate-300 hover:opacity-70"
-                  } cursor-pointer`}
-                  aria-label="Upload glb"
-                  title="Upload a 3D model (.glb) and convert it into bricks"
-                >
-                  <Box className="h-4 w-4" />
-                  {showGlbUpload ? "Hide GLB Upload" : "Upload GLB"}
                 </button>
               </div>
             )}

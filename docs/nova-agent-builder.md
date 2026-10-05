@@ -31,7 +31,10 @@ sent to the browser. Setup preserves session data and the protected provider
 configuration across rebuilds. It replaces only this installation's managed
 container, whose name is derived from the installation directory.
 
-Open **Full set agent** on the BrickBuilder landing page. The selected API key
+Choose **All parts (beta)** in the mode dropdown below the landing-page prompt.
+**Basic bricks** uses the standard BrickBuilder LLM-to-bricks workflow. The model
+dropdown applies to either mode, and **Upload image** adds a reference for either
+workflow. Press **Create** inside the prompt bar to start a build. The selected API key
 is forwarded from the backend to the private Nova provider configuration.
 **Local provider connections** signs into Nova's own provider session once the
 runtime is installed. OpenAI uses Nova's device login; Claude uses Nova's SDK
