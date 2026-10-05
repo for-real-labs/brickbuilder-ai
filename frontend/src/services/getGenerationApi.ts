@@ -27,6 +27,7 @@ export interface GetGenerationResponse {
   model_generation_id?: string;
   version?: number;
   endpoint?: string;
+  mode?: 'basic_bricks' | 'all_parts';
   generation_id: string;
   status: GenerationStatus;
   prompt: string | null;

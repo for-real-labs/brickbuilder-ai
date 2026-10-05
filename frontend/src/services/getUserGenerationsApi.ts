@@ -43,6 +43,7 @@ export interface GenerationWithOrder {
   name?: string | null;
   detail_level: number;
   endpoint: string;
+  mode?: 'basic_bricks' | 'all_parts';
   created_at: string;
   status: string;
   error_message?: string;

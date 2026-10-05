@@ -97,7 +97,10 @@ The private `generation-output` bucket retains:
 
 These files are read only through owner-checked backend operations. Public model
 links do not expose Nova sessions, conversations or private source archives.
-No new public database columns or migration are needed. Cancellation and timeout
+The `generations.mode` column stores `basic_bricks` or `all_parts`, including
+follow-up revisions. Apply `20261005000000_generation_mode.sql` before deploying
+the application update; it backfills existing models and keeps older API
+deployments assigning the correct mode through a database trigger. Cancellation and timeout
 also cancel the active Nova turn; its durable session remains available.
 Old generations from the previous PR implementation retain source downloads but
 do not have a resumable Nova session.

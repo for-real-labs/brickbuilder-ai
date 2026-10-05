@@ -4,6 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from fastapi import HTTPException, Request
 
+from ..utils.generation_mode import GenerationMode, generation_mode
 from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_api_call, track_error
 
@@ -37,6 +38,7 @@ class GenerationWithOrder(BaseModel):
     name: Optional[str] = None
     detail_level: float
     endpoint: str
+    mode: GenerationMode = 'basic_bricks'
     created_at: str
     status: str
     error_message: Optional[str] = None
@@ -183,6 +185,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
                 name=gen.get("name"),
                 detail_level=gen.get("detail_level", 0),
                 endpoint=gen.get("endpoint", ""),
+                mode=generation_mode(gen.get("endpoint"), gen.get("mode")),
                 created_at=gen.get("created_at", ""),
                 status=gen.get("status", ""),
                 error_message=gen.get("error_message"),

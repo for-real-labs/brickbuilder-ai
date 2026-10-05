@@ -109,3 +109,23 @@ def test_store_preview_image_uploads_png_and_saves_its_url():
     assert (content, content_type) == (b"png", "image/png")
     assert path.startswith("generations/generation-1/preview_image_") and path.endswith(".png")
     assert updates == [({"preview_image_url": url}, "id", "generation-1")]
+
+
+
+def test_create_generation_persists_mode_and_inherits_it_for_non_generating_revisions():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    records = []
+    class Table:
+        def insert(self, row):
+            records.append(row)
+            return self
+        def execute(self): return SimpleNamespace(data=[records[-1]])
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = SimpleNamespace(table=lambda name: Table())
+    storage.get_generation = AsyncMock(return_value={'id': 'source', 'generation_id': 'model', 'user_id': 'owner', 'user_type': 'authenticated', 'endpoint': 'novaToBricks', 'mode': 'all_parts'})
+    for endpoint, mode in [('novaToBricks', 'all_parts'), ('llmToBricks', 'basic_bricks'), ('textToBricks', 'basic_bricks')]:
+        asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40, endpoint=endpoint))
+        assert records[-1]['mode'] == mode
+    asyncio.run(storage.create_generation('owner', 'authenticated', 'edit', 40, endpoint='updateModel', edit_generation_id='source'))
+    assert records[-1]['generation_id'] == 'model' and records[-1]['mode'] == 'all_parts'
