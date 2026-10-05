@@ -17,12 +17,13 @@ import shutil
 import time
 import socket
 import subprocess
+import tempfile
 from contextlib import asynccontextmanager
 from pathlib import Path
 
 import httpx
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse, Response
 from starlette.background import BackgroundTask
 
 TOKEN = os.environ.get('NOVA_SERVICE_TOKEN', '')
@@ -163,6 +164,44 @@ async def worker_url(tenant):
         except BaseException:
             await stop_worker(process)
             raise
+
+
+@app.post('/integration/instructions')
+async def instruction_export(request: Request):
+    if not TOKEN or not hmac.compare_digest(request.headers.get('authorization', ''), 'Bearer ' + TOKEN):
+        return JSONResponse({'detail': 'Private Nova runtime'}, status_code=401)
+    source = bytearray()
+    async for chunk in request.stream():
+        source.extend(chunk)
+        if len(source) > 16 * 1024 * 1024:
+            return JSONResponse({'detail': 'Model is too large'}, status_code=413)
+    try:
+        source.decode('utf-8')
+        data = await asyncio.to_thread(export_instruction_placements, bytes(source))
+    except (UnicodeError, OSError, subprocess.SubprocessError, ValueError):
+        return JSONResponse({'detail': 'Nova construction steps could not be exported'}, status_code=502)
+    return Response(data, media_type='text/plain')
+
+
+def export_instruction_placements(source: bytes) -> bytes:
+    # Parse geometry using the installed Nova toolkit in a fresh unprivileged
+    # workspace. No owner worker, provider configuration or agent is started.
+    account = pwd.getpwnam('nobody')
+    toolkit = Path('/opt/ldraw-nova')
+    with tempfile.TemporaryDirectory(prefix='nova-instructions-') as directory:
+        root = Path(directory)
+        os.chown(root, account.pw_uid, account.pw_gid)
+        model, output = root / 'model.mpd', root / 'instructions.ldr'
+        model.write_bytes(source)
+        subprocess.run([str(toolkit / '.venv/bin/python'), str(Path(__file__).with_name('flatten.py')),
+                        str(model), str(output), os.getenv('LDRAW_DIR', '/opt/ldraw/ldraw'), '--instructions'],
+                       cwd=toolkit, user=account.pw_uid, group=account.pw_gid, extra_groups=[],
+                       env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(toolkit),
+                            'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(root)},
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=120)
+        if output.stat().st_size > 32 * 1024 * 1024:
+            raise ValueError('Instruction export is too large')
+        return output.read_bytes()
 
 
 @app.api_route('/{path:path}', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])

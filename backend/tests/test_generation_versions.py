@@ -152,3 +152,28 @@ def test_removal_preserves_backfilled_history_and_allocates_without_parent_colum
     assert sorted(row[2] for row in rows) == list(range(5, 13))
     assert all(row[1] == root for row in rows)
     assert db.execute("select version from latest_generations").fetchall() == [(12,)]
+
+
+
+def test_generation_mode_backfills_nova_revisions_and_is_saved_by_legacy_and_current_writers(db):
+    nova = insert(db, endpoint='novaToBricks', date='2026-09-01')
+    manual = insert(db, parent=nova, endpoint='updateModel', date='2026-09-02')
+    basic = insert(db, endpoint='llmToBricks', date='2026-09-03')
+    migrate(db)
+    db.execute('drop function if exists public.assign_generation_mode() cascade')
+    migration = (Path(__file__).resolve().parents[2] / 'supabase/migrations/20261005000000_generation_mode.sql').read_text()
+    with db.transaction(): db.execute(migration)
+    saved = dict(db.execute('select id, mode from public.generations'))
+    assert saved[nova] == saved[manual] == 'all_parts'
+    assert saved[basic] == 'basic_bricks'
+    assert db.execute('select mode from public.latest_generations where id=%s', (manual,)).fetchone()[0] == 'all_parts'
+    current = insert(db, endpoint='novaToBricks')
+    derived = insert(db, parent=current, endpoint='promptEditModel')
+    saved = dict(db.execute('select id, mode from public.generations'))
+    assert saved[current] == saved[derived] == 'all_parts'
+    with db.transaction(): db.execute(REMOVE_SOURCE)
+    revision = uuid4()
+    db.execute("insert into generations (id, generation_id, user_id, endpoint, mode) values (%s,%s,'owner','resizeModel','all_parts')", (revision, current))
+    assert db.execute('select mode from generations where id=%s', (revision,)).fetchone()[0] == 'all_parts'
+    with pytest.raises(psycopg.errors.CheckViolation):
+        db.execute("update public.generations set mode='unknown' where id=%s", (basic,))

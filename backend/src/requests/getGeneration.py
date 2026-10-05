@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pydantic import BaseModel, Field
 from fastapi import HTTPException
 
+from ..utils.generation_mode import GenerationMode, generation_mode
 from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_error
@@ -21,6 +22,7 @@ class GetGenerationResponse(BaseModel):
     version: int = 1
     previous_completed_generation_id: Optional[str] = None
     endpoint: Optional[str] = None
+    mode: GenerationMode = 'basic_bricks'
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
     prompt: Optional[str] = None
@@ -130,6 +132,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             version=generation.get("version", 1),
             previous_completed_generation_id=previous_id,
             endpoint=generation.get("endpoint"),
+            mode=generation_mode(generation.get("endpoint"), generation.get("mode")),
             generation_id=request.generation_id,
             status=status,
             prompt=prompt,

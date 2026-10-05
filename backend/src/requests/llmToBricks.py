@@ -168,7 +168,19 @@ class LlmToBricksRequest(BaseModel):
         return self
 
 
-DEFAULT_IMAGE_PROMPT = "Recreate the main subject in the reference image as a recognizable brick model."
+DEFAULT_IMAGE_PROMPT = (
+    "Gather the important, distinctive features of the main subject in the reference image, "
+    "and take creative liberty with stylization to make an appealing voxelized brick model. "
+    "Use the image for identity and key colors rather than copying its anatomy. For a person "
+    "or character, design a charming collectible with a large expressive head, sculpted stepped "
+    "hair, large readable eyes with prominent upper eyelids or eyelashes, a small dimensional "
+    "nose, a simple cheerful mouth, a compact body and short legs. Avoid a flat rectangular "
+    "face and tall box torso. Keep an individual character under 300 finished bricks, aiming "
+    "at 200-250 by simplifying secondary details rather than making it taller; start around "
+    "12-14 studs wide, 7-9 studs deep and 18-22 brick layers tall. For other subjects, choose "
+    "appealing proportions suited to their distinctive features. Follow the size guidance "
+    "for subjects that need larger builds."
+)
 
 
 def _user_input(request: LlmToBricksRequest) -> UserInput:
@@ -204,8 +216,8 @@ DIRECT_SYSTEM_PROMPT = """You are an expert LEGO-compatible model designer using
 Create a complete, physically connected, stable model from the user's text and/or image. Return only
 official LDraw part references through the submit_ldr_model tool. Use common, currently available parts,
 standard integer LDraw color codes, valid type-1 transformation matrices, and useful 0 STEP boundaries.
-Orient the finished model upright with its lowest bricks at y=0. Prefer a practical 150-500 piece model;
-use fewer pieces for a simple subject and never exceed 5,000 pieces. Before each submit_ldr_model call,
+Orient the finished model upright with its lowest bricks at y=0. Never exceed 5,000 pieces.
+Before each submit_ldr_model call,
 write a friendly progress summary in 1-8 words, such as "Shaping the robot head".
 Use a new short summary for each update. Do not use MPD submodels, embedded
 files, custom geometry, stickers, base64, Markdown fences, or explanatory prose inside ldr_content."""
@@ -394,15 +406,62 @@ DESIGN_TOOLS = [
 
 def _design_size_hint(detail_level: float) -> str:
     target = int(min(64, max(12, round(detail_level))))
-    return (f"aim for about {target} studs across the largest horizontal dimension unless the subject "
-            "clearly needs a different size.")
+    return (f"{target} studs across the largest horizontal dimension is a detail reference, not a "
+            "required size. Choose a smaller grid when needed to meet the brick budget.")
+
+
+def _model_size_guidance(request: LlmToBricksRequest) -> str:
+    if request.generation_id or request._source_voxels:
+        return ("MODEL SIZE FOR EDITS\n"
+                "Preserve the existing model's scale unless the user requests a size change. "
+                "If the user asks for a bigger, larger, taller, or more detailed build, allow the "
+                "brick count to grow as needed; do not apply the new-model brick budget or shrink "
+                "the model to fit it. Keep the normal hard limits.")
+    return ("MODEL SIZE FOR NEW BUILDS\n"
+            "For a character, person, animal, or individual object, default to fewer than 300 "
+            "finished bricks (at most 299); aim for roughly 150-299 bricks, and use fewer for "
+            "simple subjects. Preserve the recognizable silhouette and key features at this "
+            "compact scale. This budget counts actual bricks after packing, not voxel cells. "
+            "Choose compact dimensions and simplify small details and color fragmentation. "
+            "Use more bricks only when the requested subject genuinely needs a larger build "
+            "for recognizability, structural stability, a complex scene with multiple objects, "
+            "or an explicit large-scale request. Before accepting or submitting the final model, "
+            "check the brick count and reduce an oversized individual subject unless that extra "
+            "size is necessary. Briefly explain any necessary larger build in a progress update.")
+
+
+def _direct_system_prompt(request: LlmToBricksRequest) -> str:
+    return DIRECT_SYSTEM_PROMPT + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request)
+
+
+def _reference_image_guidance(request: LlmToBricksRequest) -> str:
+    if not request.image_base64 or request.generation_id or request._source_voxels:
+        return ""
+    return ("\n\nREFERENCE IMAGE DESIGN\n"
+            "Use the image to identify the main subject and its distinctive silhouette, colors, "
+            "face, hair, clothing, markings, or defining object features. Preserve those identity "
+            "cues, but take creative liberty with proportions and simplify fine details to make "
+            "an appealing, recognizable voxelized brick model within the brick budget. Prioritize "
+            "a strong silhouette, readable features, and balanced proportions over a literal "
+            "copy of the image's geometry or pose. For people and characters, default to a charming "
+            "collectible interpretation with a large expressive head, sculpted stepped hair, "
+            "large readable eyes with prominent upper eyelids or eyelashes, a small dimensional "
+            "nose, a simple pleasant mouth, a compact body "
+            "and short legs. Shape the face in depth with inset and projecting features rather "
+            "than a flat pixel drawing; avoid a tall rectangular torso. Start small, often around "
+            "12-14 studs across and 18-22 brick layers tall, aiming at 200-250 finished bricks to "
+            "leave room within the under-300 budget. Simplify secondary details instead of making "
+            "the model taller. Adapt these proportions to the subject; do not force every subject "
+            "into the same style. Ignore the "
+            "background and incidental details unless requested. Explicit user instructions for "
+            "realistic proportions, an exact pose, or a particular style take precedence.")
 
 
 def _design_system_prompt(request: LlmToBricksRequest) -> str:
     return DESIGN_SYSTEM_PROMPT.format(
         size_hint=_design_size_hint(request.detail_level),
         palette=palette_prompt_text(),
-    )
+    ) + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request)
 
 
 @dataclass(frozen=True)
@@ -513,10 +572,18 @@ async def _generate_ldr_with_design(
                 reviews += 1
                 if on_thinking:
                     await on_thinking("\n\nReviewing the model from two angles.\n\n")
+                converted = await loop.run_in_executor(None, _convert_design_voxels, result.xyzrgb())
+                final_count = sum(line.startswith("1 ") for line in converted.ldr.splitlines())
                 preview = await loop.run_in_executor(None, render_preview_png, result.grid, result.unit, palette)
                 results.append(ToolResult(
                     call.id,
-                    result.summary(palette) + "\n\nReview the renders against the request (and reference"
+                    result.summary(palette) + "\n\n" + _model_size_guidance(request)
+                    + _reference_image_guidance(request)
+                    + f"\n\nThe final voxel-to-brick converter produces {final_count} bricks. "
+                    "Use this actual final count, rather than the draft builder's count, when "
+                    "checking the brick budget. Simplify or reduce an oversized design unless "
+                    "the size guidance permits a larger build."
+                    + "\n\nReview the renders against the request (and reference"
                     " image, if any). Call accept_design if it is right, or submit_brick_design with a"
                     " corrected complete design.",
                     image_png=preview,
@@ -538,7 +605,7 @@ async def _generate_ldr_direct(
     and floating parts, and the model gets DIRECT_FIX_ROUNDS chances to correct them."""
     best: Optional[str] = None
     async with httpx.AsyncClient(timeout=TIMEOUT_SECONDS) as client:
-        conversation = _open_conversation(request, client, DIRECT_SYSTEM_PROMPT, DIRECT_TOOLS)
+        conversation = _open_conversation(request, client, _direct_system_prompt(request), DIRECT_TOOLS)
         for round_number in range(DIRECT_FIX_ROUNDS + 1):
             turn = await conversation.send_stream(on_thinking) if on_thinking else await conversation.send()
             try:

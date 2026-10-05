@@ -1,4 +1,5 @@
 import { apiFetch } from './apiFetch';
+import type { OrderQuote } from '../utils/orderCheckout';
 /// <reference types="vite/client" />
 
 export interface CreateCheckoutSessionRequest {
@@ -7,11 +8,15 @@ export interface CreateCheckoutSessionRequest {
   quantity?: number;
   generationId?: string;
   brickowlCartId?: string;
+  uiMode?: 'hosted' | 'custom' | 'embedded' | 'elements';
+  customerEmail?: string;
 }
 
 export interface CreateCheckoutSessionResponse {
   session_id: string;
-  checkout_url: string;
+  checkout_url?: string | null;
+  client_secret?: string | null;
+  price_data?: OrderQuote;
 }
 
 // API Configuration
@@ -65,15 +70,11 @@ export class CreateCheckoutSessionApiService {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Create checkout session API error:', errorText);
         
         let errorMessage = 'Failed to create checkout session';
         try {
           const errorData = JSON.parse(errorText);
           errorMessage = errorData.error || errorData.detail || `API error: ${response.status} ${response.statusText}`;
-          if (errorData.details) {
-            console.error('Create checkout session API error details:', errorData.details);
-          }
         } catch (parseError) {
           // If it's not JSON, use the raw text
           errorMessage = errorText || `${response.status} ${response.statusText}`;

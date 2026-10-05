@@ -163,6 +163,17 @@ class NovaService:
             raise ValueError('Could not import the published Nova source archive') from None
         return await asyncio.to_thread(read_export, bytes(data), session)
 
+    async def instructions(self, mpd: str) -> str:
+        try:
+            response = await self.client.post('integration/instructions', content=mpd.encode('utf-8'),
+                headers={'Content-Type': 'text/plain'}, timeout=180)
+            response.raise_for_status()
+            if not response.headers.get('content-type', '').startswith('text/plain') or not response.text.strip():
+                raise ValueError('Nova instruction adapter is unavailable. Rebuild the private runtime.')
+            return response.text
+        except httpx.HTTPError:
+            raise ValueError('Could not load Nova construction steps') from None
+
     async def run(self, request, provider: str, save_session, on_output=None, previous: dict | None = None, *, on_progress=None) -> NovaResult:
         versions = await self.ready()
         model_id = await self.configure_model(request.model, provider, request.auth_mode)

@@ -17,6 +17,12 @@ describe('generation routes', () => {
     );
   });
 
+  it('opens a completed revision exactly without resuming the pending edit', () => {
+    expect(getGeneratedModelPath('completed?id=2', true)).toBe(
+      '/generated-model?id=completed%3Fid%3D2&exact=1',
+    );
+  });
+
   it('returns from the order page to the generation supplied in navigation state', () => {
     expect(getOrderReturnModelPath('order-generation', 'last-generation')).toBe(
       '/generated-model?id=order-generation',

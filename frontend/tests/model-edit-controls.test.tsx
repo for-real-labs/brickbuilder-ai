@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { ModelEditControls } from '../src/components/ModelEditControls';
 
 describe('ModelEditControls', () => {
-  it('shows a single Edit action and hides AI editing controls', () => {
+  it('labels the block editor action Manually Edit', () => {
     const container = document.createElement('div');
     const root = createRoot(container);
 
@@ -21,8 +21,8 @@ describe('ModelEditControls', () => {
         );
       });
 
-      expect(container.textContent).toBe('Edit');
-      expect(container.querySelector('[aria-label="Edit model"]')).not.toBeNull();
+      expect(container.textContent).toBe('Manually Edit');
+      expect(container.querySelector('[aria-label="Manually edit model"]')).not.toBeNull();
       expect(container.querySelector('[aria-label="AI edit model"]')).toBeNull();
       expect(container.querySelector('[aria-label="Thinking level"]')).toBeNull();
     } finally {
@@ -30,7 +30,7 @@ describe('ModelEditControls', () => {
     }
   });
 
-  it('opens the editor from the Edit action', () => {
+  it('opens the editor from the Manually Edit action', () => {
     const container = document.createElement('div');
     const root = createRoot(container);
     const onManualEdit = vi.fn();
@@ -47,7 +47,7 @@ describe('ModelEditControls', () => {
       });
 
       act(() => {
-        (container.querySelector('[aria-label="Edit model"]') as HTMLButtonElement).click();
+        (container.querySelector('[aria-label="Manually edit model"]') as HTMLButtonElement).click();
       });
       expect(onManualEdit).toHaveBeenCalledOnce();
     } finally {

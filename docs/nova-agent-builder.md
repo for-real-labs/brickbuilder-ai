@@ -31,7 +31,10 @@ sent to the browser. Setup preserves session data and the protected provider
 configuration across rebuilds. It replaces only this installation's managed
 container, whose name is derived from the installation directory.
 
-Open **Full set agent** on the BrickBuilder landing page. The selected API key
+Choose **All parts (beta)** in the mode dropdown below the landing-page prompt.
+**Basic bricks** uses the standard BrickBuilder LLM-to-bricks workflow. The model
+dropdown applies to either mode, and **Upload image** adds a reference for either
+workflow. Press **Create** inside the prompt bar to start a build. The selected API key
 is forwarded from the backend to the private Nova provider configuration.
 **Local provider connections** signs into Nova's own provider session once the
 runtime is installed. OpenAI uses Nova's device login; Claude uses Nova's SDK
@@ -70,8 +73,23 @@ does not send Nova models through the voxel builder.
 Request size changes in that composer too; the voxel resize controls are hidden
 for Nova models so subsequent edits keep using their original Nova workspace.
 
+**Building Instructions** uses BrickBuilder's existing step-by-step viewer,
+including Previous/Next, highlighting new parts, the per-step parts panel and
+PDF exports. The installed Nova parser expands the original MPD hierarchy into
+physical placements while retaining the subassemblies' authored steps, world
+transforms and inherited colors. Embedded part definitions remain available
+but are not counted as building placements. Existing Nova models recover their
+instructions from the saved source archive on first use; completed instruction
+geometry can be shared while conversations and provider configuration stay private.
+
+**Edit with AI** continues the original Nova conversation. The completed model
+stays visible during the edit; progress, cancellation and “This can take up to
+30 min. You can close this window safely.” appear in the top-left corner of the
+3D view. Manual voxel editing is unavailable for All parts models.
+
 The private `generation-output` bucket retains:
 
+- `nova-instructions.ldr`: cached physical placements with construction steps.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
 - `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
@@ -79,7 +97,10 @@ The private `generation-output` bucket retains:
 
 These files are read only through owner-checked backend operations. Public model
 links do not expose Nova sessions, conversations or private source archives.
-No new public database columns or migration are needed. Cancellation and timeout
+The `generations.mode` column stores `basic_bricks` or `all_parts`, including
+follow-up revisions. Apply `20261005000000_generation_mode.sql` before deploying
+the application update; it backfills existing models and keeps older API
+deployments assigning the correct mode through a database trigger. Cancellation and timeout
 also cancel the active Nova turn; its durable session remains available.
 Old generations from the previous PR implementation retain source downloads but
 do not have a resumable Nova session.

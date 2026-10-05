@@ -30,6 +30,7 @@ from .requests.resizeModel import resize_model, ResizeModelRequest, ResizeModelR
 from .requests.promptEditModel import prompt_edit_model, PromptEditModelRequest
 from .requests.llmRender import llm_render, llm_render_stream, LlmRenderRequest, LlmRenderResponse
 from .requests.llmToBricks import llm_to_bricks, llm_to_bricks_stream, LlmToBricksRequest
+from .requests.novaInstructions import get_nova_instructions
 from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
 from .requests.localProviders import router as local_providers_router
 from .utils.local_provider_connections import local_provider_connections, require_local_development
@@ -115,6 +116,19 @@ async def nova_to_bricks_endpoint(
 @app.get("/generation/{generation_id}/nova-source")
 async def nova_source_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
     return await get_nova_source(str(generation_id), auth_info)
+
+
+@app.get("/generation/{generation_id}/nova-instructions.ldr")
+async def nova_instructions_endpoint(generation_id: UUID):
+    return await get_nova_instructions(str(generation_id))
+
+
+@app.get("/.well-known/openai-apps-challenge", include_in_schema=False)
+async def openai_apps_challenge():
+    token = os.getenv("OPENAI_APPS_CHALLENGE", "")
+    if not re.fullmatch(r"[A-Za-z0-9_-]{20,200}", token):
+        raise HTTPException(status_code=404, detail="Not found")
+    return Response(content=token, media_type="text/plain", headers={"Cache-Control": "no-store"})
 
 
 @app.post("/generation/{generation_id}/cancel")

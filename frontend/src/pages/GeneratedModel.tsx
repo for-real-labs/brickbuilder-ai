@@ -50,18 +50,16 @@ import { UpdateModelApiService, UpdateModelResponse } from "../services/updateMo
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import { ModelEditControls } from "../components/ModelEditControls";
-import { StatCard } from "../components/StatCard";
+import { ModelOrderCard } from "../components/ModelOrderCard";
+import "./GeneratedModel.css";
 import { UpdateGenerationNameApiService } from "../services/updateGenerationNameApi";
 import { UpdateImagePreviewApiService } from "../services/updateImagePreviewApi";
 import { supabase } from "../lib/supabase";
 import posthog from "posthog-js";
 import { useAuth } from "../contexts/AuthContext";
 import {
-  HandCoins,
-  Package,
   Hammer,
   Mail,
-  Boxes,
   Star,
   Heart,
   Loader2,
@@ -74,7 +72,6 @@ import {
   FileText,
   Video,
   BookOpen,
-  ShoppingCart,
   X,
   LayoutDashboard,
   History,
@@ -133,7 +130,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="View BrickBuilder on GitHub"
-      className="inline-flex h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
+      className="hidden sm:inline-flex h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white sm:h-6 sm:w-6">
         <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -158,7 +155,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
       </a>
 
       {/* Login / Sign Up OR Account Menu */}
-      <div className="flex w-full items-center justify-end gap-2 sm:w-auto sm:gap-3">
+      <div className="flex w-auto items-center justify-end gap-2 sm:gap-3">
         <button
           className="hidden sm:inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
           onClick={() => onGuardedNavigate("/community")}
@@ -219,6 +216,7 @@ export default function GeneratedModel() {
   const [displayedGenerationId, setDisplayedGenerationId] = useState<string | null>(null);
   const [generationLoading, setGenerationLoading] = React.useState(false);
   const [pendingGeneration, setPendingGeneration] = React.useState<GetGenerationResponse | null>(null);
+  const [editGenerationId, setEditGenerationId] = React.useState<string | null>(null);
   const modelLoadAbortRef = React.useRef<AbortController | null>(null);
   const [generationError, setGenerationError] = React.useState<string | null>(null);
   const [currentGenerationId, setCurrentGenerationId] = React.useState<string | null>(null);
@@ -336,6 +334,8 @@ export default function GeneratedModel() {
     ldrContent?: string,
     modelName?: string,
     voxelSize?: number,
+    editSourceGenerationId?: string,
+    editSourceEndpoint?: string,
     generation_id?: string,
     storageKeys?: {
       LDR_CONTENT: string,
@@ -347,7 +347,22 @@ export default function GeneratedModel() {
   } | null;
 
   const isDemoModel = !!currentGenerationId && DEMO_MODEL_IDS.has(currentGenerationId);
-  const isNovaModel = pendingGeneration?.endpoint === 'novaToBricks';
+  const retainedEditSourceId = stateData?.editSourceGenerationId;
+  const canKeepModelVisible = Boolean(mpdContent && (
+    searchParams.get('id') === currentGenerationId || retainedEditSourceId === currentGenerationId ||
+    pendingGeneration?.previous_completed_generation_id === currentGenerationId
+  ));
+  const isModelEditing = isPromptEditing || Boolean(editGenerationId) ||
+    (generationLoading && canKeepModelVisible && retainedEditSourceId === currentGenerationId);
+  const showModelPage = !generationError && (!generationLoading || canKeepModelVisible);
+  const handleEditCancelled = () => {
+    modelLoadAbortRef.current?.abort();
+    refreshNotifications();
+    const previousId = pendingGeneration?.previous_completed_generation_id || retainedEditSourceId;
+    navigate(previousId ? `/generated-model?id=${encodeURIComponent(previousId)}&exact=1` : '/', { replace: true });
+  };
+  const isNovaModel = pendingGeneration?.endpoint === 'novaToBricks' ||
+    (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
   const hasNovaSource = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
 
@@ -411,9 +426,13 @@ export default function GeneratedModel() {
     const controller = new AbortController();
     modelLoadAbortRef.current = controller;
     setPendingGeneration(null);
-    setDisplayedGenerationId(null);
-    setSceneReady(false);
+    setEditGenerationId(null);
+    if (!canKeepModelVisible) {
+      setDisplayedGenerationId(null);
+      setSceneReady(false);
+    }
     const initializeModelData = async () => {
+      let previousCompletedGeneration: GetGenerationResponse | null = null;
       // Priority 1: Check for id parameter in URL (e.g., /generated-model?id=abc123)
       const urlGenerationId = searchParams.get('id');
       
@@ -421,6 +440,7 @@ export default function GeneratedModel() {
         setGenerationLoading(true);
         setGenerationError(null);
         
+        let editingExistingModel = false;
         try {
           // First check the current status
           const statusResponse = await GetGenerationApiService.getGeneration(urlGenerationId, controller.signal);
@@ -439,6 +459,25 @@ export default function GeneratedModel() {
           
           // If still processing, poll until complete
           if (isGenerationActive(statusResponse.status)) {
+            const previousId = statusResponse.previous_completed_generation_id;
+            if (previousId) {
+              setEditGenerationId(urlGenerationId);
+              previousCompletedGeneration = await GetGenerationApiService.getGeneration(previousId, controller.signal);
+              if (controller.signal.aborted) return;
+              if (currentGenerationId === previousId && mpdContent) {
+                setGenerationLoading(false);
+              } else {
+                const previous = previousCompletedGeneration;
+                setProcessedImageUrl(previous.processed_image_url);
+                setCurrentScaler(previous.detail_level ?? undefined);
+                if (controller.signal.aborted) return;
+                if (previous.status !== 'completed' || !previous.ldr_content) throw new Error('The previous model could not be loaded.');
+                await processCompletedGeneration(previousId, { ...previous, ldr_content: previous.ldr_content, prompt: previous.prompt || 'Your Model' });
+                if (controller.signal.aborted) return;
+              }
+              editingExistingModel = true;
+            }
+
             // Show preview image if available
             if (statusResponse.external_image_url) {
               setEditPreviewImageUrl(statusResponse.external_image_url);
@@ -471,6 +510,8 @@ export default function GeneratedModel() {
             
             // Process completed generation
             await processCompletedGeneration(urlGenerationId, generationData);
+            if (controller.signal.aborted) return;
+            setEditGenerationId(null);
             return;
           }
           
@@ -514,7 +555,13 @@ export default function GeneratedModel() {
         } catch (error) {
           if (controller.signal.aborted) return;
           console.error('Failed to fetch generation data from URL id:', error);
-          setGenerationError(`Failed to load generation: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          const message = error instanceof Error ? error.message : 'Unknown error';
+          if (editingExistingModel) {
+            setEditPromptError(message);
+            if (previousCompletedGeneration) setPendingGeneration(previousCompletedGeneration);
+          }
+          else setGenerationError(`Failed to load generation: ${message}`);
+          setEditGenerationId(null);
           setGenerationLoading(false);
           return;
         }
@@ -664,31 +711,13 @@ export default function GeneratedModel() {
         problematic_xyzrgb_url: string | null;
       }
     ) => {
-      // Store generation ID for edit mode
-      setCurrentGenerationId(generationId);
-      
-      // Update xyzrgb URL if available
-      if (data.xyzrgb_url) {
-        setXyzrgbUrl(data.xyzrgb_url);
-      }
-      
-      // Update problematic xyzrgb URL if available
-      if (data.problematic_xyzrgb_url) {
-        setProblematicXyzrgbUrl(data.problematic_xyzrgb_url);
-      }
-      
-      // Set LDR content
-      setLdrContent(data.ldr_content);
-      
-      // Set model name from prompt
       const fetchedModelName = data.name || data.prompt || "Your Model";
-      setModelName(fetchedModelName);
-      
+
       // Get MPD content from URL or convert LDR to MPD
       let mpdContent: string | null = null;
       if (data.mpd_url) {
         try {
-          const mpdResponse = await fetch(data.mpd_url);
+          const mpdResponse = await fetch(data.mpd_url, { signal: controller.signal });
           if (mpdResponse.ok) {
             mpdContent = await mpdResponse.text();
           }
@@ -697,6 +726,7 @@ export default function GeneratedModel() {
         }
       }
       
+      if (controller.signal.aborted) return;
       if (!mpdContent) {
         try {
           const authToken = (await supabase.auth.getSession()).data.session?.access_token;
@@ -713,10 +743,14 @@ export default function GeneratedModel() {
       
       if (controller.signal.aborted) return;
       if (!mpdContent) throw new Error("The model is saved, but its preview could not be loaded. Please try again shortly.");
+      // Keep the previous model intact until the replacement preview is ready.
+      setCurrentGenerationId(generationId);
+      setXyzrgbUrl(data.xyzrgb_url);
+      setProblematicXyzrgbUrl(data.problematic_xyzrgb_url);
+      setLdrContent(data.ldr_content);
+      setModelName(fetchedModelName);
       setMpdContent(mpdContent);
-      
-      if (controller.signal.aborted) return;
-      if (mpdContent) setDisplayedGenerationId(generationId);
+      setDisplayedGenerationId(generationId);
       setGenerationLoading(false);
     };
     
@@ -1581,7 +1615,7 @@ export default function GeneratedModel() {
   }, [mpdContent, accessToken, currentGenerationId, modelName]);
 
   const handlePromptEditModel = React.useCallback(async () => {
-    if (isPromptEditing || isResizing || isSavePolling) return;
+    if (isModelEditing || isResizing || isSavePolling) return;
     if (!editPrompt.trim()) {
       console.error('No prompt provided for editing');
       return;
@@ -1614,7 +1648,7 @@ export default function GeneratedModel() {
       localStorage.setItem('lastGenerationId', newGenerationId);
       if (!currentUser) recordAnonymousGeneration(newGenerationId);
       refreshNotifications();
-      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true });
+      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? 'novaToBricks' : 'llmToBricks' } });
       setEditPrompt('');
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
@@ -1624,7 +1658,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isPromptEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -1642,6 +1676,7 @@ export default function GeneratedModel() {
   };
 
   const navigateToOrder = () => {
+    if (isModelEditing) return;
     guardUnsavedChanges(() => navigate("/order", {
       state: {
         name: modelName,
@@ -1709,6 +1744,7 @@ export default function GeneratedModel() {
   };
 
   const handleEditModelClick = async () => {
+    if (isModelEditing || isNovaModel) return;
     posthog.capture('generated_model_edit_button_clicked', {
       generation_id: currentGenerationId,
       action: showVoxelEditor ? 'exit_editor' : 'enter_editor',
@@ -1808,12 +1844,8 @@ export default function GeneratedModel() {
     }, [currentGenerationId, hasNovaSource, isDownloadingNovaSource, downloadBlob, getSafeExportName]);
 
 
-  // Summer sale: 50% off everything (parts + shipping). The price returned by
-  // the API already includes shipping, so we simply halve the total.
-  const saleDiscountedPrice = priceData ? priceData.total_price * 0.5 : 0;
-
   return (
-    <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
+    <div className="generated-model-page min-h-screen text-slate-900" style={{ backgroundColor: "#f7f8fa" }}>
       <SEO
         title={`Generated Model — ${modelName}`}
         description="View your generated model, pricing, steps, and pieces."
@@ -1830,20 +1862,20 @@ export default function GeneratedModel() {
         onSuccess={() => { void handleCommunityLoginSuccess(); }}
       />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-3">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-28 lg:pb-16 pt-3">
         <Header onGuardedNavigate={(path) => guardUnsavedChanges(() => navigate(path))} />
         
         {/* Generate Another Button */}
         <button
           onClick={() => navigate('/')}
-          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mt-4 mb-2 transition-colors"
+          className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mt-3 mb-1 transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Generate Another
         </button>
 
         {/* Loading state when fetching generation by ID */}
-        {generationLoading && (
+        {generationLoading && !canKeepModelVisible && (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200">
               <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
@@ -1855,12 +1887,7 @@ export default function GeneratedModel() {
             </div>
             {pendingGeneration && isGenerationActive(pendingGeneration.status) && <CancelGenerationButton
               generationId={pendingGeneration.generation_id} isEdit={(pendingGeneration.version ?? 1) > 1}
-              onCancelled={() => {
-                modelLoadAbortRef.current?.abort();
-                refreshNotifications();
-                navigate(pendingGeneration.previous_completed_generation_id
-                  ? `/generated-model?id=${encodeURIComponent(pendingGeneration.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
-              }} />}
+              onCancelled={handleEditCancelled} />}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
           </div>
@@ -1894,15 +1921,16 @@ export default function GeneratedModel() {
           </div>
         )}
 
-        {/* Main content - only show when not loading and no error */}
-        {!generationLoading && !generationError && (
+        {/* Keep the completed model page visible while its edit runs. */}
+        {showModelPage && (
           <>
-        <section className="mt-3 mb-5 sm:mb-6">
+        <section className="model-workspace-title mt-2 mb-4">
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Your brick model</p>
           <GenerationTitle
             key={currentGenerationId || 'local'}
             generationId={currentGenerationId || undefined}
             name={modelName}
-            canEdit={canToggleCommunity && !isSavePolling}
+            canEdit={canToggleCommunity && !isSavePolling && !isModelEditing}
             accessToken={accessToken || undefined}
             onSaved={name => {
               setModelName(name);
@@ -1912,9 +1940,11 @@ export default function GeneratedModel() {
           />
         </section>
 
+<div className={`model-workspace ${showVoxelEditor ? "model-workspace-manual" : ""}`}>
+<div className="model-workspace-preview">
 {/* Voxel Editor - shown when edit mode is active */}
 {showVoxelEditor && xyzrgbContent ? (
-  <section className="mt-6 md:mt-8 lg:mt-10">
+  <section className="model-preview-section">
     <div className="space-y-4">
       {/* Voxel editor */}
       <figure className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
@@ -1950,7 +1980,7 @@ export default function GeneratedModel() {
   </section>
 ) : (
   /* Angle gallery with extra vertical spacing - hidden when voxel editor is shown */
-  <section className="mt-2 md:mt-3">
+  <section className="model-preview-section">
     <div className="grid grid-cols-1 gap-4">
       {/* View angle screenshots disabled
       {angles.slice(0, 2).map((a, idx) => {
@@ -1993,8 +2023,7 @@ export default function GeneratedModel() {
       {/* 3D viewer - always visible */}
       <figure className="rounded-2xl border border-slate-200 bg-white p-2 shadow-sm">
         <div
-          className="relative w-full overflow-hidden rounded-xl bg-slate-50"
-          style={{ aspectRatio: '3 / 2', maxHeight: '50vh' }}
+          className="model-preview-canvas relative w-full overflow-hidden rounded-xl bg-slate-50"
         >
           <div ref={exportMenuRef} className="absolute right-3 top-3 z-20">
             <button
@@ -2195,6 +2224,15 @@ export default function GeneratedModel() {
                 onModelLoaded={() => setSceneReady(true)}
                 onExportCaptureReady={handleExportCaptureReady}
                 animateModelBuild
+                topLeftOverlay={isModelEditing ? (
+                  <div className="w-fit max-w-full rounded-xl bg-white/90 px-3 pb-3 shadow-sm backdrop-blur-sm">
+                    {isNovaModel && <p className="pt-3 text-sm text-slate-600">This can take up to 30 min. You can close this window safely.</p>}
+                    {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
+                      ? <LlmGenerationOutput generationId={editGenerationId} active />
+                      : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
+                    {editGenerationId && <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />}
+                  </div>
+                ) : undefined}
                 /* onScreenshotsReady={setScreenshots} — disabled */
               />
             ) : (
@@ -2204,16 +2242,79 @@ export default function GeneratedModel() {
         </div>
         {novaSourceError && <p role="alert" className="mt-2 break-words px-2 text-center text-xs text-red-600">{novaSourceError}</p>}
         <figcaption className="mt-1 text-xs text-slate-500 text-center">
-          {/* Click/touch and drag to rotate, scroll/pinch to zoom */}
+          Drag to rotate · Pinch or scroll to zoom
         </figcaption>
       </figure>
     </div>
   </section>
 )}
 
+
+</div>
+<aside className="model-workspace-sidebar" aria-label="Refine and order your model">
+            {!isNovaModel && (showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
+              isManualEditorOpen={showVoxelEditor}
+              manualLoading={xyzrgbLoading}
+              disabled={isModelEditing}
+              onManualEdit={() => { void handleEditModelClick(); }}
+            />}
+
+        {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
+          <VoxelPromptEditor
+            onSuggestionSelected={suggestion => posthog.capture('generated_model_edit_suggestion_clicked', {
+              generation_id: currentGenerationId, is_demo_model: isDemoModel, suggestion,
+            })}
+            prompt={editPrompt}
+            onPromptChange={setEditPrompt}
+            onSubmit={() => { void handlePromptEditModel(); }}
+            loading={isModelEditing}
+            disabled={isResizing || isSavePolling || isModelEditing}
+            error={editPromptError}
+            manualEditControl={isNovaModel ? undefined : <ModelEditControls
+              isManualEditorOpen={false}
+              manualLoading={xyzrgbLoading || isPromptEditing || isResizing || isSavePolling}
+              disabled={isModelEditing}
+              onManualEdit={() => { void handleEditModelClick(); }}
+            />}
+          />
+        )}
+
+          <ModelOrderCard
+            quote={priceData}
+            loading={priceLoading || isSavePolling}
+            updating={isModelEditing || isResizing}
+            error={priceError}
+            onOrder={source => {
+              posthog.capture('generated_model_order_clicked', {
+                generation_id: currentGenerationId, is_demo_model: isDemoModel, source,
+              });
+              posthog.capture('generated_model_stat_action_clicked', {
+                action: 'order', generation_id: currentGenerationId, is_demo_model: isDemoModel, source,
+              });
+              navigateToOrder();
+            }}
+            onResize={priceData && !isDemoModel && !isNovaModel ? () => {
+              posthog.capture('generated_model_resize_price_clicked', {
+                generation_id: currentGenerationId, is_demo_model: isDemoModel,
+              });
+              setShowPriceResize(prev => !prev);
+            } : undefined}
+          />
+          {!isNovaModel && showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
+            <section className="model-refine-card" aria-label="Adjust kit size">
+              <ResizeScaler
+                onResize={handleResizeModel}
+                disabled={!mpdContent || isModelEditing}
+                isResizing={isResizing}
+                scaler={currentScaler}
+                onScalerChange={setCurrentScaler}
+              />
+            </section>
+          )}
+</aside>
         {/* Sections below the 3D preview fade in once the scene is ready */}
         <div
-          className={sceneReady ? "below-preview-sequence" : ""}
+          className={`model-workspace-secondary ${sceneReady ? "below-preview-sequence" : ""}`}
           style={sceneReady ? undefined : { opacity: 0 }}
         >
         {/* Resize Scaler - shown outside edit mode */}
@@ -2221,7 +2322,7 @@ export default function GeneratedModel() {
           <section className="mt-12 max-w-md mx-auto space-y-6">
             <ResizeScaler
               onResize={handleResizeModel}
-              disabled={!mpdContent || isPromptEditing}
+              disabled={!mpdContent || isModelEditing}
               isResizing={isResizing}
               scaler={currentScaler}
               onScalerChange={setCurrentScaler}
@@ -2229,37 +2330,16 @@ export default function GeneratedModel() {
           </section>
         )}
 
-        {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
-          <VoxelPromptEditor
-            prompt={editPrompt}
-            onPromptChange={setEditPrompt}
-            onSubmit={() => { void handlePromptEditModel(); }}
-            loading={isPromptEditing}
-            disabled={isResizing || isSavePolling}
-            error={editPromptError}
-          />
-        )}
 
         {/* Centered model actions */}
         <section className="relative z-40 mt-4 mb-4 flex flex-col items-center gap-3 px-4">
-          {/* Tip nudging users toward the Block Editor (hidden in edit mode) */}
-          {!isNovaModel && !showVoxelEditor && (
-            <p className="text-sm text-slate-500 text-center mb-2 max-w-2xl">
-              Not what you were expecting? Try editing your model!
-            </p>
-          )}
-          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
-            {!isNovaModel && <ModelEditControls
-              isManualEditorOpen={showVoxelEditor}
-              manualLoading={xyzrgbLoading || isPromptEditing}
-              onManualEdit={() => { void handleEditModelClick(); }}
-            />}
+          <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
             {/* Instructions button — white with grey border, turns red on hover */}
             <button
               type="button"
               aria-label="View instructions"
               onClick={navigateToInstructions}
-              disabled={!currentGenerationId || isSavePolling || isPromptEditing}
+              disabled={!currentGenerationId || isSavePolling}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-300 bg-white px-7 font-semibold text-black transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-44"
             >
               {isSavePolling ? (
@@ -2270,13 +2350,10 @@ export default function GeneratedModel() {
               ) : (
                 <>
                   <BookOpen size={16} />
-                  Building Instructions
+                  View Instructions
                 </>
               )}
             </button>
-          </div>
-
-          <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-6">
             {isCommunity && (
               <button
                 type="button"
@@ -2313,7 +2390,7 @@ export default function GeneratedModel() {
               <button
                 type="button"
                 aria-label={isCommunity ? 'Remove from community' : 'Post to community'}
-                disabled={!currentGenerationId || communityToggleLoading || isSavePolling}
+                disabled={!currentGenerationId || communityToggleLoading || isSavePolling || isModelEditing}
                 onClick={() => {
                   if (!currentUser) {
                     setPendingCommunityPost(true);
@@ -2323,7 +2400,7 @@ export default function GeneratedModel() {
                   guardUnsavedChanges(() => { void handleToggleCommunity(); });
                 }}
                 className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold transition-all duration-150 sm:w-auto sm:min-w-44 ${
-                  !currentGenerationId || communityToggleLoading || isSavePolling
+                  !currentGenerationId || communityToggleLoading || isSavePolling || isModelEditing
                     ? 'bg-white text-gray-400 border-gray-200 cursor-not-allowed'
                     : 'bg-white text-black border-gray-300 cursor-pointer hover:border-[#f44336] hover:text-[#f44336] hover:scale-[1.03] hover:shadow-lg'
                 }`}
@@ -2342,32 +2419,8 @@ export default function GeneratedModel() {
               </button>
             )}
 
-            {/* Order is the primary final action. */}
-            <button
-              type="button"
-              aria-label="Order my kit"
-              disabled={priceLoading || isSavePolling}
-              onClick={navigateToOrder}
-              className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 px-7 font-semibold text-white shadow-lg shadow-[#f44336]/25 transition-all duration-150 sm:w-auto sm:min-w-44 ${
-                priceLoading || isSavePolling
-                  ? 'cursor-not-allowed border-red-300 bg-red-300 opacity-70'
-                  : 'cursor-pointer border-[#f44336] bg-[#f44336] hover:scale-[1.03] hover:border-[#ff6b6b] hover:bg-[#ff6b6b]'
-              }`}
-            >
-              {priceLoading || isSavePolling ? (
-                <>
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/50 border-t-white"></div>
-                  Order my Kit!
-                </>
-              ) : (
-                <>
-                  <ShoppingCart size={16} />
-                  Order
-                </>
-              )}
-            </button>
           </div>
-          
+
           {/* Error message for voxel editor */}
           {xyzrgbError && (
             <p className="text-red-500 text-sm">{xyzrgbError}</p>
@@ -2380,158 +2433,8 @@ export default function GeneratedModel() {
           )}
         </section>
 
-        {/* Congrats line */}
-        <section className="mt-12">
-          {/* <p className="text-base text-center md:text-left">
-            <span className="font-semibold">Congratulations:</span>{" "}
-            <span className="text-slate-700">your model is generated.</span>
-          </p> */}
-        </section>
-
-        {/* Resize panel — shown above the stats badges when "Try resizing!" is pressed */}
-        {!isNovaModel && showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
-          <section className="mt-6 max-w-xs mx-auto">
-            <ResizeScaler
-              onResize={handleResizeModel}
-              disabled={!mpdContent || isPromptEditing}
-              isResizing={isResizing}
-              scaler={currentScaler}
-              onScalerChange={setCurrentScaler}
-            />
-          </section>
-        )}
-
-        {/* Stats grid with hover animation */}
-        <section className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-          <div className="flex flex-col">
-            <StatCard
-              icon={(priceLoading || isSavePolling) ? (
-                <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-              ) : (
-                <HandCoins className="h-5 w-5 text-black" />
-              )}
-              title={
-                (priceLoading || isSavePolling)
-                  ? "Estimating Price..." 
-                  : priceError 
-                    ? "Price Unavailable"
-                    : priceData 
-                      ? (
-                        <span className="flex items-baseline gap-2">
-                          <span className="text-slate-400 line-through">${priceData.total_price.toFixed(2)}</span>
-                          <span>${saleDiscountedPrice.toFixed(2)} {priceData.currency}</span>
-                        </span>
-                      )
-                      : ""
-              }
-              sub={
-                (priceLoading || isSavePolling)
-                  ? "Loading price estimate..."
-                  : priceError
-                    ? "Unable to calculate pricing"
-                    : priceData
-                      ? "Total cost + shipping"
-                      : ""
-              }
-              actionLabel="Order this model"
-              disabled={priceLoading || isSavePolling || !priceData}
-              onClick={() => {
-                posthog.capture('generated_model_stat_action_clicked', {
-                  action: 'order',
-                  generation_id: currentGenerationId,
-                  is_demo_model: isDemoModel,
-                });
-                navigateToOrder();
-              }}
-            />
-            {/* Too expensive? Try resizing! */}
-            {!isNovaModel && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
-              <div className="mt-2 text-center">
-                <p className="text-sm text-slate-500">
-                  Too expensive?{' '}
-                  <button
-                    type="button"
-                    onClick={() => setShowPriceResize(prev => !prev)}
-                    className="text-[#f44336] font-semibold hover:underline cursor-pointer bg-transparent border-none p-0 text-sm"
-                  >
-                    Try resizing!
-                  </button>
-                </p>
-              </div>
-            )}
-          </div>
-          <StatCard
-            icon={(priceLoading || isSavePolling) ? (
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            ) : (
-              <Package className="h-5 w-5 text-black" />
-            )}
-            title={
-              (priceLoading || isSavePolling)
-                ? "Counting Pieces..."
-                : priceData 
-                  ? `${priceData.total_parts} Pieces`
-                  : ""
-            }
-            sub={
-              (priceLoading || isSavePolling)
-                ? "Loading piece count..."
-                : priceData 
-                  ? ""
-                  : ""
-            }
-            actionLabel="View building instructions"
-            disabled={!currentGenerationId || isSavePolling || !priceData}
-            onClick={() => {
-              posthog.capture('generated_model_stat_action_clicked', {
-                action: 'view_instructions',
-                generation_id: currentGenerationId,
-                is_demo_model: isDemoModel,
-                source: 'pieces',
-              });
-              navigateToInstructions();
-            }}
-          />
-          <StatCard
-            icon={(priceLoading || isSavePolling) ? (
-              <div className="w-5 h-5 border-2 border-gray-300 border-t-black rounded-full animate-spin"></div>
-            ) : (
-              <Boxes className="h-5 w-5 text-black" />
-            )}
-            title={
-              (priceLoading || isSavePolling)
-                ? "Calculating Weight..."
-                : priceData
-                  ? `${priceData.total_weight.toFixed(2)} kg`
-                  : ""
-            }
-            sub={
-              (priceLoading || isSavePolling)
-                ? "Loading weight..."
-                : priceData
-                  ? "Total weight"
-                  : ""
-            }
-            actionLabel="View building instructions"
-            disabled={!currentGenerationId || isSavePolling || !priceData}
-            onClick={() => {
-              posthog.capture('generated_model_stat_action_clicked', {
-                action: 'view_instructions',
-                generation_id: currentGenerationId,
-                is_demo_model: isDemoModel,
-                source: 'weight',
-              });
-              navigateToInstructions();
-            }}
-          />
-        </section>
-
-        {/* Footer action bar */}
-        <section className="mt-12 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-          </div>
-        </section>
         </div>
+</div>
           </>
         )}
 

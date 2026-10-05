@@ -33,6 +33,7 @@
  *   RAILWAY_PREVIEW_RETRY_DELAY_MS - delay between attempts in ms (default 5000)
  */
 import { spawnSync } from 'node:child_process';
+import { prerenderLegalPages } from './legal-prerender.mjs';
 import {
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_RETRY_DELAY_MS,
@@ -45,7 +46,7 @@ function log(message) {
   console.log(`[build] ${message}`);
 }
 
-function runViteBuild(env) {
+async function runViteBuild(env) {
   const result = spawnSync('npx', ['vite', 'build'], {
     stdio: 'inherit',
     env: {
@@ -54,7 +55,13 @@ function runViteBuild(env) {
       VITE_CHANGE_REQUEST_SHA: process.env.VERCEL_GIT_COMMIT_SHA || '',
     },
   });
-  process.exit(result.status ?? 1);
+  if (result.status !== 0) process.exit(result.status ?? 1);
+  try {
+    await prerenderLegalPages();
+  } catch (error) {
+    console.error('[build] Legal page rendering failed:', error);
+    process.exit(1);
+  }
 }
 
 function readPositiveInteger(value, fallback, name) {
@@ -73,7 +80,7 @@ async function main() {
 
   if (vercelEnv !== 'preview' || !prId) {
     log('Not a PR preview build; skipping Railway PR backend lookup.');
-    runViteBuild(process.env);
+    await runViteBuild(process.env);
     return;
   }
 
@@ -86,7 +93,7 @@ async function main() {
       'RAILWAY_API_TOKEN and/or RAILWAY_PROJECT_ID are not set; skipping. ' +
         'Set them as Vercel project env vars to enable per-PR backend resolution.'
     );
-    runViteBuild(process.env);
+    await runViteBuild(process.env);
     return;
   }
 
@@ -161,19 +168,19 @@ async function main() {
     log,
   });
   if (!backendUrl) {
-    runViteBuild(process.env);
+    await runViteBuild(process.env);
     return;
   }
 
   log(`Resolved PR backend to ${backendUrl}; building with it.`);
-  runViteBuild({
+  await runViteBuild({
     ...process.env,
     VITE_API_MODE: 'railway_staging',
     VITE_RAILWAY_API_URL_STAGING: backendUrl,
   });
 }
 
-main().catch((err) => {
+main().catch(async (err) => {
   log(`Unexpected error, falling back to default build: ${err}`);
-  runViteBuild(process.env);
+  await runViteBuild(process.env);
 });

@@ -1,5 +1,5 @@
-export const getGeneratedModelPath = (generationId: string): string =>
-  `/generated-model?id=${encodeURIComponent(generationId)}`;
+export const getGeneratedModelPath = (generationId: string, exact = false): string =>
+  `/generated-model?id=${encodeURIComponent(generationId)}${exact ? '&exact=1' : ''}`;
 
 export const getOrderReturnModelPath = (
   orderGenerationId: string | undefined,
