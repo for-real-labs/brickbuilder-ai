@@ -181,7 +181,10 @@ null because their original completion time cannot be inferred from `updated_at`
 By default (`LLM_TO_BRICKS_MODE=design`) the model does not write LDraw
 coordinates. It submits a voxel design (boxes, ellipsoids, cylinders and
 per-layer pixel maps on a stud grid, in brick or plate layers, using only colors
-from `gobrick_colors.csv`) and `src/utils/brick_design.py` builds it:
+from `gobrick_colors.csv`). This skips image-to-3D reconstruction and mesh
+voxelization, while still using colored voxels internally.
+
+`src/utils/brick_design.py` builds a draft for validation and LLM review:
 
 1. rasterize the shapes; reject parts that float (reported in design coordinates)
 2. hollow solid volumes to a 2-stud shell (open bottom)
@@ -195,6 +198,14 @@ from `gobrick_colors.csv`) and `src/utils/brick_design.py` builds it:
 6. order the build steps with the voxel2brick stability reordering so no step
    contains a floating part (overhangs are placed after what they hang from)
 
+The accepted design's solid voxels are then passed to
+`_convert_design_voxels()` in `src/requests/llmToBricks.py`. It writes an XYZRGB
+file and calls the shared `glb2brick` / `voxel2brick` pipeline with
+`xyzrgb_path`, bypassing GLB voxelization. This converter performs the final
+brick packing and support repair used by image-based builds; its LDR, rather
+than the draft packer's output, becomes the final artifact. The LLM review
+receives the converter's actual brick count to check the requested budget.
+
 The model's solid voxels (un-hollowed, without the plate base; plate layers
 merged three to a brick layer) are saved in the voxel pipeline's xyzrgb format
 as both `xyzrgb_url`, which the block editor loads and its saves replace, and
@@ -207,7 +218,8 @@ the model as tool errors (`LLM_TO_BRICKS_DESIGN_MAX_ATTEMPTS`, default `3`); on
 the last attempt unsupported bricks are recolored or dropped instead of failing.
 The model then reviews the renders and accepts or revises
 (`LLM_TO_BRICKS_DESIGN_REVIEW_ROUNDS`, default `1`; `0` skips the review).
-`detail_level` is used as the target size in studs (clamped to 12-64).
+`detail_level` supplies a size reference in studs (clamped to 12-64); the model
+may choose a smaller grid to meet the brick budget.
 
 `LLM_TO_BRICKS_MODE=direct` keeps the original raw-LDraw path. Its output is
 audited with `audit_ldraw` (overlaps, off-grid and floating bricks/plates) and
