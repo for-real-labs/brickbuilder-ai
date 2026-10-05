@@ -12,7 +12,7 @@
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     {
-      "source": "/((?!sitemap\\.xml|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|assets/).*)",
+      "source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|assets/).*)",
       "destination": "/index.html"
     }
   ]
