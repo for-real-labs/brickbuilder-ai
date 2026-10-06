@@ -42,7 +42,8 @@ def test_source_and_sessions_recheck_owner_before_accessing_runtime_or_storage(m
 
 
 def test_resume_cannot_bypass_native_loopback_guard(monkeypatch):
-    monkeypatch.setattr(module, 'generation_storage', object())
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value={
+        'user_id': 'owner', 'user_type': 'anonymous'})))
     monkeypatch.setattr(module, '_owned_session', AsyncMock(return_value={
         'chat_id': 'chat', 'model': 'gpt-5.5', 'auth_mode': 'native', 'tenant': 'a' * 64}))
     request = module.NovaToBricksRequest(prompt='red roof', source_generation_id='source')
@@ -107,3 +108,74 @@ def test_failed_nova_turn_does_not_charge(monkeypatch, message):
     asyncio.run(module.process_nova_to_bricks_task('generation', request, {'user_email': 'test'}, {}))
     charge.assert_not_awaited()
     storage.update_status.assert_awaited_with('generation', 'failed', message)
+
+
+@pytest.mark.parametrize('status,endpoint', [('processing', 'novaToBricks'), ('failed', 'novaToBricks'), ('completed', 'llmToBricks')])
+def test_foreign_edit_requires_completed_nova_geometry(monkeypatch, status, endpoint):
+    download = AsyncMock()
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'authenticated',
+            'status': status, 'endpoint': endpoint, 'ldr_url': 'public-model'}),
+        download_file_from_storage=download))
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert exc.value.status_code == 404
+    download.assert_not_awaited()
+
+
+def test_foreign_edit_copies_only_public_geometry_and_keeps_callers_provider(monkeypatch):
+    geometry = b'0 !COLOUR EggWhite CODE 100027 VALUE #EFDBB2 EDGE #333333\n1 100027 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'
+    download = AsyncMock(return_value=geometry)
+    private_session = AsyncMock()
+    monkeypatch.setattr(module, '_owned_session', private_session)
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
+        download_file_from_storage=download))
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source', model='gpt-5.5')
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert request._nova_source_ldr == geometry.decode()
+    assert request._nova_session is None and request.model == 'gpt-5.5'
+    download.assert_awaited_once_with('public-model')
+    private_session.assert_not_awaited()
+
+
+def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
+    storage = SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
+        download_file_from_storage=AsyncMock(return_value=b'1 19 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'),
+        create_generation=AsyncMock(return_value='new-generation'))
+    class Service:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        ready = AsyncMock()
+        configure_model = AsyncMock()
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
+    monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **kwargs: {
+        'user_email': 'caller@example.com', 'is_anonymous': False})
+    def start(generation, coroutine):
+        coroutine.close()
+        future = asyncio.get_running_loop().create_future()
+        future.set_result(None)
+        return future
+    monkeypatch.setattr(module, 'start_generation_task', start)
+    request = module.NovaToBricksRequest(prompt='add a door', source_generation_id='original')
+    result = asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))
+    assert result.generation_id == 'new-generation'
+    saved = storage.create_generation.call_args.kwargs
+    assert saved['user_id'] == 'caller' and saved['user_type'] == 'authenticated'
+    assert saved['edit_generation_id'] is None
+
+
+def test_completed_owned_model_with_lost_session_can_import_geometry(monkeypatch):
+    monkeypatch.setattr(module, '_owned_session', AsyncMock(side_effect=HTTPException(409, 'session unavailable')))
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
+        download_file_from_storage=AsyncMock(return_value=b'public geometry')))
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert request._nova_source_ldr == 'public geometry' and request._nova_session is None

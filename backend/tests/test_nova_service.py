@@ -192,3 +192,42 @@ def test_upstream_activity_is_shown_without_repeating_heartbeat_phases():
     asyncio.run(run())
     assert output == ['Running LDraw Nova\n\n', 'Reviewing a rendered image\n\n']
     assert progress[-1] == 'Reviewing a rendered image'
+
+
+def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'callers-key')
+    geometry = '1 19 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'
+    sessions, calls = [], []
+    chat_reads = 0
+    def transport(req):
+        nonlocal chat_reads
+        calls.append(req.url.path)
+        if req.url.path == '/integration/runtime': return httpx.Response(200, json=VERSIONS)
+        if req.url.path == '/api/llm-models' and req.method == 'GET': return httpx.Response(200, json={'models': []})
+        if req.url.path == '/api/llm-models': return httpx.Response(200, json={'id': 'caller-model'})
+        if req.url.path == '/integration/import':
+            assert json.loads(req.content) == {'model': geometry, 'llm_model_id': 'caller-model'}
+            return httpx.Response(200, json={'id': 'copy-chat', 'model_id': 'seed'})
+        if req.url.path == '/api/chats/copy-chat':
+            chat_reads += 1
+            models = {'seed': {'id': 'seed', 'created_at': 1}}
+            if chat_reads > 1: models['edited'] = {'id': 'edited', 'created_at': 2}
+            return httpx.Response(200, json={'chat': {'running': False}, 'models': models})
+        if req.url.path.endswith('/messages'):
+            assert sessions[0]['model_id'] == 'seed'
+            assert json.loads(req.content)['text'] == 'add a door'
+            return httpx.Response(202, json={})
+        if req.url.path.endswith('/stream'): return httpx.Response(200, text='event: done\ndata: {}\n\n')
+        if req.url.path == '/integration/chats/copy-chat/export/edited':
+            return httpx.Response(200, content=archive(), headers={'content-type': 'application/zip'})
+        pytest.fail(str(req.url))
+    async def run():
+        async def save(session): sessions.append(dict(session))
+        request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='add a door',
+            image_base64=None, _nova_source_ldr=geometry)
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(transport))) as service:
+            result = await service.run(request, 'openai', save)
+            assert result.session['chat_id'] == 'copy-chat' and result.session['model_id'] == 'edited'
+    asyncio.run(run())
+    assert '/api/chats' not in calls
+    assert sessions[-1]['model_id'] == 'edited'

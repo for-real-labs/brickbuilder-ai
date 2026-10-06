@@ -46,6 +46,40 @@ def _generation_timeout() -> float | None:
 class NovaToBricksRequest(LlmToBricksRequest):
     auth_mode: Literal["api_key", "native"] = "api_key"
     _nova_session: dict | None = PrivateAttr(default=None)
+    _nova_source_ldr: str | None = PrivateAttr(default=None)
+
+
+async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
+    source = await generation_storage.get_generation(request.generation_id)
+    if not source:
+        raise HTTPException(404, 'Generation not found')
+    try:
+        require_generation_access(source, auth_info)
+        owned = True
+    except HTTPException:
+        owned = False
+    if owned:
+        try:
+            request._nova_session = await _owned_session(request.generation_id, auth_info)
+        except HTTPException as exc:
+            if exc.status_code != 409 or source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
+                raise
+        else:
+            request.model = request._nova_session['model']
+            request.auth_mode = request._nova_session['auth_mode']
+            return
+    # Completed geometry is public; sessions and source archives are not.
+    if source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
+        raise HTTPException(404, 'Generation not found')
+    if not source.get('ldr_url'):
+        raise HTTPException(409, 'This model has no saved geometry to copy')
+    content = await generation_storage.download_file_from_storage(source['ldr_url'])
+    if not content or len(content) > 16 * 1024 * 1024:
+        raise HTTPException(409, 'The saved model cannot be imported into Nova')
+    try:
+        request._nova_source_ldr = content.decode('utf-8')
+    except UnicodeDecodeError:
+        raise HTTPException(409, 'The saved model cannot be imported into Nova') from None
 
 
 async def _save_session(generation_id: str, session: dict):
@@ -151,10 +185,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
     if generation_storage is None:
         raise HTTPException(status_code=503, detail="Generation storage is unavailable")
     if request.generation_id:
-        request._nova_session = await _owned_session(request.generation_id, auth_info)
-        # Continue with the original provider settings and workspace.
-        request.model = request._nova_session['model']
-        request.auth_mode = request._nova_session['auth_mode']
+        await _prepare_edit(request, auth_info)
     if request.auth_mode == 'native':
         from ..utils.local_provider_connections import require_local_development
         if http_request is None:
@@ -174,7 +205,8 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         user_id=auth_info.get("user_id", user_info["user_email"]),
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,
-        endpoint="novaToBricks", model_3d=request.model, edit_generation_id=request.generation_id,
+        endpoint="novaToBricks", model_3d=request.model,
+        edit_generation_id=request.generation_id if request._nova_session else None,
     )
     task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info, native_progress=True))
     _background_tasks.add(task)

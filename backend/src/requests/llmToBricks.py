@@ -636,7 +636,9 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
     generation = await generation_storage.get_generation(request.generation_id)
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
-    require_generation_access(generation, auth_info)
+    # Completed voxel geometry is public and edits save a copy under the caller.
+    if generation.get("status") != "completed":
+        require_generation_access(generation, auth_info)
     url = generation.get("xyzrgb_url")
     if generation.get("status") != "completed" or not url:
         raise HTTPException(status_code=400, detail="This model has no saved voxels to edit")

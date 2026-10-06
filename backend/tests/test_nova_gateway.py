@@ -51,7 +51,7 @@ def test_gateway_routes_only_to_selected_tenant_and_strips_browser_headers(tmp_p
     module.worker_url.assert_awaited_once_with('b' * 64)
 
 
-def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch):
+def worker(tmp_path, monkeypatch):
     from types import SimpleNamespace
     import sys
     from fastapi import FastAPI
@@ -74,6 +74,12 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
     spec = importlib.util.spec_from_file_location('nova_worker_test', target)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
+    return module
+
+
+def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch):
+    module = worker(tmp_path, monkeypatch)
+    upstream = module.app
     module.export_sources = lambda chat, model: b'zip'
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
@@ -96,3 +102,41 @@ def test_instruction_export_uses_only_model_data_and_does_not_start_an_owner_wor
         assert client.post(url, content=b'\xff', headers={'Authorization': 'Bearer runtime-secret'}).status_code == 502
     assert calls == [b'model']
     module.worker_url.assert_not_called()
+
+
+def test_worker_import_seeds_independent_workspace_and_rejects_unsafe_references(tmp_path, monkeypatch):
+    import sys
+    from types import SimpleNamespace
+    module = worker(tmp_path, monkeypatch)
+    workspace = tmp_path / 'work'
+    workspace.mkdir()
+    generated = tmp_path / 'generated'
+    generated.mkdir()
+    module.settings.GENERATED_DIR = generated
+    chats, messages, models = [], [], []
+    def create_chat(title, provider):
+        chats.append((title, provider))
+        return {'id': 'new-chat'}
+    def add_model(chat, title, model, parts):
+        models.append((chat, model.read_text()))
+        return {'id': 'imported-model'}
+    module.get_store = lambda: SimpleNamespace(create_chat=create_chat, add_model=add_model,
+        work_dir=lambda chat: workspace, add_message=lambda chat, message: messages.append((chat, message)))
+    accessible = []
+    monkeypatch.setitem(sys.modules, 'sandbox', SimpleNamespace(give_to_agent=accessible.append))
+    geometry = '0 !COLOUR Cream CODE 100027 VALUE #EFDBB2 EDGE #333333\n1 100027 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'
+    with TestClient(module.app) as client:
+        headers = {'Authorization': 'Bearer worker-secret'}
+        body = {'model': geometry, 'llm_model_id': 'callers-provider'}
+        assert client.post('/integration/import', json=body).status_code == 401
+        for reference in ('../secret', '/config/secret', 'C:\\secret'):
+            bad = {**body, 'model': geometry.replace('3001.dat', reference)}
+            assert client.post('/integration/import', json=bad, headers=headers).status_code == 400
+        assert not chats
+        result = client.post('/integration/import', json=body, headers=headers)
+        assert result.json() == {'id': 'new-chat', 'model_id': 'imported-model'}
+    assert chats == [('Model copy', 'callers-provider')]
+    assert models == [('new-chat', geometry)]
+    assert workspace in accessible and workspace / 'model.ldr' in accessible
+    assert (workspace / 'model.ldr').read_text() == geometry
+    assert len(messages) == 1 and 'independent copy' in messages[0][1]['content']

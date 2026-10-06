@@ -186,10 +186,19 @@ class NovaService:
             if before['chat'].get('running'):
                 raise ValueError('Nova is already working on this session. Wait before editing it again.')
         else:
-            created = await self.request('POST', 'api/chats', json={'llm_model_id': model_id})
-            chat_id, before = self.session_id(created['id']), {'models': {}}
+            source = getattr(request, '_nova_source_ldr', None)
+            if source:
+                created = await self.request('POST', 'integration/import',
+                    json={'model': source, 'llm_model_id': model_id})
+                chat_id = self.session_id(created['id'])
+                before = await self.chat(chat_id)
+            else:
+                created = await self.request('POST', 'api/chats', json={'llm_model_id': model_id})
+                chat_id, before = self.session_id(created['id']), {'models': {}}
         session = {'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
                    'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
+        if not previous and getattr(request, '_nova_source_ldr', None):
+            session['model_id'] = self.session_id(created['model_id'])
         await save_session(session)
         text = request.prompt or 'Create a model from the reference image.'
         images = ([f'data:{request.image_media_type};base64,{request.image_base64}'] if request.image_base64 else [])
