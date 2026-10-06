@@ -10,10 +10,12 @@ import pwd
 import subprocess
 import tempfile
 import zipfile
+import uuid
 from pathlib import Path
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, Field
 
 from main import app
 import agent
@@ -43,6 +45,48 @@ async def private_runtime(request: Request, call_next):
 @app.get('/integration/runtime')
 def runtime():
     return VERSIONS
+
+
+class ImportedModel(BaseModel):
+    model: str = Field(min_length=1, max_length=16 * 1024 * 1024)
+    llm_model_id: str = Field(min_length=1, max_length=64, pattern=r'^[A-Za-z0-9_-]+$')
+
+
+def import_model(body: ImportedModel) -> dict:
+    # Only geometry crosses owners. The caller selects this tenant's provider.
+    if len(body.model.encode('utf-8')) > 16 * 1024 * 1024:
+        raise HTTPException(413, 'Model is too large')
+    placements = 0
+    for line in body.model.splitlines():
+        tokens = line.split()
+        if tokens and tokens[0] == '1':
+            placements += 1
+            reference = tokens[-1].replace('\\', '/')
+            if len(tokens) < 15 or reference.startswith('/') or ':' in reference or '..' in reference.split('/'):
+                raise HTTPException(400, 'Invalid model reference')
+    if not placements:
+        raise HTTPException(400, 'Model contains no parts')
+    from sandbox import give_to_agent
+    store = get_store()
+    chat = store.create_chat('Model copy', body.llm_model_id)
+    model = settings.GENERATED_DIR / f'imported-{uuid.uuid4()}.ldr'
+    model.write_text(body.model, encoding='utf-8')
+    give_to_agent(model)
+    ref = store.add_model(chat['id'], 'Imported model', model, [])
+    work = store.work_dir(chat['id'])
+    editable = work / 'model.ldr'
+    editable.write_text(body.model, encoding='utf-8')
+    give_to_agent(editable)
+    notes = 'This workspace contains an independent copy of a completed public model. Read model.ldr and modify this existing geometry for the next edit request. Preserve custom color definitions and publish the revised model with Nova tools.'
+    (work / 'NOTES.md').write_text(notes, encoding='utf-8')
+    give_to_agent(work / 'NOTES.md')
+    store.add_message(chat['id'], {'role': 'user', 'content': notes})
+    return {'id': chat['id'], 'model_id': ref['id']}
+
+
+@app.post('/integration/import')
+async def import_geometry(body: ImportedModel):
+    return await asyncio.to_thread(import_model, body)
 
 
 def export_sources(chat_id: str, model_id: str) -> bytes:
