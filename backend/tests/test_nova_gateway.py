@@ -122,7 +122,8 @@ def test_worker_import_seeds_independent_workspace_and_rejects_unsafe_references
         return {'id': 'imported-model'}
     module.get_store = lambda: SimpleNamespace(create_chat=create_chat, add_model=add_model,
         work_dir=lambda chat: workspace, add_message=lambda chat, message: messages.append((chat, message)))
-    monkeypatch.setitem(sys.modules, 'sandbox', SimpleNamespace(give_to_agent=lambda path: None))
+    accessible = []
+    monkeypatch.setitem(sys.modules, 'sandbox', SimpleNamespace(give_to_agent=accessible.append))
     geometry = '0 !COLOUR Cream CODE 100027 VALUE #EFDBB2 EDGE #333333\n1 100027 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'
     with TestClient(module.app) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
@@ -136,5 +137,6 @@ def test_worker_import_seeds_independent_workspace_and_rejects_unsafe_references
         assert result.json() == {'id': 'new-chat', 'model_id': 'imported-model'}
     assert chats == [('Model copy', 'callers-provider')]
     assert models == [('new-chat', geometry)]
+    assert workspace in accessible and workspace / 'model.ldr' in accessible
     assert (workspace / 'model.ldr').read_text() == geometry
     assert len(messages) == 1 and 'independent copy' in messages[0][1]['content']

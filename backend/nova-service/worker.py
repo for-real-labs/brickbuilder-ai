@@ -74,6 +74,7 @@ def import_model(body: ImportedModel) -> dict:
     give_to_agent(model)
     ref = store.add_model(chat['id'], 'Imported model', model, [])
     work = store.work_dir(chat['id'])
+    give_to_agent(work)
     editable = work / 'model.ldr'
     editable.write_text(body.model, encoding='utf-8')
     give_to_agent(editable)
