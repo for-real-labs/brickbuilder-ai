@@ -106,6 +106,21 @@ def test_preview_is_responsive_escaped_and_links_to_exact_generation(email_confi
     assert payload['html'].count(f'id={id}&amp;exact=1') == 2
 
 
+def test_completion_email_has_order_branding_support_and_plain_text(email_config):
+    payload = mail.email_payload({'generation_id': str(uuid4()), 'email': 'delivered@resend.dev',
+                                 'origin': 'https://brickbuilder.ai', 'title': 'Orange Tabby Cat'})
+    assert '<html lang="en">' in payload['html']
+    assert 'name="viewport"' in payload['html']
+    assert '>BRICK</span><span style="color:#1e293b;">BUILDER</span>' in payload['html']
+    assert 'background-color:#ef4444;color:#ffffff' in payload['html']
+    assert 'mailto:support@brickbuilder.ai' in payload['html']
+    assert 'You asked us to let you know when this model was ready.' in payload['html']
+    assert 'Happy building!' in payload['text']
+    assert 'support@brickbuilder.ai' in payload['text']
+    assert payload['subject'] == 'Orange Tabby Cat is ready!'
+    assert payload['reply_to'] == 'support@brickbuilder.ai'
+
+
 def test_database_completion_race_privacy_limits_and_lease_recovery(tmp_path):
     server=pgserver.get_server(tmp_path/'mail-db',cleanup_mode='delete')
     try:
