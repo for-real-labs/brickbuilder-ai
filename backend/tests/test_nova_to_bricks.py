@@ -168,3 +168,14 @@ def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
     saved = storage.create_generation.call_args.kwargs
     assert saved['user_id'] == 'caller' and saved['user_type'] == 'authenticated'
     assert saved['edit_generation_id'] is None
+
+
+def test_completed_owned_model_with_lost_session_can_import_geometry(monkeypatch):
+    monkeypatch.setattr(module, '_owned_session', AsyncMock(side_effect=HTTPException(409, 'session unavailable')))
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
+        download_file_from_storage=AsyncMock(return_value=b'public geometry')))
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert request._nova_source_ldr == 'public geometry' and request._nova_session is None

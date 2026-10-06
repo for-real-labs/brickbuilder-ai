@@ -55,23 +55,31 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         raise HTTPException(404, 'Generation not found')
     try:
         require_generation_access(source, auth_info)
+        owned = True
     except HTTPException:
-        # Completed geometry is public; sessions and source archives are not.
-        if source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
-            raise HTTPException(404, 'Generation not found') from None
-        if not source.get('ldr_url'):
-            raise HTTPException(409, 'This model has no saved geometry to copy') from None
-        content = await generation_storage.download_file_from_storage(source['ldr_url'])
-        if not content or len(content) > 16 * 1024 * 1024:
-            raise HTTPException(409, 'The saved model cannot be imported into Nova') from None
+        owned = False
+    if owned:
         try:
-            request._nova_source_ldr = content.decode('utf-8')
-        except UnicodeDecodeError:
-            raise HTTPException(409, 'The saved model cannot be imported into Nova') from None
-        return
-    request._nova_session = await _owned_session(request.generation_id, auth_info)
-    request.model = request._nova_session['model']
-    request.auth_mode = request._nova_session['auth_mode']
+            request._nova_session = await _owned_session(request.generation_id, auth_info)
+        except HTTPException as exc:
+            if exc.status_code != 409 or source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
+                raise
+        else:
+            request.model = request._nova_session['model']
+            request.auth_mode = request._nova_session['auth_mode']
+            return
+    # Completed geometry is public; sessions and source archives are not.
+    if source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
+        raise HTTPException(404, 'Generation not found')
+    if not source.get('ldr_url'):
+        raise HTTPException(409, 'This model has no saved geometry to copy')
+    content = await generation_storage.download_file_from_storage(source['ldr_url'])
+    if not content or len(content) > 16 * 1024 * 1024:
+        raise HTTPException(409, 'The saved model cannot be imported into Nova')
+    try:
+        request._nova_source_ldr = content.decode('utf-8')
+    except UnicodeDecodeError:
+        raise HTTPException(409, 'The saved model cannot be imported into Nova') from None
 
 
 async def _save_session(generation_id: str, session: dict):

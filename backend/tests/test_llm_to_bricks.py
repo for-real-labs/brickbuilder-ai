@@ -691,7 +691,7 @@ def test_background_generation_survives_request_cancellation(monkeypatch):
     asyncio.run(scenario())
 
 
-def test_voxel_edit_loads_current_saved_voxels_and_checks_ownership(monkeypatch):
+def test_voxel_edit_loads_public_completed_voxels_but_protects_unfinished_sources(monkeypatch):
     from unittest.mock import AsyncMock
     from fastapi import HTTPException
     storage = AsyncMock()
@@ -706,8 +706,12 @@ def test_voxel_edit_loads_current_saved_voxels_and_checks_ownership(monkeypatch)
     storage.download_file_from_storage.assert_awaited_once_with("saved-current")
     assert "0 0 0 255 0 0" in module._user_input(request).text
     storage.download_file_from_storage.reset_mock()
+    asyncio.run(module._load_edit_source(request, {"authenticated": True, "user_id": "other"}))
+    storage.download_file_from_storage.assert_awaited_once_with("saved-current")
+    storage.download_file_from_storage.reset_mock()
+    storage.get_generation.return_value["status"] = "processing"
     with pytest.raises(HTTPException):
-        asyncio.run(module._load_edit_source(request, {"authenticated": True, "user_id": "other"}))
+        asyncio.run(module._load_edit_source(request, {"authenticated": False, "user_id": "guest"}))
     storage.download_file_from_storage.assert_not_awaited()
 
 

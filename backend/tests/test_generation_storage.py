@@ -129,3 +129,21 @@ def test_create_generation_persists_mode_and_inherits_it_for_non_generating_revi
         assert records[-1]['mode'] == mode
     asyncio.run(storage.create_generation('owner', 'authenticated', 'edit', 40, endpoint='updateModel', edit_generation_id='source'))
     assert records[-1]['generation_id'] == 'model' and records[-1]['mode'] == 'all_parts'
+
+
+def test_public_voxel_edit_starts_independent_root_for_guest_editor():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    records = []
+    class Table:
+        def insert(self, row): records.append(row); return self
+        def execute(self): return SimpleNamespace(data=[records[-1]])
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = SimpleNamespace(table=lambda name: Table())
+    storage.get_generation = AsyncMock(return_value={'id': 'source', 'generation_id': 'original-root',
+        'user_id': 'owner', 'user_type': 'authenticated', 'status': 'completed', 'is_community': False,
+        'name': 'Castle'})
+    result = asyncio.run(storage.create_generation('guest-editor', 'anonymous', 'blue roof', 40,
+        endpoint='llmToBricks', edit_generation_id='source'))
+    assert records[-1]['generation_id'] == result and result != 'original-root'
+    assert records[-1]['name'] == 'Castle' and records[-1]['user_id'] == 'guest-editor'
