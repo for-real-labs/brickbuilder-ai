@@ -200,6 +200,11 @@ of bypassing the isolation boundary.
 
 ## Upgrading and attribution
 
+For the repeatable shared staging workflow and per-PR Vercel connection, see
+[Testing Nova through BrickBuilder staging](nova-staging.md). Run
+`npm run nova:pin-staging` on a feature branch to select both forks' latest staging
+commits and regenerate the deployment recipe before opening the consumer PR.
+
 The two repository pins are in `backend/setup_nova.cjs`:
 
 - https://github.com/jjohnson5253/ldraw-nova, AGPL-3.0, forked from anteloc/ldraw-nova.
