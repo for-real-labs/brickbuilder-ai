@@ -24,7 +24,7 @@ async def notification_row(generation_id, auth_info):
 
 async def notification_status(generation_id, auth_info):
     row = await notification_row(generation_id, auth_info)
-    return {'subscribed': bool(row.get('notification_email'))}
+    return {'subscribed': bool(row.get('notification_email')), 'email': row.get('notification_email')}
 
 
 async def save_notification_email(generation_id, request, auth_info):
@@ -62,4 +62,4 @@ async def save_notification_email(generation_id, request, auth_info):
                 if not profile_id:
                     raise HTTPException(503, 'Could not save your email. Please try again.') from None
         await asyncio.to_thread(lambda: client.table('user_profiles').upsert({'id': str(UUID(profile_id)), 'email': email}, on_conflict='id', ignore_duplicates=True).execute())
-    return {'subscribed': True}
+    return {'subscribed': True, 'email': email}

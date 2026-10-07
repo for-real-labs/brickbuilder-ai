@@ -1,5 +1,6 @@
 import { GenerationTitle } from '../components/GenerationTitle';
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
+import { GetNotifiedButton } from '../components/GetNotifiedButton';
 import { LlmPreviewLoader } from '../components/LlmPreviewLoader';
 import { LlmGenerationOutput } from '../components/LlmGenerationOutput';
 import { GenerationNotificationsApi } from "../services/generationNotificationsApi";
@@ -1885,9 +1886,11 @@ export default function GeneratedModel() {
                 ? <LlmGenerationOutput generationId={pendingGeneration.generation_id} active />
                 : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
             </div>
-            {pendingGeneration && isGenerationActive(pendingGeneration.status) && <CancelGenerationButton
-              generationId={pendingGeneration.generation_id} isEdit={(pendingGeneration.version ?? 1) > 1}
-              onCancelled={handleEditCancelled} />}
+            {pendingGeneration && isGenerationActive(pendingGeneration.status) && <>
+              <CancelGenerationButton generationId={pendingGeneration.generation_id}
+                isEdit={(pendingGeneration.version ?? 1) > 1} onCancelled={handleEditCancelled} />
+              <GetNotifiedButton generationId={pendingGeneration.generation_id} />
+            </>}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
           </div>
@@ -2230,7 +2233,10 @@ export default function GeneratedModel() {
                     {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
                       ? <LlmGenerationOutput generationId={editGenerationId} active />
                       : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
-                    {editGenerationId && <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />}
+                    {editGenerationId && <>
+                      <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />
+                      <GetNotifiedButton generationId={editGenerationId} />
+                    </>}
                   </div>
                 ) : undefined}
                 /* onScreenshotsReady={setScreenshots} — disabled */

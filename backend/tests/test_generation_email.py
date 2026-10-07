@@ -38,7 +38,7 @@ def test_owner_enrollment_uses_account_email_or_guest_contact(monkeypatch, email
     monkeypatch.setattr(endpoint, 'generation_storage', storage)
     auth = {'user_id': 'owner', 'authenticated': authenticated, 'user_email': 'account@example.com'}
     result = asyncio.run(endpoint.save_notification_email(row['id'], endpoint.NotificationEmailRequest(email='guest@example.com'), auth))
-    assert result == {'subscribed': True}
+    assert result == {'subscribed': True, 'email': 'account@example.com' if authenticated else 'guest@example.com'}
     assert row['notification_email'] == ('account@example.com' if authenticated else 'guest@example.com')
     assert row['user_id'] == 'owner'  # Entering an email never grants/changes ownership.
     if not authenticated:
@@ -48,14 +48,27 @@ def test_owner_enrollment_uses_account_email_or_guest_contact(monkeypatch, email
         client.auth.admin.create_user.assert_not_called()
 
 
-def test_another_guest_cannot_enroll_or_read_subscription(monkeypatch, email_config):
-    storage = SimpleNamespace(client=Mock(), get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'anonymous'}))
+@pytest.mark.parametrize('authenticated', [True, False])
+def test_another_owner_cannot_enroll_or_read_subscription(monkeypatch, email_config, authenticated):
+    storage = SimpleNamespace(client=Mock(), get_generation=AsyncMock(return_value={
+        'user_id': 'other', 'user_type': 'authenticated' if authenticated else 'anonymous',
+        'status': 'completed', 'is_community': True, 'notification_email': 'private@example.com'}))
     monkeypatch.setattr(endpoint, 'generation_storage', storage)
-    for action in [endpoint.notification_status('id', {'user_id':'mine'}), endpoint.save_notification_email('id', endpoint.NotificationEmailRequest(email='guest@example.com'), {'user_id':'mine'})]:
+    auth = {'user_id': 'mine', 'authenticated': authenticated}
+    for action in [endpoint.notification_status('id', auth), endpoint.save_notification_email('id', endpoint.NotificationEmailRequest(email='guest@example.com'), auth)]:
         with pytest.raises(HTTPException) as error:
             asyncio.run(action)
         assert error.value.status_code == 404
     storage.client.rpc.assert_not_called()
+
+
+@pytest.mark.parametrize('email', [None, 'saved@example.com'])
+def test_owner_can_restore_the_actual_notification_recipient(monkeypatch, email):
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value={
+        'user_id': 'mine', 'user_type': 'anonymous', 'notification_email': email}))
+    monkeypatch.setattr(endpoint, 'generation_storage', storage)
+    assert asyncio.run(endpoint.notification_status('id', {'user_id': 'mine'})) == {
+        'subscribed': bool(email), 'email': email}
 
 
 @pytest.mark.parametrize('status,expected', [(200,'sent'),(429,'pending'),(500,'pending'),(422,'failed')])

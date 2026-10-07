@@ -16,9 +16,11 @@ import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { GetGenerationsByImageApiService } from '../src/services/getGenerationsByImageApi';
 import { getGeneratedModelPath } from '../src/utils/generationRoutes';
 import posthog from 'posthog-js';
+import { GenerationEmailApi } from '../src/services/generationEmailApi';
 
-const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'} as {id: string} | null, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
-vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, userProfile: null, isSupabaseConfigured: true})}));
+const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'} as {id: string} | null,
+  session: null as null | {user: {id: string}}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
+vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, session: mocks.session, userProfile: null, isSupabaseConfigured: true})}));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({useGenerationNotifications: () => ({refresh: mocks.refresh, markViewed: mocks.markViewed})}));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName, onModelLoaded, topLeftOverlay, showModelControls = true}: {modelName: string; onModelLoaded?: () => void; topLeftOverlay?: React.ReactNode; showModelControls?: boolean}) => {
   React.useEffect(() => { onModelLoaded?.(); }, [modelName]);
@@ -40,11 +42,14 @@ let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   mocks.owner = 'owner';
   mocks.user = {id: 'owner'};
+  mocks.session = null;
   mocks.query.mockImplementation(async () => ({data: {user_id: mocks.owner, is_community: true, preview_image_url: '/preview.png'}, error: null}));
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({generation_id: 'g', status: 'completed', name: 'Sunny Dachshund', prompt: 'please create a dachshund in sunglasses, with lots of details', ldr_content: 'ldr'} as never);
   vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({mpd_content: 'mpd'} as never);
   vi.spyOn(GetPriceApiService, 'getPrice').mockRejectedValue(new Error('No estimate'));
   vi.spyOn(GenerationNotificationsApi, 'latestEdit').mockResolvedValue({generation_id: null});
+  vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({subscribed: false, email: null});
+  vi.spyOn(GenerationEmailApi, 'subscribe').mockResolvedValue({subscribed: true, email: 'builder@example.com'});
   vi.spyOn(GetGenerationLikeStatusApiService, 'getGenerationLikeStatus').mockResolvedValue({is_community: true, like_count: 0, viewer_has_liked: false});
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ok: true, json: async () => ({stargazers_count: 0})}));
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
@@ -343,6 +348,41 @@ function modelButton(label: string) {
   return container.querySelector(`[aria-label="${label}"]`) as HTMLButtonElement;
 }
 
+it.each([true, false])('offers the shared email flow on an initial generation, signed in: %s', async signedIn => {
+  mockPendingEdit();
+  mocks.session = signedIn ? {user: {id: 'owner'}} : null;
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({
+    generation_id: 'new-build', status: 'processing', endpoint: 'llmToBricks', version: 1,
+  } as never);
+  vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=new-build']}><GeneratedModel /></MemoryRouter>));
+  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Get notified')!;
+  expect(notify).toBeTruthy();
+  expect(GenerationEmailApi.status).toHaveBeenCalledWith('new-build', expect.any(AbortSignal));
+  await act(async () => notify.click());
+  const modal = document.querySelector('[role="dialog"]')!;
+  if (signedIn) {
+    expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('new-build', undefined);
+    expect(modal.textContent).toContain('builder@example.com');
+  } else {
+    expect(modal.querySelector('input[type="email"]')).not.toBeNull();
+    expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
+  }
+});
+
+it('restores the edit notification and its recipient when returning to the model page', async () => {
+  mockPendingEdit();
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({subscribed: true, email: 'edit-recipient@example.com'});
+  vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g']}><GeneratedModel /></MemoryRouter>));
+  expect(GenerationEmailApi.status).toHaveBeenCalledWith('g', expect.any(AbortSignal));
+  expect(GenerationEmailApi.status).not.toHaveBeenCalledWith('old', expect.anything());
+  const notify = Array.from(container.querySelectorAll('figure button')).find(button => button.textContent === 'We’ll email you')!;
+  act(() => notify.click());
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('edit-recipient@example.com');
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
+});
+
 it('keeps the complete page visible on a resumed edit and locks only model changes and purchases', async () => {
   mockPendingEdit();
   vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
@@ -386,6 +426,17 @@ it('keeps the mounted viewer when submitting an edit and while the edit request 
   expect(container.querySelector('[data-testid="viewer"]')).toBe(viewer);
   expect(container.textContent).toContain('Shrinking the Pepsi can');
   expect(container.textContent).not.toContain('Continue browsing');
+  expect(container.textContent).toContain('Get notified');
+  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Get notified')!;
+  act(() => notify.click());
+  act(() => {
+    const input = document.querySelector('[role="dialog"] input')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'builder@example.com');
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+  await act(async () => document.querySelector('[role="dialog"] form')!.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true})));
+  expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('g', 'builder@example.com');
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('builder@example.com');
 });
 
 it('replaces the model and unlocks actions when the edit completes', async () => {
