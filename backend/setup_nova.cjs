@@ -6,8 +6,8 @@ const path = require('node:path');
 const runtime = path.join(__dirname, '.nova');
 // Upgrade both together, then run the adapter contract and real-runtime smoke tests.
 const SOURCES = Object.freeze([
-  { name: 'toolkit', url: 'https://github.com/jjohnson5253/ldraw-nova.git', commit: 'c4ba6c4913e0975ee7e34e647c26129137657d5e' },
-  { name: 'web', url: 'https://github.com/jjohnson5253/ldraw-nova-docker.git', commit: '46a6ffd35d9bb342d43a687b8c614b4a873f79e4' },
+  { name: 'toolkit', url: 'https://github.com/jjohnson5253/ldraw-nova.git', commit: 'e4ab1b0b35652f2bddfcd440f7ec7496f4d520e9' },
+  { name: 'web', url: 'https://github.com/jjohnson5253/ldraw-nova-docker.git', commit: '5fa0fde287364a899a3e8af8bb61abe0b470c93f' },
 ]);
 const IMAGE = `brickbuilder-nova:${SOURCES[0].commit.slice(0, 12)}-${SOURCES[1].commit.slice(0, 12)}-parts-v1`;
 const SERVICE_CMD = 'CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]\n';
@@ -31,7 +31,6 @@ function deploymentDockerfile(upstream) {
   const versions = JSON.stringify(Object.fromEntries(SOURCES.map(s => [s.name, s.commit])));
   return '# Generated from the pinned Nova forks by backend/setup_nova.cjs.\n' + sources + '\n' + recipe + '\n' +
     'COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/\n' +
-    'COPY backend/src/utils/parts_catalog.py /app/web/backend/brickbuilder_integration/parts_catalog.py\n' +
     `RUN printf '%s' '${versions}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools\n` + SERVICE_CMD;
 }
 
@@ -71,7 +70,6 @@ function prepare(run = spawnSync) {
   const web = ensureSource(SOURCES[1], run);
   const integration = path.join(web, 'brickbuilder-integration');
   cpSync(path.join(__dirname, 'nova-service'), integration, { recursive: true });
-  cpSync(path.join(__dirname, 'src/utils/parts_catalog.py'), path.join(integration, 'parts_catalog.py'));
   writeFileSync(path.join(integration, 'versions.json'), JSON.stringify(Object.fromEntries(SOURCES.map(s => [s.name, s.commit]))));
   // Build upstream's actual Dockerfile, including its renderer, sandbox and SDKs.
   // Append only the private gateway; no copies of upstream app/toolkit code live here.

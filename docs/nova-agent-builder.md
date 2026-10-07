@@ -27,8 +27,9 @@ combine compatible repositories, build their Docker image, then run the app.
 
 The root `npm install` fetches two immutable fork revisions into ignored
 `backend/.nova/toolkit` and `backend/.nova/web`. It builds the upstream Dockerfile
-with the toolkit as its additional build context. The only additions are the
+with the toolkit as its additional build context. BrickBuilder adds the
 private tenant gateway and artifact export adapter in `backend/nova-service`.
+Supplier inventory enforcement is native to the pinned Nova forks.
 LeoCAD, the official parts library, Jev, provider SDKs and Nova's sandbox come
 from the upstream image. The first build can take several minutes and several
 GB of disk space. `npm start` starts or reuses the managed container, waits for

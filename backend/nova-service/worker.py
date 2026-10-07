@@ -20,15 +20,13 @@ from main import app
 import agent
 import settings
 import tools
-from brickbuilder_integration.parts_restrictions import ChatPartsPolicy, install_parts_restrictions
+from parts_policy import policy as parts_policy, CATALOG_VERSION
 from store import get_store
 from leocad_render import bom_path_for, snapshot_path_for
 
 MAX_EXPORT_BYTES = 64 * 1024 * 1024
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
-VERSIONS['parts_catalog_version'] = 1
-parts_policy = ChatPartsPolicy(settings.CONFIG_DIR)
-install_parts_restrictions(agent, tools, settings, parts_policy)
+VERSIONS['parts_catalog_version'] = CATALOG_VERSION
 
 
 @app.middleware('http')

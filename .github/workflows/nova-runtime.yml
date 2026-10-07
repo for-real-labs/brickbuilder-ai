@@ -6,14 +6,12 @@ on:
     paths:
       - backend/setup_nova.cjs
       - backend/nova-service/**
-      - backend/src/utils/parts_catalog.py
       - .github/workflows/nova-runtime.yml
   push:
     branches: [main, staging]
     paths:
       - backend/setup_nova.cjs
       - backend/nova-service/**
-      - backend/src/utils/parts_catalog.py
       - .github/workflows/nova-runtime.yml
 
 permissions:

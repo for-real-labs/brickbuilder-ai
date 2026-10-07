@@ -1,9 +1,10 @@
 # Supplier parts restrictions and pricing
 
 All parts generation and every Nova edit now use the Brickwith catalog. This
-extends the pinned Nova fork through the private runtime integration; the
-standalone fork source and its normal builder, rendering and validation tools
-remain upstream dependencies.
+uses native restrictions in the pinned Nova forks. The toolkit owns
+`PartsCatalog` and physical inventory expansion; the Nova agent service owns
+`ChatPartsPolicy`, discovery tools and the publication gate. BrickBuilder supplies
+a catalog through its private integration and independently checks imports.
 
 ## Source and refresh
 
@@ -49,7 +50,7 @@ alias or color substitutions are inferred from a similar name or RGB value.
    quantity limits. The agent queries this instead of loading thousands of
    entries into every prompt. `check_model_parts` provides actionable failures.
 2. **Publication gate.** When Nova's publication tool has captured a candidate
-   revision, the integration expands it through Nova's parser. This handles
+   revision, Nova expands its captured source bytes through its parser. This handles
    nested subassemblies, repeated occurrences and inherited colors. Every
    physical placement must be allowed. Unavailable combinations or excess
    quantities raise a tool error before publication; the agent can repair and
@@ -73,6 +74,24 @@ Rebuild both the API and Nova service when deploying this change. Runtime
 readiness requires `parts_catalog_version=1`, so an old runtime fails visibly
 before generation. The local image tag changes to force a rebuild. Catalog
 refreshes alone need only an API deployment: it supplies the CSV to the runtime.
+
+## Staging deployment boundary
+
+Both Nova forks now provide these changes on their staging branches. BrickBuilder
+fetches immutable commits, not branch heads. Its `backend/setup_nova.cjs` pins both
+matching revisions, and the generated runtime Dockerfile fetches those exact SHAs.
+
+Railway's existing `lego stuff` staging environment runs both `nova` and
+`brickai-backend`. Both services deploy from `jjohnson5253/brickbuilder-ai` staging.
+The backend connects to `http://nova.railway.internal:8000` within this environment.
+Merging Nova's staging branches alone does not redeploy those pinned consumers.
+Merge the BrickBuilder PR into staging to rebuild the runtime and API there.
+The normal frontend staging deployment then uses that staging backend.
+
+Standalone Nova defaults to its shipped Brickwith catalog, accepts an absolute
+`NOVA_PARTS_CATALOG` CSV path, and allows per-chat overrides through its native
+`PUT /api/chats/<id>/parts-catalog` endpoint. BrickBuilder always supplies its own
+selected snapshot. Nova's `docs/parts-catalog.md` describes native configuration.
 
 ## Another supplier or a finite inventory
 

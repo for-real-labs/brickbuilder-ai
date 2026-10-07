@@ -63,8 +63,7 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
     monkeypatch.setitem(sys.modules, 'agent', SimpleNamespace())
     monkeypatch.setitem(sys.modules, 'settings', SimpleNamespace(CONFIG_DIR=tmp_path / 'config'))
     monkeypatch.setitem(sys.modules, 'tools', SimpleNamespace())
-    monkeypatch.setitem(sys.modules, 'brickbuilder_integration.parts_restrictions', SimpleNamespace(
-        ChatPartsPolicy=lambda config: None, install_parts_restrictions=lambda *args: None))
+    monkeypatch.setitem(sys.modules, 'parts_policy', SimpleNamespace(policy=None, CATALOG_VERSION=1))
     monkeypatch.setitem(sys.modules, 'store', SimpleNamespace(get_store=lambda: None))
     monkeypatch.setitem(sys.modules, 'leocad_render', SimpleNamespace(bom_path_for=lambda p: p, snapshot_path_for=lambda p: p))
     monkeypatch.setenv('NOVA_SERVICE_TOKEN', 'worker-secret')

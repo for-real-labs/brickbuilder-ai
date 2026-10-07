@@ -3,8 +3,5 @@
 !backend/
 !backend/nova-service/
 !backend/nova-service/**
-!backend/src/
-!backend/src/utils/
-!backend/src/utils/parts_catalog.py
 **/__pycache__/
 **/*.pyc
