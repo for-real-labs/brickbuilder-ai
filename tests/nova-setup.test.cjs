@@ -111,8 +111,10 @@ test('unready Nova prevents API startup instead of silently allowing failed All 
 test('both build contexts include the shared parts policy and use a new integration image tag', () => {
   const setup = readFileSync(path.resolve(__dirname, '../backend/setup_nova.cjs'), 'utf8');
   const ignore = readFileSync(path.resolve(__dirname, '../backend/nova-service/Dockerfile.dockerignore'), 'utf8');
+  const workflow = readFileSync(path.resolve(__dirname, '../.github/workflows/nova-runtime.yml'), 'utf8');
   assert.match(setup, /parts-v1/);
   assert.match(setup, /COPY backend\/src\/utils\/parts_catalog.py/);
   assert.match(setup, /cpSync\(path.join\(__dirname, 'src\/utils\/parts_catalog.py'\)/);
   assert.match(ignore, /!backend\/src\/utils\/parts_catalog.py/);
+  assert.equal(workflow.match(/- backend\/src\/utils\/parts_catalog.py/g)?.length, 2);
 });
