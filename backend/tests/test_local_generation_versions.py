@@ -94,3 +94,17 @@ def test_previous_completed_revision_skips_cancelled_failed_active_and_other_mod
     storage.client = client
     assert asyncio.run(storage.get_previous_completed_generation(current))['id'] == completed['id']
     assert asyncio.run(storage.get_previous_completed_generation(root)) is None
+
+
+def test_local_completion_duration_is_saved_and_not_changed_by_later_metadata_or_resize(local_db):
+    from datetime import datetime, timezone, timedelta
+    _conn, client = local_db
+    row = client.table('generations').insert({'user_id': 'owner', 'user_type': 'anonymous', 'status': 'processing',
+        'created_at': (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat()}).execute().data[0]
+    assert row.get('generation_duration_seconds') is None
+    completed = client.table('generations').update({'status': 'completed'}).eq('id', row['id']).execute().data[0]
+    duration = completed['generation_duration_seconds']
+    assert 90 <= duration < 95
+    client.table('generations').update({'status': 'resizing', 'example_edit_prompt': 'Make it blue'}).eq('id', row['id']).execute()
+    resumed = client.table('generations').update({'status': 'completed'}).eq('id', row['id']).execute().data[0]
+    assert resumed['generation_duration_seconds'] == duration

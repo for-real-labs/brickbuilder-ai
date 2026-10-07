@@ -17,7 +17,7 @@ from .auth import supabase_client
 from .community_likes import is_community_likes_schema_error
 from .image_processing import convert_base64_to_png
 from .brickowl_utils import parse_ldr_file, generate_parts_list_csv
-from .generation_titles import generate_title
+from .generation_titles import generate_title_details
 from .generation_mode import generation_mode, INHERITED_MODE_ENDPOINTS
 
 logger = logging.getLogger(__name__)
@@ -93,6 +93,8 @@ class GenerationStorage:
                     generation_data["mode"] = generation_mode(source.get("endpoint"), source.get("mode"))
                 if source.get("name"):
                     generation_data["name"] = source["name"]
+                if source.get("example_edit_prompt"):
+                    generation_data["example_edit_prompt"] = source["example_edit_prompt"]
 
             # Add model information if provided
             if image_model:
@@ -608,14 +610,23 @@ class GenerationStorage:
         """Save an automatic title before publishing completion; never replace an owner name."""
         try:
             row = await self.get_generation(generation_id)
-            if not row or row.get("name") or row.get("status") == "cancelled":
+            if not row or (row.get("name") and row.get("example_edit_prompt")) or row.get("status") == "cancelled":
                 return
-            name = await generate_title(row, self.client.storage)
-            (self.client.table("generations").update({"name": name})
-             .eq("id", generation_id).is_("name", "null").neq("status", "cancelled").execute())
+            details = await generate_title_details(row, self.client.storage)
+            if not row.get('name'):
+                (self.client.table("generations").update(details)
+                 .eq("id", generation_id).is_("name", "null").neq("status", "cancelled").execute())
+            else:
+                (self.client.table("generations").update({'example_edit_prompt': details['example_edit_prompt']})
+                 .eq("id", generation_id).eq('name', row['name']).is_('example_edit_prompt', 'null')
+                 .neq("status", "cancelled").execute())
         except Exception:
             # Naming must never prevent a completed build from being delivered.
             logger.warning("Unable to save model title for %s", generation_id)
+
+    async def save_generation_usage(self, generation_id: str, values: dict) -> None:
+        # Usage also belongs to failed/cancelled jobs; never change their status.
+        self.client.table('generations').update(values).eq('id', generation_id).execute()
     
     async def cancel_generation(self, generation_id: str) -> bool:
         from .generation_tasks import ACTIVE_STATUSES

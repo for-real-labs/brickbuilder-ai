@@ -108,3 +108,61 @@ def test_claude_sdk_cannot_complete_without_valid_cost_usage(monkeypatch, cost):
         with pytest.raises(ValueError, match='cost usage'):
             async for event in sdk.ClaudeSDKClient.receive_response(None): pass
     asyncio.run(run())
+
+
+def test_nova_records_each_generation_turn_separately_in_private_files(monkeypatch, tmp_path):
+    import json
+    module = load_limits(monkeypatch)
+    tasks = []
+    async def completion(**kwargs):
+        return SimpleNamespace(usage={'prompt_tokens': 100, 'completion_tokens': 20})
+    llm = SimpleNamespace(acompletion=completion)
+    async def start(*args):
+        tasks.append(asyncio.create_task(llm.acompletion(model='openai/gpt-5.5', messages=[])))
+    agent = SimpleNamespace(start_turn=start)
+    config = SimpleNamespace(get=lambda id: {'litellm_params': {'model': 'openai/gpt-5.5'}})
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs, ClaudeSDKClient=SimpleNamespace(receive_response=lambda: None))
+    module.install_cost_limits(agent, config, llm, sdk)
+    store = SimpleNamespace(chat_dir=lambda _: tmp_path)
+    async def run():
+        for id in ['11111111-1111-1111-1111-111111111111', '22222222-2222-2222-2222-222222222222']:
+            context = module.current_usage_id.set(id)
+            try: await agent.start_turn(store, 'chat', 'fish', 'model')
+            finally: module.current_usage_id.reset(context)
+        await asyncio.gather(*tasks)
+    asyncio.run(run())
+    files = list(tmp_path.glob('.brickbuilder-usage-*.json'))
+    assert len(files) == 2
+    for file in files:
+        report = json.loads(file.read_text())
+        assert len(report['calls']) == 1
+        assert report['calls'][0]['input_tokens'] == 100
+        assert report['calls'][0]['output_tokens'] == 20
+        assert Decimal(report['calls'][0]['estimated_cost_usd']) == Decimal('.0011')
+        assert report['generation_id'] in file.name
+        assert 'fish' not in file.read_text()
+
+
+@pytest.mark.parametrize('budget_failure', [False, True])
+def test_native_claude_usage_includes_cached_tokens(monkeypatch, budget_failure):
+    module = load_limits(monkeypatch)
+    class Result:
+        total_cost_usd = .01
+        subtype = 'error_max_budget_usd' if budget_failure else 'success'
+        usage = {'input_tokens': 1000, 'output_tokens': 200, 'cache_read_input_tokens': 2000, 'cache_creation_input_tokens': 1000}
+    async def receive(client): yield Result()
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs,
+        ClaudeSDKClient=SimpleNamespace(receive_response=receive), ResultMessage=Result)
+    module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, SimpleNamespace(acompletion=lambda: None), sdk)
+    budget = generation_budget.GenerationBudget('claude-opus-5-5')
+    context = module.current_budget.set(budget)
+    try:
+        async def run():
+            async for _ in sdk.ClaudeSDKClient.receive_response(None): pass
+        if budget_failure:
+            with pytest.raises(generation_budget.GenerationBudgetExceeded): asyncio.run(run())
+        else: asyncio.run(run())
+    finally: module.current_budget.reset(context)
+    assert budget.usage_records[0]['input_tokens'] == 4000
+    assert budget.usage_records[0]['output_tokens'] == 200
+    assert budget.spent == Decimal('.0134')

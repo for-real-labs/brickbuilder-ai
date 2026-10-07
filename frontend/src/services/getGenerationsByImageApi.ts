@@ -26,6 +26,7 @@ export interface GenerationIteration {
   user_id: string;
   prompt: string;
   created_at: string;
+  generation_duration_seconds?: number | null;
   status: string;
   ldr_url?: string;
   xyzrgb_url?: string;

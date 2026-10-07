@@ -256,3 +256,42 @@ def test_workspace_recovery_does_not_hide_busy_sessions_or_runtime_failures(monk
                 await service.run(request, 'openai', save, previous={'chat_id': 'chat'})
     asyncio.run(run())
     assert '/integration/import' not in calls
+
+
+@pytest.mark.parametrize('failure', [False, True])
+def test_nova_usage_is_read_for_only_this_generation_including_failed_edits(monkeypatch, failure):
+    from unittest.mock import AsyncMock
+    from src.utils.generation_budget import GenerationUsage, current_generation_usage
+    id = '11111111-1111-1111-1111-111111111111'
+    ledger = GenerationUsage(id)
+    before = {'chat': {'running': False}, 'models': {}, 'messages': []}
+    after = {'chat': {'running': False}, 'models': {} if failure else {'new': {'id': 'new', 'created_at': 1}}, 'messages': []}
+    service = NovaService(httpx.AsyncClient(base_url='http://nova'))
+    service.ready = AsyncMock(return_value={**VERSIONS, 'generation_usage_version': 1})
+    service.configure_model = AsyncMock(return_value='model')
+    service.chat = AsyncMock(side_effect=[before, after])
+    service.wait_for_turn = AsyncMock()
+    service.export = AsyncMock(return_value='exported')
+    async def respond(method, path, **kwargs):
+        if path.endswith('/messages'):
+            assert kwargs['headers'] == {'X-BrickBuilder-Generation-Id': id}
+            return {}
+        if path.endswith('/cancel'): return {}
+        assert path == f'integration/chats/chat/usage/{id}'
+        return {'generation_id': id, 'calls': [{'model': 'gpt-5.5', 'input_tokens': 100, 'output_tokens': 50, 'estimated_cost_usd': '.002'}]}
+    service.request = AsyncMock(side_effect=respond)
+    async def run():
+        context = current_generation_usage.set(ledger)
+        try:
+            request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='make fins blue', image_base64=None)
+            if failure:
+                with pytest.raises(ValueError, match='without publishing'):
+                    await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
+            else:
+                assert await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'}) == 'exported'
+        finally:
+            current_generation_usage.reset(context)
+            await service.client.aclose()
+    asyncio.run(run())
+    assert ledger.values()['tokens_used'] == 150
+    assert ledger.values()['estimated_cost_usd'] == '0.002'

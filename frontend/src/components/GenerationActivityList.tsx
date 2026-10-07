@@ -5,6 +5,7 @@ import posthog from 'posthog-js';
 import { GenerationActivity, isGenerationActive, isPreviewPending } from '../hooks/useGenerationActivity';
 import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
+import { GenerationDuration } from './GenerationDuration';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { isAgentGeneration } from '../utils/agentGeneration';
 import { ResumeNovaButton } from './ResumeNovaButton';
@@ -82,6 +83,7 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
                 {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
                 {active && agentGeneration && <LlmGenerationOutput generationId={generation.id} active />}
+                {generation.status === 'completed' && <GenerationDuration seconds={generation.durationSeconds} />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
                 {active && <GetNotifiedButton generationId={generation.id} />}
                 {active && <div className="relative z-20 w-fit"><CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} /></div>}

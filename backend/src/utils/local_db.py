@@ -375,6 +375,28 @@ def _create_schema(conn) -> None:
             )
     _create_local_generation_versions(conn)
     _create_local_generation_limit(conn)
+    _create_local_generation_duration(conn)
+
+
+def _create_local_generation_duration(conn) -> None:
+    conn.execute("""
+        CREATE OR REPLACE FUNCTION record_local_generation_duration() RETURNS trigger
+        LANGUAGE plpgsql AS $$
+        BEGIN
+            IF new.doc->>'status' = 'completed' AND new.doc->>'created_at' IS NOT NULL THEN
+                IF tg_op = 'UPDATE' AND old.doc->>'generation_duration_seconds' IS NOT NULL THEN
+                    new.doc := new.doc || jsonb_build_object('generation_duration_seconds', old.doc->'generation_duration_seconds');
+                ELSIF tg_op = 'INSERT' OR old.doc->>'status' IS DISTINCT FROM 'completed' THEN
+                    new.doc := new.doc || jsonb_build_object('generation_duration_seconds',
+                        greatest(0, extract(epoch FROM clock_timestamp() - (new.doc->>'created_at')::timestamptz)));
+                END IF;
+            END IF;
+            RETURN new;
+        END; $$;
+        DROP TRIGGER IF EXISTS generations_local_duration ON generations;
+        CREATE TRIGGER generations_local_duration BEFORE INSERT OR UPDATE ON generations
+        FOR EACH ROW EXECUTE FUNCTION record_local_generation_duration();
+    """)
 
 
 def _create_local_generation_limit(conn) -> None:

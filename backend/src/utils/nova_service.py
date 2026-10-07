@@ -12,11 +12,15 @@ import json
 import os
 import re
 import zipfile
+import logging
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 import httpx
+from .generation_budget import current_generation_usage
+
+logger = logging.getLogger(__name__)
 
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
@@ -214,9 +218,12 @@ class NovaService:
         text = request.prompt or 'Create a model from the reference image.'
         images = ([f'data:{request.image_media_type};base64,{request.image_base64}'] if request.image_base64 else [])
         started = False
+        usage = current_generation_usage.get()
+        track_usage = usage is not None and versions.get('generation_usage_version') == 1
         try:
             await self.request('POST', f'api/chats/{chat_id}/messages', json={
-                'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']})
+                'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']},
+                **({'headers': {'X-BrickBuilder-Generation-Id': usage.generation_id}} if track_usage else {}))
             started = True
             await self.wait_for_turn(chat_id, on_output, on_progress)
             after = await self.chat(chat_id)
@@ -243,6 +250,19 @@ class NovaService:
                 except (ValueError, asyncio.TimeoutError):
                     pass
             raise
+        finally:
+            if started and track_usage:
+                try:
+                    report = await asyncio.wait_for(asyncio.shield(self.request('GET',
+                        f'integration/chats/{chat_id}/usage/{usage.generation_id}')), 15)
+                    if not isinstance(report, dict) or report.get('generation_id') != usage.generation_id:
+                        raise ValueError('Nova returned usage for another generation')
+                    calls = report.get('calls')
+                    if not isinstance(calls, list) or len(calls) > 10000:
+                        raise ValueError('Invalid Nova usage')
+                    usage.extend(calls)
+                except (ValueError, asyncio.TimeoutError):
+                    logger.warning('Unable to retrieve Nova generation usage')
 
     async def wait_for_turn(self, chat_id: str, on_output, on_progress=None):
         last_phase = None

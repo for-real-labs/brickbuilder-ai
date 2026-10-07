@@ -2,10 +2,50 @@
 from __future__ import annotations
 
 import json
-from decimal import Decimal, ROUND_FLOOR
+from contextvars import ContextVar
+from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 
 MAX_GENERATION_COST_USD = Decimal('10')
 BUDGET_ERROR = 'Generation stopped because it would exceed the $10 AI cost limit.'
+
+
+class GenerationUsage:
+    """Provider-reported LLM calls for one job; no prompts or credentials."""
+    def __init__(self, generation_id):
+        self.generation_id = generation_id
+        self.calls = []
+
+    def extend(self, calls):
+        records = []
+        for call in calls:
+            if (not isinstance(call, dict) or not isinstance(call.get('model'), str)
+                    or not call['model'] or any(key not in call for key in ('input_tokens', 'output_tokens', 'estimated_cost_usd'))):
+                raise ValueError('Invalid generation usage')
+            try:
+                cost = Decimal(str(call['estimated_cost_usd']))
+            except InvalidOperation:
+                raise ValueError('Invalid generation cost') from None
+            if not cost.is_finite() or cost < 0:
+                raise ValueError('Invalid generation cost')
+            records.append({
+                'model': str(call['model'])[:100],
+                'input_tokens': _tokens(call, 'input_tokens'),
+                'output_tokens': _tokens(call, 'output_tokens'),
+                'cache_read_tokens': _tokens(call, 'cache_read_tokens'),
+                'cache_write_tokens': _tokens(call, 'cache_write_tokens'),
+                'estimated_cost_usd': str(cost),
+            })
+        self.calls.extend(records)
+
+    def values(self):
+        inputs = sum(call['input_tokens'] for call in self.calls)
+        outputs = sum(call['output_tokens'] for call in self.calls)
+        return {'input_tokens': inputs, 'output_tokens': outputs, 'tokens_used': inputs + outputs,
+                'estimated_cost_usd': str(sum((Decimal(call['estimated_cost_usd']) for call in self.calls), Decimal(0))),
+                'ai_usage': {'scope': 'reported_llm_usage', 'calls': self.calls}}
+
+
+current_generation_usage = ContextVar('generation_usage', default=None)
 
 
 class GenerationBudgetExceeded(ValueError):
@@ -59,6 +99,8 @@ class GenerationBudget:
             raise ValueError('AI cost limits are unavailable for this model; generation stopped.')
         self.prices = tuple(Decimal(price) for price in MODEL_PRICES[self.model])
         self.spent = Decimal('0')
+        self.usage_records = []
+        self.on_usage = None
 
     def output_limit(self, input_tokens: int, requested: int) -> int:
         # Reserve cache writes at their highest rate and long-context pricing.
@@ -99,6 +141,17 @@ class GenerationBudget:
                 output_price *= Decimal('1.5')
             # Reasoning is already included in the reported output tokens.
             cost = (inputs - cached) * input_price + cached * read_price + outputs * output_price
-        self.spent += cost / 1000000
+        cost /= 1000000
+        record = {'model': self.model, 'input_tokens': inputs + cached + written if provider == 'anthropic' else inputs,
+                  'output_tokens': outputs, 'cache_read_tokens': cached,
+                  'cache_write_tokens': written if provider == 'anthropic' else 0,
+                  'estimated_cost_usd': str(cost)}
+        self.usage_records.append(record)
+        ledger = current_generation_usage.get()
+        if ledger is not None:
+            ledger.extend([record])
+        self.spent += cost
+        if self.on_usage:
+            self.on_usage(self.usage_records)
         if self.spent > MAX_GENERATION_COST_USD:
             raise GenerationBudgetExceeded()

@@ -1,3 +1,4 @@
+import { GenerationDuration } from '../components/GenerationDuration';
 import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
@@ -135,6 +136,7 @@ type FeaturedItem = {
   creator: string | null;
   createdAt: string;
   likeCount: number;
+  durationSeconds?: number | null;
 };
 
 const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
@@ -149,6 +151,7 @@ const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
   creator: generation.username?.trim() || null,
   createdAt: generation.created_at,
   likeCount: generation.like_count ?? 0,
+  durationSeconds: generation.generation_duration_seconds,
 });
 
 function ScrollRevealContent({ children }: { children: React.ReactNode }) {
@@ -1124,7 +1127,7 @@ export default function LandingPage() {
               onResumed={(sourceId, newId) => {
                 const row = generations.find(generation => generation.id === sourceId);
                 if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
-                  createdAt: new Date().toISOString(), previewWaitUntil: undefined }, sourceId);
+                  createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
               }}
               onCancelled={id => {
                 const row = generations.find(generation => generation.id === id);
@@ -1580,6 +1583,7 @@ export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: Fea
                     </div>
                     <div className="mt-3 text-center">
                       <h3 className="text-sm font-semibold text-slate-800 mb-1 line-clamp-2">{item.title}</h3>
+                      <GenerationDuration seconds={item.durationSeconds} compact className="mt-1 flex items-center justify-center gap-1 text-xs tabular-nums text-slate-500" />
                       <button
                         onClick={() => navigate(`/generated-model?id=${item.id}`)}
                         className="mt-1 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"

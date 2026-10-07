@@ -17,7 +17,7 @@ from src.utils.generation_storage import GenerationStorage
 def test_history_uses_shared_id_for_image_free_model_and_scopes_owner(monkeypatch, owner_type):
     source = {"id": "revision", "generation_id": "root", "user_id": "owner", "user_type": owner_type}
     row = {**source, "version": 3, "prompt": "rover", "detail_level": 30,
-           "endpoint": "llmToBricks", "created_at": "2026-09-30", "status": "completed"}
+           "endpoint": "llmToBricks", "created_at": "2026-09-30", "status": "completed", "generation_duration_seconds": 50}
     storage = SimpleNamespace(get_generation=AsyncMock(return_value=source),
                               get_generation_versions=AsyncMock(return_value=[row]))
     monkeypatch.setattr(history, "generation_storage", storage)
@@ -25,6 +25,7 @@ def test_history_uses_shared_id_for_image_free_model_and_scopes_owner(monkeypatc
         history.GetGenerationsByImageRequest(generation_id="revision"),
         {"user_id": "owner", "authenticated": owner_type == "authenticated"}))
     assert result.generations[0].version == 3
+    assert result.generations[0].generation_duration_seconds == 50
     storage.get_generation_versions.assert_awaited_once_with(
         generation_id="root", user_id="owner", user_type=owner_type)
     with pytest.raises(HTTPException) as error:
@@ -160,3 +161,15 @@ def test_cancelled_version_returns_computed_completed_fallback_without_parent_co
     assert result.previous_completed_generation_id == (previous["id"] if previous else None)
     assert result.model_generation_id == "root" and result.version == 4
     assert "source_generation_id" not in result.model_dump()
+
+
+def test_model_response_includes_saved_example_and_duration_without_private_usage(monkeypatch):
+    store = SimpleNamespace(get_generation=AsyncMock(return_value={
+        'id': 'g', 'status': 'completed', 'name': 'Fish', 'example_edit_prompt': 'Make the fins blue',
+        'generation_duration_seconds': 90, 'tokens_used': 12000, 'ai_usage': {'private': True},
+    }))
+    monkeypatch.setattr(generation_endpoint, 'generation_storage', store)
+    response = asyncio.run(generation_endpoint.get_generation(generation_endpoint.GetGenerationRequest(generation_id='g'), {}))
+    assert response.example_edit_prompt == 'Make the fins blue'
+    assert response.generation_duration_seconds == 90
+    assert 'ai_usage' not in response.model_dump() and 'tokens_used' not in response.model_dump()

@@ -23,7 +23,7 @@ import settings
 import llm_config
 import litellm
 import claude_agent
-from brickbuilder_integration.cost_limits import install_cost_limits
+from brickbuilder_integration.cost_limits import install_cost_limits, current_usage_id
 from store import get_store
 from leocad_render import bom_path_for, snapshot_path_for
 
@@ -31,6 +31,7 @@ MAX_EXPORT_BYTES = 64 * 1024 * 1024
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 install_cost_limits(agent, llm_config, litellm, claude_agent)
 VERSIONS['generation_cost_limit_usd'] = 10
+VERSIONS['generation_usage_version'] = 1
 
 
 @app.middleware('http')
@@ -39,12 +40,33 @@ async def private_runtime(request: Request, call_next):
     supplied = request.headers.get('authorization', '')
     if not token or not hmac.compare_digest(supplied, 'Bearer ' + token):
         return JSONResponse({'detail': 'Private Nova runtime'}, status_code=401)
-    return await call_next(request)
+    usage_id = request.headers.get('x-brickbuilder-generation-id')
+    if usage_id:
+        try:
+            usage_id = str(uuid.UUID(usage_id))
+        except ValueError:
+            return JSONResponse({'detail': 'Invalid generation identity'}, status_code=400)
+    context = current_usage_id.set(usage_id)
+    try:
+        return await call_next(request)
+    finally:
+        current_usage_id.reset(context)
 
 
 @app.get('/integration/runtime')
 def runtime():
     return VERSIONS
+
+
+@app.get('/integration/chats/{chat_id}/usage/{generation_id}')
+def generation_usage(chat_id: str, generation_id: uuid.UUID):
+    store = get_store()
+    if not store.get_chat(chat_id):
+        raise HTTPException(404, 'Nova session not found')
+    path = store.chat_dir(chat_id) / f'.brickbuilder-usage-{generation_id}.json'
+    if not path.is_file():
+        raise HTTPException(404, 'Generation usage not found')
+    return json.loads(path.read_text())
 
 
 class ImportedModel(BaseModel):

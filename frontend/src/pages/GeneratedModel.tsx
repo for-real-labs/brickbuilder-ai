@@ -2283,6 +2283,8 @@ export default function GeneratedModel() {
         {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
           <VoxelPromptEditor
             prompt={editPrompt}
+            examplePrompt={pendingGeneration?.example_edit_prompt}
+            modelName={modelName}
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}
             loading={isModelEditing}

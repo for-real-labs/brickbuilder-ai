@@ -124,19 +124,19 @@ def make_storage(row):
 
 def test_completion_saves_name_before_publishing_and_guards_concurrent_renames(monkeypatch):
     storage = make_storage({'id': 'g', 'prompt': 'a dog', 'name': None, 'status': 'processing'})
-    generate = AsyncMock(return_value='Sunny Dachshund')
-    monkeypatch.setattr(storage_module, 'generate_title', generate)
+    generate = AsyncMock(return_value={'name': 'Sunny Dachshund', 'example_edit_prompt': 'Make the sunglasses blue'})
+    monkeypatch.setattr(storage_module, 'generate_title_details', generate)
     asyncio.run(storage.update_status('g', 'completed'))
-    assert storage.client.writes[0] == ({'name': 'Sunny Dachshund'}, [('eq', 'id', 'g'), ('is', 'name', 'null'), ('neq', 'status', 'cancelled')])
+    assert storage.client.writes[0] == ({'name': 'Sunny Dachshund', 'example_edit_prompt': 'Make the sunglasses blue'}, [('eq', 'id', 'g'), ('is', 'name', 'null'), ('neq', 'status', 'cancelled')])
     assert storage.client.writes[1][0]['status'] == 'completed'
     generate.assert_awaited_once()
 
 
-@pytest.mark.parametrize('row', [None, {'name': 'My Custom Name'}, {'name': None, 'status': 'cancelled'}])
+@pytest.mark.parametrize('row', [None, {'name': 'My Custom Name', 'example_edit_prompt': 'Make it blue'}, {'name': None, 'status': 'cancelled'}])
 def test_existing_names_and_cancelled_builds_are_never_renamed(monkeypatch, row):
     storage = make_storage(row)
     generate = AsyncMock()
-    monkeypatch.setattr(storage_module, 'generate_title', generate)
+    monkeypatch.setattr(storage_module, 'generate_title_details', generate)
     asyncio.run(storage.ensure_generation_name('g'))
     generate.assert_not_awaited()
     assert storage.client.writes == []
@@ -144,7 +144,7 @@ def test_existing_names_and_cancelled_builds_are_never_renamed(monkeypatch, row)
 
 def test_naming_storage_failure_does_not_block_completion(monkeypatch):
     storage = make_storage({'id': 'g', 'name': None})
-    monkeypatch.setattr(storage_module, 'generate_title', AsyncMock(side_effect=RuntimeError()))
+    monkeypatch.setattr(storage_module, 'generate_title_details', AsyncMock(side_effect=RuntimeError()))
     asyncio.run(storage.update_status('g', 'completed'))
     assert storage.client.writes[0][0]['status'] == 'completed'
 
@@ -179,3 +179,62 @@ def test_owner_rename_persists_trimmed_name_with_owner_filters(monkeypatch):
     result = asyncio.run(rename.update_generation_name(rename.UpdateGenerationNameRequest(generation_id='g', name='  New Name  '), {'authenticated': True, 'user_id': 'owner'}))
     assert result.name == 'New Name'
     assert storage.client.writes == [({'name': 'New Name'}, [('eq', 'id', 'g'), ('eq', 'user_id', 'owner'), ('eq', 'user_type', 'authenticated')])]
+
+
+def test_title_and_subject_specific_example_are_created_in_one_request(monkeypatch):
+    request = AsyncMock(return_value='{"name":"Brick-built Fish", "example_edit_prompt":"Make the fins blue and add a longer tail"}')
+    monkeypatch.setattr(titles, '_request_title', request)
+    result = asyncio.run(titles.generate_title_details({'id': 'fish', 'prompt': 'image reference'}, None))
+    assert result == {'name': 'Fish', 'example_edit_prompt': 'Make the fins blue and add a longer tail'}
+    request.assert_awaited_once()
+
+
+@pytest.mark.parametrize('response', ['not-json', '{"name":42,"example_edit_prompt":[]}', '{"name":"Fish","example_edit_prompt":"' + 'x' * 201 + '"}', '[]'])
+def test_malformed_metadata_still_provides_a_bounded_subject_example(monkeypatch, response):
+    monkeypatch.setattr(titles, '_request_title', AsyncMock(return_value=response))
+    result = asyncio.run(titles.generate_title_details({'name': 'Fish', 'prompt': 'image reference'}, None))
+    assert result['name'] == 'Fish'
+    assert result['example_edit_prompt'] == 'Change the colors of the Fish and add more detail'
+
+
+def test_existing_owner_name_is_preserved_when_saving_a_missing_example(monkeypatch):
+    storage = make_storage({'id': 'g', 'name': 'My Fish', 'status': 'processing'})
+    monkeypatch.setattr(storage_module, 'generate_title_details', AsyncMock(return_value={
+        'name': 'Fish', 'example_edit_prompt': 'Make the fins blue',
+    }))
+    asyncio.run(storage.ensure_generation_name('g'))
+    assert storage.client.writes == [({'example_edit_prompt': 'Make the fins blue'}, [
+        ('eq', 'id', 'g'), ('eq', 'name', 'My Fish'), ('is', 'example_edit_prompt', 'null'), ('neq', 'status', 'cancelled')])]
+
+
+def test_derivative_inherits_example_but_not_source_usage():
+    storage = make_storage({'id': 'source', 'generation_id': 'root', 'name': 'Fish', 'example_edit_prompt': 'Make the fins blue',
+                            'user_id': 'user', 'user_type': 'authenticated', 'tokens_used': 5000, 'estimated_cost_usd': '.1'})
+    asyncio.run(storage.create_generation('user', 'authenticated', 'Make it bigger', 40, edit_generation_id='source'))
+    values = storage.client.writes[0][0]
+    assert values['example_edit_prompt'] == 'Make the fins blue'
+    assert 'tokens_used' not in values and 'estimated_cost_usd' not in values
+
+
+def test_metadata_provider_usage_is_included_in_the_generation_total(monkeypatch):
+    from src.utils.generation_budget import GenerationUsage, current_generation_usage
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'test')
+    monkeypatch.setattr(titles, 'post_json', AsyncMock(return_value={
+        'content': [{'type': 'text', 'text': '{"name":"Fish","example_edit_prompt":"Make the fins blue"}'}],
+        'usage': {'input_tokens': 100, 'output_tokens': 30},
+    }))
+    ledger = GenerationUsage('g')
+    token = current_generation_usage.set(ledger)
+    try:
+        result = asyncio.run(titles.generate_title_details({'id': 'g', 'prompt': 'a fish'}, None))
+    finally:
+        current_generation_usage.reset(token)
+    assert result['example_edit_prompt'] == 'Make the fins blue'
+    assert ledger.values()['tokens_used'] == 130
+
+
+def test_fenced_json_is_parsed_and_malformed_json_cannot_become_a_title(monkeypatch):
+    monkeypatch.setattr(titles, '_request_title', AsyncMock(return_value='```json\n{"name":"Fish","example_edit_prompt":"Make the fins blue"}\n```'))
+    assert asyncio.run(titles.generate_title_details({'prompt': 'a fish'}, None)) == {'name': 'Fish', 'example_edit_prompt': 'Make the fins blue'}
+    monkeypatch.setattr(titles, '_request_title', AsyncMock(return_value='{"name":"Fish"'))
+    assert asyncio.run(titles.generate_title_details({'prompt': 'a fish'}, None))['name'] == 'Fish'

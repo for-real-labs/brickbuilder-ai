@@ -60,6 +60,7 @@ class FakeCommunityStorage:
             "user_type": "authenticated",
             "prompt": "castle",
             "name": "Castle",
+            "generation_duration_seconds": 75,
             "detail_level": 10,
             "endpoint": "llm",
             "created_at": "2026-09-26T00:00:00Z",
@@ -79,5 +80,6 @@ def test_get_community_generations_defaults_viewer_likes_when_schema_missing(mon
 
     assert response.total_count == 1
     assert response.generations[0].username == "builder"
+    assert response.generations[0].generation_duration_seconds == 75
     assert response.generations[0].like_count == 4
     assert response.generations[0].viewer_has_liked is False

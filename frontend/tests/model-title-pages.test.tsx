@@ -556,3 +556,19 @@ it.each(['Order my kit', 'Order this model'])('opens checkout for the displayed 
     generation_id: 'g', is_demo_model: false, source: label === 'Order my kit' ? 'card' : 'mobile_bar',
   });
 });
+
+it('shows the saved generation duration on the dashboard card', async () => {
+  await act(async () => root.render(<MemoryRouter><GenerationCard g={{
+    id: 'timed', user_id: 'owner', user_type: 'authenticated', prompt: 'Fish', detail_level: 40,
+    endpoint: 'novaToBricks', created_at: '2026-10-01', status: 'completed', generation_duration_seconds: 125,
+  }} onView={vi.fn()} /></MemoryRouter>));
+  expect(container.textContent).toContain('Generation time: 2m 5s');
+});
+
+it('loads the saved edit example from the generated model response', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({generation_id: 'g', status: 'completed',
+    endpoint: 'novaToBricks', name: 'Fish', prompt: 'image reference', ldr_content: 'ldr',
+    example_edit_prompt: 'Make the fins blue and add a longer tail'} as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('textarea')?.placeholder).toBe('e.g. Make the fins blue and add a longer tail');
+});

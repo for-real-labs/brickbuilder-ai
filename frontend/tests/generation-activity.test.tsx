@@ -324,3 +324,14 @@ it.each(['failed', 'cancelled'])('does not link a %s card to an unavailable mode
   expect(container.querySelector('a')).toBeNull();
   expect(container.querySelector('button')).toBeNull();
 });
+
+it('carries the final stored duration from polling to the completed landing card', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({generation_id: 'timed', status: 'completed',
+    preview_image_url: '/fish.png', generation_duration_seconds: 125} as never);
+  await act(async () => root.render(<Harness />));
+  act(() => activity.trackGeneration({...job('timed'), createdAt: '2026-10-01'}));
+  await act(async () => vi.advanceTimersByTimeAsync(5000));
+  expect(container.querySelector('article')?.textContent).toContain('Generation time: 2m 5s');
+  expect(container.textContent).not.toContain('Building for');
+});

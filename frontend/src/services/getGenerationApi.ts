@@ -34,6 +34,7 @@ export interface GetGenerationResponse {
   name?: string | null;
   created_at?: string | null;
   generation_duration_seconds?: number | null;
+  example_edit_prompt?: string | null;
   external_image_url: string | null;
   processed_image_url: string | null;
   preview_image_url?: string | null;

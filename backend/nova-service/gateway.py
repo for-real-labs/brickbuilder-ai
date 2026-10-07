@@ -30,6 +30,7 @@ TOKEN = os.environ.get('NOVA_SERVICE_TOKEN', '')
 TENANT_RE = re.compile(r'^[a-f0-9]{64}$')
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 VERSIONS['generation_cost_limit_usd'] = 10
+VERSIONS['generation_usage_version'] = 1
 _workers = {}
 _locks = {}
 _capacity_lock = asyncio.Lock()
@@ -224,7 +225,9 @@ async def proxy(path: str, request: Request):
                 return JSONResponse({'detail': 'Nova request is too large'}, status_code=413)
         outgoing = app.state.client.build_request(request.method, url + '/' + path,
             params=request.query_params, content=bytes(body), headers={
-                'Authorization': 'Bearer ' + TOKEN, 'Content-Type': request.headers.get('content-type', 'application/json')})
+                'Authorization': 'Bearer ' + TOKEN, 'Content-Type': request.headers.get('content-type', 'application/json'),
+                **({'X-BrickBuilder-Generation-Id': request.headers['x-brickbuilder-generation-id']}
+                   if 'x-brickbuilder-generation-id' in request.headers else {})})
         response = await app.state.client.send(outgoing, stream=True)
     except (RuntimeError, httpx.HTTPError, OSError):
         return JSONResponse({'detail': 'Nova worker is unavailable or at capacity'}, status_code=503)
