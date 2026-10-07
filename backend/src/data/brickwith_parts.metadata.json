@@ -1,0 +1,18 @@
+{
+  "supplier": "Brickwith",
+  "currency": "USD",
+  "fetched_at": "2026-10-07T13:09:16.954729+00:00",
+  "list_endpoint": "https://server.brickwith.com/medusa_api/store_v2/part_main/find_list",
+  "detail_endpoint": "https://server.brickwith.com/medusa_api/store_v2/part_main/find_map_array",
+  "color_reference": "https://www.brickwith.com/en/parts/Brick/3001?color_id=010",
+  "palette": {
+    "url": "https://file.brickwith.com/open/brickwith-parts-202603",
+    "sha256": "c329295b0b32d2d5462bf25789b5387573c8b442dfe0fad5ba6dab136f5e2205",
+    "placements": 36912
+  },
+  "products": 1721,
+  "variants": 41664,
+  "mapped_part_color_pairs": 36374,
+  "unmapped_variants": 5290,
+  "sha256": "bc7fd8350414e835b59b3b303cedfdfacda4cb5a0f80c8ebd8a0c29cf0a09d90"
+}

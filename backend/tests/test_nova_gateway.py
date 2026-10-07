@@ -26,7 +26,7 @@ def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path)
         assert client.get('/integration/runtime').status_code == 401
         assert client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': '../../other'}).status_code == 400
         response = client.get('/integration/runtime', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40}
+        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'parts_catalog_version': 1}
     assert not module._workers
 
 
@@ -61,7 +61,9 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
         return {'frontend': True}
     monkeypatch.setitem(sys.modules, 'main', SimpleNamespace(app=upstream))
     monkeypatch.setitem(sys.modules, 'agent', SimpleNamespace())
-    monkeypatch.setitem(sys.modules, 'settings', SimpleNamespace())
+    monkeypatch.setitem(sys.modules, 'settings', SimpleNamespace(CONFIG_DIR=tmp_path / 'config'))
+    monkeypatch.setitem(sys.modules, 'tools', SimpleNamespace())
+    monkeypatch.setitem(sys.modules, 'parts_policy', SimpleNamespace(policy=None, CATALOG_VERSION=1))
     monkeypatch.setitem(sys.modules, 'store', SimpleNamespace(get_store=lambda: None))
     monkeypatch.setitem(sys.modules, 'leocad_render', SimpleNamespace(bom_path_for=lambda p: p, snapshot_path_for=lambda p: p))
     monkeypatch.setenv('NOVA_SERVICE_TOKEN', 'worker-secret')
@@ -72,12 +74,23 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.export_sources = lambda chat, model: b'zip'
+    from src.utils.parts_catalog import PartsCatalog
+    module.get_store = lambda: SimpleNamespace(get_chat=lambda chat: {'id': chat} if chat != 'missing' else None)
+    module.agent.is_running = lambda chat: chat == 'busy'
+    module.parts_policy = SimpleNamespace(configure=lambda store, chat, content: PartsCatalog.from_csv(content))
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
-        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision'}
+        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'parts_catalog_version': 1}
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401
+        catalog = {'csv': 'part_id,color_id\n3001,4\n'}
+        assert client.put('/integration/chats/chat/parts-catalog', json=catalog).status_code == 401
+        assert client.put('/integration/chats/missing/parts-catalog', json=catalog, headers=headers).status_code == 404
+        assert client.put('/integration/chats/busy/parts-catalog', json=catalog, headers=headers).status_code == 409
+        result = client.put('/integration/chats/chat/parts-catalog', json=catalog, headers=headers)
+        assert result.json() == {'parts_catalog_version': 1, 'allowed_combinations': 1}
+        assert client.put('/integration/chats/chat/parts-catalog', json={'csv': 'bad'}, headers=headers).status_code == 400
 
 
 def test_instruction_export_uses_only_model_data_and_does_not_start_an_owner_worker(tmp_path):
