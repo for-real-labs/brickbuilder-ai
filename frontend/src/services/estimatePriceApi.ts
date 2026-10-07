@@ -3,12 +3,13 @@ import { apiFetch } from './apiFetch';
 
 export interface PartListItem {
   design_id: string;
-  color_id: string;
+  color_id: number | null;
+  ldraw_color_id: number;
   quantity: number;
 }
 
 export interface EstimatePriceResponse {
-  cart_id: string;
+  cart_id: string | null;
   total_price: string;
   currency: string;
   parts_count: number;

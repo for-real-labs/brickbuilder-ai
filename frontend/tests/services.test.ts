@@ -78,6 +78,19 @@ describe('JSON API service contracts', () => {
     expect(JSON.parse(localStorage.getItem('current_parts_list')!)).toEqual(price.parts_breakdown);
   });
 
+  it('preserves exact supplier colors, SKUs and prices without requiring a BrickOwl cart', async () => {
+    const estimate = { cart_id: null, total_price: '0.37', currency: 'USD', unmapped_parts: 0,
+      parts_list: [{ design_id: '3001', color_id: 21, ldraw_color_id: 4, quantity: 1 }] };
+    vi.mocked(fetch).mockResolvedValueOnce(ok(estimate) as unknown as Response);
+    await expect(EstimatePriceApiService.estimatePrice('ldr')).resolves.toEqual(estimate);
+    const price = { generation_id: 'g', total_price: 0.37, price_source: 'brickwith_parts',
+      parts_breakdown: [{ part_id: '3001.dat', color_id: 36, sku: 'GDS-542-110', quantity: 1,
+        unit_price: 0.22, total_price: 0.22 }] };
+    vi.mocked(fetch).mockResolvedValueOnce(ok(price) as unknown as Response);
+    await expect(GetPriceApiService.getPrice('g')).resolves.toEqual(price);
+    expect(JSON.parse(localStorage.getItem('current_parts_list')!)).toEqual(price.parts_breakdown);
+  });
+
   it('normalizes waitlist emails and returns server failures as data', async () => {
     vi.mocked(fetch).mockResolvedValueOnce(ok({ success: true }) as unknown as Response);
     await SendWaitlistEmailApiService.sendWaitlistEmail(' Test@Example.COM ');

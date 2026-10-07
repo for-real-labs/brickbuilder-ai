@@ -6,6 +6,10 @@ Nova owns prompts, tools, provider conversations, script execution, search,
 validation, rendering and publication. Follow-up edits continue the same Nova
 conversation and workspace.
 
+All parts mode now uses Brickwith's exact part/color catalog. See
+[Supplier parts restrictions and pricing](nova-parts-catalog.md) for catalog
+sources, refresh instructions, the publication gate and custom inventory input.
+
 ## Local setup
 
 Install Docker Desktop, then run:

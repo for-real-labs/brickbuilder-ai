@@ -14,15 +14,21 @@ from pathlib import Path
 
 from fastapi import HTTPException, Request
 from fastapi.responses import JSONResponse, Response
+from pydantic import BaseModel, Field
 
 from main import app
 import agent
 import settings
+import tools
+from brickbuilder_integration.parts_restrictions import ChatPartsPolicy, install_parts_restrictions
 from store import get_store
 from leocad_render import bom_path_for, snapshot_path_for
 
 MAX_EXPORT_BYTES = 64 * 1024 * 1024
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
+VERSIONS['parts_catalog_version'] = 1
+parts_policy = ChatPartsPolicy(settings.CONFIG_DIR)
+install_parts_restrictions(agent, tools, settings, parts_policy)
 
 
 @app.middleware('http')
@@ -37,6 +43,24 @@ async def private_runtime(request: Request, call_next):
 @app.get('/integration/runtime')
 def runtime():
     return VERSIONS
+
+
+class PartsCatalogRequest(BaseModel):
+    csv: str = Field(min_length=1, max_length=16 * 1024 * 1024)
+
+
+@app.put('/integration/chats/{chat_id}/parts-catalog')
+async def configure_parts_catalog(chat_id: str, body: PartsCatalogRequest):
+    store = get_store()
+    if not store.get_chat(chat_id):
+        raise HTTPException(404, 'Nova session not found')
+    if agent.is_running(chat_id):
+        raise HTTPException(409, 'Nova is working on this session')
+    try:
+        catalog = parts_policy.configure(store, chat_id, body.csv)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+    return {'parts_catalog_version': 1, 'allowed_combinations': len(catalog.parts)}
 
 
 def export_sources(chat_id: str, model_id: str) -> bytes:

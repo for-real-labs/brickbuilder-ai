@@ -6,17 +6,48 @@ from types import SimpleNamespace
 
 import httpx
 import pytest
+from unittest.mock import AsyncMock
 
 from src.utils.nova_service import NovaService, read_export
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'parts_catalog_version': 1}
+
+
+def test_old_runtime_fails_before_any_generation_can_start():
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
+                lambda req: httpx.Response(200, json={'toolkit': 'old'})))) as service:
+            with pytest.raises(ValueError, match='parts catalog'):
+                await service.ready()
+    asyncio.run(run())
+
+
+def test_final_import_blocks_a_runtime_publication_that_bypassed_the_parts_gate():
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
+            service.ready = AsyncMock(return_value=VERSIONS)
+            service.configure_model = AsyncMock(return_value='config')
+            service.request = AsyncMock(return_value={'parts_catalog_version': 1})
+            service.chat = AsyncMock(side_effect=[{'chat': {'running': False}, 'models': {}},
+                {'chat': {'running': False}, 'models': {'new': {'id': 'new', 'created_at': 1}}}])
+            service.wait_for_turn = AsyncMock()
+            service.cancel = AsyncMock()
+            invalid = archive({'model.mpd': 'original MPD',
+                               'model.ldr': '1 999999 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'})
+            service.export = AsyncMock(return_value=read_export(invalid, {}))
+            request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='build', image_base64=None)
+            with pytest.raises(ValueError, match='Parts unavailable'):
+                await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
+            assert service.request.call_args_list[0].args[:2] == ('PUT', 'integration/chats/chat/parts-catalog')
+            service.cancel.assert_awaited_once_with('chat')
+    asyncio.run(run())
 
 
 def archive(files=None):
     out = io.BytesIO()
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
-        for name, value in (files or {'model.mpd': 'original hierarchical MPD', 'model.ldr': 'flat LDR', 'preview.png': b'png'}).items():
+        for name, value in (files or {'model.mpd': 'original hierarchical MPD', 'model.ldr': '1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat', 'preview.png': b'png'}).items():
             z.writestr(name, value)
     return out.getvalue()
 
@@ -51,6 +82,9 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
         nonlocal chat_reads
         body = json.loads(req.content) if req.content else None
         calls.append((req.method, req.url.path, body))
+        if req.url.path.endswith('/parts-catalog'):
+            assert req.method == 'PUT' and 'unit_price' in body['csv']
+            return httpx.Response(200, json={'parts_catalog_version': 1})
         if req.url.path == '/integration/runtime':
             return httpx.Response(200, json=VERSIONS)
         if req.url.path == '/api/llm-models' and req.method == 'GET':
@@ -115,6 +149,7 @@ def test_cancellation_stops_the_upstream_turn_but_conflicts_do_not(monkeypatch):
         ready = asyncio.Event()
         def transport(req):
             calls.append(req.url.path)
+            if req.url.path.endswith('/parts-catalog'): return httpx.Response(200, json={'parts_catalog_version': 1})
             if req.url.path == '/integration/runtime': return httpx.Response(200, json=VERSIONS)
             if req.url.path == '/api/llm-models' and req.method == 'GET': return httpx.Response(200, json={'models': []})
             if req.url.path == '/api/llm-models': return httpx.Response(200, json={'id': 'llm'})

@@ -107,3 +107,12 @@ test('new runtimes use localhost and named volumes and wait for authenticated re
 test('unready Nova prevents API startup instead of silently allowing failed All parts builds', () => {
   assert.throws(()=>waitReady({url:'http://nova:8000',token:'private'},()=>({status:1})),/startup failed/);
 });
+
+test('both build contexts include the shared parts policy and use a new integration image tag', () => {
+  const setup = readFileSync(path.resolve(__dirname, '../backend/setup_nova.cjs'), 'utf8');
+  const ignore = readFileSync(path.resolve(__dirname, '../backend/nova-service/Dockerfile.dockerignore'), 'utf8');
+  assert.match(setup, /parts-v1/);
+  assert.match(setup, /COPY backend\/src\/utils\/parts_catalog.py/);
+  assert.match(setup, /cpSync\(path.join\(__dirname, 'src\/utils\/parts_catalog.py'\)/);
+  assert.match(ignore, /!backend\/src\/utils\/parts_catalog.py/);
+});
