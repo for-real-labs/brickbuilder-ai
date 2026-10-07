@@ -194,7 +194,8 @@ def test_upstream_activity_is_shown_without_repeating_heartbeat_phases():
     assert progress[-1] == 'Reviewing a rendered image'
 
 
-def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(monkeypatch):
+@pytest.mark.parametrize('missing_workspace', [False, True])
+def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(monkeypatch, missing_workspace):
     monkeypatch.setenv('OPENAI_API_KEY', 'callers-key')
     geometry = '1 19 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'
     sessions, calls = [], []
@@ -205,6 +206,8 @@ def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(
         if req.url.path == '/integration/runtime': return httpx.Response(200, json=VERSIONS)
         if req.url.path == '/api/llm-models' and req.method == 'GET': return httpx.Response(200, json={'models': []})
         if req.url.path == '/api/llm-models': return httpx.Response(200, json={'id': 'caller-model'})
+        if req.url.path == '/api/chats/missing-chat':
+            return httpx.Response(404, json={'detail': 'Chat not found'})
         if req.url.path == '/integration/import':
             assert json.loads(req.content) == {'model': geometry, 'llm_model_id': 'caller-model'}
             return httpx.Response(200, json={'id': 'copy-chat', 'model_id': 'seed'})
@@ -226,8 +229,30 @@ def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(
         request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='add a door',
             image_base64=None, _nova_source_ldr=geometry)
         async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(transport))) as service:
-            result = await service.run(request, 'openai', save)
+            result = await service.run(request, 'openai', save,
+                previous={'chat_id': 'missing-chat'} if missing_workspace else None)
             assert result.session['chat_id'] == 'copy-chat' and result.session['model_id'] == 'edited'
     asyncio.run(run())
     assert '/api/chats' not in calls
     assert sessions[-1]['model_id'] == 'edited'
+    assert '/api/chats/missing-chat/messages' not in calls
+
+
+@pytest.mark.parametrize('status', [409, 500])
+def test_workspace_recovery_does_not_hide_busy_sessions_or_runtime_failures(monkeypatch, status):
+    monkeypatch.setenv('OPENAI_API_KEY', 'key')
+    calls = []
+    def transport(req):
+        calls.append(req.url.path)
+        if req.url.path == '/integration/runtime': return httpx.Response(200, json=VERSIONS)
+        if req.url.path == '/api/llm-models' and req.method == 'GET': return httpx.Response(200, json={'models': []})
+        if req.url.path == '/api/llm-models': return httpx.Response(200, json={'id': 'model'})
+        return httpx.Response(status, json={})
+    async def run():
+        async def save(session): pass
+        request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', _nova_source_ldr='saved geometry')
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(transport))) as service:
+            with pytest.raises(ValueError):
+                await service.run(request, 'openai', save, previous={'chat_id': 'chat'})
+    asyncio.run(run())
+    assert '/integration/import' not in calls

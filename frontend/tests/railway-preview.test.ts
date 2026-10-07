@@ -4,6 +4,7 @@ import {
   inspectRailwayProject,
   resolveRailwayPreviewBackend,
 } from '../scripts/railway-preview.mjs';
+import { railwayBackendFromComments, resolveGitHubPreviewBackend } from '../scripts/github-preview.mjs';
 
 function railwayProject({
   environmentName,
@@ -125,4 +126,59 @@ describe('Railway preview backend resolution', () => {
     expect(loadProject).toHaveBeenCalledOnce();
     expect(sleep).not.toHaveBeenCalled();
   });
+});
+
+const previewEnv = {
+  VERCEL_ENV: 'preview', VERCEL_GIT_REPO_OWNER: 'builder', VERCEL_GIT_REPO_SLUG: 'bricks',
+  VERCEL_GIT_COMMIT_REF: 'feature/notifications', VERCEL_GIT_COMMIT_SHA: 'a'.repeat(40),
+};
+const deploymentComment = {
+  user: {login: 'railway-app[bot]', type: 'Bot'},
+  body: '<!-- railway-project-id="project" -->\n| brickai-backend | ✅ Success | [Web](https://backend-pr-205.up.railway.app) | now |',
+};
+const json = (data: unknown) => ({ok: true, json: async () => data});
+
+it('finds the PR for a branch deployment and waits for its matching backend commit', async () => {
+  const fetchImpl = vi.fn().mockResolvedValueOnce(json([{
+    number: 205, state: 'open', head: {ref: previewEnv.VERCEL_GIT_COMMIT_REF, repo: {owner: {login: 'builder'}}},
+  }])).mockResolvedValueOnce(json({statuses: [{context: 'lego stuff - brickai-backend', state: 'pending'}]}))
+    .mockResolvedValueOnce(json({statuses: [{context: 'lego stuff - brickai-backend', state: 'success'}]}))
+    .mockResolvedValueOnce(json([deploymentComment]));
+  const sleep = vi.fn();
+  await expect(resolveGitHubPreviewBackend({env: previewEnv, fetchImpl, sleep, maxAttempts: 2}))
+    .resolves.toBe('https://backend-pr-205.up.railway.app');
+  expect(fetchImpl.mock.calls[0][0]).toContain('head=builder%3Afeature%2Fnotifications');
+  expect(fetchImpl.mock.calls[1][0]).toContain('/commits/' + previewEnv.VERCEL_GIT_COMMIT_SHA + '/status');
+  expect(sleep).toHaveBeenCalledOnce();
+});
+
+it.each(['failure', 'error', 'pending'])('does not build against shared staging when the PR backend is %s', async state => {
+  const fetchImpl = vi.fn().mockResolvedValue(json({statuses: [{context: 'lego stuff - brickai-backend', state}]}));
+  await expect(resolveGitHubPreviewBackend({
+    env: {...previewEnv, VERCEL_GIT_PULL_REQUEST_ID: '205'}, fetchImpl, maxAttempts: 1,
+  })).rejects.toThrow(state === 'pending' ? 'not ready' : 'deployment failed');
+  expect(fetchImpl).toHaveBeenCalledOnce();
+});
+
+it('keeps production and branches without a PR on their configured backend', async () => {
+  const fetchImpl = vi.fn().mockResolvedValue(json([]));
+  await expect(resolveGitHubPreviewBackend({env: {...previewEnv, VERCEL_ENV: 'production'}, fetchImpl})).resolves.toBeNull();
+  expect(fetchImpl).not.toHaveBeenCalled();
+  await expect(resolveGitHubPreviewBackend({env: previewEnv, fetchImpl})).resolves.toBeNull();
+});
+
+it('accepts only unambiguous successful Railway bot links for the selected service and project', () => {
+  expect(railwayBackendFromComments([deploymentComment], 'brickai-backend', 'project'))
+    .toBe('https://backend-pr-205.up.railway.app');
+  expect(railwayBackendFromComments([deploymentComment], 'nova-production', 'project')).toBeNull();
+  expect(railwayBackendFromComments([deploymentComment], 'brickai-backend', 'other')).toBeNull();
+  for (const link of ['https://evil.example', 'http://test.up.railway.app', 'https://user:secret@test.up.railway.app']) {
+    expect(railwayBackendFromComments([{...deploymentComment,
+      body: deploymentComment.body.replace('https://backend-pr-205.up.railway.app', link),
+    }], 'brickai-backend')).toBeNull();
+  }
+  expect(railwayBackendFromComments([{...deploymentComment, user: {login: 'intruder', type: 'User'}}], 'brickai-backend')).toBeNull();
+  expect(railwayBackendFromComments([deploymentComment, {...deploymentComment,
+    body: deploymentComment.body.replace('backend-pr-205', 'other'),
+  }], 'brickai-backend')).toBeNull();
 });

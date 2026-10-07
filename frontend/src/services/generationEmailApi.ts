@@ -11,7 +11,9 @@ async function request(id: string, init: RequestInit = {}) {
     const body = await response.json().catch(() => ({}));
     throw new Error(typeof body.detail === 'string' ? body.detail : 'Could not save your notification. Please try again.');
   }
-  return response.json() as Promise<{ subscribed: boolean; email: string | null }>;
+  const data = await response.json();
+  return { subscribed: data.subscribed === true,
+    email: typeof data.email === 'string' && data.email.trim() ? data.email : null };
 }
 
 export const GenerationEmailApi = {

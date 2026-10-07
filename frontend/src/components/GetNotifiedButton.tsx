@@ -77,6 +77,9 @@ function NotificationButton({ generationId, signedIn }: { generationId: string; 
       {busy ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : subscribed ? <Check aria-hidden className="h-4 w-4" /> : <Bell aria-hidden className="h-4 w-4" />}
       {subscribed ? 'We’ll email you' : 'Get notified'}
     </button>
+    {subscribed && recipient && <p className="mt-2 break-all text-xs text-slate-600">
+      Emailing <strong className="font-semibold text-slate-900">{recipient}</strong>
+    </p>}
     {!open && error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
     {open && createPortal(<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={event => { if (event.target === event.currentTarget && !busy) close(); }}>
       <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
@@ -93,7 +96,9 @@ function NotificationButton({ generationId, signedIn }: { generationId: string; 
         {stage === 'success' ? <>
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-600"><Check aria-hidden className="h-6 w-6" /></div>
           <h2 id={titleId} className="pr-9 text-xl font-semibold text-slate-900">You’re all set</h2>
-          <p id={descriptionId} className="mt-2 text-sm text-slate-600">We’ll send one email to <strong className="break-all font-semibold text-slate-900">{recipient}</strong> when your model is ready. No newsletter.</p>
+          <p id={descriptionId} className="mt-2 text-sm text-slate-600">{recipient
+            ? <>We’ll send one email to <strong className="break-all font-semibold text-slate-900">{recipient}</strong> when your model is ready. No newsletter.</>
+            : 'Your email notification is saved. Refresh to see the recipient email address.'}</p>
           <button type="button" onClick={close} className="mt-5 h-12 w-full rounded-full bg-[#f44336] px-5 font-semibold text-white hover:bg-[#ff6b6b]">Done</button>
         </> : <>
         <h2 id={titleId} className="pr-9 text-xl font-semibold text-slate-900">Get notified</h2>

@@ -49,13 +49,22 @@ it('restores the server start timestamp and persists it across leaving and retur
 });
 
 beforeEach(() => {
-  vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: false });
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: false, email: null });
   vi.useFakeTimers();
   open.mockReset();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
   vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
+});
+
+it('shows the saved notification recipient inside the landing generation card and its modal', async () => {
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({subscribed: true, email: 'landing-builder@example.com'});
+  await act(async () => root.render(<GenerationActivityList generations={[job('email-build')]} error={null} onOpen={open} />));
+  expect(container.querySelector('article')!.textContent).toContain('Emailing landing-builder@example.com');
+  act(() => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'We’ll email you')!.click());
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('landing-builder@example.com');
+  expect(open).not.toHaveBeenCalled();
 });
 afterEach(() => {
   act(() => root.unmount());

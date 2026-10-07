@@ -522,6 +522,21 @@ export default function GeneratedModel() {
             return;
           }
           if (statusResponse.status === 'failed') {
+            if (statusResponse.previous_completed_generation_id) {
+              const previous = await GetGenerationApiService.getGeneration(statusResponse.previous_completed_generation_id, controller.signal);
+              if (controller.signal.aborted) return;
+              if (previous.status === 'completed' && previous.ldr_content) {
+                await processCompletedGeneration(previous.generation_id, {
+                  ...previous, ldr_content: previous.ldr_content, prompt: previous.prompt || 'Your Model',
+                });
+                if (controller.signal.aborted) return;
+                setPendingGeneration(previous);
+                setEditPromptError(statusResponse.error_message?.includes('Nova session or artifact is unavailable')
+                  ? 'The editing workspace was unavailable. Your saved model is intact; try your edit again.'
+                  : statusResponse.error_message || 'Your edit couldn’t finish. Your previous model is ready to edit again.');
+                return;
+              }
+            }
             throw new Error(statusResponse.error_message || 'Generation failed');
           }
           

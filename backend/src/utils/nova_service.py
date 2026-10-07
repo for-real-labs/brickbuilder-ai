@@ -22,6 +22,10 @@ MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
 
 
+class NovaSessionUnavailableError(ValueError):
+    """The selected runtime cannot find a saved session or artifact."""
+
+
 def connection() -> tuple[str, str]:
     url, token = os.getenv('NOVA_SERVICE_URL'), os.getenv('NOVA_SERVICE_TOKEN')
     if not url and not token:
@@ -97,7 +101,7 @@ class NovaService:
             if exc.response.status_code == 409:
                 raise ValueError('Nova is already working on this session. Wait for it to finish before editing again.') from None
             if exc.response.status_code == 404:
-                raise ValueError('Nova session or artifact is unavailable. Check the runtime data volume.') from None
+                raise NovaSessionUnavailableError('Nova session or artifact is unavailable. Check the runtime data volume.') from None
             raise ValueError('Nova rejected the request. Check its provider connection and runtime configuration.') from None
         except httpx.HTTPError:
             raise ValueError('Cannot reach the Nova runtime. Check that it is running and the private connection is configured.') from None
@@ -180,13 +184,20 @@ class NovaService:
     async def run(self, request, provider: str, save_session, on_output=None, previous: dict | None = None, *, on_progress=None) -> NovaResult:
         versions = await self.ready()
         model_id = await self.configure_model(request.model, provider, request.auth_mode)
+        source = getattr(request, '_nova_source_ldr', None)
         if previous:
             chat_id = self.session_id(previous['chat_id'])
-            before = await self.chat(chat_id)
-            if before['chat'].get('running'):
+            try:
+                before = await self.chat(chat_id)
+            except NovaSessionUnavailableError:
+                if not source:
+                    raise
+                # The saved geometry survives runtime/volume changes. Import it
+                # into this tenant instead of depending on a missing conversation.
+                previous = None
+            if previous and before['chat'].get('running'):
                 raise ValueError('Nova is already working on this session. Wait before editing it again.')
-        else:
-            source = getattr(request, '_nova_source_ldr', None)
+        if not previous:
             if source:
                 created = await self.request('POST', 'integration/import',
                     json={'model': source, 'llm_model_id': model_id})
@@ -197,7 +208,7 @@ class NovaService:
                 chat_id, before = self.session_id(created['id']), {'models': {}}
         session = {'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
                    'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
-        if not previous and getattr(request, '_nova_source_ldr', None):
+        if not previous and source:
             session['model_id'] = self.session_id(created['model_id'])
         await save_session(session)
         text = request.prompt or 'Create a model from the reference image.'

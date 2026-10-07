@@ -30,6 +30,7 @@ it('subscribes a signed-in owner with their server-side account email in one cli
   expect(modal.textContent).toContain('account@example.com');
   expect(modal.querySelector('input')).toBeNull();
   expect(container.textContent).toContain('We’ll email you');
+  expect(container.textContent).toContain('Emailing account@example.com');
   expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_subscribed', { generation_id: 'build', is_authenticated: true });
 });
 
@@ -52,6 +53,7 @@ it('lets a guest enter an email without a login, shows errors, and retries', asy
   expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('build', 'guest@example.com');
   expect(modal.textContent).toContain('You’re all set');
   expect(modal.textContent).toContain('guest@example.com');
+  expect(container.textContent).toContain('Emailing guest@example.com');
   expect(modal.querySelector('input')).toBeNull();
   expect(document.body.style.overflow).toBe('hidden');
   act(() => Array.from(modal.querySelectorAll('button')).find(button => button.textContent === 'Done')!.click());
@@ -64,6 +66,7 @@ it('restores a saved opt-in after leaving and coming back', async () => {
   vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: true, email: 'saved@example.com' });
   await act(async () => root.render(<GetNotifiedButton generationId="build" />));
   expect(container.textContent).toContain('We’ll email you');
+  expect(container.textContent).toContain('Emailing saved@example.com');
   act(() => container.querySelector('button')!.click());
   expect(document.querySelector('[role="dialog"]')!.textContent).toContain('saved@example.com');
   expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
@@ -127,7 +130,7 @@ it('uses authenticated transport and sends no client recipient for signed-in req
   vi.mocked(GenerationEmailApi.status).mockRestore();
   vi.mocked(GenerationEmailApi.subscribe).mockRestore();
   vi.mocked(authenticatedApiFetch).mockResolvedValue({ ok: true, json: async () => ({ subscribed: true }) } as Response);
-  await GenerationEmailApi.subscribe('build');
+  await expect(GenerationEmailApi.subscribe('build')).resolves.toEqual({ subscribed: true, email: null });
   expect(authenticatedApiFetch).toHaveBeenLastCalledWith(expect.stringContaining('/generation/build/notification-email'), {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}',
   });
@@ -138,4 +141,14 @@ it('uses authenticated transport and sends no client recipient for signed-in req
   expect(authenticatedApiFetch).toHaveBeenLastCalledWith(expect.any(String), { signal: controller.signal });
   vi.mocked(authenticatedApiFetch).mockResolvedValue({ ok: false, json: async () => ({ detail: 'This build has stopped.' }) } as Response);
   await expect(GenerationEmailApi.subscribe('build')).rejects.toThrow('This build has stopped.');
+});
+
+it('does not show an empty recipient sentence when a legacy backend omits the email', async () => {
+  auth.session = { user: { id: 'owner' } };
+  vi.mocked(GenerationEmailApi.subscribe).mockResolvedValue({ subscribed: true, email: null });
+  await act(async () => root.render(<GetNotifiedButton generationId="build" />));
+  await act(async () => container.querySelector('button')!.click());
+  const modal = document.querySelector('[role="dialog"]')!;
+  expect(modal.textContent).toContain('Refresh to see the recipient email address.');
+  expect(modal.textContent).not.toContain('email to when');
 });

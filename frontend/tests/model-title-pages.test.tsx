@@ -380,6 +380,7 @@ it('restores the edit notification and its recipient when returning to the model
   const notify = Array.from(container.querySelectorAll('figure button')).find(button => button.textContent === 'We’ll email you')!;
   act(() => notify.click());
   expect(document.querySelector('[role="dialog"]')!.textContent).toContain('edit-recipient@example.com');
+  expect(container.textContent).toContain('Emailing edit-recipient@example.com');
   expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
 });
 
@@ -478,6 +479,29 @@ it('keeps the source model available and unlocks controls after an edit fails', 
   expect(container.textContent).not.toContain('Failed to Load Model');
   expect(modelButton('Manually edit model').disabled).toBe(false);
   expect(modelButton('Order my kit').disabled).toBe(false);
+});
+
+it('opens the last completed model when returning to a failed edit', async () => {
+  mockPendingEdit();
+  vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id => (
+    id === 'old' ? {...completedEditSource, endpoint: 'novaToBricks'} : {
+      ...pendingEdit, endpoint: 'novaToBricks', status: 'failed',
+      error_message: 'Nova session or artifact is unavailable. Check the runtime data volume.',
+    }
+  ) as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('h1')?.textContent).toBe('Pepsi Can');
+  expect(container.textContent).toContain('Your saved model is intact; try your edit again.');
+  expect(container.textContent).not.toContain('Failed to Load Model');
+  expect((container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement).disabled).toBe(false);
+  const edit = vi.spyOn(NovaToBricksApiService, 'edit').mockRejectedValue(new Error('Test request stopped'));
+  act(() => {
+    const input = container.querySelector('#voxel-edit-prompt')!;
+    Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Try a taller roof');
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+  await act(async () => container.querySelector('#voxel-edit-prompt')!.closest('form')!.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true})));
+  expect(edit).toHaveBeenCalledWith('old', 'Try a taller roof', 'token');
 });
 
 
