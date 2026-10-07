@@ -179,3 +179,19 @@ def test_completed_owned_model_with_lost_session_can_import_geometry(monkeypatch
     request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
     asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
     assert request._nova_source_ldr == 'public geometry' and request._nova_session is None
+
+
+def test_owned_completed_edit_retains_geometry_in_case_runtime_session_is_missing(monkeypatch):
+    session = {'chat_id': 'old-chat', 'model': 'gpt-5.5', 'auth_mode': 'api_key', 'tenant': 'a' * 64}
+    monkeypatch.setattr(module, '_owned_session', AsyncMock(return_value=session))
+    download = AsyncMock(return_value=b'saved geometry')
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
+        download_file_from_storage=download))
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert request._nova_session == session
+    assert request._nova_source_ldr == 'saved geometry'
+    assert request.model == session['model'] and request.auth_mode == session['auth_mode']
+    download.assert_awaited_once_with('public-model')

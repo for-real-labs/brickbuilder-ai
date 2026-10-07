@@ -2,10 +2,13 @@
 from contextvars import ContextVar
 from decimal import Decimal
 from functools import wraps
+import json
+import os
 
 from .generation_budget import GenerationBudget, GenerationBudgetExceeded, MAX_GENERATION_COST_USD, input_token_bound
 
 current_budget = ContextVar('brickbuilder_generation_budget', default=None)
+current_usage_id = ContextVar('brickbuilder_usage_id', default=None)
 
 
 def account_usage(budget, reported):
@@ -37,7 +40,19 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
         if entry is None:
             raise ValueError('No model configured for the generation cost limit.')
         # asyncio.create_task inherits this context; every tool round uses one budget.
-        token = current_budget.set(GenerationBudget(entry['litellm_params']['model']))
+        budget = GenerationBudget(entry['litellm_params']['model'])
+        usage_id = current_usage_id.get()
+        if usage_id:
+            path = store.chat_dir(chat_id) / f'.brickbuilder-usage-{usage_id}.json'
+            def save_usage(records):
+                # A hidden, private file survives worker restarts and is excluded
+                # from model exports. Each generation gets its own turn totals.
+                temporary = path.with_suffix('.tmp')
+                temporary.write_text(json.dumps({'generation_id': usage_id, 'calls': records}))
+                os.replace(temporary, path)
+            budget.on_usage = save_usage
+            save_usage([])
+        token = current_budget.set(budget)
         try:
             return await original_start(store, chat_id, text, llm_model_id, *args, **kwargs)
         finally:
@@ -87,6 +102,10 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
         async for event in original_receive(client):
             if isinstance(event, claude_agent.ResultMessage):
                 reported = True
+                budget = current_budget.get()
+                usage = getattr(event, 'usage', None)
+                if budget is not None and isinstance(usage, dict) and usage:
+                    budget.record_usage(usage, 'anthropic')
                 cost = getattr(event, 'total_cost_usd', None)
                 if getattr(event, 'subtype', '') == 'error_max_budget_usd':
                     raise GenerationBudgetExceeded()

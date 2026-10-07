@@ -10,6 +10,7 @@ export interface GenerationActivity {
   status: string;
   endpoint?: string;
   createdAt?: string;
+  durationSeconds?: number | null;
   imageUrl?: string;
   errorMessage?: string;
   previewWaitUntil?: number;
@@ -103,12 +104,14 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
             ? row.previewWaitUntil ?? Date.now() + PREVIEW_WAIT_MS : undefined;
           return { ...row, status: status.status, prompt: status.prompt || row.prompt, name: status.name || row.name,
             createdAt: status.created_at || row.createdAt,
+            durationSeconds: status.generation_duration_seconds ?? row.durationSeconds,
             previewWaitUntil,
             imageUrl: status.preview_image_url || status.processed_image_url || status.external_image_url || row.imageUrl,
             errorMessage: status.error_message || undefined };
         }));
         if (controller.signal.aborted) return;
         const updates = new Map<string, GenerationActivity>([...resumable, ...active].map(row => [row.id, {
+          durationSeconds: row.generation_duration_seconds,
           id: row.id, prompt: row.prompt, name: row.name, status: row.status, endpoint: row.endpoint,
           createdAt: row.created_at || rows.current.find(saved => saved.id === row.id)?.createdAt,
           imageUrl: row.preview_image_url || row.processed_image_url || row.external_image_url,

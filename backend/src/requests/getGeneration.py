@@ -27,6 +27,7 @@ class GetGenerationResponse(BaseModel):
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
     prompt: Optional[str] = None
     name: Optional[str] = None
+    example_edit_prompt: Optional[str] = None
     created_at: Optional[str] = None
     generation_duration_seconds: Optional[float] = None
     detail_level: Optional[float] = None
@@ -137,6 +138,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             status=status,
             prompt=prompt,
             name=name,
+            example_edit_prompt=generation.get("example_edit_prompt"),
             created_at=generation.get("created_at"),
             generation_duration_seconds=generation.get("generation_duration_seconds"),
             detail_level=detail_level,

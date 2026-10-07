@@ -37,6 +37,7 @@ class GenerationWithOrder(BaseModel):
     user_type: str
     prompt: str
     name: Optional[str] = None
+    generation_duration_seconds: Optional[float] = None
     detail_level: float
     endpoint: str
     mode: GenerationMode = 'basic_bricks'
@@ -189,6 +190,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
                 user_type=gen.get("user_type"),
                 prompt=gen.get("prompt", ""),
                 name=gen.get("name"),
+                generation_duration_seconds=gen.get("generation_duration_seconds"),
                 detail_level=gen.get("detail_level", 0),
                 endpoint=gen.get("endpoint", ""),
                 mode=generation_mode(gen.get("endpoint"), gen.get("mode")),

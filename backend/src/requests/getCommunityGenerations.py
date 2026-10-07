@@ -19,6 +19,7 @@ class CommunityGeneration(BaseModel):
     username: Optional[str] = None  # username of the generation's owner, if available
     prompt: str
     name: Optional[str] = None
+    generation_duration_seconds: Optional[float] = None
     detail_level: float
     endpoint: str
     created_at: str
@@ -173,6 +174,7 @@ async def get_community_generations(
                 username=usernames_by_user_id.get(gen.get("user_id")),
                 prompt=gen.get("prompt", ""),
                 name=gen.get("name"),
+                generation_duration_seconds=gen.get("generation_duration_seconds"),
                 detail_level=gen.get("detail_level", 0),
                 endpoint=gen.get("endpoint", ""),
                 created_at=gen.get("created_at", ""),

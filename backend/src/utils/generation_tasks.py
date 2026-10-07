@@ -4,6 +4,7 @@ import logging
 from collections.abc import Coroutine
 from contextlib import suppress
 from typing import Any
+from .generation_budget import GenerationUsage, current_generation_usage
 
 logger = logging.getLogger(__name__)
 ACTIVE_STATUSES = ("queued", "started", "processing", "ldr_processing", "resizing")
@@ -27,6 +28,8 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
         if row and row.get("status") == "cancelled":
             raise asyncio.CancelledError
         started = True
+        usage = GenerationUsage(generation_id)
+        usage_token = current_generation_usage.set(usage)
         worker = asyncio.create_task(work)
 
         async def watch_cancellation():
@@ -47,6 +50,13 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
             watcher.cancel()
             with suppress(asyncio.CancelledError):
                 await watcher
+            try:
+                if usage.calls:
+                    await asyncio.shield(generation_storage.save_generation_usage(generation_id, usage.values()))
+            except Exception:
+                logger.warning('Unable to save AI usage for %s', generation_id)
+            finally:
+                current_generation_usage.reset(usage_token)
 
     task = asyncio.create_task(run())
     _tasks[generation_id] = task

@@ -49,3 +49,19 @@ it('labels the refine input and keeps manual edits separate from submitting a pr
     expect(submit).not.toHaveBeenCalled();
   } finally { act(() => root.unmount()); }
 });
+
+it('uses the saved subject edit example as a placeholder without filling or submitting the input', () => {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    act(() => root.render(<VoxelPromptEditor prompt="" examplePrompt="Make the fins blue and add a longer tail" modelName="Fish"
+      onPromptChange={vi.fn()} onSubmit={vi.fn()} loading={false} disabled={false} error={null} />));
+    expect(container.querySelector('textarea')?.placeholder).toBe('e.g. Make the fins blue and add a longer tail');
+    expect(container.querySelector('textarea')?.value).toBe('');
+    expect(container.querySelector('button')?.disabled).toBe(true);
+    act(() => root.render(<VoxelPromptEditor prompt="My own edit" modelName="Crocodile"
+      onPromptChange={vi.fn()} onSubmit={vi.fn()} loading={false} disabled={false} error={null} />));
+    expect(container.querySelector('textarea')?.placeholder).toContain('Crocodile');
+    expect(container.querySelector('textarea')?.value).toBe('My own edit');
+  } finally { act(() => root.unmount()); }
+});

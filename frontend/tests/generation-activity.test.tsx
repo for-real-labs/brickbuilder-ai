@@ -49,13 +49,22 @@ it('restores the server start timestamp and persists it across leaving and retur
 });
 
 beforeEach(() => {
-  vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: false });
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: false, email: null });
   vi.useFakeTimers();
   open.mockReset();
   container = document.createElement('div');
   document.body.appendChild(container);
   root = createRoot(container);
   vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
+});
+
+it('shows the saved notification recipient inside the landing generation card and its modal', async () => {
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({subscribed: true, email: 'landing-builder@example.com'});
+  await act(async () => root.render(<GenerationActivityList generations={[job('email-build')]} error={null} onOpen={open} />));
+  expect(container.querySelector('article')!.textContent).toContain('Emailing landing-builder@example.com');
+  act(() => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'We’ll email you')!.click());
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('landing-builder@example.com');
+  expect(open).not.toHaveBeenCalled();
 });
 afterEach(() => {
   act(() => root.unmount());
@@ -314,4 +323,15 @@ it.each(['failed', 'cancelled'])('does not link a %s card to an unavailable mode
   ]} error={null} onOpen={open} />));
   expect(container.querySelector('a')).toBeNull();
   expect(container.querySelector('button')).toBeNull();
+});
+
+it('carries the final stored duration from polling to the completed landing card', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({generation_id: 'timed', status: 'completed',
+    preview_image_url: '/fish.png', generation_duration_seconds: 125} as never);
+  await act(async () => root.render(<Harness />));
+  act(() => activity.trackGeneration({...job('timed'), createdAt: '2026-10-01'}));
+  await act(async () => vi.advanceTimersByTimeAsync(5000));
+  expect(container.querySelector('article')?.textContent).toContain('Generation time: 2m 5s');
+  expect(container.textContent).not.toContain('Building for');
 });

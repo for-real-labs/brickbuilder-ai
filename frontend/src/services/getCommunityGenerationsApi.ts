@@ -28,6 +28,7 @@ export interface CommunityGeneration {
   detail_level: number;
   endpoint: string;
   created_at: string;
+  generation_duration_seconds?: number | null;
   status: string;
   ldr_url?: string | null;
   xyzrgb_url?: string | null;

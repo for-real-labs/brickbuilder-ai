@@ -1,3 +1,5 @@
+import { GenerationDuration } from '../components/GenerationDuration';
+import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
 import { NotificationMenu } from "../components/NotificationMenu";
 
 import React, { useState, useEffect } from "react";
@@ -253,6 +255,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
               <div className="font-mono text-[11px] sm:text-xs text-slate-600">{g.id.slice(0, 8)}...</div>
             </div>
           </div>
+          {isProcessing ? <GenerationElapsedTime startedAt={g.created_at} /> : g.status === 'completed' && <GenerationDuration seconds={g.generation_duration_seconds} />}
 
           <div className="mt-2 sm:mt-3 flex gap-2 flex-wrap">
             {isProcessing ? (
@@ -334,6 +337,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
                           )}
                         </div>
                         <p className="text-xs text-slate-900 font-mono mb-1.5">{edit.id}</p>
+                        {edit.status === 'completed' && <GenerationDuration seconds={edit.generation_duration_seconds} />}
                         <div className="flex items-center gap-2 text-[10px] text-slate-500">
                           <span className="flex items-center gap-1">
                             <Calendar className="w-3 h-3"/>

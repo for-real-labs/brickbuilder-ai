@@ -12,7 +12,7 @@ def test_dashboard_uses_database_pagination_and_preserves_same_image_models(monk
     rows = [dict(id=id, generation_id=id, version=version, user_id="user",
                  user_type="authenticated", prompt="Castle", detail_level=40,
                  endpoint="llmToBricks", created_at="2026-09-26T00:00:00",
-                 status="processing", processed_image_url="https://example.com/same.png")
+                 status="processing", generation_duration_seconds=125, processed_image_url="https://example.com/same.png")
             for id, version in [("one", 3), ("two", 1), ("extra", 2)]]
     fetch = AsyncMock(return_value=rows)
     storage = SimpleNamespace(count_user_generations=AsyncMock(return_value=5),
@@ -26,6 +26,7 @@ def test_dashboard_uses_database_pagination_and_preserves_same_image_models(monk
     ))
     assert [row.id for row in result.generations] == ["one", "two"]
     assert [row.version for row in result.generations] == [3, 1]
+    assert [row.generation_duration_seconds for row in result.generations] == [125, 125]
     assert result.has_more and result.total_user_generations == 5
     assert fetch.await_args.kwargs == {
         "user_id": "user", "user_type": "authenticated", "limit": 3, "offset": 1,

@@ -17,9 +17,11 @@
  * always lose. Spawning `vite build` with an explicit env object is the only
  * way to actually win that precedence.
  *
- * It waits for a newly created PR environment and domain before falling back.
- * Permanent failures (missing config, API error, unexpected schema) are logged
- * and the build proceeds with the default configured backend.
+ * Public GitHub branch builds discover their PR even when Vercel omits its ID.
+ * They wait for the matching backend commit and use Railway's authenticated bot
+ * deployment link. A failed or unavailable PR backend stops the preview build.
+ * Non-PR branches keep their configured backend. The GraphQL lookup below
+ * supports explicit PR builds without GitHub repository metadata.
  *
  * Required Vercel project env vars for this to activate:
  *   RAILWAY_API_TOKEN            - Railway account or workspace token
@@ -34,6 +36,7 @@
  */
 import { spawnSync } from 'node:child_process';
 import { prerenderLegalPages } from './legal-prerender.mjs';
+import { resolveGitHubPreviewBackend } from './github-preview.mjs';
 import {
   DEFAULT_MAX_ATTEMPTS,
   DEFAULT_RETRY_DELAY_MS,
@@ -75,6 +78,14 @@ function readPositiveInteger(value, fallback, name) {
 }
 
 async function main() {
+  const githubBackend = await resolveGitHubPreviewBackend({ env: process.env, log });
+  if (githubBackend) {
+    log(`Resolved PR backend to ${githubBackend}; building with it.`);
+    await runViteBuild({
+      ...process.env, VITE_API_MODE: 'railway_staging', VITE_RAILWAY_API_URL_STAGING: githubBackend,
+    });
+    return;
+  }
   const prId = process.env.VERCEL_GIT_PULL_REQUEST_ID;
   const vercelEnv = process.env.VERCEL_ENV;
 
@@ -180,7 +191,7 @@ async function main() {
   });
 }
 
-main().catch(async (err) => {
-  log(`Unexpected error, falling back to default build: ${err}`);
-  await runViteBuild(process.env);
+main().catch((err) => {
+  log(`Build stopped: ${err.message}. A PR preview must use its matching backend.`);
+  process.exit(1);
 });

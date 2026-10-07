@@ -45,6 +45,7 @@ export interface GenerationWithOrder {
   endpoint: string;
   mode?: 'basic_bricks' | 'all_parts';
   created_at: string;
+  generation_duration_seconds?: number | null;
   status: string;
   error_message?: string;
   ldr_url?: string;

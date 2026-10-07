@@ -26,7 +26,7 @@ def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path)
         assert client.get('/integration/runtime').status_code == 401
         assert client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': '../../other'}).status_code == 400
         response = client.get('/integration/runtime', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10}
+        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1}
     assert not module._workers
 
 
@@ -38,6 +38,7 @@ def test_gateway_routes_only_to_selected_tenant_and_strips_browser_headers(tmp_p
         assert request.url.path == '/api/chats'
         assert 'origin' not in request.headers and 'cookie' not in request.headers
         assert request.headers['authorization'] == 'Bearer runtime-secret'
+        assert request.headers['x-brickbuilder-generation-id'] == '11111111-1111-1111-1111-111111111111'
         class Body(httpx.AsyncByteStream):
             async def __aiter__(self):
                 yield b'{"chats": []}'
@@ -46,7 +47,7 @@ def test_gateway_routes_only_to_selected_tenant_and_strips_browser_headers(tmp_p
         asyncio.run(module.app.state.client.aclose())
         module.app.state.client = httpx.AsyncClient(transport=httpx.MockTransport(handle))
         response = client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret',
-            'X-Nova-Tenant': 'b' * 64, 'Origin': 'https://untrusted.example', 'Cookie': 'private-browser-data'})
+            'X-Nova-Tenant': 'b' * 64, 'X-BrickBuilder-Generation-Id': '11111111-1111-1111-1111-111111111111', 'Origin': 'https://untrusted.example', 'Cookie': 'private-browser-data'})
         assert response.json() == {'chats': []}
     module.worker_url.assert_awaited_once_with('b' * 64)
 
@@ -63,7 +64,7 @@ def worker(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, 'agent', SimpleNamespace())
     for name in ['llm_config', 'litellm', 'claude_agent']:
         monkeypatch.setitem(sys.modules, name, SimpleNamespace())
-    monkeypatch.setitem(sys.modules, 'brickbuilder_integration.cost_limits', SimpleNamespace(install_cost_limits=lambda *args: None))
+    monkeypatch.setitem(sys.modules, 'brickbuilder_integration.cost_limits', SimpleNamespace(install_cost_limits=lambda *args: None, current_usage_id=__import__('contextvars').ContextVar('test_usage_id', default=None)))
     monkeypatch.setitem(sys.modules, 'settings', SimpleNamespace())
     monkeypatch.setitem(sys.modules, 'store', SimpleNamespace(get_store=lambda: None))
     monkeypatch.setitem(sys.modules, 'leocad_render', SimpleNamespace(bom_path_for=lambda p: p, snapshot_path_for=lambda p: p))
@@ -83,7 +84,7 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
     module.export_sources = lambda chat, model: b'zip'
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
-        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10}
+        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1}
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401
@@ -140,3 +141,19 @@ def test_worker_import_seeds_independent_workspace_and_rejects_unsafe_references
     assert workspace in accessible and workspace / 'model.ldr' in accessible
     assert (workspace / 'model.ldr').read_text() == geometry
     assert len(messages) == 1 and 'independent copy' in messages[0][1]['content']
+
+
+def test_usage_endpoint_reads_private_per_generation_file_and_validates_identity(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    module = worker(tmp_path, monkeypatch)
+    generation_id = '11111111-1111-1111-1111-111111111111'
+    report = {'generation_id': generation_id, 'calls': [{'model': 'gpt-5.5', 'input_tokens': 100, 'output_tokens': 20, 'estimated_cost_usd': '.0011'}]}
+    (tmp_path / f'.brickbuilder-usage-{generation_id}.json').write_text(json.dumps(report))
+    module.get_store = lambda: SimpleNamespace(get_chat=lambda id: {} if id != 'chat' else {'id': 'chat'}, chat_dir=lambda _: tmp_path)
+    headers = {'Authorization': 'Bearer worker-secret'}
+    with TestClient(module.app) as client:
+        assert client.get(f'/integration/chats/chat/usage/{generation_id}').status_code == 401
+        assert client.get(f'/integration/chats/chat/usage/{generation_id}', headers=headers).json() == report
+        assert client.get(f'/integration/chats/other/usage/{generation_id}', headers=headers).status_code == 404
+        assert client.get('/integration/chats/chat/usage/not-a-uuid', headers=headers).status_code == 422
+        assert client.get('/integration/runtime', headers={**headers, 'X-BrickBuilder-Generation-Id': '../../secret'}).status_code == 400

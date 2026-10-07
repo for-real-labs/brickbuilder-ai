@@ -752,3 +752,14 @@ it('positions the render-model chevron inside the select without intercepting in
   expect(chevron.classList.contains('top-1/2')).toBe(true);
   expect(chevron.classList.contains('right-3')).toBe(true);
 });
+
+it('shows saved generation time on featured landing models', () => {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    act(() => root.render(<FeaturedStrip items={[{id: 'fish', title: 'Fish', imageUrl: '/fish.png', creator: null,
+      createdAt: '2026-10-01', likeCount: 0, durationSeconds: 75}]} />));
+    expect(container.querySelector('article')?.textContent).toContain('1m 15s');
+    expect(container.querySelector('[aria-label="Generation time: 1m 15s"]')).not.toBeNull();
+  } finally { act(() => root.unmount()); }
+});

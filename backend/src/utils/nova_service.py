@@ -12,14 +12,22 @@ import json
 import os
 import re
 import zipfile
+import logging
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 import httpx
+from .generation_budget import current_generation_usage
+
+logger = logging.getLogger(__name__)
 
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
+
+
+class NovaSessionUnavailableError(ValueError):
+    """The selected runtime cannot find a saved session or artifact."""
 
 
 def connection() -> tuple[str, str]:
@@ -97,7 +105,7 @@ class NovaService:
             if exc.response.status_code == 409:
                 raise ValueError('Nova is already working on this session. Wait for it to finish before editing again.') from None
             if exc.response.status_code == 404:
-                raise ValueError('Nova session or artifact is unavailable. Check the runtime data volume.') from None
+                raise NovaSessionUnavailableError('Nova session or artifact is unavailable. Check the runtime data volume.') from None
             raise ValueError('Nova rejected the request. Check its provider connection and runtime configuration.') from None
         except httpx.HTTPError:
             raise ValueError('Cannot reach the Nova runtime. Check that it is running and the private connection is configured.') from None
@@ -180,13 +188,20 @@ class NovaService:
     async def run(self, request, provider: str, save_session, on_output=None, previous: dict | None = None, *, on_progress=None) -> NovaResult:
         versions = await self.ready()
         model_id = await self.configure_model(request.model, provider, request.auth_mode)
+        source = getattr(request, '_nova_source_ldr', None)
         if previous:
             chat_id = self.session_id(previous['chat_id'])
-            before = await self.chat(chat_id)
-            if before['chat'].get('running'):
+            try:
+                before = await self.chat(chat_id)
+            except NovaSessionUnavailableError:
+                if not source:
+                    raise
+                # The saved geometry survives runtime/volume changes. Import it
+                # into this tenant instead of depending on a missing conversation.
+                previous = None
+            if previous and before['chat'].get('running'):
                 raise ValueError('Nova is already working on this session. Wait before editing it again.')
-        else:
-            source = getattr(request, '_nova_source_ldr', None)
+        if not previous:
             if source:
                 created = await self.request('POST', 'integration/import',
                     json={'model': source, 'llm_model_id': model_id})
@@ -197,15 +212,18 @@ class NovaService:
                 chat_id, before = self.session_id(created['id']), {'models': {}}
         session = {'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
                    'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
-        if not previous and getattr(request, '_nova_source_ldr', None):
+        if not previous and source:
             session['model_id'] = self.session_id(created['model_id'])
         await save_session(session)
         text = request.prompt or 'Create a model from the reference image.'
         images = ([f'data:{request.image_media_type};base64,{request.image_base64}'] if request.image_base64 else [])
         started = False
+        usage = current_generation_usage.get()
+        track_usage = usage is not None and versions.get('generation_usage_version') == 1
         try:
             await self.request('POST', f'api/chats/{chat_id}/messages', json={
-                'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']})
+                'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']},
+                **({'headers': {'X-BrickBuilder-Generation-Id': usage.generation_id}} if track_usage else {}))
             started = True
             await self.wait_for_turn(chat_id, on_output, on_progress)
             after = await self.chat(chat_id)
@@ -232,6 +250,19 @@ class NovaService:
                 except (ValueError, asyncio.TimeoutError):
                     pass
             raise
+        finally:
+            if started and track_usage:
+                try:
+                    report = await asyncio.wait_for(asyncio.shield(self.request('GET',
+                        f'integration/chats/{chat_id}/usage/{usage.generation_id}')), 15)
+                    if not isinstance(report, dict) or report.get('generation_id') != usage.generation_id:
+                        raise ValueError('Nova returned usage for another generation')
+                    calls = report.get('calls')
+                    if not isinstance(calls, list) or len(calls) > 10000:
+                        raise ValueError('Invalid Nova usage')
+                    usage.extend(calls)
+                except (ValueError, asyncio.TimeoutError):
+                    logger.warning('Unable to retrieve Nova generation usage')
 
     async def wait_for_turn(self, chat_id: str, on_output, on_progress=None):
         last_phase = None

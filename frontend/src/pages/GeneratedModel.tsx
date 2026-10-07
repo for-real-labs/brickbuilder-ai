@@ -1,5 +1,6 @@
 import { GenerationTitle } from '../components/GenerationTitle';
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
+import { GetNotifiedButton } from '../components/GetNotifiedButton';
 import { LlmPreviewLoader } from '../components/LlmPreviewLoader';
 import { LlmGenerationOutput } from '../components/LlmGenerationOutput';
 import { GenerationNotificationsApi } from "../services/generationNotificationsApi";
@@ -521,6 +522,21 @@ export default function GeneratedModel() {
             return;
           }
           if (statusResponse.status === 'failed') {
+            if (statusResponse.previous_completed_generation_id) {
+              const previous = await GetGenerationApiService.getGeneration(statusResponse.previous_completed_generation_id, controller.signal);
+              if (controller.signal.aborted) return;
+              if (previous.status === 'completed' && previous.ldr_content) {
+                await processCompletedGeneration(previous.generation_id, {
+                  ...previous, ldr_content: previous.ldr_content, prompt: previous.prompt || 'Your Model',
+                });
+                if (controller.signal.aborted) return;
+                setPendingGeneration(previous);
+                setEditPromptError(statusResponse.error_message?.includes('Nova session or artifact is unavailable')
+                  ? 'The editing workspace was unavailable. Your saved model is intact; try your edit again.'
+                  : statusResponse.error_message || 'Your edit couldn’t finish. Your previous model is ready to edit again.');
+                return;
+              }
+            }
             throw new Error(statusResponse.error_message || 'Generation failed');
           }
           
@@ -1885,9 +1901,11 @@ export default function GeneratedModel() {
                 ? <LlmGenerationOutput generationId={pendingGeneration.generation_id} active />
                 : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
             </div>
-            {pendingGeneration && isGenerationActive(pendingGeneration.status) && <CancelGenerationButton
-              generationId={pendingGeneration.generation_id} isEdit={(pendingGeneration.version ?? 1) > 1}
-              onCancelled={handleEditCancelled} />}
+            {pendingGeneration && isGenerationActive(pendingGeneration.status) && <>
+              <CancelGenerationButton generationId={pendingGeneration.generation_id}
+                isEdit={(pendingGeneration.version ?? 1) > 1} onCancelled={handleEditCancelled} />
+              <GetNotifiedButton generationId={pendingGeneration.generation_id} />
+            </>}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
           </div>
@@ -2230,7 +2248,10 @@ export default function GeneratedModel() {
                     {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
                       ? <LlmGenerationOutput generationId={editGenerationId} active />
                       : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
-                    {editGenerationId && <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />}
+                    {editGenerationId && <>
+                      <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />
+                      <GetNotifiedButton generationId={editGenerationId} />
+                    </>}
                   </div>
                 ) : undefined}
                 /* onScreenshotsReady={setScreenshots} — disabled */
@@ -2262,6 +2283,8 @@ export default function GeneratedModel() {
         {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
           <VoxelPromptEditor
             prompt={editPrompt}
+            examplePrompt={pendingGeneration?.example_edit_prompt}
+            modelName={modelName}
             onPromptChange={setEditPrompt}
             onSubmit={() => { void handlePromptEditModel(); }}
             loading={isModelEditing}

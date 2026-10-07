@@ -25,6 +25,7 @@ class GenerationInfo(BaseModel):
     user_type: str
     prompt: str
     name: Optional[str] = None
+    generation_duration_seconds: Optional[float] = None
     detail_level: float
     endpoint: str
     created_at: str

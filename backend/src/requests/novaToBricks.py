@@ -67,11 +67,14 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         else:
             request.model = request._nova_session['model']
             request.auth_mode = request._nova_session['auth_mode']
-            return
+            if source.get('status') != 'completed':
+                return
     # Completed geometry is public; sessions and source archives are not.
     if source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
         raise HTTPException(404, 'Generation not found')
     if not source.get('ldr_url'):
+        if request._nova_session:
+            return
         raise HTTPException(409, 'This model has no saved geometry to copy')
     content = await generation_storage.download_file_from_storage(source['ldr_url'])
     if not content or len(content) > 16 * 1024 * 1024:
