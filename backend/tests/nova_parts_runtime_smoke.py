@@ -15,7 +15,7 @@ from sandbox import give_to_agent
 import parts_policy
 from parts_policy import ChatPartsPolicy, expanded_inventory
 
-CATALOG = "part_id,color_id,name,sku,unit_price,weight_kg\n3001,4,Brick 2 x 4,A,0.15,0.00219\n"
+CATALOG = "part_id,color_id,name,sku\n3001,4,Brick 2 x 4,A\n"
 root = Path(tempfile.mkdtemp(prefix="brickwith-smoke-"))
 root.chmod(0o755)
 work = root / "work"

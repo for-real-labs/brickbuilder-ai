@@ -135,6 +135,22 @@ class PartsCatalog:
             weight += part.weight_kg * quantity
         return price.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), weight
 
+    def to_palette_csv(self) -> str:
+        """Send availability to Nova without pricing or supplier metadata.
+
+        Opaque groups preserve shared quantity limits across aliases without
+        exposing the supplier's SKU. Row ordering makes the palette repeatable.
+        """
+        output = io.StringIO()
+        writer = csv.writer(output, lineterminator="\n")
+        writer.writerow(["part_id", "color_id", "sku", "max_quantity"])
+        groups = {}
+        for part in sorted(self.parts.values(), key=lambda item: (item.part_id, item.color_id)):
+            group = groups.setdefault(part.sku, f"inventory-{len(groups) + 1}")
+            writer.writerow([part.part_id, part.color_id, group,
+                             part.max_quantity if part.max_quantity is not None else ""])
+        return output.getvalue()
+
     def search(self, query: str = "", color_id: int | None = None, *, offset: int = 0, limit: int = 50) -> dict:
         query = query.casefold().strip()
         rows = [part for part in self.parts.values()

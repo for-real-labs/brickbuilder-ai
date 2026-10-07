@@ -83,7 +83,9 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
         body = json.loads(req.content) if req.content else None
         calls.append((req.method, req.url.path, body))
         if req.url.path.endswith('/parts-catalog'):
-            assert req.method == 'PUT' and 'unit_price' in body['csv']
+            assert req.method == 'PUT' and 'unit_price' not in body['csv']
+            assert 'weight_kg' not in body['csv'] and 'supplier_color' not in body['csv']
+            assert 'GDS-' not in body['csv']
             return httpx.Response(200, json={'parts_catalog_version': 1})
         if req.url.path == '/integration/runtime':
             return httpx.Response(200, json=VERSIONS)

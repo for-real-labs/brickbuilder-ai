@@ -119,3 +119,19 @@ def test_shipped_snapshot_is_complete_and_matches_its_provenance():
     assert metadata['variants'] == metadata['mapped_part_color_pairs'] + metadata['unmapped_variants']
     assert catalog.parts[('3001', 4)].unit_price == Decimal('.15')
     assert catalog.parts[('3001', 36)].unit_price == Decimal('.22')
+
+
+def test_nova_palette_removes_prices_and_supplier_metadata_but_preserves_limits():
+    catalog = PartsCatalog.from_csv(CATALOG + '3001a,4,Alias,A,0.15,0.00219,4\n')
+    palette = catalog.to_palette_csv()
+    assert palette == catalog.to_palette_csv()
+    assert 'unit_price' not in palette and 'weight_kg' not in palette
+    assert 'Brick 2 x 4' not in palette and 'transparent' not in palette
+    assert 'inventory-' in palette
+    available = PartsCatalog.from_csv(palette)
+    available.validate({('3001', 4): 2, ('3001a', 4): 2})
+    with pytest.raises(ValueError, match='requested 5'):
+        available.validate({('3001', 4): 3, ('3001a', 4): 2})
+    with pytest.raises(ValueError, match='No supplier price'):
+        available.quote({('3001', 4): 1})
+    assert catalog.quote({('3001', 4): 1})[0] == Decimal('0.15')

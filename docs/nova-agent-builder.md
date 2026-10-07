@@ -29,7 +29,8 @@ The root `npm install` fetches two immutable fork revisions into ignored
 `backend/.nova/toolkit` and `backend/.nova/web`. It builds the upstream Dockerfile
 with the toolkit as its additional build context. BrickBuilder adds the
 private tenant gateway and artifact export adapter in `backend/nova-service`.
-Supplier inventory enforcement is native to the pinned Nova forks.
+Generic palette enforcement is native to the pinned Nova forks. Supplier catalogs
+and prices stay in BrickBuilder; only availability is sent to Nova.
 LeoCAD, the official parts library, Jev, provider SDKs and Nova's sandbox come
 from the upstream image. The first build can take several minutes and several
 GB of disk space. `npm start` starts or reuses the managed container, waits for
@@ -205,8 +206,9 @@ The two repository pins are in `backend/setup_nova.cjs`:
 - https://github.com/jjohnson5253/ldraw-nova-docker, forked from anteloc/ldraw-nova-docker,
   including its runtime dependencies.
 
-The pins select the current `master` versions of these forks. Updates are taken
-from the forks so changes merged there can flow into BrickBuilder.
+The pins select compatible immutable revisions merged into the forks' `staging`
+branches. Updates are taken from the forks so changes merged there can flow into
+BrickBuilder.
 
 Update the compatible pins, run setup, verify the adapter contracts and a real
 Nova generation/edit, then rebuild and deploy the service image. Clean managed

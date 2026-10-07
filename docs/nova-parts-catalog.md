@@ -2,9 +2,12 @@
 
 All parts generation and every Nova edit now use the Brickwith catalog. This
 uses native restrictions in the pinned Nova forks. The toolkit owns
-`PartsCatalog` and physical inventory expansion; the Nova agent service owns
-`ChatPartsPolicy`, discovery tools and the publication gate. BrickBuilder supplies
-a catalog through its private integration and independently checks imports.
+the generic palette reader and physical inventory expansion; the Nova agent
+service owns `ChatPartsPolicy`, discovery tools and the publication gate.
+BrickBuilder owns the Brickwith catalog, refresh script and pricing. It supplies
+only a price-free availability palette through its private integration and
+independently checks imports. Neither Nova repository contains supplier data or
+prices, and Nova makes no supplier requests.
 
 ## Source and refresh
 
@@ -46,8 +49,8 @@ alias or color substitutions are inferred from a similar name or RGB value.
 
 1. **Design guidance and discovery.** The runtime adds a mandatory system
    instruction, a workspace `allowed-parts.csv`, and `list_allowed_parts`.
-   Search results include exact LDraw IDs/colors, SKU, unit price and optional
-   quantity limits. The agent queries this instead of loading thousands of
+   Search results include exact LDraw IDs/colors, opaque inventory groups and
+   optional quantity limits. The agent queries this instead of loading thousands of
    entries into every prompt. `check_model_parts` provides actionable failures.
 2. **Publication gate.** When Nova's publication tool has captured a candidate
    revision, Nova expands its captured source bytes through its parser. This handles
@@ -66,14 +69,18 @@ review remain necessary.
 
 The authoritative per-chat catalog is stored under the owner's protected Nova
 config directory, outside the agent sandbox. Editing the workspace reference
-does not change authorization. Every generation/edit supplies a fresh snapshot;
+does not change authorization. Every generation/edit supplies a fresh palette;
 old unrestricted sessions must repair existing unsupported parts before their
-next publication. Session metadata records the catalog hash and pair count.
+next publication. Session metadata records the full catalog hash, exported palette
+hash and pair count. Supplier names, SKUs, prices, weights and metadata remain in
+BrickBuilder; shared quantity groups are exported under opaque identifiers.
+Nova strips unknown columns before storing palettes, including older per-chat
+snapshots on their next turn.
 
 Rebuild both the API and Nova service when deploying this change. Runtime
 readiness requires `parts_catalog_version=1`, so an old runtime fails visibly
 before generation. The local image tag changes to force a rebuild. Catalog
-refreshes alone need only an API deployment: it supplies the CSV to the runtime.
+refreshes alone need only an API deployment: it supplies the palette to the runtime.
 
 ## Staging deployment boundary
 
@@ -88,17 +95,23 @@ Merging Nova's staging branches alone does not redeploy those pinned consumers.
 Merge the BrickBuilder PR into staging to rebuild the runtime and API there.
 The normal frontend staging deployment then uses that staging backend.
 
-Standalone Nova defaults to its shipped Brickwith catalog, accepts an absolute
-`NOVA_PARTS_CATALOG` CSV path, and allows per-chat overrides through its native
-`PUT /api/chats/<id>/parts-catalog` endpoint. BrickBuilder always supplies its own
-selected snapshot. Nova's `docs/parts-catalog.md` describes native configuration.
+Standalone Nova is unrestricted when no palette is configured. Set
+`NOVA_PARTS_PALETTE=/absolute/path/to/allowed-parts.csv` on Nova to restrict new
+chats to a local file, or supply a per-chat palette through its native
+`PUT /api/chats/<id>/parts-catalog` endpoint. The file requires `part_id,color_id`
+and optionally `name,sku,max_quantity`; extra columns are discarded. The legacy
+`NOVA_PARTS_CATALOG` variable remains an alias for an absolute external path.
+There are no built-in supplier presets. Existing restricted chats retain their
+protected palettes. BrickBuilder always supplies its selected palette explicitly.
+Nova's `docs/parts-catalog.md` describes native configuration.
 
 ## Another supplier or a finite inventory
 
 Set `NOVA_PARTS_CATALOG=/absolute/path/to/catalog.csv` on the BrickBuilder API.
 The same selected catalog is used for generation restrictions and pricing.
-It is sent through a private, tenant-scoped runtime endpoint, never supplied
-directly by an unauthenticated public client.
+Only its availability projection is sent through the private, tenant-scoped
+runtime endpoint; prices remain in the API. Unauthenticated public clients
+cannot configure the runtime palette.
 
 The supplier-independent `PartsCatalog` class accepts CSVs with mandatory
 `part_id` and `color_id` columns. `color_id` always means **LDraw**, not Gobricks,

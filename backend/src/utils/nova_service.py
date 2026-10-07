@@ -192,13 +192,15 @@ class NovaService:
         from .parts_catalog import PartsCatalog
         catalog_csv = catalog_path().read_text(encoding='utf-8')
         catalog = PartsCatalog.from_csv(catalog_csv)
+        palette_csv = catalog.to_palette_csv()
         configured = await self.request('PUT', f'integration/chats/{chat_id}/parts-catalog',
-                                        json={'csv': catalog_csv})
+                                        json={'csv': palette_csv})
         if configured.get('parts_catalog_version') != 1:
             raise ValueError('Nova did not confirm the parts catalog restrictions')
         session = {'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
                    'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
         session['parts_catalog'] = {'sha256': hashlib.sha256(catalog_csv.encode()).hexdigest(),
+                                   'palette_sha256': hashlib.sha256(palette_csv.encode()).hexdigest(),
                                    'allowed_combinations': len(catalog.parts)}
         await save_session(session)
         text = request.prompt or 'Create a model from the reference image.'
