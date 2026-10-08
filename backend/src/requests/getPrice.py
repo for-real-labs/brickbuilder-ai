@@ -1,293 +1,99 @@
-"""
-Get Price API
-
-This module handles price calculation for a generation based on its parts list CSV.
-"""
-import csv
-import io
+"""Price a saved BOM using exact supplier part/color prices and weights."""
 import logging
-from typing import Dict, Optional
+from decimal import Decimal, ROUND_HALF_UP
 
 import httpx
-from pydantic import BaseModel
 from fastapi import HTTPException
+from pydantic import BaseModel, Field
 
-from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
+from ..utils.parts_catalog import PartsUnavailable, normalize_part_id, parts_csv_inventory
+from ..utils.posthog_client import track_api_call, track_error
+from ..utils.supplier_catalog import get_supplier_catalog
 
 logger = logging.getLogger(__name__)
 
-# Part pricing table (part_id with .dat extension -> cost in USD)
-PART_PRICES: Dict[str, float] = {
-    "2456.dat": 0.22,
-    "3001.dat": 0.15,
-    "3003.dat": 0.09,
-    "3004.dat": 0.06,
-    "3005.dat": 0.04,
-    "3010.dat": 0.10,
-}
-
-# Default price for parts not in the pricing table
-DEFAULT_PART_PRICE = 0.10
-
-# Margin/upsale percentage to add to the final price (0.20 = 20%)
-MARGIN_UPSALE_PERCENTAGE = 0.20
-
 
 class GetPriceRequest(BaseModel):
-    """Request model for getting price from generation ID"""
     generation_id: str
 
 
 class PartPriceDetail(BaseModel):
-    """Price detail for a single part type"""
     part_id: str
     quantity: int
     unit_price: float
     total_price: float
+    color_id: int
+    sku: str
 
 
 class GetPriceResponse(BaseModel):
-    """Response model for price calculation"""
     generation_id: str
     total_price: float
     total_parts: int
-    total_weight: float  # Total weight in kg
+    total_weight: float
     unique_part_types: int
     currency: str = "USD"
-    parts_breakdown: list[PartPriceDetail] = []
+    parts_breakdown: list[PartPriceDetail] = Field(default_factory=list)
     message: str
+    price_source: str = "Brickwith catalog snapshot"
 
 
 async def fetch_csv_content(url: str) -> str:
-    """
-    Fetch CSV content from a URL
-    
-    Args:
-        url: URL to fetch the CSV from
-        
-    Returns:
-        CSV content as string
-    """
     async with httpx.AsyncClient(timeout=30.0) as client:
         response = await client.get(url)
         response.raise_for_status()
         return response.text
 
 
-def parse_parts_list_csv(csv_content: str) -> tuple[Dict[str, int], float]:
-    """
-    Parse the parts list CSV and return part quantities and total weight
-    
-    The CSV has columns: BLItemNo, ElementId, LdrawId, PartName, BLColorId, LDrawColorId, ColorName, ColorCategory, Qty, Weight
-    We use LdrawId (lowercase .dat format) to match against our pricing table
-    Total weight is calculated from Weight * Qty for each row
-    
-    Args:
-        csv_content: CSV content as string
-        
-    Returns:
-        Tuple of (Dict mapping part_id (LdrawId) -> total quantity, total_weight in kg)
-    """
-    parts_dict: Dict[str, int] = {}
-    total_weight = 0.0
-    
-    # Parse the parts data
-    reader = csv.DictReader(io.StringIO(csv_content))
-    
-    for row in reader:
-        ldraw_id = row.get('LdrawId', '').strip()
-        qty_str = row.get('Qty', '0').strip()
-        weight_str = row.get('Weight', '0').strip()
-        
-        if not ldraw_id:
-            continue
-            
-        try:
-            quantity = int(qty_str)
-        except ValueError:
-            quantity = 0
-        
-        try:
-            weight_per_piece = float(weight_str)
-        except ValueError:
-            weight_per_piece = 0.0
-            
-        if quantity > 0:
-            # Aggregate by part_id (ignore color for pricing)
-            if ldraw_id in parts_dict:
-                parts_dict[ldraw_id] += quantity
-            else:
-                parts_dict[ldraw_id] = quantity
-            
-            # Add to total weight (weight per piece * quantity)
-            total_weight += weight_per_piece * quantity
-    
-    return parts_dict, total_weight
-
-
-def calculate_price(
-    parts_dict: Dict[str, int],
-    unit_price_override: Optional[float] = None,
-) -> tuple[float, list[PartPriceDetail]]:
-    """
-    Calculate total price based on parts and pricing table
-    
-    Args:
-        parts_dict: Dict mapping part_id -> quantity
-        
-    Returns:
-        Tuple of (total_price, list of part price details)
-    """
-    total_price = 0.0
-    parts_breakdown = []
-    
-    for part_id, quantity in parts_dict.items():
-        unit_price = (
-            unit_price_override
-            if unit_price_override is not None
-            else PART_PRICES.get(part_id, DEFAULT_PART_PRICE)
-        )
-        part_total = unit_price * quantity
-        total_price += part_total
-        
-        parts_breakdown.append(PartPriceDetail(
-            part_id=part_id,
-            quantity=quantity,
-            unit_price=unit_price,
-            total_price=round(part_total, 2)
-        ))
-    
-    # Sort breakdown by total price descending
-    parts_breakdown.sort(key=lambda x: x.total_price, reverse=True)
-    
-    return round(total_price, 2), parts_breakdown
+def calculate_price(inventory, catalog=None) -> tuple[float, list[PartPriceDetail], float]:
+    catalog = catalog or get_supplier_catalog()
+    price, weight = catalog.quote(inventory)
+    details = []
+    for (part_id, color), quantity in inventory.items():
+        part = catalog.parts[(normalize_part_id(part_id), color)]
+        details.append(PartPriceDetail(part_id=part.part_id + ".dat", color_id=color, sku=part.sku,
+            quantity=quantity, unit_price=float(part.unit_price),
+            total_price=float((part.unit_price * quantity).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP))))
+    details.sort(key=lambda part: part.total_price, reverse=True)
+    return float(price), details, float(weight)
 
 
 async def get_price(request: GetPriceRequest, auth_info: dict) -> GetPriceResponse:
-    """
-    Get price for a generation based on its parts list CSV
-    
-    This endpoint:
-    1. Looks up the generation by ID
-    2. Fetches the parts_list_csv_url from the generations table
-    3. Downloads and parses the CSV
-    4. Calculates price based on the pricing table
-    """
     user_email = auth_info.get("user_email", "anonymous") if isinstance(auth_info, dict) else "anonymous"
-    
+    track_api_call(endpoint="/getPrice", user_id=user_email, request_data={"generation_id": request.generation_id})
     try:
-        logger.info(f"Getting price for generation: {request.generation_id}")
-        
-        # Track API call
-        track_api_call(
-            endpoint="/getPrice",
-            user_id=user_email,
-            request_data={"generation_id": request.generation_id}
-        )
-        
-        # Fetch generation from database
         generation = await generation_storage.get_generation(request.generation_id)
         if not generation:
-            raise HTTPException(
-                status_code=404,
-                detail=f"Generation {request.generation_id} not found"
-            )
-        
-        # Get parts_list_csv_url
-        parts_list_csv_url = generation.get("parts_list_csv_url")
-        if not parts_list_csv_url:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Parts list CSV not found for generation {request.generation_id}"
-            )
-        
-        logger.info(f"Fetching parts list CSV from: {parts_list_csv_url}")
-        
-        # Fetch and parse CSV
+            raise HTTPException(404, "Generation not found")
+        url = generation.get("parts_list_csv_url")
+        if not url:
+            raise HTTPException(400, "Parts list CSV not found")
         try:
-            csv_content = await fetch_csv_content(parts_list_csv_url)
-        except httpx.HTTPStatusError as e:
-            logger.error(f"Failed to fetch CSV: {e}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to fetch parts list CSV: {e.response.status_code}"
-            )
-        except Exception as e:
-            logger.error(f"Failed to fetch CSV: {e}")
-            raise HTTPException(
-                status_code=400,
-                detail=f"Failed to fetch parts list CSV: {str(e)}"
-            )
-        
-        # Parse CSV
-        parts_dict, total_weight = parse_parts_list_csv(csv_content)
-        
-        if not parts_dict:
-            raise HTTPException(
-                status_code=400,
-                detail="No valid parts found in parts list CSV"
-            )
-        
-        # Calculate price
-        # Direct LLM generations (and older records from its former name) use flat per-piece pricing.
-        is_llm_direct_generation = generation.get("endpoint") in ("llmToBricks", "claudeToBricks")
-        base_price, parts_breakdown = calculate_price(
-            parts_dict,
-            unit_price_override=DEFAULT_PART_PRICE if is_llm_direct_generation else None,
-        )
-        total_parts = sum(parts_dict.values())
-        unique_part_types = len(parts_dict)
-        
-        # Claude-direct designs use the requested flat $0.10-per-piece estimate.
-        # Existing generation paths retain the catalog pricing and margin.
-        total_price = (
-            base_price
-            if is_llm_direct_generation
-            else round(base_price * (1 + MARGIN_UPSALE_PERCENTAGE), 2)
-        )
-        
-        pricing_label = (
-            "$0.10 flat per piece"
-            if is_llm_direct_generation
-            else f"catalog price + {MARGIN_UPSALE_PERCENTAGE*100}% margin"
-        )
-        logger.info(
-            "Price calculated: $%s -> $%s (%s) for %s parts (%s unique types), weight: %skg",
-            base_price,
-            total_price,
-            pricing_label,
-            total_parts,
-            unique_part_types,
-            total_weight,
-        )
-        
-        message = f"Price estimate: ${total_price:.2f} USD for {total_parts} parts"
-        
-        return GetPriceResponse(
-            generation_id=request.generation_id,
-            total_price=total_price,
-            total_parts=total_parts,
-            total_weight=total_weight,
-            unique_part_types=unique_part_types,
-            currency="USD",
-            parts_breakdown=parts_breakdown,
-            message=message
-        )
-        
+            content = await fetch_csv_content(url)
+        except httpx.HTTPError:
+            raise HTTPException(503, "Parts list is unavailable right now") from None
+        try:
+            catalog = get_supplier_catalog()
+        except (OSError, ValueError):
+            raise HTTPException(503, "Supplier parts catalog is unavailable right now") from None
+        try:
+            inventory = parts_csv_inventory(content)
+            total, breakdown, weight = calculate_price(inventory, catalog)
+        except PartsUnavailable as exc:
+            raise HTTPException(422, str(exc)) from None
+        except ValueError as exc:
+            raise HTTPException(422, str(exc)) from None
+        count = sum(inventory.values())
+        return GetPriceResponse(generation_id=request.generation_id, total_price=total,
+            total_parts=count, total_weight=weight, unique_part_types=len(inventory),
+            parts_breakdown=breakdown, price_source=catalog.name,
+            message=f"Parts estimate: ${total:.2f} USD for {count} parts. Catalog prices exclude shipping, tax and discounts.")
     except HTTPException:
         raise
-    except Exception as e:
-        logger.error(f"Error getting price: {str(e)}", exc_info=True)
-        
-        track_error(
-            error_type=type(e).__name__,
-            error_message=str(e),
-            endpoint="/getPrice",
-            user_id=user_email
-        )
-        
-        raise HTTPException(
-            status_code=500,
-            detail="Internal server error"
-        )
+    except (OSError, ValueError):
+        raise HTTPException(503, "Supplier parts catalog is unavailable right now") from None
+    except Exception as exc:
+        logger.exception("Price calculation failed")
+        track_error(error_type=type(exc).__name__, error_message=str(exc), endpoint="/getPrice", user_id=user_email)
+        raise HTTPException(500, "Internal server error") from None

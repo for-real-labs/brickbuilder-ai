@@ -6,6 +6,10 @@ Nova owns prompts, tools, provider conversations, script execution, search,
 validation, rendering and publication. Follow-up edits continue the same Nova
 conversation and workspace.
 
+All parts mode now uses Brickwith's exact part/color catalog. See
+[Supplier parts restrictions and pricing](nova-parts-catalog.md) for catalog
+sources, refresh instructions, the publication gate and custom inventory input.
+
 ## Local setup
 
 Install Docker Desktop, then run:
@@ -23,8 +27,10 @@ combine compatible repositories, build their Docker image, then run the app.
 
 The root `npm install` fetches two immutable fork revisions into ignored
 `backend/.nova/toolkit` and `backend/.nova/web`. It builds the upstream Dockerfile
-with the toolkit as its additional build context. The only additions are the
+with the toolkit as its additional build context. BrickBuilder adds the
 private tenant gateway, generation cost guard, and artifact export adapter in `backend/nova-service`.
+Generic palette enforcement is native to the pinned Nova forks. Supplier catalogs
+and prices stay in BrickBuilder; only availability is sent to Nova.
 LeoCAD, the official parts library, Jev, provider SDKs and Nova's sandbox come
 from the upstream image. The first build can take several minutes and several
 GB of disk space. `npm start` starts or reuses the managed container, waits for
@@ -222,14 +228,20 @@ of bypassing the isolation boundary.
 
 ## Upgrading and attribution
 
+For the repeatable shared staging workflow and per-PR Vercel connection, see
+[Testing Nova through BrickBuilder staging](nova-staging.md). Run
+`npm run nova:pin-staging` on a feature branch to select both forks' latest staging
+commits and regenerate the deployment recipe before opening the consumer PR.
+
 The two repository pins are in `backend/setup_nova.cjs`:
 
 - https://github.com/jjohnson5253/ldraw-nova, AGPL-3.0, forked from anteloc/ldraw-nova.
 - https://github.com/jjohnson5253/ldraw-nova-docker, forked from anteloc/ldraw-nova-docker,
   including its runtime dependencies.
 
-The pins select the current `master` versions of these forks. Updates are taken
-from the forks so changes merged there can flow into BrickBuilder.
+The pins select compatible immutable revisions merged into the forks' `staging`
+branches. Updates are taken from the forks so changes merged there can flow into
+BrickBuilder.
 
 Update the compatible pins, run setup, verify the adapter contracts and a real
 Nova generation/edit, then rebuild and deploy the service image. Clean managed

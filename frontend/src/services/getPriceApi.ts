@@ -6,6 +6,8 @@ export interface PartBreakdownItem {
   quantity: number;
   unit_price: number;
   total_price: number;
+  color_id?: number;
+  sku?: string;
 }
 
 export interface GetPriceResponse {
@@ -17,6 +19,7 @@ export interface GetPriceResponse {
   currency: string;
   parts_breakdown: PartBreakdownItem[];
   message: string;
+  price_source?: string;
 }
 
 // API Configuration
