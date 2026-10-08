@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import hmac
 import json
+import logging
 import os
 import pwd
 import re
@@ -16,6 +17,7 @@ import signal
 import shutil
 import time
 import socket
+import struct
 import subprocess
 import tempfile
 from contextlib import asynccontextmanager
@@ -35,6 +37,194 @@ _workers = {}
 _locks = {}
 _capacity_lock = asyncio.Lock()
 _last_used = {}
+TENANTS_ROOT = Path('/data/tenants')
+CACHE_RETENTION_SECONDS = 7 * 24 * 60 * 60
+CACHE_SWEEP_SECONDS = 60 * 60
+SEARCH_CACHES = ('discovery', 'jev-rerank', 'reference-search')
+REFERENCE_ROOT = Path('/data/reference-cache')
+REFERENCE_SOCKET = Path('/run/nova-reference.sock')
+_reference_lock = asyncio.Lock()
+_agent_tenants = {}
+logger = logging.getLogger(__name__)
+
+
+async def reference_request(reader, writer):
+    """Local agents can search public references, never select files or commands."""
+    process = None
+    try:
+        sock = writer.get_extra_info('socket')
+        _, uid, _ = struct.unpack('3i', sock.getsockopt(socket.SOL_SOCKET, socket.SO_PEERCRED, 12))
+        tenant = _agent_tenants.get(uid)
+        if tenant is None:
+            raise ValueError('Unknown reference caller')
+        payload = await asyncio.wait_for(reader.readline(), 5)
+        if len(payload) > 65536 or not payload.endswith(b'\n'):
+            raise ValueError('Invalid reference request')
+        # Validate before starting a privileged process. It can only access the
+        # immutable public corpus, using bounded search options.
+        from brickbuilder_integration.shared_reference import validate
+        validate(json.loads(payload))
+        async with _reference_lock:
+            mark_cache_used(tenant)
+            env = {'PATH': os.environ.get('PATH', '/usr/local/bin:/usr/bin:/bin'),
+                   'PYTHONPATH': '/opt/ldraw-nova', 'PYTHONDONTWRITEBYTECODE': '1',
+                   'LDRAW_DIR': '/opt/ldraw/ldraw', 'HOME': '/root'}
+            process = await asyncio.create_subprocess_exec('/opt/ldraw-nova/.venv/bin/python',
+                str(Path(__file__).with_name('shared_reference.py')),
+                stdin=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.DEVNULL, env=env, start_new_session=True)
+            output, _ = await asyncio.wait_for(process.communicate(payload), 290)
+            if len(output) > 32 * 1024 * 1024:
+                raise ValueError('Reference response is too large')
+            writer.write(output)
+            await writer.drain()
+    except Exception:
+        writer.write(b'{"error":"Shared reference search is unavailable."}')
+        await writer.drain()
+    finally:
+        if process and process.returncode is None:
+            await stop_worker(process)
+        writer.close()
+        await writer.wait_closed()
+
+
+def mark_cache_used(tenant):
+    """Persist owner activity across deployments, without exposing session data."""
+    data = TENANTS_ROOT / tenant
+    if data.is_dir() and not data.is_symlink():
+        marker = data / '.cache-last-used'
+        if marker.is_symlink():
+            raise OSError('Cache activity marker must not be a symlink')
+        marker.touch()
+
+
+def search_cache_paths(data):
+    for toolkit in data.glob('toolkit-*'):
+        cache = toolkit / '.cache'
+        if toolkit.is_symlink() or cache.is_symlink():
+            continue
+        for name in SEARCH_CACHES:
+            path = cache / name
+            if path.is_dir() and not path.is_symlink():
+                yield path
+
+
+def cache_last_used(data, caches):
+    marker = data / '.cache-last-used'
+    if marker.is_file() and not marker.is_symlink():
+        return marker.stat().st_mtime
+    # Existing installations have no marker. Use the newest cache write rather
+    # than treating every pre-existing owner as inactive on first deployment.
+    newest = data.stat().st_mtime
+    for cache in caches:
+        for root, dirs, files in os.walk(cache, followlinks=False):
+            newest = max(newest, Path(root).stat().st_mtime)
+            for name in files:
+                newest = max(newest, (Path(root) / name).lstat().st_mtime)
+    return newest
+
+
+async def expire_search_caches():
+    """Evict only reproducible indexes, after checking and stopping idle workers."""
+    async with _capacity_lock:
+        for data in TENANTS_ROOT.iterdir() if TENANTS_ROOT.is_dir() else ():
+            if not TENANT_RE.fullmatch(data.name) or data.is_symlink() or not data.is_dir():
+                continue
+            try:
+                caches = list(search_cache_paths(data))
+                # Private result files expire individually, including for owners
+                # who stay active but no longer use an older search.
+                for cache in caches:
+                    if cache.name == 'reference-search':
+                        for result in cache.glob('*.json'):
+                            if not result.is_symlink() and time.time() - result.stat().st_mtime >= CACHE_RETENTION_SECONDS:
+                                result.unlink()
+                if not caches or time.time() - cache_last_used(data, caches) < CACHE_RETENTION_SECONDS:
+                    continue
+                current = _workers.get(data.name)
+                if current and current[0].returncode is None:
+                    response = await app.state.client.get(current[1] + '/api/chats',
+                        headers={'Authorization': 'Bearer ' + TOKEN}, timeout=5)
+                    response.raise_for_status()
+                    chats = response.json()['chats']
+                    if not isinstance(chats, list) or any(chat.get('running') for chat in chats):
+                        continue
+                    await stop_worker(current[0])
+                _workers.pop(data.name, None)
+                _last_used.pop(data.name, None)
+                for cache in caches:
+                    # rmtree does not follow child symlinks. Preserve the .cache
+                    # directory, embedded model parts, workspaces and credentials.
+                    await asyncio.to_thread(shutil.rmtree, cache)
+                logger.info('Expired search caches for inactive Nova owner %s', data.name)
+            except (OSError, httpx.HTTPError, ValueError, KeyError, TypeError):
+                logger.exception('Could not expire Nova search caches for %s', data.name)
+        async with _reference_lock:
+            if not REFERENCE_ROOT.is_dir():
+                return
+            for version in REFERENCE_ROOT.iterdir():
+                if version.is_symlink() or not version.is_dir() or not re.fullmatch(r'[a-f0-9]{40}', version.name):
+                    continue
+                # Each filtered public collection expires independently, even
+                # while other collections or owners continue to use the catalog.
+                collections = version / '.cache/jev-rerank'
+                if collections.is_dir() and not collections.is_symlink():
+                    for collection in collections.iterdir():
+                        stamp = collection / '.last-used'
+                        if collection.is_symlink() or not re.fullmatch(r'[a-f0-9]{64}', collection.name):
+                            continue
+                        if not stamp.is_file() or time.time() - stamp.stat().st_mtime < CACHE_RETENTION_SECONDS:
+                            continue
+                        await asyncio.to_thread(shutil.rmtree, collection)
+                        for snapshot in (version / '.cache/discovery').glob('*/queries/' + collection.name + '.sqlite'):
+                            snapshot.unlink()
+                marker = version / '.last-used'
+                if not marker.is_file() or marker.is_symlink() or time.time() - marker.stat().st_mtime < CACHE_RETENTION_SECONDS:
+                    continue
+                # An agent may hold a read-only catalog handle between tools.
+                # Evict only after every resident owner is confirmed idle.
+                idle = []
+                try:
+                    for tenant, (process, url) in _workers.items():
+                        if process.returncode is not None:
+                            continue
+                        response = await app.state.client.get(url + '/api/chats',
+                            headers={'Authorization': 'Bearer ' + TOKEN}, timeout=5)
+                        response.raise_for_status()
+                        if any(chat.get('running') for chat in response.json()['chats']):
+                            break
+                        idle.append(tenant)
+                    else:
+                        for tenant in idle:
+                            await stop_worker(_workers.pop(tenant)[0])
+                        await asyncio.to_thread(shutil.rmtree, version)
+                        logger.info('Expired unused Nova reference index version %s', version.name)
+                except (OSError, httpx.HTTPError, ValueError, KeyError, TypeError):
+                    logger.exception('Could not expire Nova shared reference indexes')
+
+
+async def cache_sweeper():
+    while True:
+        try:
+            await expire_search_caches()
+        except Exception:
+            logger.exception('Nova cache sweep failed; retrying next hour')
+        await asyncio.sleep(CACHE_SWEEP_SECONDS)
+
+
+async def migrate_duplicate_indexes():
+    """At container startup no agents exist yet; reclaim legacy public indexes."""
+    if _workers or not TENANTS_ROOT.is_dir():
+        return
+    for data in TENANTS_ROOT.iterdir():
+        if data.is_symlink() or not data.is_dir() or not TENANT_RE.fullmatch(data.name):
+            continue
+        for cache in search_cache_paths(data):
+            if cache.name in {'discovery', 'jev-rerank'}:
+                try:
+                    await asyncio.to_thread(shutil.rmtree, cache)
+                except OSError:
+                    logger.exception('Could not migrate legacy Nova search cache')
 
 
 async def stop_worker(process):
@@ -50,9 +240,25 @@ async def stop_worker(process):
 @asynccontextmanager
 async def lifespan(app):
     app.state.client = httpx.AsyncClient(timeout=httpx.Timeout(180, connect=10), follow_redirects=False)
-    yield
-    await asyncio.gather(*(stop_worker(process) for process, _ in _workers.values()))
-    await app.state.client.aclose()
+    await migrate_duplicate_indexes()
+    sweeper = asyncio.create_task(cache_sweeper())
+    reference_server = None
+    try:
+        if os.name == 'posix' and hasattr(socket, 'SO_PEERCRED'):
+            REFERENCE_SOCKET.unlink(missing_ok=True)
+            reference_server = await asyncio.start_unix_server(reference_request,
+                path=str(REFERENCE_SOCKET), limit=65536)
+            os.chmod(REFERENCE_SOCKET, 0o666)
+        yield
+    finally:
+        if reference_server:
+            reference_server.close()
+            await reference_server.wait_closed()
+            REFERENCE_SOCKET.unlink(missing_ok=True)
+        sweeper.cancel()
+        await asyncio.gather(sweeper, return_exceptions=True)
+        await asyncio.gather(*(stop_worker(process) for process, _ in _workers.values()))
+        await app.state.client.aclose()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -68,7 +274,7 @@ def prepare_tenant(tenant):
         subprocess.run(['useradd', '--uid', str(uid), '--gid', str(uid), '--no-create-home', '--shell', '/bin/bash', account], check=True,
                        stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
         user = pwd.getpwnam(account)
-    data = Path('/data/tenants') / tenant
+    data = TENANTS_ROOT / tenant
     config = Path(os.environ.get('NOVA_CONFIG_ROOT', '/config')) / 'tenants' / tenant
     data.mkdir(parents=True, exist_ok=True)
     os.chown(data, 0, user.pw_gid)
@@ -97,6 +303,18 @@ def prepare_tenant(tenant):
         cache.mkdir()
         os.chown(cache, user.pw_uid, user.pw_gid)
         os.chmod(cache, 0o700)
+    # Install thin transport hooks in the owner copy; the pinned source used by
+    # the trusted index builder stays unchanged and never imports owner code.
+    package = toolkit / 'ldraw_tools'
+    shutil.copyfile(Path(__file__).with_name('reference_client.py'), package / '_shared_reference.py')
+    for module, install in [('common', 'install_common'), ('discovery', 'install_discovery')]:
+        path = package / (module + '.py')
+        source = path.read_text()
+        if '# BrickBuilder shared references' not in source:
+            path.write_text(source + '\n# BrickBuilder shared references\n'
+                f'from ._shared_reference import {install} as _install_shared\n'
+                f'import sys as _shared_sys\n_install_shared(_shared_sys.modules[__name__])\n')
+    _agent_tenants[user.pw_uid] = tenant
     # Upstream keeps repository-shaped workspace links across turns. Point
     # existing sessions at this installation's new pin when the image upgrades.
     chats = data / 'chats'
@@ -118,6 +336,7 @@ async def worker_url(tenant):
         _last_used[tenant] = time.monotonic()
         current = _workers.get(tenant)
         if current and current[0].returncode is None:
+            mark_cache_used(tenant)
             return current[1]
         # Bound memory/process use. Existing tenants remain persistent on disk.
         active = sum(process.returncode is None for process, _ in _workers.values())
@@ -138,6 +357,7 @@ async def worker_url(tenant):
                 else:
                     raise RuntimeError('Nova runtime is at capacity')
         account, data, config, toolkit = await asyncio.to_thread(prepare_tenant, tenant)
+        mark_cache_used(tenant)
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
             port = sock.getsockname()[1]
