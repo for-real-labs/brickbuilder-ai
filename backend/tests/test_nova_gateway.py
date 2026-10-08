@@ -17,7 +17,190 @@ def gateway(tmp_path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     module.TOKEN = 'runtime-secret'
+    module.TENANTS_ROOT = tmp_path / 'tenants'
+    module.REFERENCE_ROOT = tmp_path / 'reference-cache'
+    module.REFERENCE_SOCKET = tmp_path / 'reference.sock'
     return module
+
+
+def cached_owner(module, tenant, age):
+    import os
+    import time
+    data = module.TENANTS_ROOT / tenant
+    toolkit = data / ('toolkit-' + 'a' * 40)
+    cache = toolkit / '.cache'
+    for name in (*module.SEARCH_CACHES, 'embedded'):
+        path = cache / name
+        path.mkdir(parents=True)
+        (path / 'saved').write_text('keep or regenerate')
+    for name in ('chats/session/model.ldr', 'output/model.mpd', 'provider-config/settings.json'):
+        path = data / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('private saved build')
+    module.mark_cache_used(tenant)
+    stamp = time.time() - age
+    os.utime(data / '.cache-last-used', (stamp, stamp))
+    return data, cache
+
+
+def test_cache_expiry_preserves_builds_credentials_and_embedded_parts(tmp_path):
+    module = gateway(tmp_path)
+    expired, cache = cached_owner(module, 'a' * 64, module.CACHE_RETENTION_SECONDS + 1)
+    recent, recent_cache = cached_owner(module, 'b' * 64, module.CACHE_RETENTION_SECONDS - 1)
+    asyncio.run(module.expire_search_caches())
+    assert cache.is_dir() and (cache / 'embedded/saved').is_file()
+    assert all(not (cache / name).exists() for name in module.SEARCH_CACHES)
+    assert all((recent_cache / name / 'saved').is_file() for name in module.SEARCH_CACHES)
+    assert (expired / 'chats/session/model.ldr').read_text() == 'private saved build'
+    assert (expired / 'output/model.mpd').is_file()
+    assert (expired / 'provider-config/settings.json').is_file()
+
+
+def test_active_build_is_not_evicted_and_unknown_worker_state_fails_closed(tmp_path):
+    from types import SimpleNamespace
+    module = gateway(tmp_path)
+    tenant = 'a' * 64
+    data, cache = cached_owner(module, tenant, module.CACHE_RETENTION_SECONDS + 1)
+    module._workers[tenant] = (SimpleNamespace(returncode=None), 'http://owner')
+    module.stop_worker = AsyncMock()
+    async def scenario():
+        module.app.state.client = httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda req: httpx.Response(200, json={'chats': [{'running': True}]})))
+        await module.expire_search_caches()
+        assert (cache / 'discovery/saved').is_file()
+        module.stop_worker.assert_not_called()
+        await module.app.state.client.aclose()
+        module.app.state.client = httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda req: httpx.Response(503)))
+        await module.expire_search_caches()
+        assert (cache / 'jev-rerank/saved').is_file()
+        module.stop_worker.assert_not_called()
+        await module.app.state.client.aclose()
+    asyncio.run(scenario())
+
+
+def test_idle_worker_stops_before_cache_removal(tmp_path):
+    from types import SimpleNamespace
+    module = gateway(tmp_path)
+    tenant = 'a' * 64
+    data, cache = cached_owner(module, tenant, module.CACHE_RETENTION_SECONDS + 1)
+    process = SimpleNamespace(returncode=None)
+    module._workers[tenant] = (process, 'http://owner')
+    async def stop(worker):
+        assert worker is process and (cache / 'discovery/saved').is_file()
+    module.stop_worker = AsyncMock(side_effect=stop)
+    async def scenario():
+        module.app.state.client = httpx.AsyncClient(transport=httpx.MockTransport(
+            lambda req: httpx.Response(200, json={'chats': []})))
+        await module.expire_search_caches()
+        await module.app.state.client.aclose()
+    asyncio.run(scenario())
+    module.stop_worker.assert_awaited_once_with(process)
+    assert tenant not in module._workers and not (cache / 'discovery').exists()
+
+
+def test_cleanup_does_not_follow_cache_or_owner_symlinks(tmp_path):
+    module = gateway(tmp_path)
+    data, cache = cached_owner(module, 'a' * 64, module.CACHE_RETENTION_SECONDS + 1)
+    protected = tmp_path / 'protected'
+    protected.mkdir()
+    (protected / 'model.ldr').write_text('keep')
+    (cache / 'discovery/link').symlink_to(protected, target_is_directory=True)
+    (module.TENANTS_ROOT / ('b' * 64)).symlink_to(protected, target_is_directory=True)
+    asyncio.run(module.expire_search_caches())
+    assert (protected / 'model.ldr').read_text() == 'keep'
+
+
+def test_legacy_caches_use_latest_write_and_activity_survives_gateway_restart(tmp_path):
+    import os
+    import time
+    module = gateway(tmp_path)
+    data, cache = cached_owner(module, 'a' * 64, module.CACHE_RETENTION_SECONDS + 1)
+    (data / '.cache-last-used').unlink()
+    assert time.time() - module.cache_last_used(data, list(module.search_cache_paths(data))) < 60
+    module.mark_cache_used(data.name)
+    again = gateway(tmp_path)
+    assert time.time() - again.cache_last_used(data, []) < 60
+
+
+def test_unused_shared_index_is_removed_and_recreated_on_next_use(tmp_path):
+    import os
+    import time
+    module = gateway(tmp_path)
+    version = module.REFERENCE_ROOT / ('a' * 40)
+    version.mkdir(parents=True)
+    marker = version / '.last-used'
+    marker.touch()
+    stamp = time.time() - module.CACHE_RETENTION_SECONDS - 1
+    os.utime(marker, (stamp, stamp))
+    asyncio.run(module.expire_search_caches())
+    assert not version.exists()
+
+
+def test_old_filtered_index_expires_while_shared_catalog_is_still_active(tmp_path):
+    import os
+    import time
+    module = gateway(tmp_path)
+    version = module.REFERENCE_ROOT / ('a' * 40)
+    stale = version / '.cache/jev-rerank' / ('b' * 64)
+    fresh = version / '.cache/jev-rerank' / ('c' * 64)
+    for path in (stale, fresh):
+        path.mkdir(parents=True)
+        (path / '.last-used').touch()
+        (path / 'index.sqlite3').write_text('rebuildable')
+    (version / '.last-used').touch()
+    stamp = time.time() - module.CACHE_RETENTION_SECONDS - 1
+    os.utime(stale / '.last-used', (stamp, stamp))
+    snapshot = version / '.cache/discovery/public/queries' / (stale.name + '.sqlite')
+    snapshot.parent.mkdir(parents=True)
+    snapshot.write_text('public candidates')
+    catalog = snapshot.parent.parent / 'catalog.sqlite'
+    catalog.write_text('keep shared catalog')
+    asyncio.run(module.expire_search_caches())
+    assert not stale.exists() and not snapshot.exists()
+    assert fresh.is_dir() and catalog.is_file()
+
+
+def test_startup_migration_reclaims_duplicates_without_removing_private_results(tmp_path):
+    module = gateway(tmp_path)
+    data, cache = cached_owner(module, 'a' * 64, 0)
+    asyncio.run(module.migrate_duplicate_indexes())
+    assert not (cache / 'discovery').exists() and not (cache / 'jev-rerank').exists()
+    assert (cache / 'reference-search/saved').is_file()
+    assert (cache / 'embedded/saved').is_file()
+    assert (data / 'chats/session/model.ldr').is_file()
+
+
+def test_private_result_expires_independently_for_an_active_owner(tmp_path):
+    import os
+    import time
+    module = gateway(tmp_path)
+    data, cache = cached_owner(module, 'a' * 64, 0)
+    stale = cache / 'reference-search/old.json'
+    fresh = cache / 'reference-search/new.json'
+    stale.write_text('{}')
+    fresh.write_text('{}')
+    stamp = time.time() - module.CACHE_RETENTION_SECONDS - 1
+    os.utime(stale, (stamp, stamp))
+    asyncio.run(module.expire_search_caches())
+    assert not stale.exists() and fresh.is_file()
+    assert (data / 'chats/session/model.ldr').is_file()
+
+
+def test_reference_broker_rejects_unknown_unix_identity_before_read_or_spawn(tmp_path, monkeypatch):
+    import struct
+    from unittest.mock import MagicMock
+    module = gateway(tmp_path)
+    monkeypatch.setattr(module.socket, 'SO_PEERCRED', 17, raising=False)
+    reader, writer = AsyncMock(), MagicMock()
+    writer.get_extra_info.return_value.getsockopt.return_value = struct.pack('3i', 10, 1234, 1234)
+    writer.drain, writer.wait_closed = AsyncMock(), AsyncMock()
+    spawn = AsyncMock()
+    monkeypatch.setattr(module.asyncio, 'create_subprocess_exec', spawn)
+    asyncio.run(module.reference_request(reader, writer))
+    reader.readline.assert_not_called()
+    spawn.assert_not_called()
+    assert b'error' in writer.write.call_args.args[0]
 
 
 def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path):

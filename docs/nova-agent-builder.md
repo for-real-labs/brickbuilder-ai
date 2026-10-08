@@ -226,6 +226,33 @@ serves; route a session consistently to its volume. `NOVA_MAX_WORKERS` bounds
 concurrent resident workers (default 16); capacity errors fail visibly instead
 of bypassing the isolation boundary.
 
+### Shared reference indexes and cache retention
+
+The public LDraw reference catalog, filtered candidate databases, and Jev text
+indexes live once per toolkit revision under `/data/reference-cache`, rather
+than once per owner. A local Unix socket broker authenticates callers using their
+Unix identity and accepts only bounded reference indexing, search, and inventory
+operations. It runs the pinned immutable toolkit, serializes index writes, and
+gives agents read-only access to the public indexes. Custom libraries/indexes
+remain owner-local. Shared Jev databases do not store private query scores;
+query-bearing search results are cached inside each owner's private toolkit cache.
+
+The gateway checks hourly for seven days of inactivity. Owner search caches are
+removed only after any resident worker is confirmed idle and stopped. Shared
+filtered search indexes expire independently after seven days without use, and
+private cached result files also expire individually after seven days without use.
+an entire shared toolkit revision expires after seven days without reference
+activity, once all resident workers are confirmed idle. The indexes/results are
+rebuilt on demand when an owner returns. This preserves conversations, models,
+workspaces, provider configuration, and embedded model parts.
+
+On container startup, before any owner workers start, the gateway removes legacy
+duplicated discovery/Jev caches to reclaim space for the shared indexes. It does
+not migrate private query scores into shared storage. The first reference search
+after deployment or eviction can take longer while the public indexes rebuild.
+Seven-day retention bounds idle cache growth; it is not a hard 5 GB limit on
+active references, private workspaces, or output files.
+
 ## Upgrading and attribution
 
 For the repeatable shared staging workflow and per-PR Vercel connection, see
