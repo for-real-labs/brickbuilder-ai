@@ -383,7 +383,7 @@ async def estimate_price_endpoint(
     request: EstimatePriceRequest,
     auth_info: dict = Depends(get_user_with_optional_auth)
 ):
-    """Estimate price for an LDR file using BrickOwl catalog prices"""
+    """Estimate price for an LDR file using the Brickwith supplier catalog"""
     return await estimate_price(request, auth_info)
 
 

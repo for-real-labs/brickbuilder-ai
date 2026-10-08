@@ -33,6 +33,7 @@ TENANT_RE = re.compile(r'^[a-f0-9]{64}$')
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
+VERSIONS['parts_catalog_version'] = 1
 _workers = {}
 _locks = {}
 _capacity_lock = asyncio.Lock()

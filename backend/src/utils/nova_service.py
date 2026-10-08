@@ -114,6 +114,8 @@ class NovaService:
         info = await self.request('GET', 'integration/runtime')
         if info.get('generation_cost_limit_usd') != 10:
             raise ValueError('Nova must be rebuilt with the $10 generation cost limit before All parts can run.')
+        if info.get('parts_catalog_version') != 1:
+            raise ValueError('Rebuild the Nova runtime with parts catalog restrictions before using All parts.')
         return info
 
     @staticmethod
@@ -210,10 +212,22 @@ class NovaService:
             else:
                 created = await self.request('POST', 'api/chats', json={'llm_model_id': model_id})
                 chat_id, before = self.session_id(created['id']), {'models': {}}
+        from .supplier_catalog import catalog_path
+        from .parts_catalog import PartsCatalog
+        catalog_csv = catalog_path().read_text(encoding='utf-8')
+        catalog = PartsCatalog.from_csv(catalog_csv)
+        palette_csv = catalog.to_palette_csv()
+        configured = await self.request('PUT', f'integration/chats/{chat_id}/parts-catalog',
+                                        json={'csv': palette_csv})
+        if configured.get('parts_catalog_version') != 1:
+            raise ValueError('Nova did not confirm the parts catalog restrictions')
         session = {'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
                    'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
         if not previous and source:
             session['model_id'] = self.session_id(created['model_id'])
+        session['parts_catalog'] = {'sha256': hashlib.sha256(catalog_csv.encode()).hexdigest(),
+                                   'palette_sha256': hashlib.sha256(palette_csv.encode()).hexdigest(),
+                                   'allowed_combinations': len(catalog.parts)}
         await save_session(session)
         text = request.prompt or 'Create a model from the reference image.'
         images = ([f'data:{request.image_media_type};base64,{request.image_base64}'] if request.image_base64 else [])
@@ -240,7 +254,13 @@ class NovaService:
             latest = max(published, key=lambda row: row.get('created_at', 0))
             session['model_id'] = latest['id']
             await save_session(session)
-            return await self.export(chat_id, latest['id'], session)
+            result = await self.export(chat_id, latest['id'], session)
+            from .parts_catalog import flat_model_inventory, reject_custom_parts
+            # Defense in depth: no unsupported model reaches storage or billing,
+            # even if the agent or runtime bypassed its publication tool.
+            reject_custom_parts(result.mpd)
+            catalog.validate(flat_model_inventory(result.ldr))
+            return result
         except BaseException:
             # Includes timeout and user cancellation. Never cancel someone else's turn
             # if sending our message lost a race and returned 409.
