@@ -99,6 +99,7 @@ def test_owner_result_cache_rebuilds_after_eviction(tmp_path, monkeypatch):
     common.atomic_write = atomic_write
     monkeypatch.setitem(sys.modules, 'reference_client.common', common)
     client.__package__ = 'reference_client'
+    client.__spec__ = SimpleNamespace(parent='reference_client')
     calls = []
     def request(action, params=None):
         calls.append(action)
