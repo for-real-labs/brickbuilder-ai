@@ -13,6 +13,7 @@
     "setup:nova": "node scripts/nova.cjs setup",
     "update:nova": "node scripts/nova.cjs update",
     "nova:status": "node scripts/nova.cjs status",
+    "nova:pin-production": "node scripts/pin-nova-production.cjs",
     "nova:pin-staging": "node scripts/pin-nova-staging.cjs",
     "test": "node --test tests/*.test.cjs"
   },

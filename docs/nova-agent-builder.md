@@ -266,9 +266,18 @@ The two repository pins are in `backend/setup_nova.cjs`:
 - https://github.com/jjohnson5253/ldraw-nova-docker, forked from anteloc/ldraw-nova-docker,
   including its runtime dependencies.
 
-The pins select compatible immutable revisions merged into the forks' `staging`
-branches. Updates are taken from the forks so changes merged there can flow into
-BrickBuilder.
+Production pins select compatible immutable revisions from both forks'
+`main-BrickBuilderAI` branches. Run `npm run nova:pin-production` on a BrickBuilder
+feature branch, validate the generated recipe, and open a PR targeting `main`.
+The command resolves both customized branch heads before updating either pin.
+Local setup and Railway builds then consume the same committed revisions.
+
+Keep Railway's production Nova service connected to the BrickBuilder repository's
+`main` branch with `RAILWAY_DOCKERFILE_PATH=backend/nova-service/Dockerfile`. This
+retains the existing gateway, private address, service token, and `/data` volume.
+Nova fork pushes take effect after their new pins are released through BrickBuilder;
+they do not separately redeploy production. The staging workflow continues to
+resolve the forks' `staging` branches with `npm run nova:pin-staging`.
 
 Update the compatible pins, run setup, verify the adapter contracts and a real
 Nova generation/edit, then rebuild and deploy the service image. Clean managed

@@ -4,7 +4,7 @@ const { mkdtempSync, mkdirSync, readFileSync, writeFileSync, rmSync } = require(
 const { tmpdir } = require('node:os');
 const path = require('node:path');
 const { SOURCES } = require('../backend/setup_nova.cjs');
-const { stagingRevision, pinStaging } = require('../scripts/pin-nova-staging.cjs');
+const { branchRevision, stagingRevision, pinNova, pinStaging } = require('../scripts/pin-nova-staging.cjs');
 
 function fixture() {
   const root = mkdtempSync(path.join(tmpdir(), 'nova-pins-'));
@@ -30,6 +30,41 @@ test('resolves only the staging branch of the configured Nova fork', () => {
     'a'.repeat(40) + '\trefs/heads/staging\n' + 'b'.repeat(40) + '\trefs/heads/staging']) {
     assert.throws(() => stagingRevision(SOURCES[0], () => ({ status: 0, stdout })), /Invalid staging revision/);
   }
+});
+
+test('production resolves both customized branches to immutable pins without changing build ownership', () => {
+  const files = fixture();
+  let calls = 0;
+  try {
+    const revisions = pinNova({ root: files.root, run: (command, args, options) => {
+      if (command === 'git') {
+        const source = SOURCES[calls++];
+        assert.deepEqual(args, ['ls-remote', '--exit-code', source.url, 'refs/heads/main-BrickBuilderAI']);
+        return { status: 0, stdout: (calls === 1 ? 'a' : 'b').repeat(40) + '\trefs/heads/main-BrickBuilderAI\n' };
+      }
+      assert.equal(command, process.execPath);
+      assert.deepEqual(args, ['scripts/nova.cjs', '--prepare']);
+      assert.equal(options.cwd, files.root);
+      writeFileSync(files.dockerfile, 'production recipe');
+      return { status: 0 };
+    } });
+    assert.deepEqual(revisions.map(source => source.commit), ['a'.repeat(40), 'b'.repeat(40)]);
+    assert.equal(readFileSync(files.dockerfile, 'utf8'), 'production recipe');
+  } finally { rmSync(files.root, { recursive: true, force: true }); }
+});
+
+test('production rejects another branch and leaves the original pair untouched if either branch is unavailable', () => {
+  assert.throws(() => branchRevision(SOURCES[0], 'main-BrickBuilderAI', () => ({
+    status: 0, stdout: 'a'.repeat(40) + '\trefs/heads/master\n',
+  })), /Invalid main-BrickBuilderAI revision/);
+  const files = fixture();
+  let calls = 0;
+  try {
+    assert.throws(() => pinNova({ root: files.root, run: () => ++calls === 1
+      ? { status: 0, stdout: 'a'.repeat(40) + '\trefs/heads/main-BrickBuilderAI' } : { status: 2 } }), /Unable to read/);
+    assert.equal(readFileSync(files.setup, 'utf8'), files.original);
+    assert.equal(readFileSync(files.dockerfile, 'utf8'), 'original recipe');
+  } finally { rmSync(files.root, { recursive: true, force: true }); }
 });
 
 test('updates both immutable pins and regenerates the deployment recipe', () => {
