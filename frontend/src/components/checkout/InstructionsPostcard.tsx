@@ -36,8 +36,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
   const [failedImage, setFailedImage] = React.useState<string | null>(null);
   const dialog = React.useRef<HTMLDialogElement>(null);
   const infoButton = React.useRef<HTMLButtonElement>(null);
-  const titleId = React.useId();
-  const descriptionId = `${titleId}-description`;
+  const descriptionId = React.useId();
   const instructionsUrl = `https://brickbuilder.ai/instructions?id=${encodeURIComponent(generationId)}`;
   const image = modelImage && modelImage !== failedImage ? modelImage : null;
 
@@ -60,7 +59,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
       setOpen(true);
       posthog.capture('order_instructions_postcard_preview_opened', { generation_id: generationId });
     }}><Info size={19} aria-hidden="true" /></button>
-    <dialog ref={dialog} className="checkout-postcard-dialog" aria-labelledby={titleId} aria-describedby={descriptionId}
+    <dialog ref={dialog} className="checkout-postcard-dialog" aria-label="Instructions post card preview" aria-describedby={descriptionId}
       onClick={event => { if (event.target === event.currentTarget) close(); }}
       onCancel={event => { event.preventDefault(); close(); }}
       onClose={() => {
@@ -69,9 +68,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
       }}>
       <div className="checkout-postcard-dialog-content">
         <button type="button" className="checkout-postcard-close" aria-label="Close postcard preview" onClick={close}><X size={20} aria-hidden="true" /></button>
-        <p className="checkout-postcard-eyebrow">A keepsake for your build</p>
-        <h2 id={titleId}>Your instructions, on a post card</h2>
-        <p id={descriptionId}>Select this option to ship a post card with a QR code link to the instructions.</p>
+        <p id={descriptionId} className="checkout-postcard-description">Select this option to ship a post card with a QR code link to the instructions.</p>
         <figure className="checkout-postcard-example">
           <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
@@ -87,7 +84,6 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
               <span className="checkout-postcard-site">brickbuilder.ai</span>
             </div>
           </div>
-          <figcaption>Example post card for {modelName}</figcaption>
         </figure>
         <button type="button" className="checkout-primary" onClick={close}>Got it</button>
       </div>

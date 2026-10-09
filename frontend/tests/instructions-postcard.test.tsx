@@ -91,3 +91,15 @@ it('adapts the card style to the model’s subject', () => {
   expect(getPostcardTheme('City Skyline')).toBe('architecture');
   expect(getPostcardTheme('Race Car')).toBe('studio');
 });
+
+
+it('removes the extra popup headings and caption while keeping an accessible label and explanation', () => {
+  render(); open();
+  const dialog = container.querySelector('dialog')!;
+  expect(dialog.getAttribute('aria-label')).toBe('Instructions post card preview');
+  const description = document.getElementById(dialog.getAttribute('aria-describedby')!);
+  expect(description?.textContent).toBe('Select this option to ship a post card with a QR code link to the instructions.');
+  expect(dialog.querySelector('h2, figcaption')).toBeNull();
+  expect(dialog.textContent).not.toMatch(/keepsake|Your instructions, on a post card|Example post card for/i);
+  expect(dialog.querySelector('h3')?.textContent).toBe(props.modelName);
+});
