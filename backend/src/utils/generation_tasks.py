@@ -31,6 +31,19 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
         usage = GenerationUsage(generation_id)
         usage_token = current_generation_usage.set(usage)
         worker = asyncio.create_task(work)
+        saved_call_count = 0
+
+        async def save_usage_if_changed():
+            nonlocal saved_call_count
+            call_count = len(usage.calls)
+            if call_count == saved_call_count:
+                return
+            try:
+                await generation_storage.save_generation_usage(generation_id, usage.values())
+            except Exception:
+                logger.warning('Unable to save AI usage for %s', generation_id)
+            else:
+                saved_call_count = call_count
 
         async def watch_cancellation():
             while not worker.done():
@@ -41,6 +54,9 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
                         return
                 except Exception:
                     logger.warning("Unable to check cancellation for %s", generation_id)
+                # Preserve reported spend while long jobs are still running,
+                # including before a process restart or deployment interrupts them.
+                await save_usage_if_changed()
                 await asyncio.sleep(1)
 
         watcher = asyncio.create_task(watch_cancellation())
@@ -51,8 +67,7 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
             with suppress(asyncio.CancelledError):
                 await watcher
             try:
-                if usage.calls:
-                    await asyncio.shield(generation_storage.save_generation_usage(generation_id, usage.values()))
+                await asyncio.shield(save_usage_if_changed())
             except Exception:
                 logger.warning('Unable to save AI usage for %s', generation_id)
             finally:

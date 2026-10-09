@@ -28,6 +28,7 @@ it('subscribes a signed-in owner with their server-side account email in one cli
   const modal = document.querySelector('[role="dialog"]')!;
   expect(modal.textContent).toContain('You’re all set');
   expect(modal.textContent).toContain('account@example.com');
+  expect(modal.querySelector('p')!.textContent).toBe("We'll send an email to account@example.com when your set is ready!");
   expect(modal.querySelector('input')).toBeNull();
   expect(container.textContent).toContain('We’ll email you');
   expect(container.textContent).toContain('Emailing account@example.com');
@@ -53,6 +54,7 @@ it('lets a guest enter an email without a login, shows errors, and retries', asy
   expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('build', 'guest@example.com');
   expect(modal.textContent).toContain('You’re all set');
   expect(modal.textContent).toContain('guest@example.com');
+  expect(modal.querySelector('p')!.textContent).toBe("We'll send an email to guest@example.com when your set is ready!");
   expect(container.textContent).toContain('Emailing guest@example.com');
   expect(modal.querySelector('input')).toBeNull();
   expect(document.body.style.overflow).toBe('hidden');

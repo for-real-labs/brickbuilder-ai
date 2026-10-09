@@ -1,5 +1,5 @@
 import { apiFetch } from './apiFetch';
-import type { OrderQuote } from '../utils/orderCheckout';
+import type { OrderQuote, getShippingContact } from '../utils/orderCheckout';
 /// <reference types="vite/client" />
 
 export interface CreateCheckoutSessionRequest {
@@ -10,6 +10,8 @@ export interface CreateCheckoutSessionRequest {
   brickowlCartId?: string;
   uiMode?: 'hosted' | 'custom' | 'embedded' | 'elements';
   customerEmail?: string;
+  shipInstructionsPostcard?: boolean;
+  shippingAddress?: ReturnType<typeof getShippingContact>;
 }
 
 export interface CreateCheckoutSessionResponse {
@@ -17,6 +19,7 @@ export interface CreateCheckoutSessionResponse {
   checkout_url?: string | null;
   client_secret?: string | null;
   price_data?: OrderQuote;
+  shipping_address_provided?: boolean;
 }
 
 // API Configuration

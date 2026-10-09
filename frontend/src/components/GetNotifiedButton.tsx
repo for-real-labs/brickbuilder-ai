@@ -97,7 +97,7 @@ function NotificationButton({ generationId, signedIn }: { generationId: string; 
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-600"><Check aria-hidden className="h-6 w-6" /></div>
           <h2 id={titleId} className="pr-9 text-xl font-semibold text-slate-900">You’re all set</h2>
           <p id={descriptionId} className="mt-2 text-sm text-slate-600">{recipient
-            ? <>We’ll send one email to <strong className="break-all font-semibold text-slate-900">{recipient}</strong> when your model is ready. No newsletter.</>
+            ? <>We'll send an email to <strong className="break-all font-semibold text-slate-900">{recipient}</strong> when your set is ready!</>
             : 'Your email notification is saved. Refresh to see the recipient email address.'}</p>
           <button type="button" onClick={close} className="mt-5 h-12 w-full rounded-full bg-[#f44336] px-5 font-semibold text-white hover:bg-[#ff6b6b]">Done</button>
         </> : <>

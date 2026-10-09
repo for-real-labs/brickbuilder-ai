@@ -93,3 +93,22 @@ describe('transparent model previews', () => {
     }
   });
 });
+
+
+it('captures the current postcard angle and framing without moving the camera', () => {
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, 1.4);
+  camera.position.set(80, 20, 40);
+  camera.lookAt(1, 2, 3);
+  const orientation = camera.quaternion.clone();
+  const renderer = previewRenderer(() => {
+    expect(camera.position).toEqual(new THREE.Vector3(80, 20, 40));
+    expect(camera.quaternion.equals(orientation)).toBe(true);
+    expect(camera.aspect).toBe(1.4);
+    expect(renderer.getSize(new THREE.Vector2())).toEqual(new THREE.Vector2(800, 400));
+    return 'data:image/png;base64,chosen-angle';
+  });
+  expect(captureTransparentPreview(renderer, scene, camera)).toBe('data:image/png;base64,chosen-angle');
+  expect(camera.position).toEqual(new THREE.Vector3(80, 20, 40));
+  expect(camera.quaternion.equals(orientation)).toBe(true);
+});

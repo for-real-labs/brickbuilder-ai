@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from typing import Optional
+from urllib.parse import urlencode
 
 from pydantic import BaseModel
 from fastapi import HTTPException, Request
@@ -153,18 +154,26 @@ def handle_payment_method_attached(payment_method):
 async def handle_checkout_session_completed(session):
     """Handle completed checkout session"""
     logger.info(f"Processing completed checkout session: {session.id}")
+
+    # Checkout passes its key per request; webhook workers must authenticate
+    # independently rather than relying on Stripe's process-wide default.
+    key_name = "STRIPE_SECRET_KEY_LIVE" if os.getenv("API_MODE", "local") == "production" else "STRIPE_SECRET_KEY"
+    stripe_key = os.getenv(key_name)
+    if not stripe_key:
+        logger.error("Stripe secret key not configured for checkout fulfillment")
+        raise HTTPException(status_code=500, detail="Payment configuration is unavailable")
     
     # Retrieve the full session object from Stripe API to ensure we have all properties
     # The webhook event object doesn't always include all session properties like shipping_details
     try:
-        full_session = stripe.checkout.Session.retrieve(session.id)
+        full_session = stripe.checkout.Session.retrieve(session.id, expand=["payment_intent"], api_key=stripe_key)
         logger.info(f"Retrieved full session from Stripe API")
     except Exception as e:
         logger.error(f"Failed to retrieve full session from Stripe: {e}")
         full_session = session  # Fallback to event data
     
     # Extract custom metadata
-    metadata = full_session.get('metadata', {})
+    metadata = full_session.get('metadata') or {}
     generation_id = metadata.get('generationId')
     brickowl_cart_id = metadata.get('brickowlCartId')
     logger.info(f"Checkout session metadata: generation_id={generation_id}, brickowl_cart_id={brickowl_cart_id}")
@@ -173,16 +182,24 @@ async def handle_checkout_session_completed(session):
     amount_total = full_session.get('amount_total', 0)
     
     # Get payment intent ID
-    payment_intent = full_session.get('payment_intent')
+    payment_intent_data = full_session.get('payment_intent')
+    if metadata.get('shippingAddressProvided') == 'true' and isinstance(payment_intent_data, str):
+        payment_intent_data = stripe.PaymentIntent.retrieve(payment_intent_data, api_key=stripe_key)
+    payment_intent = payment_intent_data.get('id') if isinstance(payment_intent_data, dict) else payment_intent_data
     logger.info(f"Payment intent ID: {payment_intent}")
     
     logger.info(f"Checkout session metadata - Generation ID: {generation_id}, BrickOwl Cart ID: {brickowl_cart_id}, Amount: ${amount_total/100:.2f}")
     
     # Extract shipping information from session
     # Shipping details are in collected_information.shipping_details
-    customer_details = full_session.get('customer_details', {})
-    collected_information = full_session.get('collected_information', {})
-    shipping_details = collected_information.get('shipping_details', {})
+    customer_details = full_session.get('customer_details') or {}
+    collected_information = full_session.get('collected_information') or {}
+    shipping_details = collected_information.get('shipping_details') or {}
+    if metadata.get('shippingAddressProvided') == 'true':
+        shipping_details = payment_intent_data.get('shipping') if isinstance(payment_intent_data, dict) else None
+        if not shipping_details or not shipping_details.get('address'):
+            # Let Stripe retry rather than recording an order without its address.
+            raise HTTPException(status_code=500, detail='Paid order shipping address is unavailable')
     
     logger.info(f"Raw collected_information: {collected_information}")
     logger.info(f"Raw shipping_details: {shipping_details}")
@@ -209,6 +226,7 @@ async def handle_checkout_session_completed(session):
         'name': shipping_name,
         'email': customer_details.get('email'),
         'phone': customer_details.get('phone'),
+        'instructions_postcard': metadata.get('shipInstructionsPostcard') == 'true',
         'address': {
             'line1': shipping_address.get('line1'),
             'line2': shipping_address.get('line2'),
@@ -219,6 +237,11 @@ async def handle_checkout_session_completed(session):
         }
     }
     
+    if shipping_info['instructions_postcard']:
+        shipping_info['instructions_postcard_size'] = '6x4in'
+    if shipping_info['instructions_postcard'] and generation_id:
+        shipping_info['instructions_url'] = 'https://brickbuilder.ai/instructions?' + urlencode({'id': generation_id})
+
     logger.info(f"Shipping info - Name: {shipping_info['name']}, Email: {shipping_info['email']}, City: {shipping_info['address']['city']}, State: {shipping_info['address']['state']}, Country: {shipping_info['address']['country']}")
 
     # Create BrickOwl wishlist - DISABLED
@@ -333,6 +356,7 @@ async def handle_checkout_session_completed(session):
                                         <tr><td style="padding: 8px; font-weight: bold;">Customer:</td><td style="padding: 8px;">{shipping_info.get('name', 'N/A') if shipping_info else 'N/A'}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">{customer_email}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Ship To:</td><td style="padding: 8px;">{addr_str}</td></tr>
+                                        <tr><td style="padding: 8px; font-weight: bold;">Instructions Post Card:</td><td style="padding: 8px;">{"Include 6 × 4 inch QR instructions postcard" if shipping_info.get("instructions_postcard") else "Not requested"}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Stripe Session:</td><td style="padding: 8px;">{full_session.id}</td></tr>
                                     </table>
                                     <p style="margin-top: 16px;"><a href="https://dashboard.stripe.com/payments/{payment_intent}" style="color: #ef4444;">View in Stripe</a></p>

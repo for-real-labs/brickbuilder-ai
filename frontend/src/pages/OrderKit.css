@@ -41,8 +41,6 @@
 .checkout-field input:focus, .checkout-field select:focus { border-color: #f44336; box-shadow: 0 0 0 1px #f44336; outline: none; }
 .checkout-field input:disabled { opacity: .65; }
 .checkout-optional { color: #868b94; font-size: 11px; }
-.checkout-add-apartment { width: fit-content; color: #686c73; background: none; border: 0; font-size: 12px !important; padding: 2px 0; text-align: left; }
-.checkout-add-apartment:hover { color: #f44336; }
 .checkout-actions { display: flex; align-items: stretch; gap: 12px; margin-top: 20px; }
 .checkout-primary { display: flex; justify-content: center; align-items: center; gap: 12px; width: 100%; min-height: 50px; border: 0; border-radius: 12px; background: #f44336; color: #fff; font-size: 15px !important; font-weight: 600 !important; padding: 12px 18px; transition: background .15s; text-decoration: none; text-align: center; }
 .checkout-primary:hover:not(:disabled) { background: #ff6b6b; }
@@ -96,7 +94,6 @@
 .checkout-footer { display: flex; justify-content: center; flex-wrap: wrap; gap: 20px; padding: 8px 20px 12px; font-size: 11px; color: #868b94; }
 .checkout-footer a { color: inherit; text-decoration: none; }
 .checkout-footer a:hover { text-decoration: underline; }
-@media (min-width: 821px) { .checkout-field-grid > .checkout-field:nth-child(-n+2) { grid-column: auto; } }
 @media (min-width: 821px) and (min-height: 820px) {
   .checkout-main { padding-top: 24px; }
   .checkout-intro { margin: 20px 0 28px; }
@@ -134,7 +131,6 @@
   .checkout-field { font-size: 14px; gap: 7px; }
   .checkout-field input, .checkout-field select { min-height: 48px; padding: 12px; font-size: 16px; }
   .checkout-field-grid { gap: 16px 12px; }
-  .checkout-add-apartment { font-size: 13px !important; }
   .checkout-primary { min-height: 52px; }
   .checkout-footer { padding-bottom: 28px; }
 }
@@ -171,3 +167,44 @@
 /* Keep a measurable wallet mount while checking browser eligibility.
    display:none prevents Express Checkout from laying out its buttons. */
 .checkout-wallet-payment.is-inactive, .checkout-wallet-payment > .is-inactive { position: fixed; left: -10000px; top: 0; width: min(520px, calc(100vw - 40px)); visibility: hidden; pointer-events: none; }
+
+.checkout-postcard-option { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 12px 14px; border: 1px solid #dce0e5; border-radius: 12px; background: #fff; }
+.checkout-postcard-option.is-selected { border-color: #f44336; background: #fff8f7; }
+.checkout-postcard-option > label { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; font-size: 13px; cursor: pointer; }
+.checkout-postcard-option input { accent-color: #f44336; width: 18px; height: 18px; flex-shrink: 0; }
+.checkout-postcard-info, .checkout-postcard-close { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: #686c73; }
+.checkout-postcard-info:hover, .checkout-postcard-close:hover { background: #f0f2f5; color: #202124; }
+.checkout-postcard-dialog { padding: 0; border: 0; border-radius: 22px; width: min(660px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); background: #fff; color: #202124; margin: auto; box-shadow: 0 24px 100px #0003; font-family: Arial, sans-serif; }
+.checkout-postcard-dialog::backdrop { background: #1a202b80; backdrop-filter: blur(4px); }
+.checkout-postcard-dialog-content { padding: 28px; position: relative; }
+.checkout-postcard-close { position: absolute; top: 12px; right: 12px; }
+.checkout-postcard-description { font-size: 14px; line-height: 1.6; color: #686c73; margin: 0; max-width: 510px; padding-right: 28px; }
+.checkout-postcard-example { margin: 24px 0; container-type: inline-size; }
+.checkout-postcard { --postcard-ink: #723c2f; --postcard-paper: #fff5e8; --postcard-background: linear-gradient(140deg, #ebc9ab, #f8e9d6 50%, #d59d80); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); width: 100%; aspect-ratio: 3 / 2; grid-template-rows: minmax(0, 1fr); min-height: 0; border-radius: 4px; background: var(--postcard-paper); box-shadow: 0 8px 24px #252b3614, 0 0 0 1px #252b3614; overflow: hidden; color: var(--postcard-ink); }
+.checkout-postcard-space { --postcard-ink: #282f61; --postcard-paper: #f0f0fb; --postcard-background: radial-gradient(circle at 18% 25%, #a8acf0 0, transparent 30%), radial-gradient(circle at 80% 80%, #bc93c1 0, transparent 40%), linear-gradient(135deg, #252943, #565883); }
+.checkout-postcard-ocean { --postcard-ink: #175664; --postcard-paper: #eff9f7; --postcard-background: radial-gradient(ellipse at top left, #d0f3e8, transparent 65%), linear-gradient(160deg, #7bb9c5, #cae6df 55%, #3d90a7); }
+.checkout-postcard-nature { --postcard-ink: #3b5c40; --postcard-paper: #f3f5e9; --postcard-background: radial-gradient(ellipse at top right, #e7e6b8, transparent 70%), linear-gradient(145deg, #8aa68a, #c7d5b0 50%, #69886f); }
+.checkout-postcard-architecture { --postcard-ink: #35485b; --postcard-paper: #f6f4ef; --postcard-background: repeating-linear-gradient(90deg, transparent 0 29px, #ffffff18 29px 30px), repeating-linear-gradient(0deg, transparent 0 29px, #ffffff18 29px 30px), linear-gradient(145deg, #8fabbc, #dce0de 55%, #8b9aa8); }
+.checkout-postcard-art { padding: clamp(8px, 3cqw, 18px); min-height: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 2cqw; background: var(--postcard-background); min-width: 0; }
+.checkout-postcard-brand { align-self: flex-start; font-size: clamp(6px, 1.5cqw, 9px); font-weight: 800; letter-spacing: .1em; padding: .8cqw 1.2cqw; background: #ffffffde; color: #202124; border-radius: 2px; }
+.checkout-postcard-model { width: 100%; height: 0; flex: 1; min-height: 0; position: relative; overflow: hidden; }
+.checkout-postcard-model > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 12px 12px #0002); }
+.checkout-postcard-model.is-interactive { cursor: grab; touch-action: none; }
+.checkout-postcard-model.is-interactive:active { cursor: grabbing; }
+.checkout-postcard-model .bg-gray-100 { background: transparent; border-radius: 0; }
+.checkout-postcard-model canvas { touch-action: none; }
+.checkout-postcard-model canvas:focus-visible { outline-offset: -3px; }
+.checkout-postcard-view-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: -10px 0 14px; color: #686c73; font-size: 11px; }
+.checkout-postcard-view-controls button { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid #dce0e5; border-radius: 8px; background: #fff; color: #202124; }
+.checkout-postcard-view-controls button:disabled { opacity: .45; }
+.checkout-postcard-art-caption { color: #fff; background: #18212f45; padding: .7cqw 1.3cqw; font-size: clamp(7px, 1.65cqw, 10px); letter-spacing: .07em; }
+.checkout-postcard-details { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4cqw 2.65cqw; min-width: 0; min-height: 0; }
+.checkout-postcard-details h3 { font-family: Georgia, serif; font-size: clamp(14px, 4cqw, 24px); font-weight: 400; line-height: 1.15; overflow-wrap: anywhere; margin: 2cqw 0 3cqw; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex-shrink: 0; }
+.checkout-postcard-qr { display: block; width: clamp(64px, 18.2cqw, 110px); aspect-ratio: 1; flex-shrink: 0; max-width: 100%; background: #fff; border: 1px solid #0001; }
+.checkout-postcard-qr svg { width: 100%; height: 100%; }
+.checkout-postcard-scan { margin-top: 1.65cqw; font-size: clamp(7px, 1.65cqw, 10px); font-weight: 600; }
+.checkout-postcard-site { margin-top: 3cqw; font-size: clamp(6px, 1.32cqw, 8px); letter-spacing: .12em; opacity: .65; }
+.checkout-postcard-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #202124; font-size: 11px; text-align: center; }
+@media (max-width: 480px) {
+  .checkout-postcard-dialog-content { padding: 24px 18px 18px; }
+}

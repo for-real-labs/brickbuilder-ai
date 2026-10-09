@@ -7,6 +7,7 @@ import { LDrawLoader } from 'three/addons/loaders/LDrawLoader.js';
 import { LDrawConditionalLineMaterial } from 'three/addons/materials/LDrawConditionalLineMaterial.js';
 import { RotateCcw, Ruler } from 'lucide-react';
 import { captureTransparentPreview } from '../utils/captureTransparentPreview';
+import { adjustModelCamera } from '../utils/adjustModelCamera';
 
 // Build a simple stylized room with a table, sized to fit the model.
 const buildRoom = (
@@ -573,13 +574,14 @@ const addOutlineToNewParts = async (mainModel: THREE.Group, newPartsContent: str
   }
 };
 
-interface CameraState {
+export interface CameraState {
   position: { x: number; y: number; z: number };
   target: { x: number; y: number; z: number };
 }
 
 export interface ExportCaptureApi {
   capturePreviewPng: () => string | null;
+  captureCurrentViewPng: () => string | null;
   capturePreviewVideo: () => Promise<{ blob: Blob; extension: 'mp4' | 'webm' } | null>;
 }
 
@@ -1405,6 +1407,8 @@ interface ThreeLDRViewerProps {
   showBaseplate?: boolean;    // Whether to show baseplate with studs
   topLeftOverlay?: React.ReactNode;
   showModelControls?: boolean; // Whether to show ruler and explode controls
+  presentation?: 'room' | 'model';
+  onViewInteractionEnd?: () => void;
   animateModelBuild?: boolean; // Whether to drop parts into place on load
 }
 
@@ -1453,6 +1457,8 @@ export function ThreeLDRViewer({
   animateModelBuild = false,
   topLeftOverlay,
   showModelControls = true,
+  presentation = 'room',
+  onViewInteractionEnd,
 }: ThreeLDRViewerProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -1542,6 +1548,8 @@ export function ThreeLDRViewer({
     explodeAnimationRef.current = null;
     explodePhysicsRef.current = null;
 
+    let disposed = false;
+    let removeResizeListener: (() => void) | undefined;
     const initThreeJS = async () => {
       try {
         const container = containerRef.current!;
@@ -1550,7 +1558,7 @@ export function ThreeLDRViewer({
         
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0xf5f0e8); // warm off-white
+        scene.background = presentation === 'model' ? null : new THREE.Color(0xf5f0e8); // warm off-white
 
         // Camera setup
         const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
@@ -1558,6 +1566,7 @@ export function ThreeLDRViewer({
 
         // Renderer setup
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+        if (presentation === 'model') renderer.setClearAlpha(0);
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(width, height);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -1617,46 +1626,22 @@ export function ThreeLDRViewer({
           renderer.domElement.addEventListener('touchstart', disableAutoRotate);
         }
 
-        // Add camera change listener to track orientation
         if (onCameraChange) {
-          const handleCameraChange = () => {
-            const cameraState: CameraState = {
-              position: {
-                x: camera.position.x,
-                y: camera.position.y,
-                z: camera.position.z
-              },
-              target: {
-                x: controls.target.x,
-                y: controls.target.y,
-                z: controls.target.z
-              }
-            };
-            onCameraChange(cameraState);
-          };
-          
-          controls.addEventListener('change', handleCameraChange);
+          controls.addEventListener('change', () => onCameraChange({
+            position: { x: camera.position.x, y: camera.position.y, z: camera.position.z },
+            target: { x: controls.target.x, y: controls.target.y, z: controls.target.z },
+          }));
         }
-
-        // Add camera change listener to track orientation
-        if (onCameraChange) {
-          const handleCameraChange = () => {
-            const cameraState: CameraState = {
-              position: {
-                x: camera.position.x,
-                y: camera.position.y,
-                z: camera.position.z
-              },
-              target: {
-                x: controls.target.x,
-                y: controls.target.y,
-                z: controls.target.z
-              }
-            };
-            onCameraChange(cameraState);
-          };
-          
-          controls.addEventListener('change', handleCameraChange);
+        if (onViewInteractionEnd) controls.addEventListener('end', onViewInteractionEnd);
+        if (presentation === 'model') {
+          renderer.domElement.tabIndex = 0;
+          renderer.domElement.setAttribute('aria-label', 'Postcard model: drag to rotate, scroll to zoom; arrow keys rotate, plus and minus zoom');
+          renderer.domElement.addEventListener('keydown', event => {
+            if (adjustModelCamera(camera, controls, event.key)) {
+              event.preventDefault();
+              onViewInteractionEnd?.();
+            }
+          });
         }
 
         // Store references
@@ -1687,6 +1672,17 @@ export function ThreeLDRViewer({
           lDrawLoader.load(
             modelSource,
             (model: THREE.Group) => {
+              if (disposed) {
+                model.traverse(object => {
+                  if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
+                    object.geometry.dispose();
+                    const materials = Array.isArray(object.material) ? object.material : [object.material];
+                    materials.forEach(material => material.dispose());
+                  }
+                });
+                if (objectUrl) URL.revokeObjectURL(objectUrl);
+                return;
+              }
               
               // Clear any existing models
               const existingModel = scene.getObjectByName('ldraw-model');
@@ -1756,9 +1752,13 @@ export function ThreeLDRViewer({
               if (rulerGrid) rulerGrid.visible = false;
 
               // ── Build display room with table ──
-              buildRoom(scene, bbox, center, size, maxDimension, showBaseplate);
+              if (presentation === 'room') buildRoom(scene, bbox, center, size, maxDimension, showBaseplate);
               
-              if (preserveOrientation && initialCameraState) {
+              if (presentation === 'model' && initialCameraState) {
+                camera.position.set(initialCameraState.position.x, initialCameraState.position.y, initialCameraState.position.z);
+                controls.target.set(initialCameraState.target.x, initialCameraState.target.y, initialCameraState.target.z);
+                controls.update();
+              } else if (preserveOrientation && initialCameraState) {
                 // Preserve orientation but ensure zoom is sufficient to fit model
                 const currentDistance = new THREE.Vector3(
                   initialCameraState.position.x - center.x,
@@ -1877,6 +1877,12 @@ export function ThreeLDRViewer({
                     } finally {
                       isCaptureInProgressRef.current = false;
                     }
+                  },
+                  captureCurrentViewPng: () => {
+                    isCaptureInProgressRef.current = true;
+                    try { return captureTransparentPreview(renderer, scene, camera); }
+                    catch { return null; }
+                    finally { isCaptureInProgressRef.current = false; }
                   },
                   capturePreviewVideo: async () => {
                     isCaptureInProgressRef.current = true;
@@ -2022,9 +2028,7 @@ export function ThreeLDRViewer({
 
         window.addEventListener('resize', handleResize);
 
-        return () => {
-          window.removeEventListener('resize', handleResize);
-        };
+        removeResizeListener = () => window.removeEventListener('resize', handleResize);
 
       } catch (error) {
         console.error('Failed to initialize Three.js LDR viewer:', error);
@@ -2037,6 +2041,9 @@ export function ThreeLDRViewer({
 
     // Cleanup
     return () => {
+      disposed = true;
+      removeResizeListener?.();
+      sceneRef.current.controls?.dispose();
       if (onExportCaptureReady) {
         onExportCaptureReady(null);
       }
@@ -2047,12 +2054,13 @@ export function ThreeLDRViewer({
       explodePhysicsRef.current = null;
       if (sceneRef.current.renderer) {
         sceneRef.current.renderer.dispose();
+        sceneRef.current.renderer.forceContextLoss();
         if (containerRef.current && sceneRef.current.renderer.domElement) {
           containerRef.current.removeChild(sceneRef.current.renderer.domElement);
         }
       }
     };
-  }, [modelPath, modelContent, onExportCaptureReady, animateModelBuild]);
+  }, [modelPath, modelContent, onExportCaptureReady, animateModelBuild, presentation]);
 
   useEffect(() => {
     const { scene } = sceneRef.current;

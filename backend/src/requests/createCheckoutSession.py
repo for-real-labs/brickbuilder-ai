@@ -2,9 +2,11 @@ import os
 import logging
 import asyncio
 import math
+import json
+from pathlib import Path
 from typing import Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator
 from fastapi import HTTPException
 import stripe
 
@@ -14,6 +16,38 @@ from ..utils.authorization import require_generation_access
 from .getPrice import GetPriceRequest, GetPriceResponse, get_price
 
 logger = logging.getLogger(__name__)
+
+# Verified against Brickwith's checkout dropdown on 2026-10-09.
+SHIPPING_COUNTRIES = json.loads((Path(__file__).resolve().parents[1] / 'data' / 'shipping_countries.json').read_text())
+SHIPPING_COUNTRY_CODES = {row['code'] for row in SHIPPING_COUNTRIES}
+# Stripe's address selector enum omits these ISO regions. New on-page orders
+# supply their address via payment_intent_data.shipping instead of that selector.
+STRIPE_SELECTOR_UNSUPPORTED = {'AS', 'CC', 'CU', 'CX', 'FM', 'HM', 'IR', 'KP', 'MH', 'MP', 'NF', 'PW', 'SY', 'UM', 'VI'}
+STRIPE_SHIPPING_COUNTRIES = sorted(SHIPPING_COUNTRY_CODES - STRIPE_SELECTOR_UNSUPPORTED)
+
+
+class ShippingAddress(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    line1: str = Field(min_length=1, max_length=200)
+    line2: Optional[str] = Field(default=None, max_length=200)
+    city: str = Field(min_length=1, max_length=200)
+    state: Optional[str] = Field(default=None, max_length=200)
+    postal_code: str = Field(min_length=1, max_length=200)
+    country: str = Field(min_length=2, max_length=2)
+
+    @field_validator('country')
+    @classmethod
+    def supported_country(cls, value: str) -> str:
+        value = value.upper()
+        if value not in SHIPPING_COUNTRY_CODES:
+            raise ValueError('Unsupported shipping country')
+        return value
+
+
+class ShippingContact(BaseModel):
+    model_config = ConfigDict(extra='forbid', str_strip_whitespace=True)
+    name: str = Field(min_length=1, max_length=400)
+    address: ShippingAddress
 
 
 class CreateCheckoutSessionRequest(BaseModel):
@@ -25,6 +59,8 @@ class CreateCheckoutSessionRequest(BaseModel):
     brickowlCartId: Optional[str] = Field(default=None, max_length=100)
     uiMode: Literal["hosted", "custom", "embedded", "elements"] = "hosted"
     customerEmail: Optional[EmailStr] = None
+    shipInstructionsPostcard: StrictBool = False
+    shippingAddress: Optional[ShippingContact] = None
 
 
 class CreateCheckoutSessionResponse(BaseModel):
@@ -32,6 +68,7 @@ class CreateCheckoutSessionResponse(BaseModel):
     checkout_url: Optional[str] = None
     client_secret: Optional[str] = None
     price_data: Optional[GetPriceResponse] = None
+    shipping_address_provided: bool = False
 
 
 def checkout_price_cents(quote: GetPriceResponse) -> int:
@@ -68,7 +105,8 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         amount = checkout_price_cents(quote)
         track_api_call(endpoint="/create-checkout-session", user_id=user_email,
                        request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})
-        metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url}
+        metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url,
+                    "shipInstructionsPostcard": str(request.shipInstructionsPostcard).lower()}
         if request.brickowlCartId:
             metadata["brickowlCartId"] = request.brickowlCartId
         params = {
@@ -78,9 +116,15 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
                 "unit_amount": amount,
             }, "quantity": 1}],
             "mode": "payment", "ui_mode": request.uiMode,
-            "shipping_address_collection": {"allowed_countries": ["US", "CA"]},
+            "shipping_address_collection": {"allowed_countries": STRIPE_SHIPPING_COUNTRIES},
             "metadata": metadata,
+            "phone_number_collection": {"enabled": False},
         }
+        shipping_address_provided = request.shippingAddress is not None
+        if shipping_address_provided:
+            params.pop('shipping_address_collection')
+            params['payment_intent_data'] = {'shipping': request.shippingAddress.model_dump(exclude_none=True)}
+            metadata['shippingAddressProvided'] = 'true'
         return_url = f"{site_url.rstrip('/')}/success?session_id={{CHECKOUT_SESSION_ID}}"
         if request.uiMode != "hosted":
             # Apple Pay and Google Pay use the card rail. PayPal needs a separate US integration.
@@ -99,7 +143,7 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         return CreateCheckoutSessionResponse(
             session_id=session.id, checkout_url=session.url,
             client_secret=session.client_secret if request.uiMode != "hosted" else None,
-            price_data=quote,
+            price_data=quote, shipping_address_provided=shipping_address_provided,
         )
     except HTTPException:
         raise

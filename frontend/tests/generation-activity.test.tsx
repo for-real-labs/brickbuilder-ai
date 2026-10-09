@@ -99,7 +99,7 @@ it('uses live agent output for Nova full set jobs', async () => {
   expect(container.querySelector('.brick-build-scene')).not.toBeNull();
 });
 
-it('restores every active job and retains completed and failed outcomes independently', async () => {
+it('restores every active job and shows completed outcomes while hiding failed cards', async () => {
   const fetchJobs = vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations')
     .mockResolvedValueOnce([job('one'), job('two')] as never).mockResolvedValue([]);
   const get = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({
@@ -111,7 +111,8 @@ it('restores every active job and retains completed and failed outcomes independ
   await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
   expect(get).toHaveBeenCalledTimes(2);
   expect(container.textContent).toContain('Ready to build');
-  expect(container.textContent).toContain('Provider failed');
+  expect(container.textContent).not.toContain('Provider failed');
+  expect(container.querySelectorAll('article')).toHaveLength(1);
   expect(open).not.toHaveBeenCalled();
   act(() => container.querySelector('button')!.click());
   expect(open).toHaveBeenCalledWith('one');
@@ -254,14 +255,14 @@ it('uses the saved title in preview cards when a processing job completes', asyn
   expect(activity.generations[0].prompt).toContain('standing on a lawn');
 });
 
-it('recovers a failed Nova build and resumes the saved session without keeping a duplicate failed card', async () => {
+it('recovers a cancelled Nova build and resumes the saved session without keeping a duplicate card', async () => {
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.mocked(GetUserGenerationsApiService.getResumableNovaGenerations).mockResolvedValue([
-    { ...job('cottage'), endpoint: 'novaToBricks', status: 'failed', error_message: 'Build time limit' },
+    { ...job('cottage'), endpoint: 'novaToBricks', status: 'cancelled' },
   ] as never);
   const resume = vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'continued' } as never);
   await act(async () => root.render(<Harness />));
-  expect(container.textContent).toContain('Build time limit');
+  expect(container.textContent).toContain('Generation cancelled');
   const button = [...container.querySelectorAll('button')].find(b => b.textContent === 'Resume build')!;
   await act(async () => button.click());
   expect(resume).toHaveBeenCalledWith('cottage', expect.stringContaining('saved conversation and workspace'));
@@ -277,7 +278,15 @@ it('keeps resumable Nova failures in the owner cache when leaving and returning'
   act(() => root.unmount());
   root = createRoot(container);
   await act(async () => root.render(<Harness />));
-  expect(container.textContent).toContain('Resume build');
+  expect(container.querySelector('section')).toBeNull();
+});
+
+it('hides failed cards and the empty landing section, including restored Nova failures', async () => {
+  await act(async () => root.render(<GenerationActivityList generations={[
+    { ...job('failed-nova'), status: 'failed', endpoint: 'novaToBricks',
+      errorMessage: 'Nova session or artifact is unavailable. Check the runtime data volume.' },
+  ]} error={null} onOpen={open} onResumed={vi.fn()} />));
+  expect(container.querySelector('section')).toBeNull();
 });
 
 it.each(['processing', 'completed'])('opens the %s model from the card link and records the interaction', async status => {
