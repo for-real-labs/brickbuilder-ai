@@ -105,7 +105,6 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
               <span className="checkout-postcard-art-caption">Made to be built.</span>
             </div>
             <div className="checkout-postcard-details">
-              <span className="checkout-postcard-edition">YOUR CUSTOM BUILD</span>
               <h3 title={modelName}>{modelName}</h3>
               <a className="checkout-postcard-qr" href={instructionsUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open instructions for ${modelName}`} onClick={() => posthog.capture('order_instructions_postcard_link_clicked', { generation_id: generationId })}><InstructionsQrCode url={instructionsUrl} /></a>
               <span className="checkout-postcard-scan">Scan to start building</span>

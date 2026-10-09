@@ -113,7 +113,7 @@ it('removes the extra popup headings and caption while keeping an accessible lab
   const description = document.getElementById(dialog.getAttribute('aria-describedby')!);
   expect(description?.textContent).toBe('Select this option to ship a post card with a QR code link to the instructions.');
   expect(dialog.querySelector('h2, figcaption')).toBeNull();
-  expect(dialog.textContent).not.toMatch(/keepsake|Your instructions, on a post card|Example post card for/i);
+  expect(dialog.textContent).not.toMatch(/keepsake|Your instructions, on a post card|Example post card for|your custom build/i);
   expect(dialog.querySelector('h3')?.textContent).toBe(props.modelName);
 });
 
