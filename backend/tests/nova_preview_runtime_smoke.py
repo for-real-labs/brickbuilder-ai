@@ -37,6 +37,7 @@ def brick(x, y):
     return f'1 4 {x} {y} 0 1 0 0 0 1 0 0 0 1 3001.dat\n'
 disconnected, connected = header + brick(0, 0) + brick(400, 0), header + brick(0, 0) + brick(0, -24)
 responses = [
+    ('run_toolkit', {'arguments': ['build', 'output/plan.json', '--output', 'output/model.mpd', '--report', 'output/preview-construction.json']}),
     ('run_toolkit', {'arguments': ['render', 'output/model.mpd', '--outdir', 'output/visual-review', '--views', 'home']}),
     ('view_image', {}),
     ('publish_model', {'path': 'output/model.mpd'}),
@@ -87,8 +88,13 @@ async def run():
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
                               'capabilities': {'tools': True, 'vision': True}})
     chat = store.create_chat(llm_model_id=entry['id'])
-    source = store.work_dir(chat['id']) / 'model.mpd'
-    source.write_text(disconnected)
+    work = store.work_dir(chat['id'])
+    source = work / 'model.mpd'
+    plan = {'version': 1, 'author': 'Preview test', 'sections': [{'name': 'model.ldr', 'description': 'Two disconnected bricks', 'steps': [[
+        {'id': 'left', 'purpose': 'Left brick', 'ref': '3001.dat', 'colour': 4, 'at': [0, 0, 0]},
+        {'id': 'right', 'purpose': 'Right brick', 'ref': '3001.dat', 'colour': 4, 'at': [400, 0, 0]},
+    ]]}]}
+    (work / 'plan.json').write_text(json.dumps(plan))
     parts_policy.policy.configure(store, chat['id'], 'part_id,color_id,max_quantity\n3001,4,2\n')
     async def turn(body, verify=False):
         generation = str(uuid.uuid4())
@@ -109,13 +115,18 @@ async def run():
     preview_usage = await turn(main.NewMessage(text='Create a preview', llm_model_id=entry['id'],
         options={'mode': 'agent', 'permissions': 'full', 'build_mode': 'preview'}))
     [preview] = store.models(chat['id'])
-    assert preview['validation_status'] == 'preview' and len(calls) == 3
+    assert preview['validation_status'] == 'preview' and len(calls) == 4
+    construction = json.loads((work / 'preview-construction.json').read_text())
+    assert construction['written'] and construction['construction_checks_passed']
+    assert not construction['checks_passed'] and construction['structural_checks_deferred']
+    assert construction['geometry']['complete'] is False
     prompt = calls[0]['messages'][0]['content']
     assert 'PREVIEW WORKFLOW OVERRIDE' in prompt and 'Design the full requested model' in prompt
     assert calls[0]['reasoning_effort'] == model_catalog.entry_profile(entry)['default_effort']
     data = await asyncio.to_thread(worker.export_sources, chat['id'], preview['id'], 'preview')
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
-        assert archive.read('model.mpd').decode() == disconnected
+        assert archive.read('model.mpd') == source.read_bytes()
+        assert '400 0 0' in archive.read('model.mpd').decode()
         assert 'nova-instructions.ldr' not in archive.namelist()
         assert 'build-review.json' not in archive.namelist()
         assert len([line for line in archive.read('model.ldr').decode().splitlines() if line.startswith('1 ')]) == 2
@@ -131,8 +142,8 @@ async def run():
         assert review['instructions']['failed_step_count'] == 0
         assert archive.read('model.mpd').decode() == connected
         assert archive.read('nova-instructions.ldr')
-    assert len(preview_usage['calls']) == 3 and len(verification_usage['calls']) == 3
-    assert len(calls) == 6
+    assert len(preview_usage['calls']) == 4 and len(verification_usage['calls']) == 3
+    assert len(calls) == 7
     print('Verify Build: selected revision, full publication/export gates, checked instructions, usage retained: PASS', flush=True)
 
 
