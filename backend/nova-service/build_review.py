@@ -115,7 +115,9 @@ def review_model(source: Path, library: Path, output: Path):
         (output / 'model.ldr').write_text(display, encoding='utf-8')
         report['display_sha256'] = hashlib.sha256(display.encode()).hexdigest()
     report['diagnostic_count'] = len(diagnostics)
-    report['diagnostics'] = diagnostics[:MAX_DIAGNOSTICS]
+    # Keep blocking errors visible even when a large MPD has many header or
+    # coverage warnings ahead of them in Nova's report.
+    report['diagnostics'] = sorted(diagnostics, key=lambda d: d['severity'] != 'error')[:MAX_DIAGNOSTICS]
     report['diagnostics_truncated'] = len(diagnostics) > MAX_DIAGNOSTICS
     report['physical_validity'] = 'not_proven'
     (output / 'build-review.json').write_text(json.dumps(report, indent=2), encoding='utf-8')

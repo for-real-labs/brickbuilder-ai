@@ -119,7 +119,7 @@ def test_review_executes_immutable_toolkit_as_separate_user_without_secrets(tmp_
     assert result['passed'] is False and artifacts == {}
 
 
-@pytest.mark.parametrize('fault', ['none', 'skipped', 'truncated', 'incomplete', 'collision', 'wrong_count'])
+@pytest.mark.parametrize('fault', ['none', 'skipped', 'truncated', 'incomplete', 'collision', 'wrong_count', 'late_error'])
 def test_review_requires_complete_geometry_and_full_contacts(tmp_path, monkeypatch, fault):
     import sys
     source = tmp_path / 'model.mpd'
@@ -130,7 +130,9 @@ def test_review_requires_complete_geometry_and_full_contacts(tmp_path, monkeypat
                 'confirmed_component_count': 1, 'optimistic_component_count': 1,
                 'connection_coverage': {'complete': 501},
                 'contacts': edges(*[(i, i + 1) for i in range(500)]), 'instances': [],
-                'diagnostics': [{'severity': 'error', 'code': 'assembly.body_overlap'}] if fault == 'collision' else []}
+                'diagnostics': ([{'severity': 'warning', 'code': 'header.missing'}] * 150
+                                + [{'severity': 'error', 'code': 'assembly.body_overlap'}]) if fault == 'late_error'
+                                else [{'severity': 'error', 'code': 'assembly.body_overlap'}] if fault == 'collision' else []}
     if fault == 'wrong_count': geometry['contact_count'] += 1
     def analyze(*args, **kwargs):
         assert kwargs['contacts'] == 'all'
@@ -146,3 +148,6 @@ def test_review_requires_complete_geometry_and_full_contacts(tmp_path, monkeypat
         serialize_placements=lambda *args, **kwargs: 'reviewed placements'))
     result = review.review_model(source, tmp_path, tmp_path)
     assert result['passed'] is (fault == 'none')
+    if fault == 'late_error':
+        assert result['diagnostics_truncated'] is True
+        assert result['diagnostics'][0]['code'] == 'assembly.body_overlap'
