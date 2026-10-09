@@ -127,3 +127,24 @@ def test_missing_mode_specific_key_requires_retry_before_order_or_email(monkeypa
     retrieve.assert_not_called()
     save.assert_not_called()
     send.assert_not_called()
+
+
+def test_repeated_paid_checkout_sends_each_confirmation_only_once(monkeypatch):
+    session = stripe.StripeObject.construct_from({
+        'id': 'cs_repeat', 'metadata': {'generationId': 'g'}, 'amount_total': 2017,
+        'payment_intent': 'pi_repeat', 'customer_details': {'email': 'buyer@example.com'},
+        'collected_information': {'shipping_details': {'name': 'Builder', 'address': {'line1': '123 Main'}}},
+    }, None)
+    monkeypatch.setattr(webhook.stripe.checkout.Session, 'retrieve', Mock(return_value=session))
+    save = AsyncMock(side_effect=[95, None, None])
+    monkeypatch.setattr(webhook, 'generation_storage', SimpleNamespace(update_payment_status=save))
+    monkeypatch.setenv('RESEND_API_KEY', 'test-only')
+    send = Mock()
+    monkeypatch.setattr(webhook.resend.Emails, 'send', send)
+    for _ in range(3):
+        asyncio.run(webhook.handle_checkout_session_completed(session))
+    assert save.await_count == 3
+    assert send.call_count == 2
+    assert send.call_args_list[0].args[0]['to'] == ['buyer@example.com']
+    assert send.call_args_list[1].args[0]['to'] == ['jakejohnson3700@gmail.com']
+    assert send.call_args_list[1].args[0]['subject'] == 'New Order #95 - $20.17'

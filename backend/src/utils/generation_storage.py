@@ -712,7 +712,9 @@ class GenerationStorage:
             order_result = self.client.table("orders").insert(order_data).execute()
             
             if not order_result.data:
-                logger.error(f"Failed to create order record for generation {generation_id}")
+                # The database suppresses duplicate Stripe checkout/payment
+                # inserts atomically. No new order means no new emails.
+                logger.info("No new order inserted for checkout %s", stripe_session_id)
                 return None
             
             # Get the order ID from the inserted record
