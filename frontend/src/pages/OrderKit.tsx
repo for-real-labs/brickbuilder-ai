@@ -278,7 +278,7 @@ export default function OrderKit() {
                 {field('city', 'City', 'shipping address-level2')}
                 {field('postalCode', 'Postal Code', 'shipping postal-code')}
               </div>
-              <InstructionsPostcard selected={shipInstructionsPostcard} onChange={setShipInstructionsPostcard} disabled={loading} modelName={name} modelImage={modelImage} generationId={generationId} />
+              <InstructionsPostcard key={generationId} modelContent={mpdContent} selected={shipInstructionsPostcard} onChange={setShipInstructionsPostcard} disabled={loading} modelName={name} modelImage={modelImage} generationId={generationId} />
               {error && <p className="checkout-error" role="alert">{error}</p>}
               <div className="checkout-actions"><button type="submit" className="checkout-primary" disabled={loading || !pricing || quoteLoading}>{loading ? 'Preparing payment…' : 'Continue to payment'}{loading ? <span className="checkout-spinner" /> : <ArrowRight size={19} />}</button></div>
             </form>

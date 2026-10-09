@@ -1,7 +1,8 @@
 import React from 'react';
-import { Info, Package, X } from 'lucide-react';
+import { Info, Package, RotateCcw, X } from 'lucide-react';
 import QRCode from 'qrcode';
 import posthog from 'posthog-js';
+import { ThreeLDRViewer, type CameraState, type ExportCaptureApi } from '../ThreeLDRViewer';
 
 export function getPostcardTheme(name: string) {
   if (/\b(space|galaxy|cosmic|star|rocket|planet|moon)\b/i.test(name)) return 'space';
@@ -28,27 +29,49 @@ function InstructionsQrCode({ url }: { url: string }) {
   </svg>;
 }
 
-export function InstructionsPostcard({ selected, onChange, disabled, modelName, modelImage, generationId }: {
+export function InstructionsPostcard({ selected, onChange, disabled, modelName, modelImage, modelContent, generationId }: {
   selected: boolean; onChange: (selected: boolean) => void; disabled: boolean;
-  modelName: string; modelImage: string | null; generationId: string;
+  modelName: string; modelImage: string | null; modelContent?: string | null; generationId: string;
 }) {
   const [open, setOpen] = React.useState(false);
+  const [viewerVisible, setViewerVisible] = React.useState(false);
   const [failedImage, setFailedImage] = React.useState<string | null>(null);
+  const [viewVersion, setViewVersion] = React.useState(0);
+  const [adjusted, setAdjusted] = React.useState(false);
+  const [capturedImage, setCapturedImage] = React.useState<string | null>(null);
+  const camera = React.useRef<CameraState | undefined>(undefined);
+  const captureApi = React.useRef<ExportCaptureApi | null>(null);
   const dialog = React.useRef<HTMLDialogElement>(null);
   const infoButton = React.useRef<HTMLButtonElement>(null);
   const descriptionId = React.useId();
   const instructionsUrl = `https://brickbuilder.ai/instructions?id=${encodeURIComponent(generationId)}`;
-  const image = modelImage && modelImage !== failedImage ? modelImage : null;
+  const image = capturedImage || (modelImage && modelImage !== failedImage ? modelImage : null);
+  const trackCamera = React.useCallback((view: CameraState) => { camera.current = view; }, []);
+  const captureReady = React.useCallback((api: ExportCaptureApi | null) => { captureApi.current = api; }, []);
+  const viewInteractionEnded = React.useCallback(() => {
+    setAdjusted(true);
+    posthog.capture('order_instructions_postcard_model_adjusted', { generation_id: generationId });
+  }, [generationId]);
 
   React.useEffect(() => {
     if (!open) return;
     dialog.current?.showModal();
+    setViewerVisible(true);
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previous; };
   }, [open]);
 
-  const close = () => dialog.current?.close();
+  const close = () => {
+    const snapshot = captureApi.current?.captureCurrentViewPng();
+    if (snapshot) setCapturedImage(snapshot);
+    dialog.current?.close();
+  };
+  const resetView = () => {
+    camera.current = undefined; setCapturedImage(null); setAdjusted(false);
+    setViewVersion(value => value + 1);
+    posthog.capture('order_instructions_postcard_model_reset', { generation_id: generationId });
+  };
 
   return <div className={`checkout-postcard-option ${selected ? 'is-selected' : ''}`}>
     <label><input type="checkbox" name="shipInstructionsPostcard" checked={selected} disabled={disabled} onChange={event => {
@@ -63,7 +86,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
       onClick={event => { if (event.target === event.currentTarget) close(); }}
       onCancel={event => { event.preventDefault(); close(); }}
       onClose={() => {
-        setOpen(false); infoButton.current?.focus();
+        setOpen(false); setViewerVisible(false); infoButton.current?.focus();
         posthog.capture('order_instructions_postcard_preview_closed', { generation_id: generationId });
       }}>
       <div className="checkout-postcard-dialog-content">
@@ -73,7 +96,12 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
           <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
               <span className="checkout-postcard-brand">BRICKBUILDER</span>
-              {image ? <img src={image} alt={`${modelName} model on the example postcard`} onError={() => setFailedImage(image)} /> : <div className="checkout-postcard-placeholder"><Package size={38} aria-hidden="true" /><span>Model preview unavailable</span></div>}
+              <div className={`checkout-postcard-model ${modelContent ? 'is-interactive' : ''}`}>
+                {open && viewerVisible && modelContent ? <ThreeLDRViewer key={viewVersion} modelContent={modelContent} modelName={modelName} presentation="model" autoRotate={false} showModelControls={false} showBaseplate={false}
+                  initialCameraState={camera.current} onCameraChange={trackCamera} onExportCaptureReady={captureReady} onViewInteractionEnd={viewInteractionEnded} />
+                  : image ? <img src={image} alt={`${modelName} model on the example postcard`} onError={() => setFailedImage(image)} />
+                  : <div className="checkout-postcard-placeholder"><Package size={38} aria-hidden="true" /><span>Model preview unavailable</span></div>}
+              </div>
               <span className="checkout-postcard-art-caption">Made to be built.</span>
             </div>
             <div className="checkout-postcard-details">
@@ -85,6 +113,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
             </div>
           </div>
         </figure>
+        {modelContent && <div className="checkout-postcard-view-controls"><span>Drag to rotate · scroll or pinch to zoom</span><button type="button" disabled={!adjusted} onClick={resetView}><RotateCcw size={14} aria-hidden="true" />Reset view</button></div>}
         <button type="button" className="checkout-primary" onClick={close}>Got it</button>
       </div>
     </dialog>

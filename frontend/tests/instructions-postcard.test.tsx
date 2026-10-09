@@ -6,13 +6,26 @@ import posthog from 'posthog-js';
 import { InstructionsPostcard, getPostcardTheme } from '../src/components/checkout/InstructionsPostcard';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
+const viewer = vi.hoisted(() => ({ props: [] as any[], captureCurrentViewPng: vi.fn(() => 'data:image/png;base64,adjusted-view') }));
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: (props: any) => {
+  viewer.props.push(props);
+  React.useEffect(() => {
+    expect(document.querySelector('dialog')!.open).toBe(true);
+    props.onExportCaptureReady({ captureCurrentViewPng: viewer.captureCurrentViewPng });
+    return () => props.onExportCaptureReady(null);
+  }, [props.onExportCaptureReady]);
+  return <div data-testid="postcard-viewer"><button type="button" onClick={() => {
+    props.onCameraChange({ position: { x: 80, y: 20, z: 40 }, target: { x: 1, y: 2, z: 3 } });
+    props.onViewInteractionEnd();
+  }}>Rotate model</button></div>;
+} }));
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 const props = { selected: false, disabled: false, onChange: vi.fn(), modelName: 'Galaxy Explorer', modelImage: 'https://example.com/model.png', generationId: 'g/123' };
 beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function () { this.open = true; } });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function () { this.open = false; this.dispatchEvent(new Event('close')); } });
-  props.onChange.mockReset();
+  props.onChange.mockReset(); viewer.props = []; viewer.captureCurrentViewPng.mockClear();
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); });
@@ -109,4 +122,34 @@ it('identifies the standard 6 by 4 inch card without adding a visible caption', 
   render(); open();
   expect(container.querySelector('figure')?.getAttribute('aria-label')).toBe('6 by 4 inch instructions postcard');
   expect(container.querySelector('figcaption')).toBeNull();
+});
+
+
+it('mounts a static 3D view only while the popup is open and preserves the adjusted view when reopening', () => {
+  render({ modelContent: '0 FILE Galaxy.mpd' });
+  expect(container.querySelector('[data-testid="postcard-viewer"]')).toBeNull();
+  open();
+  expect(viewer.props.at(-1)).toMatchObject({ modelContent: '0 FILE Galaxy.mpd', presentation: 'model', autoRotate: false, showModelControls: false, showBaseplate: false });
+  act(() => container.querySelector<HTMLButtonElement>('[data-testid="postcard-viewer"] button')!.click());
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Close postcard preview"]')!.click());
+  expect(viewer.captureCurrentViewPng).toHaveBeenCalledOnce();
+  expect(container.querySelector('[data-testid="postcard-viewer"]')).toBeNull();
+  expect(container.querySelector('img')!.getAttribute('src')).toBe('data:image/png;base64,adjusted-view');
+  open();
+  expect(viewer.props.at(-1).initialCameraState).toEqual({ position: { x: 80, y: 20, z: 40 }, target: { x: 1, y: 2, z: 3 } });
+  expect(posthog.capture).toHaveBeenCalledWith('order_instructions_postcard_model_adjusted', { generation_id: props.generationId });
+});
+
+it('resets the model view without changing the postcard option or QR link', () => {
+  render({ modelContent: '0 FILE Galaxy.mpd' }); open();
+  const reset = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Reset view'))!;
+  expect(reset().disabled).toBe(true);
+  act(() => container.querySelector<HTMLButtonElement>('[data-testid="postcard-viewer"] button')!.click());
+  expect(reset().disabled).toBe(false);
+  act(() => reset().click());
+  expect(viewer.props.at(-1).initialCameraState).toBeUndefined();
+  expect(reset().disabled).toBe(true);
+  expect(props.onChange).not.toHaveBeenCalled();
+  expect(container.querySelector('a.checkout-postcard-qr')!.getAttribute('href')).toContain('g%2F123');
+  expect(posthog.capture).toHaveBeenCalledWith('order_instructions_postcard_model_reset', { generation_id: props.generationId });
 });
