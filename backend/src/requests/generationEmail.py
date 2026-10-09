@@ -41,9 +41,7 @@ async def save_notification_email(generation_id, request, auth_info):
     try:
         result = await asyncio.to_thread(lambda: client.rpc('subscribe_generation_email', {
             'p_id': generation_id, 'p_email': email, 'p_origin': notification_origin()}).execute())
-    except Exception as error:
-        if 'notification recipient limit' in str(error):
-            raise HTTPException(429, 'You can request up to 3 build emails a day.') from None
+    except Exception:
         raise HTTPException(503, 'Could not save your notification. Please try again.') from None
     if not result.data:
         raise HTTPException(409, 'This build has stopped. Start or resume it first.')

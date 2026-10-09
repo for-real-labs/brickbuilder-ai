@@ -62,6 +62,18 @@ def test_another_owner_cannot_enroll_or_read_subscription(monkeypatch, email_con
     storage.client.rpc.assert_not_called()
 
 
+def test_subscription_storage_failure_returns_a_retryable_error(monkeypatch, email_config):
+    client = Mock()
+    client.rpc.return_value.execute.side_effect = RuntimeError('private database error')
+    monkeypatch.setattr(endpoint, 'generation_storage', SimpleNamespace(client=client,
+        get_generation=AsyncMock(return_value={'user_id': 'owner', 'user_type': 'authenticated', 'status': 'processing'})))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(endpoint.save_notification_email('id', endpoint.NotificationEmailRequest(),
+            {'user_id': 'owner', 'authenticated': True, 'user_email': 'account@example.com'}))
+    assert error.value.status_code == 503
+    assert error.value.detail == 'Could not save your notification. Please try again.'
+
+
 @pytest.mark.parametrize('email', [None, 'saved@example.com'])
 def test_owner_can_restore_the_actual_notification_recipient(monkeypatch, email):
     storage = SimpleNamespace(get_generation=AsyncMock(return_value={
@@ -134,7 +146,7 @@ def test_completion_email_has_order_branding_support_and_plain_text(email_config
     assert payload['reply_to'] == 'support@brickbuilder.ai'
 
 
-def test_database_completion_race_privacy_limits_and_lease_recovery(tmp_path):
+def test_database_completion_race_privacy_unlimited_notifications_and_lease_recovery(tmp_path):
     server=pgserver.get_server(tmp_path/'mail-db',cleanup_mode='delete')
     try:
         with psycopg.connect(server.get_uri(),autocommit=True) as db:
@@ -147,6 +159,7 @@ def test_database_completion_race_privacy_limits_and_lease_recovery(tmp_path):
             db.execute('ALTER DEFAULT PRIVILEGES GRANT EXECUTE ON FUNCTIONS TO anon,authenticated')
             db.execute((Path(__file__).resolve().parents[2]/'supabase/migrations/20261005010000_generation_notification_email.sql').read_text())
             db.execute((Path(__file__).resolve().parents[2]/'supabase/migrations/20261005140000_generation_email_preview.sql').read_text())
+            db.execute((Path(__file__).resolve().parents[2]/'supabase/migrations/20261009223807_unlimited_generation_notifications.sql').read_text())
             id=uuid4()
             db.execute("INSERT INTO generations(id,user_id,status,name) VALUES (%s,'owner','processing','Pirate ship')",(id,))
             assert db.execute("SELECT subscribe_generation_email(%s,'guest@example.com','https://brickbuilder.ai')",(id,)).fetchone()[0]
@@ -176,15 +189,22 @@ def test_database_completion_race_privacy_limits_and_lease_recovery(tmp_path):
             db.execute("SELECT subscribe_generation_email(%s,'guest@example.com','https://brickbuilder.ai')",(third,))
             fourth=uuid4()
             db.execute("INSERT INTO generations(id,status) VALUES (%s,'processing')",(fourth,))
-            with pytest.raises(psycopg.errors.RaiseException,match='notification recipient limit'):
-                db.execute("SELECT subscribe_generation_email(%s,'guest@example.com','https://brickbuilder.ai')",(fourth,))
+            assert db.execute("SELECT subscribe_generation_email(%s,'guest@example.com','https://brickbuilder.ai')",(fourth,)).fetchone()[0]
+            # Many builds can subscribe on the same day; each completed build
+            # gets one outbox row even when its owner clicks repeatedly.
+            for _ in range(10):
+                next_id=uuid4()
+                db.execute("INSERT INTO generations(id,status) VALUES (%s,'completed')",(next_id,))
+                for _ in range(2):
+                    assert db.execute("SELECT subscribe_generation_email(%s,'guest@example.com','https://brickbuilder.ai')",(next_id,)).fetchone()[0]
+            assert db.execute('SELECT count(*) FROM generation_email_outbox').fetchone()[0]==12
             db.execute("UPDATE generation_email_outbox SET first_attempt_at=now()-interval '21 hours',available_at=now()-interval '1 minute' WHERE generation_id=%s",(id,))
             db.execute("SELECT count(*) FROM claim_generation_email('https://brickbuilder.ai')")
             assert db.execute('SELECT state FROM generation_email_outbox WHERE generation_id=%s',(id,)).fetchone()[0]=='failed'
             for role in ['anon','authenticated']:
                 db.execute(f'SET ROLE {role}')
                 db.execute('SELECT id,status FROM public.generations')
-                for sql in ['SELECT notification_email FROM public.generations','SELECT * FROM generation_email_outbox',"SELECT notification_profile_id('guest@example.com')"]:
+                for sql in ['SELECT notification_email FROM public.generations','SELECT * FROM generation_email_outbox',"SELECT notification_profile_id('guest@example.com')", "SELECT subscribe_generation_email(gen_random_uuid(),'guest@example.com','https://brickbuilder.ai')"]:
                     with pytest.raises(psycopg.errors.InsufficientPrivilege):db.execute(sql)
                 db.execute('RESET ROLE')
     finally:server.cleanup()
