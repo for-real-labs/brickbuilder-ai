@@ -19,6 +19,7 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
   onCancelled?: (id: string) => void;
   onResumed?: (sourceId: string, newId: string) => void;
 }) {
+  generations = generations.filter(generation => generation.status !== 'failed');
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
   const hasActiveNovaBuild = generations.some(row => row.endpoint === 'novaToBricks' && isGenerationActive(row.status));
