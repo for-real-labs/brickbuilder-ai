@@ -80,8 +80,11 @@ effort, and 150-step work budget. Previews construct the full requested design,
 render it for visual review, and allow one focused visual refinement. They defer
 exhaustive geometry/contact checks, connection repair, BOM comparison, and instruction
 validation to **Verify Build**. Basic placement alignment and syntax checks remain
-part of construction. Plan-based previews use the builder/serializer without the
-CLI build command's global geometry/contact gate. BrickBuilder has no default wall-clock
+part of construction. The familiar `run_toolkit build` command uses a preview-only
+adapter that preserves plan construction and atomic output while deferring its
+global geometry/contact gate. A successful preview build is explicitly reported
+as unchecked; Verify Build retains the original toolkit validation path.
+BrickBuilder has no default wall-clock
 cutoff for Nova; builds continue until Nova finishes or the owner cancels them.
 An operator can explicitly set `NOVA_TIMEOUT_SECONDS` (60–86400 seconds);
 unset or `0` disables that limit. Progress labels come directly from Nova,
