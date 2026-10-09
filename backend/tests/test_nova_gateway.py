@@ -210,8 +210,26 @@ def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path)
         assert client.get('/integration/runtime').status_code == 401
         assert client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': '../../other'}).status_code == 400
         response = client.get('/integration/runtime', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'build_review_version': 1}
+        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'build_review_version': 1, 'preview_build_version': 1}
     assert not module._workers
+
+
+def test_gateway_runtime_passes_brickbuilder_preview_readiness_without_spawning(tmp_path):
+    from src.utils.nova_service import NovaService
+
+    module = gateway(tmp_path)
+    module.worker_url = AsyncMock(side_effect=AssertionError('Readiness must not start a tenant worker'))
+
+    async def scenario():
+        client = httpx.AsyncClient(transport=httpx.ASGITransport(app=module.app), base_url='http://nova',
+            headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
+        async with NovaService(client) as service:
+            info = await service.ready()
+            assert info['preview_build_version'] == 1
+            assert info['generation_cost_limit_usd'] == 10
+
+    asyncio.run(scenario())
+    module.worker_url.assert_not_awaited()
 
 
 def test_gateway_routes_only_to_selected_tenant_and_strips_browser_headers(tmp_path):

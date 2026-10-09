@@ -35,6 +35,7 @@ VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = 1
 VERSIONS['build_review_version'] = 1
+VERSIONS['preview_build_version'] = 1
 _workers = {}
 _locks = {}
 _capacity_lock = asyncio.Lock()

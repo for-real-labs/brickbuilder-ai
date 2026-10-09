@@ -8,6 +8,7 @@ import uuid
 import zipfile
 import io
 from pathlib import Path
+import httpx
 
 logging.disable(logging.WARNING)
 root = Path(tempfile.mkdtemp(prefix='nova-preview-runtime-'))
@@ -61,7 +62,7 @@ async def provider(**kwargs):
 
 # Install the normal cost guard around a scripted provider, never a real API call.
 agent.litellm.acompletion = provider
-from brickbuilder_integration import worker
+from brickbuilder_integration import gateway, worker
 from brickbuilder_integration.cost_limits import current_usage_id
 import main
 from store import get_store
@@ -69,6 +70,14 @@ import parts_policy
 
 
 async def run():
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=gateway.app), base_url='http://nova',
+        headers={'Authorization': 'Bearer smoke-local-only', 'X-Nova-Tenant': 'a' * 64}) as client:
+        response = await client.get('/integration/runtime')
+        assert response.status_code == 200
+        assert response.json() == worker.runtime()
+        assert response.json()['preview_build_version'] == 1
+    assert not gateway._workers
+    print('Gateway: preview capabilities match worker before tenant startup: PASS', flush=True)
     store = get_store()
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
                               'capabilities': {'tools': True, 'vision': True}})
