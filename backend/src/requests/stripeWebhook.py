@@ -393,7 +393,7 @@ async def handle_checkout_session_completed(session):
             # except Exception as e:
             #     logger.error(f"Error retrieving parts list for generation {generation_id}: {e}")
         else:
-            logger.error(f"Failed to update payment status for generation {generation_id}")
+            logger.info("No new order for checkout %s; skipping confirmation emails", full_session.id)
             
     except Exception as e:
         logger.error(f"Error updating payment status for generation {generation_id}: {e}")
