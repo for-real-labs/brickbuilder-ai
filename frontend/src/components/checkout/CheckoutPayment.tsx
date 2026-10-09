@@ -118,7 +118,8 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
     try {
       if (!actionsRef.current) throw new Error('Payment unavailable');
       const result = await actionsRef.current.confirm({
-        email: details.email.trim(), shippingAddress: getShippingContact(details, country),
+        email: details.email.trim(),
+        ...(!session.shipping_address_provided ? { shippingAddress: getShippingContact(details, country) } : {}),
         redirect: 'if_required',
         ...(walletEvent ? { expressCheckoutConfirmEvent: walletEvent } : {}),
       });

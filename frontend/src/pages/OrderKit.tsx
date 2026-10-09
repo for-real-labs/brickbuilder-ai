@@ -13,7 +13,8 @@ import { InstructionsPostcard } from "../components/checkout/InstructionsPostcar
 import { CheckoutPayment } from "../components/checkout/CheckoutPayment";
 import { supabase } from "../lib/supabase";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
-import { getOrderPricing, formatOrderPrice, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
+import { getOrderPricing, formatOrderPrice, getShippingContact, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
+import shippingCountries from "../data/shippingCountries.json";
 import "./OrderKit.css";
 
 type LocationState = {
@@ -190,6 +191,7 @@ export default function OrderKit() {
         name, priceCents: pricing.totalCents, quantity: 1,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
         uiMode: 'elements', shipInstructionsPostcard,
+        shippingAddress: getShippingContact(delivery, country),
       }, token);
       if (!data.client_secret) throw new Error('Embedded payment unavailable');
       if (data.price_data) setQuote(data.price_data);
@@ -269,7 +271,7 @@ export default function OrderKit() {
                 <label className="checkout-field checkout-field-full"><span>Country/Region</span><select name="country" value={country} autoComplete="shipping country" required disabled={loading} onChange={event => {
                   setCountry(event.target.value);
                   posthog.capture('order_shipping_country_changed', { generation_id: generationId, country: event.target.value });
-                }}><option value="US">United States</option><option value="CA">Canada</option></select></label>
+                }}>{shippingCountries.map(destination => <option key={destination.code} value={destination.code}>{destination.name}</option>)}</select></label>
                 {field('line1', 'Address line 1', 'shipping address-line1')}
                 {field('line2', 'Address line 2', 'shipping address-line2', true)}
                 {field('region', 'State/Province', 'shipping address-level1', true)}

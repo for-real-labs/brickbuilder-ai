@@ -158,14 +158,14 @@ async def handle_checkout_session_completed(session):
     # Retrieve the full session object from Stripe API to ensure we have all properties
     # The webhook event object doesn't always include all session properties like shipping_details
     try:
-        full_session = stripe.checkout.Session.retrieve(session.id)
+        full_session = stripe.checkout.Session.retrieve(session.id, expand=["payment_intent"])
         logger.info(f"Retrieved full session from Stripe API")
     except Exception as e:
         logger.error(f"Failed to retrieve full session from Stripe: {e}")
         full_session = session  # Fallback to event data
     
     # Extract custom metadata
-    metadata = full_session.get('metadata', {})
+    metadata = full_session.get('metadata') or {}
     generation_id = metadata.get('generationId')
     brickowl_cart_id = metadata.get('brickowlCartId')
     logger.info(f"Checkout session metadata: generation_id={generation_id}, brickowl_cart_id={brickowl_cart_id}")
@@ -174,16 +174,24 @@ async def handle_checkout_session_completed(session):
     amount_total = full_session.get('amount_total', 0)
     
     # Get payment intent ID
-    payment_intent = full_session.get('payment_intent')
+    payment_intent_data = full_session.get('payment_intent')
+    if metadata.get('shippingAddressProvided') == 'true' and isinstance(payment_intent_data, str):
+        payment_intent_data = stripe.PaymentIntent.retrieve(payment_intent_data)
+    payment_intent = payment_intent_data.get('id') if isinstance(payment_intent_data, dict) else payment_intent_data
     logger.info(f"Payment intent ID: {payment_intent}")
     
     logger.info(f"Checkout session metadata - Generation ID: {generation_id}, BrickOwl Cart ID: {brickowl_cart_id}, Amount: ${amount_total/100:.2f}")
     
     # Extract shipping information from session
     # Shipping details are in collected_information.shipping_details
-    customer_details = full_session.get('customer_details', {})
-    collected_information = full_session.get('collected_information', {})
-    shipping_details = collected_information.get('shipping_details', {})
+    customer_details = full_session.get('customer_details') or {}
+    collected_information = full_session.get('collected_information') or {}
+    shipping_details = collected_information.get('shipping_details') or {}
+    if metadata.get('shippingAddressProvided') == 'true':
+        shipping_details = payment_intent_data.get('shipping') if isinstance(payment_intent_data, dict) else None
+        if not shipping_details or not shipping_details.get('address'):
+            # Let Stripe retry rather than recording an order without its address.
+            raise HTTPException(status_code=500, detail='Paid order shipping address is unavailable')
     
     logger.info(f"Raw collected_information: {collected_information}")
     logger.info(f"Raw shipping_details: {shipping_details}")

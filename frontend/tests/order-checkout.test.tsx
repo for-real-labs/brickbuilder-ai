@@ -9,6 +9,7 @@ import { CreateCheckoutSessionApiService } from '../src/services/createCheckoutS
 import { GetPriceApiService } from '../src/services/getPriceApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
+import shippingCountries from '../src/data/shippingCountries.json';
 
 const mocks = vi.hoisted(() => ({ confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
 vi.mock('@stripe/stripe-js/pure', () => ({ loadStripe: mocks.loadStripe }));
@@ -354,4 +355,20 @@ it('uses the restored generation’s name and render in the postcard rather than
   expect(container.querySelector('.checkout-postcard-nature')).not.toBeNull();
   expect(container.querySelector('.checkout-postcard h3')?.textContent).toBe('Garden Cottage');
   expect(container.querySelector('.checkout-postcard img')?.getAttribute('src')).toBe('https://example.com/cottage.png');
+});
+
+
+it('offers every verified Brickwith country and sends the selected address to checkout', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret', shipping_address_provided: true });
+  await renderOrder();
+  const select = container.querySelector<HTMLSelectElement>('[name="country"]')!;
+  expect(Array.from(select.options).map(option => ({ code: option.value, name: option.textContent }))).toEqual(shippingCountries);
+  expect(select.options).toHaveLength(249);
+  await act(async () => { select.value = 'CX'; select.dispatchEvent(new Event('change', { bubbles: true })); });
+  act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
+  await submitContact();
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shippingAddress: getShippingContact(details, 'CX') }), 'auth-token');
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input')!.click());
+  await act(async () => container.querySelector('#checkout-step-2 form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(mocks.confirm).toHaveBeenCalledWith({ email: details.email, redirect: 'if_required' });
 });

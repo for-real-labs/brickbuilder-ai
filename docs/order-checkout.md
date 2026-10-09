@@ -5,7 +5,9 @@ Standard shipping is included automatically; the delivery country is part of the
 address form, using Brickwith’s first/last name and address field order.
 Address line 2 and State/Province are optional; no phone number is collected. The model preview stays visible above the form on mobile, with
 only the price breakdown collapsible. Checkout previews hide ruler/explode controls.
-It supports the existing US/Canada standard shipping option and kit discount.
+It offers all 249 countries and regions listed in Brickwith’s checkout, verified
+on October 9, 2026, with the existing standard shipping calculation and kit discount.
+The frontend/backend country snapshots are checked for parity by tests.
 Model data survives a reload; contact details and payment client secrets stay in memory.
 
 ## Stripe configuration
@@ -28,7 +30,12 @@ unconfigured cryptocurrency, newsletter, or referral services.
 
 Checkout computes the charged price from the stored model's parts list on the
 server; it does not trust the amount supplied by the browser. The returned quote
-updates the displayed total before payment. The existing
+updates the displayed total before payment. The address is validated on the backend and supplied through
+`payment_intent_data.shipping`; the webhook reads that address from the expanded
+PaymentIntent. This supports Brickwith entries omitted from Stripe’s address
+selector without putting addresses in session metadata or analytics. Older
+clients retain Stripe’s compatible address selector. Phone collection is disabled.
+The existing
 `checkout.session.completed` webhook and generation/cart/CSV metadata remain
 in use for fulfillment.
 
