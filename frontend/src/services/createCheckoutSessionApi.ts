@@ -10,6 +10,7 @@ export interface CreateCheckoutSessionRequest {
   brickowlCartId?: string;
   uiMode?: 'hosted' | 'custom' | 'embedded' | 'elements';
   customerEmail?: string;
+  shipInstructionsPostcard?: boolean;
 }
 
 export interface CreateCheckoutSessionResponse {

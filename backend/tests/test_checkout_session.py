@@ -45,7 +45,7 @@ def test_custom_checkout_uses_server_price_and_preserves_fulfillment(setup):
     assert params['payment_method_types'] == ['card']
     assert params['return_url'] == 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}'
     assert 'success_url' not in params and 'cancel_url' not in params
-    assert params['metadata'] == {'generationId': 'g', 'partsListCsvUrl': 'https://example.com/parts.csv', 'brickowlCartId': 'cart'}
+    assert params['metadata'] == {'generationId': 'g', 'partsListCsvUrl': 'https://example.com/parts.csv', 'brickowlCartId': 'cart', 'shipInstructionsPostcard': 'false'}
     assert params['shipping_address_collection'] == {'allowed_countries': ['US', 'CA']}
     assert result.client_secret == 'client-secret' and result.price_data.total_price == 50
 
@@ -123,3 +123,17 @@ def test_previous_checkout_clients_survive_the_deployment(setup, mode):
         assert params['redirect_on_completion'] == 'if_required'
     else:
         assert params['stripe_version'] == '2026-09-30.endive'
+
+
+@pytest.mark.parametrize('selected', [True, False])
+def test_checkout_records_postcard_choice_for_fulfillment(setup, selected):
+    _, create, _ = setup
+    run(uiMode='elements', shipInstructionsPostcard=selected)
+    assert create.call_args.kwargs['metadata']['shipInstructionsPostcard'] == str(selected).lower()
+    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 2500
+
+
+@pytest.mark.parametrize('value', ['true', 1, None, {'selected': True}])
+def test_postcard_choice_requires_a_boolean(value):
+    with pytest.raises(ValidationError):
+        checkout.CreateCheckoutSessionRequest(shipInstructionsPostcard=value)

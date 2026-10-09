@@ -7,6 +7,7 @@ import { CheckoutPayment } from '../src/components/checkout/CheckoutPayment';
 import { getOrderPricing, getShippingContact } from '../src/utils/orderCheckout';
 import { CreateCheckoutSessionApiService } from '../src/services/createCheckoutSessionApi';
 import { GetPriceApiService } from '../src/services/getPriceApi';
+import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
 
 const mocks = vi.hoisted(() => ({ confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
@@ -19,7 +20,7 @@ vi.mock('../src/services/getGenerationApi', () => ({ GetGenerationApiService: { 
 vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { getSession: async () => ({ data: { session: { access_token: 'auth-token' } } }) } } }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 const quote = { total_price: 50, total_weight: 0.1, total_parts: 240 };
-const details = { email: 'test@example.com', name: 'Test Builder', line1: '123 Test Street', line2: '', city: 'Chicago', region: 'IL', postalCode: '60601' };
+const details = { email: 'test@example.com', firstName: 'Test', lastName: 'Builder', line1: '123 Test Street', line2: '', city: 'Chicago', region: 'IL', postalCode: '60601' };
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
@@ -112,16 +113,15 @@ it('starts with contact details, keeps the preview visible, and has no shipping 
 it('retains country and optional apartment details when editing after payment', async () => {
   vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs_test', client_secret: 'secret' });
   await renderOrder();
-  await click('Add apartment');
   act(() => Object.entries({ ...details, line2: 'Suite 2' }).forEach(([name, value]) => fill(name, value)));
   const country = container.querySelector('select')!;
   await act(async () => { country.value = 'CA'; country.dispatchEvent(new Event('change', { bubbles: true })); });
-  expect(container.textContent).toContain('Province');
+  expect(container.textContent).toContain('State/Province');
   await submitContact();
   await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
   expect(container.querySelector('select')!.value).toBe('CA');
   expect(container.querySelector<HTMLInputElement>('[name="line2"]')!.value).toBe('Suite 2');
-  expect(posthog.capture).toHaveBeenCalledWith('order_apartment_field_opened', expect.objectContaining({ generation_id: 'g' }));
+  expect(posthog.capture).toHaveBeenCalledWith('order_shipping_country_changed', expect.objectContaining({ generation_id: 'g', country: 'CA' }));
 });
 
 it('shows a useful empty checkout when no model is selected', async () => {
@@ -140,10 +140,10 @@ it('recovers a quote when a model is restored without pricing', async () => {
 it('blocks progression on missing pricing and allows a failed quote to be retried', async () => {
   const fetchPrice = vi.spyOn(GetPriceApiService, 'getPrice').mockRejectedValueOnce(new Error('Unavailable')).mockResolvedValue(quote as never);
   await renderOrder({ generation_id: 'g' });
-  expect(container.querySelector<HTMLButtonElement>('button.checkout-primary')!.disabled).toBe(true);
+  expect(container.querySelector<HTMLButtonElement>('button.checkout-primary[type="submit"]')!.disabled).toBe(true);
   await click('Try again');
   expect(fetchPrice).toHaveBeenCalledTimes(2);
-  expect(container.querySelector<HTMLButtonElement>('button.checkout-primary')!.disabled).toBe(false);
+  expect(container.querySelector<HTMLButtonElement>('button.checkout-primary[type="submit"]')!.disabled).toBe(false);
 });
 
 it('progresses contact → payment, sends auth, retains details when editing, and never caches contact or secrets', async () => {
@@ -178,7 +178,7 @@ it('keeps terms and Stripe readiness as payment gates, sends shipping securely, 
   mocks.confirm.mockResolvedValue({ type: 'error', error: { message: 'Your card was declined.', code: 'paymentFailed' } });
   await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
   expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
-  act(() => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input[type="checkbox"]')!.click());
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   expect(mocks.confirm).toHaveBeenCalledWith({ email: details.email, shippingAddress: getShippingContact(details, 'US'), redirect: 'if_required' });
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('Your card was declined');
@@ -224,7 +224,7 @@ it('locks completed steps during confirmation and releases them after a recovera
   await renderOrder();
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
   await submitContact();
-  act(() => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input[type="checkbox"]')!.click());
   act(() => container.querySelector('#checkout-step-2 form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   const contactEdit = container.querySelector<HTMLButtonElement>('.checkout-step-bar.is-complete')!;
   expect(contactEdit.disabled).toBe(true);
@@ -247,7 +247,7 @@ it('restores the selected model and price when returning from hosted checkout', 
   localStorage.setItem('orderState', JSON.stringify({ generation_id: 'g', priceData: quote }));
   await act(async () => root.render(<MemoryRouter initialEntries={['/order']}><OrderKit /></MemoryRouter>));
   expect(container.textContent).toContain('$25.00');
-  expect(container.querySelector<HTMLButtonElement>('button.checkout-primary')!.disabled).toBe(false);
+  expect(container.querySelector<HTMLButtonElement>('button.checkout-primary[type="submit"]')!.disabled).toBe(false);
 });
 
 it('updates the displayed total from the authoritative checkout quote', async () => {
@@ -280,7 +280,7 @@ it('keeps unavailable wallets disabled without blocking card payment', async () 
   act(() => mocks.walletEvents.loaderror?.());
   const options = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
   expect(options[1].disabled).toBe(true); expect(options[3].disabled).toBe(true);
-  act(() => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input[type="checkbox"]')!.click());
   expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
 });
 
@@ -293,10 +293,65 @@ it('confirms a wallet with the same checkout session, shipping and terms gate', 
   expect(resolve).not.toHaveBeenCalled();
   await act(async () => mocks.walletEvents.confirm?.({ expressPaymentType: 'google_pay' }));
   expect(mocks.confirm).not.toHaveBeenCalled();
-  act(() => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input[type="checkbox"]')!.click());
   act(() => mocks.walletEvents.click?.({ resolve })); expect(resolve).toHaveBeenCalledOnce();
   const walletEvent = { expressPaymentType: 'google_pay' };
   await act(async () => mocks.walletEvents.confirm?.(walletEvent));
   expect(mocks.confirm).toHaveBeenCalledWith({ email: details.email, shippingAddress: getShippingContact(details, 'CA'), redirect: 'if_required', expressCheckoutConfirmEvent: walletEvent });
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please retry.');
+});
+
+
+it('matches Brickwith address order and optional fields without collecting a phone number', async () => {
+  await renderOrder();
+  const form = container.querySelector('#checkout-step-1 form')!;
+  expect(Array.from(form.querySelectorAll('input, select')).map(input => input.getAttribute('name'))).toEqual([
+    'email', 'firstName', 'lastName', 'country', 'line1', 'line2', 'region', 'city', 'postalCode', 'shipInstructionsPostcard',
+  ]);
+  expect(container.querySelector<HTMLInputElement>('[name="line2"]')!.required).toBe(false);
+  expect(container.querySelector<HTMLInputElement>('[name="region"]')!.required).toBe(false);
+  expect(container.querySelector('input[type="tel"], input[name="phone"]')).toBeNull();
+  expect(form.textContent).not.toMatch(/phone/i);
+});
+
+it('joins and trims recipient names and sends international addresses without a phone property', () => {
+  expect(getShippingContact({ ...details, firstName: '  Test ', lastName: ' Builder  ', region: '', line2: ' Suite 2 ' }, 'GB')).toEqual({
+    name: 'Test Builder', address: { line1: '123 Test Street', line2: 'Suite 2', city: 'Chicago', state: '', postal_code: '60601', country: 'GB' },
+  });
+});
+
+
+it('tracks address field interactions without contact values', async () => {
+  await renderOrder();
+  act(() => fill('firstName', 'Private Name'));
+  await act(async () => container.querySelector('[name="firstName"]')!.dispatchEvent(new FocusEvent('focusout', { bubbles: true })));
+  expect(posthog.capture).toHaveBeenCalledWith('order_delivery_field_completed', { generation_id: 'g', field: 'firstName', filled: true });
+  expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain('Private Name');
+});
+
+
+it('sends the postcard choice to payment and retains it when editing contact details', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret' });
+  await renderOrder();
+  const postcard = container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!;
+  expect(postcard.checked).toBe(false);
+  act(() => { postcard.click(); Object.entries(details).forEach(([name, value]) => fill(name, value)); });
+  await submitContact();
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shipInstructionsPostcard: true }), 'auth-token');
+  await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
+  expect(container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.checked).toBe(true);
+  act(() => container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.click());
+  await submitContact();
+  expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ shipInstructionsPostcard: false }), 'auth-token');
+});
+
+
+it('uses the restored generation’s name and render in the postcard rather than an outdated navigation screenshot', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    generation_id: 'g', name: 'Garden Cottage', status: 'completed', preview_image_url: 'https://example.com/cottage.png', ldr_content: '0 Cottage',
+  } as never);
+  await renderOrder({ generation_id: 'g', priceData: quote, name: 'Outdated model', screenshots: { angle1: 'https://example.com/outdated.png' } });
+  expect(container.querySelector('.checkout-postcard-nature')).not.toBeNull();
+  expect(container.querySelector('.checkout-postcard h3')?.textContent).toBe('Garden Cottage');
+  expect(container.querySelector('.checkout-postcard img')?.getAttribute('src')).toBe('https://example.com/cottage.png');
 });

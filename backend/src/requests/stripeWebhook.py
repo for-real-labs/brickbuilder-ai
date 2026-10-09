@@ -2,6 +2,7 @@ import os
 import json
 import logging
 from typing import Optional
+from urllib.parse import urlencode
 
 from pydantic import BaseModel
 from fastapi import HTTPException, Request
@@ -209,6 +210,7 @@ async def handle_checkout_session_completed(session):
         'name': shipping_name,
         'email': customer_details.get('email'),
         'phone': customer_details.get('phone'),
+        'instructions_postcard': metadata.get('shipInstructionsPostcard') == 'true',
         'address': {
             'line1': shipping_address.get('line1'),
             'line2': shipping_address.get('line2'),
@@ -219,6 +221,9 @@ async def handle_checkout_session_completed(session):
         }
     }
     
+    if shipping_info['instructions_postcard'] and generation_id:
+        shipping_info['instructions_url'] = 'https://brickbuilder.ai/instructions?' + urlencode({'id': generation_id})
+
     logger.info(f"Shipping info - Name: {shipping_info['name']}, Email: {shipping_info['email']}, City: {shipping_info['address']['city']}, State: {shipping_info['address']['state']}, Country: {shipping_info['address']['country']}")
 
     # Create BrickOwl wishlist - DISABLED
@@ -333,6 +338,7 @@ async def handle_checkout_session_completed(session):
                                         <tr><td style="padding: 8px; font-weight: bold;">Customer:</td><td style="padding: 8px;">{shipping_info.get('name', 'N/A') if shipping_info else 'N/A'}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">{customer_email}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Ship To:</td><td style="padding: 8px;">{addr_str}</td></tr>
+                                        <tr><td style="padding: 8px; font-weight: bold;">Instructions Post Card:</td><td style="padding: 8px;">{"Include QR instructions postcard" if shipping_info.get("instructions_postcard") else "Not requested"}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Stripe Session:</td><td style="padding: 8px;">{full_session.id}</td></tr>
                                     </table>
                                     <p style="margin-top: 16px;"><a href="https://dashboard.stripe.com/payments/{payment_intent}" style="color: #ef4444;">View in Stripe</a></p>

@@ -4,7 +4,7 @@ import asyncio
 import math
 from typing import Literal, Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, StrictBool
 from fastapi import HTTPException
 import stripe
 
@@ -25,6 +25,7 @@ class CreateCheckoutSessionRequest(BaseModel):
     brickowlCartId: Optional[str] = Field(default=None, max_length=100)
     uiMode: Literal["hosted", "custom", "embedded", "elements"] = "hosted"
     customerEmail: Optional[EmailStr] = None
+    shipInstructionsPostcard: StrictBool = False
 
 
 class CreateCheckoutSessionResponse(BaseModel):
@@ -68,7 +69,8 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         amount = checkout_price_cents(quote)
         track_api_call(endpoint="/create-checkout-session", user_id=user_email,
                        request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})
-        metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url}
+        metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url,
+                    "shipInstructionsPostcard": str(request.shipInstructionsPostcard).lower()}
         if request.brickowlCartId:
             metadata["brickowlCartId"] = request.brickowlCartId
         params = {

@@ -9,6 +9,7 @@ import { GetGenerationApiService } from "../services/getGenerationApi";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { SEO } from "../components/SEO";
 import { CheckoutStep } from "../components/checkout/CheckoutStep";
+import { InstructionsPostcard } from "../components/checkout/InstructionsPostcard";
 import { CheckoutPayment } from "../components/checkout/CheckoutPayment";
 import { supabase } from "../lib/supabase";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
@@ -33,7 +34,7 @@ function restoreOrderState(navigationState: LocationState | null): LocationState
   catch { return {}; }
 }
 
-const emptyDelivery: DeliveryDetails = { email: '', name: '', line1: '', line2: '', city: '', region: '', postalCode: '' };
+const emptyDelivery: DeliveryDetails = { email: '', firstName: '', lastName: '', line1: '', line2: '', city: '', region: '', postalCode: '' };
 const stepNames = ['Contact & delivery', 'Payment'];
 
 export default function OrderKit() {
@@ -43,6 +44,8 @@ export default function OrderKit() {
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
   const [resolvedName, setResolvedName] = React.useState<string | null>(null);
+  const [modelImage, setModelImage] = React.useState<string | null>(state.screenshots?.angle1 || null);
+  const [shipInstructionsPostcard, setShipInstructionsPostcard] = React.useState(false);
   const [allParts, setAllParts] = React.useState(false);
   const name = resolvedName || state.name || 'Your Model';
   const [mpdContent, setMpdContent] = React.useState<string | null>(null);
@@ -53,12 +56,11 @@ export default function OrderKit() {
   const [quoteAttempt, setQuoteAttempt] = React.useState(0);
   const pricing = getOrderPricing(quote);
   const [step, setStep] = React.useState(0);
-  const [country, setCountry] = React.useState<'US' | 'CA'>('US');
+  const [country, setCountry] = React.useState<string>('US');
   const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
   const [session, setSession] = React.useState<CreateCheckoutSessionResponse | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [showApartment, setShowApartment] = React.useState(false);
   const [summaryExpanded, setSummaryExpanded] = React.useState(false);
   const stepFocusRef = React.useRef<HTMLDivElement>(null);
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
@@ -98,6 +100,7 @@ export default function OrderKit() {
   React.useEffect(() => {
     const controller = new AbortController();
     setResolvedName(null);
+    setModelImage(state.screenshots?.angle1 || null);
     setAllParts(false);
     const fetchModelContent = async () => {
       if (!generationId) {
@@ -115,6 +118,7 @@ export default function OrderKit() {
         if (controller.signal.aborted) return;
         const fetchedName = generationData.name || generationData.prompt || state.name || "Your Model";
         setResolvedName(fetchedName);
+        if (generationData.preview_image_url) setModelImage(generationData.preview_image_url);
         setAllParts(generationData.mode === 'all_parts' || generationData.endpoint === 'novaToBricks');
         
         // Get MPD content from URL or convert LDR to MPD (same as GeneratedModel)
@@ -165,7 +169,7 @@ export default function OrderKit() {
 
     void fetchModelContent();
     return () => controller.abort();
-  }, [generationId, state.name]);
+  }, [generationId, state.name, state.screenshots?.angle1]);
 
 
   const goToStep = (next: number) => {
@@ -185,7 +189,7 @@ export default function OrderKit() {
       const data = await CreateCheckoutSessionApiService.createCheckoutSession({
         name, priceCents: pricing.totalCents, quantity: 1,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
-        uiMode: 'elements',
+        uiMode: 'elements', shipInstructionsPostcard,
       }, token);
       if (!data.client_secret) throw new Error('Embedded payment unavailable');
       if (data.price_data) setQuote(data.price_data);
@@ -198,12 +202,16 @@ export default function OrderKit() {
   };
 
   const field = (key: keyof DeliveryDetails, label: string, autoComplete: string, optional = false) =>
-    <label className={`checkout-field ${['email', 'name', 'line1', 'line2'].includes(key) ? 'checkout-field-full' : ''}`}>
+    <label className={`checkout-field ${['firstName', 'lastName'].includes(key) ? '' : 'checkout-field-full'}`}>
       <span>{label}{optional && <span className="checkout-optional"> (optional)</span>}</span>
       <input name={key} type={key === 'email' ? 'email' : 'text'} autoComplete={autoComplete}
         required={!optional} maxLength={key === 'email' ? 254 : 200} disabled={loading}
         value={delivery[key]} onChange={event => setDelivery(current => ({ ...current, [key]: event.target.value }))}
-        onBlur={event => setDelivery(current => ({ ...current, [key]: event.target.value.trim() }))} />
+        onBlur={event => {
+          const value = event.target.value.trim();
+          setDelivery(current => ({ ...current, [key]: value }));
+          posthog.capture('order_delivery_field_completed', { generation_id: generationId, field: key, filled: Boolean(value) });
+        }} />
     </label>;
 
   return <div className="order-checkout">
@@ -229,7 +237,7 @@ export default function OrderKit() {
           <div className="checkout-summary-body">
             <p className="checkout-kit-eyebrow">YOUR CUSTOM KIT</p>
             <h2 className="checkout-summary-heading">{name}</h2>
-            <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
+            <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} onPreviewCaptured={setModelImage} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
             <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
             {allParts && <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-xs leading-5 text-slate-600">Using all parts mode is experimental. Some pieces may not fit. <Link className="underline underline-offset-2" to={`/instructions?id=${encodeURIComponent(generationId)}`}>Check the steps</Link> before you buy, or choose <Link className="underline underline-offset-2" to="/">Basic bricks</Link>.</p>}
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
@@ -254,12 +262,21 @@ export default function OrderKit() {
           <CheckoutStep title="Contact & delivery" number={1} active={step === 0} complete={step > 0} disabled={loading} onEdit={() => goToStep(0)}>
             <form onSubmit={startPayment}>
               <p className="checkout-section-note">Your kit is almost yours. Where should we send it?</p>
-              <div className="checkout-field-grid">{field('email', 'Email address', 'email')}{field('name', 'Full name', 'shipping name')}{field('line1', 'Street address', 'shipping address-line1')}{showApartment ? field('line2', 'Apartment, suite, etc.', 'shipping address-line2', true) : <button type="button" className="checkout-add-apartment checkout-field-full" onClick={() => { setShowApartment(true); posthog.capture('order_apartment_field_opened', { generation_id: generationId }); }}>+ Add apartment, suite, etc.</button>}{field('city', 'City', 'shipping address-level2')}{field('region', country === 'US' ? 'State' : 'Province', 'shipping address-level1')}{field('postalCode', country === 'US' ? 'ZIP code' : 'Postal code', 'shipping postal-code')}
-                <label className="checkout-field"><span>Country</span><select value={country} autoComplete="shipping country" disabled={loading} onChange={event => {
-                  setCountry(event.target.value as 'US' | 'CA');
+              <div className="checkout-field-grid">
+                {field('email', 'Email address', 'email')}
+                {field('firstName', 'First Name', 'shipping given-name')}
+                {field('lastName', 'Last Name', 'shipping family-name')}
+                <label className="checkout-field checkout-field-full"><span>Country/Region</span><select name="country" value={country} autoComplete="shipping country" required disabled={loading} onChange={event => {
+                  setCountry(event.target.value);
                   posthog.capture('order_shipping_country_changed', { generation_id: generationId, country: event.target.value });
                 }}><option value="US">United States</option><option value="CA">Canada</option></select></label>
+                {field('line1', 'Address line 1', 'shipping address-line1')}
+                {field('line2', 'Address line 2', 'shipping address-line2', true)}
+                {field('region', 'State/Province', 'shipping address-level1', true)}
+                {field('city', 'City', 'shipping address-level2')}
+                {field('postalCode', 'Postal Code', 'shipping postal-code')}
               </div>
+              <InstructionsPostcard selected={shipInstructionsPostcard} onChange={setShipInstructionsPostcard} disabled={loading} modelName={name} modelImage={modelImage} generationId={generationId} />
               {error && <p className="checkout-error" role="alert">{error}</p>}
               <div className="checkout-actions"><button type="submit" className="checkout-primary" disabled={loading || !pricing || quoteLoading}>{loading ? 'Preparing payment…' : 'Continue to payment'}{loading ? <span className="checkout-spinner" /> : <ArrowRight size={19} />}</button></div>
             </form>

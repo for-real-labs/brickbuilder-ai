@@ -25,7 +25,7 @@ const checkoutAppearance: Appearance = {
 
 export function CheckoutPayment({ session, publishableKey, details, country, totalCents, generationId, onBack, onRetry, onBusyChange }: {
   session: CreateCheckoutSessionResponse; publishableKey: string;
-  details: DeliveryDetails; country: 'US' | 'CA'; totalCents: number;
+  details: DeliveryDetails; country: string; totalCents: number;
   generationId?: string; onBack: () => void; onRetry: () => void;
   onBusyChange?: (busy: boolean) => void;
 }) {

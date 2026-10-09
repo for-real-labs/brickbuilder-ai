@@ -2,7 +2,8 @@
 
 `/order` has two editable stages: Contact & delivery, and Payment.
 Standard shipping is included automatically; the delivery country is part of the
-address form. The model preview stays visible above the form on mobile, with
+address form, using Brickwith’s first/last name and address field order.
+Address line 2 and State/Province are optional; no phone number is collected. The model preview stays visible above the form on mobile, with
 only the price breakdown collapsible. Checkout previews hide ruler/explode controls.
 It supports the existing US/Canada standard shipping option and kit discount.
 Model data survives a reload; contact details and payment client secrets stay in memory.
@@ -48,3 +49,25 @@ Apple Pay and Google Pay use a Checkout Express Checkout Element and the existin
 PayPal is explicitly disabled pending a separate PayPal integration: the current Stripe account is US based, while native Stripe PayPal processing supports European merchant accounts only (https://docs.stripe.com/payments/paypal). Do not enable the option without a real processing and fulfillment integration. Custom Checkout sessions restrict payment_method_types to card, which also covers Apple Pay and Google Pay, preventing unrelated installment methods from appearing.
 
 Stripe.js v10 uses initCheckoutElementsSdk with ui_mode elements. Backend pins 2026-09-30.endive and uses allowed_payment_method_types for this mode and retains hosted, embedded, and custom compatibility for older clients.
+
+
+## Instructions post card
+
+Contact & delivery offers an unchecked `ship instructions post card` option.
+The info button opens an accessible modal with the model name, its saved render
+(or a fresh viewer capture), a theme based on the model’s subject, and a scannable
+QR code linking to `https://brickbuilder.ai/instructions?id=<generation id>`.
+The card is an example preview. If its model image is unavailable, the preview
+shows that state rather than substituting another model.
+
+The choice is sent as the boolean `shipInstructionsPostcard` in checkout creation.
+Stripe metadata carries it through payment to the webhook, which saves
+`instructions_postcard` and, when selected, `instructions_url` in the order’s
+`shipping_info`. The owner notification includes whether to pack the card.
+Older clients and existing Stripe sessions default to no postcard. Selecting it
+does not change the kit’s price. Selection and preview analytics omit names,
+contact details, and model images.
+
+Postcard checks: `npm --prefix frontend test` and
+`cd backend && uv run pytest tests/test_checkout_session.py tests/test_stripe_webhook.py`.
+The frontend tests decode the rendered QR using an independent QR reader.
