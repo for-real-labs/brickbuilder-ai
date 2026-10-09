@@ -87,6 +87,59 @@ def test_storage_persists_usage_on_only_the_requested_row():
     assert calls == [('update', {'tokens_used': 120}), ('eq', 'id', 'job')]
 
 
+def test_running_job_checkpoints_usage_then_saves_remaining_calls(monkeypatch):
+    async def run():
+        checkpoint = asyncio.Event()
+        release = asyncio.Event()
+        async def saved(*args):
+            checkpoint.set()
+        store = SimpleNamespace(get_generation=AsyncMock(return_value={'status': 'processing'}),
+                                save_generation_usage=AsyncMock(side_effect=saved))
+        monkeypatch.setattr(generation_storage, 'generation_storage', store)
+        async def work():
+            budget = GenerationBudget('gpt-5.5')
+            budget.record_usage({'input_tokens': 1000, 'output_tokens': 100}, 'openai')
+            await release.wait()
+            budget.record_usage({'input_tokens': 2000, 'output_tokens': 200}, 'openai')
+        task = generation_tasks.start_generation_task('job', work())
+        await asyncio.wait_for(checkpoint.wait(), timeout=2)
+        assert not task.done()
+        first = store.save_generation_usage.await_args.args[1]
+        assert first['tokens_used'] == 1100
+        release.set()
+        await task
+        assert store.save_generation_usage.await_count == 2
+        assert store.save_generation_usage.await_args.args[1]['tokens_used'] == 3300
+        assert len(first['ai_usage']['calls']) == 1
+    asyncio.run(run())
+
+
+def test_failed_checkpoint_is_retried_when_job_finishes(monkeypatch):
+    async def run():
+        attempted = asyncio.Event()
+        release = asyncio.Event()
+        attempts = 0
+        async def saved(*args):
+            nonlocal attempts
+            attempts += 1
+            attempted.set()
+            if attempts == 1:
+                raise RuntimeError('temporary storage failure')
+        store = SimpleNamespace(get_generation=AsyncMock(return_value={'status': 'processing'}),
+                                save_generation_usage=AsyncMock(side_effect=saved))
+        monkeypatch.setattr(generation_storage, 'generation_storage', store)
+        async def work():
+            GenerationBudget('gpt-5.5').record_usage({'input_tokens': 1000, 'output_tokens': 100}, 'openai')
+            await release.wait()
+        task = generation_tasks.start_generation_task('job', work())
+        await asyncio.wait_for(attempted.wait(), timeout=2)
+        release.set()
+        await task
+        assert attempts == 2
+        assert store.save_generation_usage.await_args.args[1]['tokens_used'] == 1100
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize('invalid', [float('nan'), float('inf'), -1])
 def test_invalid_runtime_cost_is_rejected_without_partially_adding_calls(invalid):
     ledger = GenerationUsage('job')

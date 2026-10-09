@@ -42,7 +42,7 @@ class GenerationUsage:
         outputs = sum(call['output_tokens'] for call in self.calls)
         return {'input_tokens': inputs, 'output_tokens': outputs, 'tokens_used': inputs + outputs,
                 'estimated_cost_usd': str(sum((Decimal(call['estimated_cost_usd']) for call in self.calls), Decimal(0))),
-                'ai_usage': {'scope': 'reported_llm_usage', 'calls': self.calls}}
+                'ai_usage': {'scope': 'reported_llm_usage', 'calls': [dict(call) for call in self.calls]}}
 
 
 current_generation_usage = ContextVar('generation_usage', default=None)
