@@ -75,9 +75,13 @@ press **Create** after connecting to start the build.
 
 The generation adapter selects Nova's **Agent** mode with **Full** tool
 permissions so builds run automatically in their isolated workspace. Initial
-prompts and edits select Nova's quick-preview workflow, low default reasoning
-effort where supported, and its shorter 24-step limit. **Verify Build** restores
-the normal model effort, complete workflow, and 150-step limit. BrickBuilder has no default wall-clock
+prompts and edits retain Nova's full design foundations, normal model reasoning
+effort, and 150-step work budget. Previews construct the full requested design,
+render it for visual review, and allow one focused visual refinement. They defer
+exhaustive geometry/contact checks, connection repair, BOM comparison, and instruction
+validation to **Verify Build**. Basic placement alignment and syntax checks remain
+part of construction. Plan-based previews use the builder/serializer without the
+CLI build command's global geometry/contact gate. BrickBuilder has no default wall-clock
 cutoff for Nova; builds continue until Nova finishes or the owner cancels them.
 An operator can explicitly set `NOVA_TIMEOUT_SECONDS` (60–86400 seconds);
 unset or `0` disables that limit. Progress labels come directly from Nova,
@@ -355,8 +359,8 @@ active references, private workspaces, or output files.
 
 ## Upgrading and attribution
 
-The quick-preview integration pins the immutable head of
-[Nova fork PR #5](https://github.com/jjohnson5253/ldraw-nova-docker/pull/5), including
+The design-preview integration pins the immutable head of
+[Nova fork PR #8](https://github.com/jjohnson5253/ldraw-nova-docker/pull/8), preserving
 selected-revision verification and complete Claude usage accounting after preview
 interruption. The API requires `preview_build_version: 1` in addition to the cost,
 palette, and build-review capabilities before admitting new All parts jobs.

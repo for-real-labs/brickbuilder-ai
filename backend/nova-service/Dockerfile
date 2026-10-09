@@ -3,7 +3,7 @@ FROM alpine:3.22 AS nova
 RUN apk add --no-cache git && git init /source && cd /source && git remote add origin https://github.com/jjohnson5253/ldraw-nova.git && git fetch --depth 1 origin 98eac806bf721d83c9a04d31299050cea8d6d4f9 && git checkout --detach FETCH_HEAD
 
 FROM alpine:3.22 AS nova_web
-RUN apk add --no-cache git && git init /source && cd /source && git remote add origin https://github.com/jjohnson5253/ldraw-nova-docker.git && git fetch --depth 1 origin 5cf646b4d489f2320d8cc1a17bb7b9b86dc4f6a3 && git checkout --detach FETCH_HEAD
+RUN apk add --no-cache git && git init /source && cd /source && git remote add origin https://github.com/jjohnson5253/ldraw-nova-docker.git && git fetch --depth 1 origin 051dc2115211410cdc538461991ad2d498c18fda && git checkout --detach FETCH_HEAD
 
 # check=skip=FromPlatformFlagConstDisallowed
 # ldraw-nova-docker: LeoCAD (pinned released AppImage) + Python + full LDraw parts library,
@@ -299,5 +299,5 @@ CMD ["uvicorn", "main:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0"
 
 COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/
 COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py
-RUN printf '%s' '{"toolkit":"98eac806bf721d83c9a04d31299050cea8d6d4f9","web":"5cf646b4d489f2320d8cc1a17bb7b9b86dc4f6a3"}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools
+RUN printf '%s' '{"toolkit":"98eac806bf721d83c9a04d31299050cea8d6d4f9","web":"051dc2115211410cdc538461991ad2d498c18fda"}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools
 CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]
