@@ -48,6 +48,7 @@ class NovaToBricksRequest(LlmToBricksRequest):
     build_mode: Literal["preview", "verify"] = "preview"
     _nova_session: dict | None = PrivateAttr(default=None)
     _nova_source_ldr: str | None = PrivateAttr(default=None)
+    _nova_verification_prompt: str | None = PrivateAttr(default=None)
 
     @model_validator(mode='after')
     def require_saved_revision_for_verification(self):
@@ -64,6 +65,7 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         require_generation_access(source, auth_info)
         if source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
             raise HTTPException(409, 'Choose a completed Nova preview before verifying a build')
+        request._nova_verification_prompt = source.get('prompt') or source.get('name') or 'Nova build'
     try:
         require_generation_access(source, auth_info)
         owned = True
@@ -229,7 +231,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
     generation_id = await generation_storage.create_generation(
         user_id=auth_info.get("user_id", user_info["user_email"]),
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
-        prompt=request.prompt or "Image reference", detail_level=request.detail_level,
+        prompt=request._nova_verification_prompt or request.prompt or "Image reference", detail_level=request.detail_level,
         endpoint="novaToBricks", model_3d=request.model,
         edit_generation_id=request.generation_id if request._nova_session or request.build_mode == 'verify' else None,
         nova_build_mode=request.build_mode,

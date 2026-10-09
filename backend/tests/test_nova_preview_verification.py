@@ -103,6 +103,17 @@ def test_verification_is_owner_only_before_private_session_or_geometry_reads(mon
     download.assert_not_awaited()
 
 
+def test_verification_keeps_the_selected_models_original_prompt(monkeypatch):
+    monkeypatch.setattr(jobs, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'owner', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': 'novaToBricks', 'prompt': 'Red rover'})))
+    monkeypatch.setattr(jobs, '_owned_session', AsyncMock(return_value={
+        'model': 'gpt-5.5', 'auth_mode': 'api_key', 'chat_id': 'chat', 'tenant': 'a' * 64}))
+    request = jobs.NovaToBricksRequest(prompt='Verify Build', source_generation_id='saved', build_mode='verify')
+    asyncio.run(jobs._prepare_edit(request, {'user_id': 'owner', 'authenticated': True}))
+    assert request._nova_verification_prompt == 'Red rover'
+
+
 def test_preview_jobs_skip_packing_and_checked_instruction_cache_and_charge_after_saving(monkeypatch):
     writes, events = [], []
     class Bucket:
