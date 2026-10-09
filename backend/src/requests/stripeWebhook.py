@@ -154,11 +154,19 @@ def handle_payment_method_attached(payment_method):
 async def handle_checkout_session_completed(session):
     """Handle completed checkout session"""
     logger.info(f"Processing completed checkout session: {session.id}")
+
+    # Checkout passes its key per request; webhook workers must authenticate
+    # independently rather than relying on Stripe's process-wide default.
+    key_name = "STRIPE_SECRET_KEY_LIVE" if os.getenv("API_MODE", "local") == "production" else "STRIPE_SECRET_KEY"
+    stripe_key = os.getenv(key_name)
+    if not stripe_key:
+        logger.error("Stripe secret key not configured for checkout fulfillment")
+        raise HTTPException(status_code=500, detail="Payment configuration is unavailable")
     
     # Retrieve the full session object from Stripe API to ensure we have all properties
     # The webhook event object doesn't always include all session properties like shipping_details
     try:
-        full_session = stripe.checkout.Session.retrieve(session.id, expand=["payment_intent"])
+        full_session = stripe.checkout.Session.retrieve(session.id, expand=["payment_intent"], api_key=stripe_key)
         logger.info(f"Retrieved full session from Stripe API")
     except Exception as e:
         logger.error(f"Failed to retrieve full session from Stripe: {e}")
@@ -176,7 +184,7 @@ async def handle_checkout_session_completed(session):
     # Get payment intent ID
     payment_intent_data = full_session.get('payment_intent')
     if metadata.get('shippingAddressProvided') == 'true' and isinstance(payment_intent_data, str):
-        payment_intent_data = stripe.PaymentIntent.retrieve(payment_intent_data)
+        payment_intent_data = stripe.PaymentIntent.retrieve(payment_intent_data, api_key=stripe_key)
     payment_intent = payment_intent_data.get('id') if isinstance(payment_intent_data, dict) else payment_intent_data
     logger.info(f"Payment intent ID: {payment_intent}")
     
