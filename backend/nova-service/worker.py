@@ -24,6 +24,8 @@ import llm_config
 import litellm
 import claude_agent
 from brickbuilder_integration.cost_limits import install_cost_limits, current_usage_id
+import tools
+from parts_policy import policy as parts_policy, CATALOG_VERSION
 from store import get_store
 from leocad_render import bom_path_for, snapshot_path_for
 
@@ -32,6 +34,7 @@ VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 install_cost_limits(agent, llm_config, litellm, claude_agent)
 VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
+VERSIONS['parts_catalog_version'] = CATALOG_VERSION
 
 
 @app.middleware('http')
@@ -100,7 +103,7 @@ def import_model(body: ImportedModel) -> dict:
     editable = work / 'model.ldr'
     editable.write_text(body.model, encoding='utf-8')
     give_to_agent(editable)
-    notes = 'This workspace contains an independent copy of a completed public model. Read model.ldr and modify this existing geometry for the next edit request. Preserve custom color definitions and publish the revised model with Nova tools.'
+    notes = 'This workspace contains an independent copy of a completed public model. Read model.ldr and modify this existing geometry for the next edit request. Honor the configured parts palette, replacing unsupported parts or custom colors before publishing the revised model with Nova tools.'
     (work / 'NOTES.md').write_text(notes, encoding='utf-8')
     give_to_agent(work / 'NOTES.md')
     store.add_message(chat['id'], {'role': 'user', 'content': notes})
@@ -110,6 +113,24 @@ def import_model(body: ImportedModel) -> dict:
 @app.post('/integration/import')
 async def import_geometry(body: ImportedModel):
     return await asyncio.to_thread(import_model, body)
+
+
+class PartsCatalogRequest(BaseModel):
+    csv: str = Field(min_length=1, max_length=16 * 1024 * 1024)
+
+
+@app.put('/integration/chats/{chat_id}/parts-catalog')
+async def configure_parts_catalog(chat_id: str, body: PartsCatalogRequest):
+    store = get_store()
+    if not store.get_chat(chat_id):
+        raise HTTPException(404, 'Nova session not found')
+    if agent.is_running(chat_id):
+        raise HTTPException(409, 'Nova is working on this session')
+    try:
+        catalog = parts_policy.configure(store, chat_id, body.csv)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from None
+    return {'parts_catalog_version': 1, 'allowed_combinations': len(catalog.parts)}
 
 
 def export_sources(chat_id: str, model_id: str) -> bytes:

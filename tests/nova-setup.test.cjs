@@ -107,3 +107,13 @@ test('new runtimes use localhost and named volumes and wait for authenticated re
 test('unready Nova prevents API startup instead of silently allowing failed All parts builds', () => {
   assert.throws(()=>waitReady({url:'http://nova:8000',token:'private'},()=>({status:1})),/startup failed/);
 });
+
+test('catalog enforcement is supplied by the pinned Nova forks', () => {
+  const setup = readFileSync(path.resolve(__dirname, '../backend/setup_nova.cjs'), 'utf8');
+  const worker = readFileSync(path.resolve(__dirname, '../backend/nova-service/worker.py'), 'utf8');
+  const recipe = deploymentDockerfile('FROM ubuntu:24.04\nCOPY --from=nova ldraw_tools/parts_catalog.py /app/web/backend/parts_catalog.py');
+  assert.match(setup, /parts-v1/);
+  assert.match(worker, /from parts_policy import policy as parts_policy, CATALOG_VERSION/);
+  assert.ok(!setup.includes('COPY backend/src/utils/parts_catalog.py'));
+  assert.ok(recipe.includes('COPY --from=nova /source/ldraw_tools/parts_catalog.py /app/web/backend/parts_catalog.py'));
+});
