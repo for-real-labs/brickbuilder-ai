@@ -6,12 +6,16 @@ on:
     paths:
       - backend/setup_nova.cjs
       - backend/nova-service/**
+      - backend/tests/nova_preview_runtime_smoke.py
+      - backend/tests/nova_build_review_smoke.py
       - .github/workflows/nova-runtime.yml
   push:
     branches: [main, staging]
     paths:
       - backend/setup_nova.cjs
       - backend/nova-service/**
+      - backend/tests/nova_preview_runtime_smoke.py
+      - backend/tests/nova_build_review_smoke.py
       - .github/workflows/nova-runtime.yml
 
 permissions:
@@ -52,3 +56,10 @@ jobs:
           -e NOVA_SERVICE_TOKEN=smoke-local-only
           ghcr.io/${{ github.repository }}-nova:${{ github.sha }}
           /tmp/cache-smoke.py
+      - name: Verify preview and full review workflows without provider calls
+        run: >-
+          docker run --rm --network none
+          -v "$PWD/backend/tests/nova_preview_runtime_smoke.py:/tmp/preview-smoke.py:ro"
+          -e PYTHONPATH=/app/web/backend
+          ghcr.io/${{ github.repository }}-nova:${{ github.sha }}
+          python3 /tmp/preview-smoke.py

@@ -252,7 +252,7 @@ def worker(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, 'settings', SimpleNamespace())
     monkeypatch.setitem(sys.modules, 'tools', SimpleNamespace())
     monkeypatch.setitem(sys.modules, 'brickbuilder_integration.build_policy', SimpleNamespace(
-        install_build_policy=lambda *args: None, review_source=lambda *args: None, REVIEW_VERSION=1, REVIEW_FAILURE='Review failed'))
+        install_build_policy=lambda *args: None, review_source=lambda *args: None, preview_display=lambda *args: None, REVIEW_VERSION=1, REVIEW_FAILURE='Review failed'))
     monkeypatch.setitem(sys.modules, 'parts_policy', SimpleNamespace(policy=None, CATALOG_VERSION=1))
     monkeypatch.setitem(sys.modules, 'store', SimpleNamespace(get_store=lambda: None))
     monkeypatch.setitem(sys.modules, 'leocad_render', SimpleNamespace(bom_path_for=lambda p: p, snapshot_path_for=lambda p: p))
@@ -269,10 +269,10 @@ def worker(tmp_path, monkeypatch):
 def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch):
     module = worker(tmp_path, monkeypatch)
     upstream = module.app
-    module.export_sources = lambda chat, model: b'zip'
+    module.export_sources = lambda chat, model, build_mode='verify': b'zip'
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
-        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'build_review_version': 1}
+        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'build_review_version': 1, 'preview_build_version': 1}
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401

@@ -988,7 +988,7 @@ export default function LandingPage() {
               )}
               {generationMethod === 'nova' && (
                 <p id="all-parts-warning" className="mt-2 text-left text-xs leading-relaxed text-slate-500">
-                  Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.
+                  All parts is experimental. Prompts create quick, unchecked previews. Choose Verify Build when ready for full validation and building instructions.
                 </p>
               )}
               <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">

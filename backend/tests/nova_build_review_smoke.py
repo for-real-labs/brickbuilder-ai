@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, '/review')
 from build_review import review_model
+from build_policy import preview_display
 
 root = Path(tempfile.mkdtemp(prefix='nova-review-smoke-'))
 library = Path('/opt/ldraw/ldraw')
@@ -31,6 +32,10 @@ def check(label, text, passed, failed_steps=None):
 header = '0 FILE main.ldr\n'
 check('Connected stack', header + part(0, 0) + '0 STEP\n' + part(0, -24), True, [])
 check('Disconnected final model', header + part(0, 0) + '0 STEP\n' + part(400, 0), False, [2])
+preview = preview_display((header + part(0, 0) + '0 STEP\n' + part(400, 0)).encode(), library)
+assert len([line for line in preview.decode().splitlines() if line.startswith('1 ')]) == 2
+assert '0 STEP' not in preview.decode()
+print('Disconnected preview exports immediately without checked instructions: PASS', flush=True)
 check('Later bridge fails earlier instruction step', header + part(0, 0) + '0 STEP\n' + part(80, 0)
       + '0 STEP\n' + part(40, -24), False, [2])
 check('Same-step bridge passes', header + part(0, 0) + '0 STEP\n' + part(80, 0) + part(40, -24), True, [])

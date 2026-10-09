@@ -45,7 +45,8 @@ class GenerationStorage:
         endpoint: str = "textToBricks",
         image_model: Optional[str] = None,
         model_3d: Optional[str] = None,
-        edit_generation_id: Optional[str] = None
+        edit_generation_id: Optional[str] = None,
+        nova_build_mode: Optional[str] = None
     ) -> str:
         """
         Create a new generation record and return the generation ID
@@ -78,6 +79,10 @@ class GenerationStorage:
                 "created_at": datetime.utcnow().isoformat(),
                 "status": "started"
             }
+            if nova_build_mode is not None:
+                if endpoint != 'novaToBricks' or nova_build_mode not in {'preview', 'verify'}:
+                    raise ValueError('Invalid Nova build mode')
+                generation_data['nova_build_mode'] = nova_build_mode
             # The input revision is needed to inherit model identity and title,
             # but is not stored as a parent link on the new revision.
             if edit_generation_id:

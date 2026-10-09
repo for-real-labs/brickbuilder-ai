@@ -12,7 +12,7 @@ from src.utils.nova_service import NovaService, read_export
 from nova_review_helpers import receipt
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'build_review_version': 1}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'build_review_version': 1, 'preview_build_version': 1}
 
 
 @pytest.mark.parametrize('versions,error', [({}, 'cost limit'),
@@ -117,7 +117,7 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
             chat_reads += 1
             return httpx.Response(200, json=before if chat_reads == 1 else after)
         if req.url.path.endswith('/messages'):
-            assert body == {'text': 'make the roof red', 'images': [], 'llm_model_id': 'model-config', 'options': {'mode': 'agent', 'permissions': 'full'}}
+            assert body == {'text': 'make the roof red', 'images': [], 'llm_model_id': 'model-config', 'options': {'mode': 'agent', 'permissions': 'full', 'build_mode': 'verify'}}
             return httpx.Response(202, json={'started': True})
         if req.url.path.endswith('/stream'):
             return httpx.Response(200, text='event: progress\ndata: {"summary":"Rendering"}\n\nevent: text\ndata: {"delta":"Nova reply"}\n\nevent: done\ndata: {}\n\n')

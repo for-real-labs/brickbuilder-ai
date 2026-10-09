@@ -22,7 +22,7 @@ import llm_config
 import litellm
 import claude_agent
 from brickbuilder_integration.cost_limits import install_cost_limits, current_usage_id
-from brickbuilder_integration.build_policy import install_build_policy, review_source, REVIEW_VERSION, REVIEW_FAILURE
+from brickbuilder_integration.build_policy import install_build_policy, review_source, preview_display, REVIEW_VERSION, REVIEW_FAILURE
 import tools
 from parts_policy import policy as parts_policy, CATALOG_VERSION
 from store import get_store
@@ -36,6 +36,7 @@ VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = CATALOG_VERSION
 VERSIONS['build_review_version'] = REVIEW_VERSION
+VERSIONS['preview_build_version'] = 1
 
 
 @app.middleware('http')
@@ -134,7 +135,7 @@ async def configure_parts_catalog(chat_id: str, body: PartsCatalogRequest):
     return {'parts_catalog_version': 1, 'allowed_combinations': len(catalog.parts)}
 
 
-def export_sources(chat_id: str, model_id: str) -> bytes:
+def export_sources(chat_id: str, model_id: str, build_mode: str = 'verify') -> bytes:
     store = get_store()
     if not store.get_chat(chat_id):
         raise HTTPException(404, 'Nova session not found')
@@ -146,17 +147,31 @@ def export_sources(chat_id: str, model_id: str) -> bytes:
     model = store.resolve(chat_id, ref['model']).resolve()
     if model.parent != settings.GENERATED_DIR.resolve() or not model.is_file():
         raise HTTPException(404, 'Nova model source not found')
-    # Recheck a captured revision independently of agent-authored reports or
-    # even publication-tool use. Only these reviewed bytes leave the runtime.
+    # Capture the revision once. Verified exports independently review these
+    # bytes; preview exports carry explicit unchecked metadata and no instructions.
     if model.stat().st_size > 32 * 1024 * 1024:
         raise HTTPException(413, 'Nova model exceeds the review size limit')
     source = model.read_bytes()
-    try:
-        review, reviewed = review_source(source, settings.LDRAW_DIR)
-    except (ValueError, OSError, subprocess.SubprocessError):
-        raise HTTPException(502, 'Nova build review could not finish; completion is blocked') from None
-    if review['passed'] is not True:
-        raise HTTPException(422, REVIEW_FAILURE)
+    if build_mode == 'preview':
+        if ref.get('validation_status') != 'preview':
+            raise HTTPException(409, 'This revision was not published as a preview')
+        try:
+            fixed = {'model.mpd': source, 'model.ldr': preview_display(source, settings.LDRAW_DIR)}
+        except (ValueError, OSError, subprocess.SubprocessError):
+            raise HTTPException(502, 'Nova preview display export could not finish') from None
+    elif build_mode == 'verify':
+        try:
+            review, reviewed = review_source(source, settings.LDRAW_DIR)
+        except (ValueError, OSError, subprocess.SubprocessError):
+            raise HTTPException(502, 'Nova build review could not finish; completion is blocked') from None
+        if review['passed'] is not True:
+            raise HTTPException(422, REVIEW_FAILURE)
+        fixed = {'model.mpd': source, 'model.ldr': reviewed['model.ldr'],
+                 'nova-instructions.ldr': reviewed['instructions.ldr'],
+                 'build-review.json': json.dumps(review).encode()}
+    else:
+        raise HTTPException(400, 'Unknown Nova build mode')
+    fixed['export-mode.json'] = json.dumps({'build_mode': build_mode}).encode()
     files = {'preview.png': snapshot_path_for(model),
              'nova-bom.csv': bom_path_for(model)}
     work = store.work_dir(chat_id).resolve()
@@ -170,9 +185,6 @@ def export_sources(chat_id: str, model_id: str) -> bytes:
             files['workspace/' + relative.as_posix()] = path
     if len(files) > 2000:
         raise HTTPException(413, 'Nova source archive contains too many files')
-    fixed = {'model.mpd': source, 'model.ldr': reviewed['model.ldr'],
-             'nova-instructions.ldr': reviewed['instructions.ldr'],
-             'build-review.json': json.dumps(review).encode()}
     total = sum(map(len, fixed.values()))
     output = io.BytesIO()
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
@@ -200,8 +212,8 @@ def export_sources(chat_id: str, model_id: str) -> bytes:
 
 
 @app.get('/integration/chats/{chat_id}/export/{model_id}')
-async def export(chat_id: str, model_id: str):
-    data = await asyncio.to_thread(export_sources, chat_id, model_id)
+async def export(chat_id: str, model_id: str, build_mode: str = 'verify'):
+    data = await asyncio.to_thread(export_sources, chat_id, model_id, build_mode)
     return Response(data, media_type='application/zip', headers={'Cache-Control': 'private, no-store'})
 
 

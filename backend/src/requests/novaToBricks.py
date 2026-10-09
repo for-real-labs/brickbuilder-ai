@@ -12,7 +12,7 @@ from typing import Literal
 
 from fastapi import Depends, HTTPException
 from fastapi.responses import Response
-from pydantic import PrivateAttr
+from pydantic import PrivateAttr, model_validator
 
 from .imageToBricks import ImageToBricksResponse
 from .llmToBricks import LlmToBricksRequest, SUPPORTED_MODELS
@@ -45,14 +45,25 @@ def _generation_timeout() -> float | None:
 
 class NovaToBricksRequest(LlmToBricksRequest):
     auth_mode: Literal["api_key", "native"] = "api_key"
+    build_mode: Literal["preview", "verify"] = "preview"
     _nova_session: dict | None = PrivateAttr(default=None)
     _nova_source_ldr: str | None = PrivateAttr(default=None)
+
+    @model_validator(mode='after')
+    def require_saved_revision_for_verification(self):
+        if self.build_mode == 'verify' and not self.generation_id:
+            raise ValueError('Choose a saved preview before verifying a build')
+        return self
 
 
 async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
     source = await generation_storage.get_generation(request.generation_id)
     if not source:
         raise HTTPException(404, 'Generation not found')
+    if request.build_mode == 'verify':
+        require_generation_access(source, auth_info)
+        if source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
+            raise HTTPException(409, 'Choose a completed Nova preview before verifying a build')
     try:
         require_generation_access(source, auth_info)
         owned = True
@@ -136,17 +147,22 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
                     timeout=_generation_timeout())
             except asyncio.TimeoutError:
                 raise ValueError("Nova reached the build time limit. Its session is retained for continuation.") from None
-        result.require_build_review()
+        if request.build_mode == 'verify':
+            result.require_build_review()
+        else:
+            result.require_preview()
         if on_thinking:
             await on_thinking("\n\nSaving Nova's model and source files.\n\n")
         if on_progress:
             await on_progress("Saving your model and source files")
-        with tempfile.TemporaryDirectory(prefix="brickbuilder-nova-import-") as directory:
-            model_path = Path(directory) / "model.mpd"
-            model_path.write_text(result.mpd, encoding="utf-8")
-            packer = LDrawPacker(ldraw_path=os.getenv("LDRAW_DIR"))
-            packed_path = await asyncio.to_thread(packer.pack_ldraw_model, str(model_path))
-            packed_mpd = Path(packed_path).read_text(encoding="utf-8")
+        packed_mpd = result.mpd
+        if request.build_mode == 'verify':
+            with tempfile.TemporaryDirectory(prefix="brickbuilder-nova-import-") as directory:
+                model_path = Path(directory) / "model.mpd"
+                model_path.write_text(result.mpd, encoding="utf-8")
+                packer = LDrawPacker(ldraw_path=os.getenv("LDRAW_DIR"))
+                packed_path = await asyncio.to_thread(packer.pack_ldraw_model, str(model_path))
+                packed_mpd = Path(packed_path).read_text(encoding="utf-8")
         if request.image_base64:
             image = f"data:{request.image_media_type};base64,{request.image_base64}"
             await generation_storage.store_images(generation_id=generation_id, original_image_url=image, processed_image_url=image)
@@ -163,11 +179,12 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
         bucket = generation_storage.client.storage.from_("generation-output")
         await asyncio.to_thread(bucket.upload, path=f"{generation_id}/nova-source.zip", file=result.archive,
                                 file_options={"content-type": "application/zip", "upsert": "true"})
-        await asyncio.to_thread(bucket.upload, path=f"{generation_id}/{REVIEWED_INSTRUCTIONS_FILE}",
-                                file=result.instructions.encode('utf-8'),
-                                file_options={"content-type": "text/plain", "upsert": "true"})
+        if request.build_mode == 'verify':
+            await asyncio.to_thread(bucket.upload, path=f"{generation_id}/{REVIEWED_INSTRUCTIONS_FILE}",
+                                    file=result.instructions.encode('utf-8'),
+                                    file_options={"content-type": "text/plain", "upsert": "true"})
         await deduct_credits(user_info=user_info, auth_info=auth_info, credits_to_deduct=1,
-                             operation_description=f"Nova generation ({request.model})")
+                             operation_description=f"Nova {request.build_mode} ({request.model})")
         await generation_storage.update_status(generation_id, "completed")
         track_image_conversion(user_id=user_info["user_email"], success=True, has_mpd=True,
                                ldr_size=len(result.ldr), mpd_size=len(packed_mpd.encode()), image_type="nova_full_set",
@@ -201,7 +218,8 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
     provider = SUPPORTED_MODELS[request.model].provider
     user_info = handle_auth_and_tracking(auth_info=auth_info, endpoint="/novaToBricks", required_credits=1,
         track_properties={"has_image": bool(request.image_base64), "model": request.model, "provider": provider,
-                          "auth_mode": request.auth_mode, "is_edit": bool(request.generation_id)})
+                          "auth_mode": request.auth_mode, "is_edit": bool(request.generation_id),
+                          "build_mode": request.build_mode})
     try:
         async with _nova_service(request, auth_info) as nova:
             await nova.ready()
@@ -213,7 +231,8 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,
         endpoint="novaToBricks", model_3d=request.model,
-        edit_generation_id=request.generation_id if request._nova_session else None,
+        edit_generation_id=request.generation_id if request._nova_session or request.build_mode == 'verify' else None,
+        nova_build_mode=request.build_mode,
     )
     task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info, native_progress=True))
     _background_tasks.add(task)

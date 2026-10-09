@@ -84,7 +84,7 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     monkeypatch.setattr(module, 'LDrawPacker', Packer)
     monkeypatch.setattr(module, 'deduct_credits', charge)
     monkeypatch.setattr(module, 'track_image_conversion', lambda **kwargs: None)
-    request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5')
+    request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5', build_mode='verify', source_generation_id='source')
     assert asyncio.run(module.process_nova_to_bricks_task('generation', request,
         {'user_email': 'test', 'is_developer': False}, {})) is None
     assert calls[1][1] == 'generation/nova-session.json'
@@ -213,7 +213,7 @@ def test_unreviewed_export_is_rejected_before_saving_model_or_charging(monkeypat
     monkeypatch.setattr(module, 'deduct_credits', charge)
     monkeypatch.setattr(module, 'track_error', lambda **kwargs: None)
     result = asyncio.run(module.process_nova_to_bricks_task('generation',
-        module.NovaToBricksRequest(prompt='guitar', model='gpt-5.5'), {'user_email': 'test'}, {}))
+        module.NovaToBricksRequest(prompt='guitar', model='gpt-5.5', build_mode='verify', source_generation_id='source'), {'user_email': 'test'}, {}))
     assert 'build review failed' in result
     charge.assert_not_awaited()
     storage.update_status.assert_awaited_with('generation', 'failed', result)

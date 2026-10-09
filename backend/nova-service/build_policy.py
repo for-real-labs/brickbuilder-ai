@@ -1,4 +1,4 @@
-"""Require a fresh Nova build review at publication and final artifact export."""
+"""Require independent review for verification; export preview geometry without checks."""
 from __future__ import annotations
 
 import asyncio
@@ -52,6 +52,8 @@ def install_build_policy(tools, settings):
     schema, publish = tools.TOOLS['publish_model']
 
     async def checked_publish(ctx, path: str, name: str | None = None):
+        if getattr(ctx, 'build_mode', 'verify') == 'preview':
+            return await publish(ctx, path, name)
         source = tools.resolve_path(ctx, path, write=True)
         if not source.is_file() or source.suffix.lower() not in {'.mpd', '.ldr'}:
             raise tools.ToolError('Publish a self-contained .mpd or .ldr from the output folder')
@@ -92,3 +94,24 @@ def install_build_policy(tools, settings):
     tools.TOOLS['publish_model'] = (schema, checked_publish)
     tools.t_publish_model = checked_publish
     tools._brickbuilder_build_policy = True
+
+
+def preview_display(source: bytes, library: Path) -> bytes:
+    """Flatten a preview for the viewer without geometry/contact/instruction review."""
+    if not source or len(source) > MAX_MODEL_BYTES:
+        raise ValueError('Invalid Nova model size')
+    account = pwd.getpwnam('nobody')
+    with tempfile.TemporaryDirectory(prefix='nova-preview-export-') as directory:
+        root = Path(directory)
+        os.chown(root, account.pw_uid, account.pw_gid)
+        model, output = root / 'model.mpd', root / 'model.ldr'
+        model.write_bytes(source)
+        subprocess.run([str(TOOLKIT_ROOT / '.venv/bin/python'), str(Path(__file__).with_name('flatten.py')),
+                        str(model), str(output), str(library)], cwd=TOOLKIT_ROOT,
+                       user=account.pw_uid, group=account.pw_gid, extra_groups=[],
+                       env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(TOOLKIT_ROOT),
+                            'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(root)},
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=120)
+        if output.stat().st_size > MAX_MODEL_BYTES:
+            raise ValueError('Nova preview export exceeds its size limit')
+        return output.read_bytes()

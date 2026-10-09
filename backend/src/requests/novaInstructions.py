@@ -16,6 +16,8 @@ async def get_nova_instructions(generation_id: str) -> Response:
     # reasoning, conversations and active jobs retain their owner checks.
     if not row or row.get('status') != 'completed' or row.get('endpoint') != 'novaToBricks':
         raise HTTPException(404, 'Nova instructions are unavailable')
+    if row.get('nova_build_mode') == 'preview':
+        raise HTTPException(409, 'This is an unchecked preview. Choose Verify Build before opening instructions.')
     bucket = generation_storage.client.storage.from_('generation-output')
     try:
         data = await asyncio.to_thread(bucket.download, f'{generation_id}/{REVIEWED_INSTRUCTIONS_FILE}')

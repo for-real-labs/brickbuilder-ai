@@ -11,6 +11,15 @@ vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { getSession: async ()
 beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
 
 describe('Nova agent API', () => {
+  it('requests verification of a saved revision with owner credentials', async () => {
+    vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'verified', message: 'Started' }));
+    await NovaToBricksApiService.verifyBuild('selected', 'owner-token');
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({
+      source_generation_id: 'selected', build_mode: 'verify', prompt: 'Verify Build',
+    });
+    expect(new Headers(vi.mocked(fetch).mock.calls[0][1]?.headers).get('Authorization')).toBe('Bearer owner-token');
+    await expect(NovaToBricksApiService.verifyBuild('')).rejects.toThrow('saved Nova preview');
+  });
   it('starts a native agent build with owner credentials', async () => {
     vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'set', message: 'Started' }));
     await expect(NovaToBricksApiService.generate({ ...DEFAULT_NOVA_OPTIONS, prompt: '  orbital launch site  ', authMode: 'native', imageBase64: 'pixels' }, 'token')).resolves.toMatchObject({ generation_id: 'set' });
@@ -20,7 +29,7 @@ describe('Nova agent API', () => {
     expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
     expect(JSON.parse(init?.body as string)).toEqual({
       prompt: 'orbital launch site', image_base64: 'pixels', image_media_type: 'image/png', detail_level: 40,
-      model: DEFAULT_NOVA_OPTIONS.model, auth_mode: 'native',
+      model: DEFAULT_NOVA_OPTIONS.model, auth_mode: 'native', build_mode: 'preview',
     });
   });
 
@@ -37,7 +46,7 @@ describe('Nova agent API', () => {
     vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'revision', message: 'Started' }));
     await NovaToBricksApiService.edit('original', 'Make the roof red', 'owner-token');
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({
-      source_generation_id: 'original', prompt: 'Make the roof red',
+      source_generation_id: 'original', prompt: 'Make the roof red', build_mode: 'preview',
     });
     expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/novaToBricks');
   });

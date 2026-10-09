@@ -74,8 +74,10 @@ or the Supabase generations table. Closing the modal preserves the model/prompt;
 press **Create** after connecting to start the build.
 
 The generation adapter selects Nova's **Agent** mode with **Full** tool
-permissions so builds run automatically in their isolated workspace. Nova's
-own step limit and model defaults apply. BrickBuilder has no default wall-clock
+permissions so builds run automatically in their isolated workspace. Initial
+prompts and edits select Nova's quick-preview workflow, low default reasoning
+effort where supported, and its shorter 24-step limit. **Verify Build** restores
+the normal model effort, complete workflow, and 150-step limit. BrickBuilder has no default wall-clock
 cutoff for Nova; builds continue until Nova finishes or the owner cancels them.
 An operator can explicitly set `NOVA_TIMEOUT_SECONDS` (60–86400 seconds);
 unset or `0` disables that limit. Progress labels come directly from Nova,
@@ -119,6 +121,29 @@ The model dropdown also exposes **SAM3D** and **Trellis** under **Other**. Those
 models use the existing image/text-to-3D pipeline rather than an LLM mode.
 
 ## Saved generations and edits
+
+All parts requests now save an **unchecked preview** first. The preview is ready
+for 3D viewing, parts estimates, downloads, and follow-up edits without a mandatory
+inventory/geometry/contact/instruction review or synchronous rendering pass.
+Nova still selects parts from the protected availability palette; preview results
+have no availability, quantity, connection, or buildability guarantee.
+
+Once satisfied with the design, its owner can click **Verify Build** beside the
+viewer. This creates another generation/revision, charges the existing one-credit
+rate on success (one additional credit), and runs Nova's normal full workflow.
+The selected saved Nova model ID is passed explicitly, so an earlier saved revision
+cannot silently verify a newer model in the same conversation. Lost workspaces
+recover the saved geometry through the existing import flow. Cancellation, private
+progress, notifications, and the displayed previous revision work as for AI edits.
+Typed edits always return to preview mode, including edits after verification.
+
+Apply `20261009000000_nova_preview_verification.sql` before deploying the API.
+`generations.nova_build_mode` is `preview` or `verify` for new Nova requests;
+only a completed verify generation has passed the independent import gate.
+Legacy rows remain NULL and retain their checked-instruction recovery behavior.
+Preview rows cannot serve or implicitly generate construction instructions;
+both the API and instructions page direct the user to **Verify Build** first.
+Previews do not create the versioned reviewed-instruction cache.
 
 On publication, the adapter imports the original hierarchical MPD, Nova's
 preview, and a flat physical-placement export for existing viewer/parts-list
@@ -173,7 +198,11 @@ Rebuild and deploy the Nova runtime together with the API for this change. The
 API requires `build_review_version: 1` before starting a generation, edit, or
 resume; older runtime images cannot silently skip the policy.
 
-The runtime wraps `publish_model` with a mandatory build review. It runs Nova's
+The runtime wraps `publish_model` with a mandatory build review for verification
+turns. Explicit preview turns skip that gate and publish visibly unchecked models.
+Preview export flattens geometry for the viewer in a private unprivileged workspace;
+it emits no review receipt or checked instructions. Verified export independently
+reviews the captured bytes as described below. It runs Nova's
 assembly/geometry validator and forces `contacts=all`, including above the
 500-placement automatic-contact threshold. Geometry errors, incomplete or
 truncated contact evidence, and multiple final connected groups block
@@ -228,6 +257,12 @@ docker run --rm --platform linux/amd64 --network none \
   -v "$PWD/backend/tests/nova_build_review_smoke.py:/smoke.py:ro" \
   ldraw-nova-app /smoke.py
 ```
+
+The runtime CI also runs `backend/tests/nova_preview_runtime_smoke.py` in the
+built image without network access. Scripted provider responses exercise a
+one-round preview, selected-revision verification, real palette/connection checks
+and rendering, both artifact exports, and per-turn usage accounting. No provider
+credentials or paid generation calls are used.
 
 ## Hosted runtime
 
@@ -319,6 +354,15 @@ Seven-day retention bounds idle cache growth; it is not a hard 5 GB limit on
 active references, private workspaces, or output files.
 
 ## Upgrading and attribution
+
+The quick-preview integration pins the immutable head of
+[Nova fork PR #5](https://github.com/jjohnson5253/ldraw-nova-docker/pull/5), including
+selected-revision verification and complete Claude usage accounting after preview
+interruption. The API requires `preview_build_version: 1` in addition to the cost,
+palette, and build-review capabilities before admitting new All parts jobs.
+Deploy the rebuilt Nova runtime together with this API/frontend after applying
+the new generation-mode migration. No production merge or deployment is performed
+by preparing these changes.
 
 For the repeatable shared staging workflow and per-PR Vercel connection, see
 [Testing Nova through BrickBuilder staging](nova-staging.md). Run
