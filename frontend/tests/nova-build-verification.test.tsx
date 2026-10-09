@@ -31,7 +31,7 @@ describe('Nova build verification', () => {
     try {
       act(() => root.render(<NovaBuildVerification verified busy={false} canVerify onVerify={vi.fn()} error="Unable to verify" />));
       expect(node.textContent).toContain('Build verified');
-      expect(node.textContent).toContain('Any new edit creates another quick preview');
+      expect(node.textContent).toContain('Any new edit creates a new unchecked preview');
       expect(node.querySelector('[role="alert"]')?.textContent).toBe('Unable to verify');
     } finally { act(() => root.unmount()); }
   });

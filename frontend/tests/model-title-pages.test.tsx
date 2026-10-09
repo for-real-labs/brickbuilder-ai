@@ -232,7 +232,7 @@ it('continues Nova AI edits while keeping the completed model, instructions, and
   expect(llm).not.toHaveBeenCalled();
   const viewer = container.querySelector('[data-testid="viewer"]')!;
   expect(viewer.textContent).toContain('Garden cottage');
-  expect(viewer.closest('figure')?.textContent).toContain('Creating a quick preview. You can close this window safely.');
+  expect(viewer.closest('figure')?.textContent).toContain('Creating your model preview. You can close this window safely.');
   expect(viewer.closest('figure')?.textContent).toContain('Refining the roof');
   expect(container.querySelector<HTMLButtonElement>('[aria-label="View instructions"]')!.disabled).toBe(false);
   expect(container.querySelector('[aria-label="Manually edit model"]')).toBeNull();

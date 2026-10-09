@@ -2275,7 +2275,7 @@ export default function GeneratedModel() {
                 topLeftOverlay={isModelEditing ? (
                   <div className="w-fit max-w-full rounded-xl bg-white/90 px-3 pb-3 shadow-sm backdrop-blur-sm">
                     {isNovaModel && <p className="pt-3 text-sm text-slate-600">
-                      {pendingGeneration?.nova_build_mode === 'verify' ? 'Full verification can take up to 30 min.' : 'Creating a quick preview.'}
+                      {pendingGeneration?.nova_build_mode === 'verify' ? 'Full verification can take up to 30 min.' : 'Creating your model preview.'}
                       {' '}You can close this window safely.
                     </p>}
                     {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)

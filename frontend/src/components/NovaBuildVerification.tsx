@@ -10,8 +10,8 @@ export function NovaBuildVerification({ verified, busy, canVerify, onVerify, err
       <h2>{verified ? 'Build verified' : 'Unchecked preview'}</h2>
     </div>
     <p className="mt-2 text-sm leading-6 text-slate-600">
-      {verified ? 'Connection and instruction checks passed. Any new edit creates another quick preview.' :
-        'Prompts and edits make quick previews. When the design is ready, verify connections, building steps, and the full build.'}
+      {verified ? 'Connection and instruction checks passed. Any new edit creates a new unchecked preview.' :
+        'Build and refine the full design first. When it looks right, Verify Build checks connections and building instructions.'}
     </p>
     <button type="button" disabled={busy || !canVerify} onClick={onVerify}
       title={!canVerify ? 'Only the owner can verify this build' : undefined}

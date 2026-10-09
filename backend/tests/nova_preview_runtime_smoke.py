@@ -21,6 +21,7 @@ os.environ['NOVA_SERVICE_TOKEN'] = 'smoke-local-only'
 import agent
 import llm_config
 import model_discovery
+import model_catalog
 from litellm.types.utils import (
     ChatCompletionDeltaToolCall, Delta, Function, ModelResponseStream, StreamingChoices, Usage,
 )
@@ -36,6 +37,8 @@ def brick(x, y):
     return f'1 4 {x} {y} 0 1 0 0 0 1 0 0 0 1 3001.dat\n'
 disconnected, connected = header + brick(0, 0) + brick(400, 0), header + brick(0, 0) + brick(0, -24)
 responses = [
+    ('run_toolkit', {'arguments': ['render', 'output/model.mpd', '--outdir', 'output/visual-review', '--views', 'home']}),
+    ('view_image', {}),
     ('publish_model', {'path': 'output/model.mpd'}),
     ('write_file', {'path': 'output/model.mpd', 'content': connected}),
     ('publish_model', {'path': 'output/model.mpd'}),
@@ -46,6 +49,8 @@ calls = []
 
 async def provider(**kwargs):
     name, body = responses[len(calls)]
+    if name == 'view_image':
+        body = {'path': str(next((root / 'data/output').rglob('visual-review/*.png')))}
     calls.append(kwargs)
     if name:
         delta = Delta(tool_calls=[ChatCompletionDeltaToolCall(
@@ -104,14 +109,18 @@ async def run():
     preview_usage = await turn(main.NewMessage(text='Create a preview', llm_model_id=entry['id'],
         options={'mode': 'agent', 'permissions': 'full', 'build_mode': 'preview'}))
     [preview] = store.models(chat['id'])
-    assert preview['validation_status'] == 'preview' and len(calls) == 1
+    assert preview['validation_status'] == 'preview' and len(calls) == 3
+    prompt = calls[0]['messages'][0]['content']
+    assert 'PREVIEW WORKFLOW OVERRIDE' in prompt and 'Design the full requested model' in prompt
+    assert calls[0]['reasoning_effort'] == model_catalog.entry_profile(entry)['default_effort']
     data = await asyncio.to_thread(worker.export_sources, chat['id'], preview['id'], 'preview')
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         assert archive.read('model.mpd').decode() == disconnected
         assert 'nova-instructions.ldr' not in archive.namelist()
         assert 'build-review.json' not in archive.namelist()
         assert len([line for line in archive.read('model.ldr').decode().splitlines() if line.startswith('1 ')]) == 2
-    print('Preview: one provider round, unchecked geometry export, no instruction cache, usage retained: PASS', flush=True)
+    assert any(message.get('_images_for_llm') for message in store.messages(chat['id']))
+    print('Preview: normal design effort, rendered visual review, disconnected geometry allowed, no instruction cache, usage retained: PASS', flush=True)
     verification_usage = await turn(main.VerifyBuild(llm_model_id=entry['id'], model_id=preview['id'], permissions='full'), True)
     checked = store.models(chat['id'])[-1]
     assert checked['id'] != preview['id'] and checked['validation_status'] == 'passed'
@@ -122,8 +131,8 @@ async def run():
         assert review['instructions']['failed_step_count'] == 0
         assert archive.read('model.mpd').decode() == connected
         assert archive.read('nova-instructions.ldr')
-    assert len(preview_usage['calls']) == 1 and len(verification_usage['calls']) == 3
-    assert len(calls) == 4
+    assert len(preview_usage['calls']) == 3 and len(verification_usage['calls']) == 3
+    assert len(calls) == 6
     print('Verify Build: selected revision, full publication/export gates, checked instructions, usage retained: PASS', flush=True)
 
 
