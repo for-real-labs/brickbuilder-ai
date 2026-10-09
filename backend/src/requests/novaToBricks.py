@@ -21,7 +21,7 @@ from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
-from ..utils.nova_service import NovaService
+from ..utils.nova_service import NovaService, REVIEWED_INSTRUCTIONS_FILE
 from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.posthog_client import track_error, track_image_conversion
 
@@ -136,6 +136,7 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
                     timeout=_generation_timeout())
             except asyncio.TimeoutError:
                 raise ValueError("Nova reached the build time limit. Its session is retained for continuation.") from None
+        result.require_build_review()
         if on_thinking:
             await on_thinking("\n\nSaving Nova's model and source files.\n\n")
         if on_progress:
@@ -162,6 +163,9 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
         bucket = generation_storage.client.storage.from_("generation-output")
         await asyncio.to_thread(bucket.upload, path=f"{generation_id}/nova-source.zip", file=result.archive,
                                 file_options={"content-type": "application/zip", "upsert": "true"})
+        await asyncio.to_thread(bucket.upload, path=f"{generation_id}/{REVIEWED_INSTRUCTIONS_FILE}",
+                                file=result.instructions.encode('utf-8'),
+                                file_options={"content-type": "text/plain", "upsert": "true"})
         await deduct_credits(user_info=user_info, auth_info=auth_info, credits_to_deduct=1,
                              operation_description=f"Nova generation ({request.model})")
         await generation_storage.update_status(generation_id, "completed")

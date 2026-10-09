@@ -3,7 +3,8 @@
 Nova mode runs the real upstream Nova agent. BrickBuilder supplies the existing
 composer, generation jobs, notifications, viewer and saved model collection.
 Nova owns prompts, tools, provider conversations, script execution, search,
-validation, rendering and publication. Follow-up edits continue the same Nova
+validation, rendering and publication. BrickBuilder adds a completion policy over
+Nova’s geometry and connection evidence. Follow-up edits continue the same Nova
 conversation and workspace.
 
 All parts mode now uses Brickwith's exact part/color catalog. See
@@ -82,7 +83,8 @@ without additional Claude or OpenAI summarization calls. Failed or cancelled
 Nova cards offer **Resume build**, preserving the original conversation,
 workspace and provider settings instead of starting over.
 Describe scale and part preferences in the prompt. There are no separate
-BrickBuilder planning prompts, tool schemas, render loop or acceptance rules.
+BrickBuilder planning prompts or render loop. The runtime publication wrapper
+and final import enforce the connectivity policy below.
 
 Set `TYPESAFE_API_KEY` in the ignored backend environment to configure Jev in
 Nova's protected settings. Nova chooses its own search workflow and fallback.
@@ -148,10 +150,11 @@ stays visible during the edit; progress, cancellation and “This can take up to
 
 The private `generation-output` bucket retains:
 
-- `nova-instructions.ldr`: cached physical placements with construction steps.
+- `nova-instructions-reviewed-v1.ldr`: reviewed physical placements with construction steps.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
-- `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
+- `nova-source.zip`: the original MPD, reviewed flat and instruction exports,
+  `build-review.json`, preview, original Nova BOM,
   conversation and bounded workspace source/review files.
 
 These files are read only through owner-checked backend operations. Public model
@@ -163,6 +166,68 @@ deployments assigning the correct mode through a database trigger. Cancellation 
 also cancel the active Nova turn; its durable session remains available.
 Old generations from the previous PR implementation retain source downloads but
 do not have a resumable Nova session.
+
+## Connectivity and instruction completion gate
+
+Rebuild and deploy the Nova runtime together with the API for this change. The
+API requires `build_review_version: 1` before starting a generation, edit, or
+resume; older runtime images cannot silently skip the policy.
+
+The runtime wraps `publish_model` with a mandatory build review. It runs Nova's
+assembly/geometry validator and forces `contacts=all`, including above the
+500-placement automatic-contact threshold. Geometry errors, incomplete or
+truncated contact evidence, and multiple final connected groups block
+publication. Nova receives a bounded report with affected steps and source
+locations so it can repair its generator and retry within the existing turn.
+
+Every prefix of the exact exported instruction sequence must contain one
+connected group, beginning with step 1. Pieces added together may connect through
+other pieces in that same step. A later bridge does not clear an earlier floating
+step. The exporter and reviewer share the same mapping of authored nested and
+repeated subassemblies to viewer steps; no geometry or steps are silently moved.
+The current flat viewer does not present detached subassembly callouts. Such
+assemblies, loose scenery, and intentionally separate objects must be resequenced
+or combined into connected steps to pass this conservative policy.
+
+The gate uses Nova's optimistic graph (confirmed and potential connector matches),
+not only its confirmed graph: the toolkit deliberately labels some ordinary
+stud/socket fits as potential. This enforces available connection evidence;
+it does not prove physical fit, clutch strength, stability, insertion order within
+a step, or general collision freedom. Missing metadata may require simpler parts
+or improvements to Nova's connector coverage. There is no agent-authored override.
+
+Before final export, the runtime independently reviews a captured model revision
+again in a private temporary workspace as `nobody`, using the immutable toolkit
+and no provider credentials. Agent-written review files cannot authorize
+completion. The API verifies the receipt's hashes against the imported source,
+display geometry, and instruction bytes before saving checked instructions,
+charging a generation credit, or marking the build completed. Failed builds retain
+their Nova session for repair/resume.
+
+Existing models ignore the old unchecked instruction cache. Their original source
+is reviewed on the first request, and a successful result is saved under the new
+versioned cache name. Failed review returns a repair message instead of serving
+unchecked steps. Existing saved model geometry and private source remain available.
+
+Run the focused unit tests:
+
+```sh
+backend/.venv/bin/python -m pytest \
+  backend/tests/test_nova_build_review.py backend/tests/test_nova_service.py \
+  backend/tests/test_nova_gateway.py backend/tests/test_nova_instructions.py \
+  backend/tests/test_nova_to_bricks.py
+```
+
+The real-library smoke suite can run without credentials or network against a
+prepared Nova image:
+
+```sh
+docker run --rm --platform linux/amd64 --network none \
+  --entrypoint /opt/ldraw-nova/.venv/bin/python \
+  -v "$PWD/backend/nova-service:/review:ro" \
+  -v "$PWD/backend/tests/nova_build_review_smoke.py:/smoke.py:ro" \
+  ldraw-nova-app /smoke.py
+```
 
 ## Hosted runtime
 

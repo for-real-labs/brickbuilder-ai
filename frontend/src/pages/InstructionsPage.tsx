@@ -8,7 +8,7 @@ import { MpdImageRenderer } from '../components/MpdImageRenderer';
 import { supabase } from '../lib/supabase';
 import { parseLDrawColors, getColorNameWithFallback, type LDrawColor } from '../utils/colorParser';
 import { LdrToMpdApiService } from '../services/ldrToMpdApi';
-import { NovaToBricksApiService } from '../services/novaToBricksApi';
+import { NovaToBricksApiService, NovaInstructionReviewError } from '../services/novaToBricksApi';
 import { GetGenerationApiService } from '../services/getGenerationApi';
 import { useAuth } from '../contexts/AuthContext';
 import { Loader2, Upload, Coins, X, Palette, ArrowLeft, LayoutDashboard } from 'lucide-react';
@@ -375,7 +375,7 @@ export function InstructionsPage() {
           
         } catch (err) {
           console.error('Failed to fetch generation data:');
-          setError(`Failed to load generation`);
+          setError(err instanceof NovaInstructionReviewError ? err.message : 'Failed to load generation');
           setLoading(false);
           return;
         }

@@ -128,3 +128,8 @@ describe('local provider API', () => {
     expect(safeProviderLoginUrl('fal', 'https://claude.ai')).toBeUndefined();
   });
 });
+
+it('explains rejected instruction review with an actionable repair message', async () => {
+  vi.mocked(fetch).mockResolvedValue(response({ detail: 'private runtime diagnostic' }, 409));
+  await expect(NovaToBricksApiService.instructions('guitar')).rejects.toThrow('Use Edit with AI');
+});
