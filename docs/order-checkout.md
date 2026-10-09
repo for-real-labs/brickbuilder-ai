@@ -64,6 +64,12 @@ Contact & delivery offers an unchecked `ship instructions post card` option.
 The info button opens an accessible modal with the model name, its saved render
 (or a fresh viewer capture), a theme based on the model’s subject, and a scannable
 QR code linking to `https://brickbuilder.ai/instructions?id=<generation id>`.
+When model data is available, the popup’s image area uses a transparent 3D viewer.
+Drag/touch rotates the model, scroll/pinch zooms it, and arrow keys plus +/- offer
+keyboard controls. Reset view restores the starting camera. The angle survives
+closing and reopening the popup; this changes the example preview only. The
+viewer mounts only while the popup is open.
+
 The card is a 6 × 4 inch landscape example preview with a consistent 3:2 aspect
 ratio on desktop and mobile. Fulfillment records the size as `6x4in`. If its model image is unavailable, the preview
 shows that state rather than substituting another model.
