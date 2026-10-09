@@ -69,7 +69,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
       <div className="checkout-postcard-dialog-content">
         <button type="button" className="checkout-postcard-close" aria-label="Close postcard preview" onClick={close}><X size={20} aria-hidden="true" /></button>
         <p id={descriptionId} className="checkout-postcard-description">Select this option to ship a post card with a QR code link to the instructions.</p>
-        <figure className="checkout-postcard-example">
+        <figure className="checkout-postcard-example" aria-label="6 by 4 inch instructions postcard">
           <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
               <span className="checkout-postcard-brand">BRICKBUILDER</span>
@@ -78,7 +78,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
             </div>
             <div className="checkout-postcard-details">
               <span className="checkout-postcard-edition">YOUR CUSTOM BUILD</span>
-              <h3>{modelName}</h3>
+              <h3 title={modelName}>{modelName}</h3>
               <a className="checkout-postcard-qr" href={instructionsUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open instructions for ${modelName}`} onClick={() => posthog.capture('order_instructions_postcard_link_clicked', { generation_id: generationId })}><InstructionsQrCode url={instructionsUrl} /></a>
               <span className="checkout-postcard-scan">Scan to start building</span>
               <span className="checkout-postcard-site">brickbuilder.ai</span>

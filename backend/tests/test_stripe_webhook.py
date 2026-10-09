@@ -28,8 +28,10 @@ def test_paid_order_saves_postcard_choice_and_instructions_link(monkeypatch, sel
     info = save.call_args.kwargs['shipping_info']
     assert info['instructions_postcard'] is expected
     if expected:
+        assert info['instructions_postcard_size'] == '6x4in'
         assert info['instructions_url'] == 'https://brickbuilder.ai/instructions?id=g%2F123'
     else:
+        assert 'instructions_postcard_size' not in info
         assert 'instructions_url' not in info
     owner_message = send.call_args.args[0]['html']
-    assert ('Include QR instructions postcard' if expected else 'Not requested') in owner_message
+    assert ('Include 6 × 4 inch QR instructions postcard' if expected else 'Not requested') in owner_message

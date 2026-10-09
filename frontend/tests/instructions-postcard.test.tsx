@@ -103,3 +103,10 @@ it('removes the extra popup headings and caption while keeping an accessible lab
   expect(dialog.textContent).not.toMatch(/keepsake|Your instructions, on a post card|Example post card for/i);
   expect(dialog.querySelector('h3')?.textContent).toBe(props.modelName);
 });
+
+
+it('identifies the standard 6 by 4 inch card without adding a visible caption', () => {
+  render(); open();
+  expect(container.querySelector('figure')?.getAttribute('aria-label')).toBe('6 by 4 inch instructions postcard');
+  expect(container.querySelector('figcaption')).toBeNull();
+});

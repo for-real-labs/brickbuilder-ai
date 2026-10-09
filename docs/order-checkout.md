@@ -57,7 +57,8 @@ Contact & delivery offers an unchecked `ship instructions post card` option.
 The info button opens an accessible modal with the model name, its saved render
 (or a fresh viewer capture), a theme based on the model’s subject, and a scannable
 QR code linking to `https://brickbuilder.ai/instructions?id=<generation id>`.
-The card is an example preview. If its model image is unavailable, the preview
+The card is a 6 × 4 inch landscape example preview with a consistent 3:2 aspect
+ratio on desktop and mobile. Fulfillment records the size as `6x4in`. If its model image is unavailable, the preview
 shows that state rather than substituting another model.
 
 The choice is sent as the boolean `shipInstructionsPostcard` in checkout creation.

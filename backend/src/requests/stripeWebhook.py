@@ -221,6 +221,8 @@ async def handle_checkout_session_completed(session):
         }
     }
     
+    if shipping_info['instructions_postcard']:
+        shipping_info['instructions_postcard_size'] = '6x4in'
     if shipping_info['instructions_postcard'] and generation_id:
         shipping_info['instructions_url'] = 'https://brickbuilder.ai/instructions?' + urlencode({'id': generation_id})
 
@@ -338,7 +340,7 @@ async def handle_checkout_session_completed(session):
                                         <tr><td style="padding: 8px; font-weight: bold;">Customer:</td><td style="padding: 8px;">{shipping_info.get('name', 'N/A') if shipping_info else 'N/A'}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">{customer_email}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Ship To:</td><td style="padding: 8px;">{addr_str}</td></tr>
-                                        <tr><td style="padding: 8px; font-weight: bold;">Instructions Post Card:</td><td style="padding: 8px;">{"Include QR instructions postcard" if shipping_info.get("instructions_postcard") else "Not requested"}</td></tr>
+                                        <tr><td style="padding: 8px; font-weight: bold;">Instructions Post Card:</td><td style="padding: 8px;">{"Include 6 × 4 inch QR instructions postcard" if shipping_info.get("instructions_postcard") else "Not requested"}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Stripe Session:</td><td style="padding: 8px;">{full_session.id}</td></tr>
                                     </table>
                                     <p style="margin-top: 16px;"><a href="https://dashboard.stripe.com/payments/{payment_intent}" style="color: #ef4444;">View in Stripe</a></p>

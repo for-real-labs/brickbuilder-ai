@@ -179,34 +179,24 @@
 .checkout-postcard-dialog-content { padding: 28px; position: relative; }
 .checkout-postcard-close { position: absolute; top: 12px; right: 12px; }
 .checkout-postcard-description { font-size: 14px; line-height: 1.6; color: #686c73; margin: 0; max-width: 510px; padding-right: 28px; }
-.checkout-postcard-example { margin: 24px 0; }
-.checkout-postcard { --postcard-ink: #723c2f; --postcard-paper: #fff5e8; --postcard-background: linear-gradient(140deg, #ebc9ab, #f8e9d6 50%, #d59d80); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); min-height: 300px; border-radius: 4px; background: var(--postcard-paper); box-shadow: 0 8px 24px #252b3614, 0 0 0 1px #252b3614; overflow: hidden; color: var(--postcard-ink); }
+.checkout-postcard-example { margin: 24px 0; container-type: inline-size; }
+.checkout-postcard { --postcard-ink: #723c2f; --postcard-paper: #fff5e8; --postcard-background: linear-gradient(140deg, #ebc9ab, #f8e9d6 50%, #d59d80); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); width: 100%; aspect-ratio: 3 / 2; grid-template-rows: minmax(0, 1fr); min-height: 0; border-radius: 4px; background: var(--postcard-paper); box-shadow: 0 8px 24px #252b3614, 0 0 0 1px #252b3614; overflow: hidden; color: var(--postcard-ink); }
 .checkout-postcard-space { --postcard-ink: #282f61; --postcard-paper: #f0f0fb; --postcard-background: radial-gradient(circle at 18% 25%, #a8acf0 0, transparent 30%), radial-gradient(circle at 80% 80%, #bc93c1 0, transparent 40%), linear-gradient(135deg, #252943, #565883); }
 .checkout-postcard-ocean { --postcard-ink: #175664; --postcard-paper: #eff9f7; --postcard-background: radial-gradient(ellipse at top left, #d0f3e8, transparent 65%), linear-gradient(160deg, #7bb9c5, #cae6df 55%, #3d90a7); }
 .checkout-postcard-nature { --postcard-ink: #3b5c40; --postcard-paper: #f3f5e9; --postcard-background: radial-gradient(ellipse at top right, #e7e6b8, transparent 70%), linear-gradient(145deg, #8aa68a, #c7d5b0 50%, #69886f); }
 .checkout-postcard-architecture { --postcard-ink: #35485b; --postcard-paper: #f6f4ef; --postcard-background: repeating-linear-gradient(90deg, transparent 0 29px, #ffffff18 29px 30px), repeating-linear-gradient(0deg, transparent 0 29px, #ffffff18 29px 30px), linear-gradient(145deg, #8fabbc, #dce0de 55%, #8b9aa8); }
-.checkout-postcard-art { padding: 18px; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 12px; background: var(--postcard-background); min-width: 0; }
-.checkout-postcard-brand { align-self: flex-start; font-size: 9px; font-weight: 800; letter-spacing: 1px; padding: 5px 7px; background: #ffffffde; color: #202124; border-radius: 2px; }
-.checkout-postcard-art > img { width: 100%; height: 200px; object-fit: contain; filter: drop-shadow(0 12px 12px #0002); }
-.checkout-postcard-art-caption { color: #fff; background: #18212f45; padding: 4px 8px; font-size: 10px; letter-spacing: .7px; }
-.checkout-postcard-details { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px 16px; min-width: 0; }
-.checkout-postcard-edition { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; }
-.checkout-postcard-details h3 { font-family: Georgia, serif; font-size: 24px; font-weight: 400; line-height: 1.15; overflow-wrap: anywhere; margin: 12px 0 18px; }
-.checkout-postcard-qr { display: block; width: 110px; height: 110px; max-width: 100%; background: #fff; border: 1px solid #0001; }
+.checkout-postcard-art { padding: clamp(8px, 3cqw, 18px); min-height: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 2cqw; background: var(--postcard-background); min-width: 0; }
+.checkout-postcard-brand { align-self: flex-start; font-size: clamp(6px, 1.5cqw, 9px); font-weight: 800; letter-spacing: .1em; padding: .8cqw 1.2cqw; background: #ffffffde; color: #202124; border-radius: 2px; }
+.checkout-postcard-art > img { width: 100%; height: 0; flex: 1; min-height: 0; object-fit: contain; filter: drop-shadow(0 12px 12px #0002); }
+.checkout-postcard-art-caption { color: #fff; background: #18212f45; padding: .7cqw 1.3cqw; font-size: clamp(7px, 1.65cqw, 10px); letter-spacing: .07em; }
+.checkout-postcard-details { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4cqw 2.65cqw; min-width: 0; min-height: 0; }
+.checkout-postcard-edition { font-size: clamp(6px, 1.32cqw, 8px); font-weight: 600; letter-spacing: .18em; }
+.checkout-postcard-details h3 { font-family: Georgia, serif; font-size: clamp(14px, 4cqw, 24px); font-weight: 400; line-height: 1.15; overflow-wrap: anywhere; margin: 2cqw 0 3cqw; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex-shrink: 0; }
+.checkout-postcard-qr { display: block; width: clamp(64px, 18.2cqw, 110px); aspect-ratio: 1; flex-shrink: 0; max-width: 100%; background: #fff; border: 1px solid #0001; }
 .checkout-postcard-qr svg { width: 100%; height: 100%; }
-.checkout-postcard-scan { margin-top: 10px; font-size: 10px; font-weight: 600; }
-.checkout-postcard-site { margin-top: 18px; font-size: 8px; letter-spacing: 1px; opacity: .65; }
+.checkout-postcard-scan { margin-top: 1.65cqw; font-size: clamp(7px, 1.65cqw, 10px); font-weight: 600; }
+.checkout-postcard-site { margin-top: 3cqw; font-size: clamp(6px, 1.32cqw, 8px); letter-spacing: .12em; opacity: .65; }
 .checkout-postcard-placeholder { display: flex; flex-direction: column; align-items: center; gap: 10px; color: #202124; font-size: 11px; text-align: center; }
 @media (max-width: 480px) {
   .checkout-postcard-dialog-content { padding: 24px 18px 18px; }
-  .checkout-postcard { min-height: 235px; }
-  .checkout-postcard-art { padding: 12px 8px; }
-  .checkout-postcard-art > img { height: 150px; }
-  .checkout-postcard-brand { font-size: 7px; letter-spacing: .5px; }
-  .checkout-postcard-details { padding: 20px 10px; }
-  .checkout-postcard-details h3 { font-size: 19px; margin: 10px 0 14px; }
-  .checkout-postcard-edition { font-size: 6px; letter-spacing: .8px; }
-  .checkout-postcard-qr { width: 90px; height: 90px; }
-  .checkout-postcard-scan { font-size: 8px; }
-  .checkout-postcard-site { margin-top: 14px; }
 }
