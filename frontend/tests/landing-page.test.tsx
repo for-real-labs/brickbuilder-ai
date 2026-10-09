@@ -410,7 +410,7 @@ describe('LandingPage', () => {
         mode.querySelector<HTMLButtonElement>('button[value="nova"]')!.click();
       });
       expect(model.value).toBe('gpt-5.6-sol');
-      expect(container.querySelector('#all-parts-warning')?.textContent).toContain('Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.');
+      expect(container.querySelector('#all-parts-warning')?.textContent).toContain('Prompts create quick, unchecked previews. Choose Verify Build when ready for full validation and building instructions.');
       expect(mode.getAttribute('aria-describedby')).toBe('all-parts-warning');
       const warning = container.querySelector('#all-parts-warning')!;
       expect(container.querySelector('[aria-label="Describe your model"]')!.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

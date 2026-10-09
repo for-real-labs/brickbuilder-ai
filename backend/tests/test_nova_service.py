@@ -9,9 +9,10 @@ import pytest
 from unittest.mock import AsyncMock
 
 from src.utils.nova_service import NovaService, read_export
+from nova_review_helpers import receipt
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'build_review_version': 1, 'preview_build_version': 1}
 
 
 @pytest.mark.parametrize('versions,error', [({}, 'cost limit'),
@@ -60,8 +61,12 @@ def test_final_import_blocks_a_runtime_publication_that_bypassed_the_parts_gate(
 
 def archive(files=None):
     out = io.BytesIO()
+    if files is None:
+        files = {'model.mpd': 'original hierarchical MPD', 'model.ldr': '1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat', 'preview.png': b'png'}
+        files['nova-instructions.ldr'] = files['model.ldr'] + '\n0 STEP\n'
+        files['build-review.json'] = json.dumps(receipt(files['model.mpd'], files['model.ldr'], files['nova-instructions.ldr']))
     with zipfile.ZipFile(out, 'w', zipfile.ZIP_DEFLATED) as z:
-        for name, value in (files or {'model.mpd': 'original hierarchical MPD', 'model.ldr': '1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat', 'preview.png': b'png'}).items():
+        for name, value in files.items():
             z.writestr(name, value)
     return out.getvalue()
 
@@ -112,7 +117,7 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
             chat_reads += 1
             return httpx.Response(200, json=before if chat_reads == 1 else after)
         if req.url.path.endswith('/messages'):
-            assert body == {'text': 'make the roof red', 'images': [], 'llm_model_id': 'model-config', 'options': {'mode': 'agent', 'permissions': 'full'}}
+            assert body == {'text': 'make the roof red', 'images': [], 'llm_model_id': 'model-config', 'options': {'mode': 'agent', 'permissions': 'full', 'build_mode': 'verify'}}
             return httpx.Response(202, json={'started': True})
         if req.url.path.endswith('/stream'):
             return httpx.Response(200, text='event: progress\ndata: {"summary":"Rendering"}\n\nevent: text\ndata: {"delta":"Nova reply"}\n\nevent: done\ndata: {}\n\n')
@@ -334,3 +339,43 @@ def test_nova_usage_is_read_for_only_this_generation_including_failed_edits(monk
     asyncio.run(run())
     assert ledger.values()['tokens_used'] == 150
     assert ledger.values()['estimated_cost_usd'] == '0.002'
+
+
+@pytest.mark.parametrize('change', ['missing', 'failed', 'source', 'display', 'instructions', 'steps', 'contacts', 'truncated', 'groups'])
+def test_completion_rejects_unreviewed_or_mismatched_artifacts(change):
+    from dataclasses import replace
+    result = read_export(archive(), {})
+    if change == 'missing': result = replace(result, build_review=None)
+    elif change == 'failed': result.build_review['passed'] = False
+    elif change == 'source': result = replace(result, mpd='different model')
+    elif change == 'display': result = replace(result, ldr='different display')
+    elif change == 'instructions': result = replace(result, instructions='different steps')
+    elif change == 'steps': result.build_review['instructions']['failed_step_count'] = 1
+    elif change == 'contacts': result.build_review['geometry']['contacts_checked'] = False
+    elif change == 'truncated': result.build_review['geometry']['contacts_truncated'] = True
+    elif change == 'groups': result.build_review['instructions']['final_component_count'] = 2
+    with pytest.raises(ValueError, match='build review failed'):
+        result.require_build_review()
+
+
+def test_readiness_requires_review_capability_before_a_turn():
+    async def run():
+        versions = {k: v for k, v in VERSIONS.items() if k != 'build_review_version'}
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
+                lambda req: httpx.Response(200, json=versions)))) as service:
+            with pytest.raises(ValueError, match='connectivity and instruction review'):
+                await service.ready()
+    asyncio.run(run())
+
+
+def test_completed_review_rejections_are_visible_without_echoing_runtime_content():
+    async def run():
+        def respond(req):
+            if req.url.path == '/integration/runtime': return httpx.Response(200, json=VERSIONS)
+            return httpx.Response(422, json={'detail': 'private runtime content'})
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(respond))) as service:
+            for operation in [service.export('chat', 'model', {}), service.instructions('model')]:
+                with pytest.raises(ValueError, match='Repair disconnected') as error:
+                    await operation
+                assert 'private runtime content' not in str(error.value)
+    asyncio.run(run())

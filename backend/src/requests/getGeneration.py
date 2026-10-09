@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional
+from typing import Dict, Literal, Optional
 from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field
@@ -23,6 +23,7 @@ class GetGenerationResponse(BaseModel):
     previous_completed_generation_id: Optional[str] = None
     endpoint: Optional[str] = None
     mode: GenerationMode = 'basic_bricks'
+    nova_build_mode: Optional[Literal['preview', 'verify']] = None
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
     prompt: Optional[str] = None
@@ -134,6 +135,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             previous_completed_generation_id=previous_id,
             endpoint=generation.get("endpoint"),
             mode=generation_mode(generation.get("endpoint"), generation.get("mode")),
+            nova_build_mode=generation.get("nova_build_mode"),
             generation_id=request.generation_id,
             status=status,
             prompt=prompt,

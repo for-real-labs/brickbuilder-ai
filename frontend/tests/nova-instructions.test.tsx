@@ -49,3 +49,32 @@ it('does not count embedded part geometry as extra building placements or steps'
   expect(model.steps[1].parts[0].filename).toBe('custom.dat');
   expect(LDrawParser.embeddedDefinitions(instructions)).toContain('0 FILE custom.dat');
 });
+
+it('shows the repair message and no steps when connection review fails', async () => {
+  const { NovaInstructionReviewError } = await import('../src/services/novaToBricksApi');
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'nova', endpoint: 'novaToBricks', status: 'completed' } as never);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockRejectedValue(new NovaInstructionReviewError());
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter initialEntries={['/instructions?id=nova']}><InstructionsPage /></MemoryRouter>));
+    expect(container.textContent).toContain('Use Edit with AI to repair disconnected parts and the build order');
+    expect(container.querySelector('[data-testid="instructions-viewer"]')).toBeNull();
+  } finally { act(() => root.unmount()); container.remove(); }
+});
+
+it('requires Verify Build for a preview without requesting an instruction review', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    generation_id: 'preview', endpoint: 'novaToBricks', nova_build_mode: 'preview', status: 'completed',
+  } as never);
+  const get = vi.spyOn(NovaToBricksApiService, 'instructions');
+  get.mockClear();
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter initialEntries={['/instructions?id=preview']}><InstructionsPage /></MemoryRouter>));
+    expect(container.textContent).toContain('Choose Verify Build on the model page');
+    expect(get).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="instructions-viewer"]')).toBeNull();
+  } finally { act(() => root.unmount()); container.remove(); }
+});

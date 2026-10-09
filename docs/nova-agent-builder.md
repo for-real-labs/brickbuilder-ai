@@ -3,7 +3,8 @@
 Nova mode runs the real upstream Nova agent. BrickBuilder supplies the existing
 composer, generation jobs, notifications, viewer and saved model collection.
 Nova owns prompts, tools, provider conversations, script execution, search,
-validation, rendering and publication. Follow-up edits continue the same Nova
+validation, rendering and publication. BrickBuilder adds a completion policy over
+Nova’s geometry and connection evidence. Follow-up edits continue the same Nova
 conversation and workspace.
 
 All parts mode now uses Brickwith's exact part/color catalog. See
@@ -73,8 +74,10 @@ or the Supabase generations table. Closing the modal preserves the model/prompt;
 press **Create** after connecting to start the build.
 
 The generation adapter selects Nova's **Agent** mode with **Full** tool
-permissions so builds run automatically in their isolated workspace. Nova's
-own step limit and model defaults apply. BrickBuilder has no default wall-clock
+permissions so builds run automatically in their isolated workspace. Initial
+prompts and edits select Nova's quick-preview workflow, low default reasoning
+effort where supported, and its shorter 24-step limit. **Verify Build** restores
+the normal model effort, complete workflow, and 150-step limit. BrickBuilder has no default wall-clock
 cutoff for Nova; builds continue until Nova finishes or the owner cancels them.
 An operator can explicitly set `NOVA_TIMEOUT_SECONDS` (60–86400 seconds);
 unset or `0` disables that limit. Progress labels come directly from Nova,
@@ -82,7 +85,8 @@ without additional Claude or OpenAI summarization calls. Failed or cancelled
 Nova cards offer **Resume build**, preserving the original conversation,
 workspace and provider settings instead of starting over.
 Describe scale and part preferences in the prompt. There are no separate
-BrickBuilder planning prompts, tool schemas, render loop or acceptance rules.
+BrickBuilder planning prompts or render loop. The runtime publication wrapper
+and final import enforce the connectivity policy below.
 
 Set `TYPESAFE_API_KEY` in the ignored backend environment to configure Jev in
 Nova's protected settings. Nova chooses its own search workflow and fallback.
@@ -118,6 +122,29 @@ models use the existing image/text-to-3D pipeline rather than an LLM mode.
 
 ## Saved generations and edits
 
+All parts requests now save an **unchecked preview** first. The preview is ready
+for 3D viewing, parts estimates, downloads, and follow-up edits without a mandatory
+inventory/geometry/contact/instruction review or synchronous rendering pass.
+Nova still selects parts from the protected availability palette; preview results
+have no availability, quantity, connection, or buildability guarantee.
+
+Once satisfied with the design, its owner can click **Verify Build** beside the
+viewer. This creates another generation/revision, charges the existing one-credit
+rate on success (one additional credit), and runs Nova's normal full workflow.
+The selected saved Nova model ID is passed explicitly, so an earlier saved revision
+cannot silently verify a newer model in the same conversation. Lost workspaces
+recover the saved geometry through the existing import flow. Cancellation, private
+progress, notifications, and the displayed previous revision work as for AI edits.
+Typed edits always return to preview mode, including edits after verification.
+
+Apply `20261009212219_nova_preview_verification.sql` before deploying the API.
+`generations.nova_build_mode` is `preview` or `verify` for new Nova requests;
+only a completed verify generation has passed the independent import gate.
+Legacy rows remain NULL and retain their checked-instruction recovery behavior.
+Preview rows cannot serve or implicitly generate construction instructions;
+both the API and instructions page direct the user to **Verify Build** first.
+Previews do not create the versioned reviewed-instruction cache.
+
 On publication, the adapter imports the original hierarchical MPD, Nova's
 preview, and a flat physical-placement export for existing viewer/parts-list
 consumers. Flattening uses Nova's own parser, part classification and occurrence
@@ -148,10 +175,11 @@ stays visible during the edit; progress, cancellation and “This can take up to
 
 The private `generation-output` bucket retains:
 
-- `nova-instructions.ldr`: cached physical placements with construction steps.
+- `nova-instructions-reviewed-v1.ldr`: reviewed physical placements with construction steps.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
-- `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
+- `nova-source.zip`: the original MPD, reviewed flat and instruction exports,
+  `build-review.json`, preview, original Nova BOM,
   conversation and bounded workspace source/review files.
 
 These files are read only through owner-checked backend operations. Public model
@@ -163,6 +191,78 @@ deployments assigning the correct mode through a database trigger. Cancellation 
 also cancel the active Nova turn; its durable session remains available.
 Old generations from the previous PR implementation retain source downloads but
 do not have a resumable Nova session.
+
+## Connectivity and instruction completion gate
+
+Rebuild and deploy the Nova runtime together with the API for this change. The
+API requires `build_review_version: 1` before starting a generation, edit, or
+resume; older runtime images cannot silently skip the policy.
+
+The runtime wraps `publish_model` with a mandatory build review for verification
+turns. Explicit preview turns skip that gate and publish visibly unchecked models.
+Preview export flattens geometry for the viewer in a private unprivileged workspace;
+it emits no review receipt or checked instructions. Verified export independently
+reviews the captured bytes as described below. It runs Nova's
+assembly/geometry validator and forces `contacts=all`, including above the
+500-placement automatic-contact threshold. Geometry errors, incomplete or
+truncated contact evidence, and multiple final connected groups block
+publication. Nova receives a bounded report with affected steps and source
+locations so it can repair its generator and retry within the existing turn.
+
+Every prefix of the exact exported instruction sequence must contain one
+connected group, beginning with step 1. Pieces added together may connect through
+other pieces in that same step. A later bridge does not clear an earlier floating
+step. The exporter and reviewer share the same mapping of authored nested and
+repeated subassemblies to viewer steps; no geometry or steps are silently moved.
+The current flat viewer does not present detached subassembly callouts. Such
+assemblies, loose scenery, and intentionally separate objects must be resequenced
+or combined into connected steps to pass this conservative policy.
+
+The gate uses Nova's optimistic graph (confirmed and potential connector matches),
+not only its confirmed graph: the toolkit deliberately labels some ordinary
+stud/socket fits as potential. This enforces available connection evidence;
+it does not prove physical fit, clutch strength, stability, insertion order within
+a step, or general collision freedom. Missing metadata may require simpler parts
+or improvements to Nova's connector coverage. There is no agent-authored override.
+
+Before final export, the runtime independently reviews a captured model revision
+again in a private temporary workspace as `nobody`, using the immutable toolkit
+and no provider credentials. Agent-written review files cannot authorize
+completion. The API verifies the receipt's hashes against the imported source,
+display geometry, and instruction bytes before saving checked instructions,
+charging a generation credit, or marking the build completed. Failed builds retain
+their Nova session for repair/resume.
+
+Existing models ignore the old unchecked instruction cache. Their original source
+is reviewed on the first request, and a successful result is saved under the new
+versioned cache name. Failed review returns a repair message instead of serving
+unchecked steps. Existing saved model geometry and private source remain available.
+
+Run the focused unit tests:
+
+```sh
+backend/.venv/bin/python -m pytest \
+  backend/tests/test_nova_build_review.py backend/tests/test_nova_service.py \
+  backend/tests/test_nova_gateway.py backend/tests/test_nova_instructions.py \
+  backend/tests/test_nova_to_bricks.py
+```
+
+The real-library smoke suite can run without credentials or network against a
+prepared Nova image:
+
+```sh
+docker run --rm --platform linux/amd64 --network none \
+  --entrypoint /opt/ldraw-nova/.venv/bin/python \
+  -v "$PWD/backend/nova-service:/review:ro" \
+  -v "$PWD/backend/tests/nova_build_review_smoke.py:/smoke.py:ro" \
+  ldraw-nova-app /smoke.py
+```
+
+The runtime CI also runs `backend/tests/nova_preview_runtime_smoke.py` in the
+built image without network access. Scripted provider responses exercise a
+one-round preview, selected-revision verification, real palette/connection checks
+and rendering, both artifact exports, and per-turn usage accounting. No provider
+credentials or paid generation calls are used.
 
 ## Hosted runtime
 
@@ -254,6 +354,15 @@ Seven-day retention bounds idle cache growth; it is not a hard 5 GB limit on
 active references, private workspaces, or output files.
 
 ## Upgrading and attribution
+
+The quick-preview integration pins the immutable head of
+[Nova fork PR #5](https://github.com/jjohnson5253/ldraw-nova-docker/pull/5), including
+selected-revision verification and complete Claude usage accounting after preview
+interruption. The API requires `preview_build_version: 1` in addition to the cost,
+palette, and build-review capabilities before admitting new All parts jobs.
+Deploy the rebuilt Nova runtime together with this API/frontend after applying
+the new generation-mode migration. No production merge or deployment is performed
+by preparing these changes.
 
 For the repeatable shared staging workflow and per-PR Vercel connection, see
 [Testing Nova through BrickBuilder staging](nova-staging.md). Run

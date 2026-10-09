@@ -24,6 +24,14 @@ logger = logging.getLogger(__name__)
 
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
+REVIEW_VERSION = 1
+REVIEWED_INSTRUCTIONS_FILE = 'nova-instructions-reviewed-v1.ldr'
+REVIEW_FAILURE = ('Nova build review failed. Repair disconnected parts and instruction steps '
+                  'that rely on later connections, then resume the build.')
+
+
+class NovaBuildReviewError(ValueError):
+    """A completed review rejected the model or its instruction sequence."""
 
 
 class NovaSessionUnavailableError(ValueError):
@@ -52,6 +60,29 @@ class NovaResult:
     preview: bytes | None
     archive: bytes
     session: dict
+    instructions: str | None = None
+    build_review: dict | None = None
+    build_mode: str = 'verify'
+
+    def require_preview(self):
+        if self.build_mode != 'preview' or not self.mpd.strip() or not self.ldr.strip():
+            raise ValueError('Nova did not return an unchecked preview export')
+
+    def require_build_review(self):
+        """Verify the private runtime's receipt belongs to all imported artifacts."""
+        review = self.build_review or {}
+        geometry, sequence = review.get('geometry', {}), review.get('instructions', {})
+        if (self.build_mode != 'verify' or review.get('version') != REVIEW_VERSION or review.get('passed') is not True
+                or geometry.get('complete') is not True or geometry.get('contacts_checked') is not True
+                or geometry.get('contacts_truncated') is not False
+                or geometry.get('optimistic_component_count') != 1
+                or sequence.get('checked') is not True or sequence.get('failed_step_count') != 0
+                or sequence.get('final_component_count') != 1
+                or not self.instructions
+                or any(review.get(key) != hashlib.sha256(content.encode('utf-8')).hexdigest()
+                       for key, content in [('source_sha256', self.mpd), ('display_sha256', self.ldr),
+                                            ('instructions_sha256', self.instructions or '')])):
+            raise NovaBuildReviewError(REVIEW_FAILURE)
 
 
 def read_export(data: bytes, session: dict) -> NovaResult:
@@ -72,7 +103,21 @@ def read_export(data: bytes, session: dict) -> NovaResult:
             preview = archive.read('preview.png') if 'preview.png' in names else None
             if not mpd.strip() or not ldr.strip():
                 raise ValueError('Nova published an empty model')
-            return NovaResult(mpd, ldr, preview, data, session)
+            instructions = archive.read('nova-instructions.ldr').decode('utf-8') if 'nova-instructions.ldr' in names else None
+            review = json.loads(archive.read('build-review.json')) if 'build-review.json' in names else None
+            export_mode = json.loads(archive.read('export-mode.json')) if 'export-mode.json' in names else {'build_mode': 'verify'}
+            if not isinstance(export_mode, dict) or export_mode.get('build_mode') not in {'preview', 'verify'}:
+                raise ValueError('Invalid Nova export mode')
+            build_mode = export_mode['build_mode']
+            if build_mode == 'preview':
+                publication = json.loads(archive.read('publication.json'))
+                if (not isinstance(publication, dict) or publication.get('validation_status') != 'preview'
+                        or instructions is not None or review is not None):
+                    raise ValueError('Invalid Nova preview export')
+            if review is not None and (not isinstance(review, dict)
+                    or any(not isinstance(review.get(key, {}), dict) for key in ('geometry', 'instructions'))):
+                raise ValueError('Invalid Nova build review receipt')
+            return NovaResult(mpd, ldr, preview, data, session, instructions, review, build_mode)
     except (zipfile.BadZipFile, KeyError, UnicodeError) as exc:
         raise ValueError('Nova did not return a complete model source archive') from exc
 
@@ -116,6 +161,10 @@ class NovaService:
             raise ValueError('Nova must be rebuilt with the $10 generation cost limit before All parts can run.')
         if info.get('parts_catalog_version') != 1:
             raise ValueError('Rebuild the Nova runtime with parts catalog restrictions before using All parts.')
+        if info.get('build_review_version') != REVIEW_VERSION:
+            raise ValueError('Rebuild the Nova runtime with connectivity and instruction review before using All parts.')
+        if info.get('preview_build_version') != 1:
+            raise ValueError('Rebuild the Nova runtime with quick previews and Verify Build before using All parts.')
         return info
 
     @staticmethod
@@ -162,9 +211,13 @@ class NovaService:
 
     async def export(self, chat_id: str, model_id: str, session: dict) -> NovaResult:
         path = f'integration/chats/{self.session_id(chat_id)}/export/{self.session_id(model_id)}'
+        if session.get('build_mode') == 'preview':
+            path += '?build_mode=preview'
         data = bytearray()
         try:
-            async with self.client.stream('GET', path, timeout=180) as response:
+            async with self.client.stream('GET', path, timeout=1830) as response:
+                if response.status_code == 422:
+                    raise NovaBuildReviewError(REVIEW_FAILURE)
                 response.raise_for_status()
                 if not response.headers.get('content-type', '').startswith('application/zip'):
                     raise ValueError('Nova source-export adapter is unavailable. Rebuild the private runtime.')
@@ -177,9 +230,12 @@ class NovaService:
         return await asyncio.to_thread(read_export, bytes(data), session)
 
     async def instructions(self, mpd: str) -> str:
+        await self.ready()
         try:
             response = await self.client.post('integration/instructions', content=mpd.encode('utf-8'),
-                headers={'Content-Type': 'text/plain'}, timeout=180)
+                headers={'Content-Type': 'text/plain'}, timeout=1830)
+            if response.status_code == 422:
+                raise NovaBuildReviewError(REVIEW_FAILURE)
             response.raise_for_status()
             if not response.headers.get('content-type', '').startswith('text/plain') or not response.text.strip():
                 raise ValueError('Nova instruction adapter is unavailable. Rebuild the private runtime.')
@@ -222,7 +278,8 @@ class NovaService:
         if configured.get('parts_catalog_version') != 1:
             raise ValueError('Nova did not confirm the parts catalog restrictions')
         session = {'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
-                   'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
+                   'auth_mode': request.auth_mode, 'build_mode': getattr(request, 'build_mode', 'verify'),
+                   'options': {'mode': 'agent', 'permissions': 'full', 'build_mode': getattr(request, 'build_mode', 'verify')}}
         if not previous and source:
             session['model_id'] = self.session_id(created['model_id'])
         session['parts_catalog'] = {'sha256': hashlib.sha256(catalog_csv.encode()).hexdigest(),
@@ -235,8 +292,16 @@ class NovaService:
         usage = current_generation_usage.get()
         track_usage = usage is not None and versions.get('generation_usage_version') == 1
         try:
-            await self.request('POST', f'api/chats/{chat_id}/messages', json={
-                'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']},
+            if getattr(request, 'build_mode', None) == 'verify':
+                selected_model = previous.get('model_id') if previous else session.get('model_id')
+                if not selected_model:
+                    raise ValueError('Choose a saved Nova preview before verifying a build.')
+                path = f'api/chats/{chat_id}/verify'
+                body = {'model_id': self.session_id(selected_model), 'llm_model_id': model_id, 'permissions': 'full'}
+            else:
+                path = f'api/chats/{chat_id}/messages'
+                body = {'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']}
+            await self.request('POST', path, json=body,
                 **({'headers': {'X-BrickBuilder-Generation-Id': usage.generation_id}} if track_usage else {}))
             started = True
             await self.wait_for_turn(chat_id, on_output, on_progress)
@@ -256,10 +321,14 @@ class NovaService:
             await save_session(session)
             result = await self.export(chat_id, latest['id'], session)
             from .parts_catalog import flat_model_inventory, reject_custom_parts
-            # Defense in depth: no unsupported model reaches storage or billing,
-            # even if the agent or runtime bypassed its publication tool.
-            reject_custom_parts(result.mpd)
-            catalog.validate(flat_model_inventory(result.ldr))
+            # Verified imports independently enforce the palette and receipt.
+            # Preview imports must be explicitly stamped as unchecked.
+            if session['build_mode'] == 'verify':
+                reject_custom_parts(result.mpd)
+                catalog.validate(flat_model_inventory(result.ldr))
+                result.require_build_review()
+            else:
+                result.require_preview()
             return result
         except BaseException:
             # Includes timeout and user cancellation. Never cancel someone else's turn
