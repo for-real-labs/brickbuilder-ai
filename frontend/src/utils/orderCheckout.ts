@@ -24,7 +24,8 @@ export function formatOrderPrice(cents: number) {
 
 export type DeliveryDetails = {
   email: string;
-  name: string;
+  firstName: string;
+  lastName: string;
   line1: string;
   line2: string;
   city: string;
@@ -32,9 +33,9 @@ export type DeliveryDetails = {
   postalCode: string;
 };
 
-export function getShippingContact(details: DeliveryDetails, country: 'US' | 'CA') {
+export function getShippingContact(details: DeliveryDetails, country: string) {
   return {
-    name: details.name.trim(),
+    name: [details.firstName.trim(), details.lastName.trim()].filter(Boolean).join(' '),
     address: {
       line1: details.line1.trim(), line2: details.line2.trim() || null,
       city: details.city.trim(), state: details.region.trim(),
