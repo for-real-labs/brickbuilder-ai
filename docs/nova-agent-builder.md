@@ -137,7 +137,7 @@ recover the saved geometry through the existing import flow. Cancellation, priva
 progress, notifications, and the displayed previous revision work as for AI edits.
 Typed edits always return to preview mode, including edits after verification.
 
-Apply `20261009000000_nova_preview_verification.sql` before deploying the API.
+Apply `20261009212219_nova_preview_verification.sql` before deploying the API.
 `generations.nova_build_mode` is `preview` or `verify` for new Nova requests;
 only a completed verify generation has passed the independent import gate.
 Legacy rows remain NULL and retain their checked-instruction recovery behavior.
