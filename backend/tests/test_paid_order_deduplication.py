@@ -1,5 +1,9 @@
 """Exercise duplicate webhook delivery protection against real PostgreSQL."""
 import asyncio
+import hashlib
+import hmac
+import json
+import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -9,7 +13,12 @@ from uuid import uuid4
 import pgserver
 import psycopg
 import pytest
+import stripe
+from fastapi import HTTPException, Request
+from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 
+from src.requests import stripeWebhook as webhook
 from src.utils.generation_storage import GenerationStorage
 
 MIGRATION = (Path(__file__).resolve().parents[2] /
@@ -138,3 +147,133 @@ def test_storage_skips_generation_update_when_database_suppresses_the_insert():
     assert asyncio.run(storage.update_payment_status('g', 2017, 'cs_order', 'pi_order')) is None
     client.table.assert_called_once_with('orders')
     orders.update.assert_not_called()
+
+
+class PostgresOrderClient:
+    """Run the storage method's Supabase query interface against the test DB.
+
+    Insert results come from PostgreSQL RETURNING, including suppressed rows;
+    the test does not prescribe whether an order was inserted.
+    """
+
+    def __init__(self, connection):
+        self.connection = connection
+
+    def table(self, name):
+        assert name in {'orders', 'generations'}
+        return PostgresOrderQuery(self.connection, name)
+
+
+class PostgresOrderQuery:
+    def __init__(self, connection, table):
+        self.connection = connection
+        self.table = table
+
+    def insert(self, data):
+        assert self.table == 'orders'
+        self.data = data
+        self.operation = 'insert'
+        return self
+
+    def update(self, data):
+        assert self.table == 'generations'
+        self.data = data
+        self.operation = 'update'
+        return self
+
+    def eq(self, column, value):
+        assert column == 'id'
+        self.generation = value
+        return self
+
+    def execute(self):
+        with self.connection.cursor(row_factory=dict_row) as cursor:
+            if self.operation == 'insert':
+                cursor.execute('''INSERT INTO public.orders
+                    (generation_id, amount_paid, stripe_session_id, stripe_payment_intent, shipping_info)
+                    VALUES (%s, %s, %s, %s, %s) RETURNING *''', (
+                    self.data['generation_id'], self.data['amount_paid'], self.data['stripe_session_id'],
+                    self.data['stripe_payment_intent'], Jsonb(self.data['shipping_info']),
+                ))
+            else:
+                cursor.execute('''UPDATE public.generations SET ordered = %s, updated_at = %s
+                    WHERE id = %s RETURNING *''',
+                    (self.data['ordered'], self.data['updated_at'], self.generation))
+            return SimpleNamespace(data=cursor.fetchall())
+
+
+def signed_event_request(payload, secret):
+    timestamp = int(time.time())
+    signature = hmac.new(secret.encode(), str(timestamp).encode() + b'.' + payload, hashlib.sha256).hexdigest()
+
+    async def receive():
+        return {'type': 'http.request', 'body': payload, 'more_body': False}
+
+    return Request({'type': 'http', 'method': 'POST', 'path': '/stripeWebhook',
+                    'headers': [(b'stripe-signature', f't={timestamp},v1={signature}'.encode())]}, receive)
+
+
+def test_failed_delivery_then_manual_and_automatic_retry_creates_one_order_and_one_email_each(db, monkeypatch):
+    db.execute(MIGRATION)
+    db.execute('DROP TABLE IF EXISTS public.generations')
+    db.execute('''CREATE TABLE public.generations (
+        id uuid PRIMARY KEY, ordered boolean DEFAULT false, updated_at timestamptz
+    )''')
+    generation = uuid4()
+    db.execute('INSERT INTO public.generations (id) VALUES (%s)', (generation,))
+    secret = 'test-webhook-secret'
+    monkeypatch.setenv('API_MODE', 'production')
+    monkeypatch.setenv('STRIPE_SECRET_KEY_LIVE', 'test-only-live-key')
+    monkeypatch.setenv('STRIPE_WEBHOOK_SECRET_LIVE', secret)
+    monkeypatch.setenv('RESEND_API_KEY', 'test-only-email-key')
+    monkeypatch.setattr(stripe, 'api_key', None)
+    monkeypatch.setattr(webhook, 'track_api_call', Mock())
+    monkeypatch.setattr(webhook, 'track_error', Mock())
+
+    shipping = {'name': 'Test Builder', 'address': {'line1': '123 Main', 'city': 'Chicago', 'country': 'US'}}
+    event_session = {
+        'id': 'cs_retry', 'metadata': {'generationId': str(generation), 'shippingAddressProvided': 'true'},
+        'amount_total': 2017, 'payment_status': 'paid', 'payment_intent': 'pi_retry',
+        'customer_details': {'email': 'buyer@example.com'}, 'collected_information': None,
+    }
+    full_session = stripe.StripeObject.construct_from({
+        **event_session, 'payment_intent': {'id': 'pi_retry', 'shipping': shipping},
+    }, None)
+    # Reproduce the failed original delivery, then successful manual recovery
+    # followed by Stripe's scheduled retry of the exact same signed event.
+    retrieve = Mock(side_effect=[stripe.AuthenticationError('Simulated authentication failure'), full_session, full_session])
+    monkeypatch.setattr(stripe.checkout.Session, 'retrieve', retrieve)
+    monkeypatch.setattr(stripe.PaymentIntent, 'retrieve', Mock(side_effect=stripe.AuthenticationError('Simulated authentication failure')))
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = PostgresOrderClient(db)
+    monkeypatch.setattr(webhook, 'generation_storage', storage)
+    send = Mock(return_value={'id': 'test-email'})
+    monkeypatch.setattr(webhook.resend.Emails, 'send', send)
+    payload = json.dumps({'id': 'evt_retry', 'object': 'event', 'type': 'checkout.session.completed',
+                          'data': {'object': event_session}}).encode()
+
+    async def deliver():
+        return await webhook.stripe_webhook(signed_event_request(payload, secret), {})
+
+    with pytest.raises(HTTPException) as failed:
+        asyncio.run(deliver())
+    assert failed.value.status_code == 500
+    assert db.execute('SELECT count(*) FROM public.orders').fetchone() == (0,)
+    send.assert_not_called()
+
+    assert asyncio.run(deliver()).success is True  # manual resend
+    first_order = db.execute('SELECT id FROM public.orders').fetchone()[0]
+    assert send.call_count == 2
+    assert asyncio.run(deliver()).success is True  # already scheduled automatic retry
+
+    rows = db.execute('''SELECT id, stripe_session_id, stripe_payment_intent, amount_paid
+        FROM public.orders''').fetchall()
+    assert rows == [(first_order, 'cs_retry', 'pi_retry', '20.17')]
+    assert db.execute('SELECT ordered FROM public.generations WHERE id = %s', (generation,)).fetchone() == (True,)
+    assert send.call_count == 2
+    assert [call.args[0]['to'] for call in send.call_args_list] == [
+        ['buyer@example.com'], ['jakejohnson3700@gmail.com'],
+    ]
+    assert send.call_args_list[1].args[0]['subject'] == f'New Order #{first_order} - $20.17'
+    assert retrieve.call_count == 3
+    assert all(call.kwargs['api_key'] == 'test-only-live-key' for call in retrieve.call_args_list)
