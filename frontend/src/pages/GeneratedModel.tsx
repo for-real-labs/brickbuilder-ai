@@ -362,10 +362,13 @@ export default function GeneratedModel() {
     const previousId = pendingGeneration?.previous_completed_generation_id || retainedEditSourceId;
     navigate(previousId ? `/generated-model?id=${encodeURIComponent(previousId)}&exact=1` : '/', { replace: true });
   };
-  const isNovaModel = pendingGeneration?.endpoint === 'novaToBricks' ||
+  const isLDrawUpload = pendingGeneration?.endpoint === 'uploadLdraw';
+  const orderable = pendingGeneration?.orderable !== false && !isLDrawUpload;
+  const isNovaModel = isLDrawUpload || pendingGeneration?.endpoint === 'novaToBricks' ||
     (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
-  const hasNovaSource = isNovaModel && pendingGeneration?.status === 'completed'
+  const hasNovaGeometry = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
+  const hasNovaSource = hasNovaGeometry && !isLDrawUpload;
 
   React.useEffect(() => { setNovaSourceError(''); }, [currentGenerationId]);
   
@@ -1436,7 +1439,8 @@ export default function GeneratedModel() {
   // Fetch price estimate when generation_id is available
   React.useEffect(() => {
     const fetchPriceEstimate = async () => {
-      if (!currentGenerationId) {
+      if (!currentGenerationId || !orderable) {
+        setPriceData(null);
         return;
       }
       
@@ -1458,7 +1462,7 @@ export default function GeneratedModel() {
     };
 
     fetchPriceEstimate();
-  }, [currentGenerationId, priceRefreshCounter, accessToken]);
+  }, [currentGenerationId, priceRefreshCounter, accessToken, orderable]);
 
   // Handle resize model functionality
   const handleResizeModel = React.useCallback(async (detailLevel: number) => {
@@ -1653,7 +1657,7 @@ export default function GeneratedModel() {
 
     try {
       // Start the async edit operation
-      const response = hasNovaSource
+      const response = hasNovaGeometry
         ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined)
         : await LlmToBricksApiService.generate({
           sourceGenerationId: currentGenerationId,
@@ -1674,7 +1678,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaGeometry, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
@@ -1692,7 +1696,7 @@ export default function GeneratedModel() {
   };
 
   const navigateToOrder = () => {
-    if (isModelEditing) return;
+    if (isModelEditing || !orderable) return;
     guardUnsavedChanges(() => navigate("/order", {
       state: {
         name: modelName,
@@ -2212,7 +2216,7 @@ export default function GeneratedModel() {
               type="button"
               aria-controls="edit-history-menu"
               aria-expanded={editHistoryOpen}
-              disabled={!currentGenerationId || isSavePolling}
+              disabled={!currentGenerationId || isSavePolling || isLDrawUpload}
               onClick={() => { void handleToggleEditHistory(); }}
               title={!currentGenerationId ? 'No edit history is available for this model' : 'View previous edits'}
               className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-150 hover:scale-[1.03] hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100 sm:px-4"
@@ -2280,7 +2284,7 @@ export default function GeneratedModel() {
               onManualEdit={() => { void handleEditModelClick(); }}
             />}
 
-        {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaSource) && currentGenerationId && (
+        {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaGeometry) && currentGenerationId && (
           <VoxelPromptEditor
             prompt={editPrompt}
             examplePrompt={pendingGeneration?.example_edit_prompt}
@@ -2299,7 +2303,10 @@ export default function GeneratedModel() {
           />
         )}
 
-          <ModelOrderCard
+          {!orderable ? <section className="model-refine-card" aria-label="Imported model ordering">
+            <h2 className="text-lg font-semibold text-slate-900">Edit your model before ordering</h2>
+            <p className="mt-2 text-sm leading-6 text-slate-600">This uploaded model has not been checked against Brickwith’s available parts and colors. Use AI editing to adapt the model; ordering becomes available after the edited model passes the parts check.</p>
+          </section> : <ModelOrderCard
             quote={priceData}
             loading={priceLoading || isSavePolling}
             updating={isModelEditing || isResizing}
@@ -2319,7 +2326,7 @@ export default function GeneratedModel() {
               });
               setShowPriceResize(prev => !prev);
             } : undefined}
-          />
+          />}
           {!isNovaModel && showPriceResize && priceData && !priceLoading && !isSavePolling && !isDemoModel && (
             <section className="model-refine-card" aria-label="Adjust kit size">
               <ResizeScaler
@@ -2406,7 +2413,7 @@ export default function GeneratedModel() {
 
             {/* Post / Remove from Community button — owners can toggle; logged-out
                 visitors see it too and are prompted to log in on click */}
-            {canShowCommunityButton && (
+            {canShowCommunityButton && !isLDrawUpload && (
               <button
                 type="button"
                 aria-label={isCommunity ? 'Remove from community' : 'Post to community'}

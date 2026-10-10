@@ -66,6 +66,8 @@ async def get_price(request: GetPriceRequest, auth_info: dict) -> GetPriceRespon
         generation = await generation_storage.get_generation(request.generation_id)
         if not generation:
             raise HTTPException(404, "Generation not found")
+        if generation.get('endpoint') == 'uploadLdraw':
+            raise HTTPException(409, 'Edit this uploaded model with AI to use Brickwith parts before ordering.')
         url = generation.get("parts_list_csv_url")
         if not url:
             raise HTTPException(400, "Parts list CSV not found")

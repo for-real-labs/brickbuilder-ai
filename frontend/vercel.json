@@ -9,12 +9,13 @@
     }
   ],
   "rewrites": [
+    { "source": "/use-ai-to-edit-ldraw", "destination": "/use-ai-to-edit-ldraw.html" },
     { "source": "/image-to-lego", "destination": "/image-to-lego.html" },
     { "source": "/photo-to-lego", "destination": "/photo-to-lego.html" },
     { "source": "/privacy", "destination": "/privacy.html" },
     { "source": "/terms", "destination": "/terms.html" },
     {
-      "source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|image-to-lego\\.html|photo-to-lego\\.html|assets/).*)",
+      "source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|use-ai-to-edit-ldraw\\.html|image-to-lego\\.html|photo-to-lego\\.html|assets/).*)",
       "destination": "/index.html"
     }
   ]

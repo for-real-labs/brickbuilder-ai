@@ -574,3 +574,30 @@ it('loads the saved edit example from the generated model response', async () =>
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
   expect(container.querySelector('textarea')?.placeholder).toBe('e.g. Make the fins blue and add a longer tail');
 });
+
+it('opens uploaded LDraw geometry for Nova editing while blocking both order controls', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'uploadLdraw', orderable: false,
+    status: 'completed', name: 'Imported castle', ldr_content: 'ldr' } as never);
+  const edit = vi.spyOn(NovaToBricksApiService, 'edit').mockRejectedValue(new Error('Test edit request'));
+  const basic = vi.spyOn(LlmToBricksApiService, 'generate');
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('h1')?.textContent).toBe('Imported castle');
+  expect(container.querySelector('[aria-label="Order my kit"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Order this model"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Imported model ordering"]')).toBeTruthy();
+  const input = container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement;
+  expect(input.disabled).toBe(false);
+  act(() => { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Adapt this to Brickwith parts'); input.dispatchEvent(new Event('input', { bubbles: true })); });
+  await act(async () => input.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(edit).toHaveBeenCalledWith('g', 'Adapt this to Brickwith parts', 'token');
+  expect(basic).not.toHaveBeenCalled();
+});
+
+it('enables ordering for a completed catalog-validated Nova revision of an uploaded model', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'novaToBricks', orderable: true,
+    status: 'completed', name: 'Imported castle', ldr_content: 'ldr' } as never);
+  vi.mocked(GetPriceApiService.getPrice).mockResolvedValue({ generation_id: 'g', total_price: 10, total_parts: 1, total_weight: .01, currency: 'USD', parts_breakdown: [] } as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('[aria-label="Imported model ordering"]')).toBeNull();
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')?.disabled).toBe(false);
+});

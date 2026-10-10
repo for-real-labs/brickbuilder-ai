@@ -1,3 +1,4 @@
+import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
@@ -213,6 +214,7 @@ function useBeatText(active: boolean) {
 }
 
 export default function LandingPage({ imageLandingPath }: { imageLandingPath?: ImageLandingPath } = {}) {
+  const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const { session, loading: authLoading } = useAuth();
   const { generations, error: activityError, trackGeneration } = useGenerationActivity(
@@ -954,7 +956,16 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               </div>
             </div>
 
-            <form
+            {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
+              <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding?.uploadTitle}</h2>
+              <p className="mb-4 text-left text-sm text-slate-600">{imageLanding?.uploadDescription}</p>
+              <LDrawUploadSection authToken={session?.access_token} onImported={id => {
+                localStorage.setItem('lastGenerationId', id);
+                if (!session) recordAnonymousGeneration(id);
+                navigate(`/generated-model?id=${encodeURIComponent(id)}&exact=1`);
+              }} />
+            </div>}
+            {!ldrawLanding && <form
               aria-label="Create a brick model"
               className="relative z-20 w-full landing-fade-in landing-delay-3"
               onSubmit={event => {
@@ -1065,7 +1076,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 </div>
               )}
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
-            </form>
+            </form>}
 
             {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
             {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
@@ -1457,6 +1468,11 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
           <Box className="h-4 w-4" />
           GLB to LEGO
         </button>
+        <a href="/use-ai-to-edit-ldraw"
+          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
+          onClick={() => posthog.capture('landing_header_upload_ldraw_clicked')}>
+          <Box aria-hidden="true" className="h-4 w-4" />Upload LDraw
+        </a>
         <button
           className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
           onClick={() => navigate("/community")}

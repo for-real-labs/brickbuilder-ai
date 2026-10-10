@@ -47,6 +47,7 @@ class NovaToBricksRequest(LlmToBricksRequest):
     auth_mode: Literal["api_key", "native"] = "api_key"
     _nova_session: dict | None = PrivateAttr(default=None)
     _nova_source_ldr: str | None = PrivateAttr(default=None)
+    _nova_uploaded_source: bool = PrivateAttr(default=False)
 
 
 async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
@@ -57,8 +58,11 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         require_generation_access(source, auth_info)
         owned = True
     except HTTPException:
+        if source.get('endpoint') == 'uploadLdraw':
+            raise
         owned = False
-    if owned:
+    request._nova_uploaded_source = owned and source.get('endpoint') == 'uploadLdraw'
+    if owned and source.get('endpoint') != 'uploadLdraw':
         try:
             request._nova_session = await _owned_session(request.generation_id, auth_info)
         except HTTPException as exc:
@@ -70,7 +74,7 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             if source.get('status') != 'completed':
                 return
     # Completed geometry is public; sessions and source archives are not.
-    if source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
+    if source.get('status') != 'completed' or source.get('endpoint') not in {'novaToBricks', 'uploadLdraw'}:
         raise HTTPException(404, 'Generation not found')
     if not source.get('ldr_url'):
         if request._nova_session:
@@ -209,7 +213,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,
         endpoint="novaToBricks", model_3d=request.model,
-        edit_generation_id=request.generation_id if request._nova_session else None,
+        edit_generation_id=request.generation_id if request._nova_session or request._nova_uploaded_source else None,
     )
     task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info, native_progress=True))
     _background_tasks.add(task)

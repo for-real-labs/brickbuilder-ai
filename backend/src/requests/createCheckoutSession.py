@@ -96,6 +96,8 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         if not generation:
             raise HTTPException(status_code=404, detail="Generation not found")
         require_generation_access(generation, auth_info, allow_community=True)
+        if generation.get("endpoint") == "uploadLdraw":
+            raise HTTPException(409, "Edit this uploaded model with AI to use Brickwith parts before ordering.")
         if generation.get("status") != "completed":
             raise HTTPException(status_code=400, detail="Only completed models can be ordered")
         parts_list_csv_url = generation.get("parts_list_csv_url")

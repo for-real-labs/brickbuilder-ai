@@ -44,6 +44,7 @@ export default function App() {
         <Routes>
           {/* Public */}
           <Route path="/" element={<LandingPage />} />
+          <Route path="/use-ai-to-edit-ldraw" element={<LandingPage imageLandingPath="use-ai-to-edit-ldraw" />} />
           <Route path="/image-to-lego" element={<LandingPage imageLandingPath="image-to-lego" />} />
           <Route path="/photo-to-lego" element={<LandingPage imageLandingPath="photo-to-lego" />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />

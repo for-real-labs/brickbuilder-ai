@@ -184,3 +184,12 @@ def test_shipping_address_rejects_invalid_or_unexpected_fields(change):
     contact = {**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], **change}}
     with pytest.raises(ValidationError):
         checkout.CreateCheckoutSessionRequest(shippingAddress=contact)
+
+
+def test_imported_ldraw_cannot_be_ordered_even_if_a_parts_list_is_attached(setup):
+    storage, create, _ = setup
+    storage.return_value['endpoint'] = 'uploadLdraw'
+    with pytest.raises(HTTPException) as error:
+        run()
+    assert error.value.status_code == 409
+    create.assert_not_called()

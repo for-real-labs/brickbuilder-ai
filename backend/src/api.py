@@ -34,6 +34,7 @@ from .requests.llmToBricks import llm_to_bricks, llm_to_bricks_stream, LlmToBric
 from .requests.novaInstructions import get_nova_instructions
 from .requests.generationEmail import NotificationEmailRequest, save_notification_email, notification_status
 from .utils.generation_email import start_email_worker
+from .requests.uploadLdraw import upload_ldraw, UploadLdrawResponse
 from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
 from .requests.localProviders import router as local_providers_router
 from .utils.local_provider_connections import local_provider_connections, require_local_development
@@ -118,6 +119,11 @@ async def generation_notification_status(generation_id: UUID, auth_info: dict = 
 async def generation_notification_email(generation_id: UUID, request: NotificationEmailRequest,
                                         auth_info: dict = Depends(get_optional_identity)):
     return await save_notification_email(str(generation_id), request, auth_info)
+
+
+@app.post('/uploadLdraw', response_model=UploadLdrawResponse)
+async def upload_ldraw_endpoint(file: UploadFile = File(...), auth_info: dict = Depends(get_user_with_optional_auth)):
+    return await upload_ldraw(file, auth_info)
 
 
 @app.post("/novaToBricks", response_model=ImageToBricksResponse)

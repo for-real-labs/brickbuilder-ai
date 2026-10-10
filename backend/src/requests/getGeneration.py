@@ -22,6 +22,7 @@ class GetGenerationResponse(BaseModel):
     version: int = 1
     previous_completed_generation_id: Optional[str] = None
     endpoint: Optional[str] = None
+    orderable: bool = True
     mode: GenerationMode = 'basic_bricks'
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
@@ -74,7 +75,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
         # Sharing a finished model must not grant access to its owner's live
         # output, generation history, or editing/claiming permissions. Keep this
         # exception on the model-read endpoint instead of the shared auth helper.
-        if generation.get("status") != "completed":
+        if generation.get("status") != "completed" or generation.get("endpoint") == "uploadLdraw":
             require_generation_access(generation, auth_info)
 
         # Extract fields
@@ -133,6 +134,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             version=generation.get("version", 1),
             previous_completed_generation_id=previous_id,
             endpoint=generation.get("endpoint"),
+            orderable=generation.get("endpoint") != "uploadLdraw",
             mode=generation_mode(generation.get("endpoint"), generation.get("mode")),
             generation_id=request.generation_id,
             status=status,
