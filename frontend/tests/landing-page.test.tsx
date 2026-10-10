@@ -77,6 +77,33 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
+  it.each([
+    { saved: undefined, expected: 'nova' },
+    { saved: 'unknown', expected: 'nova' },
+    { saved: 'nova', expected: 'nova' },
+    { saved: 'llm', expected: 'llm' },
+    { saved: '3d', expected: '3d' },
+  ])('restores saved mode $saved as $expected after login', async ({ saved, expected }) => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'A red castle', generationMethod: saved }));
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const mode = container.querySelector('#landing-builder-mode')!;
+      expect(mode.querySelector(`button[value="${expected === '3d' ? 'llm' : expected}"]`)?.getAttribute('aria-pressed')).toBe('true');
+      expect(Boolean(container.querySelector('#all-parts-warning'))).toBe(expected === 'nova');
+      expect((container.querySelector('#landing-render-model') as HTMLSelectElement).value).toBe(expected === '3d' ? 'sam3d' : DEFAULT_LLM_MODEL);
+      expect((container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement).value).toBe('A red castle');
+      expect(sessionStorage.getItem('pendingLandingState')).toBeNull();
+    } finally {
+      act(() => root.unmount());
+      sessionStorage.removeItem('pendingLandingState');
+    }
+  });
+
   it.each(['sam3d', 'trellis'])('routes Other model %s to the 3D provider and returns to Basic bricks for LLM models', async selected => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -160,6 +187,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
+      act(() => container.querySelector<HTMLButtonElement>('#landing-builder-mode button[value="llm"]')!.click());
       const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
       await act(async () => {
@@ -350,6 +378,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
+      act(() => container.querySelector<HTMLButtonElement>('#landing-builder-mode button[value="llm"]')!.click());
       await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!.click());
       expect(start).not.toHaveBeenCalled();
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ has_prompt: false, has_image: false }));
@@ -384,7 +413,7 @@ describe('LandingPage', () => {
     }
   });
 
-  it('keeps the selected model when switching modes and routes All parts through Nova', async () => {
+  it('defaults to All parts, routes through Nova, and keeps the model when switching to Basic bricks', async () => {
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
@@ -400,14 +429,13 @@ describe('LandingPage', () => {
       await act(async () => root.render(<LandingPage />));
       const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
-      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(mode.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('false');
       expect(Array.from(mode.querySelectorAll('button')).map(button => button.textContent)).toEqual(['Basic bricks', 'All parts']);
-      expect(container.querySelector('#all-parts-warning')).toBeNull();
       expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       await act(async () => {
         model.value = 'gpt-5.6-sol';
         model.dispatchEvent(new Event('change', { bubbles: true }));
-        mode.querySelector<HTMLButtonElement>('button[value="nova"]')!.click();
       });
       expect(model.value).toBe('gpt-5.6-sol');
       expect(container.querySelector('#all-parts-warning')?.textContent).toContain('Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.');
@@ -415,7 +443,6 @@ describe('LandingPage', () => {
       const warning = container.querySelector('#all-parts-warning')!;
       expect(container.querySelector('[aria-label="Describe your model"]')!.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(warning.compareDocumentPosition(mode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'nova' });
       const input = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
       act(() => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Spaceport with launch tower, rover, and research lab');
@@ -423,6 +450,7 @@ describe('LandingPage', () => {
       });
       await act(async () => findButton('Create').click());
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: 'gpt-5.6-sol', prompt: input.value }), undefined);
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(container.textContent).toContain('1 in progress');
@@ -433,6 +461,8 @@ describe('LandingPage', () => {
         mode.querySelector<HTMLButtonElement>('button[value="llm"]')!.click();
       });
       expect(model.value).toBe('gpt-5.6-sol');
+      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'llm' });
       expect(container.querySelector('#all-parts-warning')).toBeNull();
       await act(async () => findButton('Create').click());
       expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: input.value, model: 'gpt-5.6-sol' }), undefined);
@@ -494,8 +524,7 @@ describe('LandingPage', () => {
       await act(async()=>{
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value')!.set!.call(input,'A red lighthouse');
         input.dispatchEvent(new Event('input',{bubbles:true}));
-        const mode=container.querySelector<HTMLDivElement>('#landing-builder-mode')!;
-        mode.querySelector<HTMLButtonElement>('button[value="nova"]')!.click();
+        container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
       });
       expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Connect Claude');
       expect(nova).not.toHaveBeenCalled();
@@ -600,7 +629,7 @@ describe('LandingPage', () => {
   });
 
   it('shows the compact controls in the browser and native shell', () => {
-    expect(DEFAULT_GENERATION_METHOD).toBe('llm');
+    expect(DEFAULT_GENERATION_METHOD).toBe('nova');
     expect(DEFAULT_LLM_MODEL).toBe('claude-opus-5-5');
     const verify = () => {
       const container = document.createElement('div');
@@ -614,7 +643,7 @@ describe('LandingPage', () => {
       const mode = form.querySelector('#landing-builder-mode') as HTMLDivElement;
       const upload = form.querySelector('[aria-label="Upload image"]')!;
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
-      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(mode.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
       expect(model.parentElement!.parentElement).toBe(mode.parentElement);
       expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(mode.querySelector('select')).toBeNull();

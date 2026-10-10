@@ -67,7 +67,7 @@ const MODEL_QUALITY_PRESETS: { label: string; value: ModelQuality; modelOption: 
 const DEFAULT_PROMPT_OPTION = "a";
 
 type GenerationMethod = "3d" | "llm" | "nova";
-export const DEFAULT_GENERATION_METHOD: GenerationMethod = "llm";
+export const DEFAULT_GENERATION_METHOD: GenerationMethod = "nova";
 export type ThreeDModel = "sam3d" | "trellis";
 export const DEFAULT_THREE_D_MODEL: ThreeDModel = "sam3d";
 const LLM_PROVIDER_GROUPS: Array<{ provider: LlmProvider; label: string }> = [
@@ -386,7 +386,8 @@ export default function LandingPage() {
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      setGenerationMethod(payload.generationMethod === '3d' ? '3d' : payload.generationMethod === 'nova' ? 'nova' : 'llm');
+      setGenerationMethod(payload.generationMethod === '3d' || payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
+        ? payload.generationMethod : DEFAULT_GENERATION_METHOD);
       if (payload.threeDModel === 'sam3d' || payload.threeDModel === 'trellis') setThreeDModel(payload.threeDModel);
       if (payload.llmModel && getLlmModelOption(payload.llmModel)) setLlmModel(payload.llmModel);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
