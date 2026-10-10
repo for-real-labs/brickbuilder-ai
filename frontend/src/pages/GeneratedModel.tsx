@@ -39,7 +39,6 @@ import { ResizeModelApiService } from "../services/resizeModelApi";
 import { LlmToBricksApiService } from "../services/llmToBricksApi";
 import { isAgentGeneration } from "../utils/agentGeneration";
 import { NovaToBricksApiService } from "../services/novaToBricksApi";
-import { NovaBuildVerification } from "../components/NovaBuildVerification";
 import { VoxelPromptEditor } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
@@ -49,7 +48,7 @@ import { GetGenerationLikeStatusApiService } from "../services/getGenerationLike
 import { ToggleGenerationLikeApiService } from "../services/toggleGenerationLikeApi";
 import { ClaimGenerationApiService } from "../services/claimGenerationApi";
 import { UpdateModelApiService, UpdateModelResponse } from "../services/updateModelApi";
-import { getAnonymousGenerationIds, recordAnonymousGeneration } from "../utils/anonGenerations";
+import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import { ModelEditControls } from "../components/ModelEditControls";
 import { ModelOrderCard } from "../components/ModelOrderCard";
@@ -211,7 +210,7 @@ export default function GeneratedModel() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const params = new URLSearchParams(location.search);
-  const { user: currentUser, userProfile: currentUserProfile, updateUsername, isSupabaseConfigured } = useAuth();
+  const { user: currentUser, userProfile: currentUserProfile, updateUsername } = useAuth();
   
   // Generation fetch state
   const { markViewed, refresh: refreshNotifications } = useGenerationNotifications();
@@ -309,9 +308,6 @@ export default function GeneratedModel() {
   const [isExportingVideo, setIsExportingVideo] = React.useState(false);
   const [isDownloadingNovaSource, setIsDownloadingNovaSource] = React.useState(false);
   const [novaSourceError, setNovaSourceError] = React.useState('');
-  const [isVerifyingNova, setIsVerifyingNova] = React.useState(false);
-  const [novaVerifyError, setNovaVerifyError] = React.useState<string | null>(null);
-  const [displayedNovaBuildMode, setDisplayedNovaBuildMode] = React.useState<'preview' | 'verify' | null>(null);
   const exportCaptureApiRef = React.useRef<ExportCaptureApi | null>(null);
   const exportMenuRef = React.useRef<HTMLDivElement | null>(null);
   const [editHistoryOpen, setEditHistoryOpen] = React.useState(false);
@@ -357,7 +353,7 @@ export default function GeneratedModel() {
     searchParams.get('id') === currentGenerationId || retainedEditSourceId === currentGenerationId ||
     pendingGeneration?.previous_completed_generation_id === currentGenerationId
   ));
-  const isModelEditing = isVerifyingNova || isPromptEditing || Boolean(editGenerationId) ||
+  const isModelEditing = isPromptEditing || Boolean(editGenerationId) ||
     (generationLoading && canKeepModelVisible && retainedEditSourceId === currentGenerationId);
   const showModelPage = !generationError && (!generationLoading || canKeepModelVisible);
   const handleEditCancelled = () => {
@@ -370,9 +366,8 @@ export default function GeneratedModel() {
     (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
   const hasNovaSource = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
-  const isNovaPreview = isNovaModel && displayedNovaBuildMode === 'preview';
 
-  React.useEffect(() => { setNovaSourceError(''); setNovaVerifyError(null); }, [currentGenerationId]);
+  React.useEffect(() => { setNovaSourceError(''); }, [currentGenerationId]);
   
   // Function to load model data from various sources
   const getModelData = () => {
@@ -563,7 +558,6 @@ export default function GeneratedModel() {
             
             await processCompletedGeneration(urlGenerationId, {
               generation_id: statusResponse.generation_id,
-              nova_build_mode: statusResponse.nova_build_mode,
               name: statusResponse.name,
               prompt: statusResponse.prompt || 'Your Model',
               ldr_content: statusResponse.ldr_content,
@@ -606,7 +600,6 @@ export default function GeneratedModel() {
             }
             await processCompletedGeneration(stateGenerationId, {
               generation_id: statusResponse.generation_id,
-              nova_build_mode: statusResponse.nova_build_mode,
               name: statusResponse.name,
               prompt: statusResponse.prompt || stateData?.modelName || 'Your Model',
               ldr_content: statusResponse.ldr_content,
@@ -645,7 +638,6 @@ export default function GeneratedModel() {
           if (statusResponse.status === 'completed' && statusResponse.ldr_content) {
             // Store generation ID for edit mode
             setCurrentGenerationId(generationId);
-            setDisplayedNovaBuildMode(statusResponse.nova_build_mode ?? null);
             
             // Set reference image URL for voxel editor
             if (statusResponse.processed_image_url) {
@@ -727,7 +719,6 @@ export default function GeneratedModel() {
       generationId: string,
       data: { 
         generation_id: string;
-        nova_build_mode?: 'preview' | 'verify' | null;
         prompt: string; 
         name?: string | null;
         ldr_content: string; 
@@ -770,7 +761,6 @@ export default function GeneratedModel() {
       if (!mpdContent) throw new Error("The model is saved, but its preview could not be loaded. Please try again shortly.");
       // Keep the previous model intact until the replacement preview is ready.
       setCurrentGenerationId(generationId);
-      setDisplayedNovaBuildMode(data.nova_build_mode ?? null);
       setXyzrgbUrl(data.xyzrgb_url);
       setProblematicXyzrgbUrl(data.problematic_xyzrgb_url);
       setLdrContent(data.ldr_content);
@@ -1686,26 +1676,6 @@ export default function GeneratedModel() {
     }
   }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaSource, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
-  const handleVerifyNovaBuild = async () => {
-    if (!currentGenerationId || !hasNovaSource || isModelEditing || isSavePolling) return;
-    posthog.capture('generated_model_nova_verify_build_clicked', {
-      generation_id: currentGenerationId, build_mode: pendingGeneration?.nova_build_mode ?? 'legacy',
-    });
-    setIsVerifyingNova(true);
-    setNovaVerifyError(null);
-    try {
-      const response = await NovaToBricksApiService.verifyBuild(currentGenerationId, accessToken || undefined);
-      localStorage.setItem('lastGenerationId', response.generation_id);
-      if (!currentUser) recordAnonymousGeneration(response.generation_id);
-      refreshNotifications();
-      navigate(`/generated-model?id=${encodeURIComponent(response.generation_id)}`, { replace: true,
-        state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: 'novaToBricks' } });
-    } catch (error) {
-      setNovaVerifyError(error instanceof Error ? error.message : 'Unable to verify this build');
-      posthog.capture('generated_model_nova_verify_build_failed', { generation_id: currentGenerationId });
-    } finally { setIsVerifyingNova(false); }
-  };
-
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
   const guardUnsavedChanges = (action: PendingExitAction) => {
@@ -2274,10 +2244,7 @@ export default function GeneratedModel() {
                 animateModelBuild
                 topLeftOverlay={isModelEditing ? (
                   <div className="w-fit max-w-full rounded-xl bg-white/90 px-3 pb-3 shadow-sm backdrop-blur-sm">
-                    {isNovaModel && <p className="pt-3 text-sm text-slate-600">
-                      {pendingGeneration?.nova_build_mode === 'verify' ? 'Full verification can take up to 30 min.' : 'Creating your model preview.'}
-                      {' '}You can close this window safely.
-                    </p>}
+                    {isNovaModel && <p className="pt-3 text-sm text-slate-600">This can take up to 30 min. You can close this window safely.</p>}
                     {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
                       ? <LlmGenerationOutput generationId={editGenerationId} active />
                       : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
@@ -2306,15 +2273,6 @@ export default function GeneratedModel() {
 
 </div>
 <aside className="model-workspace-sidebar" aria-label="Refine and order your model">
-        {isNovaModel && <NovaBuildVerification
-          verified={displayedNovaBuildMode === 'verify'}
-          busy={isVerifyingNova || (isModelEditing && pendingGeneration?.nova_build_mode === 'verify')}
-          canVerify={hasNovaSource && !isModelEditing && !isSavePolling && (
-            isGenerationOwner || !isSupabaseConfigured ||
-            (!currentUser && !!currentGenerationId && getAnonymousGenerationIds().includes(currentGenerationId))
-          )}
-          onVerify={() => { void handleVerifyNovaBuild(); }} error={novaVerifyError}
-        />}
             {!isNovaModel && (showVoxelEditor || !mpdContent || !xyzrgbUrl || !currentGenerationId) && <ModelEditControls
               isManualEditorOpen={showVoxelEditor}
               manualLoading={xyzrgbLoading}
@@ -2401,8 +2359,7 @@ export default function GeneratedModel() {
               type="button"
               aria-label="View instructions"
               onClick={navigateToInstructions}
-              disabled={!currentGenerationId || isSavePolling || isNovaPreview}
-              title={isNovaPreview ? 'Choose Verify Build before opening instructions' : undefined}
+              disabled={!currentGenerationId || isSavePolling}
               className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-full border-2 border-gray-300 bg-white px-7 font-semibold text-black transition-all duration-150 hover:scale-[1.03] hover:border-[#f44336] hover:text-[#f44336] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto sm:min-w-44"
             >
               {isSavePolling ? (

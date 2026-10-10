@@ -92,35 +92,6 @@ it('shows an owner permission error when the agent source cannot be downloaded',
   expect(container.textContent).toContain('Only the owner can download this agent source.');
 });
 
-it('verifies the selected preview and keeps unchecked instructions disabled', async () => {
-  vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id => ({
-    generation_id: id, endpoint: 'novaToBricks', nova_build_mode: id === 'g' ? 'preview' : 'verify',
-    status: 'completed', name: 'Rover', prompt: 'rover', ldr_content: 'ldr',
-  }) as never);
-  const verify = vi.spyOn(NovaToBricksApiService, 'verifyBuild').mockResolvedValue({ generation_id: 'verified', message: 'Started' });
-  const Location = () => { const location = useLocation(); return <output>{location.search}</output>; };
-  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
-  expect(container.querySelector<HTMLButtonElement>('[aria-label="View instructions"]')!.disabled).toBe(true);
-  const button = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Verify Build')!;
-  expect(button.disabled).toBe(false);
-  await act(async () => button.click());
-  expect(verify).toHaveBeenCalledWith('g', 'token');
-  expect(posthog.capture).toHaveBeenCalledWith('generated_model_nova_verify_build_clicked', { generation_id: 'g', build_mode: 'preview' });
-  expect(container.querySelector('output')?.textContent).toContain('id=verified');
-  expect(container.querySelector('[aria-label="Build verification"]')?.textContent).toContain('Build verified');
-  expect(container.querySelector<HTMLButtonElement>('[aria-label="View instructions"]')!.disabled).toBe(false);
-});
-
-it('does not enable verification of another owner’s Nova preview', async () => {
-  mocks.user = { id: 'visitor' };
-  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({
-    generation_id: 'g', endpoint: 'novaToBricks', nova_build_mode: 'preview', status: 'completed', ldr_content: 'ldr',
-  } as never);
-  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
-  const button = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Verify Build')!;
-  expect(button.disabled).toBe(true);
-});
-
 it('updates the model title after an owner rename and uses it on the order page', async () => {
   const save = vi.spyOn(UpdateGenerationNameApiService, 'updateGenerationName').mockResolvedValue({generation_id: 'g', name: 'My Sunny Dog'});
   mocks.owner = 'owner';
@@ -221,6 +192,8 @@ it('continues Nova AI edits while keeping the completed model, instructions, and
     return true;
   });
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.textContent).not.toContain('Verify Build');
+  expect((container.querySelector('[aria-label="View instructions"]') as HTMLButtonElement).disabled).toBe(false);
   const input = container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement;
   expect(input).not.toBeNull();
   act(() => {
@@ -232,7 +205,7 @@ it('continues Nova AI edits while keeping the completed model, instructions, and
   expect(llm).not.toHaveBeenCalled();
   const viewer = container.querySelector('[data-testid="viewer"]')!;
   expect(viewer.textContent).toContain('Garden cottage');
-  expect(viewer.closest('figure')?.textContent).toContain('Creating your model preview. You can close this window safely.');
+  expect(viewer.closest('figure')?.textContent).toContain('This can take up to 30 min. You can close this window safely.');
   expect(viewer.closest('figure')?.textContent).toContain('Refining the roof');
   expect(container.querySelector<HTMLButtonElement>('[aria-label="View instructions"]')!.disabled).toBe(false);
   expect(container.querySelector('[aria-label="Manually edit model"]')).toBeNull();

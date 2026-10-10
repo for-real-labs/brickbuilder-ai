@@ -33,7 +33,19 @@ def test_finished_model_reads_cached_steps_without_reading_private_source(monkey
     monkeypatch.setattr(module, 'generation_storage', storage({'status': 'completed', 'endpoint': 'novaToBricks'}, Bucket()))
     response = asyncio.run(module.get_nova_instructions('generation'))
     assert response.body.count(b'0 STEP') == 2
-    assert reads == ['generation/nova-instructions-reviewed-v1.ldr']
+    assert reads == ['generation/nova-instructions.ldr']
+
+
+def test_historical_unchecked_preview_cannot_read_or_create_instructions(monkeypatch):
+    class Bucket:
+        def download(self, path):
+            pytest.fail('Unchecked history must never reach the instruction cache or private source')
+    monkeypatch.setattr(module, 'generation_storage', storage({
+        'status': 'completed', 'endpoint': 'novaToBricks', 'nova_build_mode': 'preview'}, Bucket()))
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(module.get_nova_instructions('generation'))
+    assert exc.value.status_code == 409
+    assert 'Create a new build' in exc.value.detail and 'Verify Build' not in exc.value.detail
 
 
 def test_existing_models_use_the_original_nova_hierarchy_and_cache_only_steps(monkeypatch):
@@ -61,34 +73,5 @@ def test_existing_models_use_the_original_nova_hierarchy_and_cache_only_steps(mo
     assert sources == [source]
     assert response.body.count(b'0 STEP') == 2
     assert b'PRIVATE' not in response.body
-    assert writes[0]['path'] == 'generation/nova-instructions-reviewed-v1.ldr'
+    assert writes[0]['path'] == 'generation/nova-instructions.ldr'
     assert writes[0]['file'] == response.body
-
-
-def test_old_unchecked_cache_cannot_bypass_failed_review(monkeypatch):
-    from src.utils.nova_service import NovaBuildReviewError
-    reads, writes = [], []
-    archive = io.BytesIO()
-    with zipfile.ZipFile(archive, 'w') as zipped:
-        zipped.writestr('model.mpd', 'original')
-        zipped.writestr('model.ldr', 'flat')
-    class Bucket:
-        def download(self, path):
-            reads.append(path)
-            if path.endswith('nova-instructions.ldr'): return b'old unchecked cache'
-            if path.endswith('.zip'): return archive.getvalue()
-            raise FileNotFoundError()
-        def upload(self, **kwargs): writes.append(kwargs)
-    class Service:
-        async def __aenter__(self): return self
-        async def __aexit__(self, *args): pass
-        async def instructions(self, source):
-            raise NovaBuildReviewError('Nova build review failed. Repair disconnected parts.')
-    monkeypatch.setattr(module, 'generation_storage', storage({'status': 'completed', 'endpoint': 'novaToBricks'}, Bucket()))
-    monkeypatch.setattr(module, 'NovaService', Service)
-    with pytest.raises(HTTPException) as error:
-        asyncio.run(module.get_nova_instructions('generation'))
-    assert error.value.status_code == 409
-    assert 'Repair disconnected' in error.value.detail
-    assert reads == ['generation/nova-instructions-reviewed-v1.ldr', 'generation/nova-source.zip']
-    assert writes == []

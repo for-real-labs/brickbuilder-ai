@@ -5,7 +5,7 @@ import asyncio
 from fastapi import HTTPException
 from fastapi.responses import Response
 from ..utils.generation_storage import generation_storage
-from ..utils.nova_service import NovaService, read_export, NovaBuildReviewError, REVIEWED_INSTRUCTIONS_FILE
+from ..utils.nova_service import NovaService, read_export
 
 
 async def get_nova_instructions(generation_id: str) -> Response:
@@ -17,10 +17,10 @@ async def get_nova_instructions(generation_id: str) -> Response:
     if not row or row.get('status') != 'completed' or row.get('endpoint') != 'novaToBricks':
         raise HTTPException(404, 'Nova instructions are unavailable')
     if row.get('nova_build_mode') == 'preview':
-        raise HTTPException(409, 'This is an unchecked preview. Choose Verify Build before opening instructions.')
+        raise HTTPException(409, 'Instructions are unavailable for this earlier unchecked preview. Create a new build.')
     bucket = generation_storage.client.storage.from_('generation-output')
     try:
-        data = await asyncio.to_thread(bucket.download, f'{generation_id}/{REVIEWED_INSTRUCTIONS_FILE}')
+        data = await asyncio.to_thread(bucket.download, f'{generation_id}/nova-instructions.ldr')
     except Exception:
         try:
             archive = await asyncio.to_thread(bucket.download, f'{generation_id}/nova-source.zip')
@@ -28,10 +28,8 @@ async def get_nova_instructions(generation_id: str) -> Response:
             async with NovaService() as runtime:
                 content = await runtime.instructions(original.mpd)
             data = content.encode('utf-8')
-            await asyncio.to_thread(bucket.upload, path=f'{generation_id}/{REVIEWED_INSTRUCTIONS_FILE}', file=data,
+            await asyncio.to_thread(bucket.upload, path=f'{generation_id}/nova-instructions.ldr', file=data,
                                    file_options={'content-type': 'text/plain', 'upsert': 'true'})
-        except NovaBuildReviewError as exc:
-            raise HTTPException(409, str(exc)) from None
         except Exception as exc:
             raise HTTPException(503, 'Nova construction steps are unavailable. Check the private Nova runtime.') from exc
     return Response(data, media_type='text/plain', headers={'Cache-Control': 'public, max-age=3600',
