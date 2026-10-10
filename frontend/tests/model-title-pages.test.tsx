@@ -585,6 +585,7 @@ it('opens uploaded LDraw geometry for Nova editing while blocking both order con
   expect(container.querySelector('[aria-label="Order my kit"]')).toBeNull();
   expect(container.querySelector('[aria-label="Order this model"]')).toBeNull();
   expect(container.querySelector('[aria-label="Imported model ordering"]')).toBeTruthy();
+  expect(container.querySelector('[aria-label="View instructions"]')).toBeNull();
   const input = container.querySelector('#voxel-edit-prompt') as HTMLTextAreaElement;
   expect(input.disabled).toBe(false);
   act(() => { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Adapt this to Brickwith parts'); input.dispatchEvent(new Event('input', { bubbles: true })); });

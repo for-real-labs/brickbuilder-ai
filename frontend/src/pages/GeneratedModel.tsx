@@ -2216,7 +2216,7 @@ export default function GeneratedModel() {
               type="button"
               aria-controls="edit-history-menu"
               aria-expanded={editHistoryOpen}
-              disabled={!currentGenerationId || isSavePolling || isLDrawUpload}
+              disabled={!currentGenerationId || isSavePolling}
               onClick={() => { void handleToggleEditHistory(); }}
               title={!currentGenerationId ? 'No edit history is available for this model' : 'View previous edits'}
               className="inline-flex items-center gap-2 rounded-full border border-slate-700/40 bg-slate-900/85 px-3 py-2 text-xs font-semibold text-white shadow-lg shadow-black/30 backdrop-blur-sm transition-all duration-150 hover:scale-[1.03] hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-45 disabled:hover:scale-100 sm:px-4"
@@ -2362,7 +2362,7 @@ export default function GeneratedModel() {
         <section className="relative z-40 mt-4 mb-4 flex flex-col items-center gap-3 px-4">
           <div className="flex w-full flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
             {/* Instructions button — white with grey border, turns red on hover */}
-            <button
+            {!isLDrawUpload && <button
               type="button"
               aria-label="View instructions"
               onClick={navigateToInstructions}
@@ -2380,7 +2380,7 @@ export default function GeneratedModel() {
                   View Instructions
                 </>
               )}
-            </button>
+            </button>}
             {isCommunity && (
               <button
                 type="button"
