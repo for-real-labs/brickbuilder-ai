@@ -28,7 +28,6 @@ export interface GetGenerationResponse {
   version?: number;
   endpoint?: string;
   mode?: 'basic_bricks' | 'all_parts';
-  nova_build_mode?: 'preview' | 'verify' | null;
   generation_id: string;
   status: GenerationStatus;
   prompt: string | null;
@@ -52,7 +51,6 @@ export interface GetGenerationResponse {
 // Helper type for completed generations
 export interface CompletedGeneration {
   generation_id: string;
-  nova_build_mode?: 'preview' | 'verify' | null;
   prompt: string;
   name?: string | null;
   ldr_content: string;
@@ -147,7 +145,6 @@ export class GetGenerationApiService {
         }
         return {
           generation_id: response.generation_id,
-          nova_build_mode: response.nova_build_mode,
           prompt: response.prompt,
           name: response.name,
           ldr_content: response.ldr_content,

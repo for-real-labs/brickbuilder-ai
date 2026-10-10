@@ -6,7 +6,9 @@ import hmac
 import io
 import json
 import os
+import pwd
 import subprocess
+import tempfile
 import zipfile
 import uuid
 from pathlib import Path
@@ -22,7 +24,6 @@ import llm_config
 import litellm
 import claude_agent
 from brickbuilder_integration.cost_limits import install_cost_limits, current_usage_id
-from brickbuilder_integration.build_policy import install_build_policy, review_source, preview_display, REVIEW_VERSION, REVIEW_FAILURE
 import tools
 from parts_policy import policy as parts_policy, CATALOG_VERSION
 from store import get_store
@@ -31,12 +32,9 @@ from leocad_render import bom_path_for, snapshot_path_for
 MAX_EXPORT_BYTES = 64 * 1024 * 1024
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 install_cost_limits(agent, llm_config, litellm, claude_agent)
-install_build_policy(tools, settings)
 VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = CATALOG_VERSION
-VERSIONS['build_review_version'] = REVIEW_VERSION
-VERSIONS['preview_build_version'] = 1
 
 
 @app.middleware('http')
@@ -135,7 +133,7 @@ async def configure_parts_catalog(chat_id: str, body: PartsCatalogRequest):
     return {'parts_catalog_version': 1, 'allowed_combinations': len(catalog.parts)}
 
 
-def export_sources(chat_id: str, model_id: str, build_mode: str = 'verify') -> bytes:
+def export_sources(chat_id: str, model_id: str) -> bytes:
     store = get_store()
     if not store.get_chat(chat_id):
         raise HTTPException(404, 'Nova session not found')
@@ -144,35 +142,12 @@ def export_sources(chat_id: str, model_id: str, build_mode: str = 'verify') -> b
     ref = next((row for row in store.models(chat_id) if row['id'] == model_id), None)
     if ref is None:
         raise HTTPException(404, 'Nova model not found')
+    if ref.get('validation_status') == 'preview':
+        raise HTTPException(409, 'This earlier unchecked preview needs a new generation before export.')
     model = store.resolve(chat_id, ref['model']).resolve()
     if model.parent != settings.GENERATED_DIR.resolve() or not model.is_file():
         raise HTTPException(404, 'Nova model source not found')
-    # Capture the revision once. Verified exports independently review these
-    # bytes; preview exports carry explicit unchecked metadata and no instructions.
-    if model.stat().st_size > 32 * 1024 * 1024:
-        raise HTTPException(413, 'Nova model exceeds the review size limit')
-    source = model.read_bytes()
-    if build_mode == 'preview':
-        if ref.get('validation_status') != 'preview':
-            raise HTTPException(409, 'This revision was not published as a preview')
-        try:
-            fixed = {'model.mpd': source, 'model.ldr': preview_display(source, settings.LDRAW_DIR)}
-        except (ValueError, OSError, subprocess.SubprocessError):
-            raise HTTPException(502, 'Nova preview display export could not finish') from None
-    elif build_mode == 'verify':
-        try:
-            review, reviewed = review_source(source, settings.LDRAW_DIR)
-        except (ValueError, OSError, subprocess.SubprocessError):
-            raise HTTPException(502, 'Nova build review could not finish; completion is blocked') from None
-        if review['passed'] is not True:
-            raise HTTPException(422, REVIEW_FAILURE)
-        fixed = {'model.mpd': source, 'model.ldr': reviewed['model.ldr'],
-                 'nova-instructions.ldr': reviewed['instructions.ldr'],
-                 'build-review.json': json.dumps(review).encode()}
-    else:
-        raise HTTPException(400, 'Unknown Nova build mode')
-    fixed['export-mode.json'] = json.dumps({'build_mode': build_mode}).encode()
-    files = {'preview.png': snapshot_path_for(model),
+    files = {'model.mpd': model, 'preview.png': snapshot_path_for(model),
              'nova-bom.csv': bom_path_for(model)}
     work = store.work_dir(chat_id).resolve()
     # Keep generators, plans, references and review evidence for reproducibility.
@@ -185,11 +160,25 @@ def export_sources(chat_id: str, model_id: str, build_mode: str = 'verify') -> b
             files['workspace/' + relative.as_posix()] = path
     if len(files) > 2000:
         raise HTTPException(413, 'Nova source archive contains too many files')
-    total = sum(map(len, fixed.values()))
+    with tempfile.TemporaryDirectory(prefix='nova-export-') as directory:
+        flat = Path(directory) / 'model.ldr'
+        account = pwd.getpwnam(os.environ['LDRAW_NOVA_AGENT_USER'])
+        os.chown(directory, account.pw_uid, account.pw_gid)
+        try:
+            subprocess.run([str(settings.TOOLKIT_DIR / '.venv/bin/python'),
+                            str(Path(__file__).with_name('flatten.py')), str(model), str(flat),
+                            str(settings.LDRAW_DIR)], cwd=settings.TOOLKIT_DIR,
+                           user=account.pw_uid, group=account.pw_gid, extra_groups=[],
+                           env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(settings.TOOLKIT_DIR),
+                                'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(store.work_dir(chat_id))},
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=120)
+            flat_data = flat.read_bytes()
+        except (OSError, subprocess.SubprocessError):
+            raise HTTPException(502, 'Nova display export failed') from None
+    total = len(flat_data)
     output = io.BytesIO()
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
-        for name, data in fixed.items():
-            archive.writestr(name, data)
+        archive.writestr('model.ldr', flat_data)
         archive.writestr('runtime.json', json.dumps(VERSIONS))
         archive.writestr('publication.json', json.dumps(ref))
         # This is an owner-only archive. Provider settings and credentials are excluded.
@@ -212,8 +201,8 @@ def export_sources(chat_id: str, model_id: str, build_mode: str = 'verify') -> b
 
 
 @app.get('/integration/chats/{chat_id}/export/{model_id}')
-async def export(chat_id: str, model_id: str, build_mode: str = 'verify'):
-    data = await asyncio.to_thread(export_sources, chat_id, model_id, build_mode)
+async def export(chat_id: str, model_id: str):
+    data = await asyncio.to_thread(export_sources, chat_id, model_id)
     return Response(data, media_type='application/zip', headers={'Cache-Control': 'private, no-store'})
 
 

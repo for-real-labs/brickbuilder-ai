@@ -6,7 +6,6 @@ from unittest.mock import AsyncMock
 
 from fastapi.testclient import TestClient
 import httpx
-import pytest
 
 
 def gateway(tmp_path):
@@ -210,26 +209,8 @@ def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path)
         assert client.get('/integration/runtime').status_code == 401
         assert client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': '../../other'}).status_code == 400
         response = client.get('/integration/runtime', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'build_review_version': 1, 'preview_build_version': 1}
+        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1}
     assert not module._workers
-
-
-def test_gateway_runtime_passes_brickbuilder_preview_readiness_without_spawning(tmp_path):
-    from src.utils.nova_service import NovaService
-
-    module = gateway(tmp_path)
-    module.worker_url = AsyncMock(side_effect=AssertionError('Readiness must not start a tenant worker'))
-
-    async def scenario():
-        client = httpx.AsyncClient(transport=httpx.ASGITransport(app=module.app), base_url='http://nova',
-            headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        async with NovaService(client) as service:
-            info = await service.ready()
-            assert info['preview_build_version'] == 1
-            assert info['generation_cost_limit_usd'] == 10
-
-    asyncio.run(scenario())
-    module.worker_url.assert_not_awaited()
 
 
 def test_gateway_routes_only_to_selected_tenant_and_strips_browser_headers(tmp_path):
@@ -269,8 +250,6 @@ def worker(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, 'brickbuilder_integration.cost_limits', SimpleNamespace(install_cost_limits=lambda *args: None, current_usage_id=__import__('contextvars').ContextVar('test_usage_id', default=None)))
     monkeypatch.setitem(sys.modules, 'settings', SimpleNamespace())
     monkeypatch.setitem(sys.modules, 'tools', SimpleNamespace())
-    monkeypatch.setitem(sys.modules, 'brickbuilder_integration.build_policy', SimpleNamespace(
-        install_build_policy=lambda *args: None, review_source=lambda *args: None, preview_display=lambda *args: None, REVIEW_VERSION=1, REVIEW_FAILURE='Review failed'))
     monkeypatch.setitem(sys.modules, 'parts_policy', SimpleNamespace(policy=None, CATALOG_VERSION=1))
     monkeypatch.setitem(sys.modules, 'store', SimpleNamespace(get_store=lambda: None))
     monkeypatch.setitem(sys.modules, 'leocad_render', SimpleNamespace(bom_path_for=lambda p: p, snapshot_path_for=lambda p: p))
@@ -287,10 +266,10 @@ def worker(tmp_path, monkeypatch):
 def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch):
     module = worker(tmp_path, monkeypatch)
     upstream = module.app
-    module.export_sources = lambda chat, model, build_mode='verify': b'zip'
+    module.export_sources = lambda chat, model: b'zip'
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
-        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'build_review_version': 1, 'preview_build_version': 1}
+        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1}
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401
@@ -381,55 +360,3 @@ def test_usage_endpoint_reads_private_per_generation_file_and_validates_identity
         assert client.get(f'/integration/chats/other/usage/{generation_id}', headers=headers).status_code == 404
         assert client.get('/integration/chats/chat/usage/not-a-uuid', headers=headers).status_code == 422
         assert client.get('/integration/runtime', headers={**headers, 'X-BrickBuilder-Generation-Id': '../../secret'}).status_code == 400
-
-
-@pytest.mark.parametrize('passed', [False, True])
-def test_final_export_rechecks_model_and_uses_the_reviewed_snapshot(tmp_path, monkeypatch, passed):
-    import io
-    import zipfile
-    from types import SimpleNamespace
-    from fastapi import HTTPException
-    module = worker(tmp_path, monkeypatch)
-    generated, work = tmp_path / 'generated', tmp_path / 'work'
-    generated.mkdir(); work.mkdir()
-    model = generated / 'model.mpd'
-    model.write_bytes(b'captured model')
-    (work / 'build-review.json').write_text('{"passed":true}')
-    module.settings.GENERATED_DIR = generated
-    module.settings.LDRAW_DIR = tmp_path / 'library'
-    module.agent.is_running = lambda chat: False
-    module.get_store = lambda: SimpleNamespace(get_chat=lambda chat: {},
-        models=lambda chat: [{'id': 'model', 'model': str(model)}], resolve=lambda *args: model,
-        work_dir=lambda chat: work, messages=lambda chat: [])
-    # A real chat must be truthy.
-    store = module.get_store()
-    store.get_chat = lambda chat: {'id': chat}
-    module.get_store = lambda: store
-    calls = []
-    def review(content, library):
-        calls.append(content)
-        model.write_bytes(b'changed while reviewing')
-        return {'passed': passed}, {'model.ldr': b'checked display', 'instructions.ldr': b'checked steps'}
-    module.review_source = review
-    if not passed:
-        with pytest.raises(HTTPException) as error:
-            module.export_sources('chat', 'model')
-        assert error.value.status_code == 422
-    else:
-        with zipfile.ZipFile(io.BytesIO(module.export_sources('chat', 'model'))) as archive:
-            assert archive.read('model.mpd') == b'captured model'
-            assert archive.read('model.ldr') == b'checked display'
-            assert archive.read('nova-instructions.ldr') == b'checked steps'
-            assert json.loads(archive.read('build-review.json')) == {'passed': True}
-    assert calls == [b'captured model']
-
-
-def test_old_instruction_review_failure_returns_repair_status(tmp_path):
-    module = gateway(tmp_path)
-    def reject(source): raise ValueError('private review report')
-    module.export_instruction_placements = reject
-    with TestClient(module.app) as client:
-        result = client.post('/integration/instructions', content=b'model', headers={'Authorization': 'Bearer runtime-secret'})
-    assert result.status_code == 422
-    assert 'Repair disconnected' in result.json()['detail']
-    assert 'private review report' not in result.text

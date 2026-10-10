@@ -10,7 +10,6 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 from src.requests import novaToBricks as module
 from src.utils.nova_service import NovaResult
-from nova_review_helpers import receipt
 
 
 def test_request_accepts_nova_continuation_and_validates_provider_input():
@@ -56,8 +55,7 @@ def test_resume_cannot_bypass_native_loopback_guard(monkeypatch):
 def test_nova_import_saves_original_model_and_durable_session_before_charging(monkeypatch, tmp_path):
     calls = []
     session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'versions': {'toolkit': 'revision'}, 'model_id': 'new'}
-    result = NovaResult('hierarchical MPD', 'flat LDR', b'png', b'archive', session,
-                        'reviewed steps', receipt('hierarchical MPD', 'flat LDR', 'reviewed steps'))
+    result = NovaResult('hierarchical MPD', 'flat LDR', b'png', b'archive', session)
     class Bucket:
         def upload(self, **kwargs): calls.append(('upload', kwargs['path'], kwargs['file']))
     class Storage:
@@ -84,18 +82,17 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     monkeypatch.setattr(module, 'LDrawPacker', Packer)
     monkeypatch.setattr(module, 'deduct_credits', charge)
     monkeypatch.setattr(module, 'track_image_conversion', lambda **kwargs: None)
-    request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5', build_mode='verify', source_generation_id='source')
+    request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5')
     assert asyncio.run(module.process_nova_to_bricks_task('generation', request,
         {'user_email': 'test', 'is_developer': False}, {})) is None
     assert calls[1][1] == 'generation/nova-session.json'
     assert json.loads(calls[1][2]) == session
     assert ('model', 'ldr', 'flat LDR') in calls
-    assert ('upload', 'generation/nova-instructions-reviewed-v1.ldr', b'reviewed steps') in calls
     assert not any(call[:2] == ('model', 'mpd') for call in calls)
     assert calls[-2:] == [('charge', 1), ('status', 'completed')]
 
 
-@pytest.mark.parametrize('message', ['Nova did not publish a model', 'Nova build review failed. Repair disconnected parts and instruction steps.', 'Generation stopped because it would exceed the $10 AI cost limit.'])
+@pytest.mark.parametrize('message', ['Nova did not publish a model', 'Generation stopped because it would exceed the $10 AI cost limit.'])
 def test_failed_nova_turn_does_not_charge(monkeypatch, message):
     storage = SimpleNamespace(update_status=AsyncMock())
     class Service:
@@ -198,22 +195,3 @@ def test_owned_completed_edit_retains_geometry_in_case_runtime_session_is_missin
     assert request._nova_source_ldr == 'saved geometry'
     assert request.model == session['model'] and request.auth_mode == session['auth_mode']
     download.assert_awaited_once_with('public-model')
-
-
-def test_unreviewed_export_is_rejected_before_saving_model_or_charging(monkeypatch):
-    storage = SimpleNamespace(update_status=AsyncMock())
-    class Service:
-        async def __aenter__(self): return self
-        async def __aexit__(self, *args): pass
-        async def run(self, *args, **kwargs):
-            return NovaResult('source', 'display', None, b'legacy export', {})
-    charge = AsyncMock()
-    monkeypatch.setattr(module, 'generation_storage', storage)
-    monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
-    monkeypatch.setattr(module, 'deduct_credits', charge)
-    monkeypatch.setattr(module, 'track_error', lambda **kwargs: None)
-    result = asyncio.run(module.process_nova_to_bricks_task('generation',
-        module.NovaToBricksRequest(prompt='guitar', model='gpt-5.5', build_mode='verify', source_generation_id='source'), {'user_email': 'test'}, {}))
-    assert 'build review failed' in result
-    charge.assert_not_awaited()
-    storage.update_status.assert_awaited_with('generation', 'failed', result)

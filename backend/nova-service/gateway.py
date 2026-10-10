@@ -34,8 +34,6 @@ VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = 1
-VERSIONS['build_review_version'] = 1
-VERSIONS['preview_build_version'] = 1
 _workers = {}
 _locks = {}
 _capacity_lock = asyncio.Lock()
@@ -403,22 +401,30 @@ async def instruction_export(request: Request):
     try:
         source.decode('utf-8')
         data = await asyncio.to_thread(export_instruction_placements, bytes(source))
-    except UnicodeError:
-        return JSONResponse({'detail': 'Invalid model encoding'}, status_code=502)
-    except ValueError:
-        return JSONResponse({'detail': 'Nova build review failed. Repair disconnected parts and instruction steps that rely on later connections, then resume the build.'}, status_code=422)
-    except (OSError, subprocess.SubprocessError):
+    except (UnicodeError, OSError, subprocess.SubprocessError, ValueError):
         return JSONResponse({'detail': 'Nova construction steps could not be exported'}, status_code=502)
     return Response(data, media_type='text/plain')
 
 
 def export_instruction_placements(source: bytes) -> bytes:
-    from brickbuilder_integration.build_policy import review_source, REVIEW_FAILURE
-    # Existing models receive the same review before a checked cache is created.
-    report, artifacts = review_source(source, Path(os.getenv('LDRAW_DIR', '/opt/ldraw/ldraw')))
-    if report['passed'] is not True:
-        raise ValueError(REVIEW_FAILURE)
-    return artifacts['instructions.ldr']
+    # Parse geometry using the installed Nova toolkit in a fresh unprivileged
+    # workspace. No owner worker, provider configuration or agent is started.
+    account = pwd.getpwnam('nobody')
+    toolkit = Path('/opt/ldraw-nova')
+    with tempfile.TemporaryDirectory(prefix='nova-instructions-') as directory:
+        root = Path(directory)
+        os.chown(root, account.pw_uid, account.pw_gid)
+        model, output = root / 'model.mpd', root / 'instructions.ldr'
+        model.write_bytes(source)
+        subprocess.run([str(toolkit / '.venv/bin/python'), str(Path(__file__).with_name('flatten.py')),
+                        str(model), str(output), os.getenv('LDRAW_DIR', '/opt/ldraw/ldraw'), '--instructions'],
+                       cwd=toolkit, user=account.pw_uid, group=account.pw_gid, extra_groups=[],
+                       env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(toolkit),
+                            'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(root)},
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=120)
+        if output.stat().st_size > 32 * 1024 * 1024:
+            raise ValueError('Instruction export is too large')
+        return output.read_bytes()
 
 
 @app.api_route('/{path:path}', methods=['GET', 'POST', 'PUT', 'PATCH', 'DELETE'])
@@ -439,7 +445,6 @@ async def proxy(path: str, request: Request):
             if len(body) > 16 * 1024 * 1024:
                 return JSONResponse({'detail': 'Nova request is too large'}, status_code=413)
         outgoing = app.state.client.build_request(request.method, url + '/' + path,
-            timeout=1830 if path.startswith('integration/chats/') and '/export/' in path else 180,
             params=request.query_params, content=bytes(body), headers={
                 'Authorization': 'Bearer ' + TOKEN, 'Content-Type': request.headers.get('content-type', 'application/json'),
                 **({'X-BrickBuilder-Generation-Id': request.headers['x-brickbuilder-generation-id']}

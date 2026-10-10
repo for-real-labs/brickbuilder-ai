@@ -1,6 +1,5 @@
 import asyncio
 import sys
-import pytest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -130,13 +129,6 @@ def test_create_generation_persists_mode_and_inherits_it_for_non_generating_revi
         assert records[-1]['mode'] == mode
     asyncio.run(storage.create_generation('owner', 'authenticated', 'edit', 40, endpoint='updateModel', edit_generation_id='source'))
     assert records[-1]['generation_id'] == 'model' and records[-1]['mode'] == 'all_parts'
-    for build_mode in ('preview', 'verify'):
-        asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40,
-            endpoint='novaToBricks', nova_build_mode=build_mode))
-        assert records[-1]['nova_build_mode'] == build_mode
-    with pytest.raises(ValueError, match='Invalid Nova build mode'):
-        asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40,
-            endpoint='llmToBricks', nova_build_mode='preview'))
 
 
 def test_public_voxel_edit_starts_independent_root_for_guest_editor():

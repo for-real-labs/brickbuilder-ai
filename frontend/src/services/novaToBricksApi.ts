@@ -14,7 +14,6 @@ export const DEFAULT_NOVA_OPTIONS: NovaBuilderOptions = {
 };
 
 export interface NovaToBricksRequest extends NovaBuilderOptions {
-  buildMode?: 'preview' | 'verify';
   sourceGenerationId?: string;
   prompt?: string;
   imageBase64?: string;
@@ -29,24 +28,9 @@ const API_BASE_URL = API_MODE === 'local'
     ? import.meta.env.VITE_RAILWAY_API_URL_STAGING || 'https://brickai-backend-staging.up.railway.app'
     : import.meta.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
 
-export class NovaInstructionReviewError extends Error {
-  constructor() {
-    super('These instructions failed connection review. Use Edit with AI to repair disconnected parts and the build order.');
-    this.name = 'NovaInstructionReviewError';
-  }
-}
-
-export class NovaPreviewInstructionsError extends Error {
-  constructor() {
-    super('This is an unchecked preview. Choose Verify Build on the model page before opening instructions.');
-    this.name = 'NovaPreviewInstructionsError';
-  }
-}
-
 export class NovaToBricksApiService {
   static async instructions(generationId: string): Promise<string> {
     const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-instructions.ldr`);
-    if (response.status === 409) throw new NovaInstructionReviewError();
     if (!response.ok) throw new Error('Unable to load Nova construction steps. Please try again.');
     return response.text();
   }
@@ -62,21 +46,13 @@ export class NovaToBricksApiService {
   }
 
   static async edit(generationId: string, prompt: string, authToken?: string): Promise<LlmToBricksResponse> {
-    return this.generate({ ...DEFAULT_NOVA_OPTIONS, sourceGenerationId: generationId, prompt, buildMode: 'preview' }, authToken);
-  }
-
-  static async verifyBuild(generationId: string, authToken?: string): Promise<LlmToBricksResponse> {
-    if (!generationId) throw new Error('Choose a saved Nova preview');
-    return this.generate({ ...DEFAULT_NOVA_OPTIONS, sourceGenerationId: generationId,
-      prompt: 'Verify Build', buildMode: 'verify' }, authToken);
+    return this.generate({ ...DEFAULT_NOVA_OPTIONS, sourceGenerationId: generationId, prompt }, authToken);
   }
 
   static async generate(request: NovaToBricksRequest, authToken?: string): Promise<LlmToBricksResponse> {
     if (!request.prompt?.trim() && !request.imageBase64) throw new Error('A prompt or image is required');
     if (!getLlmModelOption(request.model)) throw new Error('Choose a supported agent model');
     if (!['api_key', 'native'].includes(request.authMode)) throw new Error('Choose a supported provider connection');
-    if (request.buildMode && !['preview', 'verify'].includes(request.buildMode)) throw new Error('Choose a supported build mode');
-    if (request.buildMode === 'verify' && !request.sourceGenerationId) throw new Error('Choose a saved Nova preview');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = `Bearer ${authToken}`;
     const response = await (authToken ? apiFetch : authenticatedApiFetch)(`${API_BASE_URL}/novaToBricks`, {
@@ -89,7 +65,6 @@ export class NovaToBricksApiService {
         detail_level: request.detailLevel ?? 40,
         model: request.model,
         auth_mode: request.authMode,
-        build_mode: request.buildMode ?? 'preview',
       }),
     });
     if (!response.ok) {
