@@ -25,6 +25,18 @@ test('hosted build imports fork sources without requiring registry credentials o
   assert.ok(!recipe.includes('\nVOLUME '));
 });
 
+test('committed hosted recipe fetches and reports the configured runtime revisions', () => {
+  const recipe = readFileSync(path.resolve(__dirname, '../backend/nova-service/Dockerfile'), 'utf8');
+  for (const source of SOURCES) {
+    assert.ok(recipe.includes(`git remote add origin ${source.url} && git fetch --depth 1 origin ${source.commit}`));
+  }
+  const versionsLine = recipe.split('\n').find(line => line.includes('versions.json'));
+  assert.ok(versionsLine);
+  for (const source of SOURCES) {
+    assert.ok(versionsLine.includes(`"${source.name}":"${source.commit}"`));
+  }
+});
+
 test('managed checkout fetches immutable source with argument-based calls', () => {
   const calls = [];
   ensureSource(SOURCES[0], (command, args, options) => {
