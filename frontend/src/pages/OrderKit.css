@@ -186,7 +186,6 @@
 .checkout-postcard-nature { --postcard-ink: #3b5c40; --postcard-paper: #f3f5e9; --postcard-background: radial-gradient(ellipse at top right, #e7e6b8, transparent 70%), linear-gradient(145deg, #8aa68a, #c7d5b0 50%, #69886f); }
 .checkout-postcard-architecture { --postcard-ink: #35485b; --postcard-paper: #f6f4ef; --postcard-background: repeating-linear-gradient(90deg, transparent 0 29px, #ffffff18 29px 30px), repeating-linear-gradient(0deg, transparent 0 29px, #ffffff18 29px 30px), linear-gradient(145deg, #8fabbc, #dce0de 55%, #8b9aa8); }
 .checkout-postcard-art { padding: clamp(8px, 3cqw, 18px); min-height: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 2cqw; background: var(--postcard-background); min-width: 0; }
-.checkout-postcard-brand { align-self: flex-start; font-size: clamp(6px, 1.5cqw, 9px); font-weight: 800; letter-spacing: .1em; padding: .8cqw 1.2cqw; background: #ffffffde; color: #202124; border-radius: 2px; }
 .checkout-postcard-model { width: 100%; height: 0; flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .checkout-postcard-model > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 12px 12px #0002); }
 .checkout-postcard-model.is-interactive { cursor: grab; touch-action: none; }
@@ -197,7 +196,6 @@
 .checkout-postcard-view-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: -10px 0 14px; color: #686c73; font-size: 11px; }
 .checkout-postcard-view-controls button { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid #dce0e5; border-radius: 8px; background: #fff; color: #202124; }
 .checkout-postcard-view-controls button:disabled { opacity: .45; }
-.checkout-postcard-art-caption { color: #fff; background: #18212f45; padding: .7cqw 1.3cqw; font-size: clamp(7px, 1.65cqw, 10px); letter-spacing: .07em; }
 .checkout-postcard-details { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4cqw 2.65cqw; min-width: 0; min-height: 0; }
 .checkout-postcard-details h3 { font-family: Georgia, serif; font-size: clamp(14px, 4cqw, 24px); font-weight: 400; line-height: 1.15; overflow-wrap: anywhere; margin: 2cqw 0 3cqw; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex-shrink: 0; }
 .checkout-postcard-qr { display: block; width: clamp(64px, 18.2cqw, 110px); aspect-ratio: 1; flex-shrink: 0; max-width: 100%; background: #fff; border: 1px solid #0001; }

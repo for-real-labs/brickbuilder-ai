@@ -95,14 +95,12 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
         <figure className="checkout-postcard-example" aria-label="7 by 5 inch instructions postcard with bleed (7.12 by 5.12 inches)">
           <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
-              <span className="checkout-postcard-brand">BRICKBUILDER</span>
               <div className={`checkout-postcard-model ${modelContent ? 'is-interactive' : ''}`}>
                 {open && viewerVisible && modelContent ? <ThreeLDRViewer key={viewVersion} modelContent={modelContent} modelName={modelName} presentation="model" autoRotate={false} showModelControls={false} showBaseplate={false}
                   initialCameraState={camera.current} onCameraChange={trackCamera} onExportCaptureReady={captureReady} onViewInteractionEnd={viewInteractionEnded} />
                   : image ? <img src={image} alt={`${modelName} model on the example postcard`} onError={() => setFailedImage(image)} />
                   : <div className="checkout-postcard-placeholder"><Package size={38} aria-hidden="true" /><span>Model preview unavailable</span></div>}
               </div>
-              <span className="checkout-postcard-art-caption">Made to be built.</span>
             </div>
             <div className="checkout-postcard-details">
               <h3 title={modelName}>{modelName}</h3>

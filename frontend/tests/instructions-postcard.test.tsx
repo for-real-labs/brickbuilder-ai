@@ -118,6 +118,9 @@ it('removes the extra popup headings and caption while keeping an accessible lab
   expect(dialog.querySelector('h2, figcaption')).toBeNull();
   expect(dialog.textContent).not.toMatch(/keepsake|Your instructions, on a post card|Example post card for|your custom build/i);
   expect(dialog.querySelector('h3')?.textContent).toBe(props.modelName);
+  expect(dialog.textContent).not.toContain('BRICKBUILDER');
+  expect(dialog.textContent).not.toContain('Made to be built.');
+  expect(dialog.querySelector('.checkout-postcard-brand, .checkout-postcard-art-caption')).toBeNull();
 });
 
 
