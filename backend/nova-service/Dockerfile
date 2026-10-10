@@ -1,6 +1,6 @@
 # Generated from the pinned Nova forks by backend/setup_nova.cjs.
 FROM alpine:3.22 AS nova
-RUN apk add --no-cache git && git init /source && cd /source && git remote add origin https://github.com/jjohnson5253/ldraw-nova.git && git fetch --depth 1 origin 98eac806bf721d83c9a04d31299050cea8d6d4f9 && git checkout --detach FETCH_HEAD
+RUN apk add --no-cache git && git init /source && cd /source && git remote add origin https://github.com/jjohnson5253/ldraw-nova.git && git fetch --depth 1 origin a6b00ef9382604f0a57cab674f24af32b8f8fc15 && git checkout --detach FETCH_HEAD
 
 FROM alpine:3.22 AS nova_web
 RUN apk add --no-cache git && git init /source && cd /source && git remote add origin https://github.com/jjohnson5253/ldraw-nova-docker.git && git fetch --depth 1 origin b67ee2bf85e8b91f49e1bcbc308deef3e722cc7b && git checkout --detach FETCH_HEAD
@@ -299,5 +299,5 @@ CMD ["uvicorn", "main:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0"
 
 COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/
 COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py
-RUN printf '%s' '{"toolkit":"98eac806bf721d83c9a04d31299050cea8d6d4f9","web":"b67ee2bf85e8b91f49e1bcbc308deef3e722cc7b"}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools
+RUN printf '%s' '{"toolkit":"a6b00ef9382604f0a57cab674f24af32b8f8fc15","web":"b67ee2bf85e8b91f49e1bcbc308deef3e722cc7b"}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools
 CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]
