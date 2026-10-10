@@ -75,6 +75,8 @@ export function SiteFooter() {
           <Link to="/blog" className="hover:text-[#f44336] transition-colors">
             Blog
           </Link>
+          <Link to="/image-to-lego" onClick={() => posthog.capture('footer_image_to_lego_clicked')} className="hover:text-[#f44336] transition-colors">Image to LEGO</Link>
+          <Link to="/photo-to-lego" onClick={() => posthog.capture('footer_photo_to_lego_clicked')} className="hover:text-[#f44336] transition-colors">Photo to LEGO</Link>
           <Link to="/glb-to-lego" className="hover:text-[#f44336] transition-colors">
             GLB to LEGO Converter
           </Link>

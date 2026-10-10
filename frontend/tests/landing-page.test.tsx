@@ -373,6 +373,47 @@ describe('LandingPage', () => {
     }
   });
 
+  it.each(['image-to-lego', 'photo-to-lego'] as const)('uses the shared upload and generation flow on /%s', async path => {
+    vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('Test Nova request'));
+    const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
+    const BrowserURL = URL;
+    vi.stubGlobal('URL', class extends BrowserURL { static createObjectURL = vi.fn(() => 'blob:reference'); static revokeObjectURL = vi.fn(); });
+    const container = document.createElement('div'); document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage imageLandingPath={path} />));
+      const upload = container.querySelector('[aria-label="Image upload"]')!;
+      const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
+      expect(upload.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(prompt.placeholder).toBe('add optional instructions');
+      expect(container.textContent).toContain('How It Works');
+      const picker = container.querySelector('input[type=file]') as HTMLInputElement;
+      expect(picker.accept).toContain('.heic');
+      const file = new File(['reference'], 'castle.png', { type: 'image/png' });
+      await act(async () => {
+        Object.defineProperty(picker, 'files', { configurable: true, value: [file] });
+        picker.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(upload.querySelector('img')?.getAttribute('src')).toBe('blob:reference');
+      const create = container.querySelector<HTMLButtonElement>('button[type=submit]')!;
+      await act(async () => { create.click(); await vi.waitFor(() => expect(nova).toHaveBeenCalledTimes(1)); });
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ imageBase64: btoa('reference'), imageMediaType: 'image/png', model: DEFAULT_LLM_MODEL }), undefined);
+      act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+      await act(async () => { create.click(); await vi.waitFor(() => expect(llm).toHaveBeenCalledTimes(1)); });
+      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ imageBase64: btoa('reference'), model: DEFAULT_LLM_MODEL }), undefined);
+      act(() => container.querySelector<HTMLButtonElement>('[aria-label="Remove image"]')!.click());
+      expect(upload.querySelector('img')).toBeNull();
+      const drop = new Event('drop', { bubbles: true, cancelable: true });
+      Object.defineProperty(drop, 'dataTransfer', { value: { files: [file] } });
+      await act(async () => container.firstElementChild!.dispatchEvent(drop));
+      expect(upload.querySelector('img')).toBeTruthy();
+    } finally { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); }
+  });
+
   it('defaults to All parts, routes through Nova, and keeps the model when switching to Basic bricks', async () => {
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);

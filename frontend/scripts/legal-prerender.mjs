@@ -18,7 +18,10 @@ export async function prerenderLegalPages() {
         rollupOptions: { output: { entryFileNames: 'render.mjs' } },
       },
     });
-    const { legalPages, renderLegalDocument } = await import(pathToFileURL(`${directory}/render.mjs`).href);
+    const { legalPages, renderLegalDocument, imageLandingPaths, renderImageLandingDocument } = await import(pathToFileURL(`${directory}/render.mjs`).href);
+    for (const path of imageLandingPaths) {
+      await writeFile(`dist/${path}.html`, renderImageLandingDocument(shell, path));
+    }
     for (const page of legalPages) {
       await writeFile(`dist/${page.path}.html`, renderLegalDocument(shell, page.path));
     }

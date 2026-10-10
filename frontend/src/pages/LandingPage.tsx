@@ -1,3 +1,6 @@
+import { ImageUploadSection } from '../components/ImageUploadSection';
+import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
+import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
 import { GenerationDuration } from '../components/GenerationDuration';
 import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
 import { NotificationMenu } from "../components/NotificationMenu";
@@ -209,7 +212,8 @@ function useBeatText(active: boolean) {
   return { text, fade };
 }
 
-export default function LandingPage() {
+export default function LandingPage({ imageLandingPath }: { imageLandingPath?: ImageLandingPath } = {}) {
+  const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const { session, loading: authLoading } = useAuth();
   const { generations, error: activityError, trackGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
@@ -252,6 +256,9 @@ export default function LandingPage() {
   }, [imgFile]);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [preparingImage, setPreparingImage] = useState(false);
+  const [imageUploadError, setImageUploadError] = useState<string | null>(null);
+  const uploadRevision = useRef(0);
 
   const [focused, setFocused] = useState(false);
   const showTypewriter = !focused && prompt.length === 0;
@@ -282,7 +289,7 @@ export default function LandingPage() {
   const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
   const [statsReady, setStatsReady] = useState(false);
   const [communityReady, setCommunityReady] = useState(false);
-  const lowerContentReady = statsReady && communityReady;
+  const lowerContentReady = (statsReady && communityReady) || typeof window === 'undefined';
   const [featuredCommunityModels, setFeaturedCommunityModels] = useState<FeaturedItem[]>([]);
 
   useEffect(() => {
@@ -419,15 +426,32 @@ export default function LandingPage() {
     }
   };
 
-  const onPickImage = () => fileInputRef.current?.click();
+  const onPickImage = () => {
+    posthog.capture('landing_image_picker_opened', { page: imageLandingPath ?? '/' });
+    fileInputRef.current?.click();
+  };
+  const selectImage = async (file: File, source: 'picker' | 'drop') => {
+    const revision = ++uploadRevision.current;
+    setPreparingImage(true); setImageUploadError(null);
+    try {
+      const prepared = await prepareImageUpload(file);
+      if (revision !== uploadRevision.current) return;
+      setImgFile(prepared); setInputValidationMessage(null);
+      posthog.capture('landing_image_uploaded', { page: imageLandingPath ?? '/', source, format: prepared.type });
+    } catch (error) {
+      if (revision === uploadRevision.current) setImageUploadError(error instanceof Error ? error.message : 'Unable to read this image. Please try another file.');
+    } finally { if (revision === uploadRevision.current) setPreparingImage(false); }
+  };
   const clearSelectedImage = () => {
+    uploadRevision.current++; setPreparingImage(false); setImageUploadError(null);
+    posthog.capture('landing_image_removed', { page: imageLandingPath ?? '/' });
     setImgFile(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
   const onFileChange: React.ChangeEventHandler<HTMLInputElement> = (e) => {
-    if (e.target.files?.length) setInputValidationMessage(null);
-    const file = e.target.files?.[0] ?? null;
-    setImgFile(file);
+    const file = e.target.files?.[0];
+    if (file) void selectImage(file, 'picker');
+    e.target.value = '';
   };
 
   // Drag-and-drop state & handlers
@@ -464,9 +488,7 @@ export default function LandingPage() {
     dragCounter.current = 0;
     if (loading) return;
     const file = e.dataTransfer.files?.[0];
-    if (file && file.type.startsWith('image/')) {
-      setImgFile(file);
-    }
+    if (file) void selectImage(file, 'drop');
   };
 
   // Helper function to convert File to base64
@@ -513,7 +535,13 @@ export default function LandingPage() {
 
   const onGenerate = async () => {
     // Prevent multiple simultaneous calls
-    if (loading || checkingProviderRef.current || providerLogin) return;
+    if (loading || preparingImage || checkingProviderRef.current || providerLogin) return;
+
+    if (imageLanding && !imgFile) {
+      setImageUploadError('Upload an image to get started. You can add optional instructions below.');
+      posthog.capture('landing_generation_image_required', { page: imageLandingPath });
+      return;
+    }
 
     // Validate input: either text prompt or image required
     if (!imgFile && !prompt.trim()) {
@@ -872,9 +900,10 @@ export default function LandingPage() {
         </div>
       )}
       <SEO
-        title="BrickBuilder - Turn Images into 3D LEGO-Compatible Brick Models"
-        description="Build brick models from text prompts or images. Experimental demo — results may vary."
-        url="https://brickbuilder.ai/landing"
+        title={imageLanding?.title ?? "BrickBuilder - Turn Images into 3D LEGO-Compatible Brick Models"}
+        description={imageLanding?.description ?? "Build brick models from text prompts or images. Experimental demo — results may vary."}
+        keywords={imageLanding?.keywords}
+        url={`https://brickbuilder.ai/${imageLandingPath ?? ""}`}
       />
 
       <FallingBricks density={22} opacity={0.25} zIndex={0} />
@@ -886,7 +915,7 @@ export default function LandingPage() {
           setPendingGenerateAfterLogin(false);
         }}
         onSuccess={() => setShowLoginModal(false)}
-        redirectTo="/"
+        redirectTo={imageLandingPath ? `/${imageLandingPath}` : "/"}
         onBeforeOAuthRedirect={savePendingLandingState}
       />
       <NovaProviderLoginModal provider={providerLogin} onClose={() => setProviderLogin(null)} onConnected={mode => {
@@ -933,6 +962,12 @@ export default function LandingPage() {
                 submitGeneration();
               }}
             >
+              {imageLanding && <>
+                <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
+                <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
+                <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || preparingImage}
+                  error={imageUploadError} onPick={onPickImage} onRemove={clearSelectedImage} />
+              </>}
               <div className="relative w-full">
                 <input
                   ref={promptInputRef}
@@ -951,13 +986,13 @@ export default function LandingPage() {
                     if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                     event.currentTarget.form?.requestSubmit();
                   }}
-                  placeholder={imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
+                  placeholder={imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
                   className="h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
-                  disabled={loading}
+                  disabled={loading || preparingImage}
                 />
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || preparingImage}
                   className="absolute right-2 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-base"
                 >
                   <Sparkles aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1009,12 +1044,12 @@ export default function LandingPage() {
                   onClick={onPickImage}
                   className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition-colors hover:border-red-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Upload image"
-                  disabled={loading}
+                  disabled={loading || preparingImage}
                 >
                   <ImageIcon aria-hidden="true" className="h-4 w-4" />
                   Upload image
                 </button>
-                <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={onFileChange} disabled={loading} />
+                <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage} />
               </div>
               {localDevelopment && generationMethod === 'nova' && (
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
@@ -1032,8 +1067,10 @@ export default function LandingPage() {
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form>
 
+            {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
+            {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
             {/* Image thumbnail preview */}
-            {imagePreviewUrl && (
+            {!imageLanding && imagePreviewUrl && (
               <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
                 <img
                   src={imagePreviewUrl}
