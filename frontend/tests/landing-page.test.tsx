@@ -67,8 +67,6 @@ import { GetGenerationStatsApiService } from '../src/services/getGenerationStats
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
-import { TextToBricksApiService } from '../src/services/textToBricksApi';
-import { ImageToBricksApiService } from '../src/services/imageToBricksApi';
 import { LocalProvidersApiService, type LocalProviderStatus } from '../src/services/localProvidersApi';
 
 const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus => ({
@@ -82,7 +80,7 @@ describe('LandingPage', () => {
     { saved: 'unknown', expected: 'nova' },
     { saved: 'nova', expected: 'nova' },
     { saved: 'llm', expected: 'llm' },
-    { saved: '3d', expected: '3d' },
+    { saved: '3d', expected: 'nova' },
   ])('restores saved mode $saved as $expected after login', async ({ saved, expected }) => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -104,64 +102,26 @@ describe('LandingPage', () => {
     }
   });
 
-  it.each(['sam3d', 'trellis'])('routes Other model %s to the 3D provider and returns to Basic bricks for LLM models', async selected => {
+  it.each(['claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores obsolete model %s as Opus 5.5 and submits it', async savedModel => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
-    const text = vi.spyOn(TextToBricksApiService, 'generateBricksFromTextStream').mockRejectedValue(new Error('Test 3D request'));
-    const image = vi.spyOn(ImageToBricksApiService, 'generateBricksFromImageStream').mockRejectedValue(new Error('Test image request'));
-    const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
-    const BrowserURL = URL;
-    vi.stubGlobal('URL', class extends BrowserURL {
-      static createObjectURL = vi.fn(() => 'blob:test-image');
-      static revokeObjectURL = vi.fn();
-    });
+    const generate = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Blue car', generationMethod: 'llm', llmModel: savedModel }));
     const container = document.createElement('div');
     document.body.append(container);
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
-      expect(Array.from(model.querySelectorAll('optgroup')).map(group => group.label)).toEqual(['Claude', 'OpenAI', 'Other']);
-      const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
-      const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
-      act(() => {
-        model.value = selected;
-        model.dispatchEvent(new Event('change', { bubbles: true }));
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'Blue car');
-        prompt.dispatchEvent(new Event('input', { bubbles: true }));
-      });
-      expect(model.value).toBe(selected);
-      expect(Array.from(mode.querySelectorAll('button')).every(button => button.disabled)).toBe(true);
+      expect(Array.from(model.options).map(option => ({ value: option.value, label: option.label }))).toEqual([
+        { value: DEFAULT_LLM_MODEL, label: 'Claude Opus 5.5' },
+      ]);
+      expect(model.value).toBe(DEFAULT_LLM_MODEL);
       const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
       await act(async () => create.click());
-      expect(text.mock.calls[0][6]).toBe(selected === 'sam3d');
-      expect(llm).not.toHaveBeenCalled();
-      const upload = container.querySelector('input[type=file]') as HTMLInputElement;
-      act(() => {
-        Object.defineProperty(upload, 'files', { configurable: true, value: [new File(['image'], 'car.png', { type: 'image/png' })] });
-        upload.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      await act(async () => {
-        create.click();
-        await vi.waitFor(() => expect(image).toHaveBeenCalledTimes(1));
-      });
-      expect(image.mock.calls[0][6]).toBe(selected === 'sam3d');
-      act(() => {
-        model.value = 'gpt-5.5';
-        model.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      expect(Array.from(mode.querySelectorAll('button')).every(button => !button.disabled)).toBe(true);
-      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
-      await act(async () => {
-        create.click();
-        await vi.waitFor(() => expect(llm).toHaveBeenCalledTimes(1));
-      });
-      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.5' }), undefined);
-      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_render_model_selected', {
-        generation_method: '3d', model: selected, provider: 'fal',
-      });
-    } finally { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); }
+      expect(generate).toHaveBeenCalledWith(expect.objectContaining({ model: DEFAULT_LLM_MODEL }), undefined);
+    } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); container.remove(); }
   });
 
   it.each(['accepted', 'failed'])('submits an image with Enter and clears it only when %s', async outcome => {
@@ -433,11 +393,7 @@ describe('LandingPage', () => {
       expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('false');
       expect(Array.from(mode.querySelectorAll('button')).map(button => button.textContent)).toEqual(['Basic bricks', 'All parts']);
       expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      await act(async () => {
-        model.value = 'gpt-5.6-sol';
-        model.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-      expect(model.value).toBe('gpt-5.6-sol');
+      expect(model.value).toBe(DEFAULT_LLM_MODEL);
       expect(container.querySelector('#all-parts-warning')?.textContent).toContain('Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.');
       expect(mode.getAttribute('aria-describedby')).toBe('all-parts-warning');
       const warning = container.querySelector('#all-parts-warning')!;
@@ -449,7 +405,7 @@ describe('LandingPage', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await act(async () => findButton('Create').click());
-      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: 'gpt-5.6-sol', prompt: input.value }), undefined);
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: DEFAULT_LLM_MODEL, prompt: input.value }), undefined);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
@@ -460,12 +416,12 @@ describe('LandingPage', () => {
       act(() => {
         mode.querySelector<HTMLButtonElement>('button[value="llm"]')!.click();
       });
-      expect(model.value).toBe('gpt-5.6-sol');
+      expect(model.value).toBe(DEFAULT_LLM_MODEL);
       expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'llm' });
       expect(container.querySelector('#all-parts-warning')).toBeNull();
       await act(async () => findButton('Create').click());
-      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: input.value, model: 'gpt-5.6-sol' }), undefined);
+      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: input.value, model: DEFAULT_LLM_MODEL }), undefined);
       expect(nova).toHaveBeenCalledTimes(1);
 
     } finally { act(() => root.unmount()); container.remove(); }
@@ -652,15 +608,14 @@ describe('LandingPage', () => {
       expect(container.querySelector('[aria-label="Toggle settings"]')).toBeNull();
       expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
       expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
-      expect(Array.from(model.options).map(option => option.value)).toContain('sam3d');
-      expect(Array.from(model.options).map(option => option.value)).toContain('trellis');
+      expect(Array.from(model.options).map(option => option.value)).toEqual([DEFAULT_LLM_MODEL]);
     };
     verify();
     window.__BRICKBUILDER_NATIVE_APP__ = Object.freeze({ platform: 'ios', version: '0.1.0' });
     try { verify(); } finally { delete window.__BRICKBUILDER_NATIVE_APP__; }
   });
 
-  it('model selection preserves Nova mode and ignores disabled controls', async () => {
+  it('model selection ignores unavailable models and disabled controls', async () => {
     const onChange = vi.fn();
     const container = document.createElement('div');
     const root = createRoot(container);
@@ -672,10 +627,8 @@ describe('LandingPage', () => {
         select.value = 'gpt-5.6-sol';
         select.dispatchEvent(new Event('change', { bubbles: true }));
       });
-      expect(onChange).toHaveBeenCalledWith('gpt-5.6-sol');
-      expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
-        generation_method: 'nova', model: 'gpt-5.6-sol', provider: 'openai',
-      });
+      expect(onChange).not.toHaveBeenCalled();
+      expect(capture).not.toHaveBeenCalledWith('landing_render_model_selected', expect.anything());
       expect(capture).not.toHaveBeenCalledWith('landing_generation_method_selected', expect.anything());
       onChange.mockClear();
       act(() => root.render(<GenerationModelSelector mode="nova" disabled onChange={onChange} />));

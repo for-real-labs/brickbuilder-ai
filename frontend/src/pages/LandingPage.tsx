@@ -31,7 +31,6 @@ import { CommunityGeneration, GetCommunityGenerationsApiService } from "../servi
 import {
   DEFAULT_LLM_MODEL,
   LLM_MODEL_OPTIONS,
-  LlmProvider,
   LlmToBricksApiService,
   getLlmModelOption,
 } from "../services/llmToBricksApi";
@@ -70,10 +69,6 @@ type GenerationMethod = "3d" | "llm" | "nova";
 export const DEFAULT_GENERATION_METHOD: GenerationMethod = "nova";
 export type ThreeDModel = "sam3d" | "trellis";
 export const DEFAULT_THREE_D_MODEL: ThreeDModel = "sam3d";
-const LLM_PROVIDER_GROUPS: Array<{ provider: LlmProvider; label: string }> = [
-  { provider: "anthropic", label: "Claude" },
-  { provider: "openai", label: "OpenAI" },
-];
 
 export function GenerationModelSelector({
   model = DEFAULT_LLM_MODEL,
@@ -96,26 +91,17 @@ export function GenerationModelSelector({
         onChange={event => {
           const option = getLlmModelOption(event.target.value);
           const selected = event.target.value;
-          const other = selected === 'sam3d' || selected === 'trellis';
-          if ((!option && !other) || selected === model || disabled) return;
+          if (!option || selected !== DEFAULT_LLM_MODEL || selected === model || disabled) return;
           onChange(selected);
           posthog.capture('landing_render_model_selected', {
-            generation_method: other ? '3d' : mode === '3d' ? 'llm' : mode, model: selected, provider: option?.provider ?? 'fal',
+            generation_method: mode === '3d' ? 'llm' : mode, model: selected, provider: option.provider,
           });
         }}
         className="min-h-11 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-52"
       >
-        {LLM_PROVIDER_GROUPS.map(group => (
-          <optgroup key={group.provider} label={group.label}>
-            {LLM_MODEL_OPTIONS.filter(option => option.provider === group.provider).map(option => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </optgroup>
+        {LLM_MODEL_OPTIONS.filter(option => option.id === DEFAULT_LLM_MODEL).map(option => (
+          <option key={option.id} value={option.id}>{option.label}</option>
         ))}
-        <optgroup label="Other">
-          <option value="sam3d">SAM3D</option>
-          <option value="trellis">Trellis</option>
-        </optgroup>
       </select>
       <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
     </div>
@@ -386,13 +372,10 @@ export default function LandingPage() {
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      setGenerationMethod(payload.generationMethod === '3d' || payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
+      setGenerationMethod(payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
         ? payload.generationMethod : DEFAULT_GENERATION_METHOD);
-      if (payload.threeDModel === 'sam3d' || payload.threeDModel === 'trellis') setThreeDModel(payload.threeDModel);
-      if (payload.llmModel && getLlmModelOption(payload.llmModel)) setLlmModel(payload.llmModel);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
-        setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
-        if (payload.generationMethod === 'nova') setLlmModel(payload.novaOptions.model);
+        setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, model: DEFAULT_LLM_MODEL, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
       }
       if (payload.image && payload.image.base64) {
         try {
