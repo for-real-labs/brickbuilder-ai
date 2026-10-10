@@ -52,6 +52,7 @@ import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import { ModelEditControls } from "../components/ModelEditControls";
 import { ModelOrderCard } from "../components/ModelOrderCard";
+import { ModelShareMenu } from "../components/ModelShareMenu";
 import "./GeneratedModel.css";
 import { UpdateGenerationNameApiService } from "../services/updateGenerationNameApi";
 import { UpdateImagePreviewApiService } from "../services/updateImagePreviewApi";
@@ -1946,7 +1947,8 @@ export default function GeneratedModel() {
         {/* Keep the completed model page visible while its edit runs. */}
         {showModelPage && (
           <>
-        <section className="model-workspace-title mt-2 mb-4">
+        <section className="model-workspace-title mt-2 mb-4 flex items-center justify-between gap-3">
+          <div className="min-w-0">
           <p className="mb-1 text-xs font-normal text-slate-500">Your brick model</p>
           <GenerationTitle
             key={currentGenerationId || 'local'}
@@ -1960,6 +1962,10 @@ export default function GeneratedModel() {
               refreshNotifications();
             }}
           />
+          </div>
+          {currentGenerationId && mpdContent && !isSavePolling && !isLDrawUpload && (
+            <ModelShareMenu generationId={currentGenerationId} modelName={modelName} />
+          )}
         </section>
 
 <div className={`model-workspace ${showVoxelEditor ? "model-workspace-manual" : ""}`}>
