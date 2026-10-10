@@ -92,7 +92,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
       <div className="checkout-postcard-dialog-content">
         <button type="button" className="checkout-postcard-close" aria-label="Close postcard preview" onClick={close}><X size={20} aria-hidden="true" /></button>
         <p id={descriptionId} className="checkout-postcard-description">Select this option to ship a post card with a QR code link to the instructions.</p>
-        <figure className="checkout-postcard-example" aria-label="6 by 4 inch instructions postcard">
+        <figure className="checkout-postcard-example" aria-label="7 by 5 inch instructions postcard with bleed (7.12 by 5.12 inches)">
           <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
               <span className="checkout-postcard-brand">BRICKBUILDER</span>

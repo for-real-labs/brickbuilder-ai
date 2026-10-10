@@ -1,9 +1,12 @@
 import React, { act } from 'react';
+import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import jsQR from 'jsqr';
 import posthog from 'posthog-js';
 import { InstructionsPostcard, getPostcardTheme } from '../src/components/checkout/InstructionsPostcard';
+
+const orderKitStyles = readFileSync('src/pages/OrderKit.css', 'utf8');
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 const viewer = vi.hoisted(() => ({ props: [] as any[], captureCurrentViewPng: vi.fn(() => 'data:image/png;base64,adjusted-view') }));
@@ -118,9 +121,16 @@ it('removes the extra popup headings and caption while keeping an accessible lab
 });
 
 
-it('identifies the standard 6 by 4 inch card without adding a visible caption', () => {
-  render(); open();
-  expect(container.querySelector('figure')?.getAttribute('aria-label')).toBe('6 by 4 inch instructions postcard');
+it('keeps the Vistaprint bleed aspect ratio with a long title and unavailable model', () => {
+  render({ modelName: 'A very long custom model name that wraps across multiple lines', modelImage: null }); open();
+  const style = document.createElement('style');
+  style.textContent = orderKitStyles;
+  document.head.append(style);
+  try {
+    const cardRule = Array.from(style.sheet!.cssRules).find(rule => (rule as CSSStyleRule).selectorText === '.checkout-postcard') as CSSStyleRule;
+    expect(cardRule.style.getPropertyValue('aspect-ratio')).toBe('7.12 / 5.12');
+    expect(container.querySelector('figure')?.getAttribute('aria-label')).toBe('7 by 5 inch instructions postcard with bleed (7.12 by 5.12 inches)');
+  } finally { style.remove(); }
   expect(container.querySelector('figcaption')).toBeNull();
 });
 
