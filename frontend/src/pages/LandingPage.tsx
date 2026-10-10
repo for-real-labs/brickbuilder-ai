@@ -1441,7 +1441,15 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
         </span>
       </a>
 
-      <nav className="absolute left-1/2 top-1/2 hidden -translate-x-1/2 -translate-y-1/2 sm:flex">
+      <nav aria-label="Main navigation" className="order-last flex w-full flex-wrap items-center justify-center xl:absolute xl:left-1/2 xl:top-1/2 xl:w-auto xl:-translate-x-1/2 xl:-translate-y-1/2">
+        <a
+          href="/image-to-lego"
+          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
+          onClick={() => posthog.capture('landing_header_image_to_lego_clicked')}
+        >
+          <ImageIcon aria-hidden="true" className="h-4 w-4" />
+          Image to LEGO
+        </a>
         <button
           className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
           onClick={() => navigate("/glb-to-lego")}

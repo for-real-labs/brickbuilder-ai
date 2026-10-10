@@ -683,6 +683,26 @@ describe('LandingPage', () => {
   });
 });
 
+it('links to image-to-lego immediately before GLB to LEGO in the header', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+  vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    const nav = container.querySelector('header nav')!;
+    const imageLink = nav.querySelector<HTMLAnchorElement>('a')!;
+    expect(imageLink.getAttribute('href')).toBe('/image-to-lego');
+    expect(imageLink.textContent?.trim()).toBe('Image to LEGO');
+    expect(imageLink.nextElementSibling?.textContent?.trim()).toBe('GLB to LEGO');
+    imageLink.addEventListener('click', event => event.preventDefault());
+    act(() => imageLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+    expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_header_image_to_lego_clicked');
+  } finally { act(() => root.unmount()); vi.unstubAllGlobals(); }
+});
+
 it('labels the top-right auth action Sign up', async () => {
   authSettings.isSupabaseConfigured = true;
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
