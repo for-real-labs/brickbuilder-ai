@@ -29,13 +29,13 @@ it('keeps one in-memory guest credential when browser storage is blocked', () =>
   expect(getGuestSession()).toBe(getGuestSession());
 });
 
-it('sends guest proof on creation and claiming, preserving auth, body, and abort', async () => {
+it('sends guest proof on creation and claiming, adding entry-page attribution and preserving auth and abort', async () => {
   const fetch = vi.fn().mockResolvedValue({ ok: true });
   vi.stubGlobal('fetch', fetch);
   const signal = new AbortController().signal;
   await apiFetch('/llmToBricks', { method: 'POST', body: '{}', signal });
   await apiFetch('/claimGeneration', { headers: { Authorization: 'Bearer token' }, signal });
-  expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'POST', body: '{}', signal, headers: { 'x-guest-session': getGuestSession() } });
+  expect(fetch.mock.calls[0][1]).toMatchObject({ method: 'POST', body: JSON.stringify({ entry_page: '/' }), signal, headers: { 'x-guest-session': getGuestSession() } });
   expect(fetch.mock.calls[1][1].headers).toMatchObject({ authorization: 'Bearer token', 'x-guest-session': getGuestSession() });
 });
 

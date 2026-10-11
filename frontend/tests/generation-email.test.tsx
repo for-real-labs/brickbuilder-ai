@@ -6,7 +6,7 @@ import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { authenticatedApiFetch } from '../src/services/apiFetch';
 import posthog from 'posthog-js';
 
-const auth = vi.hoisted(() => ({ session: null as null | { user: { id: string } } }));
+const auth = vi.hoisted(() => ({ session: null as null | { user: { id: string; email?: string } } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../src/services/apiFetch', () => ({ authenticatedApiFetch: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
@@ -18,6 +18,74 @@ beforeEach(() => {
   vi.spyOn(GenerationEmailApi, 'subscribe').mockResolvedValue({ subscribed: true, email: 'guest@example.com' });
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); });
+
+it('prompts after a new generation and shares the card subscription and success message', async () => {
+  const onPromptShown = vi.fn();
+  await act(async () => root.render(<GetNotifiedButton generationId="new-build" promptOnStart onPromptShown={onPromptShown} />));
+  const modal = document.querySelector('[role="dialog"]')!;
+  expect(modal.textContent).toContain('This may take up to 30 minutes to generate.');
+  expect(modal.textContent).toContain('Would you like to be notified?');
+  const input = modal.querySelector('input')!;
+  expect(input.placeholder).toBe('you@example.com');
+  expect(input.value).toBe('');
+  expect(input.className).toContain('placeholder:text-slate-400');
+  expect(document.activeElement).toBe(input);
+  expect(onPromptShown).toHaveBeenCalledTimes(1);
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
+    generation_id: 'new-build', is_authenticated: false,
+  });
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'guest@example.com');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => modal.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('new-build', 'guest@example.com');
+  expect(modal.querySelector('p')!.textContent).toBe("We'll send an email to guest@example.com when your set is ready!");
+  expect(container.textContent).toContain('We’ll email you');
+  act(() => Array.from(modal.querySelectorAll('button')).find(button => button.textContent === 'Done')!.click());
+  act(() => container.querySelector('button')!.click());
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('guest@example.com');
+  expect(GenerationEmailApi.subscribe).toHaveBeenCalledTimes(1);
+  expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain('guest@example.com');
+});
+
+it.each(['Not now', 'Escape', 'backdrop'])('dismisses the prompt with %s without opting in or reopening', async method => {
+  await act(async () => root.render(<GetNotifiedButton generationId="new-build" promptOnStart />));
+  const modal = document.querySelector('[role="dialog"]')!;
+  act(() => {
+    if (method === 'Escape') modal.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+    else if (method === 'backdrop') (modal.parentElement as HTMLElement).click();
+    else Array.from(modal.querySelectorAll('button')).find(button => button.textContent === method)!.click();
+  });
+  await act(async () => root.render(<GetNotifiedButton generationId="new-build" promptOnStart />));
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+  expect(document.body.style.overflow).toBe('');
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_dismissed', { generation_id: 'new-build', stage: 'prompt' });
+  act(() => container.querySelector('button')!.click());
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('No newsletter');
+});
+
+it('shows the account email and preserves signed-in card enrollment rules in the prompt', async () => {
+  auth.session = { user: { id: 'owner', email: 'account@example.com' } };
+  vi.mocked(GenerationEmailApi.subscribe).mockResolvedValue({ subscribed: true, email: 'account@example.com' });
+  await act(async () => root.render(<GetNotifiedButton generationId="new-build" promptOnStart />));
+  const modal = document.querySelector('[role="dialog"]')!;
+  expect(modal.querySelector('input')!.value).toBe('account@example.com');
+  expect(modal.querySelector('input')!.readOnly).toBe(true);
+  await act(async () => modal.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('new-build', undefined);
+  expect(modal.querySelector('p')!.textContent).toBe("We'll send an email to account@example.com when your set is ready!");
+});
+
+it('shows a restored subscription instead of offering to subscribe again in the prompt', async () => {
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: true, email: 'saved@example.com' });
+  await act(async () => root.render(<GetNotifiedButton generationId="new-build" promptOnStart />));
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('You’re all set');
+  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('saved@example.com');
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
+});
 
 it('subscribes a signed-in owner with their server-side account email in one click', async () => {
   auth.session = { user: { id: 'owner' } };

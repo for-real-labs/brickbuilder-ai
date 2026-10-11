@@ -5,16 +5,24 @@ import { useAuth } from '../contexts/AuthContext';
 import { GenerationEmailApi } from '../services/generationEmailApi';
 import posthog from 'posthog-js';
 
-export function GetNotifiedButton({ generationId }: { generationId: string }) {
+export function GetNotifiedButton({ generationId, promptOnStart = false, onPromptShown }: {
+  generationId: string;
+  promptOnStart?: boolean;
+  onPromptShown?: () => void;
+}) {
   const { session } = useAuth();
   return <NotificationButton key={`${generationId}:${session?.user.id || 'guest'}`}
-    generationId={generationId} signedIn={!!session} />;
+    generationId={generationId} signedIn={!!session} accountEmail={session?.user.email}
+    promptOnStart={promptOnStart} onPromptShown={onPromptShown} />;
 }
 
-function NotificationButton({ generationId, signedIn }: { generationId: string; signedIn: boolean }) {
+function NotificationButton({ generationId, signedIn, accountEmail, promptOnStart, onPromptShown }: {
+  generationId: string; signedIn: boolean; accountEmail?: string;
+  promptOnStart: boolean; onPromptShown?: () => void;
+}) {
   const [subscribed, setSubscribed] = React.useState(false);
-  const [stage, setStage] = React.useState<'email' | 'success' | null>(null);
-  const [email, setEmail] = React.useState('');
+  const [stage, setStage] = React.useState<'prompt' | 'email' | 'success' | null>(null);
+  const [email, setEmail] = React.useState(accountEmail || '');
   const [recipient, setRecipient] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState('');
@@ -22,8 +30,18 @@ function NotificationButton({ generationId, signedIn }: { generationId: string; 
   const input = React.useRef<HTMLInputElement>(null);
   const dialog = React.useRef<HTMLDivElement>(null);
   const statusRequest = React.useRef<AbortController | null>(null);
+  const promptShown = React.useRef(false);
   const titleId = React.useId();
   const descriptionId = `${titleId}-description`;
+  React.useEffect(() => {
+    if (!promptOnStart || promptShown.current) return;
+    promptShown.current = true;
+    setStage(subscribed ? 'success' : 'prompt');
+    posthog.capture('generation_email_notification_prompt_shown', {
+      generation_id: generationId, is_authenticated: signedIn,
+    });
+    onPromptShown?.();
+  }, [promptOnStart, subscribed, generationId, signedIn, onPromptShown]);
   React.useEffect(() => {
     const controller = new AbortController();
     statusRequest.current = controller;
@@ -31,6 +49,7 @@ function NotificationButton({ generationId, signedIn }: { generationId: string; 
       if (!controller.signal.aborted) {
         setSubscribed(result.subscribed);
         setRecipient(result.email);
+        if (result.subscribed) setStage(current => current === 'prompt' ? 'success' : current);
       }
     }).catch(() => {});
     return () => controller.abort();
@@ -101,13 +120,18 @@ function NotificationButton({ generationId, signedIn }: { generationId: string; 
             : 'Your email notification is saved. Refresh to see the recipient email address.'}</p>
           <button type="button" onClick={close} className="mt-5 h-12 w-full rounded-full bg-[#f44336] px-5 font-semibold text-white hover:bg-[#ff6b6b]">Done</button>
         </> : <>
-        <h2 id={titleId} className="pr-9 text-xl font-semibold text-slate-900">Get notified</h2>
-        <p id={descriptionId} className="mt-2 text-sm text-slate-600">We’ll send one email when your model is ready. No newsletter.</p>
+        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-[#f44336]"><Bell aria-hidden className="h-6 w-6" /></div>
+        <h2 id={titleId} className="pr-9 text-xl font-semibold text-slate-900">{stage === 'prompt' ? 'This may take up to 30 minutes to generate.' : 'Get notified'}</h2>
+        <p id={descriptionId} className="mt-2 text-sm text-slate-600">{stage === 'prompt'
+          ? 'Would you like to be notified?'
+          : 'We’ll send one email when your model is ready. No newsletter.'}</p>
         <form onSubmit={event => { event.preventDefault(); void save(); }} className="mt-5">
-          <label htmlFor={`${titleId}-email`} className="text-sm font-medium text-slate-700">Email address</label>
-          <input ref={input} id={`${titleId}-email`} type="email" autoComplete="email" required maxLength={254} disabled={busy} value={email} onChange={event => setEmail(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100" />
+          <label htmlFor={`${titleId}-email`} className="text-sm font-medium text-slate-700">{signedIn ? 'Account email address' : 'Email address'}</label>
+          <input ref={input} id={`${titleId}-email`} type="email" autoComplete="email" placeholder="you@example.com" required={!signedIn} readOnly={signedIn} maxLength={254} disabled={busy} value={email} onChange={event => setEmail(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 text-slate-900 placeholder:text-slate-400 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100" />
+          {stage === 'prompt' && <p className="mt-2 text-xs text-slate-500">We’ll send one email when your model is ready. No newsletter.</p>}
           {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={busy} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#f44336] px-5 font-semibold text-white hover:bg-[#ff6b6b] disabled:opacity-60">{busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}Notify me</button>
+          <button type="submit" disabled={busy} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#f44336] px-5 font-semibold text-white hover:bg-[#ff6b6b] disabled:opacity-60">{busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}{stage === 'prompt' ? 'Get notified' : 'Notify me'}</button>
+          {stage === 'prompt' && <button type="button" disabled={busy} onClick={close} className="mt-2 min-h-11 w-full rounded-full px-5 text-sm font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336]">Not now</button>}
         </form>
         </>}
       </div>
