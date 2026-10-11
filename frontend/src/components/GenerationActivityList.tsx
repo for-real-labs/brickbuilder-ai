@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, CheckCircle2, Loader2, AlertCircle, Square } from 'lucide-react';
+import { Box, CheckCircle2, Loader2, AlertCircle, Square, X } from 'lucide-react';
 import { CancelGenerationButton } from './CancelGenerationButton';
 import posthog from 'posthog-js';
 import { GenerationActivity, isGenerationActive, isPreviewPending } from '../hooks/useGenerationActivity';
@@ -12,10 +12,11 @@ import { ResumeNovaButton } from './ResumeNovaButton';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { GetNotifiedButton } from './GetNotifiedButton';
 
-export function GenerationActivityList({ generations, error, onOpen, onCancelled, onResumed, notificationPromptId, onNotificationPromptShown }: {
+export function GenerationActivityList({ generations, error, onOpen, onDismiss, onCancelled, onResumed, notificationPromptId, onNotificationPromptShown }: {
   generations: GenerationActivity[];
   error: string | null;
   onOpen: (id: string) => void;
+  onDismiss?: (id: string) => void;
   onCancelled?: (id: string) => void;
   onResumed?: (sourceId: string, newId: string) => void;
   notificationPromptId?: string | null;
@@ -51,6 +52,12 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
             : agentGeneration ? 'Designing bricks' : 'Building your model';
           return (
             <article key={generation.id} className={`relative min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors ${canOpen ? 'hover:border-slate-400' : ''}`}>
+              {!active && onDismiss && <button type="button" aria-label={`Dismiss ${title}`}
+                className="absolute right-2 top-2 z-30 flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-500 shadow-sm hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336]"
+                onClick={() => {
+                  posthog.capture('landing_generation_dismissed', { generation_id: generation.id, status: generation.status });
+                  onDismiss(generation.id);
+                }}><X aria-hidden="true" className="h-4 w-4" /></button>}
               <div className="relative h-36 overflow-hidden bg-slate-50">
                 {previewPending
                   ? <div role="status" aria-label="Loading model preview" className="flex h-full items-center justify-center"><Loader2 aria-hidden="true" className="h-9 w-9 animate-spin text-slate-400" /></div>

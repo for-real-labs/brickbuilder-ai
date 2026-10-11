@@ -5,6 +5,7 @@ import zipfile
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
+import httpx
 import pytest
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -52,12 +53,19 @@ def test_resume_cannot_bypass_native_loopback_guard(monkeypatch):
     assert exc.value.status_code == 403
 
 
-def test_nova_import_saves_original_model_and_durable_session_before_charging(monkeypatch, tmp_path):
+@pytest.mark.parametrize("disconnect", [False, True])
+def test_nova_import_saves_original_model_and_durable_session_before_charging(monkeypatch, tmp_path, disconnect):
     calls = []
     session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'versions': {'toolkit': 'revision'}, 'model_id': 'new'}
     result = NovaResult('hierarchical MPD', 'flat LDR', b'png', b'archive', session)
+    attempts = []
     class Bucket:
-        def upload(self, **kwargs): calls.append(('upload', kwargs['path'], kwargs['file']))
+        def upload(self, **kwargs):
+            if kwargs["path"].endswith("nova-source.zip"):
+                attempts.append(kwargs)
+                if disconnect and len(attempts) == 1:
+                    raise httpx.RemoteProtocolError("Server disconnected")
+            calls.append(('upload', kwargs['path'], kwargs['file']))
     class Storage:
         client = SimpleNamespace(storage=SimpleNamespace(from_=lambda _: Bucket()))
         async def update_status(self, generation_id, status, error_message=None): calls.append(('status', status))
@@ -77,6 +85,7 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
             target = tmp_path / 'packed.mpd'; target.write_text('packed hierarchy')
             return str(target)
     async def charge(**kwargs): calls.append(('charge', 1))
+    monkeypatch.setattr("src.utils.storage_upload.retry_sleep", AsyncMock())
     monkeypatch.setattr(module, 'generation_storage', Storage())
     monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
     monkeypatch.setattr(module, 'LDrawPacker', Packer)
@@ -90,6 +99,8 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     assert ('model', 'ldr', 'flat LDR') in calls
     assert not any(call[:2] == ('model', 'mpd') for call in calls)
     assert calls[-2:] == [('charge', 1), ('status', 'completed')]
+    assert len(attempts) == (2 if disconnect else 1)
+    assert all(attempt == attempts[0] for attempt in attempts)
 
 
 @pytest.mark.parametrize('message', ['Nova did not publish a model', 'Generation stopped because it would exceed the $10 AI cost limit.'])

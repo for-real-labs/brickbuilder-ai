@@ -22,6 +22,7 @@ from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.nova_service import NovaService
+from ..utils.storage_upload import upload_artifact
 from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.posthog_client import track_error, track_image_conversion
 from ..utils.generation_attribution import infer_input_type
@@ -104,9 +105,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
 
 async def _save_session(generation_id: str, session: dict):
     bucket = generation_storage.client.storage.from_("generation-output")
-    await asyncio.to_thread(bucket.upload, path=f"{generation_id}/nova-session.json",
-                            file=json.dumps(session, allow_nan=False).encode(),
-                            file_options={"content-type": "application/json", "upsert": "true"})
+    await upload_artifact(bucket, path=f"{generation_id}/nova-session.json",
+                          file=json.dumps(session, allow_nan=False).encode(), content_type="application/json")
 
 
 async def _owned_session(generation_id: str, auth_info: dict) -> dict:
@@ -177,8 +177,8 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
         if result.preview:
             await generation_storage.store_preview_image(generation_id, result.preview)
         bucket = generation_storage.client.storage.from_("generation-output")
-        await asyncio.to_thread(bucket.upload, path=f"{generation_id}/nova-source.zip", file=result.archive,
-                                file_options={"content-type": "application/zip", "upsert": "true"})
+        await upload_artifact(bucket, path=f"{generation_id}/nova-source.zip", file=result.archive,
+                              content_type="application/zip")
         await deduct_credits(user_info=user_info, auth_info=auth_info, credits_to_deduct=1,
                              operation_description=f"Nova generation ({request.model})")
         await generation_storage.update_status(generation_id, "completed")
