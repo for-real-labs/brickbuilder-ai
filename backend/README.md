@@ -146,7 +146,7 @@ artifact flow: LDR validation, MPD packing, parts-list creation, Supabase
 upload, and `/generation/{id}` polling.
 
 `model` must be one of the allow-listed IDs in `SUPPORTED_MODELS`
-(`src/requests/llmToBricks.py`): `claude-opus-5-5` (default), `claude-opus-5`,
+(`src/requests/llmToBricks.py`): `gpt-6-astra` (default), `claude-opus-5-5`, `claude-opus-5`,
 `claude-sonnet-5`, `claude-fable-5`, `gpt-5.6-sol`, `gpt-5.6-terra` or `gpt-5.5`.
 Claude models use `ANTHROPIC_API_KEY` (and optional `ANTHROPIC_WORKSPACE_ID`)
 through the Messages API; OpenAI models use `OPENAI_API_KEY` through the

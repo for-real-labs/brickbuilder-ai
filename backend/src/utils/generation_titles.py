@@ -79,7 +79,7 @@ async def _reference_image(row: dict, storage_client) -> str | None:
 
 
 async def _request_title(row: dict, storage_client) -> str:
-    provider = "anthropic" if os.getenv("ANTHROPIC_API_KEY") else "openai"
+    provider = "openai" if os.getenv("OPENAI_API_KEY") else "anthropic"
     if not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("OPENAI_API_KEY"):
         return ""
     image = await _reference_image(row, storage_client)

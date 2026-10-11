@@ -74,8 +74,15 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             if exc.status_code != 409 or source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
                 raise
         else:
-            request.model = request._nova_session['model']
-            request.auth_mode = request._nova_session['auth_mode']
+            # Completed Claude builds can be edited with the current OpenAI
+            # default by importing their saved geometry into a fresh session.
+            if (source.get('status') == 'completed'
+                    and request.model == 'gpt-6-astra'
+                    and request._nova_session['model'].startswith('claude-')):
+                request._nova_session = None
+            else:
+                request.model = request._nova_session['model']
+                request.auth_mode = request._nova_session['auth_mode']
             if source.get('status') != 'completed':
                 return
     # Completed geometry is public; sessions and source archives are not.

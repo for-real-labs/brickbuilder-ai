@@ -82,3 +82,20 @@ def test_provider_usage_accumulates_across_streamed_and_normal_turns(monkeypatch
 def test_unknown_model_cannot_silently_bypass_budget():
     with pytest.raises(ValueError, match='unavailable'):
         GenerationBudget('unpriced-model')
+
+
+def test_astra_costs_and_response_bridge_share_the_generation_budget():
+    budget = GenerationBudget('openai/responses/gpt-6-astra')
+    budget.record_usage({'input_tokens': 2000, 'input_tokens_details': {'cached_tokens': 1000},
+                         'output_tokens': 1000}, 'openai')
+    assert budget.spent == Decimal('.061')
+    budget.spent = Decimal('9')
+    assert budget.output_limit(10000, 65536) == 17500
+
+
+def test_astra_cache_writes_are_charged_at_the_published_rate():
+    budget = GenerationBudget('gpt-6-astra')
+    budget.record_usage({'input_tokens': 2000, 'input_tokens_details': {'cached_tokens': 500, 'cache_write_tokens': 1000},
+                         'output_tokens': 1000}, 'openai')
+    assert budget.spent == Decimal('.068')
+    assert budget.usage_records[0]['cache_write_tokens'] == 1000

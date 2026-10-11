@@ -53,11 +53,12 @@ class GenerationBudgetExceeded(ValueError):
         super().__init__(BUDGET_ERROR)
 
 
-# Standard API USD per million tokens, verified 2026-10-05:
+# Standard API USD per million tokens, verified 2026-10-11:
 # https://developers.openai.com/api/docs/pricing
 # https://platform.claude.com/docs/en/about-claude/pricing
 # input, output, cache read, 5m cache write, 1h cache write
 MODEL_PRICES = {
+    'gpt-6-astra': ('10', '50', '1', '12.5', '12.5'),
     'gpt-5.6-sol': ('4', '20', '.4', '5', '8'),
     'gpt-5.6-terra': ('2', '12', '.2', '2.5', '4'),
     'gpt-5.5': ('5', '30', '.5', '6.25', '10'),
@@ -133,18 +134,20 @@ class GenerationBudget:
             outputs = _tokens(usage, 'output_tokens' if 'output_tokens' in usage else 'completion_tokens')
             details = usage.get('input_tokens_details') or usage.get('prompt_tokens_details') or {}
             cached = _tokens(details, 'cached_tokens')
-            if cached > inputs:
+            written = _tokens(details, 'cache_write_tokens')
+            if cached + written > inputs:
                 raise ValueError('Provider returned invalid cache usage; generation stopped.')
             if inputs > 272000:
                 input_price *= 2
                 read_price *= 2
+                write5 *= 2
                 output_price *= Decimal('1.5')
             # Reasoning is already included in the reported output tokens.
-            cost = (inputs - cached) * input_price + cached * read_price + outputs * output_price
+            cost = (inputs - cached - written) * input_price + cached * read_price + written * write5 + outputs * output_price
         cost /= 1000000
         record = {'model': self.model, 'input_tokens': inputs + cached + written if provider == 'anthropic' else inputs,
                   'output_tokens': outputs, 'cache_read_tokens': cached,
-                  'cache_write_tokens': written if provider == 'anthropic' else 0,
+                  'cache_write_tokens': written,
                   'estimated_cost_usd': str(cost)}
         self.usage_records.append(record)
         ledger = current_generation_usage.get()
