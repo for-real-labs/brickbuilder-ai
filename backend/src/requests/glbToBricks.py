@@ -190,6 +190,7 @@ async def glb_to_bricks(
     voxelizer: str = Form("trimesh"),
     detail_level: float = Form(40.0),
     auth_info: dict = Depends(get_user_with_optional_auth),
+    entry_page: str | None = None,
 ) -> GlbToBricksResponse:
     """
     Upload a GLB and convert it to a brick structure.
@@ -249,6 +250,7 @@ async def glb_to_bricks(
             prompt=f"GLB upload: {file.filename}",
             detail_level=detail_level,
             endpoint="glbToBricks",
+            input_format="glb", entry_page=entry_page,
             model_3d=f"upload:{voxelizer}",
         )
 

@@ -12,18 +12,20 @@ export function LDrawUploadSection({ authToken, onImported }: { authToken?: stri
   useEffect(() => () => controller.current?.abort(), []);
   const upload = async (file: File, source: 'picker' | 'drop') => {
     if (controller.current) return;
+    const attribution = { page: window.location.pathname, input_type: 'ldraw', input_format: file.name.split('.').pop()?.toLowerCase() };
     const current = new AbortController(); controller.current = current;
     setUploading(true); setError(null);
-    posthog.capture('ldraw_upload_started', { source, format: file.name.split('.').pop()?.toLowerCase() });
+    posthog.capture('ldraw_upload_started', { ...attribution, source, format: attribution.input_format });
     try {
       const result = await UploadLdrawApiService.upload(file, authToken, current.signal);
       if (current.signal.aborted) return;
-      posthog.capture('ldraw_upload_completed', { generation_id: result.generation_id });
+      posthog.capture('ldraw_upload_completed', { ...attribution, generation_id: result.generation_id });
+      posthog.capture('generation_started', { ...attribution, generation_id: result.generation_id });
       onImported(result.generation_id);
     } catch (failure) {
       if (!current.signal.aborted) {
         setError(failure instanceof Error ? failure.message : 'Unable to import this model. Please try again.');
-        posthog.capture('ldraw_upload_failed');
+        posthog.capture('ldraw_upload_failed', attribution);
       }
     } finally {
       if (controller.current === current) { controller.current = null; setUploading(false); }
@@ -33,7 +35,7 @@ export function LDrawUploadSection({ authToken, onImported }: { authToken?: stri
     onDragOver={event => { event.preventDefault(); event.stopPropagation(); }}
     onDragLeave={event => { event.preventDefault(); event.stopPropagation(); if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDragging(false); }}
     onDrop={event => { event.preventDefault(); event.stopPropagation(); setDragging(false); const file = event.dataTransfer.files[0]; if (file) void upload(file, 'drop'); }}>
-    <button type="button" disabled={uploading} aria-label="Choose LDraw file" onClick={() => { posthog.capture('ldraw_upload_picker_opened'); input.current?.click(); }}
+    <button type="button" disabled={uploading} aria-label="Choose LDraw file" onClick={() => { posthog.capture('ldraw_upload_picker_opened', { page: window.location.pathname, input_type: 'ldraw' }); input.current?.click(); }}
       className={`flex min-h-64 w-full flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed bg-white px-6 py-8 text-center shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-wait ${dragging ? 'border-[#f44336] bg-red-50' : 'border-red-200 hover:border-[#f44336]'}`}>
       <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50 text-[#f44336]"><Box aria-hidden="true" className="h-8 w-8" /></span>
       <span className="text-xl font-semibold text-slate-900">{uploading ? 'Importing your model…' : 'Drag and drop your LDraw model here'}</span>

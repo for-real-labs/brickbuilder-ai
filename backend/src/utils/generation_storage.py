@@ -19,6 +19,7 @@ from .image_processing import convert_base64_to_png
 from .brickowl_utils import parse_ldr_file, generate_parts_list_csv
 from .generation_titles import generate_title_details
 from .generation_mode import generation_mode, INHERITED_MODE_ENDPOINTS
+from .generation_attribution import INPUT_TYPES, infer_input_type, normalize_entry_page
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,10 @@ class GenerationStorage:
         endpoint: str = "textToBricks",
         image_model: Optional[str] = None,
         model_3d: Optional[str] = None,
-        edit_generation_id: Optional[str] = None
+        edit_generation_id: Optional[str] = None,
+        input_type: Optional[str] = None,
+        input_format: Optional[str] = None,
+        entry_page: Optional[str] = None,
     ) -> str:
         """
         Create a new generation record and return the generation ID
@@ -62,6 +66,10 @@ class GenerationStorage:
         Returns:
             generation_id: UUID string for this generation
         """
+        if input_type is not None and input_type not in INPUT_TYPES:
+            raise ValueError("Unsupported generation input type")
+        if input_format is not None and input_format not in {'io', 'ldr', 'mpd', 'glb'}:
+            raise ValueError("Unsupported generation input format")
         generation_id = str(uuid.uuid4())
         
         try:
@@ -75,6 +83,9 @@ class GenerationStorage:
                 "detail_level": detail_level,
                 "endpoint": endpoint,
                 "mode": generation_mode(endpoint),
+                "input_type": input_type or infer_input_type(endpoint),
+                "input_format": input_format,
+                "entry_page": normalize_entry_page(entry_page),
                 "created_at": datetime.utcnow().isoformat(),
                 "status": "started"
             }
@@ -91,6 +102,9 @@ class GenerationStorage:
                     raise ValueError("Source generation belongs to another owner")
                 if endpoint in INHERITED_MODE_ENDPOINTS:
                     generation_data["mode"] = generation_mode(source.get("endpoint"), source.get("mode"))
+                # AI/manual edits keep the original model's input origin.
+                generation_data["input_type"] = source.get("input_type") or infer_input_type(source.get("endpoint"))
+                generation_data["input_format"] = source.get("input_format")
                 if source.get("name"):
                     generation_data["name"] = source["name"]
                 if source.get("example_edit_prompt"):

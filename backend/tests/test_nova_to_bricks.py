@@ -144,7 +144,8 @@ def test_foreign_edit_copies_only_public_geometry_and_keeps_callers_provider(mon
 def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
     storage = SimpleNamespace(
         get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'authenticated',
-            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
+            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model',
+            'input_type': 'image'}),
         download_file_from_storage=AsyncMock(return_value=b'1 19 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'),
         create_generation=AsyncMock(return_value='new-generation'))
     class Service:
@@ -168,6 +169,7 @@ def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
     saved = storage.create_generation.call_args.kwargs
     assert saved['user_id'] == 'caller' and saved['user_type'] == 'authenticated'
     assert saved['edit_generation_id'] is None
+    assert saved['input_type'] == 'image'
 
 
 def test_completed_owned_model_with_lost_session_can_import_geometry(monkeypatch):

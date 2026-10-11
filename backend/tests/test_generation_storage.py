@@ -147,3 +147,33 @@ def test_public_voxel_edit_starts_independent_root_for_guest_editor():
         endpoint='llmToBricks', edit_generation_id='source'))
     assert records[-1]['generation_id'] == result and result != 'original-root'
     assert records[-1]['name'] == 'Castle' and records[-1]['user_id'] == 'guest-editor'
+
+
+def test_input_attribution_distinguishes_inputs_and_preserves_origin_on_edits():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    import pytest
+    records = []
+    class Table:
+        def insert(self, row): records.append(row); return self
+        def execute(self): return SimpleNamespace(data=[records[-1]])
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = SimpleNamespace(table=lambda name: Table())
+    for endpoint, kind in [('textToBricks', 'text'), ('imageToBricks', 'image'),
+                           ('glbToBricks', 'glb'), ('uploadLdraw', 'ldraw')]:
+        asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40, endpoint=endpoint))
+        assert records[-1]['input_type'] == kind
+    asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40,
+        endpoint='novaToBricks', input_type='image', entry_page='/photo-to-lego'))
+    assert records[-1]['input_type'] == 'image' and records[-1]['entry_page'] == '/photo-to-lego'
+    storage.get_generation = AsyncMock(return_value={'id': 'source', 'user_id': 'owner',
+        'user_type': 'authenticated', 'input_type': 'ldraw', 'input_format': 'io'})
+    asyncio.run(storage.create_generation('owner', 'authenticated', 'edit', 40,
+        endpoint='novaToBricks', input_type='text', edit_generation_id='source', entry_page='/generated-model'))
+    assert records[-1]['input_type'] == 'ldraw' and records[-1]['input_format'] == 'io'
+    assert records[-1]['entry_page'] == '/generated-model'
+    asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40,
+        entry_page='/image-to-lego?token=private'))
+    assert records[-1]['entry_page'] is None
+    with pytest.raises(ValueError):
+        asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40, input_type='spoof'))

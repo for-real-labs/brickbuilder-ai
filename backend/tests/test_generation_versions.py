@@ -177,3 +177,30 @@ def test_generation_mode_backfills_nova_revisions_and_is_saved_by_legacy_and_cur
     assert db.execute('select mode from generations where id=%s', (revision,)).fetchone()[0] == 'all_parts'
     with pytest.raises(psycopg.errors.CheckViolation):
         db.execute("update public.generations set mode='unknown' where id=%s", (basic,))
+
+
+def test_input_attribution_backfill_and_revision_inheritance(db):
+    db.execute('alter table generations add column original_image_url text')
+    image = insert(db, endpoint='novaToBricks', date='2026-09-01')
+    db.execute("update generations set original_image_url='reference' where id=%s", (image,))
+    edit = insert(db, parent=image, endpoint='novaToBricks', date='2026-09-02')
+    text = insert(db, endpoint='textToBricks')
+    db.execute("update generations set original_image_url='generated-output' where id=%s", (text,))
+    glb = insert(db, endpoint='glbToBricks')
+    ldraw = insert(db, endpoint='uploadLdraw')
+    unknown = insert(db, endpoint='novaToBricks', status='failed')
+    migrate(db)
+    db.execute(REMOVE_SOURCE)
+    db.execute('drop function if exists public.assign_generation_input() cascade')
+    db.execute((Path(__file__).resolve().parents[2] / 'supabase/migrations/20261011000000_generation_input_attribution.sql').read_text())
+    saved = dict(db.execute('select id, input_type from generations'))
+    assert saved[image] == saved[edit] == 'image'
+    assert saved[text] == 'text' and saved[glb] == 'glb' and saved[ldraw] == 'ldraw'
+    assert saved[unknown] == 'unknown'
+    new_id = uuid4()
+    db.execute("insert into generations (id, generation_id, user_id, endpoint, input_type) values (%s,%s,'owner','novaToBricks','text')", (new_id, image))
+    assert db.execute('select input_type from latest_generations where id=%s', (new_id,)).fetchone()[0] == 'image'
+    with pytest.raises(psycopg.errors.CheckViolation):
+        db.execute("update generations set input_type='invalid' where id=%s", (glb,))
+    with pytest.raises(psycopg.errors.CheckViolation):
+        db.execute("update generations set entry_page='/image-to-lego?secret=1' where id=%s", (glb,))

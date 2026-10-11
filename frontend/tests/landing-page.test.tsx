@@ -357,7 +357,7 @@ describe('LandingPage', () => {
       expect(start).toHaveBeenCalledTimes(2);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', {
         generation_method: 'llm', model: DEFAULT_LLM_MODEL, has_prompt: true,
-        has_image: false, size: 'big', is_authenticated: false,
+        has_image: false, size: 'big', is_authenticated: false, page: '/', input_type: 'text',
       });
       expect(stream).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();

@@ -24,6 +24,7 @@ from ..utils.llm_output import run_with_output
 from ..utils.nova_service import NovaService
 from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.posthog_client import track_error, track_image_conversion
+from ..utils.generation_attribution import infer_input_type
 
 def _nova_service(request, auth_info):
     previous = request._nova_session
@@ -48,6 +49,8 @@ class NovaToBricksRequest(LlmToBricksRequest):
     _nova_session: dict | None = PrivateAttr(default=None)
     _nova_source_ldr: str | None = PrivateAttr(default=None)
     _nova_uploaded_source: bool = PrivateAttr(default=False)
+    _nova_input_type: Optional[str] = PrivateAttr(default=None)
+    _nova_input_format: Optional[str] = PrivateAttr(default=None)
 
 
 async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
@@ -61,6 +64,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         if source.get('endpoint') == 'uploadLdraw':
             raise
         owned = False
+    request._nova_input_type = source.get('input_type') or infer_input_type(source.get('endpoint'))
+    request._nova_input_format = source.get('input_format')
     request._nova_uploaded_source = owned and source.get('endpoint') == 'uploadLdraw'
     if owned and source.get('endpoint') != 'uploadLdraw':
         try:
@@ -213,6 +218,8 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,
         endpoint="novaToBricks", model_3d=request.model,
+        input_type=request._nova_input_type or ("image" if request.image_base64 else "text"),
+        input_format=request._nova_input_format, entry_page=request.entry_page,
         edit_generation_id=request.generation_id if request._nova_session or request._nova_uploaded_source else None,
     )
     task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info, native_progress=True))

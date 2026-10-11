@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import posthog from 'posthog-js';
 import * as THREE from 'three';
 import { useNavigate } from 'react-router-dom';
 import { Upload, Loader2, Box } from 'lucide-react';
@@ -166,8 +167,14 @@ export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {})
   // Open the file browser automatically when requested (e.g. the parent's
   // "Upload glb" button was clicked).
   useEffect(() => {
-    if (autoOpen) fileInputRef.current?.click();
+    if (autoOpen) {
+      posthog.capture('glb_upload_picker_opened', { page: window.location.pathname, input_type: 'glb', input_format: 'glb' });
+      fileInputRef.current?.click();
+    }
   }, [autoOpen]);
+
+  const attribution = { page: window.location.pathname, input_type: 'glb', input_format: 'glb' };
+  const openPicker = () => { posthog.capture('glb_upload_picker_opened', attribution); fileInputRef.current?.click(); };
 
   const handleSelectFile = (selected: File | null) => {
     if (!selected) return;
@@ -178,6 +185,7 @@ export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {})
     setError(null);
     setStatus(null);
     if (objectUrl) URL.revokeObjectURL(objectUrl);
+    posthog.capture('glb_file_selected', attribution);
     setFile(selected);
     setObjectUrl(URL.createObjectURL(selected));
   };
@@ -187,6 +195,7 @@ export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {})
     setSubmitting(true);
     setError(null);
     setStatus('Uploading…');
+    posthog.capture('glb_upload_started', attribution);
     try {
       const { generation_id } = await GlbToBricksApiService.uploadGlb(
         file,
@@ -194,12 +203,15 @@ export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {})
         40,
         session?.access_token,
       );
+      posthog.capture('generation_started', { ...attribution, generation_id });
       setStatus('Processing…');
       await GetGenerationApiService.pollUntilComplete(generation_id, (res) => {
         if (res.status) setStatus(`Status: ${res.status}`);
       });
+      posthog.capture('glb_conversion_completed', { ...attribution, generation_id });
       navigate(`/generated-model?id=${generation_id}`);
     } catch (err) {
+      posthog.capture('glb_conversion_failed', attribution);
       console.error('GLB conversion failed:', err);
       setError(err instanceof Error ? err.message : 'Conversion failed');
       setStatus(null);
@@ -229,7 +241,7 @@ export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {})
       {!objectUrl ? (
         <button
           type="button"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={openPicker}
           className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#f44336] rounded-lg hover:bg-[#ff6b6b] transition-colors cursor-pointer"
         >
           <Upload className="w-4 h-4" />
@@ -243,7 +255,7 @@ export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {})
             <span className="text-sm text-slate-600 truncate max-w-[60%]">{file?.name}</span>
             <button
               type="button"
-              onClick={() => fileInputRef.current?.click()}
+              onClick={openPicker}
               disabled={submitting}
               className="text-sm font-medium text-[#f44336] hover:text-[#ff6b6b] transition-colors cursor-pointer disabled:opacity-50"
             >

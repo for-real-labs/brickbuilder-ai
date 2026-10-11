@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class ImageToBricksRequest(BaseModel):
+    entry_page: Optional[str] = None
     image_url: Optional[str] = None
     image_base64: Optional[str] = None
     prompt: Optional[str] = None
@@ -469,6 +470,7 @@ async def image_to_bricks(
             prompt=request.prompt or "no text prompt",
             detail_level=request.detail_level,
             endpoint="imageToBricks",
+            entry_page=request.entry_page,
             model_3d=model_3d
         )
         
@@ -578,6 +580,7 @@ async def image_to_bricks_stream(
             prompt=request.prompt or "no text prompt",
             detail_level=request.detail_level,
             endpoint="imageToBricks",
+            entry_page=request.entry_page,
             model_3d="sam3d" if request.stream_3d else ("trellis-2" if request.model_option == "b" else "trellis"),
         )
 

@@ -96,6 +96,7 @@ PART_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+\.dat$", re.IGNORECASE)
 
 
 class LlmToBricksRequest(BaseModel):
+    entry_page: Optional[str] = Field(default=None, max_length=128)
     generation_id: Optional[str] = Field(
         default=None, validation_alias=AliasChoices("generation_id", "source_generation_id"),
     )  # Input revision ID; the legacy request name remains accepted.
@@ -875,6 +876,8 @@ async def llm_to_bricks(
             prompt=request.prompt or "Image reference",
             detail_level=request.detail_level,
             endpoint="llmToBricks",
+            entry_page=request.entry_page,
+            input_type="image" if request.image_base64 else "text",
             model_3d=request.model,
             edit_generation_id=request.generation_id,
         )
@@ -933,6 +936,8 @@ async def llm_to_bricks_stream(
         prompt=request.prompt or "Image reference",
         detail_level=request.detail_level,
         endpoint="llmToBricks",
+        entry_page=request.entry_page,
+        input_type="image" if request.image_base64 else "text",
         model_3d=request.model,
         edit_generation_id=request.generation_id,
     )

@@ -1,4 +1,5 @@
 import { ensureAiConsent, requiresAiConsent } from '../utils/aiConsent';
+import { withGenerationEntryPage } from '../utils/generationAttribution';
 import { getGuestSession } from '../utils/guestSession';
 
 // Only backend API services use this transport; third-party requests use fetch.
@@ -10,7 +11,7 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   }
   const headers = new Headers(init.headers);
   headers.set('X-Guest-Session', getGuestSession());
-  return fetch(url, { ...init, headers: Object.fromEntries(headers.entries()) });
+  return fetch(url, { ...withGenerationEntryPage(url, init), headers: Object.fromEntries(headers.entries()) });
 }
 
 // Polling and SSE previously sent no credentials. Resolve the current session

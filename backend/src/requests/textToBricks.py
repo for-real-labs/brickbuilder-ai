@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 
 
 class TextToBricksRequest(BaseModel):
+    entry_page: Optional[str] = None
     prompt: str
     detail_level: Optional[float] = 1.6  # Default to 1.6 for fewer bricks
     model_option: Optional[str] = "a"  # Model option: "a" for trellis, "b" for trellis-2, "c" for sam3d
@@ -390,6 +391,7 @@ async def text_to_bricks(
             prompt=request.prompt,
             detail_level=request.detail_level,
             endpoint="textToBricks",
+            entry_page=request.entry_page,
             image_model=request._image_model,
             model_3d=model_3d
         )
@@ -476,6 +478,7 @@ async def text_to_bricks_stream(
             prompt=request.prompt,
             detail_level=request.detail_level,
             endpoint="textToBricks",
+            entry_page=request.entry_page,
             image_model=request._image_model,
             model_3d="sam3d" if request.stream_3d else ("trellis-2" if request.model_option == "b" else "trellis"),
         )

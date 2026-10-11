@@ -69,9 +69,11 @@ def test_upload_stores_private_unorderable_geometry_without_running_ai(monkeypat
     monkeypatch.setattr(module, 'generation_storage', storage)
     tracking = Mock(return_value={'user_email': 'builder@example.com', 'is_anonymous': anonymous, 'is_developer': False})
     monkeypatch.setattr(module, 'handle_auth_and_tracking', tracking)
-    response = asyncio.run(module.upload_ldraw(UploadFile(filename='castle.ldr', file=io.BytesIO(BRICK.encode())), {'user_id': 'owner'}))
+    response = asyncio.run(module.upload_ldraw(UploadFile(filename='castle.ldr', file=io.BytesIO(BRICK.encode())), {'user_id': 'owner'}, '/use-ai-to-edit-ldraw'))
     assert response.generation_id == 'g'
     assert storage.create_generation.call_args.kwargs['endpoint'] == 'uploadLdraw'
+    assert storage.create_generation.call_args.kwargs['input_format'] == 'ldr'
+    assert storage.create_generation.call_args.kwargs['entry_page'] == '/use-ai-to-edit-ldraw'
     assert storage.create_generation.call_args.kwargs['user_id'] == 'owner'
     assert storage.create_generation.call_args.kwargs['user_type'] == ('anonymous' if anonymous else 'authenticated')
     assert tracking.call_args.kwargs['required_credits'] == 0

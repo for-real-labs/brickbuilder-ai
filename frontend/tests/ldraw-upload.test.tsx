@@ -1,6 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import posthog from 'posthog-js';
 import { LDrawUploadSection } from '../src/components/LDrawUploadSection';
 import { UploadLdrawApiService } from '../src/services/uploadLdrawApi';
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
@@ -19,6 +20,7 @@ it.each(['io', 'ldr', 'mpd'])('uploads a selected .%s file and opens the saved m
   await act(async () => { Object.defineProperty(input, 'files', { value: [file], configurable: true }); input.dispatchEvent(new Event('change', { bubbles: true })); });
   expect(upload).toHaveBeenCalledWith(file, 'token', expect.any(AbortSignal));
   expect(open).toHaveBeenCalledWith('model-id');
+  expect(posthog.capture).toHaveBeenCalledWith('generation_started', { generation_id: 'model-id', page: '/', input_type: 'ldraw', input_format: extension });
 });
 
 it('accepts dropped files without invoking the landing image uploader', async () => {

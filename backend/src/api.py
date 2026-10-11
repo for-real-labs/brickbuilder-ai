@@ -122,8 +122,8 @@ async def generation_notification_email(generation_id: UUID, request: Notificati
 
 
 @app.post('/uploadLdraw', response_model=UploadLdrawResponse)
-async def upload_ldraw_endpoint(file: UploadFile = File(...), auth_info: dict = Depends(get_user_with_optional_auth)):
-    return await upload_ldraw(file, auth_info)
+async def upload_ldraw_endpoint(file: UploadFile = File(...), auth_info: dict = Depends(get_user_with_optional_auth), entry_page: str | None = Form(None, max_length=128)):
+    return await upload_ldraw(file, auth_info, entry_page)
 
 
 @app.post("/novaToBricks", response_model=ImageToBricksResponse)
@@ -347,6 +347,7 @@ async def glbToBricks_endpoint(
     file: UploadFile = File(...),
     voxelizer: str = Form("trimesh"),
     detail_level: float = Form(40.0),
+    entry_page: str | None = Form(None, max_length=128),
     auth_info: dict = Depends(get_user_with_optional_auth)
 ) -> GlbToBricksResponse:
     """
@@ -354,7 +355,7 @@ async def glbToBricks_endpoint(
     Choose the voxelizer with the `voxelizer` form field ("trimesh" or "obj2voxel").
     Returns generation_id immediately for polling.
     """
-    return await glb_to_bricks(file, voxelizer, detail_level, auth_info)
+    return await glb_to_bricks(file, voxelizer, detail_level, auth_info, entry_page)
 
 
 @app.post("/ldrToMpd", response_model=LdrToMpdResponse)

@@ -18,7 +18,7 @@ class UploadLdrawResponse(BaseModel):
     message: str = 'Model imported. Open it to edit with AI.'
 
 
-async def upload_ldraw(file: UploadFile, auth_info: dict) -> UploadLdrawResponse:
+async def upload_ldraw(file: UploadFile, auth_info: dict, entry_page: str | None = None) -> UploadLdrawResponse:
     if generation_storage is None:
         raise HTTPException(503, 'Generation storage is unavailable')
     try:
@@ -38,6 +38,7 @@ async def upload_ldraw(file: UploadFile, auth_info: dict) -> UploadLdrawResponse
     generation_id = await generation_storage.create_generation(
         user_id=owner, user_type='anonymous' if info['is_anonymous'] else 'authenticated',
         prompt=f'Imported LDraw model: {name}', detail_level=40, endpoint='uploadLdraw', model_3d='ldraw-import',
+        input_format=PurePosixPath(filename).suffix.lower().lstrip('.'), entry_page=entry_page,
     )
     try:
         await generation_storage.store_model_file(generation_id, model, 'ldr', raise_on_error=True)

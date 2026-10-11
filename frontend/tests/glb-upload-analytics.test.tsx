@@ -1,0 +1,31 @@
+import React, { act } from 'react';
+import { createRoot } from 'react-dom/client';
+import { MemoryRouter } from 'react-router-dom';
+import { afterEach, expect, it, vi } from 'vitest';
+import posthog from 'posthog-js';
+import { GlbUploadCard } from '../src/components/GlbUploadCard';
+import { GlbToBricksApiService } from '../src/services/glbToBricksApi';
+import { GetGenerationApiService } from '../src/services/getGenerationApi';
+vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null }) }));
+let root: ReturnType<typeof createRoot>;
+let host: HTMLDivElement;
+afterEach(() => { if (root) act(() => root.unmount()); host?.remove(); window.history.replaceState({}, '', '/'); vi.restoreAllMocks(); });
+it('tracks GLB picker, upload acceptance, and conversion with page and generation ID', async () => {
+  window.history.replaceState({}, '', '/glb-to-lego');
+  Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:model') });
+  Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+  vi.spyOn(console, 'error').mockImplementation(() => {}); // jsdom has no WebGL renderer.
+  vi.spyOn(GlbToBricksApiService, 'uploadGlb').mockResolvedValue({ generation_id: 'glb-id', message: 'started' });
+  vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockResolvedValue({ status: 'completed', generation_id: 'glb-id' });
+  host = document.createElement('div'); document.body.append(host); root = createRoot(host);
+  act(() => root.render(<MemoryRouter><GlbUploadCard /></MemoryRouter>));
+  act(() => (host.querySelector('button') as HTMLButtonElement).click());
+  expect(posthog.capture).toHaveBeenCalledWith('glb_upload_picker_opened', expect.objectContaining({ page: '/glb-to-lego', input_type: 'glb' }));
+  const input = host.querySelector('input')!;
+  await act(async () => { Object.defineProperty(input, 'files', { value: [new File(['glb'], 'castle.glb')] }); input.dispatchEvent(new Event('change', { bubbles: true })); });
+  const convert = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Convert to bricks'))!;
+  await act(async () => convert.click());
+  expect(posthog.capture).toHaveBeenCalledWith('generation_started', { page: '/glb-to-lego', input_type: 'glb', input_format: 'glb', generation_id: 'glb-id' });
+  expect(posthog.capture).toHaveBeenCalledWith('glb_conversion_completed', expect.objectContaining({ generation_id: 'glb-id' }));
+});

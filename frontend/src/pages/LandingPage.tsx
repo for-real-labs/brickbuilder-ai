@@ -736,6 +736,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       
       if (controller.signal.aborted) return;
       const generationId = postResponse.generation_id;
+      posthog.capture('generation_started', { generation_id: generationId, page: window.location.pathname,
+        input_type: imgFile ? 'image' : 'text', generation_method: generationMethod });
       clearSelectedImage();
       setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
@@ -861,6 +863,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const submitGeneration = () => {
     if (loading) return;
     posthog.capture('landing_generate_clicked', {
+      page: window.location.pathname,
+      input_type: imgFile ? 'image' : 'text',
       generation_method: generationMethod,
       model: generationMethod === '3d' ? threeDModel : llmModel,
       has_prompt: Boolean(prompt.trim()),
