@@ -63,6 +63,7 @@ MODEL_PRICES = {
     'gpt-5.6-sol': ('4', '20', '.4', '5', '8'),
     'gpt-5.6-terra': ('2', '12', '.2', '2.5', '4'),
     'gpt-5.5': ('5', '30', '.5', '6.25', '10'),
+    'claude-haiku-5-5': ('.1', '.5', '.01', '.125', '.2'),
     'claude-opus-5-5': ('4', '20', '.2', '5', '8'),
     'claude-opus-5': ('5', '25', '.5', '6.25', '10'),
     'claude-sonnet-5': ('2', '10', '.2', '2.5', '4'),
@@ -111,6 +112,10 @@ class GenerationBudget:
             input_price *= 2
             write_price *= 2
             output_price *= Decimal('1.5')
+        if self.model == 'claude-haiku-5-5' and input_tokens > 100000:
+            input_price *= 5
+            write_price *= 5
+            output_price *= 5
         reserve = Decimal(input_tokens) * max(input_price, write_price) / 1000000
         available = MAX_GENERATION_COST_USD - self.spent - reserve
         limit = int((available * 1000000 / output_price).to_integral_value(rounding=ROUND_FLOOR))
@@ -125,6 +130,8 @@ class GenerationBudget:
         if provider == 'anthropic':
             inputs, outputs = _tokens(usage, 'input_tokens'), _tokens(usage, 'output_tokens')
             cached, written = _tokens(usage, 'cache_read_input_tokens'), _tokens(usage, 'cache_creation_input_tokens')
+            if self.model == 'claude-haiku-5-5' and inputs + cached + written > 100000:
+                input_price, output_price, read_price, write5, write1 = (price * 5 for price in self.prices)
             creation = usage.get('cache_creation') or {}
             hour = _tokens(creation, 'ephemeral_1h_input_tokens')
             if hour > written:

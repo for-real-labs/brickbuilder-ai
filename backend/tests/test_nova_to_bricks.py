@@ -202,7 +202,7 @@ def test_owned_completed_edit_retains_geometry_in_case_runtime_session_is_missin
         get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
             'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
         download_file_from_storage=download))
-    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source', model='gpt-5.5')
     asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
     assert request._nova_session == session
     assert request._nova_source_ldr == 'saved geometry'
@@ -225,3 +225,34 @@ def test_completed_expensive_model_edit_imports_geometry_with_sol(monkeypatch, s
     assert request._nova_source_ldr == 'saved geometry'
     assert request.model == 'gpt-6.1-sol' and request.auth_mode == 'api_key'
     download.assert_awaited_once_with('public-model')
+
+
+@pytest.mark.parametrize('same_key', [True, False])
+def test_finished_claude_edit_reuses_only_the_current_accounts_session(monkeypatch, same_key):
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'new-account-test-key')
+    session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'model': 'claude-opus-5-5', 'auth_mode': 'api_key',
+               'provider_key_id': module._anthropic_key_id() if same_key else 'old-account'}
+    monkeypatch.setattr(module, '_owned_session', AsyncMock(return_value=session))
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
+        download_file_from_storage=AsyncMock(return_value=b'saved geometry')))
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert (request._nova_session is not None) == same_key
+    assert request.model == 'claude-opus-5-5'
+    assert request._nova_source_ldr == 'saved geometry'
+
+
+def test_saved_claude_session_keeps_only_a_key_fingerprint(monkeypatch):
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'private-test-key')
+    upload = AsyncMock()
+    monkeypatch.setattr(module, 'upload_artifact', upload)
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(client=SimpleNamespace(
+        storage=SimpleNamespace(from_=lambda name: object()))))
+    session = {'model': 'claude-haiku-5-5', 'auth_mode': 'api_key'}
+    asyncio.run(module._save_session('generation', session))
+    metadata = json.loads(upload.call_args.kwargs['file'])
+    assert metadata['provider_key_id'] == module._anthropic_key_id()
+    assert 'private-test-key' not in upload.call_args.kwargs['file'].decode()
+    assert 'provider_key_id' not in session

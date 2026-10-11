@@ -34,7 +34,7 @@ import { GenerationStats, GetGenerationStatsApiService } from "../services/getGe
 import { CommunityGeneration, GetCommunityGenerationsApiService } from "../services/getCommunityGenerationsApi";
 import {
   DEFAULT_LLM_MODEL,
-  LLM_MODEL_OPTIONS,
+  GENERATION_MODEL_OPTIONS,
   LlmToBricksApiService,
   getLlmModelOption,
 } from "../services/llmToBricksApi";
@@ -95,7 +95,7 @@ export function GenerationModelSelector({
         onChange={event => {
           const option = getLlmModelOption(event.target.value);
           const selected = event.target.value;
-          if (!option || selected !== DEFAULT_LLM_MODEL || selected === model || disabled) return;
+          if (!option || !GENERATION_MODEL_OPTIONS.some(option => option.id === selected) || selected === model || disabled) return;
           onChange(selected);
           posthog.capture('landing_render_model_selected', {
             generation_method: mode === '3d' ? 'llm' : mode, model: selected, provider: option.provider,
@@ -103,7 +103,7 @@ export function GenerationModelSelector({
         }}
         className="min-h-11 w-full min-w-0 appearance-none cursor-pointer rounded-full border border-slate-200 bg-white py-2 pl-4 pr-10 text-sm text-slate-700 transition-colors hover:border-red-200 focus:border-[#f44336] focus:outline-none focus:ring-2 focus:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50 sm:w-52"
       >
-        {LLM_MODEL_OPTIONS.filter(option => option.id === DEFAULT_LLM_MODEL).map(option => (
+        {GENERATION_MODEL_OPTIONS.map(option => (
           <option key={option.id} value={option.id}>{option.label}</option>
         ))}
       </select>

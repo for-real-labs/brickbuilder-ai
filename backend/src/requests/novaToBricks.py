@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import logging
 import math
@@ -75,12 +76,14 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             if exc.status_code != 409 or source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
                 raise
         else:
-            # Completed Claude or Astra builds use Sol for new edits by
-            # importing their saved geometry into a fresh session.
-            if (source.get('status') == 'completed'
-                    and request.model == 'gpt-6.1-sol'
-                    and (request._nova_session['model'].startswith('claude-')
-                         or request._nova_session['model'] == 'gpt-6-astra')):
+            # Finished models can change providers or accounts by importing their
+            # geometry into a fresh chat. Anthropic thinking signatures belong to
+            # the account that created them and cannot follow a credential switch.
+            previous = request._nova_session
+            account_changed = (previous['model'].startswith('claude-')
+                               and previous['auth_mode'] == 'api_key'
+                               and previous.get('provider_key_id') != _anthropic_key_id())
+            if source.get('status') == 'completed' and (request.model != previous['model'] or account_changed):
                 request._nova_session = None
             else:
                 request.model = request._nova_session['model']
@@ -103,7 +106,14 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         raise HTTPException(409, 'The saved model cannot be imported into Nova') from None
 
 
+def _anthropic_key_id() -> str | None:
+    key = os.getenv("ANTHROPIC_API_KEY")
+    return hashlib.sha256(key.encode()).hexdigest() if key else None
+
+
 async def _save_session(generation_id: str, session: dict):
+    if session.get("model", "").startswith("claude-") and session.get("auth_mode") == "api_key":
+        session = {**session, "provider_key_id": _anthropic_key_id()}
     bucket = generation_storage.client.storage.from_("generation-output")
     await upload_artifact(bucket, path=f"{generation_id}/nova-session.json",
                           file=json.dumps(session, allow_nan=False).encode(), content_type="application/json")
