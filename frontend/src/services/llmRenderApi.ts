@@ -29,11 +29,8 @@ export interface LlmRenderRequest {
   max_segmentation_rounds?: number;
 }
 
-// Model used for /llmRender calls. Any OpenAI model name is routed to OpenAI
-// by the backend; a "claude-..." name (like this one) is routed to Anthropic
-// instead. Override via VITE_LLM_RENDER_MODEL to swap models without a code
-// change.
-const LLM_RENDER_MODEL = import.meta.env.VITE_LLM_RENDER_MODEL || 'claude-fable-5';
+// Override via VITE_LLM_RENDER_MODEL when another provider is available.
+const LLM_RENDER_MODEL = import.meta.env.VITE_LLM_RENDER_MODEL || 'gpt-6-astra';
 
 
 export interface LlmRenderAppliedRule {

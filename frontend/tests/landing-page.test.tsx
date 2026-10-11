@@ -102,7 +102,7 @@ describe('LandingPage', () => {
     }
   });
 
-  it.each(['claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores obsolete model %s as Opus 5.5 and submits it', async savedModel => {
+  it.each(['claude-opus-5-5', 'claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores obsolete model %s as Astra and submits it', async savedModel => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
@@ -115,7 +115,7 @@ describe('LandingPage', () => {
       await act(async () => root.render(<LandingPage />));
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
       expect(Array.from(model.options).map(option => ({ value: option.value, label: option.label }))).toEqual([
-        { value: DEFAULT_LLM_MODEL, label: 'Claude Opus 5.5' },
+        { value: DEFAULT_LLM_MODEL, label: 'GPT-6 Astra' },
       ]);
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
       const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
@@ -523,7 +523,7 @@ describe('LandingPage', () => {
         input.dispatchEvent(new Event('input',{bubbles:true}));
         container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
       });
-      expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Connect Claude');
+      expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Connect ChatGPT');
       expect(nova).not.toHaveBeenCalled();
       const choice=Array.from(container.querySelectorAll('button')).find(button=>button.textContent==='Use project API key')!;
       await act(async()=>choice.click());
@@ -627,7 +627,7 @@ describe('LandingPage', () => {
 
   it('shows the compact controls in the browser and native shell', () => {
     expect(DEFAULT_GENERATION_METHOD).toBe('nova');
-    expect(DEFAULT_LLM_MODEL).toBe('claude-opus-5-5');
+    expect(DEFAULT_LLM_MODEL).toBe('gpt-6-astra');
     const verify = () => {
       const container = document.createElement('div');
       container.innerHTML = renderToStaticMarkup(<LandingPage />);

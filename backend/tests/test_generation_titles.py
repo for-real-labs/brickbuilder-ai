@@ -238,3 +238,14 @@ def test_fenced_json_is_parsed_and_malformed_json_cannot_become_a_title(monkeypa
     assert asyncio.run(titles.generate_title_details({'prompt': 'a fish'}, None)) == {'name': 'Fish', 'example_edit_prompt': 'Make the fins blue'}
     monkeypatch.setattr(titles, '_request_title', AsyncMock(return_value='{"name":"Fish"'))
     assert asyncio.run(titles.generate_title_details({'prompt': 'a fish'}, None))['name'] == 'Fish'
+
+
+def test_titles_prefer_openai_when_anthropic_is_also_configured(monkeypatch):
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'test-claude')
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-openai')
+    monkeypatch.delenv('GENERATION_TITLE_MODEL', raising=False)
+    post = AsyncMock(return_value={'output': []})
+    monkeypatch.setattr(titles, 'post_json', post)
+    asyncio.run(titles._request_title({'id': 'g', 'prompt': 'rocket'}, None))
+    assert post.await_args.args[1] == titles.OPENAI_URL
+    assert post.await_args.args[3]['model'] == 'gpt-5.6-sol'
