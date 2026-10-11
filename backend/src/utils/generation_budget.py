@@ -58,6 +58,7 @@ class GenerationBudgetExceeded(ValueError):
 # https://platform.claude.com/docs/en/about-claude/pricing
 # input, output, cache read, 5m cache write, 1h cache write
 MODEL_PRICES = {
+    'gpt-6.1-sol': ('2', '10', '.1', '2.5', '2.5'),
     'gpt-6-astra': ('10', '50', '1', '12.5', '12.5'),
     'gpt-5.6-sol': ('4', '20', '.4', '5', '8'),
     'gpt-5.6-terra': ('2', '12', '.2', '2.5', '4'),

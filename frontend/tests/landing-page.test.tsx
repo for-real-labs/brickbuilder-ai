@@ -103,7 +103,7 @@ describe('LandingPage', () => {
     }
   });
 
-  it.each(['claude-opus-5-5', 'claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores obsolete model %s as Astra and submits it', async savedModel => {
+  it.each(['gpt-6-astra', 'claude-opus-5-5', 'claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores obsolete model %s as Sol and submits it', async savedModel => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
@@ -116,7 +116,7 @@ describe('LandingPage', () => {
       await act(async () => root.render(<LandingPage />));
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
       expect(Array.from(model.options).map(option => ({ value: option.value, label: option.label }))).toEqual([
-        { value: DEFAULT_LLM_MODEL, label: 'GPT-6 Astra' },
+        { value: DEFAULT_LLM_MODEL, label: 'GPT-6.1 Sol' },
       ]);
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
       const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
@@ -641,7 +641,7 @@ describe('LandingPage', () => {
 
   it('shows the compact controls in the browser and native shell', () => {
     expect(DEFAULT_GENERATION_METHOD).toBe('nova');
-    expect(DEFAULT_LLM_MODEL).toBe('gpt-6-astra');
+    expect(DEFAULT_LLM_MODEL).toBe('gpt-6.1-sol');
     const verify = () => {
       const container = document.createElement('div');
       container.innerHTML = renderToStaticMarkup(<LandingPage />);

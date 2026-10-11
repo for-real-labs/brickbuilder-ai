@@ -99,3 +99,14 @@ def test_astra_cache_writes_are_charged_at_the_published_rate():
                          'output_tokens': 1000}, 'openai')
     assert budget.spent == Decimal('.068')
     assert budget.usage_records[0]['cache_write_tokens'] == 1000
+
+
+def test_sol_usage_prices_and_responses_model_normalization():
+    budget = GenerationBudget('openai/responses/gpt-6.1-sol')
+    budget.record_usage({'input_tokens': 2000,
+                         'input_tokens_details': {'cached_tokens': 500, 'cache_write_tokens': 1000},
+                         'output_tokens': 1000}, 'openai')
+    assert budget.spent == Decimal('.01355')
+    assert budget.usage_records[0]['model'] == 'gpt-6.1-sol'
+    assert budget.usage_records[0]['cache_read_tokens'] == 500
+    assert budget.usage_records[0]['cache_write_tokens'] == 1000

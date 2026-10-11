@@ -74,11 +74,12 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             if exc.status_code != 409 or source.get('status') != 'completed' or source.get('endpoint') != 'novaToBricks':
                 raise
         else:
-            # Completed Claude builds can be edited with the current OpenAI
-            # default by importing their saved geometry into a fresh session.
+            # Completed Claude or Astra builds use Sol for new edits by
+            # importing their saved geometry into a fresh session.
             if (source.get('status') == 'completed'
-                    and request.model == 'gpt-6-astra'
-                    and request._nova_session['model'].startswith('claude-')):
+                    and request.model == 'gpt-6.1-sol'
+                    and (request._nova_session['model'].startswith('claude-')
+                         or request._nova_session['model'] == 'gpt-6-astra')):
                 request._nova_session = None
             else:
                 request.model = request._nova_session['model']

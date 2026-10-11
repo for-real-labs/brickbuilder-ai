@@ -199,17 +199,18 @@ def test_owned_completed_edit_retains_geometry_in_case_runtime_session_is_missin
     download.assert_awaited_once_with('public-model')
 
 
-def test_completed_claude_edit_imports_geometry_with_astra_instead_of_capped_session(monkeypatch):
-    session = {'chat_id': 'old-chat', 'model': 'claude-opus-5-5', 'auth_mode': 'api_key', 'tenant': 'a' * 64}
+@pytest.mark.parametrize('source_model', ['claude-opus-5-5', 'gpt-6-astra'])
+def test_completed_expensive_model_edit_imports_geometry_with_sol(monkeypatch, source_model):
+    session = {'chat_id': 'old-chat', 'model': source_model, 'auth_mode': 'api_key', 'tenant': 'a' * 64}
     monkeypatch.setattr(module, '_owned_session', AsyncMock(return_value=session))
     download = AsyncMock(return_value=b'saved geometry')
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
         get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
             'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
         download_file_from_storage=download))
-    request = module.NovaToBricksRequest(prompt='edit', generation_id='source', model='gpt-6-astra')
+    request = module.NovaToBricksRequest(prompt='edit', generation_id='source', model='gpt-6.1-sol')
     asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
     assert request._nova_session is None
     assert request._nova_source_ldr == 'saved geometry'
-    assert request.model == 'gpt-6-astra' and request.auth_mode == 'api_key'
+    assert request.model == 'gpt-6.1-sol' and request.auth_mode == 'api_key'
     download.assert_awaited_once_with('public-model')
