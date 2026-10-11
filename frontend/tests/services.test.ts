@@ -35,7 +35,7 @@ describe('JSON API service contracts', () => {
 
   const cases: Array<[string, () => Promise<unknown>, string, unknown, unknown]> = [
     ['claim', () => ClaimGenerationApiService.claimGeneration('g1', 'tok'), '/claimGeneration', { generation_id: 'g1' }, { generation_id: 'g1', claimed: true }],
-    ['llm bricks', () => LlmToBricksApiService.generate({ prompt: ' castle ' }, 'tok'), '/llmToBricks', { prompt: 'castle', image_media_type: 'image/png', detail_level: 40, model: 'gpt-6.1-sol', entry_page: '/' }, { generation_id: 'g2', message: 'started' }],
+    ['llm bricks', () => LlmToBricksApiService.generate({ prompt: ' castle ' }, 'tok'), '/llmToBricks', { prompt: 'castle', image_media_type: 'image/png', detail_level: 40, model: 'claude-opus-5-5', entry_page: '/' }, { generation_id: 'g2', message: 'started' }],
     ['llm bricks openai', () => LlmToBricksApiService.generate({ prompt: 'castle', model: 'gpt-5.6-sol' }, 'tok'), '/llmToBricks', { prompt: 'castle', image_media_type: 'image/png', detail_level: 40, model: 'gpt-5.6-sol', entry_page: '/' }, { generation_id: 'g3', message: 'started' }],
     ['checkout', () => CreateCheckoutSessionApiService.createCheckoutSession({ quantity: 2 }, 'tok'), '/createCheckoutSession', { quantity: 2 }, { session_id: 's1', checkout_url: 'url' }],
     ['community', () => GetCommunityGenerationsApiService.getCommunityGenerations('tok', 10, 2, true, 'top'), '/getCommunityGenerations', { limit: 10, offset: 2, processing: true, sort: 'top' }, { generations: [], total_count: 0, has_more: false }],
@@ -51,7 +51,7 @@ describe('JSON API service contracts', () => {
     ['model', () => UpdateModelApiService.updateModel('g1', '0 0 0', 'tok'), '/updateModel', { generation_id: 'g1', xyzrgb_content: '0 0 0' }, { generation_id: 'g1', success: true }],
     ['username', () => UpdateUsernameApiService.updateUsername('builder', 'tok'), '/updateUsername', { username: 'builder' }, { username: 'builder' }],
     ['ldr', () => LdrToMpdApiService.convertLdrToMpd('ldr', 'castle', 'tok'), '/ldrToMpd', { ldr_content: 'ldr', model_name: 'castle' }, { mpd_content: 'mpd', message: 'ok' }],
-    ['llm render', () => LlmRenderApiService.llmRender('generation', 'xyz', ['image', 'image2'], 'paint', 'tok'), '/llmRender', { generation_id: 'generation', xyzrgb_url: 'xyz', reference_image_urls: ['image', 'image2'], prompt: 'paint', model: 'gpt-6.1-sol' }, { xyzrgb_content: 'xyz', voxel_count: 1, segment_count: 1, model: 'm', applied_rules: [], reference_images: {}, message: 'ok' }],
+    ['llm render', () => LlmRenderApiService.llmRender('generation', 'xyz', ['image', 'image2'], 'paint', 'tok'), '/llmRender', { generation_id: 'generation', xyzrgb_url: 'xyz', reference_image_urls: ['image', 'image2'], prompt: 'paint', model: 'claude-opus-5-5' }, { xyzrgb_content: 'xyz', voxel_count: 1, segment_count: 1, model: 'm', applied_rules: [], reference_images: {}, message: 'ok' }],
   ];
 
   it.each(cases)('%s sends the documented request and returns JSON', async (_name, invoke, endpoint, body, result) => {
@@ -155,7 +155,7 @@ describe('JSON API service contracts', () => {
         xyzrgb_url: 'xyz',
         reference_image_urls: referenceImages,
         prompt: 'paint',
-        model: 'gpt-6.1-sol',
+        model: 'claude-opus-5-5',
         max_segmentation_rounds: 2,
       }),
     });
@@ -192,7 +192,7 @@ describe('JSON API service contracts', () => {
         prompt: 'castle',
         image_media_type: 'image/png',
         detail_level: 40,
-        model: 'gpt-6.1-sol',
+        model: 'claude-opus-5-5',
         entry_page: '/',
       }),
     });

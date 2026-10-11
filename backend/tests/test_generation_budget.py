@@ -110,3 +110,22 @@ def test_sol_usage_prices_and_responses_model_normalization():
     assert budget.usage_records[0]['model'] == 'gpt-6.1-sol'
     assert budget.usage_records[0]['cache_read_tokens'] == 500
     assert budget.usage_records[0]['cache_write_tokens'] == 1000
+
+
+@pytest.mark.parametrize('inputs,multiplier', [(98000, 1), (98001, 5)])
+def test_haiku_context_price_includes_cached_and_written_tokens(inputs, multiplier):
+    budget = GenerationBudget('anthropic/claude-haiku-5-5')
+    budget.record_usage({'input_tokens': inputs, 'output_tokens': 1000,
+        'cache_read_input_tokens': 1000, 'cache_creation_input_tokens': 1000,
+        'cache_creation': {'ephemeral_1h_input_tokens': 500}}, 'anthropic')
+    expected = (Decimal(inputs) * Decimal('.1') + Decimal('10') + Decimal('62.5')
+                + Decimal('100') + Decimal('500')) * multiplier / 1000000
+    assert budget.spent == expected
+    assert budget.usage_records[0]['input_tokens'] == inputs + 2000
+
+
+def test_haiku_output_budget_reserves_the_long_context_rate():
+    budget = GenerationBudget('claude-haiku-5-5')
+    budget.spent = Decimal('9.8')
+    assert budget.output_limit(100000, 128000) == 128000
+    assert budget.output_limit(100001, 128000) == 39999
