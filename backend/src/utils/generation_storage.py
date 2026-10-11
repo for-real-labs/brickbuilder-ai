@@ -14,6 +14,7 @@ from datetime import datetime
 from supabase import Client
 from fastapi import HTTPException
 from .auth import supabase_client
+from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
 from .image_processing import convert_base64_to_png
 from .brickowl_utils import parse_ldr_file, generate_parts_list_csv
@@ -150,11 +151,8 @@ class GenerationStorage:
                 file_content = file_content.encode('utf-8')
             
             # Upload to Supabase Storage with upsert to allow overwriting existing files
-            result = self.client.storage.from_(self.bucket_name).upload(
-                path=file_path,
-                file=file_content,
-                file_options={"content-type": content_type, "upsert": "true"}
-            )
+            result = await upload_artifact(self.client.storage.from_(self.bucket_name),
+                path=file_path, file=file_content, content_type=content_type)
             
             # Check if upload failed
             if hasattr(result, 'error') and result.error:

@@ -217,7 +217,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const { session, loading: authLoading } = useAuth();
-  const { generations, error: activityError, trackGeneration } = useGenerationActivity(
+  const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
   const [prompt, setPrompt] = useState("");
@@ -1160,7 +1160,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             )}
           </div>
 
-            <GenerationActivityList generations={generations} error={activityError}
+            <GenerationActivityList generations={generations} error={activityError} onDismiss={dismissGeneration}
               notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
               onOpen={id => navigate(`/generated-model?id=${id}`)}
               onResumed={(sourceId, newId) => {

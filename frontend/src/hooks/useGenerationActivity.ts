@@ -25,6 +25,13 @@ export const isGenerationActive = (status: string) =>
   ['queued', 'started', 'processing', 'ldr_processing', 'resizing'].includes(status);
 
 const storageKey = (owner: string) => `pending_generations:${owner}`;
+const dismissedKey = (owner: string) => `dismissed_generations:${owner}`;
+function restoreDismissed(owner: string): Set<string> {
+  try {
+    const value: unknown = JSON.parse(localStorage.getItem(dismissedKey(owner)) || '[]');
+    return new Set(Array.isArray(value) ? value.filter((id): id is string => typeof id === 'string') : []);
+  } catch { return new Set(); }
+}
 const keepActivity = (row: GenerationActivity) => isGenerationActive(row.status) || isPreviewPending(row)
   || (row.endpoint === 'novaToBricks' && ['failed', 'cancelled'].includes(row.status));
 
@@ -52,6 +59,18 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
   const [error, setError] = useState<string | null>(null);
   const rows = useRef<GenerationActivity[]>([]);
   const currentOwner = useRef(owner);
+  const dismissed = useRef(restoreDismissed(owner));
+
+  const dismissGeneration = useCallback((id: string) => {
+    if (currentOwner.current !== owner) return;
+    const row = rows.current.find(row => row.id === id);
+    if (!row || isGenerationActive(row.status)) return;
+    dismissed.current.add(id);
+    try { localStorage.setItem(dismissedKey(owner), JSON.stringify([...dismissed.current])); } catch { /* Keep dismissal for this visit. */ }
+    rows.current = rows.current.filter(row => row.id !== id);
+    persist(owner, rows.current);
+    setGenerations(rows.current);
+  }, [owner]);
 
   useEffect(() => {
     if (!enabled) return;
@@ -77,7 +96,8 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
     let timer: ReturnType<typeof setTimeout>;
     let recoveredResumable = false;
     if (currentOwner.current !== owner || rows.current.length === 0) {
-      rows.current = restore(owner);
+      dismissed.current = restoreDismissed(owner);
+      rows.current = restore(owner).filter(row => !dismissed.current.has(row.id));
       currentOwner.current = owner;
     }
     setGenerations(rows.current);
@@ -125,7 +145,8 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
           if (row.status === 'cancelled') updates.set(row.id, row);
         }
         // Read the latest rows here so a job submitted during a refresh isn't lost.
-        rows.current = [...updates.values(), ...rows.current.filter(row => !updates.has(row.id))];
+        rows.current = [...updates.values(), ...rows.current.filter(row => !updates.has(row.id))]
+          .filter(row => !dismissed.current.has(row.id));
         persist(owner, rows.current);
         setGenerations(rows.current);
         setError(settled.some(result => result.status === 'rejected')
@@ -148,5 +169,5 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
     };
   }, [owner, authToken, enabled]);
 
-  return { generations: enabled && currentOwner.current === owner ? generations : [], error, trackGeneration };
+  return { generations: enabled && currentOwner.current === owner ? generations : [], error, trackGeneration, dismissGeneration };
 }

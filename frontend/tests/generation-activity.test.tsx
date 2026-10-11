@@ -21,7 +21,7 @@ let activity: ReturnType<typeof useGenerationActivity>;
 const open = vi.fn();
 function Harness({ owner = 'user', enabled = true }: { owner?: string; enabled?: boolean }) {
   activity = useGenerationActivity(owner, owner === 'user' ? 'token' : undefined, enabled);
-  return <GenerationActivityList {...activity} onOpen={open} onResumed={(sourceId, newId) => {
+  return <GenerationActivityList {...activity} onOpen={open} onDismiss={activity.dismissGeneration} onResumed={(sourceId, newId) => {
     const row = activity.generations.find(row => row.id === sourceId);
     if (row) activity.trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined }, sourceId);
   }} onCancelled={id => {
@@ -128,7 +128,7 @@ it('restores every active job and shows completed outcomes while hiding failed c
   expect(container.textContent).not.toContain('Provider failed');
   expect(container.querySelectorAll('article')).toHaveLength(1);
   expect(open).not.toHaveBeenCalled();
-  act(() => container.querySelector('button')!.click());
+  act(() => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'View model')!.click());
   expect(open).toHaveBeenCalledWith('one');
   expect(posthog.capture).toHaveBeenCalledWith('landing_generation_opened', { generation_id: 'one', status: 'completed' });
   expect(fetchJobs).toHaveBeenCalledTimes(2);
@@ -153,7 +153,7 @@ it('cancels a card and preserves cancellation when an older refresh finishes', a
   await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
   await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Cancel generation'))!.click());
   expect(container.textContent).toContain('Generation cancelled');
-  expect(container.querySelector('button')).toBeNull();
+  expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent?.includes('Cancel generation'))).toBe(false);
   await act(async () => finish([job('stop')] as never));
   expect(activity.generations[0].status).toBe('cancelled');
   expect(container.querySelector('.brick-build-scene')).toBeNull();
@@ -357,4 +357,29 @@ it('carries the final stored duration from polling to the completed landing card
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(container.querySelector('article')?.textContent).toContain('Generation time: 2m 5s');
   expect(container.textContent).not.toContain('Building for');
+});
+
+
+it('dismisses cancelled cards across refreshes and return visits without deleting the generation', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const cancelled = { ...job('old'), status: 'cancelled', endpoint: 'novaToBricks' };
+  vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([cancelled] as any);
+  await act(async () => root.render(<Harness />));
+  const dismiss = container.querySelector('[aria-label="Dismiss Build old"]') as HTMLButtonElement;
+  expect(dismiss).not.toBeNull();
+  await act(async () => dismiss.click());
+  expect(container.textContent).not.toContain('Build old');
+  expect(posthog.capture).toHaveBeenCalledWith('landing_generation_dismissed', { generation_id: 'old', status: 'cancelled' });
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  await act(async () => root.render(<Harness />));
+  expect(container.textContent).not.toContain('Build old');
+});
+
+it('does not dismiss a running generation', async () => {
+  await act(async () => root.render(<Harness />));
+  await act(async () => activity.trackGeneration(job('running')));
+  expect(container.querySelector('[aria-label="Dismiss Build running"]')).toBeNull();
+  await act(async () => activity.dismissGeneration('running'));
+  expect(activity.generations.some(row => row.id === 'running')).toBe(true);
 });
