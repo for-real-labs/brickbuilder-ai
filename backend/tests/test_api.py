@@ -116,7 +116,8 @@ def test_untrusted_vercel_origins_are_not_allowed_by_cors(origin):
 @pytest.mark.parametrize(
     ("endpoint_name", "handler_name", "call_args", "forwarded_args"),
     [
-        ("glbToBricks_endpoint", "glb_to_bricks", ("file", "trimesh", 40, AUTH), ("file", "trimesh", 40, AUTH)),
+        ("glbToBricks_endpoint", "glb_to_bricks", ("file", "trimesh", 40, AUTH, None), ("file", "trimesh", 40, AUTH, None)),
+        ("glbToBricks_endpoint", "glb_to_bricks", ("file", "trimesh", 40, AUTH, "/glb-to-lego"), ("file", "trimesh", 40, AUTH, "/glb-to-lego")),
         ("ldr_to_mpd_endpoint", "ldr_to_mpd", ("request", AUTH), ("request", AUTH)),
         ("part_to_mpd_endpoint", "part_to_mpd", ("request", AUTH), ("request", AUTH)),
         ("ldr_to_brickowl_endpoint", "ldr_to_brickowl", ("request", AUTH), ("request", AUTH)),
