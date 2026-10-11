@@ -30,7 +30,7 @@ export interface LlmRenderRequest {
 }
 
 // Override via VITE_LLM_RENDER_MODEL when another provider is available.
-const LLM_RENDER_MODEL = import.meta.env.VITE_LLM_RENDER_MODEL || 'gpt-6-astra';
+const LLM_RENDER_MODEL = import.meta.env.VITE_LLM_RENDER_MODEL || 'gpt-6.1-sol';
 
 
 export interface LlmRenderAppliedRule {
