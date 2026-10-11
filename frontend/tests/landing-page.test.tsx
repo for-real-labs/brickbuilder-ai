@@ -68,6 +68,7 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
 import { LocalProvidersApiService, type LocalProviderStatus } from '../src/services/localProvidersApi';
+import { GenerationEmailApi } from '../src/services/generationEmailApi';
 
 const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus => ({
   id, label: id, api_key_configured: false, cli_available: true, cli_connected: true,
@@ -125,6 +126,7 @@ describe('LandingPage', () => {
   });
 
   it.each(['accepted', 'failed'])('submits an image with Enter and clears it only when %s', async outcome => {
+    vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
@@ -168,11 +170,17 @@ describe('LandingPage', () => {
         prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       });
       expect(start).toHaveBeenCalledTimes(1);
+      expect(document.querySelector('[role="dialog"]')).toBeNull();
       await act(async () => {
         if (outcome === 'accepted') accept({ generation_id: 'submitted', message: 'Started' });
         else reject(new Error('Submission failed'));
       });
       if (outcome === 'accepted') {
+        expect(document.querySelector('[role="dialog"]')!.textContent).toContain('Would you like to be notified?');
+        expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
+          generation_id: 'submitted', is_authenticated: false,
+        });
+        act(() => Array.from(document.querySelectorAll('[role="dialog"] button')).find(button => button.textContent === 'Not now')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeNull();
         expect(container.querySelector('[aria-label="Remove image"]')).toBeNull();
         expect(fileInput.value).toBe('');
@@ -182,6 +190,7 @@ describe('LandingPage', () => {
         });
         expect(start).toHaveBeenLastCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: undefined }), undefined);
       } else {
+        expect(document.querySelector('[role="dialog"]')).toBeNull();
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
         expect(container.textContent).toContain('Submission failed');
         expect(URL.revokeObjectURL).not.toHaveBeenCalled();
@@ -469,6 +478,7 @@ describe('LandingPage', () => {
   });
 
   it.each(['llm', 'nova'])('sends the uploaded reference to the %s workflow from the shared bar', async modeValue => {
+    vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
@@ -505,6 +515,10 @@ describe('LandingPage', () => {
       }), undefined);
       if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
+      expect(document.querySelector('[role="dialog"]')!.textContent).toContain('This may take up to 30 minutes to generate.');
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
+        generation_id: modeValue === 'nova' ? 'image-nova' : 'image-basic', is_authenticated: false,
+      });
     } finally { act(() => root.unmount()); container.remove(); }
   });
 

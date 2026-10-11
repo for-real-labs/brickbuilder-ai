@@ -221,6 +221,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
   const [prompt, setPrompt] = useState("");
+  const [notificationPromptId, setNotificationPromptId] = useState<string | null>(null);
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const [size, setSize] = useState<SizeValue>("big");
@@ -751,6 +752,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       
       if (generationMethod === 'llm' || generationMethod === 'nova') {
         trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks', createdAt: generationStartedAt });
+        setNotificationPromptId(generationId);
         setLoading(false);
         setActiveLoadingMethod(null);
         setGenerationStatus(null);
@@ -1159,11 +1161,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
           </div>
 
             <GenerationActivityList generations={generations} error={activityError}
+              notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
               onOpen={id => navigate(`/generated-model?id=${id}`)}
               onResumed={(sourceId, newId) => {
                 const row = generations.find(generation => generation.id === sourceId);
                 if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
                   createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
+                if (row) setNotificationPromptId(newId);
               }}
               onCancelled={id => {
                 const row = generations.find(generation => generation.id === id);

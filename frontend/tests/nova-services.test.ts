@@ -19,7 +19,7 @@ describe('Nova agent API', () => {
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
     expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
     expect(JSON.parse(init?.body as string)).toEqual({
-      prompt: 'orbital launch site', image_base64: 'pixels', image_media_type: 'image/png', detail_level: 40,
+      prompt: 'orbital launch site', image_base64: 'pixels', image_media_type: 'image/png', detail_level: 40, entry_page: '/',
       model: DEFAULT_NOVA_OPTIONS.model, auth_mode: 'native',
     });
   });

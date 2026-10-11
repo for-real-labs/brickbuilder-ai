@@ -12,24 +12,23 @@ import { ResumeNovaButton } from './ResumeNovaButton';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { GetNotifiedButton } from './GetNotifiedButton';
 
-export function GenerationActivityList({ generations, error, onOpen, onCancelled, onResumed }: {
+export function GenerationActivityList({ generations, error, onOpen, onCancelled, onResumed, notificationPromptId, onNotificationPromptShown }: {
   generations: GenerationActivity[];
   error: string | null;
   onOpen: (id: string) => void;
   onCancelled?: (id: string) => void;
   onResumed?: (sourceId: string, newId: string) => void;
+  notificationPromptId?: string | null;
+  onNotificationPromptShown?: () => void;
 }) {
   generations = generations.filter(generation => generation.status !== 'failed');
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
-  const hasActiveNovaBuild = generations.some(row => row.endpoint === 'novaToBricks' && isGenerationActive(row.status));
   return (
     <section aria-label="Your generations" className="mx-auto mb-6 w-full max-w-4xl text-left">
       <div className="mb-4 px-1">
         <h2 className="text-lg font-semibold text-slate-900">Your generations{activeCount > 0 ? ` · ${activeCount} in progress` : ''}</h2>
-        <p className="mt-1 text-sm text-slate-500">{hasActiveNovaBuild
-          ? "This can take up to 30 min. You can close this window safely."
-          : "You can leave and come back. Your builds keep running."}</p>
+        <p className="mt-1 text-sm text-slate-500">You can leave and come back. Your builds keep running.</p>
         {error && <p role="status" className="mt-2 text-sm text-amber-700">{error}</p>}
       </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -86,7 +85,9 @@ export function GenerationActivityList({ generations, error, onOpen, onCancelled
                 {active && agentGeneration && <LlmGenerationOutput generationId={generation.id} active />}
                 {generation.status === 'completed' && <GenerationDuration seconds={generation.durationSeconds} />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
-                {active && <GetNotifiedButton generationId={generation.id} />}
+                {active && <p className="mt-2 text-xs text-slate-500">This may take up to 30 minutes to generate.</p>}
+                {active && <GetNotifiedButton generationId={generation.id}
+                  promptOnStart={notificationPromptId === generation.id} onPromptShown={onNotificationPromptShown} />}
                 {active && <div className="relative z-20 w-fit"><CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} /></div>}
                 {(failed || cancelled) && generation.endpoint === 'novaToBricks' && onResumed &&
                   <div className="relative z-20 w-fit"><ResumeNovaButton generationId={generation.id} onResumed={id => onResumed(generation.id, id)} /></div>}

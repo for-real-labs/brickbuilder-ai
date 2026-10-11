@@ -93,10 +93,24 @@ it('uses live agent output for Nova full set jobs', async () => {
   await act(async () => root.render(<GenerationActivityList generations={[
     { id: 'nova', prompt: 'Spaceport', status: 'processing', endpoint: 'novaToBricks' },
   ]} error={null} onOpen={open} />));
-  expect(container.textContent).toContain('This can take up to 30 min. You can close this window safely.');
+  expect(container.querySelector('article')!.textContent).toContain('This may take up to 30 minutes to generate.');
   expect(output).toHaveBeenCalledWith('nova', expect.any(Function), expect.any(AbortSignal));
   expect(container.textContent).toContain('Searching LDraw parts and validating the launch tower');
   expect(container.querySelector('.brick-build-scene')).not.toBeNull();
+});
+
+it('prompts only for the newly started card and keeps all active cards clear about the wait', async () => {
+  const onNotificationPromptShown = vi.fn();
+  await act(async () => root.render(<GenerationActivityList generations={[job('new-build'), job('older-build')]}
+    error={null} onOpen={open} notificationPromptId="new-build" onNotificationPromptShown={onNotificationPromptShown} />));
+  expect(onNotificationPromptShown).toHaveBeenCalledTimes(1);
+  expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+  expect(Array.from(container.querySelectorAll('article')).every(card =>
+    card.textContent?.includes('This may take up to 30 minutes to generate.'))).toBe(true);
+  expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
+    generation_id: 'new-build', is_authenticated: false,
+  });
+  expect(open).not.toHaveBeenCalled();
 });
 
 it('restores every active job and shows completed outcomes while hiding failed cards', async () => {
