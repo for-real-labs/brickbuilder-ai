@@ -1,9 +1,9 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router-dom';
-import { describe, expect, it, vi } from 'vitest';
+import { HelmetProvider } from 'react-helmet-async';
+import { describe, expect, it } from 'vitest';
 
-vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 import TermsOfServicePage from '../src/pages/TermsOfServicePage';
 import { renderLegalDocument } from '../src/legal-prerender';
 
@@ -36,7 +36,7 @@ describe('directory legal pages', () => {
   });
 
   it('keeps terms readable in the application and links to privacy', () => {
-    const markup = renderToStaticMarkup(<MemoryRouter><TermsOfServicePage /></MemoryRouter>);
+    const markup = renderToStaticMarkup(<HelmetProvider><MemoryRouter><TermsOfServicePage /></MemoryRouter></HelmetProvider>);
     expect(markup).toContain('href="/privacy"');
     expect(markup).toContain('geometry checks');
   });

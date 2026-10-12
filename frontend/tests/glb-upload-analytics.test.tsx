@@ -19,7 +19,7 @@ it('tracks GLB picker, upload acceptance, and conversion with page and generatio
   vi.spyOn(GlbToBricksApiService, 'uploadGlb').mockResolvedValue({ generation_id: 'glb-id', message: 'started' });
   vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockResolvedValue({ status: 'completed', generation_id: 'glb-id' });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
-  act(() => root.render(<MemoryRouter><GlbUploadCard /></MemoryRouter>));
+  act(() => root.render(<MemoryRouter initialEntries={["/glb-to-lego"]}><GlbUploadCard /></MemoryRouter>));
   act(() => (host.querySelector('button') as HTMLButtonElement).click());
   expect(posthog.capture).toHaveBeenCalledWith('glb_upload_picker_opened', expect.objectContaining({ page: '/glb-to-lego', input_type: 'glb' }));
   const input = host.querySelector('input')!;

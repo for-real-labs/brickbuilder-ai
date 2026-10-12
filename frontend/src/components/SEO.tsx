@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet-async';
 
 interface SEOProps {
@@ -22,55 +22,6 @@ export function SEO({
   noIndex = false,
   structuredData
 }: SEOProps) {
-  useEffect(() => {
-    const upsertMeta = (selector: string, attributes: Record<string, string>) => {
-      const existing = Array.from(document.head.querySelectorAll<HTMLMetaElement>(selector));
-      const primary = existing[0] ?? document.createElement('meta');
-
-      Object.entries(attributes).forEach(([key, value]) => {
-        primary.setAttribute(key, value);
-      });
-
-      if (!primary.parentElement) {
-        document.head.appendChild(primary);
-      }
-
-      existing.slice(1).forEach((element) => element.remove());
-    };
-
-    document.title = title;
-    upsertMeta('meta[name="title"]', { name: 'title', content: title });
-    upsertMeta('meta[name="description"]', { name: 'description', content: description });
-    upsertMeta('meta[name="keywords"]', { name: 'keywords', content: keywords });
-    upsertMeta('meta[property="og:type"]', { property: 'og:type', content: type });
-    upsertMeta('meta[property="og:url"]', { property: 'og:url', content: url });
-    upsertMeta('meta[property="og:title"]', { property: 'og:title', content: title });
-    upsertMeta('meta[property="og:description"]', { property: 'og:description', content: description });
-    upsertMeta('meta[property="og:image"]', { property: 'og:image', content: image });
-    upsertMeta('meta[property="og:site_name"]', { property: 'og:site_name', content: 'BrickBuilder AI' });
-    upsertMeta('meta[name="twitter:card"]', { name: 'twitter:card', content: 'summary_large_image' });
-    upsertMeta('meta[name="twitter:url"]', { name: 'twitter:url', content: url });
-    upsertMeta('meta[name="twitter:title"]', { name: 'twitter:title', content: title });
-    upsertMeta('meta[name="twitter:description"]', { name: 'twitter:description', content: description });
-    upsertMeta('meta[name="twitter:image"]', { name: 'twitter:image', content: image });
-
-    const canonicals = Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="canonical"]'));
-    const canonical = canonicals[0] ?? document.createElement('link');
-    canonical.setAttribute('rel', 'canonical');
-    canonical.setAttribute('href', url);
-    if (!canonical.parentElement) {
-      document.head.appendChild(canonical);
-    }
-    canonicals.slice(1).forEach((element) => element.remove());
-
-    const robots = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
-    if (noIndex) {
-      upsertMeta('meta[name="robots"]', { name: 'robots', content: 'noindex, nofollow' });
-    } else if (robots?.getAttribute('content') === 'noindex, nofollow') {
-      robots.remove();
-    }
-  }, [description, image, keywords, noIndex, title, type, url]);
-
   const defaultStructuredData = {
     "@context": "https://schema.org",
     "@type": "WebApplication",
@@ -107,10 +58,27 @@ export function SEO({
   };
 
   return (
-    <Helmet>
-      {/* Structured Data */}
+    <Helmet defer={false}>
+      <title>{title}</title>
+      <meta name="title" content={title} />
+      <meta name="description" content={description} />
+      <meta name="keywords" content={keywords} />
+      <meta name="robots" content={noIndex ? 'noindex, nofollow' : 'index, follow'} />
+      <meta property="og:type" content={type} />
+      <meta property="og:url" content={url} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={image} />
+      <meta property="og:site_name" content="BrickBuilder AI" />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:url" content={url} />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={image} />
+      <link rel="canonical" href={url} />
+      {/* Escape HTML delimiters so public article text cannot close the script. */}
       <script type="application/ld+json">
-        {JSON.stringify(structuredData ?? defaultStructuredData, null, 2)}
+        {JSON.stringify(structuredData ?? defaultStructuredData, null, 2).replace(/</g, '\\u003c')}
       </script>
     </Helmet>
   );

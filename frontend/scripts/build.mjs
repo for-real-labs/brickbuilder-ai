@@ -35,7 +35,7 @@
  *   RAILWAY_PREVIEW_RETRY_DELAY_MS - delay between attempts in ms (default 5000)
  */
 import { spawnSync } from 'node:child_process';
-import { prerenderLegalPages } from './legal-prerender.mjs';
+import { prerenderPublicPages } from './public-prerender.mjs';
 import { resolveGitHubPreviewBackend } from './github-preview.mjs';
 import {
   DEFAULT_MAX_ATTEMPTS,
@@ -60,9 +60,9 @@ async function runViteBuild(env) {
   });
   if (result.status !== 0) process.exit(result.status ?? 1);
   try {
-    await prerenderLegalPages();
+    await prerenderPublicPages();
   } catch (error) {
-    console.error('[build] Legal page rendering failed:', error);
+    console.error('[build] Public page rendering failed:', error);
     process.exit(1);
   }
 }
