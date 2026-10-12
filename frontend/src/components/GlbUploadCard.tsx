@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
 import * as THREE from 'three';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Upload, Loader2, Box } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { GlbToBricksApiService } from '../services/glbToBricksApi';
@@ -149,6 +149,7 @@ function GlbViewer({ objectUrl }: { objectUrl: string }) {
 export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {}) {
   const { session } = useAuth();
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
@@ -173,7 +174,7 @@ export function GlbUploadCard({ autoOpen = false }: { autoOpen?: boolean } = {})
     }
   }, [autoOpen]);
 
-  const attribution = { page: window.location.pathname, input_type: 'glb', input_format: 'glb' };
+  const attribution = { page: pathname, input_type: 'glb', input_format: 'glb' };
   const openPicker = () => { posthog.capture('glb_upload_picker_opened', attribution); fileInputRef.current?.click(); };
 
   const handleSelectFile = (selected: File | null) => {

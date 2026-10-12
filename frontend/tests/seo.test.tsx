@@ -1,0 +1,53 @@
+import React, { act } from 'react';
+import { readFileSync } from 'node:fs';
+import { createRoot } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
+import { HelmetProvider, type HelmetServerState } from 'react-helmet-async';
+import { afterEach, describe, expect, it } from 'vitest';
+import { SEO } from '../src/components/SEO';
+
+let root: ReturnType<typeof createRoot> | undefined;
+afterEach(() => {
+  if (root) act(() => root!.unmount());
+  root = undefined;
+  document.head.innerHTML = '';
+  document.body.innerHTML = '';
+});
+
+describe('SEO metadata ownership', () => {
+  it('replaces the static homepage defaults and updates one canonical during navigation', () => {
+    const shell = new DOMParser().parseFromString(readFileSync('index.html', 'utf8'), 'text/html');
+    document.head.innerHTML = shell.head.innerHTML;
+    const host = document.createElement('div');
+    document.body.appendChild(host);
+    root = createRoot(host);
+    for (const [path, noIndex] of [['/blog', false], ['/order', true], ['/glb-to-lego', false]] as const) {
+      const url = `https://brickbuilder.ai${path}`;
+      act(() => root!.render(<HelmetProvider><SEO title={path} url={url} noIndex={noIndex} /></HelmetProvider>));
+      expect(document.title).toBe(path);
+      expect(document.head.querySelectorAll('link[rel="canonical"]')).toHaveLength(1);
+      expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(url);
+      expect(document.head.querySelectorAll('meta[name="description"]')).toHaveLength(1);
+      expect(document.head.querySelectorAll('meta[name="robots"]')).toHaveLength(1);
+      expect(document.head.querySelector('meta[name="robots"]')?.getAttribute('content')).toBe(noIndex ? 'noindex, nofollow' : 'index, follow');
+      const scripts = document.head.querySelectorAll('script[type="application/ld+json"]');
+      expect(scripts).toHaveLength(1);
+      expect(JSON.parse(scripts[0].textContent!).url).toBe(url);
+    }
+  });
+
+  it('escapes structured-data HTML delimiters while preserving its JSON value', () => {
+    const context: { helmet?: HelmetServerState } = {};
+    const canUseDOM = HelmetProvider.canUseDOM;
+    HelmetProvider.canUseDOM = false;
+    const headline = '</script><script>alert("test")</script>';
+    try {
+      renderToStaticMarkup(<HelmetProvider context={context}><SEO structuredData={{ headline }} /></HelmetProvider>);
+    } finally {
+      HelmetProvider.canUseDOM = canUseDOM;
+    }
+    const parsed = new DOMParser().parseFromString(context.helmet!.script.toString(), 'text/html');
+    expect(parsed.querySelectorAll('script')).toHaveLength(1);
+    expect(JSON.parse(parsed.querySelector('script')!.textContent!).headline).toBe(headline);
+  });
+});
