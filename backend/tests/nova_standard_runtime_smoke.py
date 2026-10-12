@@ -61,7 +61,7 @@ async def run():
         runtime = (await client.get('/integration/runtime')).json()
         assert runtime == worker.runtime()
         assert 'preview_build_version' not in runtime and 'build_review_version' not in runtime
-        assert runtime['instruction_plan_version'] == 1
+        assert runtime['instruction_plan_version'] == 2
         assert runtime['generation_cost_limit_usd'] == 10 and runtime['parts_catalog_version'] == 1
     store = get_store()
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
@@ -111,6 +111,17 @@ async def run():
         assert response.status_code == 200, response.text
         counts = [sum(line.startswith('1 ') for line in step.splitlines()) for step in response.text.split('0 STEP')]
         assert [count for count in counts if count] == [1, 5, 5, 2], counts
+        # The cover is reachable through a side wall, but must wait until the
+        # axle mount is seated on the base instead of enclosing its empty slot.
+        source = '0 FILE main.ldr\n' + placement(0, 0, 0, '3031.dat')
+        source += placement(0, -24, 10, '3004.dat')
+        cover = placement(0, -32, 0, '3031.dat')
+        mount = placement(0, -24, -10, '32064a.dat')
+        source += cover + mount
+        response = await client.post('/integration/instructions', content=source.encode())
+        assert response.status_code == 200, response.text
+        assert response.text.index(mount.strip()) < response.text.index(cover.strip())
+        assert sum(line.startswith('1 ') for line in response.text.splitlines()) == 4
         disconnected = '0 FILE main.ldr\n' + placement(0, 0, 0, '3001.dat') + placement(400, 0, 0, '3001.dat')
         response = await client.post('/integration/instructions', content=disconnected.encode())
         assert response.status_code == 422 and 'Repair disconnected' in response.text

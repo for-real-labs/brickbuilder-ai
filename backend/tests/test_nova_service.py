@@ -11,11 +11,11 @@ from unittest.mock import AsyncMock
 from src.utils.nova_service import NovaService, read_export
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'instruction_plan_version': 1}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'instruction_plan_version': 2}
 
 
 @pytest.mark.parametrize('versions,error', [({}, 'cost limit'),
-    ({'parts_catalog_version': 1, 'instruction_plan_version': 1}, 'cost limit'),
+    ({'parts_catalog_version': 1, 'instruction_plan_version': 2}, 'cost limit'),
     ({'generation_cost_limit_usd': 10}, 'parts catalog')])
 def test_older_nova_runtime_is_rejected_before_provider_calls(versions, error):
     async def run():
@@ -42,7 +42,7 @@ def test_final_import_blocks_a_runtime_publication_that_bypassed_the_parts_gate(
         async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
             service.ready = AsyncMock(return_value=VERSIONS)
             service.configure_model = AsyncMock(return_value='config')
-            service.request = AsyncMock(return_value={'parts_catalog_version': 1, 'instruction_plan_version': 1})
+            service.request = AsyncMock(return_value={'parts_catalog_version': 1, 'instruction_plan_version': 2})
             service.chat = AsyncMock(side_effect=[{'chat': {'running': False}, 'models': {}},
                 {'chat': {'running': False}, 'models': {'new': {'id': 'new', 'created_at': 1}}}])
             service.wait_for_turn = AsyncMock()
@@ -101,7 +101,7 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
             assert req.method == 'PUT' and 'unit_price' not in body['csv']
             assert 'weight_kg' not in body['csv'] and 'supplier_color' not in body['csv']
             assert 'GDS-' not in body['csv']
-            return httpx.Response(200, json={'parts_catalog_version': 1, 'instruction_plan_version': 1})
+            return httpx.Response(200, json={'parts_catalog_version': 1, 'instruction_plan_version': 2})
         if req.url.path == '/integration/runtime':
             return httpx.Response(200, json=VERSIONS)
         if req.url.path == '/api/llm-models' and req.method == 'GET':
@@ -180,7 +180,7 @@ def test_cancellation_stops_the_upstream_turn_but_conflicts_do_not(monkeypatch):
             if req.url.path == '/api/llm-models' and req.method == 'GET': return httpx.Response(200, json={'models': []})
             if req.url.path == '/api/llm-models': return httpx.Response(200, json={'id': 'llm'})
             if req.url.path == '/api/chats': return httpx.Response(200, json={'id': 'chat'})
-            if req.url.path.endswith('/parts-catalog'): return httpx.Response(200, json={'parts_catalog_version': 1, 'instruction_plan_version': 1})
+            if req.url.path.endswith('/parts-catalog'): return httpx.Response(200, json={'parts_catalog_version': 1, 'instruction_plan_version': 2})
             if req.url.path.endswith('/messages'): return httpx.Response(409 if conflict else 202, json={})
             if req.url.path.endswith('/cancel'): return httpx.Response(200, json={'cancelled': True})
             pytest.fail(str(req.url))
@@ -251,7 +251,7 @@ def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(
         if req.url.path.endswith('/parts-catalog'):
             assert req.url.path == '/integration/chats/copy-chat/parts-catalog'
             assert sessions == []
-            return httpx.Response(200, json={'parts_catalog_version': 1, 'instruction_plan_version': 1})
+            return httpx.Response(200, json={'parts_catalog_version': 1, 'instruction_plan_version': 2})
         if req.url.path == '/api/chats/missing-chat':
             return httpx.Response(404, json={'detail': 'Chat not found'})
         if req.url.path == '/integration/import':
@@ -322,7 +322,7 @@ def test_nova_usage_is_read_for_only_this_generation_including_failed_edits(monk
     service.export = AsyncMock(return_value=exported)
     async def respond(method, path, **kwargs):
         if path.endswith('/parts-catalog'):
-            return {'parts_catalog_version': 1, 'instruction_plan_version': 1}
+            return {'parts_catalog_version': 1, 'instruction_plan_version': 2}
         if path.endswith('/messages'):
             assert kwargs['headers'] == {'X-BrickBuilder-Generation-Id': id}
             return {}
@@ -347,14 +347,14 @@ def test_nova_usage_is_read_for_only_this_generation_including_failed_edits(monk
     assert ledger.values()['estimated_cost_usd'] == '0.002'
 
 
-@pytest.mark.parametrize('version', [None, 0])
+@pytest.mark.parametrize('version', [None, 0, 1])
 def test_instructions_require_the_connected_exporter(version):
     async def run():
         info = {**VERSIONS, 'instruction_plan_version': version}
         service = NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
             lambda request: httpx.Response(200, json=info))))
         async with service:
-            with pytest.raises(ValueError, match='five-piece connected instructions'):
+            with pytest.raises(ValueError, match='five-piece connected instructions with placement clearance'):
                 await service.instructions('model')
     asyncio.run(run())
 
@@ -365,6 +365,6 @@ def test_instruction_failure_returns_repair_feedback_without_runtime_source():
             if request.url.path == '/integration/runtime': return httpx.Response(200, json=VERSIONS)
             return httpx.Response(422, json={'detail': 'private source'})
         async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(respond))) as service:
-            with pytest.raises(ValueError, match='Repair disconnected parts'):
+            with pytest.raises(ValueError, match='Repair disconnected or blocked parts'):
                 await service.instructions('model')
     asyncio.run(run())

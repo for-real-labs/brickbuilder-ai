@@ -148,7 +148,7 @@ stays visible during the edit; progress, cancellation and “This can take up to
 
 The private `generation-output` bucket retains:
 
-- `nova-instructions-reviewed-v2.ldr`: connected physical placements with at most five pieces per step.
+- `nova-instructions-reviewed-v3.ldr`: connected physical placements with at most five pieces per step.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
 - `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
@@ -285,17 +285,30 @@ renders are review evidence; generated models still need human build review.
 ### Connected instruction steps
 
 Instruction export grows one assembly using Nova's complete connector graph,
-starting from a low foundation and preferring authored order among available
-attachments. Every placement must connect to the existing assembly. Steps add
+starting from a low foundation, preferring lower available attachments and
+then authored order. Every placement must connect to the existing assembly. Steps
+add
 at most five pieces, and placement height changes start separate steps so upper
 supports and pieces beneath them are shown separately. Geometry, transforms,
 colors, embedded parts, and the canonical source MPD remain unchanged.
 
-Disconnected models or incomplete connector evidence return repair feedback;
+Stud contacts between upright parts also constrain insertion order when the
+matched connector axes are vertical in world space: an upper cover cannot
+close over a missing part or chain of parts whose lower support is installed.
+The same check applies when a lower support would close a gap beneath an
+installed cover. Blocked covers wait for the missing parts. This places axle
+mounts before the plates above them while allowing accessible underside
+attachments and retaining every placement. The exported sequence is checked
+again independently of the planner queue.
+
+Disconnected models, blocked placement sequences, or incomplete evidence return
+repair feedback;
 no piece is force-placed or deleted. Connector evidence does not prove balance
-or insertion clearance. This is an instruction export policy; Nova's standard
+or general insertion clearance for axles, clips, sideways parts, or other
+mechanisms. This is an instruction export policy; Nova's standard
 generation, publication, validation, and rendering workflow remains intact.
 
 Deploy the rebuilt Nova runtime with the API. Instruction export requires
-`instruction_plan_version: 1`; older instruction caches are not reused. The
-versioned cache is regenerated from the saved source on first request.
+`instruction_plan_version: 2`; older instruction caches are not reused. The
+`nova-instructions-reviewed-v3.ldr` cache is regenerated from the saved source
+on first request.

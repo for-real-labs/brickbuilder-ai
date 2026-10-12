@@ -26,7 +26,7 @@ MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
 
 
-INSTRUCTIONS_FILE = 'nova-instructions-reviewed-v2.ldr'
+INSTRUCTIONS_FILE = 'nova-instructions-reviewed-v3.ldr'
 
 
 class NovaInstructionPlanError(ValueError):
@@ -191,13 +191,13 @@ class NovaService:
 
     async def instructions(self, mpd: str) -> str:
         versions = await self.ready()
-        if versions.get('instruction_plan_version') != 1:
-            raise ValueError('Rebuild the Nova runtime with five-piece connected instructions.')
+        if versions.get('instruction_plan_version') != 2:
+            raise ValueError('Rebuild the Nova runtime with five-piece connected instructions with placement clearance.')
         try:
             response = await self.client.post('integration/instructions', content=mpd.encode('utf-8'),
                 headers={'Content-Type': 'text/plain'}, timeout=1830)
             if response.status_code == 422:
-                raise NovaInstructionPlanError('Repair disconnected parts before opening instructions.')
+                raise NovaInstructionPlanError('Repair disconnected or blocked parts before opening instructions.')
             response.raise_for_status()
             if not response.headers.get('content-type', '').startswith('text/plain') or not response.text.strip():
                 raise ValueError('Nova instruction adapter is unavailable. Rebuild the private runtime.')

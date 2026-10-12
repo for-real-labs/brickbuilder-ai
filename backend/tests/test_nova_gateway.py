@@ -209,7 +209,7 @@ def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path)
         assert client.get('/integration/runtime').status_code == 401
         assert client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': '../../other'}).status_code == 400
         response = client.get('/integration/runtime', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 1}
+        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 2}
     assert not module._workers
 
 
@@ -269,7 +269,7 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
     module.export_sources = lambda chat, model: b'zip'
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
-        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 1}
+        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 2}
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401
@@ -372,7 +372,7 @@ def test_disconnected_instructions_return_fixed_repair_feedback(tmp_path):
         response = client.post('/integration/instructions', content=b'model',
                                headers={'Authorization': 'Bearer runtime-secret'})
     assert response.status_code == 422
-    assert response.json() == {'detail': 'Repair disconnected parts before opening instructions.'}
+    assert response.json() == {'detail': 'Repair disconnected or blocked parts before opening instructions.'}
 
 
 def test_instruction_runtime_bounds_concurrent_geometry_exports(tmp_path):
