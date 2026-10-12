@@ -33,7 +33,7 @@ def test_finished_model_reads_cached_steps_without_reading_private_source(monkey
     monkeypatch.setattr(module, 'generation_storage', storage({'status': 'completed', 'endpoint': 'novaToBricks'}, Bucket()))
     response = asyncio.run(module.get_nova_instructions('generation'))
     assert response.body.count(b'0 STEP') == 2
-    assert reads == ['generation/nova-instructions-reviewed-v2.ldr']
+    assert reads == ['generation/nova-instructions-reviewed-v3.ldr']
 
 
 def test_historical_unchecked_preview_cannot_read_or_create_instructions(monkeypatch):
@@ -73,7 +73,7 @@ def test_existing_models_use_the_original_nova_hierarchy_and_cache_only_steps(mo
     assert sources == [source]
     assert response.body.count(b'0 STEP') == 2
     assert b'PRIVATE' not in response.body
-    assert writes[0]['path'] == 'generation/nova-instructions-reviewed-v2.ldr'
+    assert writes[0]['path'] == 'generation/nova-instructions-reviewed-v3.ldr'
     assert writes[0]['file'] == response.body
 
 
@@ -88,7 +88,7 @@ def test_failed_plan_returns_repair_feedback_and_does_not_cache(monkeypatch):
         async def __aenter__(self): return self
         async def __aexit__(self, *args): pass
         async def instructions(self, original):
-            raise module.NovaInstructionPlanError('Repair disconnected parts before opening instructions.')
+            raise module.NovaInstructionPlanError('Repair disconnected or blocked parts before opening instructions.')
     monkeypatch.setattr(module, 'generation_storage', storage({'status': 'completed', 'endpoint': 'novaToBricks'}, Bucket()))
     monkeypatch.setattr(module, 'read_export', lambda *args: SimpleNamespace(mpd='model'))
     monkeypatch.setattr(module, 'NovaService', Service)

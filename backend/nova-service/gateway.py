@@ -34,7 +34,7 @@ VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = 1
-VERSIONS['instruction_plan_version'] = 1
+VERSIONS['instruction_plan_version'] = 2
 # Geometry analysis is CPU/memory intensive; share a bounded runtime budget.
 _instruction_export_slots = asyncio.Semaphore(2)
 _workers = {}
@@ -406,7 +406,7 @@ async def instruction_export(request: Request):
         async with _instruction_export_slots:
             data = await asyncio.to_thread(export_instruction_placements, bytes(source))
     except InstructionPlanError:
-        return JSONResponse({'detail': 'Repair disconnected parts before opening instructions.'}, status_code=422)
+        return JSONResponse({'detail': 'Repair disconnected or blocked parts before opening instructions.'}, status_code=422)
     except (UnicodeError, OSError, subprocess.SubprocessError, ValueError):
         return JSONResponse({'detail': 'Nova construction steps could not be exported'}, status_code=502)
     return Response(data, media_type='text/plain')
@@ -435,7 +435,7 @@ def export_instruction_placements(source: bytes) -> bytes:
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=1800)
         except subprocess.CalledProcessError:
             if output.with_suffix('.error').is_file():
-                raise InstructionPlanError('Repair disconnected parts before opening instructions.') from None
+                raise InstructionPlanError('Repair disconnected or blocked parts before opening instructions.') from None
             raise
         if output.stat().st_size > 32 * 1024 * 1024:
             raise ValueError('Instruction export is too large')

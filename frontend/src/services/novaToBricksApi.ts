@@ -30,7 +30,7 @@ const API_BASE_URL = API_MODE === 'local'
 
 export class NovaInstructionPlanError extends Error {
   constructor() {
-    super('Some pieces have no verified connection to the assembly. Edit the model to repair those connections, then reopen instructions.');
+    super('Some pieces have no verified connection or cannot be inserted in order. Edit the model to repair those connections or placements, then reopen instructions.');
     this.name = 'NovaInstructionPlanError';
   }
 }
@@ -40,7 +40,8 @@ export class NovaToBricksApiService {
     const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-instructions.ldr`);
     if (response.status === 409) {
       const error = await response.json().catch(() => ({}));
-      if (error.detail === 'Repair disconnected parts before opening instructions.') throw new NovaInstructionPlanError();
+      if (['Repair disconnected parts before opening instructions.',
+        'Repair disconnected or blocked parts before opening instructions.'].includes(error.detail)) throw new NovaInstructionPlanError();
     }
     if (!response.ok) throw new Error('Unable to load Nova construction steps. Please try again.');
     return response.text();

@@ -35,7 +35,7 @@ install_cost_limits(agent, llm_config, litellm, claude_agent)
 VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = CATALOG_VERSION
-VERSIONS['instruction_plan_version'] = 1
+VERSIONS['instruction_plan_version'] = 2
 
 
 @app.middleware('http')

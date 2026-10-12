@@ -27,38 +27,115 @@ def connection_neighbors(count, contacts):
     return neighbors
 
 
+def stud_neighbors(occurrences, contacts):
+    """Identify upright support/cover pairs from actual stud connections."""
+    connection_neighbors(len(occurrences), contacts)
+    above = [set() for _ in occurrences]
+    below = [set() for _ in occurrences]
+
+    def upright(occurrence):
+        return all(math.isclose(occurrence.matrix.rows[row][1], value,
+                                rel_tol=0, abs_tol=1e-6)
+                   for row, value in enumerate((0, 1, 0)))
+
+    for contact in contacts:
+        kinds = contact.get('kinds')
+        if kinds == ['stud', 'stud_receptacle']:
+            lower, upper = contact['instances']
+        elif kinds == ['stud_receptacle', 'stud']:
+            upper, lower = contact['instances']
+        else:
+            continue
+        if (upright(occurrences[lower]) and upright(occurrences[upper])
+                and occurrences[lower].position.y > occurrences[upper].position.y + 1e-6):
+            above[lower].add(upper)
+            below[upper].add(lower)
+    return above, below
+
+
+def trapped_parts(index, placed, above, below):
+    """Missing studded chains enclosed between index and an existing part."""
+    def enclosed(direction):
+        parents, found = {}, set()
+        frontier = [index]
+        while frontier:
+            current = frontier.pop()
+            for neighbor in direction[current]:
+                if neighbor in placed:
+                    if current != index:
+                        found.add(current)
+                else:
+                    if neighbor not in parents:
+                        parents[neighbor] = set()
+                        frontier.append(neighbor)
+                    if current != index:
+                        parents[neighbor].add(current)
+        frontier = list(found)
+        while frontier:
+            for parent in parents[frontier.pop()]:
+                if parent not in found:
+                    found.add(parent)
+                    frontier.append(parent)
+        return found
+    return enclosed(above) | enclosed(below)
+
+
 def connected_instruction_order(occurrences, contacts):
-    """Grow one assembly, preferring authored order among available placements.
+    """Grow an attached assembly without trapping an unplaced studded part.
 
     LDraw's positive Y points down, so start with the lowest part origin.
-    Connector evidence proves attachment, not balance or insertion clearance.
+    Prefer lower placements, then authored order among safe attachments. A part
+    can still attach from underneath a bridge while its lower support is absent. This checks upright
+    stud sandwiches, not general insertion clearance or balance.
     """
     neighbors = connection_neighbors(len(occurrences), contacts)
     if not occurrences:
         raise DisconnectedInstructions('Missing physical placements')
+    above, below = stud_neighbors(occurrences, contacts)
     seed = max(range(len(occurrences)), key=lambda i: (occurrences[i].position.y, -i))
-    frontier, discovered, order = [seed], {seed}, []
+    def priority(index):
+        return (-float(occurrences[index].position.y), index)
+    frontier, discovered, scheduled = [priority(seed)], {seed}, {seed}
+    waiting = [set() for _ in occurrences]
+    placed, order = set(), []
     while frontier:
-        index = heapq.heappop(frontier)
+        _, index = heapq.heappop(frontier)
+        scheduled.remove(index)
+        blockers = trapped_parts(index, placed, above, below)
+        if blockers:
+            for middle in blockers:
+                waiting[middle].add(index)
+            continue
         order.append(index)
+        placed.add(index)
+        for candidate in waiting[index]:
+            if candidate not in placed and candidate not in scheduled:
+                heapq.heappush(frontier, priority(candidate))
+                scheduled.add(candidate)
         for neighbor in neighbors[index]:
             if neighbor not in discovered:
                 discovered.add(neighbor)
-                heapq.heappush(frontier, neighbor)
+                heapq.heappush(frontier, priority(neighbor))
+                scheduled.add(neighbor)
     if len(order) != len(occurrences):
-        raise DisconnectedInstructions('Remaining pieces have no connection to the assembly')
+        raise DisconnectedInstructions('Remaining pieces are disconnected or require a blocked placement')
     return order
 
 
-def verify_instruction_order(order, contacts):
-    """Independently check every prefix before serializing reordered placements."""
+def verify_instruction_order(order, contacts, occurrences):
+    """Independently check every prefix for attachment and trapped parts."""
     neighbors = connection_neighbors(len(order), contacts)
-    if sorted(order) != list(range(len(order))):
+    if sorted(order) != list(range(len(order))) or len(occurrences) != len(order):
         raise ValueError('Instruction order must contain every physical placement exactly once')
+    above, below = stud_neighbors(occurrences, contacts)
     placed = set()
     for index in order:
         if placed and not neighbors[index].intersection(placed):
             raise DisconnectedInstructions('Placement requires a later connection; repair the model')
+        # Deliberately validate the prefix directly rather than trust the
+        # planner's incremental blocked-candidate queue.
+        if trapped_parts(index, placed, above, below):
+            raise DisconnectedInstructions('Placement closes over an unplaced supported part; repair the sequence')
         placed.add(index)
 
 
@@ -139,7 +216,7 @@ def main():
                 or geometry['contact_count'] != len(geometry['contacts'])):
             raise DisconnectedInstructions('Complete connector evidence is required to order instructions')
         order = connected_instruction_order(occurrences, geometry['contacts'])
-        verify_instruction_order(order, geometry['contacts'])
+        verify_instruction_order(order, geometry['contacts'], occurrences)
         occurrences = [occurrences[index] for index in order]
     output.write_text(serialize_placements(original, occurrences, instructions=instructions), encoding='utf-8')
 
@@ -149,5 +226,5 @@ if __name__ == '__main__':
         main()
     except DisconnectedInstructions:
         # Fixed feedback only; no agent source or geometry report crosses the API.
-        Path(sys.argv[2]).with_suffix('.error').write_text('Repair disconnected parts before opening instructions.')
+        Path(sys.argv[2]).with_suffix('.error').write_text('Repair disconnected or blocked parts before opening instructions.')
         raise
