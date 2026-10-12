@@ -27,8 +27,41 @@ def connection_neighbors(count, contacts):
     return neighbors
 
 
+def contact_axes(occurrences, contacts, parts):
+    """Carry the matched connector axes into the construction evidence.
+
+    Nova's geometry JSON records feature IDs but omits frames. Read those exact
+    features from the cached part geometry, including reviewed Technic ports,
+    and transform their axes to world space. No new contacts are inferred.
+    """
+    from ldraw_tools.technic import definition, local_features, canonical
+
+    features, result = {}, []
+    for contact in contacts:
+        if set(contact.get('kinds', [])) != {'stud', 'stud_receptacle'}:
+            result.append(contact)
+            continue
+        axes = []
+        for index, feature_id in zip(contact['instances'], contact['feature_ids']):
+            occurrence = occurrences[index]
+            code = occurrence.part_code.casefold()
+            if code not in features:
+                local = parts.geometry(code)
+                ports = list(local.connections)
+                entry = definition(local)
+                if entry is not None:
+                    ports.extend(local_features(canonical(code), entry))
+                features[code] = {feature.feature_id: feature.axis for feature in ports}
+            if feature_id not in features[code]:
+                raise DisconnectedInstructions('Matched connector axis evidence is unavailable')
+            axis = occurrence.matrix * features[code][feature_id]
+            axes.append([float(axis.x), float(axis.y), float(axis.z)])
+        result.append(dict(contact, axes=axes))
+    return result
+
+
 def stud_neighbors(occurrences, contacts):
-    """Identify upright support/cover pairs from actual stud connections."""
+    """Identify upright support/cover pairs with vertical matched connectors."""
     connection_neighbors(len(occurrences), contacts)
     above = [set() for _ in occurrences]
     below = [set() for _ in occurrences]
@@ -45,6 +78,15 @@ def stud_neighbors(occurrences, contacts):
         elif kinds == ['stud_receptacle', 'stud']:
             upper, lower = contact['instances']
         else:
+            continue
+        axes = contact.get('axes')
+        if axes is None or len(axes) != 2:
+            raise DisconnectedInstructions('Matched connector axes are required for insertion review')
+        if not all(len(axis) == 3 and all(math.isfinite(value) for value in axis) for axis in axes):
+            raise DisconnectedInstructions('Invalid matched connector axes')
+        if not all(math.isclose(axis[0], 0, abs_tol=1e-6)
+                   and math.isclose(abs(axis[1]), 1, abs_tol=1e-6)
+                   and math.isclose(axis[2], 0, abs_tol=1e-6) for axis in axes):
             continue
         if (upright(occurrences[lower]) and upright(occurrences[upper])
                 and occurrences[lower].position.y > occurrences[upper].position.y + 1e-6):
@@ -204,7 +246,7 @@ def main():
     common.CACHE = document.CACHE = output.parent / 'cache'
     original = document.parse_source(source)
     parts = common.get_parts(library)
-    physical, _ = document.physical_context(original, parts)
+    physical, physical_parts = document.physical_context(original, parts)
     occurrences = physical_occurrences(physical)
     if instructions:
         from ldraw_tools.geometry import analyze_geometry
@@ -215,8 +257,9 @@ def main():
                 or geometry['occurrence_count'] != len(occurrences)
                 or geometry['contact_count'] != len(geometry['contacts'])):
             raise DisconnectedInstructions('Complete connector evidence is required to order instructions')
-        order = connected_instruction_order(occurrences, geometry['contacts'])
-        verify_instruction_order(order, geometry['contacts'], occurrences)
+        contacts = contact_axes(occurrences, geometry['contacts'], physical_parts)
+        order = connected_instruction_order(occurrences, contacts)
+        verify_instruction_order(order, contacts, occurrences)
         occurrences = [occurrences[index] for index in order]
     output.write_text(serialize_placements(original, occurrences, instructions=instructions), encoding='utf-8')
 

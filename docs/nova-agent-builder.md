@@ -148,7 +148,7 @@ stays visible during the edit; progress, cancellation and “This can take up to
 
 The private `generation-output` bucket retains:
 
-- `nova-instructions-reviewed-v2.ldr`: connected physical placements with at most five pieces per step.
+- `nova-instructions-reviewed-v3.ldr`: connected physical placements with at most five pieces per step.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
 - `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
@@ -292,7 +292,8 @@ at most five pieces, and placement height changes start separate steps so upper
 supports and pieces beneath them are shown separately. Geometry, transforms,
 colors, embedded parts, and the canonical source MPD remain unchanged.
 
-Upright stud contacts also constrain insertion order: an upper cover cannot
+Stud contacts between upright parts also constrain insertion order when the
+matched connector axes are vertical in world space: an upper cover cannot
 close over a missing part or chain of parts whose lower support is installed.
 The same check applies when a lower support would close a gap beneath an
 installed cover. Blocked covers wait for the missing parts. This places axle
