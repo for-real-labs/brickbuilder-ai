@@ -128,3 +128,9 @@ describe('local provider API', () => {
     expect(safeProviderLoginUrl('fal', 'https://claude.ai')).toBeUndefined();
   });
 });
+
+
+it('reports disconnected instruction placements with repair guidance', async () => {
+  vi.mocked(fetch).mockResolvedValue(response({ detail: 'Repair disconnected parts before opening instructions.' }, 409));
+  await expect(NovaToBricksApiService.instructions('model')).rejects.toThrow('Edit the model to repair');
+});
