@@ -61,6 +61,7 @@ async def run():
         runtime = (await client.get('/integration/runtime')).json()
         assert runtime == worker.runtime()
         assert 'preview_build_version' not in runtime and 'build_review_version' not in runtime
+        assert runtime['instruction_plan_version'] == 1
         assert runtime['generation_cost_limit_usd'] == 10 and runtime['parts_catalog_version'] == 1
     store = get_store()
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
@@ -102,6 +103,17 @@ async def run():
         response = await client.post('/integration/instructions', content=(work / 'model.mpd').read_bytes())
         assert response.status_code == 200, response.text
         assert b'0 STEP' in response.content
+        def placement(x, y, z, ref):
+            return f'1 4 {x} {y} {z} 1 0 0 0 1 0 0 0 1 {ref}\n'
+        source = '0 FILE main.ldr\n' + placement(0, 0, 0, '3031.dat') + '0 STEP\n'
+        source += ''.join(placement(x, -8, z, '3024.dat') for z in (-30, -10, 10) for x in (-30, -10, 10, 30))
+        response = await client.post('/integration/instructions', content=source.encode())
+        assert response.status_code == 200, response.text
+        counts = [sum(line.startswith('1 ') for line in step.splitlines()) for step in response.text.split('0 STEP')]
+        assert [count for count in counts if count] == [1, 5, 5, 2], counts
+        disconnected = '0 FILE main.ldr\n' + placement(0, 0, 0, '3001.dat') + placement(400, 0, 0, '3001.dat')
+        response = await client.post('/integration/instructions', content=disconnected.encode())
+        assert response.status_code == 422 and 'Repair disconnected' in response.text
     assert len(worker.generation_usage(chat['id'], generation)['calls']) == 4
     # Historical preview metadata survives the rollback, but cannot be
     # exported through the restored complete-generation contract.

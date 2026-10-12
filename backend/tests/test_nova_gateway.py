@@ -209,7 +209,7 @@ def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path)
         assert client.get('/integration/runtime').status_code == 401
         assert client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': '../../other'}).status_code == 400
         response = client.get('/integration/runtime', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1}
+        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 1}
     assert not module._workers
 
 
@@ -269,7 +269,7 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
     module.export_sources = lambda chat, model: b'zip'
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
-        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1}
+        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 10, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 1}
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401
@@ -360,3 +360,41 @@ def test_usage_endpoint_reads_private_per_generation_file_and_validates_identity
         assert client.get(f'/integration/chats/other/usage/{generation_id}', headers=headers).status_code == 404
         assert client.get('/integration/chats/chat/usage/not-a-uuid', headers=headers).status_code == 422
         assert client.get('/integration/runtime', headers={**headers, 'X-BrickBuilder-Generation-Id': '../../secret'}).status_code == 400
+
+
+
+def test_disconnected_instructions_return_fixed_repair_feedback(tmp_path):
+    module = gateway(tmp_path)
+    def fail(source):
+        raise module.InstructionPlanError('private source must not be exposed')
+    module.export_instruction_placements = fail
+    with TestClient(module.app) as client:
+        response = client.post('/integration/instructions', content=b'model',
+                               headers={'Authorization': 'Bearer runtime-secret'})
+    assert response.status_code == 422
+    assert response.json() == {'detail': 'Repair disconnected parts before opening instructions.'}
+
+
+def test_instruction_runtime_bounds_concurrent_geometry_exports(tmp_path):
+    import asyncio
+    import threading
+    import time
+    module = gateway(tmp_path)
+    active = maximum = 0
+    lock = threading.Lock()
+    def export(source):
+        nonlocal active, maximum
+        with lock:
+            active += 1
+            maximum = max(maximum, active)
+        time.sleep(0.02)
+        with lock: active -= 1
+        return b'placements'
+    module.export_instruction_placements = export
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=module.app), base_url='http://runtime') as client:
+            results = await asyncio.gather(*(client.post('/integration/instructions', content=b'model',
+                headers={'Authorization': 'Bearer runtime-secret'}) for _ in range(8)))
+            assert all(result.status_code == 200 for result in results)
+    asyncio.run(run())
+    assert maximum == 2

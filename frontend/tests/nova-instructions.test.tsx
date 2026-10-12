@@ -5,7 +5,7 @@ import { expect, it, vi } from 'vitest';
 import { InstructionsPage } from '../src/pages/InstructionsPage';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { LdrToMpdApiService } from '../src/services/ldrToMpdApi';
-import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
+import { NovaToBricksApiService, NovaInstructionPlanError } from '../src/services/novaToBricksApi';
 import { LDrawParser } from '../src/utils/ldrawParser';
 
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, isSupabaseConfigured: false }) }));
@@ -48,4 +48,17 @@ it('does not count embedded part geometry as extra building placements or steps'
   expect(model.steps).toHaveLength(2);
   expect(model.steps[1].parts[0].filename).toBe('custom.dat');
   expect(LDrawParser.embeddedDefinitions(instructions)).toContain('0 FILE custom.dat');
+});
+
+
+it('shows repair guidance when connected instruction planning fails', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ endpoint: 'novaToBricks', status: 'completed' } as never);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockRejectedValue(new NovaInstructionPlanError());
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter initialEntries={['/instructions?id=nova']}><InstructionsPage /></MemoryRouter>));
+    expect(container.textContent).toContain('Edit the model to repair those connections');
+    expect(container.querySelector('[data-testid="instructions-viewer"]')).toBeNull();
+  } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
 });

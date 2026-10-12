@@ -28,9 +28,20 @@ const API_BASE_URL = API_MODE === 'local'
     ? import.meta.env.VITE_RAILWAY_API_URL_STAGING || 'https://brickai-backend-staging.up.railway.app'
     : import.meta.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
 
+export class NovaInstructionPlanError extends Error {
+  constructor() {
+    super('Some pieces have no verified connection to the assembly. Edit the model to repair those connections, then reopen instructions.');
+    this.name = 'NovaInstructionPlanError';
+  }
+}
+
 export class NovaToBricksApiService {
   static async instructions(generationId: string): Promise<string> {
     const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-instructions.ldr`);
+    if (response.status === 409) {
+      const error = await response.json().catch(() => ({}));
+      if (error.detail === 'Repair disconnected parts before opening instructions.') throw new NovaInstructionPlanError();
+    }
     if (!response.ok) throw new Error('Unable to load Nova construction steps. Please try again.');
     return response.text();
   }

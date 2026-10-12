@@ -26,6 +26,13 @@ MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
 
 
+INSTRUCTIONS_FILE = 'nova-instructions-reviewed-v2.ldr'
+
+
+class NovaInstructionPlanError(ValueError):
+    """A model needs connected placements before instructions can be exported."""
+
+
 class NovaSessionUnavailableError(ValueError):
     """The selected runtime cannot find a saved session or artifact."""
 
@@ -183,9 +190,14 @@ class NovaService:
         return await asyncio.to_thread(read_export, bytes(data), session)
 
     async def instructions(self, mpd: str) -> str:
+        versions = await self.ready()
+        if versions.get('instruction_plan_version') != 1:
+            raise ValueError('Rebuild the Nova runtime with five-piece connected instructions.')
         try:
             response = await self.client.post('integration/instructions', content=mpd.encode('utf-8'),
-                headers={'Content-Type': 'text/plain'}, timeout=180)
+                headers={'Content-Type': 'text/plain'}, timeout=1830)
+            if response.status_code == 422:
+                raise NovaInstructionPlanError('Repair disconnected parts before opening instructions.')
             response.raise_for_status()
             if not response.headers.get('content-type', '').startswith('text/plain') or not response.text.strip():
                 raise ValueError('Nova instruction adapter is unavailable. Rebuild the private runtime.')
