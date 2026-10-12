@@ -5,7 +5,7 @@ import asyncio
 from fastapi import HTTPException
 from fastapi.responses import Response
 from ..utils.generation_storage import generation_storage
-from ..utils.nova_service import NovaService, read_export
+from ..utils.nova_service import NovaService, read_export, INSTRUCTIONS_FILE, NovaInstructionPlanError
 
 
 async def get_nova_instructions(generation_id: str) -> Response:
@@ -20,7 +20,7 @@ async def get_nova_instructions(generation_id: str) -> Response:
         raise HTTPException(409, 'Instructions are unavailable for this earlier unchecked preview. Create a new build.')
     bucket = generation_storage.client.storage.from_('generation-output')
     try:
-        data = await asyncio.to_thread(bucket.download, f'{generation_id}/nova-instructions.ldr')
+        data = await asyncio.to_thread(bucket.download, f'{generation_id}/{INSTRUCTIONS_FILE}')
     except Exception:
         try:
             archive = await asyncio.to_thread(bucket.download, f'{generation_id}/nova-source.zip')
@@ -28,8 +28,10 @@ async def get_nova_instructions(generation_id: str) -> Response:
             async with NovaService() as runtime:
                 content = await runtime.instructions(original.mpd)
             data = content.encode('utf-8')
-            await asyncio.to_thread(bucket.upload, path=f'{generation_id}/nova-instructions.ldr', file=data,
+            await asyncio.to_thread(bucket.upload, path=f'{generation_id}/{INSTRUCTIONS_FILE}', file=data,
                                    file_options={'content-type': 'text/plain', 'upsert': 'true'})
+        except NovaInstructionPlanError as exc:
+            raise HTTPException(409, str(exc)) from None
         except Exception as exc:
             raise HTTPException(503, 'Nova construction steps are unavailable. Check the private Nova runtime.') from exc
     return Response(data, media_type='text/plain', headers={'Cache-Control': 'public, max-age=3600',

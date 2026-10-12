@@ -148,7 +148,7 @@ stays visible during the edit; progress, cancellation and “This can take up to
 
 The private `generation-output` bucket retains:
 
-- `nova-instructions.ldr`: cached physical placements with construction steps.
+- `nova-instructions-reviewed-v2.ldr`: connected physical placements with at most five pieces per step.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
 - `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
@@ -281,3 +281,21 @@ Preserve upstream licenses, attribution and corresponding-source obligations
 when distributing/hosting the combined integration. Source models and official
 LDraw parts retain their own attribution and licensing. Nova's checks and
 renders are review evidence; generated models still need human build review.
+
+### Connected instruction steps
+
+Instruction export grows one assembly using Nova's complete connector graph,
+starting from a low foundation and preferring authored order among available
+attachments. Every placement must connect to the existing assembly. Steps add
+at most five pieces, and placement height changes start separate steps so upper
+supports and pieces beneath them are shown separately. Geometry, transforms,
+colors, embedded parts, and the canonical source MPD remain unchanged.
+
+Disconnected models or incomplete connector evidence return repair feedback;
+no piece is force-placed or deleted. Connector evidence does not prove balance
+or insertion clearance. This is an instruction export policy; Nova's standard
+generation, publication, validation, and rendering workflow remains intact.
+
+Deploy the rebuilt Nova runtime with the API. Instruction export requires
+`instruction_plan_version: 1`; older instruction caches are not reused. The
+versioned cache is regenerated from the saved source on first request.

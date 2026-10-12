@@ -34,6 +34,7 @@ VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = 1
+VERSIONS['instruction_plan_version'] = 1
 _workers = {}
 _locks = {}
 _capacity_lock = asyncio.Lock()
@@ -401,9 +402,15 @@ async def instruction_export(request: Request):
     try:
         source.decode('utf-8')
         data = await asyncio.to_thread(export_instruction_placements, bytes(source))
+    except InstructionPlanError:
+        return JSONResponse({'detail': 'Repair disconnected parts before opening instructions.'}, status_code=422)
     except (UnicodeError, OSError, subprocess.SubprocessError, ValueError):
         return JSONResponse({'detail': 'Nova construction steps could not be exported'}, status_code=502)
     return Response(data, media_type='text/plain')
+
+
+class InstructionPlanError(ValueError):
+    """Complete connected instructions cannot be produced for this model."""
 
 
 def export_instruction_placements(source: bytes) -> bytes:
@@ -416,12 +423,17 @@ def export_instruction_placements(source: bytes) -> bytes:
         os.chown(root, account.pw_uid, account.pw_gid)
         model, output = root / 'model.mpd', root / 'instructions.ldr'
         model.write_bytes(source)
-        subprocess.run([str(toolkit / '.venv/bin/python'), str(Path(__file__).with_name('flatten.py')),
-                        str(model), str(output), os.getenv('LDRAW_DIR', '/opt/ldraw/ldraw'), '--instructions'],
-                       cwd=toolkit, user=account.pw_uid, group=account.pw_gid, extra_groups=[],
-                       env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(toolkit),
-                            'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(root)},
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=120)
+        try:
+            subprocess.run([str(toolkit / '.venv/bin/python'), str(Path(__file__).with_name('flatten.py')),
+                            str(model), str(output), os.getenv('LDRAW_DIR', '/opt/ldraw/ldraw'), '--instructions'],
+                           cwd=toolkit, user=account.pw_uid, group=account.pw_gid, extra_groups=[],
+                           env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(toolkit),
+                                'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(root)},
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=1800)
+        except subprocess.CalledProcessError:
+            if output.with_suffix('.error').is_file():
+                raise InstructionPlanError('Repair disconnected parts before opening instructions.') from None
+            raise
         if output.stat().st_size > 32 * 1024 * 1024:
             raise ValueError('Instruction export is too large')
         return output.read_bytes()
