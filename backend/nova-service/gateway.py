@@ -35,6 +35,8 @@ VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = 1
 VERSIONS['instruction_plan_version'] = 1
+# Geometry analysis is CPU/memory intensive; share a bounded runtime budget.
+_instruction_export_slots = asyncio.Semaphore(2)
 _workers = {}
 _locks = {}
 _capacity_lock = asyncio.Lock()
@@ -401,7 +403,8 @@ async def instruction_export(request: Request):
             return JSONResponse({'detail': 'Model is too large'}, status_code=413)
     try:
         source.decode('utf-8')
-        data = await asyncio.to_thread(export_instruction_placements, bytes(source))
+        async with _instruction_export_slots:
+            data = await asyncio.to_thread(export_instruction_placements, bytes(source))
     except InstructionPlanError:
         return JSONResponse({'detail': 'Repair disconnected parts before opening instructions.'}, status_code=422)
     except (UnicodeError, OSError, subprocess.SubprocessError, ValueError):

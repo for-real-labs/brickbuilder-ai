@@ -95,3 +95,29 @@ def test_failed_plan_returns_repair_feedback_and_does_not_cache(monkeypatch):
     with pytest.raises(HTTPException) as exc:
         asyncio.run(module.get_nova_instructions('generation'))
     assert exc.value.status_code == 409 and 'Repair disconnected' in exc.value.detail
+
+
+def test_concurrent_visitors_share_one_instruction_export(monkeypatch):
+    writes, exports = [], []
+    class Bucket:
+        def download(self, path):
+            if path.endswith('.ldr'): raise FileNotFoundError()
+            return b'archive'
+        def upload(self, **kwargs): writes.append(kwargs)
+    class Service:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        async def instructions(self, original):
+            exports.append(original)
+            await asyncio.sleep(0.01)
+            return 'connected placements'
+    monkeypatch.setattr(module, 'generation_storage', storage({'status': 'completed', 'endpoint': 'novaToBricks'}, Bucket()))
+    monkeypatch.setattr(module, 'read_export', lambda *args: SimpleNamespace(mpd='model'))
+    monkeypatch.setattr(module, 'NovaService', Service)
+    async def run():
+        results = await asyncio.gather(*(module.get_nova_instructions('generation') for _ in range(10)))
+        assert all(result.body == b'connected placements' for result in results)
+        await asyncio.sleep(0)
+        assert not module._instruction_exports
+    asyncio.run(run())
+    assert exports == ['model'] and len(writes) == 1

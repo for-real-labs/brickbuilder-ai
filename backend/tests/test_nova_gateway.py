@@ -373,3 +373,28 @@ def test_disconnected_instructions_return_fixed_repair_feedback(tmp_path):
                                headers={'Authorization': 'Bearer runtime-secret'})
     assert response.status_code == 422
     assert response.json() == {'detail': 'Repair disconnected parts before opening instructions.'}
+
+
+def test_instruction_runtime_bounds_concurrent_geometry_exports(tmp_path):
+    import asyncio
+    import threading
+    import time
+    module = gateway(tmp_path)
+    active = maximum = 0
+    lock = threading.Lock()
+    def export(source):
+        nonlocal active, maximum
+        with lock:
+            active += 1
+            maximum = max(maximum, active)
+        time.sleep(0.02)
+        with lock: active -= 1
+        return b'placements'
+    module.export_instruction_placements = export
+    async def run():
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=module.app), base_url='http://runtime') as client:
+            results = await asyncio.gather(*(client.post('/integration/instructions', content=b'model',
+                headers={'Authorization': 'Bearer runtime-secret'}) for _ in range(8)))
+            assert all(result.status_code == 200 for result in results)
+    asyncio.run(run())
+    assert maximum == 2

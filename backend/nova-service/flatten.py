@@ -20,7 +20,7 @@ def connection_neighbors(count, contacts):
         a, b = contact['instances']
         if (type(a) is not int or type(b) is not int or not 0 <= a < count
                 or not 0 <= b < count or contact['status'] not in ('confirmed', 'potential')):
-            raise ValueError('Incomplete connector evidence')
+            raise DisconnectedInstructions('Incomplete connector evidence')
         if a != b:
             neighbors[a].add(b)
             neighbors[b].add(a)
