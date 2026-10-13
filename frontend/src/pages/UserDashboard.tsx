@@ -1,4 +1,5 @@
 import { GenerationDuration } from '../components/GenerationDuration';
+import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
 import { NotificationMenu } from "../components/NotificationMenu";
 
@@ -6,7 +7,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Package, Box, User as UserIcon, ChevronRight,
-  Clock, Calendar, Coins, Truck, ExternalLink, CheckCircle2,
+  Clock, Calendar, Coins, ExternalLink,
   Sparkles, TrendingUp, LogOut, Eye, Menu, X, ChevronDown, ChevronUp, History,
   Settings as SettingsIcon, Loader2, Pencil, Users
 } from "lucide-react";
@@ -378,7 +379,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
 };
 
 // Order card component
-const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> = ({g, onView}) => {
+export const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> = ({g, onView}) => {
   const order = g.order;
   if (!order) return null;
   
@@ -425,17 +426,7 @@ const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> = ({g, o
           </div>
 
           <div className="mt-2 flex items-center gap-2">
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium ${
-              order.fulfilled 
-                ? "bg-green-100 text-green-700" 
-                : "bg-yellow-100 text-yellow-700"
-            }`}>
-              {order.fulfilled ? (
-                <><CheckCircle2 className="w-3.5 h-3.5"/> Fulfilled</>
-              ) : (
-                <><Truck className="w-3.5 h-3.5"/> Processing</>
-              )}
-            </span>
+            <OrderStatusBadge order={order} />
           </div>
 
           <div className="mt-3 flex gap-2 flex-wrap">

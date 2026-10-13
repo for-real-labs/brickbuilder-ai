@@ -7,6 +7,28 @@ import pytest
 from src.requests import getUserGenerations as module
 
 
+def test_dashboard_exposes_cancelled_orders_and_preserves_replacement_fulfillment(monkeypatch):
+    row = dict(id="original", user_id="owner", user_type="authenticated",
+               prompt="Tabby Cat", detail_level=40, endpoint="llmToBricks",
+               created_at="2026-10-01", status="completed")
+    orders = [dict(id=94, generation_id="original", cancelled=True, fulfilled=False),
+              dict(id=100, generation_id="replacement", cancelled=False, fulfilled=True)]
+    storage = SimpleNamespace(count_user_generations=AsyncMock(return_value=1),
+                              get_user_generations=AsyncMock(return_value=[row]),
+                              get_user_orders=AsyncMock(return_value=orders))
+    monkeypatch.setattr(module, "generation_storage", storage)
+    monkeypatch.setattr(module, "track_api_call", lambda **kwargs: None)
+    result = asyncio.run(module.get_user_generations(
+        module.GetUserGenerationsRequest(), {"authenticated": True, "user_id": "owner"},
+    ))
+    assert result.generations[0].order.cancelled is True
+    assert [(order.id, order.cancelled, order.fulfilled) for order in result.all_orders] == [
+        (94, True, False), (100, False, True),
+    ]
+    storage.get_user_orders.assert_awaited_once_with(user_id="owner", user_type="authenticated")
+    assert module.OrderInfo(generation_id="legacy").cancelled is False
+
+
 @pytest.mark.parametrize("processing", [True, False])
 def test_dashboard_uses_database_pagination_and_preserves_same_image_models(monkeypatch, processing):
     rows = [dict(id=id, generation_id=id, version=version, user_id="user",

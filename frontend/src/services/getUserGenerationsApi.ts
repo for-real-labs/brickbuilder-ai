@@ -28,6 +28,7 @@ export interface OrderInfo {
   brickowl_cart_url?: string;
   brickowl_wishlist_name?: string;
   fulfilled?: boolean;
+  cancelled?: boolean;
   created_at?: string;
   image_url?: string;
   prompt?: string;
