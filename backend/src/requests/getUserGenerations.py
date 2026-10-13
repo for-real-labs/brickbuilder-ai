@@ -22,6 +22,7 @@ class OrderInfo(BaseModel):
     brickowl_cart_url: Optional[str] = None
     brickowl_wishlist_name: Optional[str] = None
     fulfilled: Optional[bool] = False
+    cancelled: bool = False
     created_at: Optional[str] = None
     image_url: Optional[str] = None  # Image URL from the generation
     prompt: Optional[str] = None  # Prompt from the generation
