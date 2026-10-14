@@ -50,6 +50,10 @@ from src.requests.llmRender import (
 llm_render_module = importlib.import_module("src.requests.llmRender")
 
 
+def test_render_defaults_to_astra():
+    assert llm_render_module.DEFAULT_MODEL == 'gpt-6-astra'
+
+
 def _block(x_range, y_range, z_range, color):
     return [
         {"x": x, "y": y, "z": z, "r": color[0], "g": color[1], "b": color[2]}

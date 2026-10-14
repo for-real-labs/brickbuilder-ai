@@ -115,10 +115,17 @@ class NovaService:
             return response.json()
         except httpx.HTTPStatusError as exc:
             # Never echo upstream bodies: provider configuration may contain keys.
+            logger.warning('Nova runtime request failed with HTTP %s', exc.response.status_code)
+            if exc.response.status_code == 507:
+                raise ValueError('Nova storage is full. Free runtime disk space or increase its volume capacity before trying again.') from None
+            if exc.response.status_code in {401, 403}:
+                raise ValueError('Nova runtime authentication failed. Check that the API and Nova service use the same service token.') from None
             if exc.response.status_code == 409:
                 raise ValueError('Nova is already working on this session. Wait for it to finish before editing again.') from None
             if exc.response.status_code == 404:
                 raise NovaSessionUnavailableError('Nova session or artifact is unavailable. Check the runtime data volume.') from None
+            if exc.response.status_code >= 500:
+                raise ValueError('Nova runtime failed. Check its logs and available disk space before trying again.') from None
             raise ValueError('Nova rejected the request. Check its provider connection and runtime configuration.') from None
         except httpx.HTTPError:
             raise ValueError('Cannot reach the Nova runtime. Check that it is running and the private connection is configured.') from None

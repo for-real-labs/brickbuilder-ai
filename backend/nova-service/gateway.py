@@ -7,6 +7,7 @@ never receives the runtime token or a direct runtime URL.
 from __future__ import annotations
 
 import asyncio
+import errno
 import hmac
 import json
 import logging
@@ -465,7 +466,11 @@ async def proxy(path: str, request: Request):
                 **({'X-BrickBuilder-Generation-Id': request.headers['x-brickbuilder-generation-id']}
                    if 'x-brickbuilder-generation-id' in request.headers else {})})
         response = await app.state.client.send(outgoing, stream=True)
-    except (RuntimeError, httpx.HTTPError, OSError):
+    except OSError as exc:
+        if exc.errno == errno.ENOSPC:
+            return JSONResponse({'detail': 'Nova runtime storage is full'}, status_code=507)
+        return JSONResponse({'detail': 'Nova worker is unavailable or at capacity'}, status_code=503)
+    except (RuntimeError, httpx.HTTPError):
         return JSONResponse({'detail': 'Nova worker is unavailable or at capacity'}, status_code=503)
     return StreamingResponse(response.aiter_raw(), status_code=response.status_code,
         headers={name: value for name, value in response.headers.items()

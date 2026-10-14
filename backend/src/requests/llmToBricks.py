@@ -72,7 +72,7 @@ SUPPORTED_MODELS: Dict[str, LlmModel] = {m.id: m for m in (
     LlmModel("gpt-5.6-terra", "GPT-5.6 Terra", "openai"),
     LlmModel("gpt-5.5", "GPT-5.5", "openai"),
 )}
-FALLBACK_MODEL = "claude-opus-5-5"
+FALLBACK_MODEL = "gpt-6-astra"
 DEFAULT_MODEL = os.getenv("LLM_TO_BRICKS_MODEL", FALLBACK_MODEL)
 if DEFAULT_MODEL not in SUPPORTED_MODELS:
     logger.warning("LLM_TO_BRICKS_MODEL=%r is not supported; using %s", DEFAULT_MODEL, FALLBACK_MODEL)

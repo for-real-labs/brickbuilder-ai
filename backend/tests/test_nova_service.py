@@ -158,6 +158,36 @@ def test_provider_errors_never_echo_credentials():
     asyncio.run(run())
 
 
+@pytest.mark.parametrize('status,message', [(507, 'Nova storage is full'),
+    (401, 'same service token'), (403, 'same service token'), (500, 'logs and available disk space'),
+    (502, 'logs and available disk space'), (400, 'Nova rejected the request')])
+def test_runtime_rejections_distinguish_storage_auth_and_server_errors(status, message, caplog):
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
+                lambda req: httpx.Response(status, json={'detail': 'private-key secret upstream config'})))) as service:
+            with pytest.raises(ValueError, match=message) as exc:
+                await service.request('PUT', 'api/llm-models/config', json={'api_key': 'private-key'})
+            assert 'private-key' not in str(exc.value)
+    asyncio.run(run())
+    assert f'HTTP {status}' in caplog.text
+    assert 'private-key' not in caplog.text and 'upstream config' not in caplog.text
+
+
+def test_astra_is_forwarded_to_nova_without_sol_or_anthropic_credentials(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'openai-key')
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'anthropic-key')
+    def transport(req):
+        if req.method == 'GET':
+            return httpx.Response(200, json={'models': []})
+        body = json.loads(req.content)
+        assert body['litellm_params'] == {'model': 'openai/gpt-6-astra', 'api_key': 'openai-key'}
+        return httpx.Response(200, json={'id': 'astra-config'})
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(transport))) as service:
+            assert await service.configure_model('gpt-6-astra', 'openai', 'api_key') == 'astra-config'
+    asyncio.run(run())
+
+
 def test_owner_routes_use_different_runtime_tenants(monkeypatch):
     monkeypatch.setenv('NOVA_SERVICE_URL', 'http://127.0.0.1:8778')
     monkeypatch.setenv('NOVA_SERVICE_TOKEN', 'private-runtime-token')

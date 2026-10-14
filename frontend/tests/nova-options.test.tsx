@@ -14,9 +14,10 @@ describe('Nova builder controls', () => {
     const render = (local: boolean) => renderToStaticMarkup(<NovaBuilderOptions options={DEFAULT_NOVA_OPTIONS} onChange={() => {}} local={local} />);
     expect(render(true)).toContain('Nova full set agent');
     expect(render(true)).toContain('Nova’s own agent');
-    expect(render(true)).toContain('Signed in to Claude');
+    expect(DEFAULT_NOVA_OPTIONS.model).toBe('gpt-6-astra');
+    expect(render(true)).toContain('Signed in to ChatGPT');
     expect(render(true)).toContain('Project API key');
-    expect(render(false)).not.toContain('Signed in to Claude');
+    expect(render(false)).not.toContain('Signed in to ChatGPT');
     expect(render(false)).not.toContain('Provider connection');
     expect(render(true)).toContain('grid-cols-1');
     expect(render(true)).toContain('sm:grid-cols-2');
@@ -33,7 +34,7 @@ describe('Nova builder controls', () => {
     try {
       act(() => root.render(<NovaBuilderOptions options={{ ...DEFAULT_NOVA_OPTIONS, model: 'claude-opus-5-5' }} onChange={change} local />));
       select('nova-provider', 'openai');
-      expect(change).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-6.1-sol' }));
+      expect(change).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-6-astra' }));
       expect(posthog.capture).toHaveBeenCalledWith('landing_nova_provider_selected', { provider: 'openai' });
       act(() => root.render(<NovaBuilderOptions options={{ ...DEFAULT_NOVA_OPTIONS, model: 'gpt-5.6-sol' }} onChange={change} local />));
       select('nova-model', 'gpt-5.5');

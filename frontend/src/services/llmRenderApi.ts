@@ -1,4 +1,5 @@
 import { apiFetch } from './apiFetch';
+import { DEFAULT_LLM_MODEL } from './llmToBricksApi';
 // API Configuration
 const API_MODE = import.meta.env.VITE_API_MODE || 'local';
 const LOCAL_API_URL = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002';
@@ -30,7 +31,7 @@ export interface LlmRenderRequest {
 }
 
 // Override via VITE_LLM_RENDER_MODEL when another provider is available.
-const LLM_RENDER_MODEL = import.meta.env.VITE_LLM_RENDER_MODEL || 'claude-opus-5-5';
+const LLM_RENDER_MODEL = import.meta.env.VITE_LLM_RENDER_MODEL || DEFAULT_LLM_MODEL;
 
 
 export interface LlmRenderAppliedRule {

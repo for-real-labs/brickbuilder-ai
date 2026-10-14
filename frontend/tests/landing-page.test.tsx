@@ -103,7 +103,7 @@ describe('LandingPage', () => {
     }
   });
 
-  it.each(['gpt-6-astra', 'claude-opus-5-5', 'claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores saved model %s to the Opus default and submits it', async savedModel => {
+  it.each(['gpt-6.1-sol', 'claude-opus-5-5', 'claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores saved model %s to the Astra default and submits it', async savedModel => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
@@ -116,9 +116,9 @@ describe('LandingPage', () => {
       await act(async () => root.render(<LandingPage />));
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
       expect(Array.from(model.options).map(option => ({ value: option.value, label: option.label }))).toEqual([
-        { value: DEFAULT_LLM_MODEL, label: 'Claude Opus 5.5' },
+        { value: DEFAULT_LLM_MODEL, label: 'GPT-6 Astra' },
+        { value: 'claude-opus-5-5', label: 'Claude Opus 5.5' },
         { value: 'claude-haiku-5-5', label: 'Claude Haiku 5.5' },
-        { value: 'gpt-6.1-sol', label: 'GPT-6.1 Sol' },
       ]);
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
       const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
@@ -539,14 +539,14 @@ describe('LandingPage', () => {
         input.dispatchEvent(new Event('input',{bubbles:true}));
         container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
       });
-      expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Connect Claude');
+      expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Connect ChatGPT');
       expect(nova).not.toHaveBeenCalled();
       const choice=Array.from(container.querySelectorAll('button')).find(button=>button.textContent==='Use project API key')!;
       await act(async()=>choice.click());
       expect(container.querySelector('[role="dialog"]')).toBeNull();
       expect(input.value).toBe('A red lighthouse');
       await act(async()=>container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
-      expect(nova).toHaveBeenCalledWith(expect.objectContaining({prompt:'A red lighthouse',authMode:'api_key'}),undefined);
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({prompt:'A red lighthouse',model:'gpt-6-astra',authMode:'api_key'}),undefined);
     } finally {act(()=>root.unmount());container.remove();}
   });
 
@@ -643,7 +643,7 @@ describe('LandingPage', () => {
 
   it('shows the compact controls in the browser and native shell', () => {
     expect(DEFAULT_GENERATION_METHOD).toBe('nova');
-    expect(DEFAULT_LLM_MODEL).toBe('claude-opus-5-5');
+    expect(DEFAULT_LLM_MODEL).toBe('gpt-6-astra');
     const verify = () => {
       const container = document.createElement('div');
       container.innerHTML = renderToStaticMarkup(<LandingPage />);
@@ -665,7 +665,7 @@ describe('LandingPage', () => {
       expect(container.querySelector('[aria-label="Toggle settings"]')).toBeNull();
       expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
       expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
-      expect(Array.from(model.options).map(option => option.value)).toEqual(['claude-opus-5-5', 'claude-haiku-5-5', 'gpt-6.1-sol']);
+      expect(Array.from(model.options).map(option => option.value)).toEqual(['gpt-6-astra', 'claude-opus-5-5', 'claude-haiku-5-5']);
     };
     verify();
     window.__BRICKBUILDER_NATIVE_APP__ = Object.freeze({ platform: 'ios', version: '0.1.0' });
@@ -824,13 +824,13 @@ it('shows saved generation time on featured landing models', () => {
 });
 
 
-it.each(['claude-haiku-5-5', 'gpt-6.1-sol'])('selects %s for either generation mode and records the provider', async model => {
+it.each(['claude-haiku-5-5', 'gpt-6-astra'])('selects %s for either generation mode and records the provider', async model => {
   const onChange = vi.fn();
   const container = document.createElement('div');
   const root = createRoot(container);
   const capture = (await import('posthog-js')).default.capture;
   try {
-    act(() => root.render(<GenerationModelSelector mode="nova" onChange={onChange} />));
+    act(() => root.render(<GenerationModelSelector model="claude-opus-5-5" mode="nova" onChange={onChange} />));
     const select = container.querySelector('select')!;
     act(() => { select.value = model; select.dispatchEvent(new Event('change', { bubbles: true })); });
     expect(onChange).toHaveBeenCalledWith(model);
