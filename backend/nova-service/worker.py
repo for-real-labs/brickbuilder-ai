@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import errno
 import hmac
 import io
 import json
@@ -53,6 +54,10 @@ async def private_runtime(request: Request, call_next):
     context = current_usage_id.set(usage_id)
     try:
         return await call_next(request)
+    except OSError as exc:
+        if exc.errno == errno.ENOSPC:
+            return JSONResponse({'detail': 'Nova runtime storage is full'}, status_code=507)
+        raise
     finally:
         current_usage_id.reset(context)
 

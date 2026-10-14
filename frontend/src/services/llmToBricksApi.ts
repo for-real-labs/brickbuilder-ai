@@ -10,8 +10,8 @@ export interface LlmModelOption {
 // Must match SUPPORTED_MODELS in backend/src/requests/llmToBricks.py; the
 // backend rejects any other model id.
 export const LLM_MODEL_OPTIONS: readonly LlmModelOption[] = [
-  { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol', provider: 'openai' },
   { id: 'gpt-6-astra', label: 'GPT-6 Astra', provider: 'openai' },
+  { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol', provider: 'openai' },
   { id: 'claude-opus-5-5', label: 'Claude Opus 5.5', provider: 'anthropic' },
   { id: 'claude-haiku-5-5', label: 'Claude Haiku 5.5', provider: 'anthropic' },
   { id: 'claude-opus-5', label: 'Claude Opus 5', provider: 'anthropic' },
@@ -23,7 +23,7 @@ export const LLM_MODEL_OPTIONS: readonly LlmModelOption[] = [
 ];
 
 export const DEFAULT_LLM_MODEL = 'claude-opus-5-5';
-export const GENERATION_MODEL_OPTIONS = ['claude-opus-5-5', 'claude-haiku-5-5', 'gpt-6.1-sol']
+export const GENERATION_MODEL_OPTIONS = [DEFAULT_LLM_MODEL, 'claude-haiku-5-5', 'gpt-6-astra']
   .map(id => LLM_MODEL_OPTIONS.find(option => option.id === id)!);
 
 export function getLlmModelOption(id: string): LlmModelOption | undefined {

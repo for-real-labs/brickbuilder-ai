@@ -1,4 +1,5 @@
 import asyncio
+import errno
 import importlib.util
 import json
 from pathlib import Path
@@ -261,6 +262,27 @@ def worker(tmp_path, monkeypatch):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_gateway_reports_full_storage_without_exposing_os_paths(tmp_path):
+    module = gateway(tmp_path)
+    module.worker_url = AsyncMock(side_effect=OSError(errno.ENOSPC, 'secret provider config path'))
+    with TestClient(module.app) as client:
+        response = client.put('/api/llm-models/model', headers={'Authorization': 'Bearer runtime-secret',
+            'X-Nova-Tenant': 'b' * 64}, json={})
+    assert response.status_code == 507
+    assert response.json() == {'detail': 'Nova runtime storage is full'}
+
+
+def test_worker_reports_full_storage_without_exposing_os_paths(tmp_path, monkeypatch):
+    module = worker(tmp_path, monkeypatch)
+    @module.app.put('/api/llm-models/model')
+    def save_config():
+        raise OSError(errno.ENOSPC, 'secret provider config path')
+    with TestClient(module.app) as client:
+        response = client.put('/api/llm-models/model', headers={'Authorization': 'Bearer worker-secret'}, json={})
+    assert response.status_code == 507
+    assert response.json() == {'detail': 'Nova runtime storage is full'}
 
 
 def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch):

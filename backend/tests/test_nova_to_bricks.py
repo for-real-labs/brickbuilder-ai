@@ -14,6 +14,7 @@ from src.utils.nova_service import NovaResult
 
 
 def test_request_accepts_nova_continuation_and_validates_provider_input():
+    assert module.NovaToBricksRequest(prompt='castle').model == 'claude-opus-5-5'
     request = module.NovaToBricksRequest(prompt='  red roof  ', source_generation_id='previous', model='gpt-5.5')
     assert request.prompt == 'red roof' and request.generation_id == 'previous'
     with pytest.raises(ValidationError):
@@ -237,7 +238,7 @@ def test_finished_claude_edit_reuses_only_the_current_accounts_session(monkeypat
         get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
             'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model'}),
         download_file_from_storage=AsyncMock(return_value=b'saved geometry')))
-    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
+    request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source', model='claude-opus-5-5')
     asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
     assert (request._nova_session is not None) == same_key
     assert request.model == 'claude-opus-5-5'
