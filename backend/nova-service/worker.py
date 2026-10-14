@@ -27,6 +27,7 @@ import claude_agent
 from brickbuilder_integration.cost_limits import install_cost_limits, current_usage_id
 import tools
 from parts_policy import policy as parts_policy, CATALOG_VERSION
+from brickbuilder_integration.instruction_policy import install_instruction_policy, PUBLICATION_VERSION
 from store import get_store
 from leocad_render import bom_path_for, snapshot_path_for
 
@@ -37,6 +38,8 @@ VERSIONS['generation_cost_limit_usd'] = 10
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = CATALOG_VERSION
 VERSIONS['instruction_plan_version'] = 2
+install_instruction_policy(tools, settings)
+VERSIONS['instruction_publication_version'] = PUBLICATION_VERSION
 
 
 @app.middleware('http')

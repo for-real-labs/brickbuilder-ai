@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import heapq
+import json
 import math
 import sys
 from pathlib import Path
@@ -12,6 +13,10 @@ MAX_PARTS_PER_STEP = 5
 
 class DisconnectedInstructions(ValueError):
     """No connected placement sequence exists for the supplied graph."""
+
+    def __init__(self, message, *, remaining=()):
+        super().__init__(message)
+        self.remaining = remaining
 
 
 def connection_neighbors(count, contacts):
@@ -160,7 +165,8 @@ def connected_instruction_order(occurrences, contacts):
                 heapq.heappush(frontier, priority(neighbor))
                 scheduled.add(neighbor)
     if len(order) != len(occurrences):
-        raise DisconnectedInstructions('Remaining pieces are disconnected or require a blocked placement')
+        raise DisconnectedInstructions('Remaining pieces are disconnected or require a blocked placement',
+                                       remaining=sorted(set(range(len(occurrences))) - placed))
     return order
 
 
@@ -258,8 +264,20 @@ def main():
                 or geometry['contact_count'] != len(geometry['contacts'])):
             raise DisconnectedInstructions('Complete connector evidence is required to order instructions')
         contacts = contact_axes(occurrences, geometry['contacts'], physical_parts)
-        order = connected_instruction_order(occurrences, contacts)
-        verify_instruction_order(order, contacts, occurrences)
+        try:
+            order = connected_instruction_order(occurrences, contacts)
+            verify_instruction_order(order, contacts, occurrences)
+        except DisconnectedInstructions as exc:
+            # Private repair evidence for the publication tool. Public API
+            # failures still use the fixed message in the .error sidecar.
+            output.with_suffix('.review.json').write_text(json.dumps({
+                'error': str(exc), 'remaining_count': len(exc.remaining),
+                'remaining_parts': [{'occurrence': index, 'part': occurrences[index].part_code,
+                                     'position': [float(getattr(occurrences[index].position, axis))
+                                                  for axis in ('x', 'y', 'z')]}
+                                    for index in exc.remaining[:50]],
+            }), encoding='utf-8')
+            raise
         occurrences = [occurrences[index] for index in order]
     output.write_text(serialize_placements(original, occurrences, instructions=instructions), encoding='utf-8')
 

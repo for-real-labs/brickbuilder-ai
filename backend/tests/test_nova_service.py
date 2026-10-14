@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock
 from src.utils.nova_service import NovaService, read_export
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'instruction_plan_version': 2}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'instruction_plan_version': 2, 'instruction_publication_version': 1}
 
 
 @pytest.mark.parametrize('versions,error', [({}, 'cost limit'),
@@ -95,7 +95,8 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
 
     def transport(req):
         nonlocal chat_reads
-        body = json.loads(req.content) if req.content else None
+        body = (req.content.decode() if req.url.path == '/integration/instructions'
+                else json.loads(req.content) if req.content else None)
         calls.append((req.method, req.url.path, body))
         if req.url.path.endswith('/parts-catalog'):
             assert req.method == 'PUT' and 'unit_price' not in body['csv']
@@ -104,6 +105,9 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
             return httpx.Response(200, json={'parts_catalog_version': 1, 'instruction_plan_version': 2})
         if req.url.path == '/integration/runtime':
             return httpx.Response(200, json=VERSIONS)
+        if req.url.path == '/integration/instructions':
+            assert req.content.decode() == 'original hierarchical MPD'
+            return httpx.Response(200, text='verified instructions', headers={'content-type': 'text/plain'})
         if req.url.path == '/api/llm-models' and req.method == 'GET':
             return httpx.Response(200, json={'models': []})
         if req.url.path == '/api/llm-models':
@@ -133,6 +137,7 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
                 previous={'chat_id': 'chat', 'build_mode': legacy_mode, 'options': {'build_mode': legacy_mode}})
         assert result.session['versions'] == VERSIONS
         assert result.session['model_id'] == 'new'
+        assert result.instructions == 'verified instructions'
         assert 'build_mode' not in result.session and 'build_mode' not in result.session['options']
     asyncio.run(run())
     assert sessions[0]['chat_id'] == 'chat' and sessions[-1]['model_id'] == 'new'
@@ -276,6 +281,8 @@ def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(
         nonlocal chat_reads
         calls.append(req.url.path)
         if req.url.path == '/integration/runtime': return httpx.Response(200, json=VERSIONS)
+        if req.url.path == '/integration/instructions':
+            return httpx.Response(200, text='verified instructions', headers={'content-type': 'text/plain'})
         if req.url.path == '/api/llm-models' and req.method == 'GET': return httpx.Response(200, json={'models': []})
         if req.url.path == '/api/llm-models': return httpx.Response(200, json={'id': 'caller-model'})
         if req.url.path.endswith('/parts-catalog'):
@@ -350,6 +357,7 @@ def test_nova_usage_is_read_for_only_this_generation_including_failed_edits(monk
     service.wait_for_turn = AsyncMock()
     exported = read_export(archive(), {})
     service.export = AsyncMock(return_value=exported)
+    service.instructions = AsyncMock(return_value='verified instructions')
     async def respond(method, path, **kwargs):
         if path.endswith('/parts-catalog'):
             return {'parts_catalog_version': 1, 'instruction_plan_version': 2}
@@ -368,7 +376,8 @@ def test_nova_usage_is_read_for_only_this_generation_including_failed_edits(monk
                 with pytest.raises(ValueError, match='without publishing'):
                     await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
             else:
-                assert await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'}) == exported
+                result = await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
+                assert result.mpd == exported.mpd and result.instructions == 'verified instructions'
         finally:
             current_generation_usage.reset(context)
             await service.client.aclose()
@@ -397,4 +406,36 @@ def test_instruction_failure_returns_repair_feedback_without_runtime_source():
         async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(respond))) as service:
             with pytest.raises(ValueError, match='Repair disconnected or blocked parts'):
                 await service.instructions('model')
+    asyncio.run(run())
+
+
+def test_old_runtime_cannot_start_a_build_without_publication_instruction_checks():
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
+            service.ready = AsyncMock(return_value={k: v for k, v in VERSIONS.items() if k != 'instruction_publication_version'})
+            service.configure_model = AsyncMock()
+            with pytest.raises(ValueError, match='instruction checks before publication'):
+                await service.run(SimpleNamespace(), 'openai', AsyncMock())
+            service.configure_model.assert_not_awaited()
+    asyncio.run(run())
+
+
+def test_final_import_rejects_disconnected_geometry_even_if_publication_was_bypassed():
+    from src.utils.nova_service import NovaInstructionPlanError
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
+            service.ready = AsyncMock(return_value=VERSIONS)
+            service.configure_model = AsyncMock(return_value='config')
+            service.request = AsyncMock(return_value={'parts_catalog_version': 1})
+            service.chat = AsyncMock(side_effect=[{'chat': {'running': False}, 'models': {}},
+                {'chat': {'running': False}, 'models': {'new': {'id': 'new', 'created_at': 1}}}])
+            service.wait_for_turn = AsyncMock()
+            service.cancel = AsyncMock()
+            service.export = AsyncMock(return_value=read_export(archive(), {}))
+            service.instructions = AsyncMock(side_effect=NovaInstructionPlanError('Repair disconnected or blocked parts'))
+            request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='build', image_base64=None)
+            with pytest.raises(NovaInstructionPlanError):
+                await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
+            service.instructions.assert_awaited_once_with('original hierarchical MPD')
+            service.cancel.assert_awaited_once_with('chat')
     asyncio.run(run())
