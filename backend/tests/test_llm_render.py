@@ -50,8 +50,8 @@ from src.requests.llmRender import (
 llm_render_module = importlib.import_module("src.requests.llmRender")
 
 
-def test_render_defaults_to_astra():
-    assert llm_render_module.DEFAULT_MODEL == 'gpt-6-astra'
+def test_render_defaults_to_opus_5_5():
+    assert llm_render_module.DEFAULT_MODEL == 'claude-opus-5-5'
 
 
 def _block(x_range, y_range, z_range, color):

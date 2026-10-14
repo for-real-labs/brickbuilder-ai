@@ -46,8 +46,8 @@ def test_request_accepts_text_or_supported_image_and_rejects_invalid_input():
             LlmToBricksRequest(**kwargs)
 
 
-def test_request_defaults_to_astra_and_accepts_listed_claude_and_openai_models():
-    assert LlmToBricksRequest(prompt="castle").model == "gpt-6-astra"
+def test_request_defaults_to_opus_5_5_and_accepts_listed_claude_and_openai_models():
+    assert LlmToBricksRequest(prompt="castle").model == "claude-opus-5-5"
     assert {m.provider for m in SUPPORTED_MODELS.values()} == {"anthropic", "openai"}
     for model_id in SUPPORTED_MODELS:
         assert LlmToBricksRequest(prompt="castle", model=model_id).model == model_id

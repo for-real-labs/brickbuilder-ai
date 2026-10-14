@@ -34,7 +34,7 @@ MAX_GRID_CELLS = 60_000_000
 # The model used for /llmRender is swappable per-request (LlmRenderRequest.model)
 # or via env var, and can name either an OpenAI or an Anthropic model -
 # _model_provider() below decides which API a given model name is sent to.
-DEFAULT_MODEL = os.getenv("OPENAI_LLM_RENDER_MODEL", "gpt-6-astra")
+DEFAULT_MODEL = os.getenv("OPENAI_LLM_RENDER_MODEL", "claude-opus-5-5")
 DEFAULT_REASONING_EFFORT = os.getenv("OPENAI_LLM_RENDER_REASONING_EFFORT", "medium")
 OPENAI_TIMEOUT_SECONDS = float(os.getenv("OPENAI_LLM_RENDER_TIMEOUT_SECONDS", "240"))
 

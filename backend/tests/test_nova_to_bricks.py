@@ -14,7 +14,7 @@ from src.utils.nova_service import NovaResult
 
 
 def test_request_accepts_nova_continuation_and_validates_provider_input():
-    assert module.NovaToBricksRequest(prompt='castle').model == 'gpt-6-astra'
+    assert module.NovaToBricksRequest(prompt='castle').model == 'claude-opus-5-5'
     request = module.NovaToBricksRequest(prompt='  red roof  ', source_generation_id='previous', model='gpt-5.5')
     assert request.prompt == 'red roof' and request.generation_id == 'previous'
     with pytest.raises(ValidationError):

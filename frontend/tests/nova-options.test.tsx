@@ -14,10 +14,10 @@ describe('Nova builder controls', () => {
     const render = (local: boolean) => renderToStaticMarkup(<NovaBuilderOptions options={DEFAULT_NOVA_OPTIONS} onChange={() => {}} local={local} />);
     expect(render(true)).toContain('Nova full set agent');
     expect(render(true)).toContain('Nova’s own agent');
-    expect(DEFAULT_NOVA_OPTIONS.model).toBe('gpt-6-astra');
-    expect(render(true)).toContain('Signed in to ChatGPT');
+    expect(DEFAULT_NOVA_OPTIONS.model).toBe('claude-opus-5-5');
+    expect(render(true)).toContain('Signed in to Claude');
     expect(render(true)).toContain('Project API key');
-    expect(render(false)).not.toContain('Signed in to ChatGPT');
+    expect(render(false)).not.toContain('Signed in to Claude');
     expect(render(false)).not.toContain('Provider connection');
     expect(render(true)).toContain('grid-cols-1');
     expect(render(true)).toContain('sm:grid-cols-2');
