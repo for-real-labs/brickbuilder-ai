@@ -13,7 +13,7 @@ import os
 import re
 import zipfile
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
@@ -59,6 +59,7 @@ class NovaResult:
     preview: bytes | None
     archive: bytes
     session: dict
+    instructions: str | None = None
 
 
 def read_export(data: bytes, session: dict) -> NovaResult:
@@ -138,6 +139,12 @@ class NovaService:
             raise ValueError('Rebuild the Nova runtime with parts catalog restrictions before using All parts.')
         return info
 
+    async def generation_ready(self) -> dict:
+        info = await self.ready()
+        if info.get('instruction_publication_version') != 1:
+            raise ValueError('Rebuild Nova with instruction checks before publication before starting All parts builds.')
+        return info
+
     @staticmethod
     def session_id(value: str) -> str:
         if not isinstance(value, str) or not ID_RE.fullmatch(value):
@@ -213,7 +220,7 @@ class NovaService:
             raise ValueError('Could not load Nova construction steps') from None
 
     async def run(self, request, provider: str, save_session, on_output=None, previous: dict | None = None, *, on_progress=None) -> NovaResult:
-        versions = await self.ready()
+        versions = await self.generation_ready()
         model_id = await self.configure_model(request.model, provider, request.auth_mode)
         source = getattr(request, '_nova_source_ldr', None)
         if previous:
@@ -285,7 +292,10 @@ class NovaService:
             # even if the agent or runtime bypassed its publication tool.
             reject_custom_parts(result.mpd)
             catalog.validate(flat_model_inventory(result.ldr))
-            return result
+            # Recheck the imported revision even if the publication tool was
+            # bypassed. Nothing is stored or charged until instructions pass.
+            instructions = await self.instructions(result.mpd)
+            return replace(result, instructions=instructions)
         except BaseException:
             # Includes timeout and user cancellation. Never cancel someone else's turn
             # if sending our message lost a race and returned 409.

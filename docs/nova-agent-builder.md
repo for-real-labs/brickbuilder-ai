@@ -305,10 +305,21 @@ Disconnected models, blocked placement sequences, or incomplete evidence return
 repair feedback;
 no piece is force-placed or deleted. Connector evidence does not prove balance
 or general insertion clearance for axles, clips, sideways parts, or other
-mechanisms. This is an instruction export policy; Nova's standard
-generation, publication, validation, and rendering workflow remains intact.
+mechanisms. The same connected insertion review now gates Nova's publication
+tool. A rejected candidate returns remaining occurrence IDs, part numbers and
+positions to the agent for repair in the same turn. The publisher uses the exact
+captured source bytes that passed review and retains Nova's palette, geometry,
+render and BOM workflow. The API independently rechecks the exported MPD before
+saving a completed generation or charging a credit, then saves the verified
+instructions with the model.
+
+The toolkit also recognizes LDCad's shallow, capped `R 6 5` stud sockets on
+65426/65429 wings, which pyldraw 1.7 otherwise labels as pin holes. This changes
+connector query evidence only; part geometry and transforms are preserved.
+Long or uncapped pin holes retain their original interpretation.
 
 Deploy the rebuilt Nova runtime with the API. Instruction export requires
-`instruction_plan_version: 2`; older instruction caches are not reused. The
+`instruction_plan_version: 2`, and generation requires
+`instruction_publication_version: 1`; older instruction caches are not reused. The
 `nova-instructions-reviewed-v3.ldr` cache is regenerated from the saved source
 on first request.

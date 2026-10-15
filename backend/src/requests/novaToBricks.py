@@ -22,7 +22,7 @@ from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
-from ..utils.nova_service import NovaService
+from ..utils.nova_service import NovaService, INSTRUCTIONS_FILE
 from ..utils.storage_upload import upload_artifact
 from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.posthog_client import track_error, track_image_conversion
@@ -189,6 +189,9 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
         bucket = generation_storage.client.storage.from_("generation-output")
         await upload_artifact(bucket, path=f"{generation_id}/nova-source.zip", file=result.archive,
                               content_type="application/zip")
+        if result.instructions:
+            await upload_artifact(bucket, path=f"{generation_id}/{INSTRUCTIONS_FILE}",
+                                  file=result.instructions.encode('utf-8'), content_type="text/plain")
         await deduct_credits(user_info=user_info, auth_info=auth_info, credits_to_deduct=1,
                              operation_description=f"Nova generation ({request.model})")
         await generation_storage.update_status(generation_id, "completed")
@@ -227,7 +230,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
                           "auth_mode": request.auth_mode, "is_edit": bool(request.generation_id)})
     try:
         async with _nova_service(request, auth_info) as nova:
-            await nova.ready()
+            await nova.generation_ready()
             await nova.configure_model(request.model, SUPPORTED_MODELS[request.model].provider, request.auth_mode)
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from None

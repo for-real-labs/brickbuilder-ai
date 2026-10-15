@@ -54,11 +54,28 @@ def test_resume_cannot_bypass_native_loopback_guard(monkeypatch):
     assert exc.value.status_code == 403
 
 
+def test_runtime_without_publication_checks_is_rejected_before_creating_generation(monkeypatch):
+    create = AsyncMock()
+    storage = SimpleNamespace(create_generation=create)
+    class Service:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        generation_ready = AsyncMock(side_effect=ValueError('Rebuild Nova with instruction checks before publication'))
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
+    monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **kwargs: {
+        'user_email': 'caller@example.com', 'is_anonymous': False})
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(module.nova_to_bricks(module.NovaToBricksRequest(prompt='castle'), {'user_id': 'caller'}))
+    assert error.value.status_code == 503
+    create.assert_not_awaited()
+
+
 @pytest.mark.parametrize("disconnect", [False, True])
 def test_nova_import_saves_original_model_and_durable_session_before_charging(monkeypatch, tmp_path, disconnect):
     calls = []
     session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'versions': {'toolkit': 'revision'}, 'model_id': 'new'}
-    result = NovaResult('hierarchical MPD', 'flat LDR', b'png', b'archive', session)
+    result = NovaResult('hierarchical MPD', 'flat LDR', b'png', b'archive', session, 'verified instructions')
     attempts = []
     class Bucket:
         def upload(self, **kwargs):
@@ -98,6 +115,7 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     assert calls[1][1] == 'generation/nova-session.json'
     assert json.loads(calls[1][2]) == session
     assert ('model', 'ldr', 'flat LDR') in calls
+    assert ('upload', 'generation/nova-instructions-reviewed-v3.ldr', b'verified instructions') in calls
     assert not any(call[:2] == ('model', 'mpd') for call in calls)
     assert calls[-2:] == [('charge', 1), ('status', 'completed')]
     assert len(attempts) == (2 if disconnect else 1)
@@ -163,7 +181,7 @@ def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
     class Service:
         async def __aenter__(self): return self
         async def __aexit__(self, *args): pass
-        ready = AsyncMock()
+        generation_ready = AsyncMock()
         configure_model = AsyncMock()
     monkeypatch.setattr(module, 'generation_storage', storage)
     monkeypatch.setattr(module, '_nova_service', lambda *args: Service())

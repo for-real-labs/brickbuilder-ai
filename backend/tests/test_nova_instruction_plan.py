@@ -54,8 +54,9 @@ def test_insignificant_transform_roundoff_does_not_split_one_layer():
 
 @pytest.mark.parametrize('contacts', [[], edges((0, 1))])
 def test_disconnected_parts_are_never_force_placed(contacts):
-    with pytest.raises(flatten.DisconnectedInstructions):
+    with pytest.raises(flatten.DisconnectedInstructions) as error:
         flatten.connected_instruction_order(placements(3), contacts)
+    assert error.value.remaining == ([1, 2] if not contacts else [2])
 
 
 def test_planner_accepts_potential_contacts_but_rejects_incomplete_evidence():
