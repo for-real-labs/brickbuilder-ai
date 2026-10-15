@@ -2,7 +2,7 @@
   "expo": {
     "name": "BrickBuilder",
     "slug": "brickbuilder",
-    "version": "0.1.0",
+    "version": "1.0.1",
     "orientation": "default",
     "scheme": "brickbuilder",
     "icon": "./assets/icon.png",
