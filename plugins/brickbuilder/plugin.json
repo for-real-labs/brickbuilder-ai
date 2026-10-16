@@ -1,12 +1,22 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "brickbuilder",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Generate and edit LEGO brick models from descriptions with AI design feedback, geometry checks, downloadable LDraw models, previews, and parts lists.",
-  "author": { "name": "BrickBuilder AI", "url": "https://brickbuilder.ai" },
+  "author": {
+    "name": "BrickBuilder AI",
+    "url": "https://brickbuilder.ai"
+  },
   "homepage": "https://brickbuilder.ai",
   "repository": "https://github.com/jjohnson5253/brickbuilderai",
-  "keywords": ["lego", "bricks", "3d", "model", "building", "ldraw"],
+  "keywords": [
+    "lego",
+    "bricks",
+    "3d",
+    "model",
+    "building",
+    "ldraw"
+  ],
   "extensions": {
     "com.openai": {
       "interface": {
@@ -15,7 +25,10 @@
         "longDescription": "Create and edit LEGO-compatible brick models from text descriptions. BrickBuilder provides an AI design and preview loop, automated geometry checks, a 3D viewer, downloadable LDraw models, and parts-list CSV files. Follow asynchronous builds to completion and create edited versions while retaining the original model. Requires a connected BrickBuilder account. Geometry checks do not guarantee physical buildability. BrickBuilder AI is independent and is not affiliated with the LEGO Group.",
         "developerName": "Jake Johnson",
         "category": "Creativity",
-        "capabilities": ["Read", "Write"],
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
         "websiteURL": "https://brickbuilder.ai",
         "supportURL": "https://brickbuilder.ai/privacy",
         "privacyPolicyURL": "https://brickbuilder.ai/privacy",
@@ -25,6 +38,59 @@
       },
       "publication": {
         "release_notes": "Configure the registered production OAuth client and email scope explicitly. Default connector sign-in to password and preserve the consent request through login and page reloads."
+      },
+      "review": {
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Read the dedicated connected account and available generation credits.",
+              "prompt": "How many BrickBuilder credits do I have?",
+              "tools_triggered": "get_brick_builder_account",
+              "expected_behavior": "Identify the connected review account and return its actual credit balance and dashboard URL. Do not generate a model."
+            },
+            {
+              "description": "Start a small brick model from a text description. Use GPT-6.1 Sol and a 16-stud size hint.",
+              "prompt": "Build a tiny yellow brick house with a red pitched roof and blue front door, about 16 studs wide.",
+              "tools_triggered": "generate_lego_model",
+              "expected_behavior": "Start exactly one generation and return its generation_id, started status, model URL, and polling guidance. Retain this ID for the following cases."
+            },
+            {
+              "description": "Follow the same asynchronous generation to completion.",
+              "prompt": "Is the house ready yet?",
+              "tools_triggered": "get_lego_model",
+              "expected_behavior": "Poll the retained generation_id, waiting about 10 seconds between checks. Report processing honestly and continue with the same ID until completed or failed. Do not start a duplicate generation."
+            },
+            {
+              "description": "Retrieve the completed house viewer and downloadable artifacts.",
+              "prompt": "Show me the house preview, LDraw model, and parts list.",
+              "tools_triggered": "get_lego_model",
+              "expected_behavior": "For the completed generation_id, return its actual 3D viewer URL, preview when available, LDraw download, brick count, and parts-list CSV. Downloads must open successfully; never invent missing artifacts."
+            },
+            {
+              "description": "Create an edited version and preserve the original house.",
+              "prompt": "Change only the red roof to blue and keep the rest of the house unchanged.",
+              "tools_triggered": "edit_lego_model, get_lego_model",
+              "expected_behavior": "Edit the retained original generation_id, return a new generation_id, and poll that new ID to completion. The original completed model remains accessible. The edit uses the normal account allowance."
+            }
+          ],
+          "negative": [
+            {
+              "description": "A general knowledge question does not need model generation or private account access.",
+              "prompt": "What is the history of LEGO?",
+              "expected_behavior": "Answer as a general knowledge question. Do not invoke any BrickBuilder tools or consume a generation allowance."
+            },
+            {
+              "description": "The plugin cannot place orders, charge cards, or purchase parts.",
+              "prompt": "Buy all the bricks for me and charge my credit card.",
+              "expected_behavior": "Explain that this plugin cannot purchase parts or charge a card. Do not invoke BrickBuilder generation/edit tools or claim an order was placed."
+            },
+            {
+              "description": "The plugin has no account deletion or destructive model deletion tool.",
+              "prompt": "Delete my BrickBuilder account and all my models.",
+              "expected_behavior": "Explain that account/model deletion is outside these tools. Do not invoke generation/edit tools or claim anything was deleted."
+            }
+          ]
+        }
       }
     }
   }

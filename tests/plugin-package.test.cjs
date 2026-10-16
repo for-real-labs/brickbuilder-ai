@@ -52,3 +52,16 @@ test('public package contains no secret headers, account credentials or unsuppor
   inspect(manifest);
   inspect(config);
 });
+
+test('review cases cover every exposed tool and include safe non-action scenarios', () => {
+  const cases = manifest.extensions['com.openai'].review.test_cases;
+  assert.equal(cases.positive.length, 5);
+  assert.equal(cases.negative.length, 3);
+  const tools = new Set(cases.positive.flatMap(item => item.tools_triggered.split(',').map(name => name.trim())));
+  assert.deepEqual([...tools].sort(), ['edit_lego_model', 'generate_lego_model', 'get_brick_builder_account', 'get_lego_model']);
+  for (const item of [...cases.positive, ...cases.negative]) {
+    assert.ok(item.description.trim());
+    assert.ok(item.prompt.trim());
+    assert.ok(item.expected_behavior.trim());
+  }
+});
