@@ -101,6 +101,22 @@ describe('build buddies', () => {
     expect(container.querySelector('img')).not.toBeNull();
   });
 
+  it('uses transparency for only Pip idle/listening and hides the still poster after playback starts', () => {
+    expect(petVideoPath('pip', 'idle')).toBe('/pets/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'listening')).toBe('/pets/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'building')).toBe('/pets/pip-building.mp4');
+    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/pip-celebrating.mp4');
+    expect(petVideoPath('nib', 'idle')).toBe('/pets/nib-idle.mp4');
+    render(<PetAvatar />);
+    expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
+    expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
+    act(() => container.querySelector('video')?.dispatchEvent(new Event('playing')));
+    expect(container.querySelector('.pet-avatar--alpha-playing')).not.toBeNull();
+    act(() => container.querySelector('video')?.dispatchEvent(new Event('error')));
+    expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
+    expect(container.querySelector('img')).not.toBeNull();
+  });
+
   it('celebrates a successful build, then returns to idle; failures do not celebrate', () => {
     vi.useFakeTimers();
     try {

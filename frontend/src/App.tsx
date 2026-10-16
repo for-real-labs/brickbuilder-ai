@@ -21,6 +21,7 @@ import BestAiLegoDesignTools2026Page from "./pages/BestAiLegoDesignTools2026Page
 import SubstackPostPage from "./pages/SubstackPostPage";
 import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsOfServicePage from "./pages/TermsOfServicePage";
+import PetPreviewPage from './pages/PetPreviewPage';
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
 import { FeedbackWidget } from "./components/FeedbackWidget";
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="/blog/:slug" element={<SubstackPostPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
+          <Route path="/pet-preview" element={<PetPreviewPage />} />
 
           {/* External redirects */}
           <Route

@@ -54,3 +54,25 @@ shipped media file. Browser checks cover the landing conversation, picker,
 companion on secondary pages, and the generated model editor at desktop and
 mobile widths. Model-page visual checks use an isolated local fixture API;
 they do not submit paid model-generation or edit requests.
+
+## One-animation transparency preview
+
+The `codex/pip-transparent-preview` experiment replaces only Pip's idle clip
+(also used while listening) with `frontend/public/pets/pip-idle-alpha.webm`.
+The original MP4 stays available for the before/after view at `/pet-preview`.
+The other eight animations retain their existing assets and rendering.
+
+Bria video background removal on fal.ai removed the existing clip's background;
+the character animation was not regenerated. Processing cost $0.70, bringing
+the total fal.ai spend for these pets to $3.85. The source and request are recorded
+in `transparency-preview.json`.
+
+The preview uses real VP9 alpha at 512 × 512 and 24 fps (about 230 KiB). Its
+renderer uses normal compositing and hides the static poster once playback
+starts, so the poster cannot show through the moving character's transparent
+edges. Pausing or a playback error restores the transparent still poster.
+Browsers that cannot play the WebM use that still artwork.
+
+Visual checks cover checkerboard, cream and dark backgrounds at mobile and
+desktop widths. The alpha channel was also decoded at five points in the clip:
+each sample retained a clear background, opaque character pixels and soft edges.

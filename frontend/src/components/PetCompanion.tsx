@@ -2,10 +2,10 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeftRight, Check, Pause, Play, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { usePet } from '../contexts/PetContext';
-import { PETS, petVideoPath, type PetId, type PetState } from '../pets';
+import { PETS, PIP_TRANSPARENT_IDLE, petVideoPath, type PetId, type PetState } from '../pets';
 import './PetCompanion.css';
 
-export function PetAvatar({ id, state = 'idle', still = false }: { id?: PetId; state?: PetState; still?: boolean }) {
+export function PetAvatar({ id, state = 'idle', still = false, videoSource }: { id?: PetId; state?: PetState; still?: boolean; videoSource?: string }) {
   const { pet, motion } = usePet();
   const petId = id || pet.id;
   const ref = useRef<HTMLSpanElement>(null);
@@ -14,7 +14,8 @@ export function PetAvatar({ id, state = 'idle', still = false }: { id?: PetId; s
   const [hidden, setHidden] = useState(false);
   const [failedSource, setFailedSource] = useState<string | null>(null);
   const [readySource, setReadySource] = useState<string | null>(null);
-  const source = petVideoPath(petId, state);
+  const source = videoSource || petVideoPath(petId, state);
+  const transparent = source === PIP_TRANSPARENT_IDLE;
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -37,7 +38,7 @@ export function PetAvatar({ id, state = 'idle', still = false }: { id?: PetId; s
   }, []);
 
   const playing = motion && !reduced && !hidden && visible && !still && failedSource !== source;
-  return <span ref={ref} className={`pet-avatar pet-avatar--${state}`} aria-hidden="true" data-pet={petId}>
+  return <span ref={ref} className={`pet-avatar pet-avatar--${state}${transparent ? ' pet-avatar--transparent' : ''}${transparent && playing && readySource === source ? ' pet-avatar--alpha-playing' : ''}`} aria-hidden="true" data-pet={petId}>
     <img src={`/pets/${petId}.webp`} alt="" width="512" height="512" draggable={false} />
     {playing && <video key={source} src={source} poster={`/pets/${petId}.webp`} autoPlay muted loop playsInline disablePictureInPicture
       preload="none" className={readySource === source ? 'pet-video-ready' : ''}
