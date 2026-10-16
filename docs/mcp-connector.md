@@ -161,6 +161,12 @@ and [submission instructions](https://developers.openai.com/plugins/deploy/submi
    declared public client and exact callback, then complete the tool scan.
    An endpoint reachable directly does not prove the saved portal connection
    is configured; resolve “Configuration incomplete” before resubmission.
+   The source manifest includes five positive and three negative review
+   cases. When using a private walkthrough URL, inject
+   `extensions.com.openai.review.demo_recording_url` into the upload ZIP's
+   manifest locally. Keep signed video URLs out of source control. Once
+   review information is managed by the ZIP, the portal does not let you
+   enter a missing walkthrough URL directly.
 4. In Review information → Review details, enter the dedicated account email
    and password privately. Login URL: `https://brickbuilder.ai/login`.
    Instructions: start Connect, sign in with the supplied email/password,
@@ -172,7 +178,14 @@ and [submission instructions](https://developers.openai.com/plugins/deploy/submi
 On 2026-10-15, a newly prepared dedicated account passed live password login,
 production ChatGPT PKCE authorization, consent, code exchange, four-tool MCP
 discovery, account access with 25 credits, and refresh followed by MCP access.
-These checks did not run generation/edit cases or submit a new review.
+Follow-up checks generated a 218-piece yellow house with a red roof, followed
+the same job to completion, downloaded its LDraw and parts CSV, and created
+a completed blue-roof edit while preserving the original. The production
+browser opened the model successfully. OpenAI's connected-account scan and
+metadata checks returned no findings. The corrected frontend was deployed
+directly to production; the production deployment bypasses the preview-only
+password gate even when built from a feature branch. Directory approval is
+separate from these deployment and verification results.
 
 ## Discovery and publication
 
