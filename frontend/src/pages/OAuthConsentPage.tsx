@@ -69,7 +69,8 @@ export default function OAuthConsentPage() {
   }
 
   if (!loading && !user && authorizationId && isSupabaseConfigured) {
-    return <Navigate to="/login" state={{ from: location.pathname + location.search }} replace />;
+    const destination = location.pathname + location.search;
+    return <Navigate to={`/login?${new URLSearchParams({ next: destination })}`} state={{ from: destination }} replace />;
   }
 
   return (

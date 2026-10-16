@@ -3,7 +3,23 @@
   "mcpServers": {
     "brickbuilder": {
       "type": "streamable-http",
-      "url": "https://brickai-backend-production.up.railway.app/mcp"
+      "url": "https://brickai-backend-production.up.railway.app/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "provided",
+              "clientId": "4b76b612-f257-43b0-8b20-c2b521aba02f",
+              "tokenEndpointAuthMethod": "none"
+            },
+            "resource": "https://brickai-backend-production.up.railway.app/mcp",
+            "baseScopes": ["email"],
+            "defaultScopes": ["email"],
+            "oidcEnabled": false
+          }
+        }
+      }
     }
   }
 }

@@ -41,8 +41,10 @@ remote image URLs through MCP.
    and a hook function; applying it does not activate the hook.
 2. Enable **Authentication → OAuth Server** in Supabase. Set the project's
    Site URL to the matching frontend and its authorization path to
-   `/oauth/consent`. The page preserves the request through existing password,
-   Google, or email sign-in, then displays the client, permissions, and cost.
+   `/oauth/consent`. Connector sign-in defaults to email/password and stores
+   the consent destination in the login URL so reloading cannot lose it.
+   Google and email sign-in remain available. The consent page displays the
+   client, permissions, and cost.
    Approval and denial use Supabase's OAuth methods; the app does not implement
    its own authorization codes or refresh tokens.
    If staging and production share one Supabase project, preserve the existing
@@ -128,15 +130,49 @@ Remote connections originate from Anthropic's cloud, so the endpoint must
 be publicly reachable. Follow the
 [Claude custom connector guide](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp).
 
-`plugins/brickbuilder/` contains a portable plugin manifest and MCP
-configuration targeting the intended production Railway URL. Its URL becomes
-usable after production promotion and configuration; it is not a deployment
-status claim. For a staging package, change the packaged endpoint to the
-staging URL before installation. For ChatGPT's registered-server package
-mapping, obtain the real `plugin_asdk_app...` ID from developer mode and add
-the `.app.json` mapping described in the
+`plugins/brickbuilder/` contains the portable production package. Its MCP
+configuration declares the registered production ChatGPT public client,
+token endpoint authentication `none`, the `email` scope, and OpenID Connect
+disabled. The client ID is public; no client secret is used. For staging,
+change both the endpoint/resource and client ID to the staging registration.
+The portal callback must exactly match the registered client's callback;
+verify it when creating or restoring a connection. Public submission uses
+`mcp.json` directly; `.app.json` mappings and lifecycle hooks are currently
+unsupported in submission ZIPs. See the
 [packaging guide](https://developers.openai.com/plugins/build/plugins).
-Do not invent a registration ID or use a legacy `ai-plugin.json` manifest.
+
+## Reviewer sign-in and resubmission
+
+OpenAI requires an immediately usable dedicated account with no MFA, email
+codes, magic links, or additional setup. OAuth application credentials and
+reviewer account credentials are separate: the public OAuth client ID alone
+does not let a reviewer sign in. See the
+[review requirements](https://developers.openai.com/plugins/deploy/app-review)
+and [submission instructions](https://developers.openai.com/plugins/deploy/submission).
+
+1. Prepare a dedicated, email-confirmed password account with a normal
+   `user_profiles` row, sample data, sufficient credits, and no MFA factors.
+   Keep its password out of source control, package ZIPs, issues, and PRs.
+2. From a fresh browser session, start the ChatGPT connection, sign in with
+   that account, approve consent, and confirm `get_brick_builder_account`
+   succeeds. Verify token refresh and the generation/edit evaluation cases.
+3. Upload a ZIP containing only the contents of `plugins/brickbuilder/` to
+   the existing plugin. In MCPs, connect the production server using its
+   declared public client and exact callback, then complete the tool scan.
+   An endpoint reachable directly does not prove the saved portal connection
+   is configured; resolve “Configuration incomplete” before resubmission.
+4. In Review information → Review details, enter the dedicated account email
+   and password privately. Login URL: `https://brickbuilder.ai/login`.
+   Instructions: start Connect, sign in with the supplied email/password,
+   and select Allow connection. On the older login screen, select
+   **Use password** first. No mailbox access or verification code is needed.
+5. Preserve or update the existing test cases and recording, run all of them
+   with the review account, save the details, and submit the corrected draft.
+
+On 2026-10-15, a newly prepared dedicated account passed live password login,
+production ChatGPT PKCE authorization, consent, code exchange, four-tool MCP
+discovery, account access with 25 credits, and refresh followed by MCP access.
+These checks did not run generation/edit cases or submit a new review.
 
 ## Discovery and publication
 
