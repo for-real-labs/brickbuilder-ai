@@ -24,6 +24,8 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
 import { FeedbackWidget } from "./components/FeedbackWidget";
+import { PetProvider } from "./contexts/PetContext";
+import { PetCompanion } from "./components/PetCompanion";
 // import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function ExternalRedirect({ to }: { to: string }) {
@@ -36,6 +38,7 @@ function ExternalRedirect({ to }: { to: string }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <PetProvider>
       <AiConsentDialog />
       <GenerationNotificationsProvider>
       <ChangeRequestProvider>
@@ -83,6 +86,8 @@ export default function App() {
       </ChangeRequestProvider>
       <FeedbackWidget />
       </GenerationNotificationsProvider>
+      <PetCompanion />
+      </PetProvider>
     </BrowserRouter>
   );
 }

@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Loader2, Wand2 } from 'lucide-react';
+import { PetPromptGreeting } from './PetCompanion';
+import { usePet } from '../contexts/PetContext';
 
 interface Props {
   prompt: string;
@@ -14,12 +16,16 @@ interface Props {
 }
 
 export function VoxelPromptEditor({ examplePrompt, modelName, prompt, onPromptChange, onSubmit, loading, disabled, error, manualEditControl }: Props) {
+  const { pet, activity } = usePet();
+  const [focused, setFocused] = useState(false);
   return (
     <form className="model-refine-card"
       onSubmit={(event) => { event.preventDefault(); if (prompt.trim() && !loading && !disabled) onSubmit(); }}>
+      <PetPromptGreeting mode="edit" state={loading ? 'building' : focused ? 'listening' : activity} />
       <label htmlFor="voxel-edit-prompt" className="block text-lg font-semibold text-slate-900">Refine your model</label>
-      <p id="voxel-edit-help" className="mt-1 text-sm text-slate-500">Tell us what you'd like to change.</p>
+      <p id="voxel-edit-help" className="mt-1 text-sm text-slate-500">Tell {pet.name} what you’d like to change.</p>
       <textarea id="voxel-edit-prompt" aria-describedby="voxel-edit-help" maxLength={2000} rows={3}
+        onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
         value={prompt} onChange={(event) => onPromptChange(event.target.value)} disabled={loading || disabled}
         placeholder={`e.g. ${examplePrompt?.trim() || (modelName ? `Change the colors of the ${modelName} and add more detail` : 'Make the roof red and add a chimney…')}`}
         className="mt-3 block w-full resize-y rounded-xl border border-slate-200 bg-slate-50 px-3 py-3 text-base text-slate-900 focus:border-red-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-100 disabled:opacity-60" />

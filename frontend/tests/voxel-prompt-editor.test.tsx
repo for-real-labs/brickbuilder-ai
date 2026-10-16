@@ -58,7 +58,7 @@ it('uses the saved subject edit example as a placeholder without filling or subm
       onPromptChange={vi.fn()} onSubmit={vi.fn()} loading={false} disabled={false} error={null} />));
     expect(container.querySelector('textarea')?.placeholder).toBe('e.g. Make the fins blue and add a longer tail');
     expect(container.querySelector('textarea')?.value).toBe('');
-    expect(container.querySelector('button')?.disabled).toBe(true);
+    expect(container.querySelector('button[type="submit"]')?.disabled).toBe(true);
     act(() => root.render(<VoxelPromptEditor prompt="My own edit" modelName="Crocodile"
       onPromptChange={vi.fn()} onSubmit={vi.fn()} loading={false} disabled={false} error={null} />));
     expect(container.querySelector('textarea')?.placeholder).toContain('Crocodile');
