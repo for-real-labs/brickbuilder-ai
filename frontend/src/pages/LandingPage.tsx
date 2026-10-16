@@ -6,6 +6,8 @@ import { GenerationDuration } from '../components/GenerationDuration';
 import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
+import { PetPromptGreeting } from '../components/PetCompanion';
+import { usePet, usePetActivity } from '../contexts/PetContext';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
 import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
@@ -214,6 +216,7 @@ function useBeatText(active: boolean) {
 }
 
 export default function LandingPage({ imageLandingPath }: { imageLandingPath?: ImageLandingPath } = {}) {
+  const { pet } = usePet();
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const { session, loading: authLoading } = useAuth();
@@ -886,6 +889,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingGenerateAfterLogin, session, authLoading]);
 
+  const petState = usePetActivity(loading);
+
   return (
     <div
       className="min-h-screen overflow-x-hidden text-slate-900 relative"
@@ -963,6 +968,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             </div>
 
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
+              <PetPromptGreeting mode="upload" state={petState} />
               <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding?.uploadTitle}</h2>
               <p className="mb-4 text-left text-sm text-slate-600">{imageLanding?.uploadDescription}</p>
               <LDrawUploadSection authToken={session?.access_token} onImported={id => {
@@ -979,14 +985,17 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 submitGeneration();
               }}
             >
+              <PetPromptGreeting state={focused && !loading ? 'listening' : petState} />
               {imageLanding && <>
                 <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
                 <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
                 <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || preparingImage}
                   error={imageUploadError} onPick={onPickImage} onRemove={clearSelectedImage} />
               </>}
+              <label htmlFor="landing-build-prompt" className="pet-conversation-hint">Ask {pet.name} to build something</label>
               <div className="relative w-full">
                 <input
+                  id="landing-build-prompt"
                   ref={promptInputRef}
                   aria-label="Describe your model"
                   aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
@@ -1004,7 +1013,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     event.currentTarget.form?.requestSubmit();
                   }}
                   placeholder={imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
-                  className="h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
+                  className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
                   disabled={loading || preparingImage}
                 />
                 <button

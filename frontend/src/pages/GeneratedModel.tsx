@@ -51,6 +51,8 @@ import { UpdateModelApiService, UpdateModelResponse } from "../services/updateMo
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import { ModelEditControls } from "../components/ModelEditControls";
+import { PetPromptGreeting } from '../components/PetCompanion';
+import { usePetActivity } from '../contexts/PetContext';
 import { ModelOrderCard } from "../components/ModelOrderCard";
 import { ModelShareMenu } from "../components/ModelShareMenu";
 import "./GeneratedModel.css";
@@ -357,6 +359,7 @@ export default function GeneratedModel() {
   const isModelEditing = isPromptEditing || Boolean(editGenerationId) ||
     (generationLoading && canKeepModelVisible && retainedEditSourceId === currentGenerationId);
   const showModelPage = !generationError && (!generationLoading || canKeepModelVisible);
+  const petState = usePetActivity(generationLoading || isModelEditing, Boolean(mpdContent), Boolean(generationError || editPromptError));
   const handleEditCancelled = () => {
     modelLoadAbortRef.current?.abort();
     refreshNotifications();
@@ -1898,6 +1901,7 @@ export default function GeneratedModel() {
         {/* Loading state when fetching generation by ID */}
         {generationLoading && !canKeepModelVisible && (
           <div className="flex flex-col items-center justify-center py-32">
+            <div className="w-full max-w-md"><PetPromptGreeting state={petState} /></div>
             <div className="w-full max-w-md overflow-hidden rounded-2xl border border-slate-200">
               <LlmPreviewLoader previewImageUrl={editPreviewImageUrl} />
             </div>

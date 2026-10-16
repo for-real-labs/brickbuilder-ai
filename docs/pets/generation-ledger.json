@@ -1,0 +1,110 @@
+{
+  "date": "2026-10-16",
+  "provider": "fal.ai",
+  "model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+  "budget_usd": 200,
+  "starting_credit_usd": 14.53,
+  "ending_credit_usd": 11.38,
+  "actual_spend_usd": 3.15,
+  "clips": [
+    {
+      "pet": "pip",
+      "state": "idle",
+      "url": "https://v3b.fal.media/files/b/0aaeaaad/3DvgX6a00wwb4f9JOZvo3_output.mp4",
+      "prompt": "A seamless idle animation of this exact adorable red plush brick pet. Fixed camera, pure white studio background, full body stays in the same place at the same size. Subtle soft breathing, one natural blink, a small curious head tilt and a tiny friendly paw wave, then return to the identical starting resting pose. Preserve the single stud, cream mitten hands, bead eyes and soft red fur perfectly. Restrained polished character animation for a calm app companion. No scene changes, no camera movement, no props, no text, no morphing, no extra limbs.",
+      "estimated_usd": 0.35,
+      "request_id": "01a146ea-32ae-7090-8598-4d458925c17a",
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/pip-idle.mp4"
+    },
+    {
+      "pet": "nib",
+      "state": "idle",
+      "url": "https://v3b.fal.media/files/b/0aaeaab4/6j517GR5fPgCTvvBtFGH5_output.mp4",
+      "prompt": "Seamless idle loop of this exact adorable plush beaver pet. Fixed camera, pure white background, full body remains centered at the same size. Gentle breathing, a slow natural blink, a small curious head tilt and a soft twitch of the broad navy tail, then return to the identical starting pose. Preserve the cream muzzle, two teeth, rounded ears and tactile chestnut plush perfectly. Premium calm app companion animation. No camera movement, no props, no text, no morphing, no extra limbs.",
+      "estimated_usd": 0.35,
+      "request_id": "01a146eb-0a70-78c1-bed5-518f1cd04831",
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/nib-idle.mp4"
+    },
+    {
+      "pet": "clik",
+      "state": "idle",
+      "url": "https://v3b.fal.media/files/b/0aaeaab8/ygXmKXAvve-LXwFK-cyAk_output.mp4",
+      "prompt": "Seamless idle loop of this exact adorable navy plush baby dragon. Fixed camera and pure white studio background, full body stays centered at the same size. Gentle breathing, one natural slow blink, a small curious head tilt, a tiny twitch of the curled tail and a subtle little wing flutter, then settle back into the identical original resting pose. Preserve the cream belly, red stud-shaped back bumps, red wing membranes and exact anatomy. Premium restrained app companion character animation. No camera movement, no props, no text, no morphing, no extra limbs.",
+      "estimated_usd": 0.35,
+      "request_id": "01a146eb-59fe-71c1-ad23-400590275f58",
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/clik-idle.mp4"
+    },
+    {
+      "pet": "nib",
+      "state": "building",
+      "url": "https://v3b.fal.media/files/b/0aaeaac5/pof4UT-sGu1BCqxoNP1Nw_output.mp4",
+      "prompt": "Five second seamless working loop. Animate this exact plush pet as a busy little builder. It looks down with concentration and uses its front paws to snap two small red and cream toy bricks together, gives a satisfied little nod, then gently sets the bricks down and returns to its initial resting pose. Small natural blinks and breathing. Locked camera, pure white background, full body remains centered, exact original character proportions and fur, no camera motion, no text, no scene changes, no extra limbs.",
+      "estimated_usd": 0.35,
+      "request_id": "01a146ed-b2a1-7083-82e0-e38c12cbb2c4",
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/nib-building.mp4"
+    },
+    {
+      "pet": "clik",
+      "state": "building",
+      "url": "https://v3b.fal.media/files/b/0aaeaac6/F-vgpLTj02a60hzhDReHg_output.mp4",
+      "prompt": "Five second seamless working loop. Animate this exact plush pet as a busy little builder. It looks down with concentration and uses its front paws to snap two small red and cream toy bricks together, gives a satisfied little nod, then gently sets the bricks down and returns to its initial resting pose. Small natural blinks and breathing. Locked camera, pure white background, full body remains centered, exact original character proportions and fur, no camera motion, no text, no scene changes, no extra limbs.",
+      "estimated_usd": 0.35,
+      "request_id": "01a146ed-bf15-7ef0-8a28-86c7f727d877",
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/clik-building.mp4"
+    },
+    {
+      "pet": "pip",
+      "state": "building",
+      "request_id": "01a146ed-b218-7bb2-9070-b164c6e1163a",
+      "url": "https://v3b.fal.media/files/b/0aaeaace/jnEidbdIgldYEF4CArEy8_output.mp4",
+      "prompt": "Five second seamless working loop. Animate this exact plush pet as a busy little builder. It looks down with concentration and uses its front paws to snap two small red and cream toy bricks together, gives a satisfied little nod, then gently sets the bricks down and returns to its initial resting pose. Small natural blinks and breathing. Locked camera, pure white background, full body remains centered, exact original character proportions and fur, no camera motion, no text, no scene changes, no extra limbs.",
+      "estimated_usd": 0.35,
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/pip-building.mp4"
+    },
+    {
+      "pet": "nib",
+      "state": "celebrating",
+      "request_id": "01a146ef-a670-71d0-acce-ec459484c145",
+      "url": "https://v3b.fal.media/files/b/0aaeaad2/GYkZSHZ57Zh5rveIfp7Or_output.mp4",
+      "prompt": "Five second celebration animation of this exact adorable plush pet. Fixed camera, pure white background. The little pet gives a delighted blink, makes one small happy hop, raises its front paws in a proud little cheer, and gently settles back into the original resting pose. Keep motion charming and restrained, whole body always fully visible, same size and centered position, preserve exact fur colors, face and anatomy. No props, no confetti, no text, no camera movement, no morphing or extra limbs. Start and end in the same pose for looping.",
+      "estimated_usd": 0.35,
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/nib-celebrating.mp4"
+    },
+    {
+      "pet": "clik",
+      "state": "celebrating",
+      "request_id": "01a146ef-a893-75f3-96c7-526e7171cd5e",
+      "url": "https://v3b.fal.media/files/b/0aaeaad2/ksiNxs3i8th_8eLkF30OD_output.mp4",
+      "prompt": "Five second celebration animation of this exact adorable plush pet. Fixed camera, pure white background. The little pet gives a delighted blink, makes one small happy hop, raises its front paws in a proud little cheer, and gently settles back into the original resting pose. Keep motion charming and restrained, whole body always fully visible, same size and centered position, preserve exact fur colors, face and anatomy. No props, no confetti, no text, no camera movement, no morphing or extra limbs. Start and end in the same pose for looping.",
+      "estimated_usd": 0.35,
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/clik-celebrating.mp4"
+    },
+    {
+      "pet": "pip",
+      "state": "celebrating",
+      "request_id": "01a146f1-99ff-7b33-899f-fac5800f4c66",
+      "url": "https://v3b.fal.media/files/b/0aaeaadd/_U-C9Y3UhSH9nsBD4SPso_output.mp4",
+      "prompt": "Five second celebration animation of this exact adorable plush pet. Fixed camera, pure white background. The little pet gives a delighted blink, makes one small happy hop, raises its front paws in a proud little cheer, and gently settles back into the original resting pose. Keep motion charming and restrained, whole body always fully visible, same size and centered position, preserve exact fur colors, face and anatomy. No props, no confetti, no text, no camera movement, no morphing or extra limbs. Start and end in the same pose for looping.",
+      "estimated_usd": 0.35,
+      "status": "completed",
+      "duration_seconds": 5,
+      "local_asset": "frontend/public/pets/pip-celebrating.mp4"
+    }
+  ]
+}
