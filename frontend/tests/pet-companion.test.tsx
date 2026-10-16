@@ -87,6 +87,25 @@ describe('build buddies', () => {
     expect(container.querySelector('dialog')).toBeNull();
   });
 
+  it('labels the picker and current choice, then returns keyboard focus to the conversation', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frames.push(callback); return frames.length; });
+    render(<><PetPromptGreeting mode="edit" /><PetCompanion /></>);
+    const opener = container.querySelector<HTMLButtonElement>('[aria-label="Change pet, currently Pip"]')!;
+    opener.focus();
+    click('[aria-label="Change pet, currently Pip"]');
+    const dialog = container.querySelector('dialog')!;
+    expect(opener.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelector(`#${dialog.getAttribute('aria-labelledby')}`)?.textContent).toBe('Choose your build buddy');
+    expect(container.querySelector(`#${dialog.getAttribute('aria-describedby')}`)?.textContent).toContain('Switch any time');
+    expect(container.querySelector('[aria-label="Choose Pip"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('[aria-label="Choose Nib"]')?.getAttribute('aria-pressed')).toBe('false');
+    click('[aria-label="Close pet picker"]');
+    act(() => frames.forEach(callback => callback(0)));
+    expect(opener.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(opener);
+  });
+
   it('uses still artwork for reduced motion and falls back to it on video errors', () => {
     vi.mocked(window.matchMedia).mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as MediaQueryList);
     render(<PetAvatar />);

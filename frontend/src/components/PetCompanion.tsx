@@ -63,8 +63,8 @@ export function PetPromptGreeting({ mode = 'build', state }: { mode?: 'build' | 
     <PetAvatar state={current} />
     <div className="pet-speech">
       <div className="pet-speech-heading"><span><i />{pet.name} · your build buddy</span>
-        <button type="button" onClick={() => openPicker(`${mode}_prompt`)} aria-label={`Change pet, currently ${pet.name}`} aria-haspopup="dialog" aria-expanded={pickerOpen}>
-          <ArrowLeftRight size={13} aria-hidden="true" /><span>Switch pet</span>
+        <button type="button" onClick={() => openPicker(`${mode}_prompt`)} title="Switch pet" aria-label={`Change pet, currently ${pet.name}`} aria-haspopup="dialog" aria-expanded={pickerOpen}>
+          <ArrowLeftRight size={16} aria-hidden="true" /><span>Switch pet</span>
         </button>
       </div>
       <p>{current === 'building' ? (mode === 'edit' ? 'On it! I’m working on your changes.' : 'On it! I’m bringing your idea to life.')
@@ -89,9 +89,9 @@ function PetPicker() {
   return <dialog ref={dialog} className="pet-picker" aria-labelledby="pet-picker-title" aria-describedby="pet-picker-description"
     onCancel={event => { event.preventDefault(); closePicker(); }} onClose={closePicker}>
     <div className="pet-picker-header">
-      <div><span className="pet-eyebrow">A LITTLE COMPANY. A LOT OF IMAGINATION.</span>
-        <h2 id="pet-picker-title">Meet your build buddy.</h2>
-        <p id="pet-picker-description">Three little personalities. Endless things to build.<br />Your buddy follows you wherever you go.</p>
+      <div>
+        <h2 id="pet-picker-title">Choose your build buddy</h2>
+        <p id="pet-picker-description">Your buddy follows you across BrickBuilder. Switch any time.</p>
       </div>
       <button type="button" className="pet-close" onClick={closePicker} aria-label="Close pet picker"><X size={20} /></button>
     </div>
@@ -103,7 +103,7 @@ function PetPicker() {
         <strong>{option.name}</strong><span className="pet-choice-title">{option.title}</span><span className="pet-choice-description">{option.description}</span>
       </button>)}
     </div>
-    <div className="pet-picker-footer"><span>Make yourself at home.</span>
+    <div className="pet-picker-footer"><span>Pet animations</span>
       <button type="button" aria-pressed={!motion} onClick={() => setMotion(!motion)}>
         {motion ? <Pause size={14} aria-hidden="true" /> : <Play size={14} aria-hidden="true" />}
         {motion ? 'Pause animations' : 'Play animations'}
