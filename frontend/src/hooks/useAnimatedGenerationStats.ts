@@ -2,73 +2,83 @@ import { useEffect, useRef, useState } from 'react';
 import type { GenerationStats } from '../services/getGenerationStatsApi';
 
 const TICK_DURATION_MS = 1_000;
-const COUNTERS = {
-  generation_count: { maxBehind: 25, minPause: 1_800, maxPause: 5_200 },
-  brick_count: { maxBehind: 25_000, minPause: 1_200, maxPause: 4_500 },
-} as const;
-type Counter = keyof GenerationStats;
-const keys = Object.keys(COUNTERS) as Counter[];
+const MIN_PAUSE_MS = 1_800;
+const MAX_PAUSE_MS = 5_200;
+const MAX_MODELS_BEHIND = 25;
 
-/** Catch up to confirmed totals in independent, irregular, eased bursts. */
+/** Reveal each confirmed model, then count up its share of the added bricks. */
 export function useAnimatedGenerationStats(target: GenerationStats | null): GenerationStats | null {
   const [displayed, setDisplayed] = useState<GenerationStats | null>(null);
   const current = useRef<GenerationStats | null>(null);
+  const pendingBricks = useRef<number | null>(null);
 
   useEffect(() => {
     if (!target) return;
-    const frames: Partial<Record<Counter, number>> = {};
-    const timers: Partial<Record<Counter, ReturnType<typeof setTimeout>>> = {};
+    let frame: number | undefined;
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const motionPreference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const publish = (value: GenerationStats) => {
       current.current = value;
       setDisplayed(value);
     };
-    const publishCounter = (key: Counter, value: number) => {
-      if (current.current) publish({ ...current.current, [key]: value });
+    const cancel = () => {
+      clearTimeout(timer);
+      if (frame !== undefined) cancelAnimationFrame(frame);
     };
-    const cancel = () => keys.forEach(key => {
-      clearTimeout(timers[key]);
-      if (frames[key] !== undefined) cancelAnimationFrame(frames[key]);
-    });
-    const schedule = (key: Counter) => {
-      if (!current.current || current.current[key] >= target[key]) return;
-      const { minPause, maxPause } = COUNTERS[key];
-      timers[key] = setTimeout(() => {
-        const from = current.current![key];
-        const remaining = target[key] - from;
-        const step = Math.max(1, Math.ceil(remaining * (0.12 + Math.random() * 0.18)));
-        const to = Math.min(target[key], from + step);
-        const startedAt = performance.now();
-        const tick = (now: number) => {
-          const progress = Math.min(1, Math.max(0, (now - startedAt) / TICK_DURATION_MS));
-          const eased = 1 - Math.pow(1 - progress, 3);
-          publishCounter(key, progress === 1 ? to : from + Math.floor((to - from) * eased));
-          if (progress < 1) frames[key] = requestAnimationFrame(tick);
-          else schedule(key);
-        };
-        frames[key] = requestAnimationFrame(tick);
-      }, minPause + Math.random() * (maxPause - minPause));
+    const animateBricks = (to: number) => {
+      const from = current.current!.brick_count;
+      const startedAt = performance.now();
+      pendingBricks.current = to;
+      const tick = (now: number) => {
+        const progress = Math.min(1, Math.max(0, (now - startedAt) / TICK_DURATION_MS));
+        const eased = 1 - Math.pow(1 - progress, 3);
+        publish({ ...current.current!, brick_count: progress === 1 ? to : from + Math.floor((to - from) * eased) });
+        if (progress < 1) frame = requestAnimationFrame(tick);
+        else {
+          pendingBricks.current = null;
+          schedule();
+        }
+      };
+      frame = requestAnimationFrame(tick);
+    };
+    const schedule = () => {
+      if (current.current!.generation_count >= target.generation_count) return;
+      timer = setTimeout(() => {
+        const from = current.current!;
+        const modelsRemaining = target.generation_count - from.generation_count;
+        const bricksAdded = Math.round((target.brick_count - from.brick_count) / modelsRemaining);
+        publish({ ...from, generation_count: from.generation_count + 1 });
+        animateBricks(from.brick_count + bricksAdded);
+      }, MIN_PAUSE_MS + Math.random() * (MAX_PAUSE_MS - MIN_PAUSE_MS));
     };
     const onMotionChange = () => {
       if (motionPreference?.matches) {
         cancel();
+        pendingBricks.current = null;
         publish(target);
       }
     };
 
-    if (motionPreference?.matches) publish(target);
-    else {
-      // Begin at most 0.5% behind, with modest caps even for large totals.
-      const behind = (key: Counter) => Math.max(0,
-        target[key] - Math.min(COUNTERS[key].maxBehind, Math.ceil(target[key] * 0.005)));
+    if (motionPreference?.matches) {
+      pendingBricks.current = null;
+      publish(target);
+    } else {
+      const modelsBehind = Math.min(MAX_MODELS_BEHIND, Math.ceil(target.generation_count * 0.005));
       publish(current.current ? {
         generation_count: Math.min(current.current.generation_count, target.generation_count),
         brick_count: Math.min(current.current.brick_count, target.brick_count),
       } : {
-        generation_count: behind('generation_count'),
-        brick_count: behind('brick_count'),
+        generation_count: target.generation_count - modelsBehind,
+        brick_count: target.generation_count > 0
+          ? Math.round(target.brick_count * (target.generation_count - modelsBehind) / target.generation_count)
+          : target.brick_count,
       });
-      keys.forEach(schedule);
+      if (pendingBricks.current !== null) {
+        // A refreshed total must not count the model for an unfinished burst twice.
+        animateBricks(Math.min(pendingBricks.current, target.brick_count));
+      } else if (current.current!.generation_count === target.generation_count) {
+        publish(target);
+      } else schedule();
     }
     motionPreference?.addEventListener('change', onMotionChange);
     return () => {

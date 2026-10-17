@@ -1,8 +1,9 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { Box, ChevronDown, Image, Users, Wrench } from 'lucide-react';
+import { Box, ChevronDown, Image, MessageSquare, Users, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import posthog from 'posthog-js';
 import { PetSwitchButton } from './PetCompanion';
+import { FeedbackWidget } from './FeedbackWidget';
 
 const tools = [
   { label: 'Image to LEGO', path: '/image-to-lego', icon: Image, event: 'landing_header_image_to_lego_clicked' },
@@ -14,6 +15,7 @@ const tools = [
 
 export function LandingToolsMenu({ page }: { page: string }) {
   const [open, setOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState<boolean | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panelId = useId();
@@ -64,11 +66,25 @@ export function LandingToolsMenu({ page }: { page: string }) {
             <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />{label}
           </Link>
         </li>)}
+        <li>
+          <button type="button" aria-haspopup="dialog" aria-expanded={Boolean(feedbackOpen)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
+            onClick={() => {
+              const properties = { ...attribution(), tool: 'Feedback' };
+              posthog.capture('landing_header_tools_item_clicked', properties);
+              posthog.capture('landing_header_feedback_clicked', properties);
+              setFeedbackOpen(true);
+              setOpen(false);
+            }}>
+            <MessageSquare aria-hidden="true" className="h-4 w-4 shrink-0" />Feedback
+          </button>
+        </li>
         <li className="mt-1 border-t border-slate-100 pt-1">
           <PetSwitchButton source="landing_tools" returnFocusRef={trigger} onOpen={() => setOpen(false)}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]" />
         </li>
       </ul>
     </div>}
+    {feedbackOpen !== null && <FeedbackWidget open={feedbackOpen} onClose={() => setFeedbackOpen(false)} returnFocusRef={trigger} />}
   </div>;
 }

@@ -5,11 +5,16 @@ import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
 import { MAX_FEEDBACK_LENGTH, sendFeedback } from '../services/feedbackApi';
 
-export function FeedbackWidget() {
+export function FeedbackWidget({ open: controlledOpen, onClose, returnFocusRef }: {
+  open?: boolean;
+  onClose?: () => void;
+  returnFocusRef?: React.RefObject<HTMLButtonElement | null>;
+}) {
   const { user, loading: authLoading } = useAuth();
   const { pathname } = useLocation();
   const hasPurchaseControls = pathname === '/order' || pathname === '/generated-model';
-  const [open, setOpen] = useState(false);
+  const [localOpen, setOpen] = useState(false);
+  const open = controlledOpen ?? localOpen;
   const [description, setDescription] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent'>('idle');
   const [error, setError] = useState<string | null>(null);
@@ -26,6 +31,7 @@ export function FeedbackWidget() {
   useEffect(() => {
     if (!open || hasPurchaseControls) return;
     dialog.current?.showModal();
+    posthog.capture('feedback_opened', { page: pathname, is_authenticated: Boolean(user) });
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = previousOverflow; };
@@ -64,22 +70,22 @@ export function FeedbackWidget() {
   if (hasPurchaseControls) return null;
 
   return <>
-    <button ref={button} type="button" aria-haspopup="dialog" aria-expanded={open}
+    {controlledOpen === undefined && <button ref={button} type="button" aria-haspopup="dialog" aria-expanded={open}
       onClick={() => {
-        if (status === 'sent') setStatus('idle');
-        setError(null);
         setOpen(true);
-        posthog.capture('feedback_opened', { page: pathname, is_authenticated: Boolean(user) });
       }}
       className="fixed z-[70] flex min-h-12 items-center gap-2 rounded-full border-2 border-white bg-[#f44336] px-5 py-3 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-[#d9362b] focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-red-500"
       style={{ right: 'max(1rem, env(safe-area-inset-right))', bottom: 'max(1rem, env(safe-area-inset-bottom))' }}>
       <MessageSquare className="h-5 w-5" aria-hidden="true" /> Feedback
-    </button>
+    </button>}
 
-    <dialog ref={dialog} aria-labelledby="feedback-title" aria-describedby="feedback-intro"
+    {(controlledOpen === undefined || open) && <dialog ref={dialog} aria-labelledby="feedback-title" aria-describedby="feedback-intro"
       onClose={() => {
         setOpen(false);
-        button.current?.focus();
+        if (status === 'sent') setStatus('idle');
+        setError(null);
+        onClose?.();
+        (returnFocusRef?.current ?? button.current)?.focus();
         posthog.capture('feedback_closed', { page: pathname });
       }}
       className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-lg overflow-y-auto rounded-2xl border-0 bg-white p-0 text-slate-900 shadow-2xl backdrop:bg-slate-950/50 backdrop:backdrop-blur-sm">
@@ -115,6 +121,6 @@ export function FeedbackWidget() {
           </button>
         </form>}
       </div>
-    </dialog>
+    </dialog>}
   </>;
 }

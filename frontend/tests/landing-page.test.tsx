@@ -79,7 +79,7 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
-  it('moves pet switching into settings and preserves the prompt without submitting', async () => {
+  it('keeps build buddy switching in Tools and out of generation settings without submitting', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -94,18 +94,24 @@ describe('LandingPage', () => {
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!.click());
       expect(panel.hidden).toBe(false);
-      const switchPet = panel.querySelector<HTMLButtonElement>('[aria-label="Change build buddy / pet, currently Pip"]')!;
+      expect(panel.querySelector('[aria-label^="Change build buddy / pet"]')).toBeNull();
+      const tools = container.querySelector<HTMLButtonElement>('header nav button[aria-controls]')!;
+      act(() => tools.click());
+      const switchPet = container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] [aria-label="Change build buddy / pet, currently Pip"]')!;
       expect(switchPet.type).toBe('button');
       act(() => { switchPet.focus(); switchPet.click(); });
+      expect(tools.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('dialog')?.open).toBe(true);
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Choose Clik"]')!.click());
       expect(container.querySelector('.pet-greeting')?.textContent).toContain('Hi, I’m Clik your build buddy!');
-      expect(panel.querySelector('[aria-label="Change build buddy / pet, currently Clik"]')).not.toBeNull();
+      expect(panel.querySelector('[aria-label^="Change build buddy / pet"]')).toBeNull();
       expect(container.querySelector('dialog')).toBeNull();
+      act(() => tools.click());
+      expect(container.querySelector('ul[aria-label="Tools"] [aria-label="Change build buddy / pet, currently Clik"]')).not.toBeNull();
       expect(generate).not.toHaveBeenCalled();
       const capture = (await import('posthog-js')).default.capture;
-      expect(capture).toHaveBeenCalledWith('pet_picker_opened', { source: 'landing_settings' });
-      expect(capture).toHaveBeenCalledWith('pet_selected', { pet_id: 'clik', previous_pet_id: 'pip', source: 'landing_settings' });
+      expect(capture).toHaveBeenCalledWith('pet_picker_opened', { source: 'landing_tools' });
+      expect(capture).toHaveBeenCalledWith('pet_selected', { pet_id: 'clik', previous_pet_id: 'pip', source: 'landing_tools' });
     } finally { act(() => root.unmount()); container.remove(); }
   });
 

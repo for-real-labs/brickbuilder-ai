@@ -30,7 +30,6 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import PetPreviewPage from './pages/PetPreviewPage';
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
-import { FeedbackWidget } from "./components/FeedbackWidget";
 import { PetProvider } from "./contexts/PetContext";
 import { PetCompanion } from "./components/PetCompanion";
 // import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -97,7 +96,6 @@ export default function App() {
         </Routes>
         {/* </ProtectedRoute> */}
       </ChangeRequestProvider>
-      <FeedbackWidget />
       </GenerationNotificationsProvider>
       <PetCompanion />
       </PetProvider>

@@ -8,7 +8,7 @@ import { GenerationDuration } from '../components/GenerationDuration';
 import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
-import { PetPromptGreeting, PetSwitchButton } from '../components/PetCompanion';
+import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
@@ -1070,11 +1070,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               )}
               <div id="landing-generation-settings" hidden={!settingsOpen}
                 onKeyDown={handleSettingsKeyDown} className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900">Generation settings</h3>
-                  <PetSwitchButton source="landing_settings"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336]" />
-                </div>
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Generation settings</h3>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
