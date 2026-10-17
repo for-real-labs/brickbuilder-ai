@@ -71,7 +71,7 @@ it('routes a natural upload command to the shared image-picker action', async ()
   await act(async () => root.render(<LandingPage />));
   type('Let me upload a photo'); await submit();
   const picker = vi.spyOn(container.querySelector<HTMLInputElement>('input[type="file"]')!, 'click');
-  act(() => container.querySelector<HTMLButtonElement>('[role="log"] button')!.click());
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
   expect(picker).toHaveBeenCalledOnce();
   expect(BuildBuddyApi.reply).not.toHaveBeenCalled();
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
@@ -234,7 +234,7 @@ it('derives a single useful next step from gifts, uploads, model edits and the l
   expect(buddyPromptSuggestion([{ id: 1, text: 'Castle', error: 'Failed' }], 'Pip')).toBe('Try your message again…');
 });
 
-it('plans a gift with follow-up context, blocks duplicate sends, and hands a complete idea back to Create', async () => {
+it('plans a gift with follow-up context, blocks duplicate sends, and accepts a typed request to build the idea', async () => {
   let respond!: (value: { reply: string }) => void;
   const plan = vi.spyOn(BuildBuddyApi, 'planGift').mockImplementationOnce(() => new Promise(resolve => { respond = resolve; }))
     .mockResolvedValueOnce({ reply: 'A tiny garden with a purple bench would be lovely. Want to change anything?', buildPrompt: 'A LEGO garden with sunflowers and a purple bench for Mum’s birthday' });
@@ -255,17 +255,14 @@ it('plans a gift with follow-up context, blocks duplicate sends, and hands a com
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
   expect(posthog.capture).toHaveBeenCalledWith('build_buddy_suggestion_submitted', { suggestion: 'gift' });
   expect(BuildBuddyApi.reply).not.toHaveBeenCalled();
-  const useIdea = Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent === 'Use this gift idea')!;
-  act(() => useIdea.click());
-  expect(input().value).toContain('purple bench');
-  expect(document.activeElement).toBe(input());
-  expect(container.querySelector('button[type="submit"]')?.getAttribute('aria-label')).toBe('Create');
+  expect(container.querySelector('.pet-chat-action')).toBeNull();
+  vi.mocked(BuildBuddyApi.classify).mockResolvedValueOnce({ intent: 'generate', confidence: 1 });
+  type('Build a LEGO garden with sunflowers and a purple bench for Mum’s birthday');
   await submit();
-  expect(NovaToBricksApiService.generate).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'A LEGO garden with sunflowers and a purple bench for Mum’s birthday' }), undefined);
-  expect(posthog.capture).toHaveBeenCalledWith('build_buddy_gift_idea_selected');
+  expect(NovaToBricksApiService.generate).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Build a LEGO garden with sunflowers and a purple bench for Mum’s birthday' }), undefined);
 });
 
-it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) and opens the shared picker from the pet reply', async desktop => {
+it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) without adding reply buttons', async desktop => {
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: desktop && query.includes('pointer: fine'), addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   await act(async () => root.render(<LandingPage />));
   type(IMAGE_PROMPT_SUGGESTION);
@@ -275,9 +272,10 @@ it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) a
   expect(dialogue.textContent?.includes('Drop a picture here')).toBe(desktop);
   const picker = container.querySelector<HTMLInputElement>('input[type="file"]')!;
   const pick = vi.spyOn(picker, 'click');
-  act(() => dialogue.querySelector<HTMLButtonElement>('button')!.click());
+  expect(dialogue.querySelector('button')).toBeNull();
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
   expect(pick).toHaveBeenCalledOnce();
-  expect(posthog.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'buddy_dialogue' });
+  expect(posthog.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'input_left_icon' });
   expect(BuildBuddyApi.reply).not.toHaveBeenCalled();
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
 });

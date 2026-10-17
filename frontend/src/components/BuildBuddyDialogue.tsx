@@ -9,6 +9,7 @@ import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerat
 import { isAgentGeneration } from '../utils/agentGeneration';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
+import { pickModelGreeting, rememberModelGreeting } from '../utils/buddyModelGreetings';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
 export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
@@ -21,14 +22,28 @@ export function BuddyBuildMessages({ generationId, status }: { generationId: str
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onUploadImage, onUseGiftIdea, onViewGeneration, selectedGenerationId, actionsDisabled = false, children }: {
+function ModelGreeting({ state, orderable }: { state: PetState; orderable: boolean }) {
+  const [message] = useState(pickModelGreeting);
+  useEffect(() => { rememberModelGreeting(message); }, [message]);
+  return <PetPromptGreeting state={state} showPetSwitch={false}>
+    {orderable ? message : 'This build looks great! Tell me if you want to edit this model!'}
+  </PetPromptGreeting>;
+}
+
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
-  onUploadImage?: () => void; onUseGiftIdea?: (prompt: string) => void; actionsDisabled?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
+  model?: { id: string; orderable: boolean } | null;
   children?: React.ReactNode;
 }) {
   const { pet } = usePet();
+  // A ready model starts a fresh conversation; keep only edits made after it opens.
+  const [modelConversation, setModelConversation] = useState({ id: model?.id, start: model ? turns.length : 0 });
+  if (modelConversation.id !== model?.id) {
+    setModelConversation({ id: model?.id, start: model ? turns.length : 0 });
+  }
+  const visibleTurns = model ? turns.slice(modelConversation.start) : turns;
   const [returning] = useState(() => {
     try { return localStorage.getItem(BUDDY_SEEN_KEY) === 'true'; } catch { return false; }
   });
@@ -63,21 +78,23 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     if (element.firstElementChild) observer?.observe(element.firstElementChild);
     return () => observer?.disconnect();
   }, [turns.length, generations.length]);
-  const restored = generations.filter(row => row.id === selectedGenerationId && isAgentGeneration(row.endpoint)
+  const restored = model ? [] : generations.filter(row => row.id === selectedGenerationId && isAgentGeneration(row.endpoint)
     && !turns.some(turn => turn.generationId === row.id));
   return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
-      <PetPromptGreeting state={state} showPetSwitch={false}>
+      {model ? <ModelGreeting key={model.id} state={state} orderable={model.orderable} />
+        : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
+        : <PetPromptGreeting state={state} showPetSwitch={false}>
         {returning ? formatBuddyGreeting(welcome, greetingName)
           : `Hi${greetingName ? `, ${greetingName}!` : '!'} I’m ${pet.name}. Tell me what to build!`}
-      </PetPromptGreeting>
-      <BuddyCompletedBuilds onView={onViewGeneration} />
+      </PetPromptGreeting>}
+      {!selectedGenerationId && !model && <BuddyCompletedBuilds onView={onViewGeneration} />}
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
         <PetChatMessage user><p>{row.prompt || 'Image reference'}</p></PetChatMessage>
         <BuddyBuildMessages generationId={row.id} status={row.status} />
       </div>)}
-      {turns.map(turn => {
+      {visibleTurns.map(turn => {
         const generation = generations.find(row => row.id === turn.generationId);
         return <div key={turn.id} className="pet-dialogue-turn">
           <PetChatMessage user>
@@ -88,10 +105,6 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
           {turn.error ? <PetChatMessage><p role="status">{BUILD_FAILURE_MESSAGE}</p></PetChatMessage>
             : <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
               <p>{turn.reply || (turn.kind === 'gift' ? 'Let’s find a gift they’ll love…' : 'Let me take a look…')}</p>
-              {turn.kind === 'upload' && onUploadImage && <button type="button" className="pet-chat-action" disabled={actionsDisabled}
-                onClick={onUploadImage}>Upload image</button>}
-              {turn.buildPrompt && onUseGiftIdea && <button type="button" className="pet-chat-action" disabled={actionsDisabled}
-                onClick={() => onUseGiftIdea(turn.buildPrompt!)}>Use this gift idea</button>}
             </PetChatMessage>}
           {!turn.error && turn.generationId && (turn.method === 'llm' || turn.method === 'nova') && <BuddyBuildMessages
             generationId={turn.generationId} status={generation?.status || 'started'} />}

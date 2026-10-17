@@ -21,7 +21,7 @@ import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings, X } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings, Sparkles, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -903,14 +903,14 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
   const sendLabel = buddyChat.routing ? 'Sending…' : landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
-  const showTypewriter = !hasEnteredChat && buddyChat.turns.length === 0 && !focused && !prompt && !imgFile && !imageLanding && !giftPlanning && !loading && !preparingImage;
+  const showTypewriter = !requestedModelId && !landingModel.model && !hasEnteredChat && buddyChat.turns.length === 0 && !focused && !prompt && !imgFile && !imageLanding && !giftPlanning && !loading && !preparingImage;
   const typedPlaceholder = usePromptTypewriter(showTypewriter);
   const contextualPlaceholder = buddyPromptSuggestion(buddyChat.turns, pet.name,
     landingModel.model ? modelEditSuggestion(landingModel.model) : undefined);
-  const conversationStarted = !ldrawLanding && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(landingModel.model));
+  const conversationStarted = !ldrawLanding && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model));
 
   const generationActivity = (
-    <GenerationActivityList generations={displayedGenerations} error={displayedGenerations.length || ldrawLanding ? activityError : null} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
+    <GenerationActivityList generations={landingModel.model ? displayedGenerations.filter(row => row.status !== 'completed') : displayedGenerations} error={displayedGenerations.length || ldrawLanding ? activityError : null} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
       notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
       onOpen={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
       onResumed={(sourceId, newId) => {
@@ -973,7 +973,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }} />
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
-        <LandingHeader page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
+        <LandingHeader createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: modelBusy || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
           generationSettings={ldrawLanding ? undefined : {
             open: settingsOpen,
             controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
@@ -1022,25 +1022,14 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing}
-                onOrderBarHeightChange={setOrderBarHeight}
-                onCreateNew={createNewModel} onSuggest={suggestion => {
-                  setPrompt(suggestion);
-                  if (settingsOpen) toggleSettings(false);
-                  promptInputRef.current?.focus();
-                }}>
+                onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
-                selectedGenerationId={landingModel.targetId}
+                selectedGenerationId={requestedModelId || landingModel.targetId}
+                model={landingModel.model ? { id: landingModel.model.generation.generation_id,
+                  orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
-                username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}
-                actionsDisabled={loading || buddyChat.routing || preparingImage || modelBusy || giftReplyPending || Boolean(landingModel.model)}
-                onUploadImage={() => onPickImage('buddy_dialogue')} onUseGiftIdea={idea => {
-                  posthog.capture('build_buddy_gift_idea_selected');
-                  setGiftPlanning(false);
-                  setPrompt(idea);
-                  if (settingsOpen) toggleSettings(false);
-                  promptInputRef.current?.focus();
-                }}>
+                username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>
                 {generationActivity}
               </BuildBuddyDialogue>
             <form
@@ -1086,7 +1075,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={imgFile ? "Add optional image instructions" : hasEnteredChat || buddyChat.turns.length > 0 ? contextualPlaceholder : imageLanding ? "add optional instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
+                    placeholder={imgFile ? "Add optional image instructions" : landingModel.model ? "Tell me what you’d like to change…" : hasEnteredChat || buddyChat.turns.length > 0 ? contextualPlaceholder : imageLanding ? "add optional instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
                     className={`pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white ${landingModel.model ? 'pl-4' : 'pl-14'} pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
                     disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
@@ -1285,7 +1274,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   );
 }
 
-function LandingHeader({ onLoginClick, page, generationSettings }: { onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction }) {
+function LandingHeader({ onLoginClick, page, generationSettings, createNew }: { onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
 
@@ -1339,7 +1328,7 @@ function LandingHeader({ onLoginClick, page, generationSettings }: { onLoginClic
   );
 
   return (
-    <header className="flex w-full flex-wrap items-center justify-between gap-y-2 relative landing-fade-in landing-delay-1" style={{ zIndex: 50 }}>
+    <header className={`flex w-full flex-wrap items-center justify-between gap-y-2 relative landing-fade-in landing-delay-1${createNew ? ' landing-header--model' : ''}`} style={{ zIndex: 50 }}>
       <a href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
         <img
           src="/logo.svg"
@@ -1356,6 +1345,10 @@ function LandingHeader({ onLoginClick, page, generationSettings }: { onLoginClic
         </span>
       </a>
 
+      {createNew && <button type="button" className="landing-create-new inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white/90 px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+        disabled={createNew.disabled} onClick={createNew.onClick}>
+        <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" /><span>Create new</span>
+      </button>}
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         {githubStarLink}

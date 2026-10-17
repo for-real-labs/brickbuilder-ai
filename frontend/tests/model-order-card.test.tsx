@@ -82,3 +82,11 @@ it('offers sizing separately from purchasing and locks it while the model update
   render(true);
   expect((container.querySelector('.model-resize-link') as HTMLButtonElement).disabled).toBe(true);
 });
+
+it('shows the total piece count instead of shipping copy in the compact order bar', () => {
+  act(() => root.render(<MobileModelOrderBar quote={{ ...quote, total_parts: 1234 }} loading={false} updating={false}
+    error={null} onOrder={vi.fn()} onDismiss={vi.fn()} showOnDesktop />));
+  expect(container.querySelector('.model-mobile-order span')?.textContent).toBe('1,234 pieces');
+  expect(container.textContent).not.toContain('Shipping included');
+  expect(container.querySelector('.model-mobile-order--all-screens')).not.toBeNull();
+});

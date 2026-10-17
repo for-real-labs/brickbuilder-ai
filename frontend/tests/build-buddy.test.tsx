@@ -395,3 +395,48 @@ it('aborts pending gift replies on an account change and keeps the previous owne
   await act(async () => chat.requestGiftReply(id, 'Gift', true));
   expect(plan.mock.calls[1][0].history).toEqual([]);
 });
+
+it('uses one animated model message, keeps it stable, and varies it on the next visit', async () => {
+  localStorage.setItem(BUDDY_SEEN_KEY, 'true');
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  const renderModel = () => act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]}
+    state="idle" username="Jake" selectedGenerationId="castle" model={{ id: 'castle', orderable: true }} />));
+  await renderModel();
+  const first = container.textContent;
+  expect(first).toContain('edit');
+  expect(first).toContain('order button');
+  expect(first).toContain('delivered');
+  expect(first).not.toContain('Welcome back');
+  expect(container.querySelectorAll('.pet-greeting')).toHaveLength(1);
+  expect(container.querySelector('.pet-response-word')).not.toBeNull();
+  expect(container.querySelector('button')).toBeNull();
+  await renderModel();
+  expect(container.textContent).toBe(first);
+  act(() => root.unmount()); root = createRoot(container);
+  await renderModel();
+  expect(container.textContent).not.toBe(first);
+});
+
+it('keeps image and gift replies free of suggestion buttons', async () => {
+  await act(async () => root.render(<BuildBuddyDialogue state="idle" generations={[]} turns={[
+    { id: 1, text: 'Use a photo', kind: 'upload', reply: 'Upload your photo below.' },
+    { id: 2, text: 'Find a gift', kind: 'gift', reply: 'A little castle!', buildPrompt: 'A little castle' },
+  ]} />));
+  expect(container.querySelector('.pet-chat-action')).toBeNull();
+});
+
+
+it('clears earlier chat when a model opens, keeps new edits visible, and clears them for the next ready model', async () => {
+  const earlier = { id: 1, text: 'An earlier idea', reply: 'An earlier reply' };
+  const edit = { id: 2, text: 'Add a drawbridge', reply: 'I’m making your changes.' };
+  const render = (id: string, turns: typeof earlier[]) => act(async () => root.render(<BuildBuddyDialogue
+    state="idle" generations={[]} turns={turns} selectedGenerationId={id} model={{ id, orderable: true }} />));
+  await render('castle', [earlier]);
+  expect(container.textContent).not.toContain('An earlier');
+  await render('castle', [earlier, edit]);
+  expect(container.textContent).toContain('Add a drawbridge');
+  expect(container.textContent).toContain('I’m making your changes.');
+  await render('castle-edited', [earlier, edit]);
+  expect(container.textContent).not.toContain('Add a drawbridge');
+  expect(container.querySelectorAll('.pet-greeting')).toHaveLength(1);
+});

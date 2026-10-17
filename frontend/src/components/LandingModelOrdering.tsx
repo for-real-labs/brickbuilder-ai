@@ -5,12 +5,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { GetPriceApiService, type GetPriceResponse } from '../services/getPriceApi';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { MobileModelOrderBar } from './MobileModelOrderBar';
-import { ModelOrderDialog } from './ModelOrderDialog';
 import { getOrderPricing } from '../utils/orderCheckout';
 
-export function LandingModelOrdering({ model, busy, showMobileBar, onDismiss, onHeightChange, dialogOpen, onCloseDialog, returnFocusRef }: {
+export function LandingModelOrdering({ model, busy, showMobileBar, onDismiss, onHeightChange }: {
   model: LandingModel; busy: boolean; showMobileBar: boolean; onDismiss: () => void; onHeightChange?: (height: number) => void;
-  dialogOpen: boolean; onCloseDialog: () => void; returnFocusRef: React.RefObject<HTMLButtonElement | null>;
 }) {
   const { session } = useAuth();
   const navigate = useNavigate();
@@ -40,10 +38,7 @@ export function LandingModelOrdering({ model, busy, showMobileBar, onDismiss, on
     } });
   };
   return <>
-    {showMobileBar && <MobileModelOrderBar quote={quote} loading={loading} updating={busy} error={error}
+    {showMobileBar && <MobileModelOrderBar showOnDesktop quote={quote} loading={loading} updating={busy} error={error}
       onHeightChange={onHeightChange} onDismiss={onDismiss} onOrder={() => order('mobile_bar')} />}
-    {dialogOpen && <ModelOrderDialog modelName={model.generation.name || model.generation.prompt || 'Your model'}
-      quote={quote} loading={loading} updating={busy} error={error} onOrder={() => order('card')}
-      onDismiss={onCloseDialog} returnFocusRef={returnFocusRef} />}
   </>;
 }

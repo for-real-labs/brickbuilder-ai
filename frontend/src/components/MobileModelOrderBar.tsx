@@ -9,12 +9,13 @@ interface Props {
   loading: boolean;
   updating: boolean;
   error: string | null;
+  showOnDesktop?: boolean;
   onOrder: () => void;
   onDismiss: () => void;
   onHeightChange?: (height: number) => void;
 }
 
-export function MobileModelOrderBar({ quote, loading, updating, error, onOrder, onDismiss, onHeightChange }: Props) {
+export function MobileModelOrderBar({ quote, loading, updating, error, onOrder, onDismiss, onHeightChange, showOnDesktop = false }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const pricing = getOrderPricing(quote);
   useEffect(() => {
@@ -27,12 +28,12 @@ export function MobileModelOrderBar({ quote, loading, updating, error, onOrder, 
     return () => { observer?.disconnect(); window.removeEventListener('resize', measure); onHeightChange(0); };
   }, [onHeightChange]);
 
-  return <div ref={ref} className="model-mobile-order" aria-label="Order your brick kit">
+  return <div ref={ref} className={`model-mobile-order${showOnDesktop ? ' model-mobile-order--all-screens' : ''}`} aria-label="Order your brick kit">
     <button type="button" className="model-mobile-order-dismiss" aria-label="Dismiss order banner" onClick={onDismiss}>
       <X size={18} aria-hidden="true" />
     </button>
     <div><strong>{loading ? 'Pricing…' : pricing ? formatOrderPrice(pricing.totalCents) : '—'}</strong>
-      <span>{error || (!loading && !pricing) ? 'Price unavailable right now' : 'Shipping included'}</span></div>
+      <span>{error || (!loading && !pricing) ? 'Price unavailable right now' : loading ? 'Counting pieces…' : `${quote?.total_parts.toLocaleString() ?? '—'} pieces`}</span></div>
     <button type="button" aria-label="Order this model" className="model-order-button"
       disabled={loading || updating || !!error || !pricing} onClick={onOrder}>
       Order my kit <ArrowRight size={18} aria-hidden="true" />
