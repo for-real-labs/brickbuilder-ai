@@ -29,7 +29,7 @@ const renderDialogue = async (username?: string, authLoading = false) => act(asy
 
 it('introduces Pip in a message, remembers the visit, and removes the two old captions', async () => {
   await renderDialogue();
-  expect(container.textContent).toBe('Hi! I’m Pip. What do you want to build with LEGO?');
+  expect(container.textContent).toBe('Hi! I’m Pip. Tell me what to build!');
   expect(container.querySelector('[role="log"]')?.getAttribute('aria-label')).toBe('Build buddy conversation');
   expect(container.querySelector('.pet-speech-heading')).toBeNull();
   expect(container.textContent).not.toContain('Ask Pip to build something');
@@ -61,12 +61,15 @@ it('waits for account details before including a name and works with blocked sto
   expect(container.textContent).toContain('Hi! I’m Pip');
 });
 
-it('provides 1,000 distinct LEGO or bricks invitations with optional names', () => {
+it('provides 1,000 short, open-ended invitations without offering specific objects', () => {
   expect(greetings).toHaveLength(1000);
   expect(new Set(greetings).size).toBe(1000);
   for (const greeting of greetings) {
-    expect(greeting).toMatch(/LEGO|bricks/);
-    expect(greeting.endsWith('?')).toBe(true);
+    const invitation = greeting.split(/[.!?]\s+/).at(-1)!;
+    expect(invitation).toMatch(/^(?:Tell|Show|Share|What|You (?:pick|choose)|Let me know)\b/i);
+    expect(greeting).toMatch(/[?!.]$/);
+    expect(greeting).not.toMatch(/[.!?]\s+Want to (?:build|make|try)\b/i);
+    expect(greeting).not.toMatch(/\b(?:a|an) (?:LEGO|brick) \w+/i);
     expect(formatBuddyGreeting(greeting, ' Jake ')).toContain('Welcome back, Jake!');
     expect(formatBuddyGreeting(greeting)).toMatch(/^Welcome back!/);
     expect(formatBuddyGreeting(greeting)).not.toContain('{name}');

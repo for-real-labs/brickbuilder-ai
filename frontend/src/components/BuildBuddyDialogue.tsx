@@ -70,7 +70,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     <div className="pet-dialogue-content">
       <PetPromptGreeting state={state} showPetSwitch={false}>
         {returning ? formatBuddyGreeting(welcome, greetingName)
-          : `Hi${greetingName ? `, ${greetingName}!` : '!'} I’m ${pet.name}. What do you want to build with LEGO?`}
+          : `Hi${greetingName ? `, ${greetingName}!` : '!'} I’m ${pet.name}. Tell me what to build!`}
       </PetPromptGreeting>
       <BuddyCompletedBuilds onView={onViewGeneration} />
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
