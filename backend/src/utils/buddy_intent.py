@@ -1,5 +1,6 @@
 """Ask Jev for a bounded routing decision; application code owns every action."""
 import json
+import logging
 import os
 from typing import Literal
 
@@ -7,7 +8,9 @@ import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
-from .llm_tool_conversation import post_json
+from .llm_tool_conversation import OPENAI_URL, post_json
+
+logger = logging.getLogger(__name__)
 
 BuddyIntent = Literal['generate', 'upload', 'question', 'chat', 'gift', 'clarify']
 
@@ -52,28 +55,57 @@ INTENT_QUESTION = {
 }
 
 
+async def classify_with_chat(state: dict) -> IntentDecision:
+    """Keep routing available when Jev is unconfigured or its account is unavailable."""
+    key = os.getenv('OPENAI_API_KEY')
+    if not key:
+        raise HTTPException(503, 'Message routing is unavailable. Please try again shortly.')
+    payload = {
+        'model': os.getenv('BUILD_BUDDY_MODEL', 'gpt-5.6-sol'),
+        'instructions': (
+            'Classify the message; do not reply to it or perform any action. '
+            + INTENT_QUESTION['instructions'] + '\nOptions: ' + json.dumps(INTENT_QUESTION['criteria'])
+            + '\nChoose clarify when the request is ambiguous. Return the intent and confidence from 0 to 1.'
+        ),
+        'input': json.dumps(state, ensure_ascii=False),
+        'max_output_tokens': 256, 'reasoning': {'effort': 'low'}, 'store': False,
+        'text': {'format': {'type': 'json_schema', 'name': 'buddy_intent', 'strict': True,
+                            'schema': {**IntentDecision.model_json_schema(), 'additionalProperties': False}}},
+    }
+    async with httpx.AsyncClient(timeout=15) as client:
+        result = await post_json(client, OPENAI_URL, {'Authorization': f'Bearer {key}'}, payload, 'OpenAI')
+    text = ' '.join(part.get('text', '') for item in result.get('output', [])
+                    for part in item.get('content', []) if part.get('type') == 'output_text')
+    return IntentDecision.model_validate(json.loads(text))
+
+
 async def classify_buddy_message(prompt: str, history: list[dict], has_image: bool,
                                  model_name: str | None, gift_planning: bool = False) -> IntentDecision:
     key = os.getenv('TYPESAFE_API_KEY')
-    if not key:
-        raise HTTPException(503, 'Message routing is unavailable. Please try again shortly.')
     state = {'message': prompt.strip(), 'has_image': has_image,
              'current_model': model_name, 'gift_planning': gift_planning, 'recent_messages': history[-4:]}
     # Keep the structured state below Jev's byte limit, including multilingual text.
     while len(json.dumps(state, ensure_ascii=False).encode()) > 24_000 and state['recent_messages']:
         state['recent_messages'].pop(0)
+    decision = None
+    if key:
+        try:
+            async with httpx.AsyncClient(timeout=8) as client:
+                result = await post_json(client, 'https://api.typesafe.ai/v1/systemone',
+                                         {'Authorization': f'Bearer {key}'}, {
+                                             'model': os.getenv('BUILD_BUDDY_INTENT_MODEL', 'jev-1.13.0'),
+                                             'state': state, 'questions': {'intent': INTENT_QUESTION},
+                                         }, 'TypeSafe')
+            answer = result['answers']['intent']
+            decision = IntentDecision(intent=answer['choice'], confidence=answer['confidence'])
+        except Exception:
+            logger.warning('Jev message routing unavailable; trying the configured chat provider')
     try:
-        async with httpx.AsyncClient(timeout=8) as client:
-            result = await post_json(client, 'https://api.typesafe.ai/v1/systemone',
-                                     {'Authorization': f'Bearer {key}'}, {
-                                         'model': os.getenv('BUILD_BUDDY_INTENT_MODEL', 'jev-1.13.0'),
-                                         'state': state, 'questions': {'intent': INTENT_QUESTION},
-                                     }, 'TypeSafe')
-        answer = result['answers']['intent']
-        decision = IntentDecision(intent=answer['choice'], confidence=answer['confidence'])
+        if decision is None:
+            decision = await classify_with_chat(state)
         if decision.confidence < 0.5:
             decision.intent = 'clarify'
         return decision
     except Exception:
-        # Unavailable or malformed classification must never start a generation.
+        # Neither provider may bypass intent detection by falling back to generation.
         raise HTTPException(503, 'I couldn’t understand that message just now. Please try again.') from None

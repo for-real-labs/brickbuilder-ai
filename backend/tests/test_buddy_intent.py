@@ -11,6 +11,11 @@ from src.requests import buildBuddy as buddy
 from src.utils import buddy_intent as routing
 
 
+@pytest.fixture(autouse=True)
+def isolate_provider_keys(monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+
+
 @pytest.mark.parametrize('intent', ['generate', 'upload', 'question', 'chat', 'gift', 'clarify'])
 def test_jev_returns_only_a_routing_decision_with_bounded_context(monkeypatch, intent):
     monkeypatch.setenv('TYPESAFE_API_KEY', 'server-test-key')
@@ -110,3 +115,37 @@ def test_intent_request_rejects_unbounded_or_invalid_input(values):
 
 def test_image_only_request_is_accepted():
     assert buddy.BuddyIntentRequest(has_image=True).prompt == ''
+
+
+@pytest.mark.parametrize('jev_available', [False, True])
+def test_chat_provider_classifies_when_jev_is_missing_or_returns_payment_required(monkeypatch, jev_available):
+    monkeypatch.setenv('OPENAI_API_KEY', 'chat-test-key')
+    monkeypatch.setenv('BUILD_BUDDY_MODEL', 'test-chat-model')
+    if jev_available:
+        monkeypatch.setenv('TYPESAFE_API_KEY', 'jev-test-key')
+    else:
+        monkeypatch.delenv('TYPESAFE_API_KEY', raising=False)
+    reply = {'output': [{'content': [{'type': 'output_text', 'text': '{"intent":"question","confidence":0.95}'}]}]}
+    post = AsyncMock(side_effect=[HTTPException(502, 'TypeSafe request failed: HTTP 402'), reply] if jev_available else [reply])
+    monkeypatch.setattr(routing, 'post_json', post)
+    result = asyncio.run(routing.classify_buddy_message('What bricks do you use?', [], False, None))
+    assert result.model_dump() == {'intent': 'question', 'confidence': 0.95}
+    _, url, headers, payload, provider = post.await_args.args
+    assert url == routing.OPENAI_URL
+    assert headers == {'Authorization': 'Bearer chat-test-key'}
+    assert provider == 'OpenAI'
+    assert payload['model'] == 'test-chat-model'
+    assert payload['store'] is False
+    assert payload['text']['format']['strict'] is True
+    assert payload['text']['format']['schema']['additionalProperties'] is False
+    assert json.loads(payload['input'])['message'] == 'What bricks do you use?'
+
+
+@pytest.mark.parametrize('reply', ['not json', '{"intent":"delete","confidence":1}', '{"intent":"generate","confidence":-1}'])
+def test_invalid_backup_decisions_still_fail_without_generation(monkeypatch, reply):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-key')
+    monkeypatch.delenv('TYPESAFE_API_KEY', raising=False)
+    monkeypatch.setattr(routing, 'post_json', AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': reply}]}]}))
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(routing.classify_buddy_message('castle', [], False, None))
+    assert exc.value.status_code == 503

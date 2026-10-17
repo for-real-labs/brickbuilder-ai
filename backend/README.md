@@ -41,7 +41,9 @@ A bare noun such as “castle” implies generation. Questions and chat go to
 planning keeps its conversation and explicit build-prompt handoff. Decisions
 below 0.5 confidence ask for clarification. Failed or invalid classification
 preserves the draft and never starts a build. Both endpoints share the existing
-per-identity short-window rate limit.
+per-identity short-window rate limit. If Jev is unavailable (including exhausted
+account credits), the configured chat provider performs the same structured
+intent classification. If both providers fail, no build starts.
 
 Returning greetings are chosen once per visit from 1,000 local invitations in
 `frontend/src/data/buddy-welcome-greetings.json`. Each mentions LEGO or bricks;
