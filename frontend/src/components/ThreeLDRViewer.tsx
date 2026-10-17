@@ -7,7 +7,9 @@ import { LDrawLoader } from 'three/addons/loaders/LDrawLoader.js';
 import { LDrawConditionalLineMaterial } from 'three/addons/materials/LDrawConditionalLineMaterial.js';
 import { RotateCcw, Ruler } from 'lucide-react';
 import { captureTransparentPreview } from '../utils/captureTransparentPreview';
-import { adjustModelCamera } from '../utils/adjustModelCamera';
+import { adjustModelCamera, configureModelViewRange } from '../utils/adjustModelCamera';
+import { disposeLDrawScene, instantiateLDraw, planLDrawInstances } from '../utils/instancedLDraw';
+import { createBaseplateStuds } from '../utils/baseplateStuds';
 
 // Build a simple stylized room with a table, sized to fit the model.
 const buildRoom = (
@@ -916,6 +918,7 @@ const createBuildAnimation = (
   maxDimension: number,
   totalDurationMsOverride?: number,
 ): BuildAnimationState | null => {
+  if (model.userData.instancedLDraw) return null;
   const partGroups = model.children.filter((child) => child.name !== 'baseplate');
   if (partGroups.length === 0) return null;
 
@@ -1473,6 +1476,7 @@ export function ThreeLDRViewer({
   // Track when meshes are ready to trigger material effect
   const [meshesReady, setMeshesReady] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [instanced, setInstanced] = useState(false);
   const [explodeMode, setExplodeMode] = useState<ExplodeMode>('assembled');
   const [showRulerGrid, setShowRulerGrid] = useState(false);
   const collisionCountRef = useRef(0);
@@ -1495,7 +1499,7 @@ export function ThreeLDRViewer({
     animationId: null
   });
 
-  const canExplodeModel = showExplodeControl && !loading && !error && currentStepIndex === undefined;
+  const canExplodeModel = showExplodeControl && !loading && !error && !instanced && currentStepIndex === undefined;
 
   const updateCollisionCount = (nextCount: number) => {
     if (collisionCountRef.current === nextCount) return;
@@ -1541,6 +1545,9 @@ export function ThreeLDRViewer({
     
     // Reset meshesReady for new model load
     setMeshesReady(false);
+    setLoading(true);
+    setError(null);
+    setInstanced(false);
     setExplodeMode('assembled');
     updateCollisionCount(0);
     stopExplodePhysicsAtCurrentPose(explodePhysicsRef.current);
@@ -1567,7 +1574,7 @@ export function ThreeLDRViewer({
         // Renderer setup
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
         if (presentation === 'model') renderer.setClearAlpha(0);
-        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(width, height);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 0.85;
@@ -1575,7 +1582,10 @@ export function ThreeLDRViewer({
 
         // Environment setup (soft studio lighting for reflections)
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        scene.environment = pmremGenerator.fromScene(new RoomEnvironment()).texture;
+        const environment = new RoomEnvironment();
+        scene.environment = pmremGenerator.fromScene(environment).texture;
+        environment.dispose();
+        pmremGenerator.dispose();
 
         // Enable shadows for the room
         renderer.shadowMap.enabled = true;
@@ -1658,10 +1668,11 @@ export function ThreeLDRViewer({
           // Determine what to load
           let modelSource: string;
           let objectUrl: string | null = null;
+          const instancePlan = modelContent && currentStepIndex === undefined ? planLDrawInstances(modelContent) : null;
           
           if (modelContent) {
             // Create a data URL for the model content
-            const blob = new Blob([modelContent], { type: 'text/plain' });
+            const blob = new Blob([instancePlan?.content ?? modelContent], { type: 'text/plain' });
             objectUrl = URL.createObjectURL(blob);
             modelSource = objectUrl;
           } else {
@@ -1673,15 +1684,13 @@ export function ThreeLDRViewer({
             modelSource,
             (model: THREE.Group) => {
               if (disposed) {
-                model.traverse(object => {
-                  if (object instanceof THREE.Mesh || object instanceof THREE.LineSegments) {
-                    object.geometry.dispose();
-                    const materials = Array.isArray(object.material) ? object.material : [object.material];
-                    materials.forEach(material => material.dispose());
-                  }
-                });
+                disposeLDrawScene(model);
                 if (objectUrl) URL.revokeObjectURL(objectUrl);
                 return;
+              }
+              if (instancePlan) {
+                model = instantiateLDraw(instancePlan, model);
+                setInstanced(true);
               }
               
               // Clear any existing models
@@ -1743,6 +1752,7 @@ export function ThreeLDRViewer({
               const size = bbox.getSize(new THREE.Vector3());
               const maxDimension = Math.max(size.x, size.y, size.z);
               const center = bbox.getCenter(new THREE.Vector3());
+              configureModelViewRange(camera, controls, maxDimension);
               
               // Calculate minimum distance needed to fit the model (50% more zoomed out)
               const minDistance = maxDimension * 1.8;
@@ -1800,8 +1810,6 @@ export function ThreeLDRViewer({
               if (showBaseplate) {
               // LDraw units: 1 stud spacing = 20 LDU
               const studSpacing = 20;
-              const studRadius = 6; // ~12 LDU diameter
-              const studHeight = 4;
               
               // Calculate baseplate bounds snapped to stud grid
               const padding = studSpacing * 2; // 2 studs of padding
@@ -1832,23 +1840,7 @@ export function ThreeLDRViewer({
               baseMesh.receiveShadow = true;
               baseplateGroup.add(baseMesh);
               
-              // Create stud geometry (reused for all studs)
-              const studGeometry = new THREE.CylinderGeometry(studRadius, studRadius, studHeight, 16);
-              const studMaterial = new THREE.MeshStandardMaterial({ 
-                color: 0xa8a8a8,
-                roughness: 0.7,
-                metalness: 0.1
-              });
-              
-              // Add studs at grid positions
-              for (let x = minX + studSpacing / 2; x < maxX; x += studSpacing) {
-                for (let z = minZ + studSpacing / 2; z < maxZ; z += studSpacing) {
-                  const stud = new THREE.Mesh(studGeometry, studMaterial);
-                  stud.position.set(x, bbox.min.y + studHeight / 2, z);
-                  stud.castShadow = true;
-                  baseplateGroup.add(stud);
-                }
-              }
+              baseplateGroup.add(createBaseplateStuds(minX, maxX, minZ, maxZ, bbox.min.y));
               
               scene.add(baseplateGroup);
               }
@@ -2053,6 +2045,10 @@ export function ThreeLDRViewer({
       stopExplodePhysicsAtCurrentPose(explodePhysicsRef.current);
       explodePhysicsRef.current = null;
       if (sceneRef.current.renderer) {
+        if (sceneRef.current.scene) {
+          disposeLDrawScene(sceneRef.current.scene);
+          sceneRef.current.scene.environment?.dispose();
+        }
         sceneRef.current.renderer.dispose();
         sceneRef.current.renderer.forceContextLoss();
         if (containerRef.current && sceneRef.current.renderer.domElement) {
