@@ -9,7 +9,7 @@
 .pet-greeting--edit { gap: 0; margin: -8px 0 8px; }
 .pet-greeting--edit .pet-avatar { width: 88px; height: 88px; margin-left: -12px; }
 .pet-speech { position: relative; min-width: 0; flex: 1; padding: 12px 16px 16px; border: 1px solid #e2e8f0; border-radius: 16px 16px 16px 4px; background: #fff; }
-.pet-speech-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.pet-speech-heading { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
 .pet-speech-heading > span { display: flex; align-items: center; gap: 6px; font-size: 12px; line-height: 1.5; font-weight: 500; color: #64748b; }
 .pet-speech-heading i { height: 6px; width: 6px; flex-shrink: 0; border-radius: 50%; background: #f44336; }
 .pet-speech-heading button { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; gap: 6px; min-width: 44px; min-height: 44px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 9999px; font-size: 12px; font-weight: 500; color: #475569; cursor: pointer; }
@@ -19,7 +19,6 @@
 .pet-greeting--edit .pet-speech-heading button { padding: 0; }
 .pet-greeting--edit .pet-speech-heading button > span { display: none; }
 .pet-greeting--edit .pet-speech p { font-size: 14px; }
-.pet-conversation-hint { display: block; margin: 0 0 8px 4px; text-align: left; color: #64748b; font-size: 12px; }
 .pet-dock { position: fixed; z-index: 60; bottom: max(14px, env(safe-area-inset-bottom)); left: max(14px, env(safe-area-inset-left)); display: flex; align-items: center; gap: 8px; padding: 3px 16px 3px 2px; border: 1px solid #e2e8f0; border-radius: 9999px; background: #fffffff5; box-shadow: 0 4px 16px #0f172a0d; cursor: pointer; text-align: left; backdrop-filter: blur(12px); }
 .pet-dock .pet-avatar { width: 55px; height: 55px; }
 .pet-dock-label { display: grid; gap: 2px; }
@@ -68,3 +67,35 @@
 }
 @media (max-width: 1023px) { .pet-dock--purchase { bottom: calc(96px + env(safe-area-inset-bottom)); } }
 @media (prefers-reduced-motion: reduce) { .pet-avatar > video { display: none; } .pet-choice, .pet-avatar > video { transition: none; } }
+
+.pet-dialogue { width: 100%; max-height: min(560px, 58dvh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin-bottom: 16px; padding: 4px 4px 8px; text-align: left; }
+.pet-dialogue-content, .pet-dialogue-turn, .pet-build-messages, .pet-notification-conversation { display: grid; gap: 12px; min-width: 0; }
+.pet-dialogue .pet-greeting { margin: 0; }
+.pet-chat-message { display: flex; align-items: flex-end; gap: 8px; min-width: 0; width: 100%; text-align: left; animation: pet-message-in .22s ease-out; }
+.pet-chat-message > .pet-avatar { width: 52px; height: 60px; }
+.pet-chat-bubble { min-width: 0; max-width: calc(100% - 60px); padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 18px 18px 18px 5px; background: #fff; color: #334155; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; box-shadow: 0 2px 6px #0f172a04; }
+.pet-chat-bubble p { margin: 0; white-space: pre-wrap; }
+.pet-chat-message--user { justify-content: flex-end; }
+.pet-chat-message--user .pet-chat-bubble { background: #fff1ef; border-color: #fddbd6; border-radius: 18px 18px 5px 18px; color: #7f332c; }
+.pet-chat-message--compact > .pet-avatar { width: 36px; height: 44px; }
+.pet-chat-message--compact .pet-chat-bubble { max-width: calc(100% - 44px); padding: 10px 12px; font-size: 13px; }
+.pet-chat-reference { display: block; width: min(220px, 100%); max-height: 180px; object-fit: contain; border-radius: 10px; margin-bottom: 8px; }
+.pet-chat-actions, .pet-chat-email { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pet-chat-action { position: relative; z-index: 20; display: inline-flex; min-height: 44px; align-items: center; justify-content: center; margin-top: 8px; padding: 8px 14px; border: 1px solid #e2e8f0; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; }
+.pet-chat-actions .pet-chat-action, .pet-chat-email .pet-chat-action { margin-top: 0; }
+.pet-chat-action:hover { border-color: #fecaca; background: #fff5f4; color: #b42318; }
+.pet-chat-action:disabled { opacity: .6; cursor: default; }
+.pet-chat-action:focus-visible, .pet-chat-email input:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; }
+.pet-chat-email input { flex: 1 1 160px; min-width: 0; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 16px; background: #fff; color: #0f172a; }
+.pet-chat-bubble .pet-chat-meta { margin-top: 8px; font-size: 12px; color: #64748b; }
+.pet-dialogue .pet-greeting, .pet-speech { animation: pet-message-in .22s ease-out; }
+@keyframes pet-message-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+@media (max-width: 639px) {
+  .pet-dialogue { max-height: 54dvh; padding-left: 0; padding-right: 0; }
+  .pet-chat-bubble { padding: 10px 12px; }
+  .pet-chat-message > .pet-avatar { width: 40px; height: 48px; }
+  .pet-chat-bubble { max-width: calc(100% - 48px); }
+  .pet-chat-message--compact > .pet-avatar { width: 28px; height: 36px; }
+  .pet-chat-message--compact .pet-chat-bubble { max-width: calc(100% - 36px); }
+}
+@media (prefers-reduced-motion: reduce) { .pet-chat-message, .pet-dialogue .pet-greeting, .pet-speech { animation: none; } }

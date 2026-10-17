@@ -1,140 +1,114 @@
-import React from 'react';
-import { createPortal } from 'react-dom';
-import { Bell, Check, Loader2, X } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
 import { GenerationEmailApi } from '../services/generationEmailApi';
-import posthog from 'posthog-js';
+import { PetChatMessage } from './PetCompanion';
 
 export function GetNotifiedButton({ generationId, promptOnStart = false, onPromptShown }: {
-  generationId: string;
-  promptOnStart?: boolean;
-  onPromptShown?: () => void;
+  generationId: string; promptOnStart?: boolean; onPromptShown?: () => void;
 }) {
   const { session } = useAuth();
-  return <NotificationButton key={`${generationId}:${session?.user.id || 'guest'}`}
-    generationId={generationId} signedIn={!!session} accountEmail={session?.user.email}
-    promptOnStart={promptOnStart} onPromptShown={onPromptShown} />;
+  return <BuddyNotification key={`${generationId}:${session?.user.id || 'guest'}`} generationId={generationId}
+    accountEmail={session?.user.email} signedIn={!!session} promptOnStart={promptOnStart} onPromptShown={onPromptShown} />;
 }
 
-function NotificationButton({ generationId, signedIn, accountEmail, promptOnStart, onPromptShown }: {
-  generationId: string; signedIn: boolean; accountEmail?: string;
+function BuddyNotification({ generationId, accountEmail, signedIn, promptOnStart, onPromptShown }: {
+  generationId: string; accountEmail?: string; signedIn: boolean;
   promptOnStart: boolean; onPromptShown?: () => void;
 }) {
-  const [subscribed, setSubscribed] = React.useState(false);
-  const [stage, setStage] = React.useState<'prompt' | 'email' | 'success' | null>(null);
-  const [email, setEmail] = React.useState(accountEmail || '');
-  const [recipient, setRecipient] = React.useState<string | null>(null);
-  const [busy, setBusy] = React.useState(false);
-  const [error, setError] = React.useState('');
-  const button = React.useRef<HTMLButtonElement>(null);
-  const input = React.useRef<HTMLInputElement>(null);
-  const dialog = React.useRef<HTMLDivElement>(null);
-  const statusRequest = React.useRef<AbortController | null>(null);
-  const promptShown = React.useRef(false);
-  const titleId = React.useId();
-  const descriptionId = `${titleId}-description`;
-  React.useEffect(() => {
+  const [stage, setStage] = useState<'prompt' | 'email' | 'success' | 'declined' | null>(promptOnStart ? 'prompt' : null);
+  const [email, setEmail] = useState(accountEmail || '');
+  const [recipient, setRecipient] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const [answeredYes, setAnsweredYes] = useState(false);
+  const input = useRef<HTMLInputElement>(null);
+  const statusRequest = useRef<AbortController | null>(null);
+  const promptShown = useRef(false);
+  const emailId = React.useId();
+  const properties = { generation_id: generationId, is_authenticated: signedIn, source: 'build_buddy_chat' };
+
+  useEffect(() => {
     if (!promptOnStart || promptShown.current) return;
     promptShown.current = true;
-    setStage(subscribed ? 'success' : 'prompt');
-    posthog.capture('generation_email_notification_prompt_shown', {
-      generation_id: generationId, is_authenticated: signedIn,
-    });
+    setStage(current => current === 'success' ? current : 'prompt');
+    posthog.capture('generation_email_notification_prompt_shown', { generation_id: generationId, is_authenticated: signedIn, source: 'build_buddy_chat' });
     onPromptShown?.();
-  }, [promptOnStart, subscribed, generationId, signedIn, onPromptShown]);
-  React.useEffect(() => {
+  }, [promptOnStart, generationId, signedIn, onPromptShown]);
+  useEffect(() => {
     const controller = new AbortController();
     statusRequest.current = controller;
     void GenerationEmailApi.status(generationId, controller.signal).then(result => {
-      if (!controller.signal.aborted) {
-        setSubscribed(result.subscribed);
-        setRecipient(result.email);
-        if (result.subscribed) setStage(current => current === 'prompt' ? 'success' : current);
+      if (!controller.signal.aborted && result.subscribed) {
+        setRecipient(result.email); setStage('success');
       }
     }).catch(() => {});
     return () => controller.abort();
   }, [generationId]);
-  React.useEffect(() => {
-    if (!stage) return;
-    (input.current || dialog.current?.querySelector<HTMLButtonElement>('button'))?.focus();
-  }, [stage]);
-  const open = stage !== null;
-  React.useEffect(() => {
-    if (!open) return;
-    const previous = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = previous; button.current?.focus(); };
-  }, [open]);
+  useEffect(() => { if (stage === 'email') input.current?.focus(); }, [stage]);
+
   const save = async () => {
-    if (busy || subscribed) return;
+    if (busy || stage === 'success') return;
+    if (!signedIn && !input.current?.reportValidity()) return;
     statusRequest.current?.abort();
     setBusy(true); setError('');
-    posthog.capture('generation_email_notification_requested', { generation_id: generationId, is_authenticated: signedIn });
+    posthog.capture('generation_email_notification_requested', properties);
     try {
       const result = await GenerationEmailApi.subscribe(generationId, signedIn ? undefined : email.trim());
-      setRecipient(result.email);
-      setSubscribed(true); setStage('success');
-      posthog.capture('generation_email_notification_subscribed', { generation_id: generationId, is_authenticated: signedIn });
+      if (!result.subscribed) throw new Error('I couldn’t save that notification. Please try again.');
+      setRecipient(result.email); setStage('success');
+      posthog.capture('generation_email_notification_subscribed', properties);
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : 'Please try again.');
     } finally { setBusy(false); }
   };
-  const close = () => {
-    setStage(null);
-    posthog.capture('generation_email_notification_dismissed', { generation_id: generationId, stage });
-  };
-  return <div className="relative z-20 mt-2">
-    <button ref={button} type="button" disabled={busy} aria-haspopup="dialog" aria-expanded={open}
-      onClick={() => {
-        posthog.capture('generation_email_notification_clicked', { generation_id: generationId, is_authenticated: signedIn, subscribed });
-        setError('');
-        if (subscribed) setStage('success');
-        else if (signedIn) void save();
-        else setStage('email');
-      }}
-      className="inline-flex min-h-10 max-w-full items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 disabled:cursor-default disabled:opacity-70">
-      {busy ? <Loader2 aria-hidden className="h-4 w-4 animate-spin" /> : subscribed ? <Check aria-hidden className="h-4 w-4" /> : <Bell aria-hidden className="h-4 w-4" />}
-      {subscribed ? 'We’ll email you' : 'Get notified'}
-    </button>
-    {subscribed && recipient && <p className="mt-2 break-all text-xs text-slate-600">
-      Emailing <strong className="font-semibold text-slate-900">{recipient}</strong>
-    </p>}
-    {!open && error && <p role="alert" className="mt-2 text-xs text-red-600">{error}</p>}
-    {open && createPortal(<div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4" onClick={event => { if (event.target === event.currentTarget && !busy) close(); }}>
-      <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={titleId} aria-describedby={descriptionId} className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
-        onKeyDown={event => {
-          if (event.key === 'Escape' && !busy) close();
-          if (event.key === 'Tab') {
-            const controls = Array.from(dialog.current!.querySelectorAll<HTMLElement>('button:not(:disabled),input:not(:disabled)'));
-            const first = controls[0], last = controls[controls.length - 1];
-            if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last?.focus(); }
-            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
-          }
-        }}>
-        <button type="button" aria-label="Close email notification" disabled={busy} onClick={close} className="absolute right-4 top-4 rounded-full p-2 text-slate-500 hover:bg-slate-100"><X className="h-5 w-5" /></button>
-        {stage === 'success' ? <>
-          <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-50 text-green-600"><Check aria-hidden className="h-6 w-6" /></div>
-          <h2 id={titleId} className="pr-9 text-xl font-semibold text-slate-900">You’re all set</h2>
-          <p id={descriptionId} className="mt-2 text-sm text-slate-600">{recipient
-            ? <>We'll send an email to <strong className="break-all font-semibold text-slate-900">{recipient}</strong> when your set is ready!</>
-            : 'Your email notification is saved. Refresh to see the recipient email address.'}</p>
-          <button type="button" onClick={close} className="mt-5 h-12 w-full rounded-full bg-[#f44336] px-5 font-semibold text-white hover:bg-[#ff6b6b]">Done</button>
-        </> : <>
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-[#f44336]"><Bell aria-hidden className="h-6 w-6" /></div>
-        <h2 id={titleId} className="pr-9 text-xl font-semibold text-slate-900">{stage === 'prompt' ? 'This may take up to 30 minutes to generate.' : 'Get notified'}</h2>
-        <p id={descriptionId} className="mt-2 text-sm text-slate-600">{stage === 'prompt'
-          ? 'Would you like to be notified?'
-          : 'We’ll send one email when your model is ready. No newsletter.'}</p>
-        <form onSubmit={event => { event.preventDefault(); void save(); }} className="mt-5">
-          <label htmlFor={`${titleId}-email`} className="text-sm font-medium text-slate-700">{signedIn ? 'Account email address' : 'Email address'}</label>
-          <input ref={input} id={`${titleId}-email`} type="email" autoComplete="email" placeholder="you@example.com" required={!signedIn} readOnly={signedIn} maxLength={254} disabled={busy} value={email} onChange={event => setEmail(event.target.value)} className="mt-2 h-12 w-full rounded-xl border border-slate-300 px-3 text-slate-900 placeholder:text-slate-400 focus:border-red-400 focus:outline-none focus:ring-2 focus:ring-red-100" />
-          {stage === 'prompt' && <p className="mt-2 text-xs text-slate-500">We’ll send one email when your model is ready. No newsletter.</p>}
-          {error && <p role="alert" className="mt-3 text-sm text-red-600">{error}</p>}
-          <button type="submit" disabled={busy} className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#f44336] px-5 font-semibold text-white hover:bg-[#ff6b6b] disabled:opacity-60">{busy && <Loader2 aria-hidden className="h-4 w-4 animate-spin" />}{stage === 'prompt' ? 'Get notified' : 'Notify me'}</button>
-          {stage === 'prompt' && <button type="button" disabled={busy} onClick={close} className="mt-2 min-h-11 w-full rounded-full px-5 text-sm font-medium text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336]">Not now</button>}
-        </form>
-        </>}
-      </div>
-    </div>, document.body)}
+  const buttonClass = 'pet-chat-action';
+  if (!stage) return <button type="button" className={buttonClass} onClick={() => {
+    setStage('prompt'); posthog.capture('generation_email_notification_clicked', properties);
+  }}>Get notified</button>;
+
+  return <div className="pet-notification-conversation">
+    <PetChatMessage compact>
+      <p>This might take a while, sometimes up to 30 minutes. Would you like an email when your build is ready?</p>
+      {stage === 'prompt' && <div className="pet-chat-actions">
+        <button type="button" disabled={busy} className={buttonClass} onClick={() => {
+          setAnsweredYes(true);
+          posthog.capture('build_buddy_notification_answered', { ...properties, answer: 'yes' });
+          if (signedIn) void save(); else setStage('email');
+        }}>{busy ? 'Saving…' : 'Yes, email me'}</button>
+        <button type="button" disabled={busy} className={buttonClass} onClick={() => {
+          statusRequest.current?.abort(); setStage('declined');
+          posthog.capture('generation_email_notification_dismissed', { ...properties, stage: 'prompt' });
+        }}>Not now</button>
+      </div>}
+    </PetChatMessage>
+    {answeredYes && stage !== 'declined' && <PetChatMessage compact user><p>Yes, email me.</p></PetChatMessage>}
+    {stage === 'email' && <>
+      <PetChatMessage compact>
+        <p>What email should I use? I’ll send one message when it’s ready.</p>
+        <label htmlFor={emailId} className="sr-only">Email address</label>
+        <div className="pet-chat-email">
+          <input ref={input} id={emailId} type="email" autoComplete="email" placeholder="you@example.com" required
+            maxLength={254} value={email} disabled={busy} onChange={event => setEmail(event.target.value)}
+            onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); event.stopPropagation(); void save(); } }} />
+          <button type="button" className={buttonClass} disabled={busy} onClick={() => void save()}>{busy ? 'Saving…' : 'Notify me'}</button>
+        </div>
+        <button type="button" className={buttonClass} disabled={busy} onClick={() => {
+          setStage('declined'); posthog.capture('generation_email_notification_dismissed', { ...properties, stage: 'email' });
+        }}>Not now</button>
+      </PetChatMessage>
+    </>}
+    {stage === 'success' && <PetChatMessage compact><p role="status">You’re all set! {recipient
+      ? <>I’ll email <strong>{recipient}</strong> when your build is ready.</>
+      : 'Your email notification is saved.'}</p></PetChatMessage>}
+    {stage === 'declined' && <>
+      <PetChatMessage compact user><p>Not now.</p></PetChatMessage>
+      <PetChatMessage compact><p>Okay! Your build will keep running. You can check it here anytime.</p>
+        <button type="button" className={buttonClass} onClick={() => {
+          setAnsweredYes(false); setError(''); setStage('prompt'); posthog.capture('generation_email_notification_clicked', properties);
+        }}>Get notified</button>
+      </PetChatMessage>
+    </>}
+    {error && <PetChatMessage compact><p role="alert">{error}</p></PetChatMessage>}
   </div>;
 }
