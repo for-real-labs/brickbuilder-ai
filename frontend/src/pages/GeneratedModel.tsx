@@ -55,6 +55,7 @@ import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePetActivity } from '../contexts/PetContext';
 import { ModelOrderCard } from "../components/ModelOrderCard";
 import { ModelShareMenu } from "../components/ModelShareMenu";
+import { FeedbackWidget } from "../components/FeedbackWidget";
 import "./GeneratedModel.css";
 import { UpdateGenerationNameApiService } from "../services/updateGenerationNameApi";
 import { UpdateImagePreviewApiService } from "../services/updateImagePreviewApi";
@@ -1952,7 +1953,7 @@ export default function GeneratedModel() {
         {/* Keep the completed model page visible while its edit runs. */}
         {showModelPage && (
           <>
-        <section className="model-workspace-title mt-2 mb-4 flex items-center justify-between gap-3">
+        <section className="model-workspace-title mt-2 mb-4 flex flex-wrap items-center justify-between gap-3">
           <div className="min-w-0">
           <p className="mb-1 text-xs font-normal text-slate-500">Your brick model</p>
           <GenerationTitle
@@ -1968,9 +1969,12 @@ export default function GeneratedModel() {
             }}
           />
           </div>
+          <div className="flex flex-wrap items-center gap-2">
+          <FeedbackWidget variant="content-report" />
           {currentGenerationId && mpdContent && !isSavePolling && !isLDrawUpload && (
             <ModelShareMenu generationId={currentGenerationId} modelName={modelName} />
           )}
+          </div>
         </section>
 
 <div className={`model-workspace ${showVoxelEditor ? "model-workspace-manual" : ""}`}>

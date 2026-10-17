@@ -53,6 +53,13 @@ and privacy policy, including account data, uploaded images/prompts, analytics,
 AI processing, and physical-goods orders. Rating, audience, app access, and
 production eligibility must be completed in that account before submission.
 
+The release PR adds **Report model** on generated-model pages, including guest
+access, using the existing feedback service. It includes only the model ID
+from the page query, excluding authentication tokens and other query data.
+Deploy this frontend change before Google review; the native app loads the
+hosted frontend, so the control does not require a new Android bundle.
+Google requires [in-app reporting for AI-generated content](https://support.google.com/googleplay/android-developer/answer/13985936?hl=en).
+
 On October 17, 2026, `jake@brickbuilder.ai` opened developer-account
 registration rather than an existing Play Console. App Store Connect also
 required sign-in. Submission is pending access to the intended developer

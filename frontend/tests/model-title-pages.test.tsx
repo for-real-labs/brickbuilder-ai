@@ -61,6 +61,7 @@ it.each(['owner', 'other'])('renders the saved title on the model page and gates
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
   expect(container.querySelector('h1')?.textContent).toBe('Sunny Dachshund');
   expect(!!container.querySelector('[aria-label="Rename model"]')).toBe(viewer === 'owner');
+  expect(Array.from(container.querySelectorAll('button')).some(button => button.textContent?.trim() === 'Report model')).toBe(true);
 });
 
 it('downloads the editable agent source archive for a completed Nova model and cleans up the temporary URL', async () => {
