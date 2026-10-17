@@ -1,3 +1,5 @@
+import ImageToModelPage from './pages/ImageToModelPage';
+import { IMAGE_MODEL_PAGES } from './imageModelPages';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -18,6 +20,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 
 const publicPages = [
+  ...IMAGE_MODEL_PAGES.map(({ path, output }) => ({ path, element: <ImageToModelPage output={output} /> })),
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },

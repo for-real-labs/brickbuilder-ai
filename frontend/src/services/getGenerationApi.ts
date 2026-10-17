@@ -23,6 +23,7 @@ export type GenerationStatus = 'queued' | 'started' | 'processing' | 'ldr_proces
 
 // Response type for polling endpoint
 export interface GetGenerationResponse {
+  glb_url?: string | null;
   previous_completed_generation_id?: string | null;
   model_generation_id?: string;
   version?: number;
@@ -51,6 +52,7 @@ export interface GetGenerationResponse {
 
 // Helper type for completed generations
 export interface CompletedGeneration {
+  glb_url?: string | null;
   generation_id: string;
   prompt: string;
   name?: string | null;
@@ -145,6 +147,7 @@ export class GetGenerationApiService {
           throw new Error('Generation completed but missing required content');
         }
         return {
+          glb_url: response.glb_url,
           generation_id: response.generation_id,
           prompt: response.prompt,
           name: response.name,

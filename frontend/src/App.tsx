@@ -1,3 +1,5 @@
+import ImageToModelPage from './pages/ImageToModelPage';
+import { IMAGE_MODEL_PAGES } from './imageModelPages';
 import { AiConsentDialog } from "./components/AiConsentDialog";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
@@ -48,6 +50,7 @@ export default function App() {
         {/* <AnnouncementBanner /> */}
         <Routes>
           {/* Public */}
+          {IMAGE_MODEL_PAGES.map(({ path, output }) => <Route key={path} path={path} element={<ImageToModelPage key={path} output={output} />} />)}
           <Route path="/" element={<LandingPage />} />
           <Route path="/use-ai-to-edit-ldraw" element={<LandingPage imageLandingPath="use-ai-to-edit-ldraw" />} />
           <Route path="/image-to-lego" element={<LandingPage imageLandingPath="image-to-lego" />} />

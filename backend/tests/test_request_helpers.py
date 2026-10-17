@@ -119,3 +119,32 @@ def test_image_preview_and_username_validators():
     for username in ("ab", "bad name", "x" * 31):
         with pytest.raises(ValidationError):
             UpdateUsernameRequest(username=username)
+
+
+@pytest.mark.parametrize('status,expected', [('completed', 'https://storage.example/model.glb'), ('processing', None)])
+def test_generation_exposes_original_mesh_only_when_completed(monkeypatch, status, expected):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from src.requests import getGeneration as module
+    row = {'id': 'mesh', 'status': status, 'user_id': 'owner', 'user_type': 'authenticated',
+           'glb_url': 'https://storage.example/model.glb'}
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value=row)))
+    result = asyncio.run(module.get_generation(module.GetGenerationRequest(generation_id='mesh'),
+        {'authenticated': True, 'user_id': 'owner'}))
+    assert result.glb_url == expected
+
+
+@pytest.mark.parametrize('path', ['/image-to-3d', '/image-to-glb', '/image-to-obj'])
+def test_image_model_entry_pages_preserve_attribution(path):
+    from src.utils.generation_attribution import normalize_entry_page
+    assert normalize_entry_page(path) == path
+    assert normalize_entry_page(path + '?token=private') is None
+
+
+def test_image_model_migration_matches_the_backend_entry_page_allowlist():
+    import re
+    from pathlib import Path
+    from src.utils.generation_attribution import ENTRY_PAGES
+    migration = (Path(__file__).resolve().parents[2] / 'supabase/migrations/20261017000001_image_model_entry_pages.sql').read_text()
+    constraint = migration.split('check (entry_page in (', 1)[1].split('))', 1)[0]
+    assert set(re.findall(r"'([^']+)'", constraint)) == ENTRY_PAGES

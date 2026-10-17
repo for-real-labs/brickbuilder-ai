@@ -1,3 +1,4 @@
+import { IMAGE_MODEL_PAGES } from '../imageModelPages';
 import { isNativeMobileShell } from '../utils/mobileShellAnalytics';
 import { openAiConsentSettings } from '../utils/aiConsent';
 import React from "react";
@@ -102,6 +103,11 @@ export function SiteFooter() {
             Terms of Service
           </Link>
         </div>
+        <nav aria-label="Image to 3D converters" className="flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 text-xs">
+          {IMAGE_MODEL_PAGES.map(({ path, name }) => <Link key={path} to={path}
+            onClick={() => posthog.capture('footer_image_model_converter_clicked', { destination: path })}
+            className="hover:text-[#f44336] transition-colors">{name}</Link>)}
+        </nav>
         <div className="text-xs text-slate-400">
           © 2026 BrickBuilder
         </div>

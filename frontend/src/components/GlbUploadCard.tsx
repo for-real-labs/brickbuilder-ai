@@ -8,7 +8,7 @@ import { GlbToBricksApiService } from '../services/glbToBricksApi';
 import { GetGenerationApiService } from '../services/getGenerationApi';
 
 /** Interactive GLB viewer built on raw three.js (OrbitControls + animation loop). */
-function GlbViewer({ objectUrl }: { objectUrl: string }) {
+export function GlbViewer({ objectUrl }: { objectUrl: string }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
