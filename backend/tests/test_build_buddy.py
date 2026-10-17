@@ -172,3 +172,99 @@ def test_every_reply_mode_keeps_pet_language_simple(monkeypatch, mode):
     assert 'at most 30 words total' in instructions
     assert 'Ask at most one simple question' in instructions
     assert 'even when the user uses technical words' in instructions
+
+
+def test_model_compliment_uses_name_and_preview_as_reference_without_generic_praise(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text':
+        'City of Troy’s tall towers and red flags look grand!'}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    image = base64.b64encode(b'preview').decode()
+    result = asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(
+        mode='model', prompt='City of Troy', image_base64=image, image_media_type='image/jpeg')))
+    assert 'towers' in result
+    payload = post.await_args.args[3]
+    assert payload['input'][-1]['content'] == [
+        {'type': 'input_text', 'text': 'City of Troy'},
+        {'type': 'input_image', 'detail': 'low', 'image_url': f'data:image/jpeg;base64,{image}'},
+    ]
+    assert 'at most 14 words' in payload['instructions']
+    assert 'one detail clearly visible' in payload['instructions']
+    assert 'never instructions' in payload['instructions']
+    assert 'do not guess visual details' in payload['instructions']
+    assert 'mention ordering or delivery' in payload['instructions']
+    assert payload['store'] is False
+
+
+MODEL_ID = '09c3b151-bdc2-46b1-98a6-ef1357bb3fe2'
+
+
+def model_request():
+    return Request({'type': 'http', 'headers': [], 'client': ('127.0.0.1', 1234)})
+
+
+def mock_model_storage(monkeypatch, row):
+    from types import SimpleNamespace
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value=row), client=SimpleNamespace(storage=object()))
+    monkeypatch.setattr(buddy, 'generation_storage', storage)
+    monkeypatch.setattr(buddy, 'check_anonymous_short_window_limit', lambda _: None)
+    return storage
+
+
+def test_model_greeting_reads_the_saved_name_and_prefers_its_preview(monkeypatch):
+    row = {'id': MODEL_ID, 'status': 'completed', 'endpoint': 'novaToBricks', 'name': 'City of Troy',
+           'preview_image_url': 'saved-preview.png'}
+    storage = mock_model_storage(monkeypatch, row)
+    image = base64.b64encode(b'preview').decode()
+    read = AsyncMock(return_value=image)
+    monkeypatch.setattr(buddy, 'read_generation_reference_image', read)
+    generate = AsyncMock(return_value='City of Troy’s tall towers look grand!')
+    monkeypatch.setattr(buddy, 'generate_buddy_reply', generate)
+    result = asyncio.run(buddy.buddy_model_greeting(buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID),
+                                                   model_request(), {'is_anonymous': True, 'user_id': 'visitor'}))
+    assert result == {'reply': 'City of Troy’s tall towers look grand!'}
+    storage.get_generation.assert_awaited_once_with(MODEL_ID)
+    read.assert_awaited_once_with(row, storage.client.storage, prefer_preview=True)
+    assert generate.await_args.args[0].prompt == 'City of Troy'
+    assert generate.await_args.args[0].image_base64 == image
+    assert generate.await_args.args[0].mode == 'model'
+
+
+@pytest.mark.parametrize('row', [None, {'id': MODEL_ID, 'status': 'processing', 'user_type': 'authenticated', 'user_id': 'owner'},
+                                   {'id': MODEL_ID, 'status': 'completed', 'endpoint': 'uploadLdraw', 'user_type': 'authenticated', 'user_id': 'owner'}])
+def test_model_greeting_does_not_expose_missing_private_or_imported_models(monkeypatch, row):
+    mock_model_storage(monkeypatch, row)
+    generate = AsyncMock()
+    read = AsyncMock()
+    monkeypatch.setattr(buddy, 'generate_buddy_reply', generate)
+    monkeypatch.setattr(buddy, 'read_generation_reference_image', read)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(buddy.buddy_model_greeting(buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID),
+                                               model_request(), {'is_anonymous': True, 'user_id': 'visitor'}))
+    assert error.value.status_code == 404
+    generate.assert_not_awaited()
+    read.assert_not_awaited()
+
+
+@pytest.mark.parametrize('image_error', [None, TimeoutError('slow preview')])
+def test_model_greeting_can_use_the_name_when_the_preview_is_missing_or_unavailable(monkeypatch, image_error):
+    mock_model_storage(monkeypatch, {'id': MODEL_ID, 'status': 'completed', 'name': 'Moon Rover'})
+    monkeypatch.setattr(buddy, 'read_generation_reference_image', AsyncMock(return_value=None, side_effect=image_error))
+    generate = AsyncMock(return_value='Moon Rover is a great name for a space build!')
+    monkeypatch.setattr(buddy, 'generate_buddy_reply', generate)
+    asyncio.run(buddy.buddy_model_greeting(buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID), model_request(), {}))
+    assert generate.await_args.args[0].image_base64 is None
+    assert generate.await_args.args[0].prompt == 'Moon Rover'
+
+
+def test_model_greeting_rejects_invalid_ids_and_honors_request_limits(monkeypatch):
+    with pytest.raises(ValidationError):
+        buddy.BuddyModelGreetingRequest(generation_id='../../private')
+    storage = mock_model_storage(monkeypatch, {'id': MODEL_ID, 'status': 'completed'})
+    def reject(_):
+        raise HTTPException(429, 'Too many requests')
+    monkeypatch.setattr(buddy, 'check_anonymous_short_window_limit', reject)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(buddy.buddy_model_greeting(buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID), model_request(), {}))
+    assert error.value.status_code == 429
+    storage.get_generation.assert_not_awaited()

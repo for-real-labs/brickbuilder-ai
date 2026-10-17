@@ -1025,7 +1025,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
-                model={landingModel.model ? { id: landingModel.model.generation.generation_id,
+                model={landingModel.model ? { id: landingModel.model.generation.generation_id, name: landingModel.model.generation.name,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}

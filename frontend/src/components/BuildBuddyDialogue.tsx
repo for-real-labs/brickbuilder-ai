@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { useAuth } from '../contexts/AuthContext';
+import { BuildBuddyApi } from '../services/buildBuddyApi';
 import { usePet } from '../contexts/PetContext';
 import { type PetState } from '../pets';
 import { PetChatMessage, PetPromptGreeting } from './PetCompanion';
@@ -22,11 +24,34 @@ export function BuddyBuildMessages({ generationId, status }: { generationId: str
   </div>;
 }
 
-function ModelGreeting({ state, orderable }: { state: PetState; orderable: boolean }) {
-  const [message] = useState(pickModelGreeting);
-  useEffect(() => { rememberModelGreeting(message); }, [message]);
+interface DialogueModel { id: string; name?: string | null; orderable: boolean }
+
+/** Keep the actual action words bold without interpreting model text as markup. */
+function emphasizeModelActions(text: string) {
+  return text.split(/(\b(?:edit|order)\b)/gi).map((part, index) => /^(edit|order)$/i.test(part)
+    ? <strong className="font-bold" key={index}>{part}</strong> : part);
+}
+
+function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel }) {
+  const { pet } = usePet();
+  const { session } = useAuth();
+  const [invitation] = useState(pickModelGreeting);
+  const [compliment, setCompliment] = useState<string | null>(null);
+  const name = model.name?.trim().slice(0, 200) || 'your model';
+  useEffect(() => { rememberModelGreeting(invitation); }, [invitation]);
+  useEffect(() => {
+    const controller = new AbortController();
+    const fallback = `Here’s ${name}!`;
+    const timeout = setTimeout(() => { controller.abort(); setCompliment(fallback); }, 22000);
+    void BuildBuddyApi.modelGreeting({ generationId: model.id, pet: pet.id }, session?.access_token, controller.signal)
+      .then(reply => { if (!controller.signal.aborted) setCompliment(reply); })
+      .catch(() => { if (!controller.signal.aborted) setCompliment(fallback); })
+      .finally(() => clearTimeout(timeout));
+    return () => { controller.abort(); clearTimeout(timeout); };
+  }, [model.id, name, pet.id, session?.access_token]);
+  const action = model.orderable ? invitation : 'Tell me if you want to edit this model!';
   return <PetPromptGreeting state={state} showPetSwitch={false}>
-    {orderable ? message : 'This build looks great! Tell me if you want to edit this model!'}
+    {emphasizeModelActions(`${compliment || `I’m looking at ${name}…`} ${action}`)}
   </PetPromptGreeting>;
 }
 
@@ -34,7 +59,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
-  model?: { id: string; orderable: boolean } | null;
+  model?: DialogueModel | null;
   children?: React.ReactNode;
 }) {
   const { pet } = usePet();
@@ -83,7 +108,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
-      {model ? <ModelGreeting key={model.id} state={state} orderable={model.orderable} />
+      {model ? <ModelGreeting key={model.id} state={state} model={model} />
         : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
         : <PetPromptGreeting state={state} showPetSwitch={false}>
         {returning ? formatBuddyGreeting(welcome, greetingName)

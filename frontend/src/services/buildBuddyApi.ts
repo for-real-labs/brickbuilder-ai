@@ -38,6 +38,18 @@ async function sendReply(request: BuddyReplyRequest, authToken: string | undefin
 }
 
 export const BuildBuddyApi = {
+  async modelGreeting(request: { generationId: string; pet: string }, authToken: string | undefined, signal: AbortSignal): Promise<string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await apiFetch(`${base}/build-buddy/model-greeting`, {
+      method: 'POST', headers, signal,
+      body: JSON.stringify({ generation_id: request.generationId, pet: request.pet }),
+    });
+    if (!response.ok) throw new Error('Model greeting unavailable.');
+    const data = await response.json();
+    if (typeof data.reply !== 'string' || !data.reply.trim()) throw new Error('Empty model greeting');
+    return data.reply.trim().slice(0, 240);
+  },
   async classify(request: { prompt: string; history: BuddyHistoryMessage[]; hasImage: boolean; modelName?: string; giftPlanning?: boolean },
     authToken: string | undefined, signal: AbortSignal): Promise<BuddyIntentDecision> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
