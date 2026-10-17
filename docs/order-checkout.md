@@ -60,7 +60,10 @@ Stripe.js v10 uses initCheckoutElementsSdk with ui_mode elements. Backend pins 2
 
 ## Instructions post card
 
-Contact & delivery offers an unchecked `ship instructions post card` option.
+Contact & delivery offers an unchecked `Send a custom instructions postcard (+$5.00)` option.
+Selecting it adds a separate $5.00 USD line item to the order summary and Stripe
+Checkout Session, including printing and postage. The fee is charged once per
+order, after the kit discount; the discount applies only to parts and kit shipping.
 The info button opens an accessible modal with the model name, its saved render
 (or a fresh viewer capture), a theme based on the model’s subject, and a scannable
 QR code linking to `https://brickbuilder.ai/instructions?id=<generation id>`.
@@ -78,8 +81,9 @@ The choice is sent as the boolean `shipInstructionsPostcard` in checkout creatio
 Stripe metadata carries it through payment to the webhook, which saves
 `instructions_postcard` and, when selected, `instructions_url` in the order’s
 `shipping_info`. The owner notification includes whether to pack the card.
-Older clients and existing Stripe sessions default to no postcard. Selecting it
-does not change the kit’s price. Selection and preview analytics omit names,
+Older clients default to no postcard. Already-created Stripe sessions retain
+their original price. The server determines the postcard fee from the boolean
+selection and does not trust a browser-provided price. Selection and preview analytics omit names,
 contact details, and model images.
 
 Postcard checks: `npm --prefix frontend test` and

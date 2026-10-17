@@ -54,7 +54,7 @@ export default function OrderKit() {
   const [quoteLoading, setQuoteLoading] = React.useState(false);
   const [quoteError, setQuoteError] = React.useState(false);
   const [quoteAttempt, setQuoteAttempt] = React.useState(0);
-  const pricing = getOrderPricing(quote);
+  const pricing = getOrderPricing(quote, shipInstructionsPostcard);
   const [step, setStep] = React.useState(0);
   const [country, setCountry] = React.useState<string>('US');
   const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
@@ -246,6 +246,7 @@ export default function OrderKit() {
               <dl className="checkout-price-list">
                 <div><dt>Parts subtotal</dt><dd>{formatOrderPrice(pricing.fullPartSubtotalCents)}</dd></div>
                 <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.fullShippingCents)}</dd></div>
+                {pricing.postcardCents > 0 && <div><dt>Custom instructions postcard</dt><dd>{formatOrderPrice(pricing.postcardCents)}</dd></div>}
                 <div className="checkout-discount"><dt>BrickBuilder Launch Discount</dt><dd>−{formatOrderPrice(pricing.fullTotalCents - pricing.totalCents)}</dd></div>
                 <div className="checkout-total"><dt>Total</dt><dd><s>{formatOrderPrice(pricing.fullTotalCents)}</s><span>USD</span>{formatOrderPrice(pricing.totalCents)}</dd></div>
               </dl>

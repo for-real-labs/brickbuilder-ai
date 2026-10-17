@@ -24,6 +24,7 @@ SHIPPING_COUNTRY_CODES = {row['code'] for row in SHIPPING_COUNTRIES}
 # supply their address via payment_intent_data.shipping instead of that selector.
 STRIPE_SELECTOR_UNSUPPORTED = {'AS', 'CC', 'CU', 'CX', 'FM', 'HM', 'IR', 'KP', 'MH', 'MP', 'NF', 'PW', 'SY', 'UM', 'VI'}
 STRIPE_SHIPPING_COUNTRIES = sorted(SHIPPING_COUNTRY_CODES - STRIPE_SELECTOR_UNSUPPORTED)
+INSTRUCTIONS_POSTCARD_PRICE_CENTS = 500
 
 
 class ShippingAddress(BaseModel):
@@ -104,9 +105,11 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         if not parts_list_csv_url:
             raise HTTPException(status_code=400, detail="Kit parts list is unavailable")
         quote = await get_price(GetPriceRequest(generation_id=request.generationId), auth_info)
-        amount = checkout_price_cents(quote)
+        kit_amount = checkout_price_cents(quote)
+        postcard_amount = INSTRUCTIONS_POSTCARD_PRICE_CENTS if request.shipInstructionsPostcard else 0
         track_api_call(endpoint="/create-checkout-session", user_id=user_email,
-                       request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})
+                       request_data={"generationId": request.generationId, "uiMode": request.uiMode,
+                                     "priceCents": kit_amount + postcard_amount})
         metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url,
                     "shipInstructionsPostcard": str(request.shipInstructionsPostcard).lower()}
         if request.brickowlCartId:
@@ -115,13 +118,22 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
             "line_items": [{"price_data": {
                 "currency": "usd",
                 "product_data": {"name": generation.get('name') or 'Custom brick model'},
-                "unit_amount": amount,
+                "unit_amount": kit_amount,
             }, "quantity": 1}],
             "mode": "payment", "ui_mode": request.uiMode,
             "shipping_address_collection": {"allowed_countries": STRIPE_SHIPPING_COUNTRIES},
             "metadata": metadata,
             "phone_number_collection": {"enabled": False},
         }
+        if request.shipInstructionsPostcard:
+            params['line_items'].append({"price_data": {
+                "currency": "usd",
+                "product_data": {
+                    "name": "Custom instructions postcard",
+                    "description": "Printed postcard with your model and a QR code to its building instructions. Postage included.",
+                },
+                "unit_amount": INSTRUCTIONS_POSTCARD_PRICE_CENTS,
+            }, "quantity": 1})
         shipping_address_provided = request.shippingAddress is not None
         if shipping_address_provided:
             params.pop('shipping_address_collection')
