@@ -1,5 +1,12 @@
 import * as THREE from 'three';
 
+/** Keep large models inside the camera's clipping range while zooming out. */
+export function configureModelViewRange(camera: THREE.PerspectiveCamera, controls: { maxDistance: number }, maxDimension: number) {
+  controls.maxDistance = maxDimension * 15;
+  camera.far = Math.max(10000, maxDimension * 30);
+  camera.updateProjectionMatrix();
+}
+
 /** Keyboard equivalent of the postcard viewer's orbit/zoom gestures. */
 export function adjustModelCamera(camera: THREE.PerspectiveCamera, controls: {
   target: THREE.Vector3; minDistance: number; maxDistance: number; update: () => void;
