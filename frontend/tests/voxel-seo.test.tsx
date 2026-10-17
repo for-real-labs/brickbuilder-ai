@@ -30,9 +30,17 @@ it.each(VOXEL_CONVERTERS)('publishes distinct useful SEO content at $path', ({ p
   }
 });
 
-it.each(['/obj-to-glb', '/glb-to-obj', '/glb-to-lego', '/image-to-lego', '/photo-to-lego', ...VOXEL_CONVERTERS.map(({ path }) => path)])('promotes LEGO design from objects, images, and text at %s', path => {
+it.each(['/obj-to-glb', '/glb-to-obj', '/glb-to-lego', ...VOXEL_CONVERTERS.map(({ path }) => path)])('promotes LEGO design from objects, images, and text at %s', path => {
   const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
   const callout = document.querySelector('aside[aria-label="Design LEGO models"]')!;
   expect(callout).not.toBeNull();
   for (const target of ['/glb-to-lego', '/image-to-lego', '/#landing-build-prompt']) expect(callout.querySelector(`a[href="${target}"]`)).not.toBeNull();
+});
+
+
+it.each(['/image-to-lego', '/photo-to-lego'])('keeps image landing pages focused on the build dialogue at %s', path => {
+  const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
+  expect(document.querySelector('aside[aria-label="Design LEGO models"]')).toBeNull();
+  expect(document.querySelector('[aria-label="Build suggestions"]')).not.toBeNull();
+  expect(document.querySelector('[aria-label="Build dialogue"] input[type="file"]')).not.toBeNull();
 });
