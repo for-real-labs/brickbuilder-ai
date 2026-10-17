@@ -1,0 +1,429 @@
+{
+  "date": "2026-10-16",
+  "provider": "fal.ai",
+  "model": "bria/video/background-removal",
+  "background": "Transparent",
+  "output_container_and_codec": "webm_vp9",
+  "budget_usd": 200,
+  "additional_clips": 8,
+  "additional_actual_spend_usd": 5.646664,
+  "total_background_removal_actual_spend_usd": 6.352497,
+  "approximate_total_pet_spend_usd": 9.5,
+  "cost_verification": "Per-request costs read from the fal.ai request history. Account balance changed independently; no balance-delta assumption is used.",
+  "clips": [
+    {
+      "pet": "clik",
+      "state": "building",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaac6/F-vgpLTj02a60hzhDReHg_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeacad/zMWeDS42Khj0yyBozivWP_95bcf920-2e39-44aa-9a14-79a8f1bb849e.webm",
+      "request_id": "01a14738-ca9d-7573-ba71-8a850ded19b1",
+      "local_asset": "frontend/public/pets/clik-building-alpha.webm",
+      "size_bytes": 483696,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 171782,
+          "opaque_pixels": 83209,
+          "soft_pixels": 7153
+        },
+        {
+          "second": 1,
+          "clear_pixels": 170286,
+          "opaque_pixels": 82550,
+          "soft_pixels": 9308
+        },
+        {
+          "second": 2,
+          "clear_pixels": 170039,
+          "opaque_pixels": 80737,
+          "soft_pixels": 11368
+        },
+        {
+          "second": 3,
+          "clear_pixels": 169666,
+          "opaque_pixels": 81925,
+          "soft_pixels": 10553
+        },
+        {
+          "second": 4,
+          "clear_pixels": 173264,
+          "opaque_pixels": 79063,
+          "soft_pixels": 9817
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "clik",
+      "state": "celebrating",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaad2/ksiNxs3i8th_8eLkF30OD_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeacb0/E-_EgxzizT2cui-jEPEFj_3e34f91d-25ba-43e2-a6de-81d6e76c6967.webm",
+      "request_id": "01a14738-dbfe-7a63-a55a-a85aec400b4f",
+      "local_asset": "frontend/public/pets/clik-celebrating-alpha.webm",
+      "size_bytes": 553048,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 171784,
+          "opaque_pixels": 83193,
+          "soft_pixels": 7167
+        },
+        {
+          "second": 1,
+          "clear_pixels": 170167,
+          "opaque_pixels": 80823,
+          "soft_pixels": 11154
+        },
+        {
+          "second": 2,
+          "clear_pixels": 170367,
+          "opaque_pixels": 81020,
+          "soft_pixels": 10757
+        },
+        {
+          "second": 3,
+          "clear_pixels": 172444,
+          "opaque_pixels": 80267,
+          "soft_pixels": 9433
+        },
+        {
+          "second": 4,
+          "clear_pixels": 170763,
+          "opaque_pixels": 80919,
+          "soft_pixels": 10462
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "clik",
+      "state": "idle",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaab8/ygXmKXAvve-LXwFK-cyAk_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeacac/qc2_ulP4UqY4RN4v5t5WG_f10f8116-94e7-43b8-ac90-cc1b52abaef8.webm",
+      "request_id": "01a14738-bd73-7ca2-9560-6fc16774c3c9",
+      "local_asset": "frontend/public/pets/clik-idle-alpha.webm",
+      "size_bytes": 644578,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 172017,
+          "opaque_pixels": 83417,
+          "soft_pixels": 6710
+        },
+        {
+          "second": 1,
+          "clear_pixels": 171604,
+          "opaque_pixels": 81092,
+          "soft_pixels": 9448
+        },
+        {
+          "second": 2,
+          "clear_pixels": 170310,
+          "opaque_pixels": 81392,
+          "soft_pixels": 10442
+        },
+        {
+          "second": 3,
+          "clear_pixels": 170610,
+          "opaque_pixels": 81463,
+          "soft_pixels": 10071
+        },
+        {
+          "second": 4,
+          "clear_pixels": 170945,
+          "opaque_pixels": 81460,
+          "soft_pixels": 9739
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "nib",
+      "state": "building",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaac5/pof4UT-sGu1BCqxoNP1Nw_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeacad/WQql5sYu5B7RHucgP_Mvj_49b51da1-7188-4248-be14-dd25838b7e4d.webm",
+      "request_id": "01a14738-c5db-70e2-b7b4-7d517727fe58",
+      "local_asset": "frontend/public/pets/nib-building-alpha.webm",
+      "size_bytes": 590938,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 183233,
+          "opaque_pixels": 72465,
+          "soft_pixels": 6446
+        },
+        {
+          "second": 1,
+          "clear_pixels": 183662,
+          "opaque_pixels": 70570,
+          "soft_pixels": 7912
+        },
+        {
+          "second": 2,
+          "clear_pixels": 182234,
+          "opaque_pixels": 70603,
+          "soft_pixels": 9307
+        },
+        {
+          "second": 3,
+          "clear_pixels": 181723,
+          "opaque_pixels": 71589,
+          "soft_pixels": 8832
+        },
+        {
+          "second": 4,
+          "clear_pixels": 181120,
+          "opaque_pixels": 71077,
+          "soft_pixels": 9947
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "nib",
+      "state": "celebrating",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaad2/GYkZSHZ57Zh5rveIfp7Or_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeacb0/9vacA8hhqtT086xa89i8I_f2172283-591b-4105-9033-d3290b1b4fc9.webm",
+      "request_id": "01a14738-d73d-7ff1-968e-6f2f27eb4f85",
+      "local_asset": "frontend/public/pets/nib-celebrating-alpha.webm",
+      "size_bytes": 528344,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 183063,
+          "opaque_pixels": 72367,
+          "soft_pixels": 6714
+        },
+        {
+          "second": 1,
+          "clear_pixels": 180810,
+          "opaque_pixels": 71877,
+          "soft_pixels": 9457
+        },
+        {
+          "second": 2,
+          "clear_pixels": 184706,
+          "opaque_pixels": 68777,
+          "soft_pixels": 8661
+        },
+        {
+          "second": 3,
+          "clear_pixels": 181140,
+          "opaque_pixels": 71740,
+          "soft_pixels": 9264
+        },
+        {
+          "second": 4,
+          "clear_pixels": 181508,
+          "opaque_pixels": 71469,
+          "soft_pixels": 9167
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "nib",
+      "state": "idle",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaab4/6j517GR5fPgCTvvBtFGH5_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeaca7/S3nEya-ZjTr0nJwY5Wi37_3df50c5d-ea9a-44cb-aaa6-1b7ebf0678bf.webm",
+      "request_id": "01a14738-033c-7552-9450-4398c536b629",
+      "local_asset": "frontend/public/pets/nib-idle-alpha.webm",
+      "size_bytes": 424955,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 183206,
+          "opaque_pixels": 72542,
+          "soft_pixels": 6396
+        },
+        {
+          "second": 1,
+          "clear_pixels": 183517,
+          "opaque_pixels": 70422,
+          "soft_pixels": 8205
+        },
+        {
+          "second": 2,
+          "clear_pixels": 185094,
+          "opaque_pixels": 69348,
+          "soft_pixels": 7702
+        },
+        {
+          "second": 3,
+          "clear_pixels": 184654,
+          "opaque_pixels": 69781,
+          "soft_pixels": 7709
+        },
+        {
+          "second": 4,
+          "clear_pixels": 182387,
+          "opaque_pixels": 71450,
+          "soft_pixels": 8307
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "pip",
+      "state": "building",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaace/jnEidbdIgldYEF4CArEy8_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeacaf/LLisC1B-5P-0YG5zk_ZHq_19d66132-e290-46c5-a561-03a046bdde26.webm",
+      "request_id": "01a14738-d0ea-7be3-b7d7-689e8757d5a6",
+      "local_asset": "frontend/public/pets/pip-building-alpha.webm",
+      "size_bytes": 421433,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 194445,
+          "opaque_pixels": 63421,
+          "soft_pixels": 4278
+        },
+        {
+          "second": 1,
+          "clear_pixels": 195181,
+          "opaque_pixels": 61241,
+          "soft_pixels": 5722
+        },
+        {
+          "second": 2,
+          "clear_pixels": 197030,
+          "opaque_pixels": 59875,
+          "soft_pixels": 5239
+        },
+        {
+          "second": 3,
+          "clear_pixels": 192995,
+          "opaque_pixels": 63037,
+          "soft_pixels": 6112
+        },
+        {
+          "second": 4,
+          "clear_pixels": 190151,
+          "opaque_pixels": 65075,
+          "soft_pixels": 6918
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "pip",
+      "state": "celebrating",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaadd/_U-C9Y3UhSH9nsBD4SPso_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeacb2/g-vc8YaUJX1fCa1h8qEMW_cd6bfd1a-f2ce-4263-948f-fc5ac68746f7.webm",
+      "request_id": "01a14738-e096-7551-9da2-90c302ae3e22",
+      "local_asset": "frontend/public/pets/pip-celebrating-alpha.webm",
+      "size_bytes": 339338,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 194369,
+          "opaque_pixels": 63579,
+          "soft_pixels": 4196
+        },
+        {
+          "second": 1,
+          "clear_pixels": 190831,
+          "opaque_pixels": 64206,
+          "soft_pixels": 7107
+        },
+        {
+          "second": 2,
+          "clear_pixels": 193881,
+          "opaque_pixels": 62219,
+          "soft_pixels": 6044
+        },
+        {
+          "second": 3,
+          "clear_pixels": 189533,
+          "opaque_pixels": 66134,
+          "soft_pixels": 6477
+        },
+        {
+          "second": 4,
+          "clear_pixels": 194983,
+          "opaque_pixels": 60504,
+          "soft_pixels": 6657
+        }
+      ],
+      "actual_cost_usd": 0.705833
+    },
+    {
+      "pet": "pip",
+      "state": "idle",
+      "request_id": "01a1471e-bdbb-7ac3-adb6-65d7db60e7ab",
+      "source_url": "https://v3b.fal.media/files/b/0aaeaaad/3DvgX6a00wwb4f9JOZvo3_output.mp4",
+      "output_url": "https://v3b.fal.media/files/b/0aaeac02/2x12oKtATp5ctYCMuDomP_24a69690-380e-41d6-8614-e829beb5041e.webm",
+      "local_asset": "frontend/public/pets/pip-idle-alpha.webm",
+      "size_bytes": 235311,
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "alpha_mode": 1,
+      "actual_cost_usd": 0.705833,
+      "samples": [
+        {
+          "frame": 0,
+          "transparent_pixels": 194894,
+          "opaque_pixels": 61737,
+          "soft_edge_pixels": 5513
+        },
+        {
+          "frame": 1,
+          "transparent_pixels": 195999,
+          "opaque_pixels": 61020,
+          "soft_edge_pixels": 5125
+        },
+        {
+          "frame": 2,
+          "transparent_pixels": 194672,
+          "opaque_pixels": 61728,
+          "soft_edge_pixels": 5744
+        },
+        {
+          "frame": 3,
+          "transparent_pixels": 191054,
+          "opaque_pixels": 65344,
+          "soft_edge_pixels": 5746
+        },
+        {
+          "frame": 4,
+          "transparent_pixels": 194873,
+          "opaque_pixels": 61748,
+          "soft_edge_pixels": 5523
+        }
+      ]
+    }
+  ]
+}

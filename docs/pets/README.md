@@ -12,7 +12,8 @@ Only the selected visible pet loads a clip. The picker uses still images.
 
 ## Media
 
-`frontend/public/pets/` contains three WebP posters and nine silent MP4 clips.
+`frontend/public/pets/` contains three WebP posters and nine silent VP9 alpha WebM clips,
+plus the original MP4s for comparison.
 Each pet has `idle`, `building` and `celebrating` clips. Listening uses the idle
 clip while the prompt is focused. A successful build or edit plays a five-second
 celebration; a failed request returns to idle.
@@ -39,9 +40,8 @@ prompts, source URLs, request IDs, filenames, duration and cost. Nine completed
 five-second generations cost $0.35 each ($3.15 total), verified against the
 account credit change from $14.53 to $11.38. No retries were charged.
 
-The shipped videos are 512 × 512, 24 fps, H.264/yuv420p with fast-start metadata
-and no audio. The white studio background blends into the light companion
-surfaces using multiply blending. The original high-resolution generations and
+The shipped animations are 512 × 512, 24 fps VP9 with alpha and no audio,
+under 650 KiB each. They use normal alpha compositing on every app surface. The original high-resolution generations and
 visual QA evidence are preserved locally under
 `/Users/jakejohnson/.codex/artifacts/brickbuilder-pets-01a146dc/`.
 
@@ -54,3 +54,25 @@ shipped media file. Browser checks cover the landing conversation, picker,
 companion on secondary pages, and the generated model editor at desktop and
 mobile widths. Model-page visual checks use an isolated local fixture API;
 they do not submit paid model-generation or edit requests.
+
+## Transparent animations
+
+Pip, Nib and Clik use transparent WebM for idle/listening, building and celebrating.
+Bria video background removal on fal.ai processed the nine existing animations;
+the character motion was not regenerated. `transparency-ledger.json` records
+source URLs, output URLs, request IDs, per-request costs and alpha validation.
+The first Pip experiment remains documented in `transparency-preview.json`.
+
+Each removal cost $0.705833, verified in fal.ai request history. The eight added
+clips cost $5.646664; all nine removals cost $6.352497. Together with the original
+animation generation, total pet spend is about $9.50 of the $200 budget.
+
+The renderer hides the still poster once alpha playback starts, preventing it
+from showing through the moving character. Pause, reduced motion or a playback
+error restores the transparent still. Unsupported video browsers use that still.
+
+`/pet-preview` compares each pet and activity with its matching original MP4 on
+checkerboard, cream or midnight backgrounds. Browser checks verify all nine clips
+start at 512 × 512 and hide their poster. Decoding alpha at five points per clip
+confirms clear background, opaque subject and soft edges. Mobile and desktop
+layouts were checked in Chromium; Safari alpha playback is not verified.

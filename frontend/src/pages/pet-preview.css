@@ -1,0 +1,37 @@
+.pet-preview-page { max-width: 980px; margin: 0 auto; padding: 28px 24px 110px; color: #302722; }
+.pet-preview-back { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; color: #877269; font-size: 13px; }
+.pet-preview-page header { margin: 28px 0 30px; }
+.pet-preview-page h1 { margin: 8px 0 12px; font-size: clamp(28px, 4vw, 42px); font-weight: 600; letter-spacing: -.04em; line-height: 1.15; }
+.pet-preview-page header p { font-size: 15px; line-height: 1.7; color: #8e7c72; }
+.pet-preview-filters { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
+.pet-preview-filters label { display: grid; gap: 6px; min-width: 120px; flex: 1; font-size: 13px; color: #475569; }
+.pet-preview-filters select { min-height: 44px; border: 1px solid #e2e8f0; border-radius: 12px; padding: 8px 12px; background: white; color: #0f172a; }
+.pet-preview-filters select:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; }
+.pet-preview-controls { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 18px; }
+.pet-preview-controls [role="group"] { display: flex; gap: 4px; border: 1px solid #e9dfd7; border-radius: 13px; padding: 4px; background: #f9f5ef; }
+.pet-preview-controls button { min-height: 44px; padding: 0 15px; border-radius: 9px; font-size: 12px; cursor: pointer; color: #887469; }
+.pet-preview-controls button[aria-pressed="true"] { background: white; color: #4d352b; box-shadow: 0 2px 5px #40220f0a; }
+.pet-preview-motion { display: inline-flex; align-items: center; gap: 7px; }
+.pet-preview-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.pet-preview-grid figure { min-width: 0; margin: 0; overflow: hidden; border: 1px solid #e6ded7; border-radius: 24px; }
+.pet-preview-stage { display: grid; place-items: center; aspect-ratio: 1.15; padding: 16px; background: repeating-conic-gradient(#e0dcd5 0% 25%, #f7f4ee 0% 50%) 50% / 24px 24px; }
+.pet-preview-stage .pet-avatar { width: min(100%, 360px); height: auto; aspect-ratio: 1; }
+.pet-preview-stage--original .pet-avatar { mix-blend-mode: normal; background: white; }
+.pet-preview-grid--cream .pet-preview-stage { background: #f3e6d2; }
+.pet-preview-grid--midnight .pet-preview-stage { background: #202b40; }
+.pet-preview-grid figcaption { display: flex; flex-direction: column; gap: 5px; padding: 18px 20px; background: #fffdf9; }
+.pet-preview-grid figcaption strong { font-size: 15px; font-weight: 600; }
+.pet-preview-grid figcaption span, .pet-preview-note { font-size: 12px; line-height: 1.7; color: #8e7c72; }
+.pet-preview-note { margin: 20px 0 0; }
+.pet-preview-page button:focus-visible, .pet-preview-back:focus-visible { outline: 2px solid #d66a54; outline-offset: 3px; }
+@media (max-width: 639px) {
+  .pet-preview-page { padding: 16px 16px 110px; }
+  .pet-preview-page header { margin-top: 18px; }
+  .pet-preview-controls { gap: 3px; }
+  .pet-preview-controls button { padding: 0 9px; font-size: 11px; }
+  .pet-preview-grid { gap: 10px; }
+  .pet-preview-grid figure { border-radius: 17px; }
+  .pet-preview-stage { padding: 5px; aspect-ratio: .9; }
+  .pet-preview-grid figcaption { padding: 12px; }
+  .pet-preview-grid figcaption span { font-size: 10px; }
+}

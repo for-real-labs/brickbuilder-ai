@@ -35,7 +35,7 @@ describe('build buddies', () => {
   it('validates stored identities and maps listening to the lightweight idle clip', () => {
     expect(isPetId('nib')).toBe(true);
     expect(isPetId('../../anything')).toBe(false);
-    expect(petVideoPath('clik', 'listening')).toBe('/pets/clik-idle.mp4');
+    expect(petVideoPath('clik', 'listening')).toBe('/pets/clik-idle-alpha.webm');
     localStorage.setItem(PET_STORAGE_KEY, '../../anything');
     render(<Probe />);
     expect(container.querySelector('output')?.textContent).toBe('pip:idle');
@@ -87,6 +87,25 @@ describe('build buddies', () => {
     expect(container.querySelector('dialog')).toBeNull();
   });
 
+  it('labels the picker and current choice, then returns keyboard focus to the conversation', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frames.push(callback); return frames.length; });
+    render(<><PetPromptGreeting mode="edit" /><PetCompanion /></>);
+    const opener = container.querySelector<HTMLButtonElement>('[aria-label="Change pet, currently Pip"]')!;
+    opener.focus();
+    click('[aria-label="Change pet, currently Pip"]');
+    const dialog = container.querySelector('dialog')!;
+    expect(opener.getAttribute('aria-expanded')).toBe('true');
+    expect(container.querySelector(`#${dialog.getAttribute('aria-labelledby')}`)?.textContent).toBe('Choose your build buddy');
+    expect(container.querySelector(`#${dialog.getAttribute('aria-describedby')}`)?.textContent).toContain('Switch any time');
+    expect(container.querySelector('[aria-label="Choose Pip"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('[aria-label="Choose Nib"]')?.getAttribute('aria-pressed')).toBe('false');
+    click('[aria-label="Close pet picker"]');
+    act(() => frames.forEach(callback => callback(0)));
+    expect(opener.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(opener);
+  });
+
   it('uses still artwork for reduced motion and falls back to it on video errors', () => {
     vi.mocked(window.matchMedia).mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as MediaQueryList);
     render(<PetAvatar />);
@@ -99,6 +118,33 @@ describe('build buddies', () => {
     act(() => container.querySelector('video')?.dispatchEvent(new Event('error')));
     expect(container.querySelector('video')).toBeNull();
     expect(container.querySelector('img')).not.toBeNull();
+  });
+
+  it('uses transparent clips for every pet state and hides the still poster after playback starts', () => {
+    expect(petVideoPath('pip', 'idle')).toBe('/pets/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'listening')).toBe('/pets/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'building')).toBe('/pets/pip-building-alpha.webm');
+    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/pip-celebrating-alpha.webm');
+    expect(petVideoPath('nib', 'idle')).toBe('/pets/nib-idle-alpha.webm');
+    render(<PetAvatar />);
+    expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
+    expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
+    act(() => container.querySelector('video')?.dispatchEvent(new Event('playing')));
+    expect(container.querySelector('.pet-avatar--alpha-playing')).not.toBeNull();
+    act(() => container.querySelector('video')?.dispatchEvent(new Event('error')));
+    expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
+    expect(container.querySelector('img')).not.toBeNull();
+  });
+
+  it.each(['pip', 'nib', 'clik'] as const)('uses normal alpha compositing for %s across activity changes', id => {
+    for (const state of ['idle', 'listening', 'building', 'celebrating'] as const) {
+      render(<PetAvatar id={id} state={state} />);
+      const video = container.querySelector('video')!;
+      expect(video.getAttribute('src')).toBe(petVideoPath(id, state));
+      expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
+      act(() => video.dispatchEvent(new Event('playing')));
+      expect(container.querySelector('.pet-avatar--alpha-playing')).not.toBeNull();
+    }
   });
 
   it('celebrates a successful build, then returns to idle; failures do not celebrate', () => {

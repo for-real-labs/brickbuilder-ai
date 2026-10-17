@@ -10,7 +10,7 @@ import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -88,7 +88,7 @@ export function GenerationModelSelector({
   onChange: (model: string) => void;
 }) {
   return (
-    <div className="relative min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto">
+    <div className="relative min-w-0 w-full sm:w-auto">
       <label htmlFor="landing-render-model" className="sr-only">Model</label>
       <select
         id="landing-render-model"
@@ -227,6 +227,18 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const [notificationPromptId, setNotificationPromptId] = useState<string | null>(null);
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
+  const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const toggleSettings = (expanded: boolean) => {
+    setSettingsOpen(expanded);
+    posthog.capture('landing_generation_settings_toggled', { expanded });
+  };
+  const handleSettingsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'Escape') return;
+    event.preventDefault();
+    toggleSettings(false);
+    settingsButtonRef.current?.focus();
+  };
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
@@ -993,36 +1005,44 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   error={imageUploadError} onPick={onPickImage} onRemove={clearSelectedImage} />
               </>}
               <label htmlFor="landing-build-prompt" className="pet-conversation-hint">Ask {pet.name} to build something</label>
-              <div className="relative w-full">
-                <input
-                  id="landing-build-prompt"
-                  ref={promptInputRef}
-                  aria-label="Describe your model"
-                  aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
-                  value={prompt}
-                  onFocus={() => setFocused(true)}
-                  onBlur={() => setFocused(false)}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    setPrompt(event.target.value);
-                    if (event.target.value.trim()) setInputValidationMessage(null);
-                  }}
-                  onKeyDown={event => {
-                    if (event.key !== 'Enter') return;
-                    event.preventDefault();
-                    if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
-                    event.currentTarget.form?.requestSubmit();
-                  }}
-                  placeholder={imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
-                  className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
-                  disabled={loading || preparingImage}
-                />
-                <button
-                  type="submit"
-                  disabled={loading || preparingImage}
-                  className="absolute right-2 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-base"
-                >
-                  <Sparkles aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
-                  Create
+              <div className="flex w-full items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                  <input
+                    id="landing-build-prompt"
+                    ref={promptInputRef}
+                    aria-label="Describe your model"
+                    aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
+                    value={prompt}
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                      setPrompt(event.target.value);
+                      if (event.target.value.trim()) setInputValidationMessage(null);
+                    }}
+                    onKeyDown={event => {
+                      if (event.key !== 'Enter') return;
+                      event.preventDefault();
+                      if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
+                      event.currentTarget.form?.requestSubmit();
+                    }}
+                    placeholder={imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
+                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
+                    disabled={loading || preparingImage}
+                  />
+                  <button
+                    type="submit"
+                    disabled={loading || preparingImage}
+                    className="absolute right-2 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-base"
+                  >
+                    <Sparkles aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
+                    Create
+                  </button>
+                </div>
+                <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
+                  aria-expanded={settingsOpen} aria-controls={localDevelopment ? "landing-generation-settings landing-local-provider-settings" : "landing-generation-settings"}
+                  onClick={() => toggleSettings(!settingsOpen)}
+                  className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 ${settingsOpen ? 'border-red-200 bg-red-50 text-[#f44336]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                  <Settings aria-hidden="true" className="h-5 w-5" />
                 </button>
               </div>
 
@@ -1031,44 +1051,57 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   {inputValidationMessage}
                 </p>
               )}
-              {generationMethod === 'nova' && (
-                <p id="all-parts-warning" className="mt-2 text-left text-xs leading-relaxed text-slate-500">
-                  Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.
-                </p>
-              )}
-              <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
-                <div id="landing-builder-mode" role="group" aria-label="Mode"
-                  aria-describedby={generationMethod === 'nova' ? 'all-parts-warning' : undefined}
-                  className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
-                  {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
-                    <button key={value} type="button" value={value}
-                      aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                      disabled={loading || checkingProvider || generationMethod === '3d'}
-                      onClick={() => {
-                        if (value === generationMethod) return;
-                        setGenerationMethod(value);
-                        if (localDevelopment && value === 'nova') void checkNovaConnection(llmModel);
-                        posthog.capture('landing_generation_method_selected', { generation_method: value });
-                      }}
-                      className={`min-h-9 flex-1 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                      {label}
-                    </button>
-                  ))}
+              <div id="landing-generation-settings" hidden={!settingsOpen}
+                onKeyDown={handleSettingsKeyDown} className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Generation settings</h3>
+                <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
+                  <div id="landing-builder-mode" role="group" aria-label="Mode"
+                    className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
+                    {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
+                      <button key={value} type="button" value={value}
+                        aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
+                        disabled={loading || checkingProvider || generationMethod === '3d'}
+                        onClick={() => {
+                          if (value === generationMethod) return;
+                          setGenerationMethod(value);
+                          if (localDevelopment && value === 'nova') void checkNovaConnection(llmModel);
+                          posthog.capture('landing_generation_method_selected', { generation_method: value });
+                        }}
+                        className={`min-h-9 flex-1 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <GenerationModelSelector model={generationMethod === '3d' ? threeDModel : llmModel} mode={generationMethod} onChange={model => {
+                    if (model === 'sam3d' || model === 'trellis') {
+                      setThreeDModel(model);
+                      setGenerationMethod('3d');
+                    } else {
+                      setLlmModel(model);
+                      if (generationMethod === '3d') setGenerationMethod('llm');
+                      if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
+                    }
+                  }} disabled={loading || checkingProvider} />
                 </div>
-                <GenerationModelSelector model={generationMethod === '3d' ? threeDModel : llmModel} mode={generationMethod} onChange={model => {
-                  if (model === 'sam3d' || model === 'trellis') {
-                    setThreeDModel(model);
-                    setGenerationMethod('3d');
-                  } else {
-                    setLlmModel(model);
-                    if (generationMethod === '3d') setGenerationMethod('llm');
-                    if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
-                  }
-                }} disabled={loading || checkingProvider} />
+                {localDevelopment && generationMethod === 'nova' && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
+                    <label htmlFor="nova-connection">Provider connection</label>
+                    <select id="nova-connection" value={novaOptions.authMode} disabled={loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
+                      const provider = getLlmModelOption(llmModel)?.provider as NovaLoginProvider;
+                      if (event.target.value === 'native') { delete providerChoices.current[provider]; void checkNovaConnection(llmModel); }
+                      else { providerChoices.current[provider] = 'api_key'; setNovaOptions(current => ({ ...current, authMode: 'api_key' })); }
+                    }}>
+                      <option value="api_key">Project API key</option>
+                      <option value="native">{getLlmModelOption(llmModel)?.provider === 'openai' ? 'Signed in to ChatGPT' : 'Signed in to Claude'} · local account</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+              <div className="mt-3 flex items-center gap-2">
                 <button
                   type="button"
                   onClick={onPickImage}
-                  className="inline-flex min-h-11 shrink-0 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm text-slate-600 transition-colors hover:border-red-200 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-100 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   aria-label="Upload image"
                   disabled={loading || preparingImage}
                 >
@@ -1077,21 +1110,11 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 </button>
                 <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage} />
               </div>
-              {localDevelopment && generationMethod === 'nova' && (
-                <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
-                  <label htmlFor="nova-connection">Provider connection</label>
-                  <select id="nova-connection" value={novaOptions.authMode} disabled={loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
-                    const provider = getLlmModelOption(llmModel)?.provider as NovaLoginProvider;
-                    if (event.target.value === 'native') { delete providerChoices.current[provider]; void checkNovaConnection(llmModel); }
-                    else { providerChoices.current[provider] = 'api_key'; setNovaOptions(current => ({ ...current, authMode: 'api_key' })); }
-                  }}>
-                    <option value="api_key">Project API key</option>
-                    <option value="native">{getLlmModelOption(llmModel)?.provider === 'openai' ? 'Signed in to ChatGPT' : 'Signed in to Claude'} · local account</option>
-                  </select>
-                </div>
-              )}
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form>}
+            {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
+              <LocalProviderSettings />
+            </div>}
 
             {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
             {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
@@ -1121,8 +1144,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 </button>
               </div>
             )}
-
-            {localDevelopment && !loading && <LocalProviderSettings />}
 
             {!loading && (
               <>
