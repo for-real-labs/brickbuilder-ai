@@ -73,6 +73,24 @@ describe('public page indexing', () => {
     expect(() => renderPublicDocument('<html></html>', '/')).toThrow('missing application shell');
   });
 
+  it('publishes dedicated OBJ metadata, matching FAQ schema, and crawlable converter links', () => {
+    const document = new JSDOM(renderPublicDocument(shell, '/obj-to-lego')).window.document;
+    expect(document.title).toBe('OBJ to LEGO Converter | 3D Model to LEGO | BrickBuilder AI');
+    expect(document.querySelector('h1')?.textContent).toBe('OBJ to LEGO Converter');
+    expect(document.querySelector('input[type=file]')?.getAttribute('accept')).toBe('.obj');
+    expect(document.querySelector('a[href="/glb-to-lego"]')).not.toBeNull();
+    const schemas = JSON.parse(document.querySelector('script[type="application/ld+json"]')!.textContent!);
+    expect(schemas[0].url).toBe('https://brickbuilder.ai/obj-to-lego');
+    for (const question of schemas[1].mainEntity) {
+      expect(document.querySelector('main')?.textContent).toContain(question.name);
+      expect(document.querySelector('main')?.textContent).toContain(question.acceptedAnswer.text);
+    }
+    expect(schemas[0].offers).toBeUndefined();
+    const homepage = new JSDOM(renderPublicDocument(shell, '/')).window.document;
+    expect(homepage.querySelector('a[href="/obj-to-lego"]')).not.toBeNull();
+    expect(Array.from(sitemap.querySelectorAll('loc')).map(node => node.textContent)).toContain('https://brickbuilder.ai/obj-to-lego');
+  });
+
   it('keeps successive article and converter renders independent', () => {
     const article = new JSDOM(renderPublicDocument(shell, '/blog/using-ai-to-design-lego-in-2026')).window.document;
     const converter = new JSDOM(renderPublicDocument(shell, '/glb-to-lego')).window.document;

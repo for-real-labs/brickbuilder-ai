@@ -119,3 +119,13 @@ def test_image_preview_and_username_validators():
     for username in ("ab", "bad name", "x" * 31):
         with pytest.raises(ValidationError):
             UpdateUsernameRequest(username=username)
+
+
+def test_generation_response_preserves_obj_origin_for_resize_controls(monkeypatch):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    from src.requests import getGeneration as module
+    row = {'id': 'g', 'status': 'completed', 'endpoint': 'resizeModel', 'input_type': 'obj', 'detail_level': 30}
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value=row)))
+    result = asyncio.run(module.get_generation(module.GetGenerationRequest(generation_id='g'), {'user_id': 'owner'}))
+    assert result.input_type == 'obj' and result.detail_level == 30

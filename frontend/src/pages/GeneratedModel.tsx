@@ -1470,6 +1470,7 @@ export default function GeneratedModel() {
 
   // Handle resize model functionality
   const handleResizeModel = React.useCallback(async (detailLevel: number) => {
+    posthog.capture('generated_model_resize_submitted', { generation_id: currentGenerationId, detail_level: detailLevel });
     if (!mpdContent) {
       console.error('No model content available for resizing');
       return;
@@ -2355,7 +2356,7 @@ export default function GeneratedModel() {
           style={sceneReady ? undefined : { opacity: 0 }}
         >
         {/* Resize Scaler - shown outside edit mode */}
-        {!isNovaModel && !showVoxelEditor && showResizeScaler && mpdContent && (
+        {!isDemoModel && !isNovaModel && !showVoxelEditor && (showResizeScaler || pendingGeneration?.input_type === 'glb' || pendingGeneration?.input_type === 'obj') && mpdContent && (
           <section className="mt-12 max-w-md mx-auto space-y-6">
             <ResizeScaler
               onResize={handleResizeModel}
