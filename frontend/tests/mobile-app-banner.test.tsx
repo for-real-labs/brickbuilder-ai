@@ -43,11 +43,12 @@ afterEach(() => {
 
 describe('mobile app download prompt', () => {
   it.each([
+    SAFARI,
     CHROME,
     `${IPHONE} FxiOS/130.0 Mobile/15E148 Safari/605.1.15`,
     `${IPHONE} Mobile/15E148 Instagram 350.0`,
     `${IPHONE} Version/18.0 Mobile/15E148 Safari/604.1 [FBAN/FBIOS;FBAV/480.0]`,
-  ])('prompts an iOS browser without a native Safari banner: %s', userAgent => {
+  ])('prompts iOS visitors consistently across browsers: %s', userAgent => {
     browser(userAgent);
     render('/image-to-lego');
     const banner = container.querySelector('aside')!;
@@ -64,18 +65,17 @@ describe('mobile app download prompt', () => {
   });
 
   it.each([
-    [SAFARI, {}],
     ['Mozilla/5.0 (Macintosh; Intel Mac OS X) Version/18.0 Safari/605.1.15', { platform: 'MacIntel', maxTouchPoints: 0 }],
     ['Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Mobile Safari/537.36', { platform: 'Linux armv8l' }],
-  ])('leaves Safari native banners, desktop, and Android alone: %s', (userAgent, options) => {
+  ])('does not prompt desktop or Android visitors: %s', (userAgent, options) => {
     browser(userAgent, options);
     render();
     expect(container.querySelector('aside')).toBeNull();
     expect(posthog.capture).not.toHaveBeenCalled();
   });
 
-  it('recognizes iPad browsers using a desktop user agent', () => {
-    browser('Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 CriOS/130.0 Safari/605.1.15', { platform: 'MacIntel' });
+  it.each(['Version/18.0', 'CriOS/130.0'])('recognizes iPad browsers using a desktop user agent: %s', browserVersion => {
+    browser(`Mozilla/5.0 (Macintosh; Intel Mac OS X) AppleWebKit/605.1.15 ${browserVersion} Safari/605.1.15`, { platform: 'MacIntel' });
     render();
     expect(container.querySelector('aside')).not.toBeNull();
   });
@@ -89,7 +89,8 @@ describe('mobile app download prompt', () => {
     expect(posthog.capture).not.toHaveBeenCalled();
   });
 
-  it('remembers dismissal for seven days, including subsequent visits', () => {
+  it.each([SAFARI, CHROME])('remembers dismissal for seven days, including subsequent visits: %s', userAgent => {
+    browser(userAgent);
     vi.spyOn(Date, 'now').mockReturnValue(1_800_000_000_000);
     render();
     act(() => container.querySelector<HTMLButtonElement>('aside button')!.click());
