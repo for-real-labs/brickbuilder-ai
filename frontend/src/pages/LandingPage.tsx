@@ -10,7 +10,6 @@ import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
-import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
@@ -169,8 +168,21 @@ function useBeatText(active: boolean) {
 }
 
 export default function LandingPage({ imageLandingPath }: { imageLandingPath?: ImageLandingPath } = {}) {
+  const [visit, setVisit] = useState(0);
+  useEffect(() => {
+    const restore = (event: PageTransitionEvent) => {
+      if (!event.persisted) return;
+      setVisit(current => current + 1);
+      posthog.capture('landing_visit_reset', { source: 'history_restore' });
+    };
+    window.addEventListener('pageshow', restore);
+    return () => window.removeEventListener('pageshow', restore);
+  }, []);
+  return <LandingPageVisit key={`${imageLandingPath || '/'}:${visit}`} imageLandingPath={imageLandingPath} />;
+}
+
+function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandingPath }) {
   const { pet } = usePet();
-  const { unread_count: unreadCompletions } = useGenerationNotifications();
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const landingViewportRef = useLandingViewport(!ldrawLanding);
@@ -273,19 +285,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       return next;
     }, { replace: true });
   }, [landingModel.open, setSearchParams]);
-  const ignoredModelIds = useRef(new Set<string>());
   const [editSubmitting, setEditSubmitting] = useState(false);
   const editSubmittingRef = useRef(false);
   const modelBusy = landingModel.busy || editSubmitting;
-  const displayedGenerations = generations.map(row => row.id === landingModel.model?.generation.generation_id
+  const visitGenerationIds = new Set(buddyChat.turns.map(turn => turn.generationId));
+  const displayedGenerations = generations.filter(row => ldrawLanding || row.id === landingModel.targetId || visitGenerationIds.has(row.id))
+    .map(row => row.id === landingModel.model?.generation.generation_id
     ? { ...row, status: 'completed', previewWaitUntil: undefined } : row);
-  useEffect(() => {
-    if (ldrawLanding || requestedModelId || landingModel.targetId) return;
-    const latest = generations.filter(row => !ignoredModelIds.current.has(row.id)
-      && (row.status === 'completed' || isGenerationActive(row.status)))
-      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0];
-    if (latest) openModel(latest.id);
-  }, [generations, ldrawLanding, requestedModelId, landingModel.targetId, openModel]);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Streaming 3D preview state
@@ -791,8 +797,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
 
   const createNewModel = () => {
     posthog.capture('landing_model_create_new_clicked', { generation_id: landingModel.model?.generation.generation_id });
-    generations.forEach(row => ignoredModelIds.current.add(row.id));
-    if (landingModel.targetId) ignoredModelIds.current.add(landingModel.targetId);
     landingModel.reset();
     setSearchParams(current => {
       const next = new URLSearchParams(current);
@@ -903,11 +907,10 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const typedPlaceholder = usePromptTypewriter(showTypewriter);
   const contextualPlaceholder = buddyPromptSuggestion(buddyChat.turns, pet.name,
     landingModel.model ? modelEditSuggestion(landingModel.model) : undefined);
-  const conversationStarted = !ldrawLanding && (unreadCompletions > 0 || buddyChat.turns.length > 0 || Boolean(landingModel.targetId) || loading
-    || displayedGenerations.some(row => isGenerationActive(row.status)));
+  const conversationStarted = !ldrawLanding && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(landingModel.model));
 
   const generationActivity = (
-    <GenerationActivityList generations={displayedGenerations} error={activityError} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
+    <GenerationActivityList generations={displayedGenerations} error={displayedGenerations.length || ldrawLanding ? activityError : null} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
       notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
       onOpen={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
       onResumed={(sourceId, newId) => {
@@ -1026,6 +1029,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   promptInputRef.current?.focus();
                 }}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
+                selectedGenerationId={landingModel.targetId}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}

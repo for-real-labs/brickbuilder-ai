@@ -20,7 +20,8 @@ const navigate = vi.hoisted(() => vi.fn());
 const query = vi.hoisted(() => ({ value: '', set: vi.fn() }));
 const buddy = vi.hoisted(() => ({ updateTurn: vi.fn() }));
 const viewer = vi.hoisted(() => ({ loaded: undefined as undefined | (() => void), markViewed: vi.fn() }));
-vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ notifications: [], markViewed: viewer.markViewed }) }));
+const inbox = vi.hoisted(() => ({ notifications: [] as import('../src/services/generationNotificationsApi').ModelNotification[] }));
+vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ notifications: inbox.notifications, unread_count: inbox.notifications.length, markViewed: viewer.markViewed }) }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useSearchParams: () => [new URLSearchParams(query.value), query.set] }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
@@ -61,6 +62,7 @@ beforeEach(() => {
   buddy.updateTurn.mockClear();
   viewer.loaded = undefined;
   viewer.markViewed.mockReset().mockResolvedValue(undefined);
+  inbox.notifications = [];
   window.history.replaceState(null, '', '/');
   navigate.mockClear();
   query.value = '';
@@ -88,6 +90,46 @@ function type(text: string) {
   });
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+
+it('starts fresh on reload and return despite cached models, failed history, background builds and unread notifications', async () => {
+  sessionStorage.setItem('brickbuilder.landing-model:guest', 'saved-castle');
+  activity.rows = [
+    { id: 'failed', status: 'failed', endpoint: 'novaToBricks', prompt: 'Old concert stage' },
+    { id: 'pending', status: 'processing', endpoint: 'novaToBricks', prompt: 'Background car' },
+    { id: 'cancelled', status: 'cancelled', endpoint: 'novaToBricks', prompt: 'Cancelled dragon' },
+  ];
+  inbox.notifications = [{ id: 'ready', prompt: 'Ready castle', status: 'completed', seen: false, updated_at: '2026-10-17', is_edit: false }];
+  const get = vi.spyOn(GetGenerationApiService, 'getGeneration');
+  const watch = vi.mocked(LlmToBricksApiService.watchOutput);
+  for (let visit = 0; visit < 2; visit++) {
+    await act(async () => root.render(<LandingPage />));
+    expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+    expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+    expect(container.querySelector('.pet-chat-message--user')).toBeNull();
+    expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+    expect(container.textContent).not.toContain('Old concert stage');
+    expect(container.textContent).not.toContain('Background car');
+    expect(container.textContent).not.toContain('Cancelled dragon');
+    expect(container.textContent).not.toContain('Woops!');
+    expect(container.textContent).toContain('done building');
+    act(() => root.render(null));
+  }
+  expect(get).not.toHaveBeenCalled();
+  expect(watch).not.toHaveBeenCalled();
+});
+
+it('hides stats for an explicitly linked viewer and shows them again on a plain landing visit', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
+  act(() => root.render(null));
+  query.value = '';
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+});
 
 it('floats transparent controls over the 3D viewer while reserving space for the instructions toolbar', async () => {
   const style = document.createElement('style');
@@ -190,6 +232,7 @@ it('shows a newly completed build inline, puts three suggestions below the dialo
 });
 
 it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('keeps the %s generation card and cancellation inside the scrolling dialogue', async endpoint => {
+  query.value = 'id=building&exact=1';
   activity.rows = [{ id: 'building', status: 'processing', endpoint, prompt: 'A cat', createdAt: new Date().toISOString() }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('building', endpoint), status: 'processing' });
   const cancel = vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue(undefined);
@@ -208,6 +251,7 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('keeps the %s generation ca
 });
 
 it('keeps the same dialogue, greeting and restored build messages when the model becomes ready', async () => {
+  query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'processing', endpoint: 'novaToBricks', prompt: 'A castle' }];
   let ready = false;
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async () => ({
@@ -239,6 +283,7 @@ it('keeps the same dialogue, greeting and restored build messages when the model
 });
 
 it('orders the ready landing model using its displayed quote and dismisses only the mobile banner', async () => {
+  query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -258,6 +303,7 @@ it('orders the ready landing model using its displayed quote and dismisses only 
 it('replaces model details with an order popup that uses the same quote and checkout model as the footer', async () => {
   let finish!: (quote: Awaited<ReturnType<typeof GetPriceApiService.getPrice>>) => void;
   vi.mocked(GetPriceApiService.getPrice).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -359,6 +405,7 @@ it('never applies a late quote to a different displayed model', async () => {
 
 it('keeps a failed landing quote unorderable while allowing the banner to be dismissed', async () => {
   vi.mocked(GetPriceApiService.getPrice).mockRejectedValue(new Error('Pricing unavailable'));
+  query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -376,6 +423,7 @@ it('keeps a failed landing quote unorderable while allowing the banner to be dis
 
 it.each([{ orderable: false }, { endpoint: 'uploadLdraw' }])('keeps ordering unavailable for imported or unapproved models: %o', async patch => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('castle'), ...patch });
+  query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'completed', endpoint: patch.endpoint || 'novaToBricks', prompt: 'Castle' }];
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.model-mobile-order')).toBeNull();
@@ -396,6 +444,7 @@ it('keeps the LDraw upload page intro visible when a previous chat workspace is 
 });
 
 it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its source API and retains the viewer until the replacement is ready', async endpoint => {
+  query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'completed', endpoint, prompt: 'Castle' }];
   let ready = false;
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => id === 'castle'
@@ -425,6 +474,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its so
 });
 
 it('keeps the current model and edit text available after an edit request fails', async () => {
+  query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'completed', prompt: 'Castle' }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   vi.spyOn(NovaToBricksApiService, 'edit').mockRejectedValue(new Error('Please try again'));
@@ -461,24 +511,27 @@ it('falls back to LDR conversion and ignores a late model response after reset',
   expect(model.busy).toBe(false);
 });
 
-it('restores the workspace for the same owner and clears the displayed model when accounts change', async () => {
+it('ignores saved workspaces on plain visits and clears the displayed model when accounts change', async () => {
   let model!: ReturnType<typeof useLandingModel>;
   function Probe({ owner }: { owner: string }) { model = useLandingModel(owner); return null; }
   sessionStorage.setItem('brickbuilder.landing-model:builder', 'castle');
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<Probe owner="builder" />));
+  expect(model.model).toBeNull();
+  await act(async () => model.open('castle'));
   expect(model.model?.generation.generation_id).toBe('castle');
   await act(async () => root.render(<Probe owner="someone-else" />));
   expect(model.model).toBeNull();
   expect(model.targetId).toBeNull();
   await act(async () => root.render(<Probe owner="builder" />));
-  expect(model.model?.generation.generation_id).toBe('castle');
+  expect(model.model).toBeNull();
   act(() => model.reset());
   expect(sessionStorage.getItem('brickbuilder.landing-model:builder')).toBeNull();
 });
 
-it('cycles suggestions after reloading a saved model and keeps one edit suggestion after typing', async () => {
+it('cycles suggestions after reloading an explicit model link and keeps one edit suggestion after typing', async () => {
   vi.spyOn(Math, 'random').mockReturnValue(0);
+  query.value = 'id=castle&exact=1';
   sessionStorage.setItem('brickbuilder.landing-model:guest', 'castle');
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));

@@ -39,13 +39,14 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
     setError(null);
   }, [storageKey]);
   useEffect(() => {
-    let saved: string | null = null;
-    try { saved = sessionStorage.getItem(storageKey); } catch { /* Start a fresh workspace. */ }
-    const id = requestedId || saved;
+    // A plain landing visit starts fresh. Only explicit model links restore a viewer.
+    const id = requestedId || null;
     if (selection.current?.storageKey === storageKey && selection.current.id === id) return;
     selection.current = { storageKey, id };
     if (requestedId) {
       try { sessionStorage.setItem(storageKey, requestedId); } catch { /* Deep links work without storage. */ }
+    } else {
+      try { sessionStorage.removeItem(storageKey); } catch { /* Ignore a stale workspace when storage is unavailable. */ }
     }
     revision.current++;
     setTargetId(id);

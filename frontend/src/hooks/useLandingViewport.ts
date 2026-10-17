@@ -16,10 +16,12 @@ export function useLandingViewport(enabled: boolean) {
       element.style.setProperty('--landing-viewport-top', `${top + bannerHeight}px`);
     };
     const header = element.querySelector('header');
+    const intro = element.querySelector('.landing-page-intro');
     const conversation = element.querySelector('.landing-model-conversation');
     const updatePanels = () => {
       element.style.setProperty('--landing-header-height', `${header?.getBoundingClientRect().height ?? 36}px`);
       element.style.setProperty('--landing-conversation-height', `${conversation?.getBoundingClientRect().height ?? 0}px`);
+      element.style.setProperty('--landing-intro-bottom', `${Math.max(0, (intro?.getBoundingClientRect().bottom ?? 0) - element.getBoundingClientRect().top)}px`);
     };
     updateViewport();
     updatePanels();
@@ -29,6 +31,7 @@ export function useLandingViewport(enabled: boolean) {
     });
     observer?.observe(document.body);
     if (header) observer?.observe(header);
+    if (intro) observer?.observe(intro);
     if (conversation) observer?.observe(conversation);
     viewport?.addEventListener('resize', updateViewport);
     viewport?.addEventListener('scroll', updateViewport);
