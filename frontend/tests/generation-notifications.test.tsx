@@ -5,6 +5,8 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { GenerationNotificationsProvider, useGenerationNotifications } from '../src/contexts/GenerationNotificationsContext';
 import { NotificationMenu } from '../src/components/NotificationMenu';
+import { ProfileMenu } from '../src/components/ProfileMenu';
+import posthog from 'posthog-js';
 import { GenerationNotificationsApi } from '../src/services/generationNotificationsApi';
 import UserDashboard from '../src/pages/UserDashboard';
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
@@ -166,7 +168,7 @@ it('does not mark new arrivals or another account read while a bulk request is p
   expect(feed.notifications[0].seen).toBe(false);
 });
 
-it('shows the notification bell in the dashboard header with its unread count', async () => {
+it('opens dashboard notifications through its profile menu with an unread indicator', async () => {
   vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({notifications: [ready('done')], active: [], unread_count: 1});
   vi.spyOn(GetUserGenerationsApiService, 'getUserGenerations').mockResolvedValue({
     generations: [], total_count: 0, total_user_generations: 0, all_orders: [], has_more: false,
@@ -174,9 +176,10 @@ it('shows the notification bell in the dashboard header with its unread count', 
   await act(async () => root.render(<MemoryRouter initialEntries={['/dashboard']}>
     <GenerationNotificationsProvider><UserDashboard /></GenerationNotificationsProvider>
   </MemoryRouter>));
-  const bell = container.querySelector('header [aria-label="Notifications, 1 unread"]') as HTMLButtonElement;
-  expect(bell).not.toBeNull();
-  await act(async () => bell.click());
+  expect(container.querySelector('header [data-testid="profile-notification-indicator"]')).not.toBeNull();
+  expect(container.querySelector('header [aria-label="Notifications, 1 unread"]')).toBeNull();
+  await act(async () => container.querySelector<HTMLButtonElement>('header [aria-label="Account menu"]')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('header [aria-label="Notifications, 1 unread"]')!.click());
   expect(container.querySelector('[aria-label="Model notifications"]')).not.toBeNull();
 });
 
@@ -261,4 +264,83 @@ it('hides snackbar alerts on account change and prevents a pending click from na
   await act(async () => finish({}));
   expect(container.querySelector('output')?.textContent).toBe('/');
   expect(feed.unread_count).toBe(0);
+});
+
+const renderProfile = (onNavigate?: (path: string) => void) => act(async () => {
+  root.render(<MemoryRouter><GenerationNotificationsProvider><ProfileMenu onNavigate={onNavigate} /></GenerationNotificationsProvider></MemoryRouter>);
+});
+const accountButton = () => container.querySelector<HTMLButtonElement>('[aria-label="Account menu"]')!;
+const notificationsButton = () => container.querySelector<HTMLButtonElement>('button[aria-label^="Notifications"]')!;
+const openProfileNotifications = async () => {
+  await act(async () => accountButton().click());
+  await act(async () => notificationsButton().click());
+};
+
+it('replaces the separate bell with an unread profile indicator and returns from notifications with focus', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('done')], active: [], unread_count: 1 });
+  const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockResolvedValue({});
+  await renderProfile();
+  expect(container.querySelectorAll('button')).toHaveLength(1);
+  expect(accountButton().querySelector('[data-testid="profile-notification-indicator"]')).not.toBeNull();
+  expect(document.getElementById(accountButton().getAttribute('aria-describedby')!)?.textContent).toBe('1 unread notifications');
+  await openProfileNotifications();
+  expect(container.textContent).not.toContain('My Generations');
+  expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=done&exact=1');
+  expect(posthog.capture).toHaveBeenCalledWith('generation_notifications_opened', { unread_count: 1, source: 'profile_menu' });
+  const back = container.querySelector<HTMLButtonElement>('[aria-label="Back to account menu"]')!;
+  expect(document.activeElement).toBe(back);
+  act(() => back.click());
+  expect(container.querySelector('[aria-label="Model notifications"]')).toBeNull();
+  expect(container.textContent).toContain('My Generations');
+  expect(container.textContent).toContain('Settings');
+  expect(document.activeElement).toBe(notificationsButton());
+  expect(posthog.capture).toHaveBeenCalledWith('generation_notifications_back_clicked', { source: 'profile_menu' });
+  expect(mark).not.toHaveBeenCalled();
+});
+
+it('closes the notifications submenu on Escape or outside click and reopens the profile view', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [], active: [], unread_count: 0 });
+  await renderProfile();
+  expect(container.querySelector('[data-testid="profile-notification-indicator"]')).toBeNull();
+  await openProfileNotifications();
+  expect(container.textContent).toContain('No notifications yet');
+  act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+  expect(accountButton().getAttribute('aria-expanded')).toBe('false');
+  expect(document.activeElement).toBe(accountButton());
+  act(() => accountButton().click());
+  expect(container.textContent).toContain('My Generations');
+  expect(container.querySelector('[aria-label="Back to account menu"]')).toBeNull();
+  act(() => notificationsButton().click());
+  act(() => document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+  expect(accountButton().getAttribute('aria-expanded')).toBe('false');
+  expect(container.querySelector('[aria-label="Model notifications"]')).toBeNull();
+});
+
+it('clears the profile unread indicator through mark all read while retaining notification links', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('done')], active: [], unread_count: 1 });
+  const markAll = vi.spyOn(GenerationNotificationsApi, 'markAllRead').mockResolvedValue({ seen_ids: ['done'] });
+  await renderProfile();
+  await openProfileNotifications();
+  const action = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Mark all as read')!;
+  await act(async () => action.click());
+  expect(markAll).toHaveBeenCalledWith(['done']);
+  expect(container.querySelector('[data-testid="profile-notification-indicator"]')).toBeNull();
+  expect(accountButton().hasAttribute('aria-describedby')).toBe(false);
+  expect(container.querySelector('a')).not.toBeNull();
+  expect(action.disabled).toBe(true);
+});
+
+it('uses guarded navigation and closes the profile submenu when opening a notification', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('model & edit')], active: [], unread_count: 1 });
+  const onNavigate = vi.fn();
+  await renderProfile(onNavigate);
+  await openProfileNotifications();
+  act(() => container.querySelector('a')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+  expect(onNavigate).toHaveBeenCalledWith('/generated-model?id=model%20%26%20edit&exact=1');
+  expect(accountButton().getAttribute('aria-expanded')).toBe('false');
+  expect(container.querySelector('[aria-label="Model notifications"]')).toBeNull();
+  act(() => accountButton().click());
+  const settings = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Settings')!;
+  act(() => settings.click());
+  expect(onNavigate).toHaveBeenLastCalledWith('/dashboard?tab=settings');
 });
