@@ -14,12 +14,10 @@ const PetContext = createContext({
   pet: PETS[0] as typeof PETS[number],
   motion: true,
   activity: 'idle' as PetState,
-  inlineVisible: false,
   pickerOpen: false,
   selectPet: (_id: PetId) => {},
   setMotion: (_enabled: boolean) => {},
   setActivity: (_state: PetState) => {},
-  setInlineVisible: (_visible: boolean) => {},
   openPicker: (_source: string, _returnTo?: HTMLElement | null) => {},
   closePicker: () => {},
 });
@@ -31,7 +29,6 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
   });
   const [motion, updateMotion] = useState(() => readPreference(PET_MOTION_KEY) !== 'paused');
   const [activity, setActivity] = useState<PetState>('idle');
-  const [inlineVisible, setInlineVisible] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const pickerSource = useRef('companion');
   const returnFocus = useRef<HTMLElement | null>(null);
@@ -73,9 +70,9 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
     savePreference(PET_MOTION_KEY, enabled ? 'playing' : 'paused');
     posthog.capture('pet_motion_changed', { enabled });
   }, []);
-  const value = useMemo(() => ({ pet: PETS.find(pet => pet.id === id)!, motion, activity, inlineVisible,
-    pickerOpen, selectPet, setMotion, setActivity, setInlineVisible, openPicker, closePicker,
-  }), [id, motion, activity, inlineVisible, pickerOpen, selectPet, setMotion, openPicker, closePicker]);
+  const value = useMemo(() => ({ pet: PETS.find(pet => pet.id === id)!, motion, activity,
+    pickerOpen, selectPet, setMotion, setActivity, openPicker, closePicker,
+  }), [id, motion, activity, pickerOpen, selectPet, setMotion, openPicker, closePicker]);
 
   return <PetContext.Provider value={value}>{children}</PetContext.Provider>;
 }

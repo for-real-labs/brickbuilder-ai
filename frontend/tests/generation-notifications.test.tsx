@@ -183,87 +183,58 @@ it('opens dashboard notifications through its profile menu with an unread indica
   expect(container.querySelector('[aria-label="Model notifications"]')).not.toBeNull();
 });
 
-it('shows a new completion as a snackbar without system permission and marks it read before navigating', async () => {
-  vi.stubGlobal('Notification', {permission: 'denied'});
+it.each(['default', 'denied', 'granted', 'unsupported'])('keeps new completions in the notification menu without snackbars when browser permission is %s', async permission => {
+  const native = vi.fn(function() { return { close: vi.fn() }; });
+  Object.assign(native, { permission });
+  vi.stubGlobal('Notification', permission === 'unsupported' ? undefined : native);
   vi.spyOn(GenerationNotificationsApi, 'list')
-    .mockResolvedValueOnce({notifications: [ready('old')], active: [], unread_count: 1})
-    .mockResolvedValue({notifications: [ready('new'), ready('old')], active: [], unread_count: 2});
-  let finish!: (value: object) => void;
-  const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
-  await render();
-  expect(container.querySelector('[role="status"]')).toBeNull();
-  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
-  const snackbar = container.querySelector('[role="status"]')!;
-  expect(snackbar.textContent).toContain('Your edit is ready');
-  act(() => snackbar.querySelector('button')!.click());
-  expect(mark).toHaveBeenCalledWith('new');
-  expect(container.querySelector('output')?.textContent).toBe('/');
-  await act(async () => finish({}));
-  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=new&exact=1');
-  expect(container.querySelector('[role="status"]')).toBeNull();
-  expect(feed.unread_count).toBe(1);
-  expect(feed.notifications.find(model => model.id === 'new')?.seen).toBe(true);
-  await act(async () => container.querySelector('button')!.click());
-  const link = container.querySelector('a[href="/generated-model?id=new&exact=1"]')!;
-  expect(link.querySelector('[aria-label="Unread"]')).toBeNull();
-  // Polling an older response must neither revive the badge nor repeat the snackbar.
-  await act(async () => { feed.refresh(); });
-  expect(feed.unread_count).toBe(1);
-  expect(container.querySelector('[aria-label="Dismiss notification"]')).toBeNull();
-});
-
-it('queues simultaneous arrivals and keeps dismissed or expired notifications unread without repeating alerts', async () => {
-  vi.spyOn(GenerationNotificationsApi, 'list')
-    .mockResolvedValueOnce({notifications: [], active: [], unread_count: 0})
-    .mockResolvedValue({notifications: [ready('first'), {...ready('second'), is_edit: false}], active: [], unread_count: 2});
+    .mockResolvedValueOnce({ notifications: [], active: [], unread_count: 0 })
+    .mockResolvedValue({ notifications: [ready('edit'), { ...ready('model'), is_edit: false }], active: [], unread_count: 2 });
   const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockResolvedValue({});
   await render();
-  // Refresh after an empty baseline must still recognize arrivals.
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
+  expect(container.querySelector('[role="status"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Dismiss notification"]')).toBeNull();
+  expect(container.textContent).not.toContain('Your edit is ready');
+  expect(container.textContent).not.toContain('Your model is ready');
+  expect(container.querySelector('[data-testid="notification-badge"]')?.textContent).toBe('2');
+  expect(mark).not.toHaveBeenCalled();
+  expect(native).toHaveBeenCalledTimes(permission === 'granted' ? 2 : 0);
+  await act(async () => container.querySelector('button')!.click());
+  expect(container.querySelector('a[href="/generated-model?id=edit&exact=1"]')).not.toBeNull();
+  expect(container.querySelector('a[href="/generated-model?id=model&exact=1"]')).not.toBeNull();
+  expect(container.querySelectorAll('[aria-label="Unread"]')).toHaveLength(2);
   await act(async () => { feed.refresh(); });
-  expect(container.querySelectorAll('[aria-label="Dismiss notification"]')).toHaveLength(1);
-  act(() => (container.querySelector('[aria-label="Dismiss notification"]') as HTMLButtonElement).click());
-  expect(container.querySelector('[role="status"]')?.textContent).toContain('Your model is ready');
-  await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
   expect(container.querySelector('[role="status"]')).toBeNull();
   expect(feed.unread_count).toBe(2);
-  expect(mark).not.toHaveBeenCalled();
-  await act(async () => { feed.refresh(); });
-  expect(container.querySelector('[role="status"]')).toBeNull();
+  expect(native).toHaveBeenCalledTimes(permission === 'granted' ? 2 : 0);
 });
 
-it('keeps an alert actionable when its read receipt fails and allows retry', async () => {
-  vi.spyOn(GenerationNotificationsApi, 'list')
-    .mockResolvedValueOnce({notifications: [], active: [], unread_count: 0})
-    .mockResolvedValue({notifications: [ready('new')], active: [], unread_count: 1});
+it('keeps failed read receipts unread and allows retry', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('new')], active: [], unread_count: 1 });
   const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockRejectedValueOnce(new Error('offline')).mockResolvedValue({});
   await render();
-  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
-  await act(async () => container.querySelector('[role="status"] button')!.click());
-  expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again');
+  await act(async () => { await expect(feed.markViewed('new')).rejects.toThrow('Unable to mark model as viewed'); });
   expect(feed.unread_count).toBe(1);
-  expect(container.querySelector('output')?.textContent).toBe('/');
-  await act(async () => container.querySelector('[role="status"] button')!.click());
+  await act(async () => { await feed.markViewed('new'); });
   expect(mark).toHaveBeenCalledTimes(2);
   expect(feed.unread_count).toBe(0);
-  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=new&exact=1');
 });
 
-it('hides snackbar alerts on account change and prevents a pending click from navigating in another account', async () => {
-  vi.spyOn(GenerationNotificationsApi, 'list')
-    .mockResolvedValueOnce({notifications: [], active: [], unread_count: 0})
-    .mockResolvedValue({notifications: [ready('private')], active: [], unread_count: 1});
+it('ignores pending read receipts after switching accounts', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('private')], active: [], unread_count: 1 });
   let finish!: (value: object) => void;
   vi.spyOn(GenerationNotificationsApi, 'markViewed').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
   await render();
-  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
-  act(() => container.querySelector('[role="status"] button')!.click());
-  auth = {user: {id: 'another'}, session: {access_token: 'another-token'}, loading: false};
-  vi.mocked(GenerationNotificationsApi.list).mockResolvedValue({notifications: [], active: [], unread_count: 0});
+  let pending!: Promise<void>;
+  act(() => { pending = feed.markViewed('private'); });
+  auth = { user: { id: 'another' }, session: { access_token: 'another-token' }, loading: false };
+  vi.mocked(GenerationNotificationsApi.list).mockResolvedValue({ notifications: [ready('other')], active: [], unread_count: 1 });
   await render();
-  expect(container.querySelector('[role="status"]')).toBeNull();
-  await act(async () => finish({}));
-  expect(container.querySelector('output')?.textContent).toBe('/');
-  expect(feed.unread_count).toBe(0);
+  await act(async () => { finish({}); await pending; });
+  expect(feed.unread_count).toBe(1);
+  expect(feed.notifications.map(model => model.id)).toEqual(['other']);
+  expect(feed.notifications[0].seen).toBe(false);
 });
 
 const renderProfile = (onNavigate?: (path: string) => void) => act(async () => {

@@ -10,6 +10,7 @@ import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { apiFetch } from '../src/services/apiFetch';
 import greetings from '../src/data/buddy-welcome-greetings.json';
 import { formatBuddyGreeting } from '../src/utils/buddyGreetings';
+import petStyles from '../src/components/PetCompanion.css?raw';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null }) }));
@@ -99,10 +100,26 @@ it('shows text and images in order, speaks stream updates, and shows a completed
   expect(container.textContent).toContain('I’m shaping the dragon wings…');
   expect(container.textContent).not.toContain('private implementation');
   expect(container.textContent).toContain('sometimes up to 30 minutes');
+  const dialogue = container.querySelector('[role="log"]');
+  const greeting = container.querySelector('.pet-greeting')?.textContent;
+  const originalPrompt = container.querySelector('.pet-chat-message--user');
   await act(async () => root.render(<BuildBuddyDialogue turns={turns} generations={[{ ...generations[0], status: 'completed' }]} state="idle" />));
+  expect(container.querySelector('[role="log"]')).toBe(dialogue);
+  expect(container.querySelector('.pet-greeting')?.textContent).toBe(greeting);
+  expect(container.querySelector('.pet-chat-message--user')).toBe(originalPrompt);
+  expect(container.textContent).toContain('Those wings will look great in bricks.');
   expect(container.textContent).toContain('Your build is ready');
   expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=job&exact=1');
   expect(container.querySelector('.pet-notification-conversation')).toBeNull();
+  await act(async () => root.render(<BuildBuddyDialogue
+    turns={[...turns, { id: 2, text: 'Make the wings blue', reply: 'Blue wings coming up!', generationId: 'edit', method: 'nova' }]}
+    generations={[{ ...generations[0], status: 'completed' }, { ...generations[0], id: 'edit' }]} state="building" />));
+  expect(container.querySelectorAll('[role="log"]')).toHaveLength(1);
+  expect(container.querySelector('[role="log"]')).toBe(dialogue);
+  expect(container.querySelector('.pet-chat-message--user')).toBe(originalPrompt);
+  expect(container.textContent).toContain('Those wings will look great in bricks.');
+  expect(container.textContent).toContain('Make the wings blue');
+  expect(container.textContent).toContain('Blue wings coming up!');
 });
 
 it.each(['failed', 'cancelled'])('speaks a terminal %s build without opening another stream', async status => {
@@ -114,6 +131,37 @@ it.each(['failed', 'cancelled'])('speaks a terminal %s build without opening ano
     ? 'Woops! Something in the brickverse is down. Try again later' : 'I’ve stopped this build.');
   expect(container.textContent).not.toContain('Internal runtime error');
   expect(watch).not.toHaveBeenCalled();
+});
+
+it.each(['processing', 'completed', 'cancelled', 'failed'])('keeps greetings, replies and %s updates the same size in build and edit conversations', async status => {
+  vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
+  const style = document.createElement('style');
+  style.textContent = petStyles;
+  document.head.append(style);
+  const dimensions = (element: Element, properties: string[]) => {
+    const computed = getComputedStyle(element);
+    return properties.map(property => computed.getPropertyValue(property));
+  };
+  try {
+    for (const text of ['Giraffe', 'Give the giraffe blue spots']) {
+      await act(async () => root.render(<BuildBuddyDialogue state="idle"
+        turns={[{ id: 1, text, reply: 'A spotted giraffe sounds great!', generationId: 'job', method: 'llm' }]}
+        generations={[{ id: 'job', prompt: 'Giraffe', endpoint: 'llmToBricks', status }]} />));
+      const greeting = container.querySelector('.pet-greeting')!;
+      const bubbleProperties = ['padding', 'font-size', 'line-height', 'border-radius', 'max-width', 'flex-grow'];
+      const expectedBubble = dimensions(greeting.querySelector('.pet-speech')!, bubbleProperties);
+      const expectedAvatar = dimensions(greeting.querySelector('.pet-avatar')!, ['width', 'height', 'margin-left']);
+      const messages = container.querySelectorAll('.pet-chat-message:not(.pet-chat-message--user)');
+      expect(messages.length).toBeGreaterThanOrEqual(2);
+      for (const message of messages) {
+        expect(dimensions(message.querySelector('.pet-chat-bubble')!, bubbleProperties)).toEqual(expectedBubble);
+        expect(dimensions(message.querySelector('.pet-avatar')!, ['width', 'height', 'margin-left'])).toEqual(expectedAvatar);
+      }
+      expect(getComputedStyle(container.querySelector('.pet-chat-message--user .pet-chat-bubble')!).flexGrow).not.toBe('1');
+    }
+  } finally {
+    style.remove();
+  }
 });
 
 it.each([undefined, 'job'])('shows one pet failure message without infrastructure details for generation %s', async generationId => {

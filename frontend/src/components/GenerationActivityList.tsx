@@ -27,13 +27,13 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
   return (
-    <section aria-label="Your generations" className="mx-auto mb-6 w-full max-w-4xl text-left">
+    <section aria-label="Your generations" className={buddyDialogue ? 'min-w-0 w-full text-left' : 'mx-auto mb-6 w-full max-w-4xl text-left'}>
       <div className="mb-4 px-1">
         <h2 className="text-lg font-semibold text-slate-900">Your generations{activeCount > 0 ? ` · ${activeCount} in progress` : ''}</h2>
         <p className="mt-1 text-sm text-slate-500">You can leave and come back. Your builds keep running.</p>
         {error && <p role="status" className="mt-2 text-sm text-amber-700">{error}</p>}
       </div>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className={buddyDialogue ? 'grid min-w-0 grid-cols-1 gap-3' : 'grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3'}>
         {generations.map(generation => {
           const active = isGenerationActive(generation.status);
           const failed = generation.status === 'failed';
@@ -59,7 +59,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
                   posthog.capture('landing_generation_dismissed', { generation_id: generation.id, status: generation.status });
                   onDismiss(generation.id);
                 }}><X aria-hidden="true" className="h-4 w-4" /></button>}
-              <div className="relative h-36 overflow-hidden bg-slate-50">
+              <div className={`relative overflow-hidden bg-slate-50 ${buddyDialogue ? 'h-24' : 'h-36'}`}>
                 {previewPending
                   ? <div role="status" aria-label="Loading model preview" className="flex h-full items-center justify-center"><Loader2 aria-hidden="true" className="h-9 w-9 animate-spin text-slate-400" /></div>
                   : active && (agentGeneration || !generation.imageUrl)

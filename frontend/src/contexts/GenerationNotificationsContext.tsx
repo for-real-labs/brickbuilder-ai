@@ -4,9 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { startPolling } from '../utils/polling';
 import { getGuestSession } from '../utils/guestSession';
-import { GenerationNotificationsApi, NotificationFeed, NotificationApiError, ModelNotification } from '../services/generationNotificationsApi';
-import { GenerationNotificationSnackbar } from '../components/GenerationNotificationSnackbar';
-import { getGeneratedModelPath } from '../utils/generationRoutes';
+import { GenerationNotificationsApi, NotificationFeed, NotificationApiError } from '../services/generationNotificationsApi';
 
 const empty: NotificationFeed = { notifications: [], active: [], unread_count: 0 };
 const Context = createContext({ ...empty, error: null as string | null, browserPermission: 'unsupported',
@@ -22,7 +20,6 @@ export function GenerationNotificationsProvider({ children }: { children: React.
   const navigate = useNavigate();
   const [state, setState] = useState({ owner, feed: empty, error: null as string | null });
   const [revision, setRevision] = useState(0);
-  const [alerts, setAlerts] = useState<{ owner: string; notifications: ModelNotification[] }>({ owner, notifications: [] });
   const baseline = useRef({ owner, initialized: false });
   const [permission, setPermission] = useState(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
   const viewed = useRef(new Set<string>());
@@ -45,12 +42,10 @@ export function GenerationNotificationsProvider({ children }: { children: React.
         const feed = await GenerationNotificationsApi.list(signal);
         if (signal.aborted) return;
         for (const id of readIds(deliveredKey)) delivered.add(id);
-        const arrivals: ModelNotification[] = [];
         for (const model of feed.notifications) {
           if (viewed.current.has(model.id)) model.seen = true;
           if (!initialized && !known.has(model.id)) delivered.add(model.id);
           if (initialized && !model.seen && !delivered.has(model.id)) {
-            arrivals.push(model);
             delivered.add(model.id);
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') try {
               const notification = new Notification(model.is_edit ? 'Your model edit is ready' : 'Your model is ready', {
@@ -68,12 +63,6 @@ export function GenerationNotificationsProvider({ children }: { children: React.
           localStorage.setItem(knownKey, JSON.stringify([...known].slice(-1000)));
           localStorage.setItem(deliveredKey, JSON.stringify([...delivered].slice(-1000)));
         } catch { /* The server owns read receipts. */ }
-        setAlerts(previous => {
-          const retained = previous.owner === owner ? previous.notifications.filter(model =>
-            !viewed.current.has(model.id) && !feed.notifications.some(current => current.id === model.id && current.seen)) : [];
-          if (previous.owner === owner && !arrivals.length && retained.length === previous.notifications.length) return previous;
-          return { owner, notifications: [...retained, ...arrivals] };
-        });
         const next = { owner, feed: { ...feed, unread_count: feed.notifications.filter(model => !model.seen).length }, error: null };
         setState(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
         return feed.active.length ? 5_000 : 60_000;
@@ -104,9 +93,6 @@ export function GenerationNotificationsProvider({ children }: { children: React.
         notifications: previous.feed.notifications.map(model => model.id === id ? { ...model, seen: true } : model),
         unread_count: Math.max(0, previous.feed.unread_count - (previous.feed.notifications.some(model => model.id === id && !model.seen) ? 1 : 0)),
       } }));
-      setAlerts(previous => previous.owner !== owner ? previous : ({ ...previous,
-        notifications: previous.notifications.filter(model => model.id !== id),
-      }));
     } catch (error) {
       // Public community models have no receipt in this owner's feed.
       if (error instanceof NotificationApiError && error.status === 404) return;
@@ -133,23 +119,9 @@ export function GenerationNotificationsProvider({ children }: { children: React.
       return { ...previous, feed: { ...previous.feed, notifications, unread_count: notifications.filter(model => !model.seen).length } };
     });
   }, [owner, state]);
-  const dismissAlert = useCallback((id: string) => {
-    setAlerts(previous => previous.owner !== owner ? previous : ({ ...previous,
-      notifications: previous.notifications.filter(model => model.id !== id),
-    }));
-  }, [owner]);
-  const openAlert = useCallback(async (id: string) => {
-    await markViewed(id);
-    if (ownerRef.current !== owner) return;
-    dismissAlert(id);
-    navigate(getGeneratedModelPath(id, true));
-  }, [owner, markViewed, dismissAlert, navigate]);
-  const alert = alerts.owner === owner ? alerts.notifications.find(model =>
-    !state.feed.notifications.some(current => current.id === model.id && current.seen)) : undefined;
   return <Context.Provider value={{ ...(state.owner === owner ? state.feed : empty), error: state.owner === owner ? state.error : null,
     browserPermission: permission, enableBrowserNotifications, markViewed, markAllRead, refresh }}>
     {children}
-    {alert && <GenerationNotificationSnackbar key={alert.id} notification={alert} onOpen={openAlert} onDismiss={dismissAlert} />}
   </Context.Provider>;
 }
 export const useGenerationNotifications = () => useContext(Context);

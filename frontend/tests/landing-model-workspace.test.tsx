@@ -9,6 +9,7 @@ import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { useLandingModel, type LandingModel } from '../src/hooks/useLandingModel';
 import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
+import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { modelEditSuggestions } from '../src/components/LandingModelWorkspace';
 
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
@@ -33,7 +34,6 @@ vi.mock('../src/components/LoginModal', () => ({ default: () => null }));
 vi.mock('../src/components/SiteFooter', () => ({ SiteFooter: () => null }));
 vi.mock('../src/components/ProfileMenu', () => ({ ProfileMenu: () => null }));
 vi.mock('../src/components/NotificationMenu', () => ({ NotificationMenu: () => null }));
-vi.mock('../src/components/GenerationActivityList', () => ({ GenerationActivityList: () => null }));
 vi.mock('../src/components/StreamingMeshViewer', () => ({ default: () => null }));
 
 let container: HTMLDivElement;
@@ -46,6 +46,8 @@ const generation = (id: string, endpoint = 'novaToBricks'): GetGenerationRespons
 });
 beforeEach(() => {
   buddy.updateTurn.mockClear();
+  vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
+  vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
   sessionStorage.clear();
   vi.useFakeTimers();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -66,7 +68,7 @@ function type(text: string) {
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 
-it('shows a newly completed build inline, puts three suggestions above the dialogue, and resets without reopening old builds', async () => {
+it('shows a newly completed build inline, puts three suggestions below the dialogue input, and resets without reopening old builds', async () => {
   vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'castle', message: 'Started' });
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -79,7 +81,8 @@ it('shows a newly completed build inline, puts three suggestions above the dialo
   expect(buttons[1].textContent).toContain('Castle');
   expect(buttons[2].textContent).toBe('Create new?');
   const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
-  expect(suggestions.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(conversation.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(input().compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(conversation.closest('.landing-model-conversation')).not.toBeNull();
   expect(container.querySelector('a[href="/generated-model?id=castle&exact=1"]')).not.toBeNull();
   act(() => buttons[0].click());
@@ -92,6 +95,53 @@ it('shows a newly completed build inline, puts three suggestions above the dialo
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_create_new_clicked', { generation_id: 'castle' });
+});
+
+it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('keeps the %s generation card and cancellation inside the scrolling dialogue', async endpoint => {
+  activity.rows = [{ id: 'building', status: 'processing', endpoint, prompt: 'A cat', createdAt: new Date().toISOString() }];
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('building', endpoint), status: 'processing' });
+  const cancel = vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue(undefined);
+  await act(async () => root.render(<LandingPage />));
+  const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
+  const card = conversation.querySelector('article')!;
+  expect(card).not.toBeNull();
+  expect(card.textContent).toContain('A cat');
+  expect(container.querySelectorAll('[aria-label="Your generations"]')).toHaveLength(1);
+  expect(conversation.contains(container.querySelector('[aria-label="Your generations"]'))).toBe(true);
+  expect(conversation.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  const cancelButton = Array.from(card.querySelectorAll('button')).find(button => button.textContent === 'Cancel generation')!;
+  await act(async () => cancelButton.click());
+  expect(cancel).toHaveBeenCalledExactlyOnceWith('building');
+  expect(activity.track).toHaveBeenCalledWith(expect.objectContaining({ id: 'building', status: 'cancelled' }));
+});
+
+it('keeps the same dialogue, greeting and restored build messages when the model becomes ready', async () => {
+  activity.rows = [{ id: 'castle', status: 'processing', endpoint: 'novaToBricks', prompt: 'A castle' }];
+  let ready = false;
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async () => ({
+    ...generation('castle'), status: ready ? 'completed' : 'processing',
+  }));
+  await act(async () => root.render(<LandingPage />));
+  const dialogue = container.querySelector('[aria-label="Build buddy conversation"]')!;
+  const greeting = dialogue.querySelector('.pet-greeting')!;
+  const greetingText = greeting.textContent;
+  const originalPrompt = dialogue.querySelector('.pet-chat-message--user')!;
+  expect(originalPrompt.textContent).toContain('A castle');
+  expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  ready = true;
+  await act(async () => vi.advanceTimersByTimeAsync(5000));
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  expect(container.querySelectorAll('[aria-label="Build buddy conversation"]')).toHaveLength(1);
+  expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
+  expect(dialogue.querySelector('.pet-greeting')).toBe(greeting);
+  expect(greeting.textContent).toBe(greetingText);
+  expect(dialogue.querySelector('.pet-chat-message--user')).toBe(originalPrompt);
+  expect(dialogue.textContent).toContain('Your build is ready');
+  expect(input().getAttribute('aria-label')).toBe('Describe changes to your model');
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Model suggestions"] button')!.click());
+  expect(input().value).toBe('Add a drawbridge');
+  expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
+  expect(greeting.textContent).toBe(greetingText);
 });
 
 it('keeps the LDraw upload page intro visible when a previous chat workspace is saved', async () => {

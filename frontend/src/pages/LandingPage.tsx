@@ -869,6 +869,22 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const conversationStarted = !ldrawLanding && (buddyChat.turns.length > 0 || Boolean(landingModel.targetId) || loading
     || displayedGenerations.some(row => isGenerationActive(row.status)));
 
+  const generationActivity = (
+    <GenerationActivityList generations={displayedGenerations} error={activityError} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
+      notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
+      onOpen={id => { landingModel.open(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+      onResumed={(sourceId, newId) => {
+        const row = generations.find(generation => generation.id === sourceId);
+        if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
+          createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
+        if (row) { setNotificationPromptId(newId); landingModel.open(newId); }
+      }}
+      onCancelled={id => {
+        const row = generations.find(generation => generation.id === id);
+        if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
+      }} />
+  );
+
   return (
     <div
       ref={landingViewportRef}
@@ -965,7 +981,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   setPrompt(suggestion);
                   promptInputRef.current?.focus();
                 }}>
-              <BuildBuddyDialogue modelName={landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'model' : undefined} turns={buddyChat.turns} generations={displayedGenerations}
+              <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}
                 actionsDisabled={loading || buddyChat.routing || preparingImage || modelBusy || giftReplyPending || Boolean(landingModel.model)}
@@ -974,7 +990,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   setGiftPlanning(false);
                   setPrompt(idea);
                   promptInputRef.current?.focus();
-                }} />
+                }}>
+                {generationActivity}
+              </BuildBuddyDialogue>
             <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
@@ -1128,19 +1146,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
 
           </div>
 
-            <GenerationActivityList generations={displayedGenerations} error={activityError} onDismiss={dismissGeneration} buddyDialogue
-              notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
-              onOpen={id => { landingModel.open(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              onResumed={(sourceId, newId) => {
-                const row = generations.find(generation => generation.id === sourceId);
-                if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
-                  createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
-                if (row) { setNotificationPromptId(newId); landingModel.open(newId); }
-              }}
-              onCancelled={id => {
-                const row = generations.find(generation => generation.id === id);
-                if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
-              }} />
+          {ldrawLanding && generationActivity}
           {loading && activeGenerationId && <div className="flex justify-center mb-4">
             <CancelGenerationButton generationId={activeGenerationId} onCancelled={() => {
               generationAbortRef.current?.abort();

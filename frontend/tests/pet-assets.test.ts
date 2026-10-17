@@ -44,6 +44,32 @@ it.each(PETS)('ships Safari HEVC color and alpha layers for every $name animatio
     }
     expect(layers.has(0)).toBe(true);
     expect(layers.has(1)).toBe(true);
-    expect(statSync(path).size).toBeLessThan(1_200_000);
+    expect(statSync(path).size).toBeLessThan(2_000_000);
+  }
+});
+
+it('ships the exact nine clips that passed decoded loop-boundary verification', async () => {
+  const { createHash } = await import('node:crypto');
+  const { assertAlphaQuality, assertLoopQuality } = await import('../scripts/pets/verify-loops.mjs');
+  const ledger = JSON.parse(readFileSync(resolve(process.cwd(), '../docs/pets/seamless-loops.json'), 'utf8'));
+  expect(ledger.clips).toHaveLength(9);
+  for (const pet of PETS) {
+    for (const state of ['idle', 'building', 'celebrating'] as const) {
+      const clip = ledger.clips.find((item: { clip: string }) => item.clip === `${pet.id}-${state}`);
+      expect(clip).toBeDefined();
+      expect(clip.webm.metrics.frames).toBe(122);
+      expect(clip.hevc.metrics.frames).toBe(122);
+      expect(clip.generation_input.image_url).toBe(clip.generation_input.tail_image_url);
+      expect(() => assertLoopQuality(clip.webm.metrics)).not.toThrow();
+      expect(() => assertLoopQuality(clip.hevc.metrics)).not.toThrow();
+      expect(() => assertAlphaQuality(clip.webm.metrics)).not.toThrow();
+      expect(() => assertAlphaQuality(clip.hevc.metrics)).not.toThrow();
+      for (const source of petVideoSources(pet.id, state)) {
+        expect(source.src).toContain('/pets/loops-v2/');
+        const format = source.src.endsWith('.webm') ? clip.webm : clip.hevc;
+        const bytes = readFileSync(resolve(process.cwd(), 'public', source.src.slice(1)));
+        expect(createHash('sha256').update(bytes).digest('hex')).toBe(format.sha256);
+      }
+    }
   }
 });

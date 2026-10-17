@@ -20,9 +20,10 @@ export function BuddyBuildMessages({ generationId, status }: { generationId: str
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, modelName, onUploadImage, onUseGiftIdea, actionsDisabled = false }: {
-  turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean; modelName?: string;
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onUploadImage, onUseGiftIdea, actionsDisabled = false, children }: {
+  turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onUploadImage?: () => void; onUseGiftIdea?: (prompt: string) => void; actionsDisabled?: boolean;
+  children?: React.ReactNode;
 }) {
   const { pet } = usePet();
   const [returning] = useState(() => {
@@ -45,13 +46,13 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     if (element.firstElementChild) observer?.observe(element.firstElementChild);
     return () => observer?.disconnect();
   }, [turns.length, generations.length]);
-  const restored = generations.filter(row => isAgentGeneration(row.endpoint) && isGenerationActive(row.status) && !turns.some(turn => turn.generationId === row.id))
+  const restored = generations.filter(row => isAgentGeneration(row.endpoint) && !turns.some(turn => turn.generationId === row.id))
     .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
   return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
-      <PetPromptGreeting mode={modelName ? 'edit' : undefined} state={state} showPetSwitch={false}>
-        {modelName ? `Your ${modelName} is ready! What would you like to change?` : returning ? formatBuddyGreeting(welcome, greetingName)
+      <PetPromptGreeting state={state} showPetSwitch={false}>
+        {returning ? formatBuddyGreeting(welcome, greetingName)
           : `Hi${greetingName ? `, ${greetingName}!` : ','} I’m ${pet.name} your build buddy! What would you like to build with LEGO?`}
       </PetPromptGreeting>
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
@@ -78,6 +79,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
             generationId={turn.generationId} status={generation?.status || 'started'} />}
         </div>;
       })}
+      {children}
     </div>
   </div>;
 }

@@ -56,7 +56,7 @@ describe('build buddies', () => {
   it('validates stored identities and maps listening to the lightweight idle clip', () => {
     expect(isPetId('nib')).toBe(true);
     expect(isPetId('../../anything')).toBe(false);
-    expect(petVideoPath('clik', 'listening')).toBe('/pets/clik-idle-alpha.webm');
+    expect(petVideoPath('clik', 'listening')).toBe('/pets/loops-v2/clik-idle-alpha.webm');
     localStorage.setItem(PET_STORAGE_KEY, '../../anything');
     render(<Probe />);
     expect(container.querySelector('output')?.textContent).toBe('pip:idle');
@@ -90,16 +90,16 @@ describe('build buddies', () => {
   it('continues working when localStorage is blocked', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
-    render(<><Probe /><PetCompanion /></>);
-    click('[aria-label="Pip, your build buddy. Change build buddy / pet"]');
+    render(<><Probe /><PetPromptGreeting /><PetCompanion /></>);
+    click('[aria-label="Change Build Buddy, currently Pip"]');
     click('[aria-label="Choose Clik"]');
     expect(container.querySelector('output')?.textContent).toBe('clik:idle');
   });
 
   it('pauses motion persistently and dismisses the accessible picker with Escape', () => {
-    render(<><PetAvatar /><PetCompanion /></>);
+    render(<><PetPromptGreeting /><PetCompanion /></>);
     expect(container.querySelector('video')).not.toBeNull();
-    click('[aria-label="Pip, your build buddy. Change build buddy / pet"]');
+    click('[aria-label="Change Build Buddy, currently Pip"]');
     click('.pet-picker-footer button');
     expect(localStorage.getItem(PET_MOTION_KEY)).toBe('paused');
     expect(container.querySelector('video')).toBeNull();
@@ -157,11 +157,11 @@ describe('build buddies', () => {
   });
 
   it('uses transparent clips for every pet state and hides the still poster after playback starts', () => {
-    expect(petVideoPath('pip', 'idle')).toBe('/pets/pip-idle-alpha.webm');
-    expect(petVideoPath('pip', 'listening')).toBe('/pets/pip-idle-alpha.webm');
-    expect(petVideoPath('pip', 'building')).toBe('/pets/pip-building-alpha.webm');
-    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/pip-celebrating-alpha.webm');
-    expect(petVideoPath('nib', 'idle')).toBe('/pets/nib-idle-alpha.webm');
+    expect(petVideoPath('pip', 'idle')).toBe('/pets/loops-v2/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'listening')).toBe('/pets/loops-v2/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'building')).toBe('/pets/loops-v2/pip-building-alpha.webm');
+    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/loops-v2/pip-celebrating-alpha.webm');
+    expect(petVideoPath('nib', 'idle')).toBe('/pets/loops-v2/nib-idle-alpha.webm');
     render(<PetAvatar />);
     expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
     expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
@@ -198,11 +198,15 @@ describe('build buddies', () => {
     } finally { vi.useRealTimers(); }
   });
 
-  it('keeps the companion available after client navigation, above mobile purchase controls', () => {
-    render(<><Link to="/generated-model">Open model</Link><PetCompanion /></>);
-    expect(container.querySelector('.pet-dock')).not.toBeNull();
-    click('a');
-    expect(container.querySelector('.pet-dock--purchase')).not.toBeNull();
+  it.each([false, true])('keeps the floating companion removed while building is %s and the picker available through Tools after navigation', busy => {
+    render(<><Probe busy={busy} /><LandingToolsMenu page="/" /><Link to="/generated-model">Open model</Link><PetCompanion /></>);
+    expect(container.querySelector('.pet-dock')).toBeNull();
+    expect(container.textContent).not.toContain('Building with you');
+    click('a[href="/generated-model"]');
+    expect(container.querySelector('.pet-dock')).toBeNull();
+    click('button[aria-controls]');
+    click('[aria-label="Change Build Buddy, currently Pip"]');
+    expect(container.querySelector('dialog')?.open).toBe(true);
   });
 
   it('uses the selected pet in edit conversations', () => {

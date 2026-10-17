@@ -17,10 +17,10 @@ export default function PetPreviewPage() {
   const [animation, setAnimation] = useState<typeof ANIMATIONS[number]>('idle');
   const { motion, setMotion } = usePet();
   return <main className="pet-preview-page">
-    <Helmet><title>Pet transparency preview — BrickBuilder</title><meta name="robots" content="noindex" /></Helmet>
+    <Helmet><title>Pet animation preview — BrickBuilder</title><meta name="robots" content="noindex" /></Helmet>
     <Link to="/" className="pet-preview-back" onClick={() => posthog.capture('pet_preview_back_clicked')}><ArrowLeft size={16} />Back to building</Link>
-    <header><span className="pet-eyebrow">BUILD BUDDIES</span><h1>Your buddies, without the backdrop.</h1>
-      <p>Every animation, with the background removed.<br />Try a darker surface to see the difference.</p>
+    <header><span className="pet-eyebrow">BUILD BUDDIES</span><h1>Little buddies. Smooth loops.</h1>
+      <p>Original clips on the left. Seamless loops on the right.<br />Try a darker surface to check the transparent edges.</p>
     </header>
     <div className="pet-preview-filters">
       <label>Pet<select value={previewPet} onChange={event => {
@@ -45,8 +45,8 @@ export default function PetPreviewPage() {
       <figure><div className="pet-preview-stage pet-preview-stage--original"><PetAvatar id={previewPet} state={animation} videoSource={`/pets/${previewPet}-${animation}.mp4`} /></div>
         <figcaption><strong>Original</strong><span>White studio background</span></figcaption></figure>
       <figure><div className="pet-preview-stage"><PetAvatar id={previewPet} state={animation} /></div>
-        <figcaption><strong>Transparent</strong><span>Soft edges. No studio background.</span></figcaption></figure>
+        <figcaption><strong>Seamless + transparent</strong><span>Matching start and end poses.</span></figcaption></figure>
     </div>
-    <p className="pet-preview-note">Pip, Nib, and Clik use transparent animations throughout the app, including idle, building, and celebrating.</p>
+    <p className="pet-preview-note">Pip, Nib, and Clik use seamless, transparent animations throughout the app, including idle, building, and celebrating.</p>
   </main>;
 }
