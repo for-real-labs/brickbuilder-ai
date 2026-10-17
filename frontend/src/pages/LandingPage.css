@@ -75,3 +75,10 @@
   .landing-header--model .landing-create-new { padding-inline: 10px; font-size: 12px; }
 }
 @media (max-width: 359px) { .landing-header--model > a > span { font-size: 11px; } }
+
+@media (max-width: 639px) {
+  .landing-header--guest-model { grid-template-columns: minmax(0, 1fr) auto; }
+  .landing-header--guest-model > a { grid-column: 1; grid-row: 1; }
+  .landing-header--guest-model > nav { grid-column: 2; grid-row: 1; }
+  .landing-header--guest-model .landing-create-new { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
+}

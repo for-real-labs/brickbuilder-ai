@@ -1328,7 +1328,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew }: { 
   );
 
   return (
-    <header className={`flex w-full flex-wrap items-center justify-between gap-y-2 relative landing-fade-in landing-delay-1${createNew ? ' landing-header--model' : ''}`} style={{ zIndex: 50 }}>
+    <header className={`flex w-full flex-wrap items-center justify-between gap-y-2 relative landing-fade-in landing-delay-1${createNew ? ` landing-header--model${showProfileMenu ? '' : ' landing-header--guest-model'}` : ''}`} style={{ zIndex: 50 }}>
       <a href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
         <img
           src="/logo.svg"

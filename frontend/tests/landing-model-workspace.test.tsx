@@ -15,6 +15,7 @@ import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
 import { readFileSync } from 'node:fs';
 
+const auth = vi.hoisted(() => ({ isSupabaseConfigured: false }));
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
 const navigate = vi.hoisted(() => vi.fn());
 const query = vi.hoisted(() => ({ value: '', set: vi.fn() }));
@@ -24,7 +25,7 @@ const inbox = vi.hoisted(() => ({ notifications: [] as import('../src/services/g
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ notifications: inbox.notifications, unread_count: inbox.notifications.length, markViewed: viewer.markViewed }) }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useSearchParams: () => [new URLSearchParams(query.value), query.set] }));
-vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false, ...auth }) }));
 vi.mock('../src/hooks/useGenerationActivity', async () => ({
   ...await vi.importActual('../src/hooks/useGenerationActivity'),
   useGenerationActivity: () => ({ generations: activity.rows, trackGeneration: activity.track, dismissGeneration: vi.fn() }),
@@ -59,6 +60,7 @@ const generation = (id: string, endpoint = 'novaToBricks'): GetGenerationRespons
 beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = false; }) });
+  auth.isSupabaseConfigured = false;
   buddy.updateTurn.mockClear();
   viewer.loaded = undefined;
   viewer.markViewed.mockReset().mockResolvedValue(undefined);
@@ -505,4 +507,15 @@ it.each(['failed', 'cancelled'] as const)('preserves the previous model and allo
   expect(model.model?.generation.generation_id).toBe('castle');
   expect(model.busy).toBe(false);
   expect(model.error).toBeTruthy();
+});
+
+
+it('keeps Create new centered in the header for guests alongside sign up, tools and notifications', async () => {
+  auth.isSupabaseConfigured = true;
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('header.landing-header--guest-model')).not.toBeNull();
+  expect(container.querySelector('header .landing-create-new')?.textContent).toBe('Create new');
+  expect(container.querySelector('header nav')?.textContent).toContain('Sign up');
 });
