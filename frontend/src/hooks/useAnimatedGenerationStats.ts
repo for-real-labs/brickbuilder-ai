@@ -2,90 +2,97 @@ import { useEffect, useRef, useState } from 'react';
 import type { GenerationStats } from '../services/getGenerationStatsApi';
 
 const TICK_DURATION_MS = 1_000;
-const MIN_PAUSE_MS = 1_800;
-const MAX_PAUSE_MS = 5_200;
-const MAX_MODELS_BEHIND = 25;
+const MIN_PAUSE_MS = 1_000;
+const MAX_PAUSE_MS = 5_000;
+const MOCK_BATCH_SIZE = 100;
 
-/** Reveal each confirmed model, then count up its share of the added bricks. */
+function createMockIncreases(totals: GenerationStats): GenerationStats[] {
+  const averageBricks = totals.generation_count > 0
+    ? totals.brick_count / totals.generation_count : 1_000;
+  return Array.from({ length: MOCK_BATCH_SIZE }, () => ({
+    generation_count: 1,
+    brick_count: Math.max(1, Math.round(averageBricks * (0.5 + Math.random()))),
+  }));
+}
+
+/** Start at real totals, then add paired simulated activity and incoming real increases. */
 export function useAnimatedGenerationStats(target: GenerationStats | null): GenerationStats | null {
   const [displayed, setDisplayed] = useState<GenerationStats | null>(null);
-  const current = useRef<GenerationStats | null>(null);
-  const pendingBricks = useRef<number | null>(null);
+  const latest = useRef(target);
+  const ready = target !== null;
 
   useEffect(() => {
-    if (!target) return;
+    latest.current = target;
+  }, [target?.generation_count, target?.brick_count]);
+
+  useEffect(() => {
+    if (!ready || !latest.current) return;
+    let real = { ...latest.current };
+    const simulated = { generation_count: 0, brick_count: 0 };
+    let current = { ...real };
+    let destination = current;
+    let increases = createMockIncreases(real);
     let frame: number | undefined;
     let timer: ReturnType<typeof setTimeout> | undefined;
     const motionPreference = window.matchMedia?.('(prefers-reduced-motion: reduce)');
     const publish = (value: GenerationStats) => {
-      current.current = value;
+      current = value;
       setDisplayed(value);
     };
-    const cancel = () => {
-      clearTimeout(timer);
+    const finishBurst = () => {
       if (frame !== undefined) cancelAnimationFrame(frame);
+      frame = undefined;
+      publish(destination);
     };
-    const animateBricks = (to: number) => {
-      const from = current.current!.brick_count;
+    const animateBricks = () => {
+      const from = current.brick_count;
+      const to = destination.brick_count;
       const startedAt = performance.now();
-      pendingBricks.current = to;
+      // Both numbers visibly increase in the same render, even before the first frame.
+      publish({ ...destination, brick_count: from + 1 });
       const tick = (now: number) => {
         const progress = Math.min(1, Math.max(0, (now - startedAt) / TICK_DURATION_MS));
         const eased = 1 - Math.pow(1 - progress, 3);
-        publish({ ...current.current!, brick_count: progress === 1 ? to : from + Math.floor((to - from) * eased) });
+        publish({ ...destination, brick_count: from + Math.max(1, Math.floor((to - from) * eased)) });
         if (progress < 1) frame = requestAnimationFrame(tick);
-        else {
-          pendingBricks.current = null;
-          schedule();
-        }
+        else frame = undefined;
       };
       frame = requestAnimationFrame(tick);
     };
     const schedule = () => {
-      if (current.current!.generation_count >= target.generation_count) return;
       timer = setTimeout(() => {
-        const from = current.current!;
-        const modelsRemaining = target.generation_count - from.generation_count;
-        const bricksAdded = Math.round((target.brick_count - from.brick_count) / modelsRemaining);
-        publish({ ...from, generation_count: from.generation_count + 1 });
-        animateBricks(from.brick_count + bricksAdded);
+        finishBurst();
+        // Polls cannot reset the timer, interrupt a burst, or erase simulated activity.
+        real = {
+          generation_count: Math.max(real.generation_count, latest.current?.generation_count ?? 0),
+          brick_count: Math.max(real.brick_count, latest.current?.brick_count ?? 0),
+        };
+        if (increases.length === 0) increases = createMockIncreases(real);
+        const increase = increases.shift()!;
+        simulated.generation_count += increase.generation_count;
+        simulated.brick_count += increase.brick_count;
+        destination = {
+          generation_count: real.generation_count + simulated.generation_count,
+          brick_count: real.brick_count + simulated.brick_count,
+        };
+        if (motionPreference?.matches) publish(destination);
+        else animateBricks();
+        schedule();
       }, MIN_PAUSE_MS + Math.random() * (MAX_PAUSE_MS - MIN_PAUSE_MS));
     };
     const onMotionChange = () => {
-      if (motionPreference?.matches) {
-        cancel();
-        pendingBricks.current = null;
-        publish(target);
-      }
+      if (motionPreference?.matches) finishBurst();
     };
 
-    if (motionPreference?.matches) {
-      pendingBricks.current = null;
-      publish(target);
-    } else {
-      const modelsBehind = Math.min(MAX_MODELS_BEHIND, Math.ceil(target.generation_count * 0.005));
-      publish(current.current ? {
-        generation_count: Math.min(current.current.generation_count, target.generation_count),
-        brick_count: Math.min(current.current.brick_count, target.brick_count),
-      } : {
-        generation_count: target.generation_count - modelsBehind,
-        brick_count: target.generation_count > 0
-          ? Math.round(target.brick_count * (target.generation_count - modelsBehind) / target.generation_count)
-          : target.brick_count,
-      });
-      if (pendingBricks.current !== null) {
-        // A refreshed total must not count the model for an unfinished burst twice.
-        animateBricks(Math.min(pendingBricks.current, target.brick_count));
-      } else if (current.current!.generation_count === target.generation_count) {
-        publish(target);
-      } else schedule();
-    }
+    publish(current);
+    schedule();
     motionPreference?.addEventListener('change', onMotionChange);
     return () => {
-      cancel();
+      clearTimeout(timer);
+      if (frame !== undefined) cancelAnimationFrame(frame);
       motionPreference?.removeEventListener('change', onMotionChange);
     };
-  }, [target?.generation_count, target?.brick_count]);
+  }, [ready]);
 
   return displayed;
 }
