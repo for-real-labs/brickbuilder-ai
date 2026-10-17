@@ -40,7 +40,7 @@ describe('build buddies', () => {
     expect(container.querySelector('.pet-greeting button')).toBeNull();
     const tools = container.querySelector<HTMLButtonElement>('button[aria-controls]')!;
     act(() => tools.click());
-    const switchPet = container.querySelector<HTMLButtonElement>('[aria-label="Change pet, currently Pip"]')!;
+    const switchPet = container.querySelector<HTMLButtonElement>('[aria-label="Change build buddy / pet, currently Pip"]')!;
     act(() => { switchPet.focus(); switchPet.click(); });
     expect(tools.getAttribute('aria-expanded')).toBe('false');
     expect(container.querySelector('ul[aria-label="Tools"]')).toBeNull();
@@ -65,12 +65,12 @@ describe('build buddies', () => {
   it('switches the pet across surfaces, persists it and tracks the choice without submitting a form', () => {
     const submit = vi.fn();
     render(<><Probe /><form onSubmit={submit}><PetPromptGreeting /><textarea /></form><PetCompanion /></>);
-    click('[aria-label="Change pet, currently Pip"]');
+    click('[aria-label="Change build buddy / pet, currently Pip"]');
     expect(container.querySelector('dialog')?.open).toBe(true);
     click('[aria-label="Choose Nib"]');
     expect(submit).not.toHaveBeenCalled();
     expect(container.querySelector('output')?.textContent).toBe('nib:idle');
-    expect(container.textContent).toContain('Hi, I’m Nib!');
+    expect(container.textContent).toContain('Hi, I’m Nib your build buddy!');
     expect(localStorage.getItem(PET_STORAGE_KEY)).toBe('nib');
     expect(container.querySelector('dialog')).toBeNull();
     expect(posthog.capture).toHaveBeenCalledWith('pet_selected', { pet_id: 'nib', previous_pet_id: 'pip', source: 'build_prompt' });
@@ -91,7 +91,7 @@ describe('build buddies', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
     render(<><Probe /><PetCompanion /></>);
-    click('[aria-label="Pip, your build buddy. Change pet"]');
+    click('[aria-label="Pip, your build buddy. Change build buddy / pet"]');
     click('[aria-label="Choose Clik"]');
     expect(container.querySelector('output')?.textContent).toBe('clik:idle');
   });
@@ -99,7 +99,7 @@ describe('build buddies', () => {
   it('pauses motion persistently and dismisses the accessible picker with Escape', () => {
     render(<><PetAvatar /><PetCompanion /></>);
     expect(container.querySelector('video')).not.toBeNull();
-    click('[aria-label="Pip, your build buddy. Change pet"]');
+    click('[aria-label="Pip, your build buddy. Change build buddy / pet"]');
     click('.pet-picker-footer button');
     expect(localStorage.getItem(PET_MOTION_KEY)).toBe('paused');
     expect(container.querySelector('video')).toBeNull();
@@ -112,12 +112,12 @@ describe('build buddies', () => {
     const frames: FrameRequestCallback[] = [];
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frames.push(callback); return frames.length; });
     render(<><PetPromptGreeting mode="edit" /><PetCompanion /></>);
-    const opener = container.querySelector<HTMLButtonElement>('[aria-label="Change pet, currently Pip"]')!;
+    const opener = container.querySelector<HTMLButtonElement>('[aria-label="Change build buddy / pet, currently Pip"]')!;
     opener.focus();
-    click('[aria-label="Change pet, currently Pip"]');
+    click('[aria-label="Change build buddy / pet, currently Pip"]');
     const dialog = container.querySelector('dialog')!;
     expect(opener.getAttribute('aria-expanded')).toBe('true');
-    expect(container.querySelector(`#${dialog.getAttribute('aria-labelledby')}`)?.textContent).toBe('Choose your build buddy');
+    expect(container.querySelector(`#${dialog.getAttribute('aria-labelledby')}`)?.textContent).toBe('Choose your build buddy / pet');
     expect(container.querySelector(`#${dialog.getAttribute('aria-describedby')}`)?.textContent).toContain('Switch any time');
     expect(container.querySelector('[aria-label="Choose Pip"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('[aria-label="Choose Nib"]')?.getAttribute('aria-pressed')).toBe('false');
@@ -193,7 +193,7 @@ describe('build buddies', () => {
   it('uses the selected pet in edit conversations', () => {
     localStorage.setItem(PET_STORAGE_KEY, 'clik');
     render(<PetPromptGreeting mode="edit" state="building" />);
-    expect(container.textContent).toContain('Clik · your build buddy');
+    expect(container.textContent).not.toContain('Clik · your build buddy');
     expect(container.textContent).toContain('On it! I’m working on your changes.');
     expect(container.querySelector('[data-pet="clik"]')).not.toBeNull();
   });

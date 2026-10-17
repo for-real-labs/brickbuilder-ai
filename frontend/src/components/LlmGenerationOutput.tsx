@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { LlmToBricksApiService } from '../services/llmToBricksApi';
-import { LlmDesignNotes } from './LlmDesignNotes';
+import { PetChatMessage } from './PetCompanion';
+import { summarizeBuildProgress } from '../utils/buildProgress';
 
-export function LlmGenerationOutput({ generationId, active }: { generationId: string; active: boolean }) {
+export function LlmGenerationOutput({ generationId, active, status, error }: { generationId: string; active: boolean; status?: string; error?: string }) {
   const [notes, setNotes] = useState('');
   const [summary, setSummary] = useState<string | undefined>('');
   const [reconnecting, setReconnecting] = useState(false);
   const [finished, setFinished] = useState(false);
+  const [outputStatus, setOutputStatus] = useState('');
+  const [outputError, setOutputError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -15,7 +18,10 @@ export function LlmGenerationOutput({ generationId, active }: { generationId: st
     setNotes('');
     setSummary('');
     setFinished(false);
+    setOutputStatus('');
+    setOutputError(null);
     setReconnecting(false);
+    if (!active) return () => controller.abort();
     const connect = async () => {
       let complete = false;
       try {
@@ -25,6 +31,8 @@ export function LlmGenerationOutput({ generationId, active }: { generationId: st
           setNotes(output.text);
           setSummary(typeof output.summary === 'string' ? output.summary : undefined);
           setFinished(['completed', 'failed', 'cancelled'].includes(output.status));
+          setOutputStatus(output.status);
+          setOutputError(output.error || null);
           setReconnecting(false);
           retryDelay = 1_000;
         }, controller.signal);
@@ -42,10 +50,18 @@ export function LlmGenerationOutput({ generationId, active }: { generationId: st
       controller.abort();
       clearTimeout(timer);
     };
-  }, [generationId]);
+  }, [generationId, active]);
 
-  return <div className="mt-3 min-w-0">
-    <LlmDesignNotes notes={notes} summary={summary} isThinking={active && !finished} />
-    {reconnecting && <p role="status" className="mt-2 text-xs text-slate-500">Reconnecting to live output… Your build keeps running.</p>}
-  </div>;
+  const currentStatus = status && ['completed', 'failed', 'cancelled'].includes(status) ? status : outputStatus;
+  const activity = summary === undefined ? summarizeBuildProgress(notes, '') : summary.trim();
+  const update = currentStatus === 'completed' ? 'Look what we made! Your build is ready.'
+    : currentStatus === 'cancelled' ? 'I’ve stopped this build. We can try another idea whenever you’re ready.'
+    : currentStatus === 'failed' ? `I couldn’t finish this build. ${error || outputError || 'Please try again.'}`
+    : activity ? `I’m ${activity.charAt(0).toLowerCase() + activity.slice(1).replace(/[.!…]+$/, '')}…`
+    : 'I’m getting your build ready. I’ll share updates here as I work.';
+  return <PetChatMessage compact state={currentStatus === 'completed' ? 'celebrating' : active && !finished ? 'building' : 'idle'}>
+    <p role="status" className={active && !finished ? 'build-thinking-shimmer' : undefined}>{update}</p>
+    {currentStatus === 'completed' && <a className="pet-chat-action relative z-20" href={`/generated-model?id=${encodeURIComponent(generationId)}&exact=1`}>View model</a>}
+    {reconnecting && active && !finished && <p className="pet-chat-meta">I’m reconnecting to live updates. Your build keeps running.</p>}
+  </PetChatMessage>;
 }

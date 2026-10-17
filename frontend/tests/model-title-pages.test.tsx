@@ -204,7 +204,7 @@ it('continues Nova AI edits while keeping the completed model, instructions, and
   const viewer = container.querySelector('[data-testid="viewer"]')!;
   expect(viewer.textContent).toContain('Garden cottage');
   expect(viewer.closest('figure')?.textContent).toContain('This can take up to 30 min. You can close this window safely.');
-  expect(viewer.closest('figure')?.textContent).toContain('Refining the roof');
+  expect(viewer.closest('figure')?.textContent).toContain('I’m refining the roof…');
   expect(container.querySelector<HTMLButtonElement>('[aria-label="View instructions"]')!.disabled).toBe(false);
   expect(container.querySelector('[aria-label="Manually edit model"]')).toBeNull();
   await act(async () => {
@@ -356,16 +356,17 @@ it.each([true, false])('offers the shared email flow on an initial generation, s
   } as never);
   vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=new-build']}><GeneratedModel /></MemoryRouter>));
-  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Get notified')!;
+  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Yes, email me')!;
   expect(notify).toBeTruthy();
   expect(GenerationEmailApi.status).toHaveBeenCalledWith('new-build', expect.any(AbortSignal));
   await act(async () => notify.click());
-  const modal = document.querySelector('[role="dialog"]')!;
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+  const conversation = container.querySelector('.pet-notification-conversation')!;
   if (signedIn) {
     expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('new-build', undefined);
-    expect(modal.textContent).toContain('builder@example.com');
+    expect(conversation.textContent).toContain('builder@example.com');
   } else {
-    expect(modal.querySelector('input[type="email"]')).not.toBeNull();
+    expect(conversation.querySelector('input[type="email"]')).not.toBeNull();
     expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
   }
 });
@@ -377,10 +378,8 @@ it('restores the edit notification and its recipient when returning to the model
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g']}><GeneratedModel /></MemoryRouter>));
   expect(GenerationEmailApi.status).toHaveBeenCalledWith('g', expect.any(AbortSignal));
   expect(GenerationEmailApi.status).not.toHaveBeenCalledWith('old', expect.anything());
-  const notify = Array.from(container.querySelectorAll('figure button')).find(button => button.textContent === 'We’ll email you')!;
-  act(() => notify.click());
-  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('edit-recipient@example.com');
-  expect(container.textContent).toContain('Emailing edit-recipient@example.com');
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
+  expect(container.querySelector('figure .pet-notification-conversation')?.textContent).toContain('I’ll email edit-recipient@example.com');
   expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
 });
 
@@ -392,7 +391,7 @@ it('keeps the complete page visible on a resumed edit and locks only model chang
   expect(container.querySelector('h1')?.textContent).toBe('Pepsi Can');
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
   expect(container.textContent).toContain('120 Pieces');
-  expect(container.textContent).toContain('Shrinking the Pepsi can');
+  expect(container.textContent).toContain('I’m shrinking the Pepsi can…');
   expect(container.textContent).not.toContain('Continue browsing');
   expect(container.querySelector('[data-testid="viewer"]')?.closest('figure')?.textContent).toContain('Cancel edit');
   expect(modelButton('Manually edit model').disabled).toBe(true);
@@ -425,19 +424,20 @@ it('keeps the mounted viewer when submitting an edit and while the edit request 
   expect(modelButton('Order my kit').disabled).toBe(true);
   await act(async () => startEdit({generation_id: 'g'}));
   expect(container.querySelector('[data-testid="viewer"]')).toBe(viewer);
-  expect(container.textContent).toContain('Shrinking the Pepsi can');
+  expect(container.textContent).toContain('I’m shrinking the Pepsi can…');
   expect(container.textContent).not.toContain('Continue browsing');
-  expect(container.textContent).toContain('Get notified');
-  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Get notified')!;
+  expect(container.textContent).toContain('Would you like an email when your build is ready?');
+  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Yes, email me')!;
   act(() => notify.click());
   act(() => {
-    const input = document.querySelector('[role="dialog"] input')!;
+    const input = container.querySelector('.pet-notification-conversation input')!;
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'builder@example.com');
     input.dispatchEvent(new Event('input', {bubbles: true}));
   });
-  await act(async () => document.querySelector('[role="dialog"] form')!.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true})));
+  await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Notify me')!.click());
   expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('g', 'builder@example.com');
-  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('builder@example.com');
+  expect(container.querySelector('.pet-notification-conversation')?.textContent).toContain('I’ll email builder@example.com');
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
 });
 
 it('replaces the model and unlocks actions when the edit completes', async () => {

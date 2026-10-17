@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Loader2, Wand2 } from 'lucide-react';
-import { PetPromptGreeting } from './PetCompanion';
+import { PetChatMessage, PetPromptGreeting } from './PetCompanion';
 import { usePet } from '../contexts/PetContext';
+import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 
 interface Props {
   prompt: string;
@@ -13,15 +14,30 @@ interface Props {
   disabled: boolean;
   error: string | null;
   manualEditControl?: React.ReactNode;
+  authToken?: string;
+  ownerId?: string;
 }
 
-export function VoxelPromptEditor({ examplePrompt, modelName, prompt, onPromptChange, onSubmit, loading, disabled, error, manualEditControl }: Props) {
+export function VoxelPromptEditor({ examplePrompt, modelName, prompt, onPromptChange, onSubmit, loading, disabled, error, manualEditControl, authToken, ownerId }: Props) {
   const { pet, activity } = usePet();
   const [focused, setFocused] = useState(false);
+  const chat = useBuildBuddyChat(pet.id, authToken, ownerId);
   return (
     <form className="model-refine-card"
-      onSubmit={(event) => { event.preventDefault(); if (prompt.trim() && !loading && !disabled) onSubmit(); }}>
+      onSubmit={(event) => {
+        event.preventDefault();
+        if (!prompt.trim() || loading || disabled) return;
+        const turn = chat.startTurn(prompt.trim(), null);
+        chat.requestReply(turn, prompt.trim());
+        onSubmit();
+      }}>
       <PetPromptGreeting mode="edit" state={loading ? 'building' : focused ? 'listening' : activity} />
+      {chat.turns.length > 0 && <div className="pet-dialogue" role="log" aria-label="Model edit conversation" aria-live="polite">
+        <div className="pet-dialogue-content">{chat.turns.map(turn => <div key={turn.id} className="pet-dialogue-turn">
+          <PetChatMessage user><p>{turn.text}</p></PetChatMessage>
+          <PetChatMessage><p>{turn.reply || 'Let me take a look…'}</p></PetChatMessage>
+        </div>)}</div>
+      </div>}
       <label htmlFor="voxel-edit-prompt" className="block text-lg font-semibold text-slate-900">Refine your model</label>
       <p id="voxel-edit-help" className="mt-1 text-sm text-slate-500">Tell {pet.name} what you’d like to change.</p>
       <textarea id="voxel-edit-prompt" aria-describedby="voxel-edit-help" maxLength={2000} rows={3}

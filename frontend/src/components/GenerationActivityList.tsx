@@ -12,7 +12,7 @@ import { ResumeNovaButton } from './ResumeNovaButton';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { GetNotifiedButton } from './GetNotifiedButton';
 
-export function GenerationActivityList({ generations, error, onOpen, onDismiss, onCancelled, onResumed, notificationPromptId, onNotificationPromptShown }: {
+export function GenerationActivityList({ generations, error, onOpen, onDismiss, onCancelled, onResumed, notificationPromptId, onNotificationPromptShown, buddyDialogue = false }: {
   generations: GenerationActivity[];
   error: string | null;
   onOpen: (id: string) => void;
@@ -21,6 +21,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
   onResumed?: (sourceId: string, newId: string) => void;
   notificationPromptId?: string | null;
   onNotificationPromptShown?: () => void;
+  buddyDialogue?: boolean;
 }) {
   generations = generations.filter(generation => generation.status !== 'failed');
   if (!generations.length && !error) return null;
@@ -79,7 +80,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
                       }}>{title}</a>
                   ) : title}
                 </h3>
-                {!(active && agentGeneration) && <p className={`mt-2 flex items-center gap-2 text-sm ${failed ? 'text-red-600' : 'text-slate-600'}`}>
+                {(!(active && agentGeneration) || buddyDialogue) && <p className={`mt-2 flex items-center gap-2 text-sm ${failed ? 'text-red-600' : 'text-slate-600'}`}>
                   {active ? <Loader2 aria-hidden="true" className="h-4 w-4 shrink-0 animate-spin" />
                     : cancelled ? <Square aria-hidden="true" className="h-4 w-4 shrink-0" />
                     : failed ? <AlertCircle aria-hidden="true" className="h-4 w-4 shrink-0" />
@@ -89,11 +90,11 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
                 {previewPending && <p className="mt-2 text-xs text-slate-500">Preparing preview…</p>}
                 {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
-                {active && agentGeneration && <LlmGenerationOutput generationId={generation.id} active />}
+                {active && agentGeneration && !buddyDialogue && <LlmGenerationOutput generationId={generation.id} active />}
                 {generation.status === 'completed' && <GenerationDuration seconds={generation.durationSeconds} />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
                 {active && <p className="mt-2 text-xs text-slate-500">This may take up to 30 minutes to generate.</p>}
-                {active && <GetNotifiedButton generationId={generation.id}
+                {active && (!buddyDialogue || !agentGeneration) && <GetNotifiedButton generationId={generation.id}
                   promptOnStart={notificationPromptId === generation.id} onPromptShown={onNotificationPromptShown} />}
                 {active && <div className="relative z-20 w-fit"><CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} /></div>}
                 {(failed || cancelled) && generation.endpoint === 'novaToBricks' && onResumed &&
