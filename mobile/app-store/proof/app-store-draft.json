@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-17T16:53:09.633Z",
+  "verifiedAt": "2026-10-17T17:00:33.889Z",
   "versionId": "f6ea1171-cafa-4156-87ae-46cc88987d41",
   "version": "1.0.2",
   "status": "PREPARE_FOR_SUBMISSION",
@@ -134,9 +134,9 @@
             "state": "COMPLETE"
           },
           "videoState": {
-            "errors": [],
+            "errors": null,
             "warnings": null,
-            "state": "PROCESSING"
+            "state": "COMPLETE"
           }
         }
       ]
@@ -155,9 +155,9 @@
             "state": "COMPLETE"
           },
           "videoState": {
-            "errors": [],
+            "errors": null,
             "warnings": null,
-            "state": "PROCESSING"
+            "state": "COMPLETE"
           }
         }
       ]
@@ -176,9 +176,9 @@
             "state": "COMPLETE"
           },
           "videoState": {
-            "errors": [],
+            "errors": null,
             "warnings": null,
-            "state": "PROCESSING"
+            "state": "COMPLETE"
           }
         }
       ]
