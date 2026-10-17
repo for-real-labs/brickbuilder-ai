@@ -49,7 +49,7 @@ vi.mock('../src/components/StreamingMeshViewer', () => ({
 }));
 
 vi.mock('../src/components/SiteFooter', () => ({
-  SiteFooter: () => null,
+  SiteFooter: () => <footer>Site footer</footer>,
 }));
 
 vi.mock('../src/components/GlbUploadCard', () => ({
@@ -60,7 +60,7 @@ vi.mock('../src/components/ProfileMenu', () => ({
   ProfileMenu: () => null,
 }));
 
-import LandingPage, { DEFAULT_GENERATION_METHOD, GenerationModelSelector, FeaturedStrip } from '../src/pages/LandingPage';
+import LandingPage, { DEFAULT_GENERATION_METHOD, GenerationModelSelector } from '../src/pages/LandingPage';
 import { DEFAULT_LLM_MODEL } from '../src/services/llmToBricksApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { GetUserGenerationsApiService } from '../src/services/getUserGenerationsApi';
@@ -83,7 +83,7 @@ describe('LandingPage', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     const generate = vi.spyOn(LlmToBricksApiService, 'generate');
     Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function (this: HTMLDialogElement) { this.open = true; }) });
     const container = document.createElement('div'); document.body.append(container);
@@ -124,7 +124,7 @@ describe('LandingPage', () => {
   ])('restores saved mode $saved as $expected after login', async ({ saved, expected }) => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'A red castle', generationMethod: saved }));
     const container = document.createElement('div');
     const root = createRoot(container);
@@ -146,7 +146,7 @@ describe('LandingPage', () => {
     window.history.replaceState({}, '', '/image-to-lego?mode=all_parts');
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     sessionStorage.setItem('pendingLandingState', JSON.stringify({ generationMethod: 'llm', prompt: 'Castle' }));
     const container = document.createElement('div');
     const root = createRoot(container);
@@ -163,7 +163,7 @@ describe('LandingPage', () => {
   it.each(['gpt-6.1-sol', 'gpt-6-astra', 'claude-opus-5-5', 'claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores saved model %s to the Opus default and submits it', async savedModel => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     const generate = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
     sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Blue car', generationMethod: 'llm', llmModel: savedModel }));
     const container = document.createElement('div');
@@ -187,7 +187,7 @@ describe('LandingPage', () => {
   it.each(['accepted', 'failed'])('submits an image with Enter and clears it only when %s', async outcome => {
     vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     const BrowserURL = URL;
     vi.stubGlobal('URL', class extends BrowserURL {
@@ -272,7 +272,7 @@ describe('LandingPage', () => {
 
   it('ignores Enter during text composition or key repeats, and validates an empty Enter submission', async () => {
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     const start = vi.spyOn(LlmToBricksApiService, 'generate');
     const container = document.createElement('div');
@@ -300,7 +300,7 @@ describe('LandingPage', () => {
 
   it('guides empty submissions at the input without showing a generation failure or starting AI', async () => {
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     const generateAi = vi.spyOn(LlmToBricksApiService, 'generate');
     const container = document.createElement('div');
@@ -328,91 +328,29 @@ describe('LandingPage', () => {
     }
   });
 
-  it('describes the physical builds at the Brickworld Chicago LEGO convention', async () => {
+  it.each([undefined, 'image-to-lego', 'photo-to-lego', 'use-ai-to-edit-ldraw'] as const)('omits the lower sections and community request on %s', async path => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    const community = vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations');
     const container = document.createElement('div');
     const root = createRoot(container);
     try {
-      await act(async () => root.render(<LandingPage />));
-      expect(container.textContent).toContain('BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.');
-      expect(container.querySelector('img[src="/assets/blog/brickworld26/brickbuilderai-models.jpg"]')?.getAttribute('alt')).toContain('the Brickworld Chicago LEGO convention');
-      expect(container.innerHTML).not.toContain('Meme World');
-    } finally {
-      act(() => root.unmount());
-    }
-  });
-
-  it.each(['stats', 'community'])('waits for %s before mounting lower content', async delayed => {
-    let finish!: () => void;
-    const pending = new Promise<void>(resolve => { finish = resolve; });
-    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockImplementation(async () => {
-      if (delayed === 'stats') await pending;
-      return { generation_count: 12, brick_count: 400 };
-    });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockImplementation(async () => {
-      if (delayed === 'community') await pending;
-      return { generations: [], total_count: 0, has_more: false };
-    });
-    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
-    const container = document.createElement('div');
-    const root = createRoot(container);
-    try {
-      await act(async () => root.render(<LandingPage />));
+      await act(async () => root.render(<LandingPage imageLandingPath={path} />));
+      act(() => window.dispatchEvent(new Event('scroll')));
+      expect(container.querySelector('h1')?.textContent).toContain('Imagine. Create. Build.');
+      expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+      if (path !== 'use-ai-to-edit-ldraw') {
+        expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
+        expect(container.querySelector('button[type="submit"][aria-label="Create"]')).not.toBeNull();
+      }
+      expect(container.querySelector('[aria-label="Community models"]')).toBeNull();
       expect(container.querySelector('#how-it-works')).toBeNull();
-      expect(container.textContent).toContain('Create');
-      await act(async () => { finish(); await pending; });
-      expect(container.querySelector('#how-it-works')).toBeTruthy();
-      const lower = container.querySelector<HTMLElement>('.landing-scroll-reveal')!;
-      expect(lower.style.visibility).toBe('hidden');
-      expect(lower.getAttribute('aria-hidden')).toBe('true');
-      act(() => window.dispatchEvent(new Event('scroll')));
-      expect(lower.style.visibility).toBe('hidden');
-      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(1);
-      act(() => window.dispatchEvent(new Event('scroll')));
-      expect(lower.style.visibility).toBe('');
-      expect(lower.getAttribute('aria-hidden')).toBe('false');
-      expect(container.querySelector('.landing-scroll-reveal .landing-visible')).toBeTruthy();
-      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(0);
-      act(() => window.dispatchEvent(new Event('scroll')));
-      expect(lower.style.visibility).toBe('');
-    } finally {
-      act(() => root.unmount());
-    }
-  });
-
-  it('fades lower elements only when they enter the viewport', async () => {
-    let callback!: IntersectionObserverCallback;
-    const observe = vi.fn();
-    const unobserve = vi.fn();
-    const disconnect = vi.fn();
-    vi.stubGlobal('IntersectionObserver', class {
-      constructor(next: IntersectionObserverCallback) { callback = next; }
-      observe = observe;
-      unobserve = unobserve;
-      disconnect = disconnect;
-    });
-    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
-    const root = createRoot(document.createElement('div'));
-    try {
-      await act(async () => root.render(<LandingPage />));
-      expect(observe.mock.calls.filter(([element]) => element.classList.contains('landing-fade-in'))).toHaveLength(0);
-      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(10);
-      act(() => window.dispatchEvent(new Event('scroll')));
-      const target = observe.mock.calls.find(([element]) => element.classList.contains('landing-fade-in'))![0] as Element;
-      expect(target.classList.contains('landing-visible')).toBe(false);
-      callback([{ target, isIntersecting: false }] as IntersectionObserverEntry[], {} as IntersectionObserver);
-      expect(target.classList.contains('landing-visible')).toBe(false);
-      callback([{ target, isIntersecting: true }] as IntersectionObserverEntry[], {} as IntersectionObserver);
-      expect(target.classList.contains('landing-visible')).toBe(true);
-      expect(unobserve).toHaveBeenCalledWith(target);
-    } finally {
-      act(() => root.unmount());
-      expect(disconnect).toHaveBeenCalled();
-      vi.unstubAllGlobals();
-    }
+      expect(container.textContent).not.toContain('Build It In Real Life');
+      expect(container.querySelector('img[src*="brickworld26"]')).toBeNull();
+      expect(container.querySelector('footer')).toBeNull();
+      expect(community).not.toHaveBeenCalled();
+    } finally { act(() => root.unmount()); }
   });
 
   it('starts LLM jobs in the background and allows another submission while they run', async () => {
@@ -474,7 +412,7 @@ describe('LandingPage', () => {
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('Test Nova request'));
     const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
     const BrowserURL = URL;
@@ -487,7 +425,7 @@ describe('LandingPage', () => {
       const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       expect(upload.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(prompt.placeholder).toBe('add optional instructions');
-      expect(container.textContent).toContain('How It Works');
+      expect(container.querySelector('#how-it-works')).toBeNull();
       const picker = container.querySelector('input[type=file]') as HTMLInputElement;
       expect(picker.accept).toContain('.heic');
       const file = new File(['reference'], 'castle.png', { type: 'image/png' });
@@ -519,7 +457,7 @@ describe('LandingPage', () => {
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'full-set', message: 'Started' });
     const llm = vi.spyOn(LlmToBricksApiService, 'generate');
     const poll = vi.spyOn(GetGenerationApiService, 'pollUntilComplete');
@@ -575,7 +513,7 @@ describe('LandingPage', () => {
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'image-basic', message: 'Started' });
     const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'image-nova', message: 'Started' });
     const createUrl = vi.fn(() => 'blob:reference-image');
@@ -622,7 +560,7 @@ describe('LandingPage', () => {
   it('waits for an explicit provider connection choice and preserves the prompt before starting Nova', async () => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({generation_count:12,brick_count:400});
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({generations:[],total_count:0,has_more:false});
+
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => ({...connectedProvider(id),cli_connected:false,api_key_configured:true,login:{status:'disconnected'}}));
     const nova=vi.spyOn(NovaToBricksApiService,'generate').mockResolvedValue({generation_id:'selected-key',message:'Started'});
     const container=document.createElement('div');document.body.appendChild(container);const root=createRoot(container);
@@ -643,90 +581,6 @@ describe('LandingPage', () => {
       await act(async()=>container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({prompt:'A red lighthouse',model:'claude-opus-5-5',authMode:'api_key'}),undefined);
     } finally {act(()=>root.unmount());container.remove();}
-  });
-
-  it('shows the top eight community models with chevron controls', async () => {
-    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
-    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
-      generations: Array.from({ length: 8 }, (_, index) => ({
-        id: `generation-${index + 1}`,
-        user_id: `owner-${index + 1}`,
-        user_type: 'authenticated',
-        prompt: 'castle',
-        name: `Model ${index + 1}`,
-        detail_level: 10,
-        endpoint: 'llm',
-        created_at: '2026-09-26T00:00:00Z',
-        status: 'completed',
-        preview_image_url: `https://example.com/model-${index + 1}.png`,
-        username: `builder-${index + 1}`,
-        like_count: 20 - index,
-      })),
-      total_count: 8,
-      has_more: false,
-    });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({ stargazers_count: 10 }),
-    }));
-
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const root = createRoot(container);
-
-    try {
-      await act(async () => root.render(<LandingPage />));
-
-      expect(container.querySelector('[aria-label="Scroll community models left"]')).toBeTruthy();
-      expect(container.querySelector('[aria-label="Scroll community models right"]')).toBeTruthy();
-      expect(Array.from(container.querySelectorAll('[data-featured-copy="0"] button')).filter((button) => button.textContent?.includes('View Model'))).toHaveLength(8);
-      expect(container.textContent).toContain('Model 1');
-    } finally {
-      act(() => root.unmount());
-      container.remove();
-    }
-  });
-
-  it('disables carousel arrows when there is only one distinct model', async () => {
-    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
-    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
-      generations: [{
-        id: 'generation-1',
-        user_id: 'owner-1',
-        user_type: 'authenticated',
-        prompt: 'castle',
-        name: 'Solo Model',
-        detail_level: 10,
-        endpoint: 'llm',
-        created_at: '2026-09-26T00:00:00Z',
-        status: 'completed',
-        preview_image_url: 'https://example.com/model-1.png',
-        username: 'builder-1',
-        like_count: 9,
-      }],
-      total_count: 1,
-      has_more: false,
-    });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: vi.fn().mockResolvedValue({ stargazers_count: 10 }),
-    }));
-
-    const container = document.createElement('div');
-    document.body.appendChild(container);
-    const root = createRoot(container);
-
-    try {
-      await act(async () => root.render(<LandingPage />));
-
-      expect((container.querySelector('[aria-label="Scroll community models left"]') as HTMLButtonElement).disabled).toBe(true);
-      expect((container.querySelector('[aria-label="Scroll community models right"]') as HTMLButtonElement).disabled).toBe(true);
-    } finally {
-      act(() => root.unmount());
-      container.remove();
-    }
   });
 
   it('uses the updated hero headline', () => {
@@ -789,7 +643,7 @@ describe('LandingPage', () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
     const generate = vi.spyOn(LlmToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'settings-build', message: 'Started' });
     const container = document.createElement('div'); document.body.append(container);
     const root = createRoot(container);
@@ -856,7 +710,7 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-  vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
   const container = document.createElement('div');
   document.body.append(container);
   const root = createRoot(container);
@@ -865,8 +719,8 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     const nav = container.querySelector('header nav')!;
     const trigger = nav.querySelector('button')!;
     expect(trigger.textContent).toBe('Tools');
-    expect(nav.querySelectorAll('a')).toHaveLength(1);
-    expect(nav.querySelector('a')?.getAttribute('href')).toBe('https://apps.apple.com/app/brickbuilder-ai/id6815050463');
+    expect(nav.querySelector('a')).toBeNull();
+    expect(container.querySelector('header a[href*="apps.apple.com"]')).toBeNull();
     act(() => trigger.click());
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     const links = Array.from(nav.querySelectorAll('a[href^="/"]'));
@@ -907,7 +761,7 @@ it('labels the top-right auth action Sign up', async () => {
   authSettings.isSupabaseConfigured = true;
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
   vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
-  vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   const container = document.createElement('div');
   const root = createRoot(container);
@@ -917,68 +771,6 @@ it('labels the top-right auth action Sign up', async () => {
     expect(buttons.some(button => button.textContent?.trim() === 'Sign up')).toBe(true);
     expect(buttons.some(button => button.textContent?.trim() === 'Login')).toBe(false);
   } finally { act(() => root.unmount()); authSettings.isSupabaseConfigured = false; vi.unstubAllGlobals(); }
-});
-
-it.each([2, 3, 8].flatMap(count => [390, 1440, 3714, 5120].map(width => ({ count, width }))))('fills a $width px viewport and centers $count models through scrolling and resizing', ({ count, width }) => {
-  const items = Array.from({ length: count }, (_, index) => ({
-    id: `model-${index}`, title: `Model ${index}`, imageUrl: null,
-    creator: null, createdAt: '2026-10-01', likeCount: count - index,
-  }));
-  const loopCount = Math.ceil(8 / count) * count;
-  const loopWidth = loopCount * 144;
-  let viewportWidth = width;
-  let resize!: () => void;
-  const disconnect = vi.fn();
-  vi.stubGlobal('ResizeObserver', class {
-    constructor(callback: () => void) { resize = callback; }
-    observe() {}
-    disconnect = disconnect;
-  });
-  const geometry = vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function () {
-    const width = this.tagName === 'ARTICLE' ? 120 : this.hasAttribute('data-featured-copy') ? loopWidth : viewportWidth;
-    return { width, height: 200, top: 0, left: 0, bottom: 200, right: width, x: 0, y: 0, toJSON() {} } as DOMRect;
-  });
-  const container = document.createElement('div');
-  const root = createRoot(container);
-  const transform = () => container.querySelector<HTMLElement>('[data-featured-track]')!.style.transform;
-  try {
-    act(() => root.render(<FeaturedStrip items={items} />));
-    const initialOffset = ((loopWidth - (viewportWidth - 120) / 2) % loopWidth + loopWidth) % loopWidth;
-    expect(transform()).toBe(`translate3d(${-initialOffset}px, 0, 0)`);
-    const titles = Array.from(container.querySelectorAll('h3')).map(title => title.textContent);
-    expect(titles).toEqual(Array.from({ length: loopCount * Math.max(2, Math.ceil(viewportWidth / loopWidth) + 1) }, (_, index) => `Model ${index % count}`));
-    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Scroll community models right"]')!.click());
-    expect(transform()).toBe(`translate3d(${-((initialOffset + 144) % loopWidth)}px, 0, 0)`);
-    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Scroll community models right"]')!.click());
-    expect(transform()).toBe(`translate3d(${-((initialOffset + 288) % loopWidth)}px, 0, 0)`);
-    const expectFilled = () => {
-      const copies = container.querySelectorAll('[data-featured-copy]').length;
-      const offset = -Number(transform().match(/translate3d\(([-\d.]+)px/)![1]);
-      expect(offset).toBeGreaterThanOrEqual(0);
-      expect(offset).toBeLessThan(loopWidth);
-      expect(copies * loopWidth - offset).toBeGreaterThanOrEqual(viewportWidth);
-    };
-    expectFilled();
-    // Sweep beyond a full loop in both directions, including its wrap boundary.
-    for (const direction of ['right', 'left']) {
-      for (let step = 0; step < loopCount * 2; step++) {
-        act(() => container.querySelector<HTMLButtonElement>(`[aria-label="Scroll community models ${direction}"]`)!.click());
-        expectFilled();
-      }
-    }
-    for (const resizedWidth of [390, 5120, 1440]) {
-      viewportWidth = resizedWidth;
-      act(() => resize());
-      const centeredOffset = ((loopWidth - (viewportWidth - 120) / 2) % loopWidth + loopWidth) % loopWidth;
-      expect(transform()).toBe(`translate3d(${-centeredOffset}px, 0, 0)`);
-      expectFilled();
-    }
-  } finally {
-    act(() => root.unmount());
-    geometry.mockRestore();
-    vi.unstubAllGlobals();
-  }
-  expect(disconnect).toHaveBeenCalledOnce();
 });
 
 it('positions the render-model chevron inside the select without intercepting input', () => {
@@ -995,18 +787,6 @@ it('positions the render-model chevron inside the select without intercepting in
   expect(chevron.classList.contains('top-1/2')).toBe(true);
   expect(chevron.classList.contains('right-3')).toBe(true);
 });
-
-it('shows saved generation time on featured landing models', () => {
-  const container = document.createElement('div');
-  const root = createRoot(container);
-  try {
-    act(() => root.render(<FeaturedStrip items={[{id: 'fish', title: 'Fish', imageUrl: '/fish.png', creator: null,
-      createdAt: '2026-10-01', likeCount: 0, durationSeconds: 75}]} />));
-    expect(container.querySelector('article')?.textContent).toContain('1m 15s');
-    expect(container.querySelector('[aria-label="Generation time: 1m 15s"]')).not.toBeNull();
-  } finally { act(() => root.unmount()); }
-});
-
 
 it.each(['claude-haiku-5-5', 'gpt-6-astra'])('selects %s for either generation mode and records the provider', async model => {
   const onChange = vi.fn();

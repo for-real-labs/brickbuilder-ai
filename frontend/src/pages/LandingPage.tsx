@@ -4,7 +4,6 @@ import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
-import { GenerationDuration } from '../components/GenerationDuration';
 import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
@@ -16,8 +15,8 @@ import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 
-import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { ArrowUp, Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowUp, Image as ImageIcon, Github, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -28,8 +27,6 @@ import { GetGenerationApiService, GetGenerationResponse } from "../services/getG
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import StreamingMeshViewer from "../components/StreamingMeshViewer";
 import { useAuth } from "../contexts/AuthContext";
-import { SiteFooter } from "../components/SiteFooter";
-import { AppStoreLink } from "../components/AppStoreLink";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity, isGenerationActive } from "../hooks/useGenerationActivity";
@@ -40,7 +37,6 @@ import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/No
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
 import { isLocalDevelopment, LocalProvidersApiService } from "../services/localProvidersApi";
 import { GenerationStats, GetGenerationStatsApiService } from "../services/getGenerationStatsApi";
-import { CommunityGeneration, GetCommunityGenerationsApiService } from "../services/getCommunityGenerationsApi";
 import {
   DEFAULT_LLM_MODEL,
   GENERATION_MODEL_OPTIONS,
@@ -119,64 +115,6 @@ export function GenerationModelSelector({
       <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
     </div>
   );
-}
-
-const NAV_LINKS = [
-  { label: "Products", href: "#products" },
-  { label: "Models", href: "#models" },
-  { label: "Created", href: "#created" },
-  { label: "Today", href: "#today" },
-];
-
-type FeaturedItem = {
-  id: string;
-  title: string;
-  imageUrl: string | null;
-  creator: string | null;
-  createdAt: string;
-  likeCount: number;
-  durationSeconds?: number | null;
-};
-
-const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
-  id: generation.id,
-  title: generation.name?.trim() || "Untitled Model",
-  imageUrl: generation.preview_image_url
-    || generation.external_image_url
-    || generation.image_url
-    || generation.thumbnail_url
-    || generation.processed_image_url
-    || null,
-  creator: generation.username?.trim() || null,
-  createdAt: generation.created_at,
-  likeCount: generation.like_count ?? 0,
-  durationSeconds: generation.generation_duration_seconds,
-});
-
-function ScrollRevealContent({ children, enabled }: { children: React.ReactNode; enabled: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-    const elements = ref.current?.querySelectorAll('.landing-fade-in') || [];
-    if (!('IntersectionObserver' in window)) {
-      elements.forEach(element => element.classList.add('landing-visible'));
-      return;
-    }
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('landing-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0 });
-    elements.forEach(element => observer.observe(element));
-    return () => observer.disconnect();
-  }, [enabled]);
-
-  return <div ref={ref} className="landing-scroll-reveal contents" aria-hidden={!enabled}
-    style={{ visibility: enabled ? undefined : 'hidden' }}>{children}</div>;
 }
 
 // ---- In‑place loading: progress + messages ----
@@ -322,33 +260,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   // Streaming 3D preview state
   const [voxelData, setVoxelData] = useState<VoxelDataEvent | null>(null);
   
-  // Last completed generation (shown as a row)
-  const [lastGeneration, setLastGeneration] = useState<GetGenerationResponse | null>(null);
-
   const navigate = useNavigate();
-  const [isCardHidden, setIsCardHidden] = useState(false);
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
   const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
-  const [statsReady, setStatsReady] = useState(false);
-  const [communityReady, setCommunityReady] = useState(false);
-  const lowerContentReady = (statsReady && communityReady) || typeof window === 'undefined';
-  const [featuredCommunityModels, setFeaturedCommunityModels] = useState<FeaturedItem[]>([]);
-  const [hasScrolled, setHasScrolled] = useState(false);
-
-  useEffect(() => {
-    setHasScrolled(false);
-    const revealAfterScroll = () => {
-      if (window.scrollY <= 0) return;
-      setHasScrolled(true);
-      window.removeEventListener('scroll', revealAfterScroll);
-      posthog.capture('landing_lower_content_revealed', { page: window.location.pathname });
-    };
-    window.addEventListener('scroll', revealAfterScroll, { passive: true });
-    revealAfterScroll();
-    return () => window.removeEventListener('scroll', revealAfterScroll);
-  }, [imageLandingPath]);
-
-
   useEffect(() => {
     const polling = startPolling(async (signal) => {
       try {
@@ -357,40 +271,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       } catch (error) {
         if (!signal.aborted) console.warn("Unable to load generation stats", error);
         throw error;
-      } finally {
-        if (!signal.aborted) setStatsReady(true);
       }
     }, { intervalMs: 30_000 });
     return polling.stop;
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    GetCommunityGenerationsApiService.getCommunityGenerations(
-      undefined,
-      8,
-      0,
-      undefined,
-      'top',
-    )
-      .then((response) => {
-        if (cancelled) return;
-        setFeaturedCommunityModels((response.generations || []).slice(0, 8).map(toFeaturedItem));
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          console.warn("Unable to load featured community models", error);
-          setFeaturedCommunityModels([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setCommunityReady(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   // Login modal state
@@ -604,7 +487,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     setGenerationError(null);
     setPreviewImageUrl(null);
     setGenerationStatus(null);
-    setLastGeneration(null); // Clear previous generation card
     setVoxelData(null);
     
     // Clear old recently prompted generation ID before starting new one
@@ -1159,49 +1041,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               </LandingModelWorkspace>
             </div>}
 
-            {!loading && (
-              <>
-                {/* <p className="mt-2 text-sm text-slate-500 landing-fade-in landing-delay-3">
-                  This app uses generative AI to create brick models. Results may vary.
-                </p> */}
-
-                {/* Last completed generation */}
-                {/* {lastGeneration && !isCardHidden && (
-                  <div className="mt-4 w-full max-w-xl rounded-xl border border-slate-200 bg-white shadow-sm relative">
-                    <button
-                      onClick={() => setIsCardHidden(true)}
-                      className="absolute top-3 right-3 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                      aria-label="Hide card"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div className="p-4 flex gap-4">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-slate-100 border flex items-center justify-center">
-                        {lastGeneration.external_image_url ? (
-                          <img src={lastGeneration.external_image_url} alt={lastGeneration.generation_id} className="w-full h-full object-cover" />
-                        ) : (
-                          <Sparkles className="w-6 h-6 text-slate-300" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm text-slate-900 truncate">id: {lastGeneration.generation_id}</h3>
-                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3"/> Recently created
-                          </span>
-                        </div>
-                        <button 
-                          onClick={() => navigate(`/generated-model?id=${lastGeneration.generation_id}`)}
-                          className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-50 cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5"/> View Model
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )} */}
-              </>
-            )}
           </div>
 
             <GenerationActivityList generations={displayedGenerations} error={activityError} onDismiss={dismissGeneration} buddyDialogue
@@ -1288,133 +1127,10 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               </div>
             )}
           </section>
-          {lowerContentReady && <ScrollRevealContent enabled={hasScrolled}>
-          <section aria-label="Community models" className="mt-4 w-full relative landing-fade-in" style={{ zIndex: 15 }}>
-            {featuredCommunityModels.length > 0 && (
-              <div className="w-screen relative left-1/2 -translate-x-1/2">
-                <FeaturedStrip items={featuredCommunityModels} />
-              </div>
-            )}
-            {!loading && (
-              <div className="mt-4 flex justify-center">
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center gap-1.5 h-12 rounded-full border border-slate-200 bg-white px-6 min-w-36 text-sm font-medium text-slate-700 shadow-sm transition-all hover:-translate-y-px hover:border-[#f44336]/30 hover:bg-red-50 hover:text-[#f44336]"
-                  onClick={() => navigate("/community")}
-                >
-                  <Users className="h-5 w-5" />
-                  View Community Models
-                </button>
-              </div>
-            )}
-          </section>
-
-          <HowItWorks />
-          <RealLifeBuilds />
-          </ScrollRevealContent>}
         </main>
 
-        {lowerContentReady && <ScrollRevealContent enabled={hasScrolled}>
-          <div className="landing-fade-in"><SiteFooter /></div>
-        </ScrollRevealContent>}
       </div>
     </div>
-  );
-}
-
-function HowItWorks() {
-  const steps = [
-    {
-      icon: MessageSquare,
-      title: "Describe or upload",
-      description: "Type a prompt like \"a pink elephant\" or drop in any image you want to build.",
-    },
-    {
-      icon: Wand2,
-      title: "BrickBuilder generates your model",
-      description: "Our generative pipeline turns your idea into a buildable 3D brick model in seconds.",
-    },
-    {
-      icon: Package,
-      title: "Preview, edit, and order",
-      description: "Make your edits, grab the instructions, and we'll ship the parts to your door in 8 days.",
-    },
-  ];
-
-  return (
-    <section
-      id="how-it-works"
-      className="w-full mt-10 mb-16 relative"
-      style={{ zIndex: 15 }}
-    >
-      <div className="mx-auto max-w-5xl px-2">
-        <div className="text-center landing-fade-in landing-delay-1">
-          {/* <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium tracking-wide text-slate-600 uppercase">
-            How it works
-          </span> */}
-          <h2 className="mt-4 text-3xl font-bold text-slate-900 sm:text-4xl">
-            How It Works
-          </h2>
-          <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
-            Turn images and text into custom 3D brick models. Edit freely, get instant instructions, and have the parts on your doorstep in 8 days.
-          </p>
-        </div>
-
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 relative">
-          {/* Connecting line behind cards on md+ */}
-          <div
-            aria-hidden
-            className="hidden md:block absolute left-0 right-0 top-12 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"
-          />
-
-          {steps.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <div
-                key={step.title}
-                className={`relative flex flex-col items-center text-center rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 landing-fade-in landing-delay-${i + 2}`}
-              >
-                <div className="relative">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f44336] to-[#ff6b6b] text-white shadow-md">
-                    <Icon className="h-7 w-7" />
-                  </div>
-                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
-                    {i + 1}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-lg font-semibold text-slate-900">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  {step.description}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function RealLifeBuilds() {
-  return (
-    <section className="w-full mb-16 relative" style={{ zIndex: 15 }}>
-      <div className="mx-auto max-w-5xl px-2 text-center landing-fade-in landing-delay-1">
-        <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">
-          Build It In Real Life
-        </h2>
-        <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
-          Every model comes with real, orderable LEGO parts and instructions. Here's a display of
-          BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.
-        </p>
-        <img
-          src="/assets/blog/brickworld26/brickbuilderai-models.jpg"
-          alt="BrickBuilder AI models built with real LEGO bricks, on display at the Brickworld Chicago LEGO convention"
-          className="mt-8 w-full rounded-2xl border border-slate-200 shadow-sm"
-        />
-      </div>
-    </section>
   );
 }
 
@@ -1492,7 +1208,6 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
 
       <nav aria-label="Main navigation" className="order-last flex w-full items-center justify-center gap-2 sm:gap-3 xl:absolute xl:left-1/2 xl:top-1/2 xl:w-auto xl:-translate-x-1/2 xl:-translate-y-1/2">
         <LandingToolsMenu page={page} />
-        <AppStoreLink placement="header" page={page} />
       </nav>
 
       {/* Login / Sign Up OR Account Menu */}
@@ -1533,134 +1248,3 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
     </header>
   );
 }
-
-export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: FeaturedItem[] }) {
-  const navigate = useNavigate();
-  const trackRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const positionRef = useRef(0);
-  const pausedRef = useRef(false);
-  const [copyCount, setCopyCount] = useState(2);
-  // Fill even a short list before duplicating it for a seamless loop.
-  const loopItems = items.length > 0
-    ? Array.from({ length: Math.ceil(8 / items.length) * items.length }, (_, index) => items[index % items.length])
-    : [];
-
-  const move = (distance: number) => {
-    const track = trackRef.current;
-    const width = track?.firstElementChild?.getBoundingClientRect().width || 0;
-    if (!track || !width) return;
-    positionRef.current = ((positionRef.current + distance) % width + width) % width;
-    track.style.transform = `translate3d(${-positionRef.current}px, 0, 0)`;
-  };
-
-  useLayoutEffect(() => {
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
-    if (!viewport || !track || !items.length) return;
-    const centerFirstModel = () => {
-      const loopWidth = track.firstElementChild?.getBoundingClientRect().width || 0;
-      const cardWidth = track.querySelector('article')?.getBoundingClientRect().width || 0;
-      if (!loopWidth || !cardWidth) return;
-      const viewportWidth = viewport.getBoundingClientRect().width;
-      // Movement can consume one full copy. Keep enough copies after it to
-      // cover the viewport, including wide displays and browser zoom changes.
-      setCopyCount(Math.max(2, Math.ceil(viewportWidth / loopWidth) + 1));
-      positionRef.current = 0;
-      move(loopWidth - (viewportWidth - cardWidth) / 2);
-    };
-    centerFirstModel();
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(centerFirstModel) : null;
-    observer?.observe(viewport);
-    if (track.firstElementChild) observer?.observe(track.firstElementChild);
-    return () => observer?.disconnect();
-  }, [items]);
-
-  useEffect(() => {
-    let frame: number;
-    let previous = 0;
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    const step = (time: number) => {
-      if (previous && !pausedRef.current && !reducedMotion?.matches) {
-        move(37 * Math.min((time - previous) / 1000, 0.1));
-      }
-      previous = time;
-      frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [items]);
-
-  const handleScroll = (direction: 'left' | 'right') => {
-    const cardWidth = trackRef.current?.querySelector('article')?.getBoundingClientRect().width || 160;
-    move((direction === 'left' ? -1 : 1) * (cardWidth + 24));
-    posthog.capture('landing_featured_models_arrow_clicked', {
-      direction, item_count: items.length, surface: 'landing_featured_models',
-    });
-  };
-
-  return (
-    <div className="relative w-full select-none"
-      onMouseEnter={() => { pausedRef.current = true; }}
-      onMouseLeave={() => { pausedRef.current = false; }}
-      onFocus={() => { pausedRef.current = true; }}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) pausedRef.current = false;
-      }}>
-      <button type="button" aria-label="Scroll community models left"
-        onClick={() => handleScroll('left')} disabled={items.length < 2}
-        className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <div ref={viewportRef} className="overflow-hidden">
-        <div ref={trackRef} data-featured-track className="flex w-max" style={{ willChange: 'transform' }}>
-          {Array.from({ length: copyCount }, (_, copy) => (
-            <div key={copy} data-featured-copy={copy} className="flex w-max shrink-0 gap-6 py-1 pr-6">
-              {loopItems.map((item, index) => (
-                  <article
-                    key={`${item.id}-${index}`}
-                    className="shrink-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
-                    style={{ width: "clamp(7.5rem, 13.5vw, 12.75rem)" }}
-                  >
-                    <div
-                      className="relative w-full overflow-hidden rounded-xl bg-slate-50"
-                      style={{ paddingTop: "100%" }}
-                    >
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="absolute left-0 top-0 h-full w-full object-contain"
-                          draggable="false"
-                          onDragStart={(e) => e.preventDefault()}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-                          <Sparkles className="h-10 w-10" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-3 text-center">
-                      <h3 className="text-sm font-semibold text-slate-800 mb-1 line-clamp-2">{item.title}</h3>
-                      <GenerationDuration seconds={item.durationSeconds} compact className="mt-1 flex items-center justify-center gap-1 text-xs tabular-nums text-slate-500" />
-                      <button
-                        onClick={() => navigate(`/generated-model?id=${item.id}`)}
-                        className="mt-1 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
-                      >
-                        <Eye className="w-4 h-4"/> View Model
-                      </button>
-                    </div>
-                  </article>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-      <button type="button" aria-label="Scroll community models right"
-        onClick={() => handleScroll('right')} disabled={items.length < 2}
-        className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
-        <ChevronRight className="h-5 w-5" />
-      </button>
-    </div>
-  );
-});
