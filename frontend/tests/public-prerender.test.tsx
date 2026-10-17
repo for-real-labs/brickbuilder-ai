@@ -30,11 +30,17 @@ describe('public page indexing', () => {
     expect(document.querySelector('#root h1')).not.toBeNull();
     expect(document.querySelector('#root')?.textContent?.length).toBeGreaterThan(100);
     expect(document.querySelector('script[src="/src/main.tsx"]')).not.toBeNull();
+    expect(document.querySelector('footer a[href="https://apps.apple.com/app/brickbuilder-ai/id6815050463"]')?.textContent).toContain('Download for iOS');
     const schemas = Array.from(document.head.querySelectorAll('script[type="application/ld+json"]'));
     expect(schemas).toHaveLength(1);
     const schema = JSON.parse(schemas[0].textContent!);
     expect(JSON.stringify(schema)).toContain(url);
     expect(JSON.stringify(schema)).not.toContain('aggregateRating');
+  });
+
+  it.each(['/', '/image-to-lego', '/photo-to-lego', '/use-ai-to-edit-ldraw'])('exposes the iOS download in main navigation before JavaScript at %s', path => {
+    const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
+    expect(document.querySelector('nav[aria-label="Main navigation"] a[href="https://apps.apple.com/app/brickbuilder-ai/id6815050463"]')?.textContent).toContain('Download for iOS');
   });
 
   it('pre-renders every sitemap URL and every native or imported blog article', () => {

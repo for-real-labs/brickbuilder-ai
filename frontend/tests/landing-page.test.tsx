@@ -845,10 +845,11 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     const nav = container.querySelector('header nav')!;
     const trigger = nav.querySelector('button')!;
     expect(trigger.textContent).toBe('Tools');
-    expect(nav.querySelector('a')).toBeNull();
+    expect(nav.querySelectorAll('a')).toHaveLength(1);
+    expect(nav.querySelector('a')?.getAttribute('href')).toBe('https://apps.apple.com/app/brickbuilder-ai/id6815050463');
     act(() => trigger.click());
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
-    const links = Array.from(nav.querySelectorAll('a'));
+    const links = Array.from(nav.querySelectorAll('ul[aria-label="Tools"] a'));
     expect(links.map(link => link.getAttribute('href'))).toEqual([
       '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/use-ai-to-edit-ldraw', '/community',
     ]);
