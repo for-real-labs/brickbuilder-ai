@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Download, Loader2, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -128,6 +129,6 @@ export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
       <p className="text-xs leading-5 text-slate-500">GLB includes the generated appearance. OBJ exports geometry without textures or an MTL file.</p>
     </div>}
     {error && <p role="alert" className="mt-4 text-sm leading-6 text-red-600">{error}</p>}
-    {generationId && <Link to={`/generated-model?id=${encodeURIComponent(generationId)}`} onClick={() => track('image_model_brick_result_clicked', { generation_id: generationId })} className="mt-5 inline-block text-sm font-semibold text-[#c42d23] underline">Open this generation’s brick version</Link>}
+    {generationId && <Link to={getGeneratedModelPath(generationId)} onClick={() => track('image_model_brick_result_clicked', { generation_id: generationId })} className="mt-5 inline-block text-sm font-semibold text-[#c42d23] underline">Open this generation’s brick version</Link>}
   </section>;
 }

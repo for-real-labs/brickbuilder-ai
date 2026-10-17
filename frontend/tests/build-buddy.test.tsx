@@ -109,7 +109,7 @@ it('shows text and images in order, speaks stream updates, and shows a completed
   expect(container.querySelector('.pet-chat-message--user')).toBe(originalPrompt);
   expect(container.textContent).toContain('Those wings will look great in bricks.');
   expect(container.textContent).toContain('Your build is ready');
-  expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=job&exact=1');
+  expect(container.querySelector('a')?.getAttribute('href')).toBe('/?id=job&exact=1');
   expect(container.querySelector('.pet-notification-conversation')).toBeNull();
   await act(async () => root.render(<BuildBuddyDialogue
     turns={[...turns, { id: 2, text: 'Make the wings blue', reply: 'Blue wings coming up!', generationId: 'edit', method: 'nova' }]}

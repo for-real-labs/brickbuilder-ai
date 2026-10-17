@@ -352,7 +352,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
                       </div>
                       {edit.status === 'completed' ? (
                         <button 
-                          onClick={() => navigate(`/generated-model?id=${encodeURIComponent(edit.id)}&exact=1`)}
+                          onClick={() => navigate(getGeneratedModelPath(edit.id, true))}
                           className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] hover:bg-slate-50 cursor-pointer flex-shrink-0"
                         >
                           <Eye className="w-3.5 h-3.5"/> View Model

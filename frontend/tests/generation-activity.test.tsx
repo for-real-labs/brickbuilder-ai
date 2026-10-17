@@ -314,7 +314,7 @@ it.each(['processing', 'completed'])('opens the %s model from the card link and 
   ]} error={null} onOpen={open} />));
   const link = container.querySelector('article a') as HTMLAnchorElement;
   expect(link.textContent).toBe('Sunny Dog');
-  expect(link.getAttribute('href')).toBe('/generated-model?id=card%2Fid');
+  expect(link.getAttribute('href')).toBe('/?id=card%2Fid');
   expect(link.className).toContain('after:inset-0');
   act(() => link.click());
   expect(open).toHaveBeenCalledOnce();

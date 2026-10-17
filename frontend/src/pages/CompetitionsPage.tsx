@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { Link } from "react-router-dom";
 import { ChevronLeft, Trophy, Gift, Mail, Eye } from "lucide-react";
 import { SEO } from "../components/SEO";
@@ -47,17 +48,17 @@ export default function CompetitionsPage() {
               {
                 name: "Taylor Swift Eras Tour Stage",
                 src: "/assets/competition/examples/brickworld-winners/taylorswift.png",
-                href: "/generated-model?id=2133a9b4-0880-48c6-9c4a-c30707128448",
+                href: getGeneratedModelPath("2133a9b4-0880-48c6-9c4a-c30707128448", true),
               },
               {
                 name: "Castle",
                 src: "/assets/competition/examples/brickworld-winners/castle.png",
-                href: "/generated-model?id=a5485156-a15c-4a3e-b6d9-27baf08e476c",
+                href: getGeneratedModelPath("a5485156-a15c-4a3e-b6d9-27baf08e476c", true),
               },
               {
                 name: "Avocado",
                 src: "/assets/competition/examples/brickworld-winners/avocado.png",
-                href: "/generated-model?id=08e8eb8b-1134-41a7-9c98-17b05e817972",
+                href: getGeneratedModelPath("08e8eb8b-1134-41a7-9c98-17b05e817972", true),
               },
             ].map((model) => (
               <div key={model.name} className="flex flex-col items-center text-center">

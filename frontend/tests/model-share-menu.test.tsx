@@ -19,7 +19,7 @@ const button = (label: string) => [...container.querySelectorAll('button')].find
 
 it('shares the exact displayed revision with encoded URLs and no unrelated query parameters', async () => {
   open();
-  const url = new URL('/generated-model?id=revision%20%26%202&exact=1', window.location.origin).href;
+  const url = new URL('/?id=revision%20%26%202&exact=1', window.location.origin).href;
   const facebook = container.querySelector<HTMLAnchorElement>('a[href*="facebook"]')!;
   const twitter = container.querySelector<HTMLAnchorElement>('a[href*="twitter"]')!;
   expect(new URL(facebook.href).searchParams.get('u')).toBe(url);

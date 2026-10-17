@@ -54,7 +54,7 @@ it.each(['glb', 'obj'] as const)('converts %s in voxel mode with the selected si
   await act(async () => button('Convert to bricks').click());
   expect(GlbToBricksApiService.uploadGlb).toHaveBeenCalledWith(expect.any(File), 'trimesh', 25, 'owner-token', format);
   expect(NovaToBricksApiService.edit).not.toHaveBeenCalled();
-  expect(navigate).toHaveBeenCalledWith('/generated-model?id=voxel-id');
+  expect(navigate).toHaveBeenCalledWith('/?id=voxel-id');
 });
 
 it.each(['glb', 'obj'] as const)('voxelizes %s before passing its model to the same all-parts editor as the landing page', async format => {
@@ -70,7 +70,7 @@ it.each(['glb', 'obj'] as const)('voxelizes %s before passing its model to the s
   expect(button('All LEGO parts').disabled).toBe(true);
   await act(async () => finish({ generation_id: 'voxel-id', status: 'completed' } as never));
   expect(NovaToBricksApiService.edit).toHaveBeenCalledWith('voxel-id', expect.stringContaining('full LEGO parts catalog'), 'owner-token');
-  expect(navigate).toHaveBeenCalledWith('/generated-model?id=all-parts-id');
+  expect(navigate).toHaveBeenCalledWith('/?id=all-parts-id');
   expect(posthog.capture).toHaveBeenCalledWith('generation_started', expect.objectContaining({ mode: 'all_parts', input_type: format, source_generation_id: 'voxel-id' }));
 });
 
@@ -93,7 +93,7 @@ it('keeps the voxel version accessible when the all-parts editor fails', async (
   await act(async () => button('Convert to bricks').click());
   expect(host.textContent).toContain('Builder is unavailable');
   act(() => button('Open voxel version').click());
-  expect(navigate).toHaveBeenCalledWith('/generated-model?id=voxel-id');
+  expect(navigate).toHaveBeenCalledWith('/?id=voxel-id');
 });
 
 it('rejects incorrect extensions and empty uploads before conversion', async () => {

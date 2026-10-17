@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
 import { useNavigate } from 'react-router-dom';
@@ -52,7 +53,7 @@ export function GenerationNotificationsProvider({ children }: { children: React.
               const notification = new Notification(model.is_edit ? 'Your model edit is ready' : 'Your model is ready', {
                 body: 'Open BrickBuilder to view your completed model.', tag: `brickbuilder:${model.id}`, icon: '/logo.svg',
               });
-              notification.onclick = () => { posthog.capture('browser_generation_notification_clicked', { generation_id: model.id }); window.focus(); navigate(`/generated-model?id=${encodeURIComponent(model.id)}&exact=1`); notification.close(); };
+              notification.onclick = () => { posthog.capture('browser_generation_notification_clicked', { generation_id: model.id }); window.focus(); navigate(getGeneratedModelPath(model.id, true)); notification.close(); };
             } catch { /* The in-app badge still works if system notifications are unavailable. */ }
           }
           known.delete(model.id);

@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bell, BellRing, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -73,10 +74,10 @@ export function NotificationPanel({ onNavigate, onBack }: NotificationPanelProps
       <div className="max-h-80 overflow-y-auto">
         {feed.error && <p role="status" className="px-4 py-3 text-xs text-red-600">{feed.error}</p>}
         {!feed.error && !feed.active.length && !feed.notifications.length && <p className="px-4 py-8 text-center text-sm text-slate-500">No notifications yet</p>}
-        {[...feed.active, ...feed.notifications].map(model => <a key={model.id} href={`/generated-model?id=${encodeURIComponent(model.id)}&exact=1`}
+        {[...feed.active, ...feed.notifications].map(model => <a key={model.id} href={getGeneratedModelPath(model.id, true)}
           onClick={event => { if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return; event.preventDefault();
             posthog.capture('generation_notification_clicked', { generation_id: model.id, status: model.status });
-            (onNavigate || navigate)(`/generated-model?id=${encodeURIComponent(model.id)}&exact=1`);
+            (onNavigate || navigate)(getGeneratedModelPath(model.id, true));
           }} className={`flex gap-3 border-b border-slate-100 px-4 py-3 hover:bg-slate-100 ${!model.seen && model.status === 'completed' ? 'bg-red-50/60' : ''}`}>
           <span className="mt-1 shrink-0 text-slate-400">{model.status === 'completed' ? <BellRing size={17} /> : <Loader2 size={17} className="animate-spin" />}</span>
           <span className="min-w-0 flex-1"><span className="block text-sm font-medium text-slate-800">{model.status === 'completed' ? (model.is_edit ? 'Your edit is ready' : 'Your model is ready') : 'Model in progress'}</span><span className="mt-1 block truncate text-xs text-slate-500">{model.prompt}</span></span>

@@ -8,7 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { GenerationNotificationsProvider } from "./contexts/GenerationNotificationsContext";
 
 import LandingPage from "./pages/LandingPage";
-import GeneratedModel from "./pages/GeneratedModel";
+import { GeneratedModelRedirect } from "./components/GeneratedModelRedirect";
 import OrderKit from "./pages/OrderKit";
 import Success from "./pages/Success";
 import { InstructionsPage } from "./pages/InstructionsPage";
@@ -66,7 +66,7 @@ export default function App() {
 
           {/* App pages */}
           <Route path="/dashboard" element={<UserDashboard />} /> {/* NEW */}
-          <Route path="/generated-model" element={<GeneratedModel />} />
+          <Route path="/generated-model" element={<GeneratedModelRedirect />} />
           <Route path="/glb-to-lego" element={<GlbToLegoPage />} />
           <Route path="/obj-to-lego" element={<ObjToLegoPage />} />
           {VOXEL_CONVERTERS.map(({ path, input, output }) => <Route key={path} path={path} element={<ModelToVoxelPage key={path} input={input} output={output} />} />)}

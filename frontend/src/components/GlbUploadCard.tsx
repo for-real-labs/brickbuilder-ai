@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import React, { useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
 import { ModelMeshPreview as MeshViewer } from './ModelMeshPreview';
@@ -92,9 +93,9 @@ export function GlbUploadCard({ autoOpen = false, format = 'glb' }: { autoOpen?:
           'Rebuild this voxelized reference using the full LEGO parts catalog. Preserve its silhouette, proportions and colors; use suitable slopes, curves, plates and bricks with valid connections.',
           session?.access_token);
         posthog.capture('generation_started', { ...attribution, generation_id: result.generation_id, mode: 'all_parts', source_generation_id: generation_id });
-        navigate(`/generated-model?id=${result.generation_id}`);
+        navigate(getGeneratedModelPath(result.generation_id));
       } else {
-        navigate(`/generated-model?id=${generation_id}`);
+        navigate(getGeneratedModelPath(generation_id));
       }
     } catch (err) {
       track('conversion_failed');
@@ -214,7 +215,7 @@ export function GlbUploadCard({ autoOpen = false, format = 'glb' }: { autoOpen?:
 
       {error && voxelGenerationId && <button type="button" className="mt-3 text-sm text-[#f44336] underline" onClick={() => {
         posthog.capture('model_converter_voxel_fallback_opened', { ...attribution, generation_id: voxelGenerationId });
-        navigate(`/generated-model?id=${voxelGenerationId}`);
+        navigate(getGeneratedModelPath(voxelGenerationId));
       }}>Open voxel version</button>}
       {error && <p className="mt-3 text-sm text-red-500">{error}</p>}
     </div>

@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import React, { useEffect, useState } from 'react';
 import { LlmToBricksApiService } from '../services/llmToBricksApi';
 import { PetChatMessage } from './PetCompanion';
@@ -58,7 +59,7 @@ export function LlmGenerationOutput({ generationId, active, status }: { generati
     : 'I’m getting your build ready. I’ll share updates here as I work.';
   return <PetChatMessage state={currentStatus === 'completed' ? 'celebrating' : active && !finished ? 'building' : 'idle'}>
     <p role="status" className={active && !finished ? 'build-thinking-shimmer' : undefined}>{update}</p>
-    {currentStatus === 'completed' && <a className="pet-chat-action relative z-20" href={`/generated-model?id=${encodeURIComponent(generationId)}&exact=1`}>View model</a>}
+    {currentStatus === 'completed' && <a className="pet-chat-action relative z-20" href={getGeneratedModelPath(generationId, true)}>View model</a>}
     {reconnecting && active && !finished && <p className="pet-chat-meta">I’m reconnecting to live updates. Your build keeps running.</p>}
   </PetChatMessage>;
 }

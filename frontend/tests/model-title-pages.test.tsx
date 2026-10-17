@@ -141,7 +141,7 @@ it('shows image-free LLM history ordered and labelled by stored version on the m
   expect(history).toHaveBeenCalledWith('token', 'g');
   const dialog = container.querySelector('[aria-label="Previous model edits"]')!;
   expect(dialog.textContent!.indexOf('Version 7')).toBeLessThan(dialog.textContent!.indexOf('Version 3'));
-  expect(dialog.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=old&exact=1');
+  expect(dialog.querySelector('a')?.getAttribute('href')).toBe('/?id=old&exact=1');
 });
 
 it('shows image-free history on dashboard cards and opens the selected revision exactly', async () => {
@@ -158,7 +158,7 @@ it('shows image-free history on dashboard cards and opens the selected revision 
   expect(container.textContent!.indexOf('VERSION 7')).toBeLessThan(container.textContent!.indexOf('VERSION 3'));
   const viewButtons = Array.from(container.querySelectorAll('button')).filter(button => button.textContent?.includes('View Model'));
   await act(async () => viewButtons.at(-1)!.click());
-  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=old&exact=1');
+  expect(container.querySelector('output')?.textContent).toBe('/?id=old&exact=1');
 });
 
 it('opens the earlier completed version after cancellation without a stored source link', async () => {
@@ -170,7 +170,7 @@ it('opens the earlier completed version after cancellation without a stored sour
   ) as never);
   const Location = () => { const location = useLocation(); return <output>{location.pathname}{location.search}</output>; };
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
-  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=old&exact=1');
+  expect(container.querySelector('output')?.textContent).toBe('/?id=old&exact=1');
   expect(container.querySelector('h1')?.textContent).toBe('Earlier Rover');
 });
 
@@ -253,11 +253,11 @@ it('opens the last completed model from its dashboard thumbnail while a newer ed
   await act(async () => root.render(<MemoryRouter initialEntries={['/dashboard']}>
     <Routes>
       <Route path="/dashboard" element={<DashboardCard />} />
-      <Route path="/generated-model" element={<GeneratedModel />} />
+      <Route path="/" element={<GeneratedModel />} />
     </Routes><Location />
   </MemoryRouter>));
   await act(async () => (container.querySelector('[aria-label="View model preview"]') as HTMLButtonElement).click());
-  expect(container.querySelector('output')?.textContent).toBe('/generated-model?id=completed-v2&exact=1');
+  expect(container.querySelector('output')?.textContent).toBe('/?id=completed-v2&exact=1');
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('Completed Can');
   expect(GetGenerationApiService.getGeneration).toHaveBeenCalledWith('completed-v2', expect.any(AbortSignal));
 });

@@ -1,6 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import OrderKit from '../src/pages/OrderKit';
 import { CheckoutPayment } from '../src/components/checkout/CheckoutPayment';
@@ -68,7 +68,25 @@ it('uses a text-only brand link in the checkout header', async () => {
   const brand = container.querySelector('a[aria-label="BrickBuilder home"]')!;
   expect(brand.textContent).toBe('BRICKBUILDER');
   expect(brand.querySelector('svg, img')).toBeNull();
+  expect(brand.getAttribute('href')).toBe('/?id=g&exact=1');
 });
+
+it.each(['navigation', 'saved order', 'last generation'])(
+  'returns from checkout to the landing viewer using the %s model', async source => {
+    localStorage.clear();
+    localStorage.setItem('lastGenerationId', 'last');
+    if (source === 'saved order') localStorage.setItem('orderState', JSON.stringify({ generation_id: 'saved', priceData: quote }));
+    const state = source === 'navigation' ? { generation_id: 'ordered & model', priceData: quote } : null;
+    function Location() { const location = useLocation(); return <output>{location.pathname}{location.search}</output>; }
+    await act(async () => root.render(<MemoryRouter initialEntries={[{ pathname: '/order', state }]}>
+      <Routes><Route path="/order" element={<OrderKit />} /><Route path="/" element={<Location />} /></Routes>
+    </MemoryRouter>));
+    await click('Back to model');
+    const id = source === 'navigation' ? 'ordered%20%26%20model' : source === 'saved order' ? 'saved' : 'last';
+    expect(container.querySelector('output')?.textContent).toBe(`/?id=${id}&exact=1`);
+    localStorage.clear();
+  },
+);
 
 it('shows regular line items, a separate discount, and crosses out only the original total', async () => {
   await renderOrder();

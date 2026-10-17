@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { NotificationMenu } from "../components/NotificationMenu";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -407,7 +408,7 @@ export default function CommunityPage() {
                     <CommunityCard
                       key={g.id}
                       g={g}
-                      onClick={() => navigate(`/generated-model?id=${g.id}`)}
+                      onClick={() => navigate(getGeneratedModelPath(g.id))}
                       onLikeClick={() => {
                         void handleLike(g);
                       }}

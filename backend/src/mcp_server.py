@@ -219,7 +219,7 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
             result = await llm_to_bricks(request, identity)
             return _result({
                 "generation_id": result.generation_id, "status": "started",
-                "model_url": f"{settings.website_url}/generated-model?id={result.generation_id}&exact=1",
+                "model_url": f"{settings.website_url}/?id={result.generation_id}&exact=1",
                 "poll_after_seconds": 10, "next_tool": "get_lego_model",
                 "message": "Build started. Check this generation's progress; do not start a duplicate build.",
             })
@@ -255,7 +255,7 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
             status = _generation_status(row)
             result = {
                 "generation_id": str(generation_id), "status": status,
-                "model_url": f"{settings.website_url}/generated-model?id={generation_id}&exact=1",
+                "model_url": f"{settings.website_url}/?id={generation_id}&exact=1",
             }
             if status == "completed":
                 result.update({key: row.get(key) for key in (
