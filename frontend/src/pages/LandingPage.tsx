@@ -16,7 +16,7 @@ import { useLandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
+import { ArrowUp, Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -927,6 +927,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
 
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
+  const sendLabel = landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : 'Create';
+
   return (
     <div
       className="min-h-screen overflow-x-hidden text-slate-900 relative"
@@ -973,7 +975,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
         setProviderLogin(null);
       }} />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6 relative" style={{ zIndex: 10 }}>
+      <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-[calc(min(70dvh,40rem)+3rem)] pt-6 relative" style={{ zIndex: 10 }}>
         <LandingHeader page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)} />
 
         <main className="flex flex-1 flex-col items-center text-center w-full">
@@ -981,6 +983,25 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl text-slate-900 landing-fade-in landing-delay-2">
               Imagine. Create. Build.
             </h1>
+
+            <div
+              className="flex items-center justify-center gap-4 sm:gap-8 text-slate-600 landing-fade-in landing-delay-2"
+              aria-label="BrickBuilder generation statistics"
+            >
+              <div className="min-w-0">
+                <span className="block text-xl font-bold sm:text-2xl tabular-nums text-slate-900">
+                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
+                </span>
+                <span className="whitespace-nowrap text-xs sm:text-sm">models generated</span>
+              </div>
+              <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
+              <div className="min-w-0">
+                <span className="block text-xl font-bold sm:text-2xl tabular-nums text-slate-900">
+                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
+                </span>
+                <span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span>
+              </div>
+            </div>
 
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
               <PetPromptGreeting mode="upload" state={petState} showPetSwitch={false} />
@@ -992,7 +1013,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 navigate(`/generated-model?id=${encodeURIComponent(id)}&exact=1`);
               }} />
             </div>}
-            {!ldrawLanding && <div className="relative z-20 w-full landing-fade-in landing-delay-3">
+            {!ldrawLanding && <div className="relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy}
                 onCreateNew={createNewModel} onSuggest={suggestion => {
                   setPrompt(suggestion);
@@ -1043,16 +1064,15 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       event.currentTarget.form?.requestSubmit();
                     }}
                     placeholder={landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
-                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pr-36"
+                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   <button
-                    type="submit"
+                    type="submit" aria-label={sendLabel} title={sendLabel}
                     disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
-                    className="absolute right-2 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-base"
+                    className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#f44336] text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <Sparkles aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
-                    {landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : 'Create'}
+                    <ArrowUp aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>
                 <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
@@ -1119,59 +1139,40 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             </form>
               {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
               {modelBusy && <p role="status" className="mt-3 text-left text-sm text-slate-500">{landingModel.model ? 'Updating your model… You can keep viewing it while your edit builds.' : 'Your model will appear here when it’s ready.'}</p>}
+              {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
+                <LocalProviderSettings />
+              </div>}
+
+              {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
+              {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
+              {/* Image thumbnail preview */}
+              {!imageLanding && imagePreviewUrl && (
+                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <img
+                    src={imagePreviewUrl}
+                    alt="Uploaded preview"
+                    className="w-20 h-20 object-cover rounded-md"
+                  />
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-slate-700">{imgFile?.name}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {imgFile && (imgFile.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearSelectedImage}
+                    className="text-slate-400 hover:text-red-500 transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
               </LandingModelWorkspace>
             </div>}
-            <div
-              className="flex items-center justify-center gap-8 text-slate-600 landing-fade-in landing-delay-2"
-              aria-label="BrickBuilder generation statistics"
-            >
-              <div className="min-w-28">
-                <span className="block text-2xl font-bold tabular-nums text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
-                </span>
-                <span className="text-sm">models generated</span>
-              </div>
-              <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
-              <div className="min-w-28">
-                <span className="block text-2xl font-bold tabular-nums text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
-                </span>
-                <span className="text-sm">bricks generated</span>
-              </div>
-            </div>
-
-            {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
-              <LocalProviderSettings />
-            </div>}
-
-            {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
-            {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
-            {/* Image thumbnail preview */}
-            {!imageLanding && imagePreviewUrl && (
-              <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <img
-                  src={imagePreviewUrl}
-                  alt="Uploaded preview"
-                  className="w-20 h-20 object-cover rounded-md"
-                />
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-slate-700">{imgFile?.name}</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {imgFile && (imgFile.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={clearSelectedImage}
-                  className="text-slate-400 hover:text-red-500 transition-colors"
-                  aria-label="Remove image"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
 
             {!loading && (
               <>
@@ -1493,7 +1494,7 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
       target="_blank"
       rel="noopener noreferrer"
       aria-label="View BrickBuilder on GitHub"
-      className="inline-flex h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
+      className="hidden h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:inline-flex sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white sm:h-6 sm:w-6">
         <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1534,11 +1535,12 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
 
             {/* Dashboard button */}
             <button
+              aria-label="Dashboard"
               className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-2 h-8 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px sm:px-3 sm:h-9"
               onClick={() => navigate('/dashboard')}
             >
               <LayoutDashboard className="h-4 w-4" />
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
             </button>
 
             {/* Account dropdown */}

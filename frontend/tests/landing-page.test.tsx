@@ -178,7 +178,7 @@ describe('LandingPage', () => {
         { value: 'gpt-6-astra', label: 'GPT-6 Astra' },
       ]);
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
-      const create = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
+      const create = container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
       await act(async () => create.click());
       expect(generate).toHaveBeenCalledWith(expect.objectContaining({ model: DEFAULT_LLM_MODEL }), undefined);
     } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); container.remove(); }
@@ -302,7 +302,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      const generate = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
+      const generate = container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
       await act(async () => generate.click());
       expect(container.querySelector('#generation-input-help')?.textContent).toContain('Describe what you’d like to build');
       expect(container.textContent).not.toContain('Generation Failed');
@@ -424,7 +424,7 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<LandingPage />));
       act(() => container.querySelector<HTMLButtonElement>('#landing-builder-mode button[value="llm"]')!.click());
-      await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!.click());
+      await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!.click());
       expect(start).not.toHaveBeenCalled();
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ has_prompt: false, has_image: false }));
       const input = container.querySelector('input:not([type="file"])') as HTMLInputElement;
@@ -432,7 +432,7 @@ describe('LandingPage', () => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Red castle');
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      const generate = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Create')!;
+      const generate = () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
       await act(async () => generate().click());
       expect(container.textContent).toContain('1 in progress');
       expect(input.disabled).toBe(false);
@@ -516,7 +516,7 @@ describe('LandingPage', () => {
     const container = document.createElement('div');
     document.body.appendChild(container);
     const root = createRoot(container);
-    const findButton = (text: string) => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes(text))!;
+    const findButton = (text: string) => Array.from(container.querySelectorAll('button')).find(button => button.getAttribute('aria-label') === text || button.textContent?.includes(text))!;
     try {
       await act(async () => root.render(<LandingPage />));
       const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
@@ -729,8 +729,10 @@ describe('LandingPage', () => {
     container.innerHTML = markup;
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
     const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
-    expect(form.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(stats.previousElementSibling).toBe(form.parentElement);
+    expect(stats.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(stats.previousElementSibling).toBe(container.querySelector('h1'));
+    expect(form.closest('[aria-label="Build dialogue"]')).not.toBeNull();
+    expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('[aria-label="Build dialogue"]')).toBe(form.closest('[aria-label="Build dialogue"]'));
     expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('form')).toBeNull();
   });
 
@@ -743,7 +745,9 @@ describe('LandingPage', () => {
       const form = container.querySelector('form[aria-label="Create a brick model"]')!;
       const input = form.querySelector('input[aria-label="Describe your model"]')!;
       const create = form.querySelector('button[type="submit"]')!;
-      expect(create.textContent?.trim()).toBe('Create');
+      expect(create.textContent?.trim()).toBe('');
+      expect(create.getAttribute('aria-label')).toBe('Create');
+      expect(create.querySelector('svg.lucide-arrow-up')).not.toBeNull();
       expect(create.parentElement).toBe(input.parentElement);
       const model = form.querySelector('#landing-render-model') as HTMLSelectElement;
       const mode = form.querySelector('#landing-builder-mode') as HTMLDivElement;
@@ -855,13 +859,23 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     expect(nav.querySelector('a')?.getAttribute('href')).toBe('https://apps.apple.com/app/brickbuilder-ai/id6815050463');
     act(() => trigger.click());
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
-    const links = Array.from(nav.querySelectorAll('ul[aria-label="Tools"] a'));
+    const links = Array.from(nav.querySelectorAll('a[href^="/"]'));
     expect(links.map(link => link.getAttribute('href'))).toEqual([
       '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/use-ai-to-edit-ldraw', '/community',
     ]);
     const capture = (await import('posthog-js')).default.capture;
     expect(capture).toHaveBeenCalledWith('landing_header_tools_opened', expect.objectContaining({ navigation_layout: 'tools_dropdown' }));
-    act(() => links[0].dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+    const github = nav.querySelector<HTMLAnchorElement>('a[href="https://github.com/jjohnson5253/brickbuilderai"]')!;
+    expect(github.textContent).toBe('GitHub');
+    expect(github.getAttribute('target')).toBe('_blank');
+    expect(container.querySelector('[aria-label="View BrickBuilder on GitHub"]')?.classList.contains('hidden')).toBe(true);
+    act(() => github.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+    expect(capture).toHaveBeenCalledWith('landing_header_github_clicked', {
+      page: '/', navigation_layout: 'tools_dropdown', destination: github.href, tool: 'GitHub',
+    });
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    act(() => trigger.click());
+    act(() => nav.querySelector('a[href="/image-to-lego"]')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
     expect(capture).toHaveBeenCalledWith('landing_header_image_to_lego_clicked', expect.objectContaining({ destination: '/image-to-lego', navigation_layout: 'tools_dropdown' }));
     expect(capture).toHaveBeenCalledWith('landing_header_tools_item_clicked', expect.objectContaining({ tool: 'Image to LEGO' }));
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
