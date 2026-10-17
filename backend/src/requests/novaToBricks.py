@@ -68,8 +68,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         owned = False
     request._nova_input_type = source.get('input_type') or infer_input_type(source.get('endpoint'))
     request._nova_input_format = source.get('input_format')
-    request._nova_uploaded_source = owned and source.get('endpoint') == 'uploadLdraw'
-    if owned and source.get('endpoint') != 'uploadLdraw':
+    request._nova_uploaded_source = owned and source.get('endpoint') in {'uploadLdraw', 'glbToBricks', 'objToBricks'}
+    if owned and not request._nova_uploaded_source:
         try:
             request._nova_session = await _owned_session(request.generation_id, auth_info)
         except HTTPException as exc:
@@ -91,7 +91,7 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             if source.get('status') != 'completed':
                 return
     # Completed geometry is public; sessions and source archives are not.
-    if source.get('status') != 'completed' or source.get('endpoint') not in {'novaToBricks', 'uploadLdraw'}:
+    if source.get('status') != 'completed' or (source.get('endpoint') not in {'novaToBricks', 'uploadLdraw'} and not request._nova_uploaded_source):
         raise HTTPException(404, 'Generation not found')
     if not source.get('ldr_url'):
         if request._nova_session:

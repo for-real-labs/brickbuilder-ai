@@ -30,6 +30,11 @@ afterEach(async () => {
 });
 
 describe('AI sharing permission', () => {
+  it('includes OBJ conversion in native AI sharing consent', () => {
+    expect(requiresAiConsent('/objToBricks', 'POST')).toBe(true);
+    expect(requiresAiConsent('/objToBricks', 'GET')).toBe(false);
+  });
+
   it('leaves ordinary desktop and mobile websites ungated and hides consent controls', async () => {
     delete window.__BRICKBUILDER_NATIVE_APP__;
     const prompt = vi.fn().mockResolvedValue(false);
@@ -50,7 +55,7 @@ describe('AI sharing permission', () => {
     expect(renderToStaticMarkup(<AiConsentDialog />)).toBe('');
   });
 
-  it.each(['llmToBricks', 'llmToBricks/stream', 'llmRender/stream', 'textToBricks', 'imageToBricks', 'promptEditModel', 'glbToBricks', 'resizeModel', 'updateModel'])('protects %s', endpoint => {
+  it.each(['build-buddy/reply', 'llmToBricks', 'llmToBricks/stream', 'llmRender/stream', 'textToBricks', 'imageToBricks', 'promptEditModel', 'glbToBricks', 'resizeModel', 'updateModel'])('protects %s', endpoint => {
     expect(requiresAiConsent(`https://backend.test/${endpoint}`, 'POST')).toBe(true);
     expect(requiresAiConsent(`/${endpoint}`, 'GET')).toBe(false);
   });

@@ -21,7 +21,7 @@ let container: HTMLDivElement;
 
 function LoginDestination() {
   const location = useLocation();
-  return <div>Login: {location.state?.from}</div>;
+  return <div>Login: {location.state?.from} Next: {new URLSearchParams(location.search).get('next')}</div>;
 }
 
 async function render(path = '/oauth/consent?authorization_id=auth-id') {
@@ -71,7 +71,7 @@ describe('OAuth consent', () => {
   it('preserves authorization through login', async () => {
     auth.user = null;
     await render();
-    expect(container.textContent).toBe('Login: /oauth/consent?authorization_id=auth-id');
+    expect(container.textContent).toBe('Login: /oauth/consent?authorization_id=auth-id Next: /oauth/consent?authorization_id=auth-id');
     expect(oauth.getAuthorizationDetails).not.toHaveBeenCalled();
   });
 

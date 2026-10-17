@@ -7,6 +7,7 @@ import { PetSwitchButton } from './PetCompanion';
 const tools = [
   { label: 'Image to LEGO', path: '/image-to-lego', icon: Image, event: 'landing_header_image_to_lego_clicked' },
   { label: 'GLB to LEGO', path: '/glb-to-lego', icon: Box, event: 'landing_header_glb_to_lego_clicked' },
+  { label: 'OBJ to LEGO', path: '/obj-to-lego', icon: Box, event: 'landing_header_obj_to_lego_clicked' },
   { label: 'Upload LDraw', path: '/use-ai-to-edit-ldraw', icon: Box, event: 'landing_header_upload_ldraw_clicked' },
   { label: 'Community', path: '/community', icon: Users, event: 'landing_header_community_clicked' },
 ];

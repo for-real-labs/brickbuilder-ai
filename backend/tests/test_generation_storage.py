@@ -164,12 +164,16 @@ def test_input_attribution_distinguishes_inputs_and_preserves_origin_on_edits():
     storage = GenerationStorage.__new__(GenerationStorage)
     storage.client = SimpleNamespace(table=lambda name: Table())
     for endpoint, kind in [('textToBricks', 'text'), ('imageToBricks', 'image'),
-                           ('glbToBricks', 'glb'), ('uploadLdraw', 'ldraw')]:
+                           ('glbToBricks', 'glb'), ('objToBricks', 'obj'), ('uploadLdraw', 'ldraw')]:
         asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40, endpoint=endpoint))
         assert records[-1]['input_type'] == kind
     asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40,
         endpoint='novaToBricks', input_type='image', entry_page='/photo-to-lego'))
     assert records[-1]['input_type'] == 'image' and records[-1]['entry_page'] == '/photo-to-lego'
+    asyncio.run(storage.create_generation('owner', 'authenticated', 'mesh', 30,
+        endpoint='objToBricks', input_type='obj', input_format='obj', entry_page='/obj-to-lego'))
+    assert records[-1]['input_type'] == 'obj' and records[-1]['input_format'] == 'obj'
+    assert records[-1]['entry_page'] == '/obj-to-lego'
     storage.get_generation = AsyncMock(return_value={'id': 'source', 'user_id': 'owner',
         'user_type': 'authenticated', 'input_type': 'ldraw', 'input_format': 'io'})
     asyncio.run(storage.create_generation('owner', 'authenticated', 'edit', 40,

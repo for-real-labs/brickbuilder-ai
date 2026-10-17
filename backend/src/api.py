@@ -38,6 +38,7 @@ from .utils.generation_email import start_email_worker
 from .requests.uploadLdraw import upload_ldraw, UploadLdrawResponse
 from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
 from .requests.localProviders import router as local_providers_router
+from .requests.buildBuddy import router as build_buddy_router
 from .utils.local_provider_connections import local_provider_connections, require_local_development
 from .requests.createCheckoutSession import create_checkout_session, CreateCheckoutSessionRequest, CreateCheckoutSessionResponse
 from .requests.stripeWebhook import stripe_webhook, StripeWebhookRequest, StripeWebhookResponse
@@ -109,6 +110,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.include_router(local_providers_router)
+app.include_router(build_buddy_router)
 
 
 @app.get('/generation/{generation_id}/notification-email')
@@ -368,6 +370,17 @@ async def glbToBricks_endpoint(
     Returns generation_id immediately for polling.
     """
     return await glb_to_bricks(file, voxelizer, detail_level, auth_info, entry_page)
+
+
+@app.post("/objToBricks", response_model=GlbToBricksResponse)
+async def obj_to_bricks_endpoint(
+    file: UploadFile = File(...),
+    detail_level: float = Form(40.0),
+    entry_page: str | None = Form(None, max_length=128),
+    auth_info: dict = Depends(get_user_with_optional_auth),
+) -> GlbToBricksResponse:
+    """Convert a standalone OBJ through the same voxel pipeline as GLB."""
+    return await glb_to_bricks(file, "trimesh", detail_level, auth_info, entry_page, "obj")
 
 
 @app.post("/ldrToMpd", response_model=LdrToMpdResponse)

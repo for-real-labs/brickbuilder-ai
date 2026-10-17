@@ -94,13 +94,13 @@ describe('LandingPage', () => {
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!.click());
       expect(panel.hidden).toBe(false);
-      const switchPet = panel.querySelector<HTMLButtonElement>('[aria-label="Change pet, currently Pip"]')!;
+      const switchPet = panel.querySelector<HTMLButtonElement>('[aria-label="Change build buddy / pet, currently Pip"]')!;
       expect(switchPet.type).toBe('button');
       act(() => { switchPet.focus(); switchPet.click(); });
       expect(container.querySelector('dialog')?.open).toBe(true);
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Choose Clik"]')!.click());
-      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Clik · your build buddy');
-      expect(panel.querySelector('[aria-label="Change pet, currently Clik"]')).not.toBeNull();
+      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Hi, I’m Clik your build buddy!');
+      expect(panel.querySelector('[aria-label="Change build buddy / pet, currently Clik"]')).not.toBeNull();
       expect(container.querySelector('dialog')).toBeNull();
       expect(generate).not.toHaveBeenCalled();
       const capture = (await import('posthog-js')).default.capture;
@@ -133,6 +133,24 @@ describe('LandingPage', () => {
     } finally {
       act(() => root.unmount());
       sessionStorage.removeItem('pendingLandingState');
+    }
+  });
+
+  it('honors the all-parts image handoff when restoring an older basic-bricks draft', async () => {
+    window.history.replaceState({}, '', '/image-to-lego?mode=all_parts');
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ generationMethod: 'llm', prompt: 'Castle' }));
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage imageLandingPath="image-to-lego" />));
+      expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
+    } finally {
+      act(() => root.unmount());
+      sessionStorage.removeItem('pendingLandingState');
+      window.history.replaceState({}, '', '/');
     }
   });
 
@@ -211,18 +229,20 @@ describe('LandingPage', () => {
         else reject(new Error('Submission failed'));
       });
       if (outcome === 'accepted') {
-        expect(document.querySelector('[role="dialog"]')!.textContent).toContain('Would you like to be notified?');
+        expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('Would you like an email when your build is ready?');
         expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
-          generation_id: 'submitted', is_authenticated: false,
+          generation_id: 'submitted', is_authenticated: false, source: 'build_buddy_chat',
         });
-        act(() => Array.from(document.querySelectorAll('[role="dialog"] button')).find(button => button.textContent === 'Not now')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+        act(() => Array.from(container.querySelectorAll('.pet-notification-conversation button')).find(button => button.textContent === 'Not now')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeNull();
         expect(container.querySelector('[aria-label="Remove image"]')).toBeNull();
         expect(fileInput.value).toBe('');
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:uploaded-image');
         await act(async () => {
-          prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'Anime girl');
+          prompt.dispatchEvent(new Event('input', { bubbles: true }));
         });
+        await act(async () => prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
         expect(start).toHaveBeenLastCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: undefined }), undefined);
       } else {
         expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -410,6 +430,11 @@ describe('LandingPage', () => {
       await act(async () => generate().click());
       expect(container.textContent).toContain('1 in progress');
       expect(input.disabled).toBe(false);
+      expect(input.value).toBe('');
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Blue boat');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
       await act(async () => generate().click());
       expect(container.querySelectorAll('[aria-label="Your generations"] article')).toHaveLength(2);
       expect(container.textContent).toContain('2 in progress');
@@ -425,7 +450,8 @@ describe('LandingPage', () => {
       expect(cancel).toHaveBeenCalledWith('two');
       expect(container.textContent).toContain('Generation cancelled');
       expect(container.textContent).toContain('1 in progress');
-      expect(input.value).toBe('Red castle');
+      expect(input.value).toBe('');
+      expect(container.querySelector('[aria-label="Build buddy conversation"]')?.textContent).toContain('Red castle');
     } finally {
       act(() => root.unmount());
       container.remove();
@@ -502,7 +528,7 @@ describe('LandingPage', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await act(async () => findButton('Create').click());
-      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: DEFAULT_LLM_MODEL, prompt: input.value }), undefined);
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: DEFAULT_LLM_MODEL, prompt: 'Spaceport with launch tower, rover, and research lab' }), undefined);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
@@ -517,8 +543,12 @@ describe('LandingPage', () => {
       expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'llm' });
       expect(container.querySelector('#all-parts-warning')).toBeNull();
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Red rover');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
       await act(async () => findButton('Create').click());
-      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: input.value, model: DEFAULT_LLM_MODEL }), undefined);
+      expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Red rover', model: DEFAULT_LLM_MODEL }), undefined);
       expect(nova).toHaveBeenCalledTimes(1);
 
     } finally { act(() => root.unmount()); container.remove(); }
@@ -566,9 +596,9 @@ describe('LandingPage', () => {
       }), undefined);
       if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
-      expect(document.querySelector('[role="dialog"]')!.textContent).toContain('This may take up to 30 minutes to generate.');
+      expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('sometimes up to 30 minutes');
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
-        generation_id: modeValue === 'nova' ? 'image-nova' : 'image-basic', is_authenticated: false,
+        generation_id: modeValue === 'nova' ? 'image-nova' : 'image-basic', is_authenticated: false, source: 'build_buddy_chat',
       });
     } finally { act(() => root.unmount()); container.remove(); }
   });
@@ -694,7 +724,8 @@ describe('LandingPage', () => {
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
     const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
     expect(form.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(stats.previousElementSibling).toBe(form);
+    expect(stats.previousElementSibling).toBe(form.parentElement);
+    expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('form')).toBeNull();
   });
 
   it('keeps settings collapsed and upload available in the browser and native shell', () => {
@@ -819,7 +850,7 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     const links = Array.from(nav.querySelectorAll('a'));
     expect(links.map(link => link.getAttribute('href'))).toEqual([
-      '/image-to-lego', '/glb-to-lego', '/use-ai-to-edit-ldraw', '/community',
+      '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/use-ai-to-edit-ldraw', '/community',
     ]);
     const capture = (await import('posthog-js')).default.capture;
     expect(capture).toHaveBeenCalledWith('landing_header_tools_opened', expect.objectContaining({ navigation_layout: 'tools_dropdown' }));
@@ -832,6 +863,9 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     act(() => nav.querySelector('a')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
     expect(trigger.getAttribute('aria-expanded')).toBe('false');
     expect(document.activeElement).toBe(trigger);
+    act(() => trigger.click());
+    act(() => (nav.querySelector('a[href="/obj-to-lego"]') as HTMLAnchorElement).click());
+    expect(capture).toHaveBeenCalledWith('landing_header_obj_to_lego_clicked', expect.objectContaining({ destination: '/obj-to-lego', navigation_layout: 'tools_dropdown' }));
     act(() => trigger.click());
     act(() => document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })));
     expect(trigger.getAttribute('aria-expanded')).toBe('false');

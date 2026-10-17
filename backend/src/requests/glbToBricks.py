@@ -11,6 +11,7 @@ import os
 import logging
 import asyncio
 import tempfile
+import math
 from typing import Optional
 
 from fastapi import UploadFile, File, Form, Depends, HTTPException
@@ -23,6 +24,7 @@ from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import generation_storage
 from ..utils.conversions.glb2brick import glb2brick
+from ..utils.model_upload import obj_to_glb
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,7 @@ async def process_glb_to_bricks_task(
 ):
     """Background task: run glb2brick on the uploaded GLB and store all artifacts."""
     heartbeat_task = None
+    source_path = glb_path
     try:
         await generation_storage.update_status(generation_id, "processing")
 
@@ -68,6 +71,9 @@ async def process_glb_to_bricks_task(
                     logger.warning(f"Heartbeat update failed: {e}")
 
         heartbeat_task = asyncio.create_task(heartbeat())
+
+        if source_path.endswith(".obj"):
+            glb_path = await asyncio.to_thread(obj_to_glb, source_path)
 
         # Run the GLB -> bricks pipeline with the selected voxelizer.
         logger.info(f"Running glb2brick (voxelizer={voxelizer}) for {glb_path}")
@@ -187,7 +193,7 @@ async def process_glb_to_bricks_task(
             user_id=user_email,
         )
     finally:
-        for path_var in ("glb_path", "ldr_path", "mpd_path", "vox_path", "xyzrgb_path", "problematic_xyzrgb_path"):
+        for path_var in ("source_path", "glb_path", "ldr_path", "mpd_path", "vox_path", "xyzrgb_path", "problematic_xyzrgb_path"):
             try:
                 p = locals().get(path_var)
                 if p and os.path.exists(p):
@@ -202,6 +208,7 @@ async def glb_to_bricks(
     detail_level: float = Form(40.0),
     auth_info: dict = Depends(get_user_with_optional_auth),
     entry_page: str | None = None,
+    input_format: str = "glb",
 ) -> GlbToBricksResponse:
     """
     Upload a GLB and convert it to a brick structure.
@@ -216,17 +223,23 @@ async def glb_to_bricks(
     if voxelizer not in ("trimesh", "obj2voxel"):
         raise HTTPException(status_code=400, detail="voxelizer must be 'trimesh' or 'obj2voxel'")
 
+    if input_format not in {"glb", "obj"}:
+        raise HTTPException(status_code=400, detail="Unsupported model format")
+    if not math.isfinite(detail_level) or not 1 <= detail_level <= 60:
+        raise HTTPException(status_code=400, detail="detail_level must be between 1 and 60")
     filename = (file.filename or "").lower()
-    if not filename.endswith(".glb"):
-        raise HTTPException(status_code=400, detail="Only .glb files are supported")
+    if not filename.endswith(f".{input_format}"):
+        raise HTTPException(status_code=400, detail=f"Only .{input_format} files are supported")
 
-    contents = await file.read()
+    contents = await file.read(50 * 1024 * 1024 + 1)
+    if len(contents) > 50 * 1024 * 1024:
+        raise HTTPException(status_code=413, detail="Model must be 50 MB or smaller")
     if not contents:
         raise HTTPException(status_code=400, detail="Uploaded file is empty")
 
     user_info = handle_auth_and_tracking(
         auth_info=auth_info,
-        endpoint="/glbToBricks",
+        endpoint=f"/{input_format}ToBricks",
         track_properties={
             "voxelizer": voxelizer,
             "detail_level": detail_level,
@@ -250,7 +263,7 @@ async def glb_to_bricks(
         user_type = "authenticated"
 
     # Persist the upload to a temp file the background task can read.
-    fd, glb_path = tempfile.mkstemp(suffix=".glb")
+    fd, glb_path = tempfile.mkstemp(suffix=f".{input_format}")
     with os.fdopen(fd, "wb") as f:
         f.write(contents)
 
@@ -258,10 +271,10 @@ async def glb_to_bricks(
         generation_id = await generation_storage.create_generation(
             user_id=user_id,
             user_type=user_type,
-            prompt=f"GLB upload: {file.filename}",
+            prompt=f"{input_format.upper()} upload: {file.filename}",
             detail_level=detail_level,
-            endpoint="glbToBricks",
-            input_format="glb", entry_page=entry_page,
+            endpoint=f"{input_format}ToBricks",
+            input_type=input_format, input_format=input_format, entry_page=entry_page,
             model_3d=f"upload:{voxelizer}",
         )
 

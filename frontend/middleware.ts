@@ -3,7 +3,8 @@ const AUTH_COOKIE = 'brickbuilder_preview_auth';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 
 function isProtectedDeployment(environment: NodeJS.ProcessEnv): boolean {
-  return environment.VERCEL === '1' && environment.VERCEL_GIT_COMMIT_REF !== 'main';
+  return environment.VERCEL === '1' && environment.VERCEL_ENV !== 'production'
+    && environment.VERCEL_GIT_COMMIT_REF !== 'main';
 }
 
 async function digest(value: string): Promise<string> {

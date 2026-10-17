@@ -140,6 +140,21 @@ describe('generation services', () => {
     expect(JSON.parse((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body as string)).toMatchObject({ ldr_content: 'ldr', brickowl_api_key: 'key' });
   });
 
+  it('uploads OBJ to its dedicated endpoint with size, credentials, and page attribution', async () => {
+    window.history.replaceState({}, '', '/obj-to-lego');
+    try {
+      vi.mocked(fetch).mockResolvedValueOnce(response({ generation_id: 'obj-id' }) as unknown as Response);
+      const file = new File(['v 0 0 0'], 'model.obj');
+      await GlbToBricksApiService.uploadGlb(file, 'trimesh', 25, 'owner-token', 'obj');
+      const [url, init] = vi.mocked(fetch).mock.calls[0];
+      expect(String(url)).toMatch(/\/objToBricks$/);
+      expect((init!.body as FormData).get('file')).toBe(file);
+      expect((init!.body as FormData).get('detail_level')).toBe('25');
+      expect((init!.body as FormData).get('entry_page')).toBe('/obj-to-lego');
+      expect(new Headers(init!.headers).get('Authorization')).toBe('Bearer owner-token');
+    } finally { window.history.replaceState({}, '', '/'); }
+  });
+
   it('gets and polls a generation through completion', async () => {
     const processing: GetGenerationResponse = { generation_id: 'g', status: 'processing', prompt: null, external_image_url: null, processed_image_url: null, detail_level: 1, ldr_content: null, mpd_url: null, xyzrgb_url: null, problematic_xyzrgb_url: null, error_message: null };
     const completed = { ...processing, status: 'completed' as const, prompt: 'castle', ldr_content: 'ldr' };

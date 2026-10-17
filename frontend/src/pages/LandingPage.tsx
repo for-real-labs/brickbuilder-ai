@@ -10,6 +10,8 @@ import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { PetPromptGreeting, PetSwitchButton } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
+import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
+import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
 import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
@@ -27,7 +29,7 @@ import { useAuth } from "../contexts/AuthContext";
 import { SiteFooter } from "../components/SiteFooter";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
-import { useGenerationActivity } from "../hooks/useGenerationActivity";
+import { useGenerationActivity, isGenerationActive } from "../hooks/useGenerationActivity";
 import { useAnimatedGenerationStats } from "../hooks/useAnimatedGenerationStats";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
@@ -223,7 +225,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const { pet } = usePet();
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
-  const { session, loading: authLoading } = useAuth();
+  const { session, userProfile, loading: authLoading } = useAuth();
+  const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
@@ -245,7 +248,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   };
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
-  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
+  const startWithAllParts = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'all_parts';
+  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(startWithAllParts ? 'nova' : DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
@@ -407,7 +411,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      setGenerationMethod(payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
+      setGenerationMethod(startWithAllParts ? 'nova' : payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
         ? payload.generationMethod : DEFAULT_GENERATION_METHOD);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
         setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, model: DEFAULT_LLM_MODEL, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
@@ -622,8 +626,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     generationAbortRef.current = controller;
     setActiveGenerationId(null);
     const generationStartedAt = new Date().toISOString();
+    const submittedPrompt = prompt.trim();
+    const turnId = buddyChat.startTurn(submittedPrompt, imgFile);
     
     try {
+      const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
+      buddyChat.requestReply(turnId, submittedPrompt, imageBase64, imgFile?.type);
       // Convert size to voxelSize (similar to BrickBuilder component)
       // scale conversion from: https://chatgpt.com/share/690f88ae-7234-8006-bca8-a56e991721fb
       const getVoxelSize = (size: SizeValue): number => {
@@ -706,7 +714,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       const stream3d = threeDModel === 'sam3d';
 
       if (generationMethod === 'nova') {
-        const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
         setGenerationStatus('Starting the full set agent…');
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
@@ -719,7 +726,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
         }, authToken);
         modelName = prompt.trim() || imgFile?.name.replace(/\.[^/.]+$/, '') || 'full-set-model';
       } else if (generationMethod === 'llm') {
-        const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
         const llmLabel = getLlmModelOption(llmModel)?.label ?? 'The AI model';
         setGenerationStatus(`${llmLabel} is designing your brick model…`);
         postResponse = await LlmToBricksApiService.generate(
@@ -767,6 +773,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       
       if (controller.signal.aborted) return;
       const generationId = postResponse.generation_id;
+      buddyChat.updateTurn(turnId, { generationId, method: generationMethod });
+      setPrompt('');
       posthog.capture('generation_started', { generation_id: generationId, page: window.location.pathname,
         input_type: imgFile ? 'image' : 'text', generation_method: generationMethod });
       clearSelectedImage();
@@ -883,6 +891,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
         errorMessage = errorMsg;
       }
       setGenerationError(errorMessage);
+      buddyChat.updateTurn(turnId, { error: errorMessage, reply: 'Let’s give your idea another try.' });
       setLoading(false);
       setActiveLoadingMethod(null);
       setPreviewImageUrl(null);
@@ -916,7 +925,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingGenerateAfterLogin, session, authLoading]);
 
-  const petState = usePetActivity(loading);
+  const petState = usePetActivity(loading || generations.some(row => isGenerationActive(row.status)));
 
   return (
     <div
@@ -983,22 +992,24 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 navigate(`/generated-model?id=${encodeURIComponent(id)}&exact=1`);
               }} />
             </div>}
-            {!ldrawLanding && <form
+            {!ldrawLanding && <div className="relative z-20 w-full landing-fade-in landing-delay-3">
+              <BuildBuddyDialogue turns={buddyChat.turns} generations={generations}
+                state={focused && !loading ? 'listening' : petState} authLoading={authLoading}
+                username={session ? userProfile?.username || session.user.user_metadata?.username : null} />
+            <form
               aria-label="Create a brick model"
-              className="relative z-20 w-full landing-fade-in landing-delay-3"
+              className="w-full"
               onSubmit={event => {
                 event.preventDefault();
                 submitGeneration();
               }}
             >
-              <PetPromptGreeting state={focused && !loading ? 'listening' : petState} showPetSwitch={false} />
               {imageLanding && <>
                 <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
                 <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
                 <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || preparingImage}
                   error={imageUploadError} onPick={() => onPickImage('image_upload_section')} onRemove={clearSelectedImage} />
               </>}
-              <label htmlFor="landing-build-prompt" className="pet-conversation-hint">Ask {pet.name} to build something</label>
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <button type="button" aria-label="Upload image" title="Upload image"
@@ -1010,6 +1021,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     id="landing-build-prompt"
                     ref={promptInputRef}
                     aria-label="Describe your model"
+                    maxLength={2000}
                     aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
                     value={prompt}
                     onFocus={() => setFocused(true)}
@@ -1102,7 +1114,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               </div>
               <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
-            </form>}
+            </form></div>}
             <div
               className="flex items-center justify-center gap-8 text-slate-600 landing-fade-in landing-delay-2"
               aria-label="BrickBuilder generation statistics"
@@ -1200,7 +1212,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             )}
           </div>
 
-            <GenerationActivityList generations={generations} error={activityError} onDismiss={dismissGeneration}
+            <GenerationActivityList generations={generations} error={activityError} onDismiss={dismissGeneration} buddyDialogue
               notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
               onOpen={id => navigate(`/generated-model?id=${id}`)}
               onResumed={(sourceId, newId) => {
