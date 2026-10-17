@@ -6,6 +6,7 @@ import { MemoryRouter } from 'react-router-dom';
 import posthog from 'posthog-js';
 
 const navigate = vi.fn();
+const loginLocation = vi.hoisted(() => ({ search: '', state: null as { from: string } | null }));
 const auth = {
   signIn: vi.fn(),
   signInWithGoogle: vi.fn(),
@@ -25,7 +26,7 @@ vi.mock('react-router-dom', async () => {
   return {
     ...actual,
     useNavigate: () => navigate,
-    useLocation: () => ({ state: null }),
+    useLocation: () => loginLocation,
   };
 });
 
@@ -89,6 +90,8 @@ function changeInput(input: HTMLInputElement, value: string) {
 
 describe('login auth options', () => {
   beforeEach(() => {
+    loginLocation.search = '';
+    loginLocation.state = null;
     auth.signIn.mockReset();
     auth.signIn.mockResolvedValue({ error: null });
     auth.signInWithGoogle.mockReset();
@@ -248,6 +251,63 @@ describe('login auth options', () => {
       expect(auth.signInWithOtp).toHaveBeenCalledWith('page@example.com', '/dashboard');
     } finally {
       pageRender.unmount();
+    }
+  });
+
+  it.each(['url', 'state'] as const)('starts OAuth login with password using %s context and returns to consent', async source => {
+    const destination = '/oauth/consent?authorization_id=review-request';
+    if (source === 'url') loginLocation.search = `?${new URLSearchParams({ next: destination })}`;
+    else loginLocation.state = { from: destination };
+    const { container, unmount } = renderIntoBody(<MemoryRouter><LoginPage /></MemoryRouter>);
+    try {
+      expect(container.textContent).toContain('Sign in to connect');
+      expect(container.querySelector('input[type="password"]')).not.toBeNull();
+      changeInput(container.querySelector('input[type="email"]') as HTMLInputElement, 'reviewer@example.com');
+      changeInput(container.querySelector('input[type="password"]') as HTMLInputElement, 'review-password');
+      await act(async () => {
+        container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      });
+      expect(auth.signIn).toHaveBeenCalledWith('reviewer@example.com', 'review-password');
+      expect(auth.signInWithOtp).not.toHaveBeenCalled();
+      expect(navigate).toHaveBeenCalledWith(destination);
+    } finally {
+      unmount();
+    }
+  });
+
+  it('keeps the OAuth request when an alternative sign-in method is selected', async () => {
+    const destination = '/oauth/consent?authorization_id=review-request';
+    loginLocation.search = `?${new URLSearchParams({ next: destination })}`;
+    const { container, unmount } = renderIntoBody(<MemoryRouter><LoginPage /></MemoryRouter>);
+    try {
+      await act(async () => findButton(container, 'Continue with Google')?.click());
+      expect(auth.signInWithGoogle).toHaveBeenCalledWith(destination);
+      act(() => findButton(container, 'Use magic link instead')?.click());
+      changeInput(container.querySelector('input[type="email"]') as HTMLInputElement, 'reviewer@example.com');
+      await act(async () => {
+        container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      });
+      expect(auth.signInWithOtp).toHaveBeenCalledWith('reviewer@example.com', destination);
+    } finally {
+      unmount();
+    }
+  });
+
+  it('shows invalid password errors without sending a verification email or leaving the request', async () => {
+    loginLocation.search = '?next=%2Foauth%2Fconsent%3Fauthorization_id%3Dreview-request';
+    auth.signIn.mockResolvedValue({ error: { message: 'Invalid login credentials' } });
+    const { container, unmount } = renderIntoBody(<MemoryRouter><LoginPage /></MemoryRouter>);
+    try {
+      changeInput(container.querySelector('input[type="email"]') as HTMLInputElement, 'reviewer@example.com');
+      changeInput(container.querySelector('input[type="password"]') as HTMLInputElement, 'wrong-password');
+      await act(async () => {
+        container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+      });
+      expect(container.textContent).toContain('Invalid login credentials');
+      expect(navigate).not.toHaveBeenCalled();
+      expect(auth.signInWithOtp).not.toHaveBeenCalled();
+    } finally {
+      unmount();
     }
   });
 });
