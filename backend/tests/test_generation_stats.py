@@ -2,6 +2,9 @@ import asyncio
 import sys
 from pathlib import Path
 
+import pgserver
+import psycopg
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.requests import getGenerationStats
@@ -80,3 +83,42 @@ def test_store_parts_list_persists_brick_count():
         "parts_list_csv_url": "https://example.com/parts.csv",
         "brick_count": 3,
     }
+
+
+def test_stats_index_preserves_totals_and_avoids_scanning_model_rows(tmp_path):
+    server = pgserver.get_server(tmp_path / "stats-db", cleanup_mode="delete")
+    migrations = Path(__file__).resolve().parents[2] / "supabase/migrations"
+    try:
+        with psycopg.connect(server.get_uri(), autocommit=True) as db:
+            for role in ("anon", "authenticated", "service_role"):
+                db.execute(f"CREATE ROLE {role}")
+            db.execute("CREATE TABLE public.generations (id integer PRIMARY KEY, model text)")
+            db.execute((migrations / "20260903000000_add_generation_stats.sql").read_text())
+            db.execute("""
+                INSERT INTO public.generations (id, model, brick_count)
+                SELECT n, repeat('model data ', 100), CASE WHEN n % 2 = 0 THEN n END
+                FROM generate_series(1, 2000) AS n
+            """)
+            migration = (migrations / "20261017014134_index_generation_stats.sql").read_text()
+            db.execute(migration)
+            db.execute(migration)  # Safe to reconcile an index applied during recovery.
+            db.execute("VACUUM ANALYZE public.generations")
+
+            assert db.execute("SELECT * FROM public.get_generation_stats()").fetchone() == (2000, 1001000)
+            plan = db.execute("""
+                EXPLAIN (FORMAT JSON) SELECT count(*), coalesce(sum(brick_count), 0)
+                FROM public.generations
+            """).fetchone()[0][0]["Plan"]
+            scan = plan["Plans"][0]
+            assert scan["Node Type"] == "Index Only Scan"
+            assert scan["Index Name"] == "generations_stats_brick_count_idx"
+
+            db.execute("UPDATE public.generations SET brick_count = 10 WHERE id = 1")
+            db.execute("DELETE FROM public.generations WHERE id = 2")
+            assert db.execute("SELECT * FROM public.get_generation_stats()").fetchone() == (1999, 1001008)
+            for role in ("anon", "authenticated"):
+                assert not db.execute(
+                    "SELECT has_function_privilege(%s, 'public.get_generation_stats()', 'execute')", (role,)
+                ).fetchone()[0]
+    finally:
+        server.cleanup()
