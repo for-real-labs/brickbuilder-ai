@@ -30,6 +30,11 @@ afterEach(async () => {
 });
 
 describe('AI sharing permission', () => {
+  it('includes OBJ conversion in native AI sharing consent', () => {
+    expect(requiresAiConsent('/objToBricks', 'POST')).toBe(true);
+    expect(requiresAiConsent('/objToBricks', 'GET')).toBe(false);
+  });
+
   it('leaves ordinary desktop and mobile websites ungated and hides consent controls', async () => {
     delete window.__BRICKBUILDER_NATIVE_APP__;
     const prompt = vi.fn().mockResolvedValue(false);

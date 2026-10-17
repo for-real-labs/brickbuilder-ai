@@ -600,3 +600,21 @@ it('enables ordering for a completed catalog-validated Nova revision of an uploa
   expect(container.querySelector('[aria-label="Imported model ordering"]')).toBeNull();
   expect(container.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')?.disabled).toBe(false);
 });
+
+
+it.each(['glb', 'obj'] as const)('shows the original size slider immediately for %s voxel uploads and resized revisions', async input_type => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'resizeModel', input_type,
+    status: 'completed', detail_level: 35, ldr_content: 'ldr' } as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  const slider = container.querySelector<HTMLInputElement>('input[aria-label="Model scaler"]');
+  expect(slider).not.toBeNull();
+  expect(slider!.value).toBe('51');
+  expect(container.textContent).toContain('Resize Model');
+});
+
+it('does not offer voxel resizing for all-parts models imported from an OBJ', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'novaToBricks', input_type: 'obj',
+    status: 'completed', detail_level: 35, ldr_content: 'ldr' } as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('input[aria-label="Model scaler"]')).toBeNull();
+});

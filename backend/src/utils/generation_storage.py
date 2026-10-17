@@ -125,7 +125,7 @@ class GenerationStorage:
         """
         if input_type is not None and input_type not in INPUT_TYPES:
             raise ValueError("Unsupported generation input type")
-        if input_format is not None and input_format not in {'io', 'ldr', 'mpd', 'glb'}:
+        if input_format is not None and input_format not in {'io', 'ldr', 'mpd', 'glb', 'obj'}:
             raise ValueError("Unsupported generation input format")
         generation_id = str(uuid.uuid4())
         

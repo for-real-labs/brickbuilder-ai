@@ -24,6 +24,7 @@ class GetGenerationResponse(BaseModel):
     endpoint: Optional[str] = None
     orderable: bool = True
     mode: GenerationMode = 'basic_bricks'
+    input_type: Optional[str] = None
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
     prompt: Optional[str] = None
@@ -136,6 +137,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             endpoint=generation.get("endpoint"),
             orderable=generation.get("endpoint") != "uploadLdraw",
             mode=generation_mode(generation.get("endpoint"), generation.get("mode")),
+            input_type=generation.get("input_type"),
             generation_id=request.generation_id,
             status=status,
             prompt=prompt,

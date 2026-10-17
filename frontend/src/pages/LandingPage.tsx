@@ -1,4 +1,5 @@
 import { startPolling } from '../utils/polling';
+import { LandingToolsMenu } from '../components/LandingToolsMenu';
 import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
@@ -7,11 +8,11 @@ import { GenerationDuration } from '../components/GenerationDuration';
 import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
-import { PetPromptGreeting } from '../components/PetCompanion';
+import { PetPromptGreeting, PetSwitchButton } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, Box, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
+import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -147,10 +148,11 @@ const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
   durationSeconds: generation.generation_duration_seconds,
 });
 
-function ScrollRevealContent({ children }: { children: React.ReactNode }) {
+function ScrollRevealContent({ children, enabled }: { children: React.ReactNode; enabled: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     const elements = ref.current?.querySelectorAll('.landing-fade-in') || [];
     if (!('IntersectionObserver' in window)) {
       elements.forEach(element => element.classList.add('landing-visible'));
@@ -166,9 +168,10 @@ function ScrollRevealContent({ children }: { children: React.ReactNode }) {
     }, { threshold: 0 });
     elements.forEach(element => observer.observe(element));
     return () => observer.disconnect();
-  }, []);
+  }, [enabled]);
 
-  return <div ref={ref} className="landing-scroll-reveal contents">{children}</div>;
+  return <div ref={ref} className="landing-scroll-reveal contents" aria-hidden={!enabled}
+    style={{ visibility: enabled ? undefined : 'hidden' }}>{children}</div>;
 }
 
 // ---- In‑place loading: progress + messages ----
@@ -242,7 +245,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   };
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
-  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
+  const startWithAllParts = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'all_parts';
+  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(startWithAllParts ? 'nova' : DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
@@ -310,6 +314,21 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const [communityReady, setCommunityReady] = useState(false);
   const lowerContentReady = (statsReady && communityReady) || typeof window === 'undefined';
   const [featuredCommunityModels, setFeaturedCommunityModels] = useState<FeaturedItem[]>([]);
+  const [hasScrolled, setHasScrolled] = useState(false);
+
+  useEffect(() => {
+    setHasScrolled(false);
+    const revealAfterScroll = () => {
+      if (window.scrollY <= 0) return;
+      setHasScrolled(true);
+      window.removeEventListener('scroll', revealAfterScroll);
+      posthog.capture('landing_lower_content_revealed', { page: window.location.pathname });
+    };
+    window.addEventListener('scroll', revealAfterScroll, { passive: true });
+    revealAfterScroll();
+    return () => window.removeEventListener('scroll', revealAfterScroll);
+  }, [imageLandingPath]);
+
 
   useEffect(() => {
     const polling = startPolling(async (signal) => {
@@ -389,7 +408,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      setGenerationMethod(payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
+      setGenerationMethod(startWithAllParts ? 'nova' : payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
         ? payload.generationMethod : DEFAULT_GENERATION_METHOD);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
         setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, model: DEFAULT_LLM_MODEL, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
@@ -436,10 +455,15 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   };
 
-  const onPickImage = () => {
-    posthog.capture('landing_image_picker_opened', { page: imageLandingPath ?? '/' });
+  const onPickImage = (uploadPosition: 'input_left_icon' | 'image_upload_section' = 'image_upload_section') => {
+    posthog.capture('landing_image_picker_opened', { page: imageLandingPath ?? '/', upload_position: uploadPosition });
     fileInputRef.current?.click();
   };
+  useEffect(() => {
+    if (!ldrawLanding) posthog.capture('landing_image_upload_control_shown', {
+      page: imageLandingPath ?? '/', upload_position: 'input_left_icon',
+    });
+  }, [imageLandingPath, ldrawLanding]);
   const selectImage = async (file: File, source: 'picker' | 'drop') => {
     const revision = ++uploadRevision.current;
     setPreparingImage(true); setImageUploadError(null);
@@ -942,7 +966,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       }} />
 
       <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6 relative" style={{ zIndex: 10 }}>
-        <LandingHeader onLoginClick={() => setShowLoginModal(true)} />
+        <LandingHeader page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)} />
 
         <main className="flex flex-1 flex-col items-center text-center w-full">
           <div className="mt-4 flex w-full max-w-3xl flex-col items-center gap-6 sm:mt-8">
@@ -950,29 +974,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               Imagine. Create. Build.
             </h1>
 
-            <p className="text-lg text-slate-600 landing-fade-in landing-delay-2">Turn images or text into buildable 3D brick models in seconds</p>
-
-            <div
-              className="flex items-center justify-center gap-8 text-slate-600 landing-fade-in landing-delay-2"
-              aria-label="BrickBuilder generation statistics"
-            >
-              <div className="min-w-28">
-                <span className="block text-2xl font-bold text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
-                </span>
-                <span className="text-sm">models generated</span>
-              </div>
-              <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
-              <div className="min-w-28">
-                <span className="block text-2xl font-bold text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
-                </span>
-                <span className="text-sm">bricks generated</span>
-              </div>
-            </div>
-
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
-              <PetPromptGreeting mode="upload" state={petState} />
+              <PetPromptGreeting mode="upload" state={petState} showPetSwitch={false} />
               <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding?.uploadTitle}</h2>
               <p className="mb-4 text-left text-sm text-slate-600">{imageLanding?.uploadDescription}</p>
               <LDrawUploadSection authToken={session?.access_token} onImported={id => {
@@ -989,16 +992,21 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 submitGeneration();
               }}
             >
-              <PetPromptGreeting state={focused && !loading ? 'listening' : petState} />
+              <PetPromptGreeting state={focused && !loading ? 'listening' : petState} showPetSwitch={false} />
               {imageLanding && <>
                 <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
                 <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
                 <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || preparingImage}
-                  error={imageUploadError} onPick={onPickImage} onRemove={clearSelectedImage} />
+                  error={imageUploadError} onPick={() => onPickImage('image_upload_section')} onRemove={clearSelectedImage} />
               </>}
               <label htmlFor="landing-build-prompt" className="pet-conversation-hint">Ask {pet.name} to build something</label>
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
+                  <button type="button" aria-label="Upload image" title="Upload image"
+                    disabled={loading || preparingImage} onClick={() => onPickImage('input_left_icon')}
+                    className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50">
+                    <ImageIcon aria-hidden="true" className="h-5 w-5" />
+                  </button>
                   <input
                     id="landing-build-prompt"
                     ref={promptInputRef}
@@ -1018,7 +1026,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       event.currentTarget.form?.requestSubmit();
                     }}
                     placeholder={imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
-                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-4 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pl-5 sm:pr-36"
+                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pr-36"
                     disabled={loading || preparingImage}
                   />
                   <button
@@ -1045,7 +1053,11 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               )}
               <div id="landing-generation-settings" hidden={!settingsOpen}
                 onKeyDown={handleSettingsKeyDown} className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900">Generation settings</h3>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-slate-900">Generation settings</h3>
+                  <PetSwitchButton source="landing_settings"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336]" />
+                </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
@@ -1089,21 +1101,28 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   </div>
                 )}
               </div>
-              <div className="mt-3 flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={onPickImage}
-                  className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                  aria-label="Upload image"
-                  disabled={loading || preparingImage}
-                >
-                  <ImageIcon aria-hidden="true" className="h-4 w-4" />
-                  Upload image
-                </button>
-                <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage} />
-              </div>
+              <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form>}
+            <div
+              className="flex items-center justify-center gap-8 text-slate-600 landing-fade-in landing-delay-2"
+              aria-label="BrickBuilder generation statistics"
+            >
+              <div className="min-w-28">
+                <span className="block text-2xl font-bold tabular-nums text-slate-900">
+                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
+                </span>
+                <span className="text-sm">models generated</span>
+              </div>
+              <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
+              <div className="min-w-28">
+                <span className="block text-2xl font-bold tabular-nums text-slate-900">
+                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
+                </span>
+                <span className="text-sm">bricks generated</span>
+              </div>
+            </div>
+
             {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
               <LocalProviderSettings />
             </div>}
@@ -1207,8 +1226,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               localStorage.removeItem('recently_prompted_generation_id');
             }} />
           </div>}
-          {lowerContentReady && <ScrollRevealContent>
-          {/* Featured horizontal marquee OR in‑place progress UI */}
+          {/* Keep active generation feedback visible before the user scrolls. */}
           <section className="mt-4 w-full relative landing-fade-in landing-delay-4" style={{ zIndex: 15 }}>
             {loading && (
               <div className="flex w-full flex-col items-center gap-4 mb-4">
@@ -1282,6 +1300,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 </button>
               </div>
             )}
+          </section>
+          {lowerContentReady && <ScrollRevealContent enabled={hasScrolled}>
+          <section aria-label="Community models" className="mt-4 w-full relative landing-fade-in" style={{ zIndex: 15 }}>
             {featuredCommunityModels.length > 0 && (
               <div className="w-screen relative left-1/2 -translate-x-1/2">
                 <FeaturedStrip items={featuredCommunityModels} />
@@ -1306,7 +1327,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
           </ScrollRevealContent>}
         </main>
 
-        {lowerContentReady && <ScrollRevealContent>
+        {lowerContentReady && <ScrollRevealContent enabled={hasScrolled}>
           <div className="landing-fade-in"><SiteFooter /></div>
         </ScrollRevealContent>}
       </div>
@@ -1410,7 +1431,7 @@ function RealLifeBuilds() {
   );
 }
 
-function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
+function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page: string }) {
   const navigate = useNavigate();
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
@@ -1482,34 +1503,8 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
         </span>
       </a>
 
-      <nav aria-label="Main navigation" className="order-last flex w-full flex-wrap items-center justify-center xl:absolute xl:left-1/2 xl:top-1/2 xl:w-auto xl:-translate-x-1/2 xl:-translate-y-1/2">
-        <a
-          href="/image-to-lego"
-          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
-          onClick={() => posthog.capture('landing_header_image_to_lego_clicked')}
-        >
-          <ImageIcon aria-hidden="true" className="h-4 w-4" />
-          Image to LEGO
-        </a>
-        <button
-          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
-          onClick={() => navigate("/glb-to-lego")}
-        >
-          <Box className="h-4 w-4" />
-          GLB to LEGO
-        </button>
-        <a href="/use-ai-to-edit-ldraw"
-          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
-          onClick={() => posthog.capture('landing_header_upload_ldraw_clicked')}>
-          <Box aria-hidden="true" className="h-4 w-4" />Upload LDraw
-        </a>
-        <button
-          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
-          onClick={() => navigate("/community")}
-        >
-          <Users className="h-4 w-4" />
-          Community
-        </button>
+      <nav aria-label="Main navigation" className="order-last flex w-full justify-center lg:absolute lg:left-1/2 lg:top-1/2 lg:w-auto lg:-translate-x-1/2 lg:-translate-y-1/2">
+        <LandingToolsMenu page={page} />
       </nav>
 
       {/* Login / Sign Up OR Account Menu */}

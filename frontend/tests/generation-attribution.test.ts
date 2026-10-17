@@ -9,7 +9,7 @@ it.each(['/image-to-lego', '/photo-to-lego', '/', '/generated-model'])('attribut
   await apiFetch('http://localhost:8002/novaToBricks', { method: 'POST', body: JSON.stringify({ prompt: 'castle' }) });
   expect(JSON.parse(fetch.mock.calls[0][1]?.body as string)).toEqual({ prompt: 'castle', entry_page: page });
 });
-it.each(['/glbToBricks', '/uploadLdraw'])('attributes multipart %s without changing original form', endpoint => {
+it.each(['/glbToBricks', '/objToBricks', '/uploadLdraw'])('attributes multipart %s without changing original form', endpoint => {
   window.history.replaceState({}, '', '/use-ai-to-edit-ldraw');
   const file = new File(['data'], 'castle.io');
   const form = new FormData(); form.append('file', file);

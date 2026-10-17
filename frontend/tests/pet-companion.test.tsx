@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
 import { PetProvider, usePet, usePetActivity } from '../src/contexts/PetContext';
 import { PetAvatar, PetCompanion, PetPromptGreeting } from '../src/components/PetCompanion';
+import { LandingToolsMenu } from '../src/components/LandingToolsMenu';
 import { PET_MOTION_KEY, PET_STORAGE_KEY, isPetId, petVideoPath } from '../src/pets';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
@@ -32,6 +33,26 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 describe('build buddies', () => {
+  it('switches from Tools, closes the dropdown and restores focus to its trigger', () => {
+    const frames: FrameRequestCallback[] = [];
+    vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frames.push(callback); return frames.length; });
+    render(<><Probe /><LandingToolsMenu page="/" /><PetPromptGreeting showPetSwitch={false} /><PetCompanion /></>);
+    expect(container.querySelector('.pet-greeting button')).toBeNull();
+    const tools = container.querySelector<HTMLButtonElement>('button[aria-controls]')!;
+    act(() => tools.click());
+    const switchPet = container.querySelector<HTMLButtonElement>('[aria-label="Change pet, currently Pip"]')!;
+    act(() => { switchPet.focus(); switchPet.click(); });
+    expect(tools.getAttribute('aria-expanded')).toBe('false');
+    expect(container.querySelector('ul[aria-label="Tools"]')).toBeNull();
+    expect(container.querySelector('dialog')?.open).toBe(true);
+    expect(posthog.capture).toHaveBeenCalledWith('pet_picker_opened', { source: 'landing_tools' });
+    click('[aria-label="Choose Nib"]');
+    act(() => frames.forEach(callback => callback(0)));
+    expect(container.querySelector('output')?.textContent).toBe('nib:idle');
+    expect(document.activeElement).toBe(tools);
+    expect(posthog.capture).toHaveBeenCalledWith('pet_selected', { pet_id: 'nib', previous_pet_id: 'pip', source: 'landing_tools' });
+  });
+
   it('validates stored identities and maps listening to the lightweight idle clip', () => {
     expect(isPetId('nib')).toBe(true);
     expect(isPetId('../../anything')).toBe(false);
