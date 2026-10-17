@@ -41,6 +41,7 @@ it.each(['/obj-to-glb', '/glb-to-obj', '/glb-to-lego', ...VOXEL_CONVERTERS.map((
 it.each(['/image-to-lego', '/photo-to-lego'])('keeps image landing pages focused on the build dialogue at %s', path => {
   const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
   expect(document.querySelector('aside[aria-label="Design LEGO models"]')).toBeNull();
-  expect(document.querySelector('[aria-label="Build suggestions"]')).not.toBeNull();
+  expect(document.querySelector('[aria-label="Build suggestions"]')).toBeNull();
+  expect(document.querySelector('[aria-label="Build dialogue"] input[id="landing-build-prompt"]')).not.toBeNull();
   expect(document.querySelector('[aria-label="Build dialogue"] input[type="file"]')).not.toBeNull();
 });
