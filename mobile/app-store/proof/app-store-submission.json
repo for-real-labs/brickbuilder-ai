@@ -1,0 +1,101 @@
+{
+  "verifiedAt": "2026-10-17T18:03:12.058Z",
+  "versionId": "f6ea1171-cafa-4156-87ae-46cc88987d41",
+  "version": "1.0.2",
+  "status": "WAITING_FOR_REVIEW",
+  "releaseType": "AFTER_APPROVAL",
+  "submittedForReview": true,
+  "submission": {
+    "id": "5c0dbc29-3f0c-4e17-8567-12aaa9e99fc1",
+    "platform": "IOS",
+    "submittedDate": "2026-10-17T18:02:46.62Z",
+    "state": "WAITING_FOR_REVIEW"
+  },
+  "items": [
+    {
+      "id": "NWMwZGJjMjktM2YwYy00ZTE3LTg1NjctMTJhYWE5ZTk5ZmMxfDZ8ODkzMzU1NzEz",
+      "state": "READY_FOR_REVIEW",
+      "versionId": "f6ea1171-cafa-4156-87ae-46cc88987d41"
+    }
+  ],
+  "build": {
+    "id": "3388a756-8882-45b9-883c-e7e7f5cac30f",
+    "number": "4",
+    "processingState": "VALID"
+  },
+  "screenshots": [
+    {
+      "display": "APP_IPAD_PRO_3GEN_129",
+      "count": 3,
+      "files": [
+        {
+          "id": "d8800019-6356-8adf-8000-e525dbcd8d68",
+          "name": "01-buddies.png",
+          "checksum": "73129e219ad16268a9861b054d3bc73b",
+          "state": "COMPLETE"
+        },
+        {
+          "id": "f5c00019-6356-8adf-8011-42e43fcc3152",
+          "name": "02-create.png",
+          "checksum": "65b14847d8f5c103c8e796996cbfbee2",
+          "state": "COMPLETE"
+        },
+        {
+          "id": "a9c00019-6356-8adf-801b-910edb3e4d2f",
+          "name": "03-explore.png",
+          "checksum": "8c61b3d8e4eaea82a5cdfde08d0bb1c3",
+          "state": "COMPLETE"
+        }
+      ]
+    },
+    {
+      "display": "APP_IPHONE_61",
+      "count": 3,
+      "files": [
+        {
+          "id": "cf000019-6356-8adf-802e-7809bbeb5be5",
+          "name": "01-buddies.png",
+          "checksum": "9aca94df19b89fe181e3a674cea91df0",
+          "state": "COMPLETE"
+        },
+        {
+          "id": "96800019-6356-8adf-803f-125089a6184a",
+          "name": "02-create.png",
+          "checksum": "3cc08bba29391ba26b2a6613a9ef5061",
+          "state": "COMPLETE"
+        },
+        {
+          "id": "24400019-6356-8adf-8039-61cab35b30ad",
+          "name": "03-explore.png",
+          "checksum": "60db75add8368973bf0ac12539a6f5f7",
+          "state": "COMPLETE"
+        }
+      ]
+    },
+    {
+      "display": "APP_IPHONE_67",
+      "count": 3,
+      "files": [
+        {
+          "id": "2f000019-6356-8adf-803d-7328ad757cfe",
+          "name": "01-buddies.png",
+          "checksum": "5a81ef9b2c3c2e412ccbc8d24bfdc422",
+          "state": "COMPLETE"
+        },
+        {
+          "id": "ff400019-6356-8adf-802f-fcf786060370",
+          "name": "02-create.png",
+          "checksum": "9aa266fbb6c428485685ef9006224ce7",
+          "state": "COMPLETE"
+        },
+        {
+          "id": "f0800019-6356-8adf-801a-670822d0ad87",
+          "name": "03-explore.png",
+          "checksum": "5f0b01bb10bdb0347fb81f6ae6c85cd9",
+          "state": "COMPLETE"
+        }
+      ]
+    }
+  ],
+  "previewCount": 0
+}

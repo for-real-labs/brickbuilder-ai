@@ -146,8 +146,10 @@ python -m unittest discover -s app-store/design/tests
 python -m unittest discover -s app-store/video/tests
 ```
 
-The prepared App Store Connect version is **1.0.2 (4)**. Its three Warm Studio
+The submitted App Store Connect version is **1.0.2 (4)**. Its three Warm Studio
 screenshots per device and listing copy are uploaded, with zero preview videos.
 The processed build includes the Pip icon.
-**Do not submit this version for review until Jake explicitly approves it.**
-The verification snapshot is in `app-store/proof/app-store-draft.json`.
+Jake approved submission on October 17, 2026. Apple reports **Waiting for Review**,
+with automatic release after approval. The submission verification is in
+`app-store/proof/app-store-submission.json`; `app-store/proof/app-store-draft.json`
+preserves the screenshot-only draft check before submission.
