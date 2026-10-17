@@ -1,10 +1,21 @@
-Turn photos and text into LEGO-compatible 3D brick models with BrickBuilder AI.
+Turn photos and text into LEGO-compatible 3D brick models with BrickBuilder AI — now with a little build buddy by your side.
 
-Create a design from a photo or a few words, refine your model with AI, and explore community builds for inspiration.
+MEET YOUR BUILD BUDDY
+Choose Pip, the curious red brick; Nib, the clever beaver; or Clik, the imagination dragon. Describe your idea in the conversation box and follow along as your buddy responds and your build takes shape.
 
-- Create LEGO-compatible brick models from images or text.
-- View your model in 3D and zoom in on the details.
-- Refine your LEGO-compatible model with AI edits.
-- Discover LEGO-compatible builds shared by the community.
+FROM AN IDEA TO 3D BRICKS
+Start with a photo or a few words. Create LEGO-compatible brick models, explore them in 3D, and zoom in on the details.
+
+MAKE IT YOURS
+Refine your LEGO-compatible model with AI edits. Try another direction and keep building on your imagination.
+
+FIND YOUR NEXT BUILD
+Explore community creations for inspiration and discover what other builders are making.
+
+- Three build buddies: Pip, Nib and Clik.
+- A conversation box for your ideas and build progress.
+- LEGO-compatible 3D models from images or text.
+- Interactive 3D viewing and AI model edits.
+- Community builds to explore.
 
 LEGO® is a trademark of the LEGO Group. BrickBuilder AI is an independent app and is not sponsored, authorized, or endorsed by the LEGO Group.

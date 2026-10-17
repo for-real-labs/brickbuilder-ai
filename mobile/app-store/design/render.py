@@ -1,25 +1,23 @@
-"""Render three connected App Store posters from unmodified app captures.
+"""Export three connected App Store posters from original pets and real iOS captures.
 
-Requires Pillow and numpy. Run from any directory: python render.py
+Run with Python + Pillow + numpy. Wallpaper artwork was generated on fal.ai;
+UI is never redrawn. Capture framing and provenance are in capture-manifest.json.
 """
-
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
-import math
 import zipfile
 
-import numpy as np
 from PIL import Image, ImageDraw, ImageFilter, ImageFont, ImageOps
-
 
 ROOT = Path(__file__).resolve().parent
 STORE = ROOT.parent
+REPO = ROOT.parents[2]
 WIDTH = 1242
-NAVY = (15, 23, 38)
-WHITE = (250, 248, 242)
-CORAL = (255, 100, 85)
-MUTED = (179, 191, 205)
+NAVY = (23, 32, 53)
+WHITE = (255, 253, 248)
+CORAL = (218, 70, 53)
+MUTED = (90, 91, 98)
 
 
 @dataclass(frozen=True)
@@ -31,235 +29,189 @@ class Export:
 
 
 EXPORTS = (
-    Export("iphone-6.3", 1206, 2622),
-    Export("iphone-6.5", 1242, 2688),
-    Export("iphone-6.9", 1320, 2868),
-    Export("ipad-13", 2064, 2752, True),
+    Export('iphone-6.3', 1206, 2622),
+    Export('iphone-6.5', 1242, 2688),
+    Export('iphone-6.9', 1320, 2868),
+    Export('ipad-13', 2064, 2752, True),
 )
-FILENAMES = ("01-imagine.png", "02-create.png", "03-explore.png")
-HEADLINES = (("Dream it.", "Brick it."), ("Make it", "uniquely yours."), ("Find your", "next build."))
+FILENAMES = ('01-buddies.png', '02-create.png', '03-explore.png')
+HEADLINES = (('Dream it.', 'Build with Pip.'), ('Make it', 'uniquely yours.'), ('Find your', 'next big idea.'))
 DESCRIPTIONS = (
-    ("Turn photos or text into", "LEGO-compatible 3D models."),
-    ("Refine LEGO-compatible models.", "Make every detail your own."),
-    ("Discover LEGO-compatible builds.", "Get inspired by the community."),
+    ('Meet Pip, Nib and Clik.', 'Your little AI build buddies.'),
+    ('Create LEGO-compatible 3D models.', 'Refine every detail with AI.'),
+    ('Explore LEGO-compatible creations.', 'Get inspired by the community.'),
 )
-LABELS = ("01  IMAGINE", "02  CREATE", "03  EXPLORE")
+LABELS = ('01  MEET YOUR BUDDY', '02  CREATE WITH AI', '03  GET INSPIRED')
 SOURCES = {
-    "iphone-create.png": (436, 185),
-    "iphone-model.png": (428, 654),
-    "community-search.png": (428, 93),
-    "ipad-create.png": (815, 130),
-    "ipad-model.png": (428, 384),
-    "ipad-refine.png": (428, 255),
+    'landing-ios.png': (1206, 2622),
+    'model-ios.png': (1206, 2622),
+    'edit-ios.png': (1206, 2622),
+    'community-ios.png': (1206, 2622),
+    'landing-ipad.png': (2064, 2752),
+    'model-ipad.png': (2064, 2752),
+    'edit-ipad.png': (2064, 2752),
+    'community-ipad.png': (2064, 2752),
 }
+HEADLINE_SIZE = 128
+CAPTION_SIZE = 45
 
 
 @lru_cache(maxsize=64)
 def font(size, weight=800):
-    result = ImageFont.truetype(str(ROOT / "fonts/Manrope.ttf"), size)
+    result = ImageFont.truetype(str(ROOT / 'fonts/Manrope.ttf'), size)
     result.set_variation_by_axes([weight])
     return result
 
 
-def text(draw, position, value, size, fill=WHITE, weight=800):
-    draw.text(position, value, font=font(size, weight), fill=fill, anchor="lt")
+def text(draw, xy, value, size, fill=NAVY, weight=800):
+    draw.text(xy, value, font=font(size, weight), fill=fill, anchor='lt')
 
 
 def load_source(name):
-    # Keep only focused, already-cropped app UI; omit account/header information.
-    image = Image.open(ROOT / "sources" / name).convert("RGB")
+    image = Image.open(ROOT / 'sources' / name).convert('RGB')
     if image.size != SOURCES[name]:
-        raise ValueError(f"Unexpected capture dimensions: {name}")
+        raise ValueError(f'Unexpected capture dimensions: {name}')
     return image
 
 
-def background(height):
-    """One panorama, split only after rendering, keeps every seam continuous."""
-    width = WIDTH * 3
-    yy, xx = np.mgrid[0:height, 0:width]
-    glow = np.exp(-(((xx - width * .52) / (width * .8)) ** 2 + ((yy - height * .55) / (height * .65)) ** 2))
-    pixels = np.empty((height, width, 3), dtype=np.uint8)
-    for channel, base in enumerate(NAVY):
-        pixels[:, :, channel] = base + glow * (9, 12, 15)[channel]
-    canvas = Image.fromarray(pixels).convert("RGBA")
-    draw = ImageDraw.Draw(canvas)
-    # A wide warm ribbon travels behind the app previews, joining at every edge.
-    centers = [(x, int(height * .76 + math.sin(x / 615 + .7) * height * .10)) for x in range(-20, width + 22, 3)]
-    radius = int(height * .085)
-    polygon = [(x, y - radius) for x, y in centers] + [(x, y + radius) for x, y in reversed(centers)]
-    draw.polygon(polygon, fill=(235, 91, 77))
-    draw.line([(x, y - radius + 14) for x, y in centers], fill=(255, 141, 113), width=3)
-    # Large subtle stud outlines add a brick motif without competing with copy.
-    for x, y, r in ((-80, height * .43, 245), (WIDTH + 50, height * .32, 220), (WIDTH * 2 + 30, height * .51, 260), (width - 90, height * .24, 210)):
-        draw.ellipse((x-r, y-r, x+r, y+r), outline=(42, 56, 72), width=2)
-        draw.ellipse((x-r+20, y-r+20, x+r-20, y+r-20), outline=(35, 48, 65), width=2)
-    return canvas
+def background(height, theme='01-warm-studio.jpg'):
+    # Render ONE panorama and split afterwards, preserving the ribbon at seams.
+    return ImageOps.fit(Image.open(ROOT / 'wallpapers' / theme).convert('RGB'),
+                        (WIDTH * 3, height), Image.Resampling.LANCZOS).convert('RGBA')
 
 
 def rounded_paste(canvas, content, xy, radius=38):
-    mask = Image.new("L", content.size)
+    mask = Image.new('L', content.size)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, content.width-1, content.height-1), radius, fill=255)
     canvas.paste(content, xy, mask)
 
 
-def app_card(canvas, source, xy, width, max_height=None):
+def app_card(canvas, source, xy, width, max_height=None, radius=44):
     height = round(source.height * width / source.width)
     if max_height and height > max_height:
         width = round(width * max_height / height)
         height = max_height
     shot = source.resize((width, height), Image.Resampling.LANCZOS)
     x, y = xy
-    padding = 15
-    box = (x-padding, y-padding, x+width+padding, y+height+padding)
-    shadow = Image.new("RGBA", canvas.size)
-    ImageDraw.Draw(shadow).rounded_rectangle((box[0]-4, box[1]+28, box[2]+4, box[3]+36), 60, fill=(0, 0, 0, 125))
-    canvas.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(35)))
-    draw = ImageDraw.Draw(canvas)
-    draw.rounded_rectangle(box, 53, fill=(225, 230, 233), outline=(255, 255, 255), width=2)
-    rounded_paste(canvas, shot, (x, y), 39)
-    return (x, y, width, height)
+    box = (x-10, y-10, x+width+10, y+height+10)
+    shadow = Image.new('RGBA', canvas.size)
+    ImageDraw.Draw(shadow).rounded_rectangle((box[0]-5, box[1]+24, box[2]+5, box[3]+28), radius+10, fill=(69, 35, 20, 60))
+    canvas.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(28)))
+    ImageDraw.Draw(canvas).rounded_rectangle(box, radius+10, fill='white', outline=(236, 229, 218), width=2)
+    rounded_paste(canvas, shot, (x, y), radius)
+    return x, y, width, height
 
 
-def pill(canvas, xy, value, size=29):
-    draw = ImageDraw.Draw(canvas)
-    width = math.ceil(draw.textlength(value, font=font(size, 700))) + 56
-    x, y = xy
-    draw.rounded_rectangle((x, y, x+width, y+68), 34, fill=(40, 54, 70), outline=(75, 90, 106), width=2)
-    text(draw, (x+28, y+20), value, size, WHITE, 700)
-
-
-def brick(canvas, xy, scale=1, color=CORAL, angle=-15):
-    """A small code-drawn isometric brick, used only as background artwork."""
-    tile = Image.new("RGBA", (320, 250))
-    d = ImageDraw.Draw(tile)
-    top = tuple(min(255, int(v*1.12)) for v in color)
-    side = tuple(int(v*.68) for v in color)
-    d.polygon(((40, 110), (155, 50), (280, 110), (165, 175)), fill=top)
-    d.polygon(((40, 110), (165, 175), (165, 225), (40, 160)), fill=color)
-    d.polygon(((165, 175), (280, 110), (280, 160), (165, 225)), fill=side)
-    for cx, cy in ((122, 90), (181, 119)):
-        d.ellipse((cx-27,cy-9,cx+27,cy+20), fill=side)
-        d.ellipse((cx-27,cy-20,cx+27,cy+7), fill=top, outline=color, width=2)
-    tile = tile.resize((round(320*scale), round(250*scale)), Image.Resampling.LANCZOS).rotate(angle, Image.Resampling.BICUBIC, expand=True)
-    canvas.alpha_composite(tile, xy)
-
-
-def hero(canvas, box):
-    source = Image.open(ROOT / "sources/knapp-center.png").convert("RGBA")
-    source = source.crop(source.getbbox())
+def pet(canvas, pet_id, box):
+    path = ROOT / 'sources/pip-original.png' if pet_id == 'pip' else REPO / f'frontend/public/pets/{pet_id}.webp'
+    source = Image.open(path).convert('RGBA')
+    if pet_id == 'pip':
+        source = source.crop((195, 115, 1080, 1140))
+    else:
+        # Trim only the transparent border, preserving the original app artwork.
+        bounds = source.getchannel('A').point(lambda a: 255 if a > 30 else 0).getbbox()
+        source = source.crop(bounds)
     source = ImageOps.contain(source, (box[2], box[3]), Image.Resampling.LANCZOS)
     x = box[0] + (box[2]-source.width)//2
     y = box[1] + (box[3]-source.height)//2
-    shadow = Image.new("RGBA", canvas.size)
-    d = ImageDraw.Draw(shadow)
-    d.ellipse((x+source.width*.08, y+source.height-60, x+source.width*.92, y+source.height+20), fill=(0, 0, 0, 140))
-    canvas.alpha_composite(shadow.filter(ImageFilter.GaussianBlur(32)))
-    canvas.alpha_composite(source, (x, y))
+    canvas.alpha_composite(source, (x,y))
 
 
-def community_feature(width, height):
-    """Marketing artwork using the unmodified original community model image."""
-    card = Image.new("RGBA", (width, height), (245, 247, 250, 255))
-    source = Image.open(ROOT / "sources/bat-cave.png").convert("RGBA")
+def model_hero(canvas, box):
+    source = Image.open(ROOT / 'sources/bat-cave.png').convert('RGBA')
     source = source.crop(source.getbbox())
-    label_height = 120
-    model = ImageOps.contain(source, (width-80, height-label_height-50), Image.Resampling.LANCZOS)
-    card.alpha_composite(model, ((width-model.width)//2, (height-label_height-model.height)//2))
-    d = ImageDraw.Draw(card)
-    text(d, (42, height-label_height+24), "Bat Cave", 42, NAVY)
-    text(d, (42, height-42), "FROM THE BRICKBUILDER COMMUNITY", 19, (83, 98, 116), 600)
-    return card.convert("RGB")
+    source = ImageOps.contain(source, (box[2], box[3]), Image.Resampling.LANCZOS)
+    canvas.alpha_composite(source, (box[0]+(box[2]-source.width)//2, box[1]+(box[3]-source.height)//2))
+
 
 
 def compose(index, panorama, height, tablet=False):
-    panel = panorama.crop((index*WIDTH, 0, (index+1)*WIDTH, height))
-    d = ImageDraw.Draw(panel)
-    text(d, (88, 91), "BRICK", 34, CORAL)
-    text(d, (194, 91), "BUILDER AI", 34)
-    text(d, (1044, 97), f"0{index+1} / 03", 25, MUTED, 600)
-    y = 238 if tablet else 264
-    size = 104 if index == 1 else 132
-    if tablet:
-        size = 98 if index == 1 else 116
-    for i, line in enumerate(HEADLINES[index]):
-        text(d, (85, y+i*(size+16)), line, size, CORAL if i else WHITE)
-    desc_y = y + 2*(size+16) + 48
-    for i, line in enumerate(DESCRIPTIONS[index]):
-        text(d, (90, desc_y+i*52), line, 37 if tablet else 39, MUTED, 500)
-    if index == 0:
+    panel = panorama.crop((index*WIDTH,0,(index+1)*WIDTH,height))
+    draw = ImageDraw.Draw(panel)
+    text(draw,(88,88),'BRICKBUILDER AI',31,weight=800)
+    text(draw,(1058,92),f'0{index+1}',28,CORAL,700)
+    title_y=210 if tablet else 236
+    for line_n,line in enumerate(HEADLINES[index]):
+        text(draw,(85,title_y+line_n*153),line,HEADLINE_SIZE,CORAL if line_n else NAVY)
+    caption_y=title_y+352
+    for line_n,line in enumerate(DESCRIPTIONS[index]):
+        text(draw,(90,caption_y+line_n*60),line,CAPTION_SIZE,MUTED,500)
+    if index==0:
         if tablet:
-            hero(panel, (230, 650, 800, 610))
-            app_card(panel, load_source("ipad-create.png"), (96, 1310), 1050)
-            brick(panel, (920, 783), .57, (246, 211, 135), 18)
-            brick(panel, (-90, 1000), .7)
+            pet(panel,'pip',(448,715,370,365))
+            pet(panel,'nib',(135,845,270,230))
+            pet(panel,'clik',(865,845,270,230))
+            capture=load_source('landing-ipad.png').crop((50,250,2014,900))
+            app_card(panel,capture,(96,1170),1050,radius=34)
         else:
-            # A real exported model sits above a focused crop of the creation UI.
-            hero(panel, (96, 835, 1050, 930))
-            app_card(panel, load_source("iphone-create.png"), (121, 1900), 1000)
-            pill(panel, (90, 795), "PHOTO OR TEXT  →  3D BRICKS", 25)
-            brick(panel, (1000, 1010), .74, (246, 211, 135), 18)
-            brick(panel, (-95, 1560), .8)
-    elif index == 1:
+            pet(panel,'pip',(312,815,620,745))
+            pet(panel,'nib',(70,1220,320,390))
+            pet(panel,'clik',(875,1220,300,390))
+            capture=load_source('landing-ios.png').crop((25,800,1181,1390))
+            app_card(panel,capture,(106,1800),1030,radius=34)
+        draw=ImageDraw.Draw(panel)
+        for name,cx in zip(('Nib','Pip','Clik'),(270,633,1000) if tablet else (230,622,1025)):
+            draw.text((cx,1090 if tablet else 1630),name,font=font(30),fill=CORAL,anchor='mt')
+    elif index==1:
         if tablet:
-            app_card(panel, load_source("ipad-model.png"), (95, 740), 770)
-            pill(panel, (875, 910), "REFINE WITH AI", 20)
-            app_card(panel, load_source("ipad-refine.png"), (775, 1000), 370)
+            source=load_source('model-ipad.png')
+            app_card(panel,source.crop((75,370,1215,1775)),(70,740),575,radius=36)
+            app_card(panel,load_source('edit-ipad.png').crop((1260,370,1990,1080)),(700,815),475,radius=34)
         else:
-            app_card(panel, load_source("iphone-model.png"), (145, 925), 952)
-            brick(panel, (1070, 809), .6, (246, 211, 135), 18)
+            app_card(panel,load_source('model-ios.png').crop((40,520,1166,1770)),(206,780),830)
+            app_card(panel,load_source('edit-ios.png').crop((45,300,1161,1445)),(190,1655),862)
     else:
         if tablet:
-            app_card(panel, community_feature(950, 660), (146, 745), 950)
-            app_card(panel, load_source("community-search.png"), (744, 1290), 400)
+            model_hero(panel,(86,700,1070,370))
+            capture=load_source('community-ipad.png').crop((50,720,2014,1420))
+            app_card(panel,capture,(96,1150),1050,radius=34)
         else:
-            app_card(panel, community_feature(1000, 1200), (121, 925), 1000)
-            app_card(panel, load_source("community-search.png"), (145, 2230), 952)
-            brick(panel, (-115, 785), .65, (246, 211, 135), -22)
-    d = ImageDraw.Draw(panel)
-    footer_y = height-113
-    text(d, (90, footer_y), LABELS[index], 26, WHITE, 700)
+            model_hero(panel,(50,840,1142,840))
+            capture=load_source('community-ios.png').crop((25,1450,1181,2110))
+            app_card(panel,capture,(106,1780),1030,radius=34)
+            draw=ImageDraw.Draw(panel)
+            text(draw,(100,1710),'BAT CAVE  ·  COMMUNITY BUILD',24,CORAL,800)
+    draw=ImageDraw.Draw(panel)
+    footer_y=height-101
+    text(draw,(90,footer_y),LABELS[index],23,NAVY,800)
     for n in range(3):
-        x = 1038+n*36
-        d.ellipse((x, footer_y+4, x+12, footer_y+16), fill=CORAL if n == index else (82, 96, 113))
-    return panel.convert("RGB")
+        x=1040+n*36
+        draw.ellipse((x,footer_y+3,x+12,footer_y+15),fill=CORAL if n==index else (192,175,157))
+    return panel.convert('RGB')
 
 
 def render_export(spec):
-    height = round(spec.height / spec.width * WIDTH)
-    panorama = background(height)
-    output = STORE / "screenshots" / spec.folder
-    output.mkdir(parents=True, exist_ok=True)
-    panels = []
-    for index, name in enumerate(FILENAMES):
-        panel = compose(index, panorama, height, spec.tablet)
-        panel = panel.resize((spec.width, spec.height), Image.Resampling.LANCZOS)
-        panel.save(output / name, optimize=True)
+    height=round(spec.height/spec.width*WIDTH)
+    panorama=background(height)
+    output=STORE/'screenshots'/spec.folder
+    output.mkdir(parents=True,exist_ok=True)
+    panels=[]
+    for index,name in enumerate(FILENAMES):
+        panel=compose(index,panorama,height,spec.tablet).resize((spec.width,spec.height),Image.Resampling.LANCZOS)
+        panel.save(output/name,optimize=True)
         panels.append(panel)
-    # Only remove superseded screenshots in this dedicated generated directory.
-    for path in output.glob("*.png"):
+    for path in output.glob('*.png'):
         if path.name not in FILENAMES:
             path.unlink()
-    archive = STORE / f"brickbuilder-{spec.folder}-screenshots.zip"
-    with zipfile.ZipFile(archive, "w", compression=zipfile.ZIP_DEFLATED) as bundle:
+    with zipfile.ZipFile(STORE/f'brickbuilder-{spec.folder}-screenshots.zip','w',compression=zipfile.ZIP_DEFLATED) as archive:
         for name in FILENAMES:
-            bundle.write(output / name, name)
+            archive.write(output/name,name)
     return panels
 
 
-def contact_sheet(panels, path, thumbnail_width=414):
-    height = round(panels[0].height / panels[0].width * thumbnail_width)
-    sheet = Image.new("RGB", (thumbnail_width*3, height))
-    for i, panel in enumerate(panels):
-        sheet.paste(panel.resize((thumbnail_width, height), Image.Resampling.LANCZOS), (i*thumbnail_width, 0))
-    sheet.save(path, quality=95)
+def contact_sheet(panels,path,thumbnail_width=414):
+    h=round(panels[0].height/panels[0].width*thumbnail_width)
+    sheet=Image.new('RGB',(thumbnail_width*3,h))
+    for index,panel in enumerate(panels):
+        sheet.paste(panel.resize((thumbnail_width,h),Image.Resampling.LANCZOS),(index*thumbnail_width,0))
+    sheet.save(path,quality=95)
 
 
 def main():
     for spec in EXPORTS:
-        panels = render_export(spec)
-        contact_sheet(panels, STORE / f"preview-{spec.folder}.jpg")
-    print("Exported exactly three RGB portrait PNGs per device set, ZIPs, and previews.")
+        contact_sheet(render_export(spec),STORE/f'preview-{spec.folder}.jpg')
+    print('Exported three connected RGB portrait posters per device set.')
 
 
-if __name__ == "__main__":
+if __name__=='__main__':
     main()
