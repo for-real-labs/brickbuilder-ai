@@ -3,6 +3,9 @@
   "outputDirectory": "dist",
   "trailingSlash": false,
   "redirects": [
+    {"source": "/image-to-3d.html", "destination": "/image-to-3d", "permanent": true},
+    {"source": "/image-to-glb.html", "destination": "/image-to-glb", "permanent": true},
+    {"source": "/image-to-obj.html", "destination": "/image-to-obj", "permanent": true},
     {"source": "/brickworld26", "destination": "https://docs.google.com/presentation/d/1oI4e2VkhY3XyYzyPsceF538b2fIle7ZknC3XZzzUl-Y/edit?usp=sharing", "permanent": false},
     {"source": "/landing", "destination": "/", "permanent": true},
     {"source": "/index.html", "destination": "/", "permanent": true},
@@ -29,6 +32,9 @@
     {"source": "/glb-to-obj.html", "destination": "/glb-to-obj", "permanent": true}
   ],
   "rewrites": [
+    {"source": "/image-to-3d", "destination": "/image-to-3d.html"},
+    {"source": "/image-to-glb", "destination": "/image-to-glb.html"},
+    {"source": "/image-to-obj", "destination": "/image-to-obj.html"},
     {"source": "/use-ai-to-edit-ldraw", "destination": "/use-ai-to-edit-ldraw.html"},
     {"source": "/image-to-lego", "destination": "/image-to-lego.html"},
     {"source": "/photo-to-lego", "destination": "/photo-to-lego.html"},
@@ -50,6 +56,6 @@
     {"source": "/obj-to-xyzrgb", "destination": "/obj-to-xyzrgb.html"},
     {"source": "/obj-to-glb", "destination": "/obj-to-glb.html"},
     {"source": "/glb-to-obj", "destination": "/glb-to-obj.html"},
-    {"source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|use-ai-to-edit-ldraw\\.html|image-to-lego\\.html|photo-to-lego\\.html|glb-to-lego\\.html|obj-to-lego\\.html|obj-to-glb\\.html|glb-to-obj\\.html|login\\.html|signup\\.html|blog(?:/[^/]+)?\\.html|glb-to-vox\\.html|glb-to-qb\\.html|glb-to-binvox\\.html|glb-to-xyzrgb\\.html|obj-to-vox\\.html|obj-to-qb\\.html|obj-to-binvox\\.html|obj-to-xyzrgb\\.html|assets/).*)", "destination": "/index.html"}
+    {"source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|use-ai-to-edit-ldraw\\.html|image-to-lego\\.html|photo-to-lego\\.html|glb-to-lego\\.html|obj-to-lego\\.html|obj-to-glb\\.html|glb-to-obj\\.html|login\\.html|signup\\.html|blog(?:/[^/]+)?\\.html|glb-to-vox\\.html|glb-to-qb\\.html|glb-to-binvox\\.html|glb-to-xyzrgb\\.html|obj-to-vox\\.html|obj-to-qb\\.html|obj-to-binvox\\.html|obj-to-xyzrgb\\.html|image-to-3d\\.html|image-to-glb\\.html|image-to-obj\\.html|assets/).*)", "destination": "/index.html"}
   ]
 }

@@ -5,6 +5,7 @@ import FallingBricks from "../components/FallingBricks";
 import { Mail } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { SiteFooter } from "../components/SiteFooter";
+import { isOAuthLogin, loginRedirect } from "../utils/loginRedirect";
 import {
   AuthMethod,
   trackAuthMethodSelected,
@@ -15,7 +16,8 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromState = (location.state as { from?: string } | null)?.from;
-  const redirectTo = fromState && fromState.startsWith("/") ? fromState : "/dashboard";
+  const redirectTo = loginRedirect(location.search, fromState);
+  const connectingApp = isOAuthLogin(redirectTo);
   const { signIn, signInWithGoogle, signInWithOtp, verifyOtp } = useAuth();
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -24,7 +26,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [otpSent, setOtpSent] = useState(false);
-  const [authMethod, setAuthMethod] = useState<AuthMethod>("magic_link");
+  const [authMethod, setAuthMethod] = useState<AuthMethod>(connectingApp ? "password" : "magic_link");
 
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
@@ -143,7 +145,7 @@ export default function LoginPage() {
 
         {/* Card */}
         <main style={{ border: "1px solid #e5e7eb", borderRadius: 16, background: "#fff", padding: 24, boxShadow: "0 1px 2px rgba(0,0,0,0.04)" }}>
-          <h1 className="text-2xl font-extrabold">Welcome!</h1>
+          <h1 className="text-2xl font-extrabold">{connectingApp ? "Sign in to connect" : "Welcome!"}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {otpSent
               ? "Check your email for a magic link or enter the code we sent."
@@ -157,10 +159,11 @@ export default function LoginPage() {
             <form onSubmit={handleGetCode} className="mt-5 space-y-4">
               {/* Email */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <div className="relative">
                   <Mail className="absolute h-4 w-4 text-slate-400" style={{ left: 10, top: "50%", transform: "translateY(-50%)" }} />
                   <input
+                    id="login-email"
                     type="email"
                     autoFocus
                     autoComplete="email"
@@ -204,10 +207,11 @@ export default function LoginPage() {
           {!otpSent && authMethod === "password" && (
             <form onSubmit={handlePasswordSignIn} className="mt-5 space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
                 <div className="relative">
                   <Mail className="absolute h-4 w-4 text-slate-400" style={{ left: 10, top: "50%", transform: "translateY(-50%)" }} />
                   <input
+                    id="login-email"
                     type="email"
                     autoFocus
                     autoComplete="email"
@@ -222,8 +226,9 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
+                <label htmlFor="login-password" className="block text-sm font-medium text-slate-700 mb-1">Password</label>
                 <input
+                  id="login-password"
                   type="password"
                   autoComplete="current-password"
                   placeholder="Enter your password"

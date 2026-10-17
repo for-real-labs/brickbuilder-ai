@@ -49,31 +49,36 @@ describe('generation stats ticker', () => {
     vi.unstubAllGlobals();
   });
 
-  it('starts just behind confirmed totals and eases independent bursts with pauses', () => {
+  it('adds one model per burst, then counts up its proportional bricks', () => {
     act(() => root.render(<Counter totals={null} />));
     expect(container.textContent).toBe('—');
     render(10000, 1000000);
-    expect(container.textContent).toBe('9975/995000');
-    advance(1200);
-    expect(container.textContent).toBe('9975/995000');
+    expect(values()).toEqual([9975, 997500]);
+    advance(1799);
+    expect(values()).toEqual([9975, 997500]);
+    advance(1);
+    expect(values()).toEqual([9976, 997500]);
     advance(500);
-    expect(container.textContent).toBe('9975/995525');
+    expect(values()).toEqual([9976, 997587]);
     advance(500);
-    expect(values()[1]).toBe(995600);
-    const pausedBricks = values()[1];
-    advance(500);
-    expect(values()[0]).toBeGreaterThan(9975);
-    expect(values()[0]).toBeLessThan(10000);
-    expect(values()[1]).toBe(pausedBricks);
+    expect(values()).toEqual([9976, 997600]);
+    advance(1799);
+    expect(values()).toEqual([9976, 997600]);
+    advance(1);
+    expect(values()).toEqual([9977, 997600]);
+    advance(1000);
+    expect(values()).toEqual([9977, 997700]);
   });
 
-  it('uses random delays so counters can tick in a different order', () => {
-    vi.mocked(Math.random).mockReturnValueOnce(0).mockReturnValueOnce(0.99);
+  it('varies the pause for the shared model and bricks burst', () => {
+    vi.mocked(Math.random).mockReturnValue(0.5);
     render(10000, 1000000);
-    advance(1800);
-    advance(500);
-    expect(values()[0]).toBeGreaterThan(9975);
-    expect(values()[1]).toBe(995000);
+    advance(3499);
+    expect(values()).toEqual([9975, 997500]);
+    advance(1);
+    expect(values()).toEqual([9976, 997500]);
+    advance(1000);
+    expect(values()).toEqual([9976, 997600]);
   });
 
   it('never overshoots or runs backward, and stops at the confirmed totals', () => {
@@ -101,8 +106,9 @@ describe('generation stats ticker', () => {
     render(10000, 1000000);
     advance(1000);
     render(10000, 1000000);
-    advance(700);
-    expect(values()[1]).toBeGreaterThan(995000);
+    advance(800);
+    advance(500);
+    expect(values()).toEqual([9976, 997587]);
     const interrupted = container.textContent;
     render(10003, 1002400);
     expect(container.textContent).toBe(interrupted);
@@ -110,12 +116,46 @@ describe('generation stats ticker', () => {
     expect(container.textContent).toBe('10003/1002400');
   });
 
-  it('applies downward corrections independently and bounds small and zero totals', () => {
+  it('distributes newly recorded bricks across their models and includes rounding remainders', () => {
+    motion.matches = true;
+    render(100, 10000);
+    motion.matches = false;
+    render(103, 12401);
+    advance(1800);
+    expect(values()).toEqual([101, 10000]);
+    advance(1000);
+    expect(values()).toEqual([101, 10800]);
+    advance(1800);
+    expect(values()).toEqual([102, 10800]);
+    advance(1000);
+    expect(values()).toEqual([102, 11601]);
+    advance(1800);
+    expect(values()).toEqual([103, 11601]);
+    advance(1000);
+    expect(values()).toEqual([103, 12401]);
+    expect(callbacks.size).toBe(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it('finishes an interrupted brick count without incrementing the same model twice', () => {
+    render(1, 100);
+    advance(1800);
+    advance(500);
+    expect(values()).toEqual([1, 87]);
+    render(2, 500);
+    expect(values()).toEqual([1, 87]);
+    advance(1000);
+    expect(values()).toEqual([1, 100]);
+    advance(1800);
+    expect(values()).toEqual([2, 100]);
+    advance(1000);
+    expect(values()).toEqual([2, 500]);
+  });
+
+  it('applies corrected totals and bounds small and zero totals', () => {
     render(10000, 1000000);
-    advance(1700);
-    const bricks = values()[1];
     render(9900, 1000000);
-    expect(values()).toEqual([9900, bricks]);
+    expect(values()).toEqual([9900, 1000000]);
     render(0, 1);
     expect(values()[0]).toBe(0);
     expect(values()[1]).toBeLessThanOrEqual(1);
@@ -140,9 +180,8 @@ describe('generation stats ticker', () => {
 
   it('cancels pending frames, pauses, and preference listeners on unmount', () => {
     render(10000, 1000000);
-    advance(1300);
+    advance(1800);
     expect(callbacks.size).toBeGreaterThan(0);
-    expect(vi.getTimerCount()).toBeGreaterThan(0);
     act(() => root.unmount());
     expect(callbacks.size).toBe(0);
     expect(vi.getTimerCount()).toBe(0);

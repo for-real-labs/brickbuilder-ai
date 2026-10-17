@@ -1,0 +1,12 @@
+.build-buddy-suggestions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; width: 100%; margin-bottom: 16px; }
+.build-buddy-suggestions button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-width: 0; max-width: 100%; min-height: 44px; padding: 10px 14px; border: 1px solid #e2e8f0; border-radius: 16px; background: #fff; color: #475569; font-size: 13px; font-weight: 500; text-align: left; cursor: pointer; transition: background .15s, border-color .15s; }
+.build-buddy-suggestions button:first-child { background: #fff5f4; border-color: #fddbd6; color: #a33b30; }
+.build-buddy-suggestions button svg { flex-shrink: 0; }
+.build-buddy-suggestions button span { overflow-wrap: anywhere; }
+.build-buddy-suggestions button:hover { background: #fff1ef; border-color: #f6bcb3; }
+.build-buddy-suggestions button:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; }
+.build-buddy-suggestions button:disabled { opacity: .5; cursor: default; }
+@media (max-width: 480px) {
+  .build-buddy-suggestions button:first-child { flex-basis: 100%; }
+  .build-buddy-suggestions button:not(:first-child) { flex: 1; }
+}

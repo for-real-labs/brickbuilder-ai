@@ -1,0 +1,79 @@
+import React, { useEffect, useRef, useState } from 'react';
+import { usePet } from '../contexts/PetContext';
+import { type PetState } from '../pets';
+import { PetChatMessage, PetPromptGreeting } from './PetCompanion';
+import { LlmGenerationOutput } from './LlmGenerationOutput';
+import { GetNotifiedButton } from './GetNotifiedButton';
+import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
+import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
+import { isAgentGeneration } from '../utils/agentGeneration';
+import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
+
+export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
+
+export function BuddyBuildMessages({ generationId, status }: { generationId: string; status: string }) {
+  const active = isGenerationActive(status);
+  return <div className="pet-build-messages">
+    <LlmGenerationOutput generationId={generationId} active={active} status={status} />
+    {active && <GetNotifiedButton generationId={generationId} promptOnStart />}
+  </div>;
+}
+
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, modelName, onUploadImage, onUseGiftIdea, actionsDisabled = false }: {
+  turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean; modelName?: string;
+  onUploadImage?: () => void; onUseGiftIdea?: (prompt: string) => void; actionsDisabled?: boolean;
+}) {
+  const { pet } = usePet();
+  const [returning] = useState(() => {
+    try { return localStorage.getItem(BUDDY_SEEN_KEY) === 'true'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(BUDDY_SEEN_KEY, 'true'); } catch { /* Chat also works without storage. */ }
+  }, []);
+  const log = useRef<HTMLDivElement>(null);
+  const follow = useRef(true);
+  useEffect(() => {
+    const element = log.current;
+    if (!element) return;
+    const scroll = () => { if (follow.current) element.scrollTop = element.scrollHeight; };
+    scroll();
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scroll);
+    if (element.firstElementChild) observer?.observe(element.firstElementChild);
+    return () => observer?.disconnect();
+  }, [turns.length, generations.length]);
+  const restored = generations.filter(row => isAgentGeneration(row.endpoint) && isGenerationActive(row.status) && !turns.some(turn => turn.generationId === row.id))
+    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+  return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
+    onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
+    <div className="pet-dialogue-content">
+      <PetPromptGreeting mode={modelName ? 'edit' : undefined} state={state} showPetSwitch={false}>
+        {modelName ? `Your ${modelName} is ready! What would you like to change?` : returning ? `Welcome back${!authLoading && username?.trim() ? `, ${username.trim()}` : ''}! What would you like to build?`
+          : `Hi, I’m ${pet.name} your build buddy! What would you like to build?`}
+      </PetPromptGreeting>
+      {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
+        <PetChatMessage user><p>{row.prompt || 'Image reference'}</p></PetChatMessage>
+        <BuddyBuildMessages generationId={row.id} status={row.status} />
+      </div>)}
+      {turns.map(turn => {
+        const generation = generations.find(row => row.id === turn.generationId);
+        return <div key={turn.id} className="pet-dialogue-turn">
+          <PetChatMessage user>
+            {turn.imageUrl && <img className="pet-chat-reference" src={turn.imageUrl} alt={turn.imageName || 'Your reference image'} />}
+            {turn.text && <p>{turn.text}</p>}
+            {!turn.text && <p>{turn.imageName || 'Image reference'}</p>}
+          </PetChatMessage>
+          {turn.error ? <PetChatMessage><p role="status">{BUILD_FAILURE_MESSAGE}</p></PetChatMessage>
+            : <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
+              <p>{turn.reply || (turn.kind === 'gift' ? 'Let’s find a gift they’ll love…' : 'Let me take a look…')}</p>
+              {turn.kind === 'upload' && onUploadImage && <button type="button" className="pet-chat-action" disabled={actionsDisabled}
+                onClick={onUploadImage}>Upload image</button>}
+              {turn.buildPrompt && onUseGiftIdea && <button type="button" className="pet-chat-action" disabled={actionsDisabled}
+                onClick={() => onUseGiftIdea(turn.buildPrompt!)}>Use this gift idea</button>}
+            </PetChatMessage>}
+          {!turn.error && turn.generationId && (turn.method === 'llm' || turn.method === 'nova') && <BuddyBuildMessages
+            generationId={turn.generationId} status={generation?.status || 'started'} />}
+        </div>;
+      })}
+    </div>
+  </div>;
+}

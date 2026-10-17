@@ -6,6 +6,7 @@ export const AI_PROVIDERS = 'OpenAI, Anthropic, fal.ai, and RunPod';
 export const AI_SHARED_DATA = 'Your text prompts and edit instructions, reference images or photos you select, and model data and previews needed to create or edit your brick model.';
 
 const AI_ENDPOINTS = new Set([
+  'build-buddy',
   'llmToBricks', 'llmRender', 'textToBricks', 'imageToBricks', 'promptEditModel',
   // Conversions and saved edits can also generate an AI model title.
   'glbToBricks', 'objToBricks', 'resizeModel', 'updateModel',

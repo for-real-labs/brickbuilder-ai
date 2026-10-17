@@ -147,7 +147,7 @@ const LOCAL_DEV_API_KEY = import.meta.env.DEV && API_MODE === 'local'
   : undefined;
 
 export class ImageToBricksApiService {
-  static async generateBricksFromImage(imageBase64: string, voxelSize: number = 0.5, authToken?: string, modelOption: string = 'b', promptOption: string = 'a', prompt?: string): Promise<ImageToBricksResponse> {
+  static async generateBricksFromImage(imageBase64: string, voxelSize: number = 0.5, authToken?: string, modelOption: string = 'b', promptOption: string = 'a', prompt?: string, editImage: boolean = true): Promise<ImageToBricksResponse> {
     console.log(`Sending image to bricks request to backend`);
     
     if (!imageBase64) {
@@ -175,7 +175,7 @@ export class ImageToBricksApiService {
         body: JSON.stringify({
           image_base64: imageBase64,
           detail_level: voxelSize,
-          edit_image: true,
+          edit_image: editImage,
           model_option: modelOption,
           prompt_option: promptOption,
           prompt: prompt?.trim() || undefined,

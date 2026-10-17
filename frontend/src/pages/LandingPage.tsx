@@ -4,15 +4,19 @@ import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
-import { GenerationDuration } from '../components/GenerationDuration';
-import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
+import { BuildBuddySuggestions } from '../components/BuildBuddySuggestions';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
-import { PetPromptGreeting, PetSwitchButton } from '../components/PetCompanion';
+import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
+import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
+import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
+import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
+import { useLandingModel } from '../hooks/useLandingModel';
+import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 
-import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
-import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
+import React, { useEffect, useRef, useState } from "react";
+import { ArrowUp, Image as ImageIcon, Github, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -22,12 +26,10 @@ import { ImageToBricksApiService, StreamEvent, VoxelDataEvent, PipelineEvent } f
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import StreamingMeshViewer from "../components/StreamingMeshViewer";
-import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { useAuth } from "../contexts/AuthContext";
-import { SiteFooter } from "../components/SiteFooter";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
-import { useGenerationActivity } from "../hooks/useGenerationActivity";
+import { useGenerationActivity, isGenerationActive } from "../hooks/useGenerationActivity";
 import { useAnimatedGenerationStats } from "../hooks/useAnimatedGenerationStats";
 import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
@@ -35,7 +37,6 @@ import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/No
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
 import { isLocalDevelopment, LocalProvidersApiService } from "../services/localProvidersApi";
 import { GenerationStats, GetGenerationStatsApiService } from "../services/getGenerationStatsApi";
-import { CommunityGeneration, GetCommunityGenerationsApiService } from "../services/getCommunityGenerationsApi";
 import {
   DEFAULT_LLM_MODEL,
   GENERATION_MODEL_OPTIONS,
@@ -116,64 +117,6 @@ export function GenerationModelSelector({
   );
 }
 
-const NAV_LINKS = [
-  { label: "Products", href: "#products" },
-  { label: "Models", href: "#models" },
-  { label: "Created", href: "#created" },
-  { label: "Today", href: "#today" },
-];
-
-type FeaturedItem = {
-  id: string;
-  title: string;
-  imageUrl: string | null;
-  creator: string | null;
-  createdAt: string;
-  likeCount: number;
-  durationSeconds?: number | null;
-};
-
-const toFeaturedItem = (generation: CommunityGeneration): FeaturedItem => ({
-  id: generation.id,
-  title: generation.name?.trim() || "Untitled Model",
-  imageUrl: generation.preview_image_url
-    || generation.external_image_url
-    || generation.image_url
-    || generation.thumbnail_url
-    || generation.processed_image_url
-    || null,
-  creator: generation.username?.trim() || null,
-  createdAt: generation.created_at,
-  likeCount: generation.like_count ?? 0,
-  durationSeconds: generation.generation_duration_seconds,
-});
-
-function ScrollRevealContent({ children, enabled }: { children: React.ReactNode; enabled: boolean }) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!enabled) return;
-    const elements = ref.current?.querySelectorAll('.landing-fade-in') || [];
-    if (!('IntersectionObserver' in window)) {
-      elements.forEach(element => element.classList.add('landing-visible'));
-      return;
-    }
-    const observer = new IntersectionObserver(entries => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('landing-visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0 });
-    elements.forEach(element => observer.observe(element));
-    return () => observer.disconnect();
-  }, [enabled]);
-
-  return <div ref={ref} className="landing-scroll-reveal contents" aria-hidden={!enabled}
-    style={{ visibility: enabled ? undefined : 'hidden' }}>{children}</div>;
-}
-
 // ---- In‑place loading: progress + messages ----
 const LOADING_BEATS: Array<{ dur: number; text: string }> = [
   { dur: 2000, text: "Spinning up turbo hamsters..." },
@@ -223,11 +166,15 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const { pet } = usePet();
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
-  const { session, loading: authLoading } = useAuth();
+  const { session, userProfile, loading: authLoading } = useAuth();
+  const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
   const [prompt, setPrompt] = useState("");
+  const [giftPlanning, setGiftPlanning] = useState(false);
+  const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
+  useEffect(() => { setGiftPlanning(false); }, [session?.user.id]);
   const [notificationPromptId, setNotificationPromptId] = useState<string | null>(null);
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
@@ -284,8 +231,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const uploadRevision = useRef(0);
 
   const [focused, setFocused] = useState(false);
-  const showTypewriter = !focused && prompt.length === 0;
-  const typedPlaceholder = useTypewriter(showTypewriter);
 
   // NEW: in‑place loading state
   const [loading, setLoading] = useState(false);
@@ -297,39 +242,28 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const { text: beatText, fade: beatFade } = useBeatText(loading);
 
   // Generated model state
-  const [generatedMpdContent, setGeneratedMpdContent] = useState<string | null>(null);
+  const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token);
+  const ignoredModelIds = useRef(new Set<string>());
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const editSubmittingRef = useRef(false);
+  const modelBusy = landingModel.busy || editSubmitting;
+  const displayedGenerations = generations.map(row => row.id === landingModel.model?.generation.generation_id
+    ? { ...row, status: 'completed', previewWaitUntil: undefined } : row);
+  useEffect(() => {
+    if (ldrawLanding || landingModel.targetId) return;
+    const latest = generations.filter(row => !ignoredModelIds.current.has(row.id)
+      && (row.status === 'completed' || isGenerationActive(row.status)))
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0];
+    if (latest) landingModel.open(latest.id);
+  }, [generations, ldrawLanding, landingModel.targetId, landingModel.open]);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Streaming 3D preview state
   const [voxelData, setVoxelData] = useState<VoxelDataEvent | null>(null);
   
-  // Last completed generation (shown as a row)
-  const [lastGeneration, setLastGeneration] = useState<GetGenerationResponse | null>(null);
-
   const navigate = useNavigate();
-  const [isCardHidden, setIsCardHidden] = useState(false);
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
   const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
-  const [statsReady, setStatsReady] = useState(false);
-  const [communityReady, setCommunityReady] = useState(false);
-  const lowerContentReady = (statsReady && communityReady) || typeof window === 'undefined';
-  const [featuredCommunityModels, setFeaturedCommunityModels] = useState<FeaturedItem[]>([]);
-  const [hasScrolled, setHasScrolled] = useState(false);
-
-  useEffect(() => {
-    setHasScrolled(false);
-    const revealAfterScroll = () => {
-      if (window.scrollY <= 0) return;
-      setHasScrolled(true);
-      window.removeEventListener('scroll', revealAfterScroll);
-      posthog.capture('landing_lower_content_revealed', { page: window.location.pathname });
-    };
-    window.addEventListener('scroll', revealAfterScroll, { passive: true });
-    revealAfterScroll();
-    return () => window.removeEventListener('scroll', revealAfterScroll);
-  }, [imageLandingPath]);
-
-
   useEffect(() => {
     const polling = startPolling(async (signal) => {
       try {
@@ -338,40 +272,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       } catch (error) {
         if (!signal.aborted) console.warn("Unable to load generation stats", error);
         throw error;
-      } finally {
-        if (!signal.aborted) setStatsReady(true);
       }
     }, { intervalMs: 30_000 });
     return polling.stop;
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    GetCommunityGenerationsApiService.getCommunityGenerations(
-      undefined,
-      8,
-      0,
-      undefined,
-      'top',
-    )
-      .then((response) => {
-        if (cancelled) return;
-        setFeaturedCommunityModels((response.generations || []).slice(0, 8).map(toFeaturedItem));
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          console.warn("Unable to load featured community models", error);
-          setFeaturedCommunityModels([]);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setCommunityReady(true);
-      });
-
-    return () => {
-      cancelled = true;
-    };
   }, []);
 
   // Login modal state
@@ -431,31 +334,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   }, []);
 
-  // Function to save model to localStorage (same as BrickBuilder)
-  const saveModelToStorage = (ldrContent?: string, mpdContent?: string, modelName?: string, generationId?: string) => {
-    try {
-      if (ldrContent) {
-        localStorage.setItem(STORAGE_KEYS.LDR_CONTENT, ldrContent);
-      }
-      if (mpdContent) {
-        localStorage.setItem(STORAGE_KEYS.MPD_CONTENT, mpdContent);
-      }
-      if (modelName) {
-        localStorage.setItem(STORAGE_KEYS.MODEL_NAME, modelName);
-      }
-      if (generationId && generationId.trim()) {
-        localStorage.setItem(STORAGE_KEYS.GENERATION_ID, generationId);
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.GENERATION_ID);
-      }
-      localStorage.setItem(STORAGE_KEYS.GENERATED_AT, new Date().toISOString());
-      console.log('Model saved to localStorage');
-    } catch (error) {
-      console.error('Error saving model to localStorage:', error);
-    }
-  };
-
-  const onPickImage = (uploadPosition: 'input_left_icon' | 'image_upload_section' = 'image_upload_section') => {
+  const onPickImage = (uploadPosition: 'input_left_icon' | 'image_upload_section' | 'buddy_dialogue' = 'image_upload_section') => {
     posthog.capture('landing_image_picker_opened', { page: imageLandingPath ?? '/', upload_position: uploadPosition });
     fileInputRef.current?.click();
   };
@@ -470,7 +349,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     try {
       const prepared = await prepareImageUpload(file);
       if (revision !== uploadRevision.current) return;
-      setImgFile(prepared); setInputValidationMessage(null);
+      setGiftPlanning(false); setImgFile(prepared); setInputValidationMessage(null);
       posthog.capture('landing_image_uploaded', { page: imageLandingPath ?? '/', source, format: prepared.type });
     } catch (error) {
       if (revision === uploadRevision.current) setImageUploadError(error instanceof Error ? error.message : 'Unable to read this image. Please try another file.');
@@ -567,18 +446,18 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   };
 
-  const onGenerate = async () => {
+  const onGenerate = async (requestedPrompt = prompt, requestedImage = imgFile) => {
     // Prevent multiple simultaneous calls
     if (loading || preparingImage || checkingProviderRef.current || providerLogin) return;
 
-    if (imageLanding && !imgFile) {
+    if (imageLanding && !requestedImage && !requestedPrompt.trim()) {
       setImageUploadError('Upload an image to get started. You can add optional instructions below.');
       posthog.capture('landing_generation_image_required', { page: imageLandingPath });
       return;
     }
 
     // Validate input: either text prompt or image required
-    if (!imgFile && !prompt.trim()) {
+    if (!requestedImage && !requestedPrompt.trim()) {
       setGenerationError(null);
       setInputValidationMessage("Describe what you’d like to build, or upload an image to get started.");
       promptInputRef.current?.focus();
@@ -606,11 +485,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
 
     // Clear previous results and errors
-    setGeneratedMpdContent(null);
     setGenerationError(null);
     setPreviewImageUrl(null);
     setGenerationStatus(null);
-    setLastGeneration(null); // Clear previous generation card
     setVoxelData(null);
     
     // Clear old recently prompted generation ID before starting new one
@@ -623,8 +500,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     generationAbortRef.current = controller;
     setActiveGenerationId(null);
     const generationStartedAt = new Date().toISOString();
+    const submittedPrompt = requestedPrompt.trim();
+    const turnId = buddyChat.startTurn(submittedPrompt, requestedImage);
     
     try {
+      const imageBase64 = requestedImage ? await fileToBase64(requestedImage) : undefined;
+      buddyChat.requestReply(turnId, submittedPrompt, imageBase64, requestedImage?.type);
       // Convert size to voxelSize (similar to BrickBuilder component)
       // scale conversion from: https://chatgpt.com/share/690f88ae-7234-8006-bca8-a56e991721fb
       const getVoxelSize = (size: SizeValue): number => {
@@ -707,36 +588,34 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       const stream3d = threeDModel === 'sam3d';
 
       if (generationMethod === 'nova') {
-        const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
         setGenerationStatus('Starting the full set agent…');
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
           model: llmModel,
           authMode: localDevelopment ? novaAuthMode : 'api_key',
-          prompt: prompt.trim() || undefined,
+          prompt: requestedPrompt.trim() || undefined,
           imageBase64,
-          imageMediaType: imgFile?.type || 'image/png',
+          imageMediaType: requestedImage?.type || 'image/png',
           detailLevel: getVoxelSize(size),
         }, authToken);
-        modelName = prompt.trim() || imgFile?.name.replace(/\.[^/.]+$/, '') || 'full-set-model';
+        modelName = requestedPrompt.trim() || requestedImage?.name.replace(/\.[^/.]+$/, '') || 'full-set-model';
       } else if (generationMethod === 'llm') {
-        const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
         const llmLabel = getLlmModelOption(llmModel)?.label ?? 'The AI model';
         setGenerationStatus(`${llmLabel} is designing your brick model…`);
         postResponse = await LlmToBricksApiService.generate(
           {
-            prompt: prompt.trim() || undefined,
+            prompt: requestedPrompt.trim() || undefined,
             imageBase64,
-            imageMediaType: imgFile?.type || 'image/png',
+            imageMediaType: requestedImage?.type || 'image/png',
             detailLevel: getVoxelSize(size),
             model: llmModel,
           },
           authToken,
         );
-        modelName = prompt.trim() || imgFile?.name.replace(/\.[^/.]+$/, '') || 'llm-model';
-      } else if (imgFile) {
-        console.log(`Generating from image (3D model: ${threeDModel}):`, imgFile.name);
-        const imageBase64 = await fileToBase64(imgFile);
+        modelName = requestedPrompt.trim() || requestedImage?.name.replace(/\.[^/.]+$/, '') || 'llm-model';
+      } else if (requestedImage) {
+        console.log(`Generating from image (3D model: ${threeDModel}):`, requestedImage.name);
+        const imageBase64 = await fileToBase64(requestedImage);
         postResponse = await ImageToBricksApiService.generateBricksFromImageStream(
           imageBase64,
           getVoxelSize(size),
@@ -746,14 +625,14 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
           handleStreamEvent,
           stream3d,
           'trimesh',
-          prompt.trim(),
+          requestedPrompt.trim(),
           controller.signal,
         );
-        modelName = prompt.trim() || imgFile.name.replace(/\.[^/.]+$/, ''); // Remove file extension
+        modelName = requestedPrompt.trim() || requestedImage.name.replace(/\.[^/.]+$/, ''); // Remove file extension
       } else {
-        console.log(`Generating from text prompt (3D model: ${threeDModel}):`, prompt.trim());
+        console.log(`Generating from text prompt (3D model: ${threeDModel}):`, requestedPrompt.trim());
         postResponse = await TextToBricksApiService.generateBricksFromTextStream(
-          prompt.trim(),
+          requestedPrompt.trim(),
           getVoxelSize(size),
           authToken,
           modelOption,
@@ -763,13 +642,15 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
           'trimesh',
           controller.signal,
         );
-        modelName = prompt.trim();
+        modelName = requestedPrompt.trim();
       }
       
       if (controller.signal.aborted) return;
       const generationId = postResponse.generation_id;
+      buddyChat.updateTurn(turnId, { generationId, method: generationMethod });
+      setPrompt('');
       posthog.capture('generation_started', { generation_id: generationId, page: window.location.pathname,
-        input_type: imgFile ? 'image' : 'text', generation_method: generationMethod });
+        input_type: requestedImage ? 'image' : 'text', generation_method: generationMethod });
       clearSelectedImage();
       setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
@@ -782,6 +663,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       if (!session) recordAnonymousGeneration(generationId);
       
       if (generationMethod === 'llm' || generationMethod === 'nova') {
+        landingModel.open(generationId);
         trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks', createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
         setLoading(false);
@@ -808,51 +690,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       
       console.log('Generation completed:', completedGeneration.generation_id);
       
-      // Get MPD content - either from URL or convert LDR to MPD
-      let mpdContent: string | null = null;
-      if (completedGeneration.mpd_url) {
-        try {
-          const mpdResponse = await fetch(completedGeneration.mpd_url);
-          if (mpdResponse.ok) {
-            mpdContent = await mpdResponse.text();
-          }
-        } catch (mpdError) {
-          console.warn('Failed to fetch MPD from URL:', mpdError);
-        }
-      }
-      
-      // Fallback: convert LDR to MPD if MPD URL wasn't available or failed
-      if (!mpdContent && completedGeneration.ldr_content) {
-        try {
-          const mpdData = await LdrToMpdApiService.convertLdrToMpd(
-            completedGeneration.ldr_content,
-            modelName,
-            authToken
-          );
-          mpdContent = mpdData.mpd_content;
-        } catch (mpdError) {
-          console.warn('Failed to convert LDR to MPD:', mpdError);
-        }
-      }
-      
       if (controller.signal.aborted) return;
-      setGeneratedMpdContent(mpdContent);
       setLoading(false);
       setActiveLoadingMethod(null);
       setPreviewImageUrl(null);
       setGenerationStatus(null);
-      
-      // Save to localStorage for persistence across browser refreshes
-      saveModelToStorage(
-        completedGeneration.ldr_content,
-        mpdContent || undefined,
-        modelName,
-        completedGeneration.generation_id
-      );
-      
-      // Navigate to generated model page since this completed from loading state
+      landingModel.open(completedGeneration.generation_id);
       if (!session) recordAnonymousGeneration(completedGeneration.generation_id);
-      navigate(`/generated-model?id=${completedGeneration.generation_id}`);
       
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -867,23 +711,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
         return;
       }
       console.error('Generation failed:', error);
-      // Check if error is a network error - if user is online but fetch failed, backend is likely not running
-      const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
-      const errorMsg = error instanceof Error ? error.message : '';
-      
-      let errorMessage = 'Generation failed. Please try again';
-      if (isNetworkError) {
-        errorMessage = navigator.onLine 
-          ? 'Backend services not running. Check terminal for errors.' 
-          : 'No internet connection';
-      } else if (errorMsg.includes('FAL_KEY')) {
-        // Backend is running but FAL_KEY is not configured
-        errorMessage = 'FAL_KEY not configured. Set FAL_KEY in .env file and restart the backend server.';
-      } else if (errorMsg) {
-        // Use the error message from the backend
-        errorMessage = errorMsg;
-      }
-      setGenerationError(errorMessage);
+      setGenerationError(BUILD_FAILURE_MESSAGE);
+      buddyChat.updateTurn(turnId, { error: BUILD_FAILURE_MESSAGE, reply: undefined });
       setLoading(false);
       setActiveLoadingMethod(null);
       setPreviewImageUrl(null);
@@ -893,19 +722,96 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   };
 
-  const submitGeneration = () => {
+  const submitModelEdit = async () => {
+    const model = landingModel.model;
+    if (!model || modelBusy || editSubmittingRef.current || !prompt.trim()) return;
+    editSubmittingRef.current = true;
+    setEditSubmitting(true);
+    setGenerationError(null);
+    const submittedPrompt = prompt.trim();
+    const sourceId = model.generation.generation_id;
+    const turnId = buddyChat.startTurn(submittedPrompt, null);
+    buddyChat.requestReply(turnId, submittedPrompt);
+    posthog.capture('landing_model_ai_edit_submitted', { generation_id: sourceId, prompt_length: submittedPrompt.length });
+    try {
+      const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
+      const response = nova
+        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token)
+        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt }, session?.access_token);
+      const id = response.generation_id;
+      localStorage.setItem(STORAGE_KEYS.GENERATION_ID, id);
+      if (!session) recordAnonymousGeneration(id);
+      buddyChat.updateTurn(turnId, { generationId: id, method: nova ? 'nova' : 'llm' });
+      trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks', createdAt: new Date().toISOString() });
+      landingModel.open(id, true);
+      setNotificationPromptId(id);
+      setPrompt('');
+    } catch (error) {
+      console.error('Model edit failed:', error);
+      setGenerationError(BUILD_FAILURE_MESSAGE);
+      buddyChat.updateTurn(turnId, { error: BUILD_FAILURE_MESSAGE, reply: undefined });
+      posthog.capture('landing_model_ai_edit_failed', { generation_id: sourceId });
+    } finally {
+      editSubmittingRef.current = false;
+      setEditSubmitting(false);
+    }
+  };
+
+  const createNewModel = () => {
+    posthog.capture('landing_model_create_new_clicked', { generation_id: landingModel.model?.generation.generation_id });
+    generations.forEach(row => ignoredModelIds.current.add(row.id));
+    if (landingModel.targetId) ignoredModelIds.current.add(landingModel.targetId);
+    landingModel.reset();
+    setGiftPlanning(false);
+    setPrompt('');
+    setGenerationError(null);
+    setInputValidationMessage(null);
+    clearSelectedImage();
+    requestAnimationFrame(() => promptInputRef.current?.focus());
+  };
+
+  const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile) => {
     if (loading) return;
     posthog.capture('landing_generate_clicked', {
       page: window.location.pathname,
-      input_type: imgFile ? 'image' : 'text',
+      input_type: requestedImage ? 'image' : 'text',
       generation_method: generationMethod,
       model: generationMethod === '3d' ? threeDModel : llmModel,
-      has_prompt: Boolean(prompt.trim()),
-      has_image: Boolean(imgFile),
+      has_prompt: Boolean(requestedPrompt.trim()),
+      has_image: Boolean(requestedImage),
       size,
       is_authenticated: Boolean(session),
     });
-    void onGenerate();
+    void onGenerate(requestedPrompt, requestedImage);
+  };
+
+  const startGiftPlanning = () => {
+    setGiftPlanning(true);
+    setPrompt('');
+    clearSelectedImage();
+    setInputValidationMessage(null);
+    const message = 'Help me come up with a custom LEGO gift idea.';
+    const id = buddyChat.startTurn(message, null, 'gift');
+    void buddyChat.requestGiftReply(id, message, true);
+    promptInputRef.current?.focus();
+  };
+
+  const sendGiftMessage = () => {
+    if (giftReplyPending || !prompt.trim()) return;
+    const message = prompt.trim();
+    const id = buddyChat.startTurn(message, null, 'gift');
+    setPrompt('');
+    void buddyChat.requestGiftReply(id, message);
+  };
+
+  const suggestImageUpload = () => {
+    setGiftPlanning(false);
+    setPrompt('');
+    const id = buddyChat.startTurn('I’d like to build from an image.', null, 'upload');
+    const desktop = window.matchMedia?.('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches ?? false;
+    buddyChat.updateTurn(id, { reply: desktop
+      ? 'Drag and drop an image anywhere on this page, or click the Upload image button below to choose one.'
+      : 'Click the Upload image button below to choose a picture you’d like to turn into LEGO.' });
   };
 
   // After a successful login from the modal, automatically continue generation
@@ -917,7 +823,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingGenerateAfterLogin, session, authLoading]);
 
-  const petState = usePetActivity(loading);
+  const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
+
+  const sendLabel = landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
 
   return (
     <div
@@ -965,7 +873,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
         setProviderLogin(null);
       }} />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6 relative" style={{ zIndex: 10 }}>
+      <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-[calc(min(70dvh,40rem)+3rem)] pt-6 relative" style={{ zIndex: 10 }}>
         <LandingHeader page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)} />
 
         <main className="flex flex-1 flex-col items-center text-center w-full">
@@ -973,6 +881,25 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl text-slate-900 landing-fade-in landing-delay-2">
               Imagine. Create. Build.
             </h1>
+
+            <div
+              className="flex items-center justify-center gap-4 sm:gap-8 text-slate-600 landing-fade-in landing-delay-2"
+              aria-label="BrickBuilder generation statistics"
+            >
+              <div className="min-w-0">
+                <span className="block text-xl font-bold sm:text-2xl tabular-nums text-slate-900">
+                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
+                </span>
+                <span className="whitespace-nowrap text-xs sm:text-sm">models generated</span>
+              </div>
+              <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
+              <div className="min-w-0">
+                <span className="block text-xl font-bold sm:text-2xl tabular-nums text-slate-900">
+                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
+                </span>
+                <span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span>
+              </div>
+            </div>
 
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
               <PetPromptGreeting mode="upload" state={petState} showPetSwitch={false} />
@@ -984,33 +911,57 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 navigate(`/generated-model?id=${encodeURIComponent(id)}&exact=1`);
               }} />
             </div>}
-            {!ldrawLanding && <form
-              aria-label="Create a brick model"
-              className="relative z-20 w-full landing-fade-in landing-delay-3"
+            {!ldrawLanding && <div className="relative z-20 w-full">
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy}
+                onCreateNew={createNewModel} onSuggest={suggestion => {
+                  setPrompt(suggestion);
+                  promptInputRef.current?.focus();
+                }}>
+              {!landingModel.model && <BuildBuddySuggestions disabled={loading || preparingImage || checkingProvider || giftReplyPending}
+                onGift={startGiftPlanning} onUpload={suggestImageUpload} onRandom={idea => {
+                  setGiftPlanning(false);
+                  setPrompt(idea);
+                  clearSelectedImage();
+                  submitGeneration(idea, null);
+                }} />}
+              <BuildBuddyDialogue modelName={landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'model' : undefined} turns={buddyChat.turns} generations={displayedGenerations}
+                state={focused && !loading && !modelBusy ? 'listening' : petState} authLoading={authLoading}
+                username={session ? userProfile?.username || session.user.user_metadata?.username : null}
+                actionsDisabled={loading || preparingImage || modelBusy || giftReplyPending || Boolean(landingModel.model)}
+                onUploadImage={() => onPickImage('buddy_dialogue')} onUseGiftIdea={idea => {
+                  posthog.capture('build_buddy_gift_idea_selected');
+                  setGiftPlanning(false);
+                  setPrompt(idea);
+                  promptInputRef.current?.focus();
+                }} />
+            <form
+              aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
+              className="w-full"
               onSubmit={event => {
                 event.preventDefault();
-                submitGeneration();
+                if (landingModel.model) void submitModelEdit();
+                else if (giftPlanning) sendGiftMessage();
+                else submitGeneration();
               }}
             >
-              <PetPromptGreeting state={focused && !loading ? 'listening' : petState} showPetSwitch={false} />
-              {imageLanding && <>
+              {imageLanding && !landingModel.model && <>
                 <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
                 <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
                 <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || preparingImage}
                   error={imageUploadError} onPick={() => onPickImage('image_upload_section')} onRemove={clearSelectedImage} />
               </>}
-              <label htmlFor="landing-build-prompt" className="pet-conversation-hint">Ask {pet.name} to build something</label>
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <button type="button" aria-label="Upload image" title="Upload image"
-                    disabled={loading || preparingImage} onClick={() => onPickImage('input_left_icon')}
+                    disabled={loading || preparingImage || Boolean(landingModel.model)} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
                     className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50">
                     <ImageIcon aria-hidden="true" className="h-5 w-5" />
                   </button>
                   <input
                     id="landing-build-prompt"
                     ref={promptInputRef}
-                    aria-label="Describe your model"
+                    aria-label={landingModel.model ? "Describe changes to your model" : "Describe your model"}
+                    maxLength={2000}
                     aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
                     value={prompt}
                     onFocus={() => setFocused(true)}
@@ -1025,17 +976,16 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
-                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pr-36"
-                    disabled={loading || preparingImage}
+                    placeholder={giftPlanning ? `Tell ${pet.name} about your gift…` : landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : `Tell ${pet.name} what you’d like to build…`}
+                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   <button
-                    type="submit"
-                    disabled={loading || preparingImage}
-                    className="absolute right-2 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-base"
+                    type="submit" aria-label={sendLabel} title={sendLabel}
+                    disabled={loading || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
+                    className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#f44336] text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
-                    <Sparkles aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
-                    Create
+                    <ArrowUp aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>
                 <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
@@ -1053,18 +1003,14 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               )}
               <div id="landing-generation-settings" hidden={!settingsOpen}
                 onKeyDown={handleSettingsKeyDown} className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-                <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-                  <h3 className="text-sm font-semibold text-slate-900">Generation settings</h3>
-                  <PetSwitchButton source="landing_settings"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm font-medium text-slate-600 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336]" />
-                </div>
+                <h3 className="mb-3 text-sm font-semibold text-slate-900">Generation settings</h3>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
                     {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
                       <button key={value} type="button" value={value}
                         aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                        disabled={loading || checkingProvider || generationMethod === '3d'}
+                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider || generationMethod === '3d'}
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);
@@ -1085,12 +1031,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (generationMethod === '3d') setGenerationMethod('llm');
                       if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
                     }
-                  }} disabled={loading || checkingProvider} />
+                  }} disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider} />
                 </div>
                 {localDevelopment && generationMethod === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>
-                    <select id="nova-connection" value={novaOptions.authMode} disabled={loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
+                    <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
                       const provider = getLlmModelOption(llmModel)?.provider as NovaLoginProvider;
                       if (event.target.value === 'native') { delete providerChoices.current[provider]; void checkNovaConnection(llmModel); }
                       else { providerChoices.current[provider] = 'api_key'; setNovaOptions(current => ({ ...current, authMode: 'api_key' })); }
@@ -1101,114 +1047,56 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   </div>
                 )}
               </div>
-              <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage} />
+              <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
-            </form>}
-            <div
-              className="flex items-center justify-center gap-8 text-slate-600 landing-fade-in landing-delay-2"
-              aria-label="BrickBuilder generation statistics"
-            >
-              <div className="min-w-28">
-                <span className="block text-2xl font-bold tabular-nums text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
-                </span>
-                <span className="text-sm">models generated</span>
-              </div>
-              <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
-              <div className="min-w-28">
-                <span className="block text-2xl font-bold tabular-nums text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
-                </span>
-                <span className="text-sm">bricks generated</span>
-              </div>
-            </div>
+            </form>
+              {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
+              {modelBusy && <p role="status" className="mt-3 text-left text-sm text-slate-500">{landingModel.model ? 'Updating your model… You can keep viewing it while your edit builds.' : 'Your model will appear here when it’s ready.'}</p>}
+              {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
+                <LocalProviderSettings />
+              </div>}
 
-            {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
-              <LocalProviderSettings />
+              {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
+              {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
+              {/* Image thumbnail preview */}
+              {!imageLanding && imagePreviewUrl && (
+                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                  <img
+                    src={imagePreviewUrl}
+                    alt="Uploaded preview"
+                    className="w-20 h-20 object-cover rounded-md"
+                  />
+                  <div className="flex-1 text-left">
+                    <p className="text-sm font-medium text-slate-700">{imgFile?.name}</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {imgFile && (imgFile.size / 1024).toFixed(1)} KB
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={clearSelectedImage}
+                    className="text-slate-400 hover:text-red-500 transition-colors"
+                    aria-label="Remove image"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              </LandingModelWorkspace>
             </div>}
 
-            {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
-            {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
-            {/* Image thumbnail preview */}
-            {!imageLanding && imagePreviewUrl && (
-              <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
-                <img
-                  src={imagePreviewUrl}
-                  alt="Uploaded preview"
-                  className="w-20 h-20 object-cover rounded-md"
-                />
-                <div className="flex-1 text-left">
-                  <p className="text-sm font-medium text-slate-700">{imgFile?.name}</p>
-                  <p className="text-xs text-slate-500 mt-1">
-                    {imgFile && (imgFile.size / 1024).toFixed(1)} KB
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={clearSelectedImage}
-                  className="text-slate-400 hover:text-red-500 transition-colors"
-                  aria-label="Remove image"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-            )}
-
-            {!loading && (
-              <>
-                {/* <p className="mt-2 text-sm text-slate-500 landing-fade-in landing-delay-3">
-                  This app uses generative AI to create brick models. Results may vary.
-                </p> */}
-
-                {/* Last completed generation */}
-                {/* {lastGeneration && !isCardHidden && (
-                  <div className="mt-4 w-full max-w-xl rounded-xl border border-slate-200 bg-white shadow-sm relative">
-                    <button
-                      onClick={() => setIsCardHidden(true)}
-                      className="absolute top-3 right-3 p-1 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
-                      aria-label="Hide card"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <div className="p-4 flex gap-4">
-                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-slate-100 border flex items-center justify-center">
-                        {lastGeneration.external_image_url ? (
-                          <img src={lastGeneration.external_image_url} alt={lastGeneration.generation_id} className="w-full h-full object-cover" />
-                        ) : (
-                          <Sparkles className="w-6 h-6 text-slate-300" />
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-sm text-slate-900 truncate">id: {lastGeneration.generation_id}</h3>
-                        <div className="flex items-center gap-3 text-xs text-slate-500 mt-1">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3"/> Recently created
-                          </span>
-                        </div>
-                        <button 
-                          onClick={() => navigate(`/generated-model?id=${lastGeneration.generation_id}`)}
-                          className="mt-2 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs hover:bg-slate-50 cursor-pointer"
-                        >
-                          <Eye className="w-3.5 h-3.5"/> View Model
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )} */}
-              </>
-            )}
           </div>
 
-            <GenerationActivityList generations={generations} error={activityError} onDismiss={dismissGeneration}
+            <GenerationActivityList generations={displayedGenerations} error={activityError} onDismiss={dismissGeneration} buddyDialogue
               notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
-              onOpen={id => navigate(`/generated-model?id=${id}`)}
+              onOpen={id => { landingModel.open(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               onResumed={(sourceId, newId) => {
                 const row = generations.find(generation => generation.id === sourceId);
                 if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
                   createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
-                if (row) setNotificationPromptId(newId);
+                if (row) { setNotificationPromptId(newId); landingModel.open(newId); }
               }}
               onCancelled={id => {
                 const row = generations.find(generation => generation.id === id);
@@ -1284,150 +1172,11 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 </div>
               </div>
             )}
-            {generationError && (
-              <div className="flex flex-col items-center gap-4 mb-4">
-                <div className="text-red-600 text-center">
-                  <h3 className="text-lg font-semibold mb-2">Generation Failed</h3>
-                  <p>{generationError}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setGenerationError(null);
-                  }}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-full hover:bg-slate-50 transition-colors"
-                >
-                  Try Again
-                </button>
-              </div>
-            )}
           </section>
-          {lowerContentReady && <ScrollRevealContent enabled={hasScrolled}>
-          <section aria-label="Community models" className="mt-4 w-full relative landing-fade-in" style={{ zIndex: 15 }}>
-            {featuredCommunityModels.length > 0 && (
-              <div className="w-screen relative left-1/2 -translate-x-1/2">
-                <FeaturedStrip items={featuredCommunityModels} />
-              </div>
-            )}
-            {!loading && (
-              <div className="mt-4 flex justify-center">
-                <button
-                  type="button"
-                  className="inline-flex items-center justify-center gap-1.5 h-12 rounded-full border border-slate-200 bg-white px-6 min-w-36 text-sm font-medium text-slate-700 shadow-sm transition-all hover:-translate-y-px hover:border-[#f44336]/30 hover:bg-red-50 hover:text-[#f44336]"
-                  onClick={() => navigate("/community")}
-                >
-                  <Users className="h-5 w-5" />
-                  View Community Models
-                </button>
-              </div>
-            )}
-          </section>
-
-          <HowItWorks />
-          <RealLifeBuilds />
-          </ScrollRevealContent>}
         </main>
 
-        {lowerContentReady && <ScrollRevealContent enabled={hasScrolled}>
-          <div className="landing-fade-in"><SiteFooter /></div>
-        </ScrollRevealContent>}
       </div>
     </div>
-  );
-}
-
-function HowItWorks() {
-  const steps = [
-    {
-      icon: MessageSquare,
-      title: "Describe or upload",
-      description: "Type a prompt like \"a pink elephant\" or drop in any image you want to build.",
-    },
-    {
-      icon: Wand2,
-      title: "BrickBuilder generates your model",
-      description: "Our generative pipeline turns your idea into a buildable 3D brick model in seconds.",
-    },
-    {
-      icon: Package,
-      title: "Preview, edit, and order",
-      description: "Make your edits, grab the instructions, and we'll ship the parts to your door in 8 days.",
-    },
-  ];
-
-  return (
-    <section
-      id="how-it-works"
-      className="w-full mt-10 mb-16 relative"
-      style={{ zIndex: 15 }}
-    >
-      <div className="mx-auto max-w-5xl px-2">
-        <div className="text-center landing-fade-in landing-delay-1">
-          {/* <span className="inline-block rounded-full bg-slate-100 px-3 py-1 text-xs font-medium tracking-wide text-slate-600 uppercase">
-            How it works
-          </span> */}
-          <h2 className="mt-4 text-3xl font-bold text-slate-900 sm:text-4xl">
-            How It Works
-          </h2>
-          <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
-            Turn images and text into custom 3D brick models. Edit freely, get instant instructions, and have the parts on your doorstep in 8 days.
-          </p>
-        </div>
-
-        <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3 md:gap-8 relative">
-          {/* Connecting line behind cards on md+ */}
-          <div
-            aria-hidden
-            className="hidden md:block absolute left-0 right-0 top-12 h-px bg-gradient-to-r from-transparent via-slate-200 to-transparent"
-          />
-
-          {steps.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <div
-                key={step.title}
-                className={`relative flex flex-col items-center text-center rounded-2xl border border-slate-200 bg-white/80 backdrop-blur-sm p-6 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 landing-fade-in landing-delay-${i + 2}`}
-              >
-                <div className="relative">
-                  <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#f44336] to-[#ff6b6b] text-white shadow-md">
-                    <Icon className="h-7 w-7" />
-                  </div>
-                  <span className="absolute -top-2 -right-2 flex h-6 w-6 items-center justify-center rounded-full bg-white border border-slate-200 text-xs font-bold text-slate-700 shadow-sm">
-                    {i + 1}
-                  </span>
-                </div>
-                <h3 className="mt-5 text-lg font-semibold text-slate-900">
-                  {step.title}
-                </h3>
-                <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                  {step.description}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function RealLifeBuilds() {
-  return (
-    <section className="w-full mb-16 relative" style={{ zIndex: 15 }}>
-      <div className="mx-auto max-w-5xl px-2 text-center landing-fade-in landing-delay-1">
-        <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">
-          Build It In Real Life
-        </h2>
-        <p className="mt-3 text-base text-slate-600 max-w-2xl mx-auto">
-          Every model comes with real, orderable LEGO parts and instructions. Here's a display of
-          BrickBuilder AI creations physically built at the Brickworld Chicago LEGO convention.
-        </p>
-        <img
-          src="/assets/blog/brickworld26/brickbuilderai-models.jpg"
-          alt="BrickBuilder AI models built with real LEGO bricks, on display at the Brickworld Chicago LEGO convention"
-          className="mt-8 w-full rounded-2xl border border-slate-200 shadow-sm"
-        />
-      </div>
-    </section>
   );
 }
 
@@ -1476,7 +1225,7 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
       target="_blank"
       rel="noopener noreferrer"
       aria-label="View BrickBuilder on GitHub"
-      className="inline-flex h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
+      className="hidden h-8 min-w-[4.5rem] items-center justify-center gap-1.5 rounded-full bg-slate-100 px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:inline-flex sm:h-9 sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
     >
       <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white sm:h-6 sm:w-6">
         <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
@@ -1503,7 +1252,7 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
         </span>
       </a>
 
-      <nav aria-label="Main navigation" className="order-last flex w-full justify-center lg:absolute lg:left-1/2 lg:top-1/2 lg:w-auto lg:-translate-x-1/2 lg:-translate-y-1/2">
+      <nav aria-label="Main navigation" className="order-last flex w-full items-center justify-center gap-2 sm:gap-3 xl:absolute xl:left-1/2 xl:top-1/2 xl:w-auto xl:-translate-x-1/2 xl:-translate-y-1/2">
         <LandingToolsMenu page={page} />
       </nav>
 
@@ -1516,11 +1265,12 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
 
             {/* Dashboard button */}
             <button
+              aria-label="Dashboard"
               className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-2 h-8 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px sm:px-3 sm:h-9"
               onClick={() => navigate('/dashboard')}
             >
               <LayoutDashboard className="h-4 w-4" />
-              Dashboard
+              <span className="hidden sm:inline">Dashboard</span>
             </button>
 
             {/* Account dropdown */}
@@ -1544,134 +1294,3 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
     </header>
   );
 }
-
-export const FeaturedStrip = memo(function FeaturedStrip({ items }: { items: FeaturedItem[] }) {
-  const navigate = useNavigate();
-  const trackRef = useRef<HTMLDivElement>(null);
-  const viewportRef = useRef<HTMLDivElement>(null);
-  const positionRef = useRef(0);
-  const pausedRef = useRef(false);
-  const [copyCount, setCopyCount] = useState(2);
-  // Fill even a short list before duplicating it for a seamless loop.
-  const loopItems = items.length > 0
-    ? Array.from({ length: Math.ceil(8 / items.length) * items.length }, (_, index) => items[index % items.length])
-    : [];
-
-  const move = (distance: number) => {
-    const track = trackRef.current;
-    const width = track?.firstElementChild?.getBoundingClientRect().width || 0;
-    if (!track || !width) return;
-    positionRef.current = ((positionRef.current + distance) % width + width) % width;
-    track.style.transform = `translate3d(${-positionRef.current}px, 0, 0)`;
-  };
-
-  useLayoutEffect(() => {
-    const viewport = viewportRef.current;
-    const track = trackRef.current;
-    if (!viewport || !track || !items.length) return;
-    const centerFirstModel = () => {
-      const loopWidth = track.firstElementChild?.getBoundingClientRect().width || 0;
-      const cardWidth = track.querySelector('article')?.getBoundingClientRect().width || 0;
-      if (!loopWidth || !cardWidth) return;
-      const viewportWidth = viewport.getBoundingClientRect().width;
-      // Movement can consume one full copy. Keep enough copies after it to
-      // cover the viewport, including wide displays and browser zoom changes.
-      setCopyCount(Math.max(2, Math.ceil(viewportWidth / loopWidth) + 1));
-      positionRef.current = 0;
-      move(loopWidth - (viewportWidth - cardWidth) / 2);
-    };
-    centerFirstModel();
-    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(centerFirstModel) : null;
-    observer?.observe(viewport);
-    if (track.firstElementChild) observer?.observe(track.firstElementChild);
-    return () => observer?.disconnect();
-  }, [items]);
-
-  useEffect(() => {
-    let frame: number;
-    let previous = 0;
-    const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
-    const step = (time: number) => {
-      if (previous && !pausedRef.current && !reducedMotion?.matches) {
-        move(37 * Math.min((time - previous) / 1000, 0.1));
-      }
-      previous = time;
-      frame = requestAnimationFrame(step);
-    };
-    frame = requestAnimationFrame(step);
-    return () => cancelAnimationFrame(frame);
-  }, [items]);
-
-  const handleScroll = (direction: 'left' | 'right') => {
-    const cardWidth = trackRef.current?.querySelector('article')?.getBoundingClientRect().width || 160;
-    move((direction === 'left' ? -1 : 1) * (cardWidth + 24));
-    posthog.capture('landing_featured_models_arrow_clicked', {
-      direction, item_count: items.length, surface: 'landing_featured_models',
-    });
-  };
-
-  return (
-    <div className="relative w-full select-none"
-      onMouseEnter={() => { pausedRef.current = true; }}
-      onMouseLeave={() => { pausedRef.current = false; }}
-      onFocus={() => { pausedRef.current = true; }}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) pausedRef.current = false;
-      }}>
-      <button type="button" aria-label="Scroll community models left"
-        onClick={() => handleScroll('left')} disabled={items.length < 2}
-        className="absolute left-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
-        <ChevronLeft className="h-5 w-5" />
-      </button>
-      <div ref={viewportRef} className="overflow-hidden">
-        <div ref={trackRef} data-featured-track className="flex w-max" style={{ willChange: 'transform' }}>
-          {Array.from({ length: copyCount }, (_, copy) => (
-            <div key={copy} data-featured-copy={copy} className="flex w-max shrink-0 gap-6 py-1 pr-6">
-              {loopItems.map((item, index) => (
-                  <article
-                    key={`${item.id}-${index}`}
-                    className="shrink-0 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm"
-                    style={{ width: "clamp(7.5rem, 13.5vw, 12.75rem)" }}
-                  >
-                    <div
-                      className="relative w-full overflow-hidden rounded-xl bg-slate-50"
-                      style={{ paddingTop: "100%" }}
-                    >
-                      {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.title}
-                          className="absolute left-0 top-0 h-full w-full object-contain"
-                          draggable="false"
-                          onDragStart={(e) => e.preventDefault()}
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex items-center justify-center text-slate-300">
-                          <Sparkles className="h-10 w-10" />
-                        </div>
-                      )}
-                    </div>
-                    <div className="mt-3 text-center">
-                      <h3 className="text-sm font-semibold text-slate-800 mb-1 line-clamp-2">{item.title}</h3>
-                      <GenerationDuration seconds={item.durationSeconds} compact className="mt-1 flex items-center justify-center gap-1 text-xs tabular-nums text-slate-500" />
-                      <button
-                        onClick={() => navigate(`/generated-model?id=${item.id}`)}
-                        className="mt-1 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
-                      >
-                        <Eye className="w-4 h-4"/> View Model
-                      </button>
-                    </div>
-                  </article>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
-      <button type="button" aria-label="Scroll community models right"
-        onClick={() => handleScroll('right')} disabled={items.length < 2}
-        className="absolute right-2 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md disabled:opacity-40">
-        <ChevronRight className="h-5 w-5" />
-      </button>
-    </div>
-  );
-});

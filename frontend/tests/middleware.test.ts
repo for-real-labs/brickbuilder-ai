@@ -15,6 +15,7 @@ function loginRequest(password: string, returnTo = ''): Request {
 describe('preview password middleware', () => {
   beforeEach(() => {
     process.env.VERCEL = '1';
+    process.env.VERCEL_ENV = 'preview';
     process.env.VERCEL_GIT_COMMIT_REF = 'feature/password-gate';
     process.env.PREVIEW_PASSWORD = 'test-password';
   });
@@ -33,6 +34,15 @@ describe('preview password middleware', () => {
     process.env.VERCEL_GIT_COMMIT_REF = 'main';
 
     await expect(middleware(new Request('https://example.com/'))).resolves.toBeUndefined();
+  });
+
+  it.each(['feature/password-gate', undefined])('keeps production public with git ref %s', async branch => {
+    process.env.VERCEL_ENV = 'production';
+    if (branch) process.env.VERCEL_GIT_COMMIT_REF = branch;
+    else delete process.env.VERCEL_GIT_COMMIT_REF;
+    delete process.env.PREVIEW_PASSWORD;
+
+    await expect(middleware(new Request('https://brickbuilder.ai/oauth/consent'))).resolves.toBeUndefined();
   });
 
   it('fails closed when a preview password is not configured', async () => {

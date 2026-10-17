@@ -58,12 +58,11 @@ beforeEach(() => {
   vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
 });
 
-it('shows the saved notification recipient inside the landing generation card and its modal', async () => {
+it('shows the saved notification recipient inside the landing generation card conversation', async () => {
   vi.mocked(GenerationEmailApi.status).mockResolvedValue({subscribed: true, email: 'landing-builder@example.com'});
   await act(async () => root.render(<GenerationActivityList generations={[job('email-build')]} error={null} onOpen={open} />));
-  expect(container.querySelector('article')!.textContent).toContain('Emailing landing-builder@example.com');
-  act(() => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'We’ll email you')!.click());
-  expect(document.querySelector('[role="dialog"]')!.textContent).toContain('landing-builder@example.com');
+  expect(container.querySelector('article')!.textContent).toContain('I’ll email landing-builder@example.com');
+  expect(document.querySelector('[role="dialog"]')).toBeNull();
   expect(open).not.toHaveBeenCalled();
 });
 afterEach(() => {
@@ -95,7 +94,7 @@ it('uses live agent output for Nova full set jobs', async () => {
   ]} error={null} onOpen={open} />));
   expect(container.querySelector('article')!.textContent).toContain('This may take up to 30 minutes to generate.');
   expect(output).toHaveBeenCalledWith('nova', expect.any(Function), expect.any(AbortSignal));
-  expect(container.textContent).toContain('Searching LDraw parts and validating the launch tower');
+  expect(container.textContent).toContain('I’m searching LDraw parts and validating the launch tower…');
   expect(container.querySelector('.brick-build-scene')).not.toBeNull();
 });
 
@@ -104,11 +103,12 @@ it('prompts only for the newly started card and keeps all active cards clear abo
   await act(async () => root.render(<GenerationActivityList generations={[job('new-build'), job('older-build')]}
     error={null} onOpen={open} notificationPromptId="new-build" onNotificationPromptShown={onNotificationPromptShown} />));
   expect(onNotificationPromptShown).toHaveBeenCalledTimes(1);
-  expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(1);
+  expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(0);
+  expect(container.querySelectorAll('.pet-notification-conversation')).toHaveLength(1);
   expect(Array.from(container.querySelectorAll('article')).every(card =>
     card.textContent?.includes('This may take up to 30 minutes to generate.'))).toBe(true);
   expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
-    generation_id: 'new-build', is_authenticated: false,
+    generation_id: 'new-build', is_authenticated: false, source: 'build_buddy_chat',
   });
   expect(open).not.toHaveBeenCalled();
 });

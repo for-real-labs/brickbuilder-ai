@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { FeedbackWidget } from '../src/components/FeedbackWidget';
+import { LandingToolsMenu } from '../src/components/LandingToolsMenu';
 import { FEEDBACK_ENDPOINT, sendFeedback } from '../src/services/feedbackApi';
 import posthog from 'posthog-js';
 
@@ -108,4 +109,29 @@ it('rejects invalid descriptions and reports network errors', async () => {
   expect(fetch).not.toHaveBeenCalled();
   vi.mocked(fetch).mockRejectedValue(new Error('offline'));
   await expect(sendFeedback('Feedback', undefined, '/')).rejects.toThrow('Please try again');
+});
+
+it('opens feedback from Tools, closes the dropdown, submits and restores focus', async () => {
+  act(() => root.render(<MemoryRouter><LandingToolsMenu page="/" /></MemoryRouter>));
+  const tools = container.querySelector<HTMLButtonElement>('button[aria-controls]')!;
+  expect(container.textContent).not.toContain('Feedback');
+  act(() => tools.click());
+  const feedback = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Feedback')!;
+  expect(feedback.closest('ul')?.getAttribute('aria-label')).toBe('Tools');
+  act(() => { feedback.focus(); feedback.click(); });
+  expect(tools.getAttribute('aria-expanded')).toBe('false');
+  expect(container.querySelector('ul[aria-label="Tools"]')).toBeNull();
+  expect(container.querySelector('dialog')!.open).toBe(true);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_header_tools_item_clicked', { page: '/', navigation_layout: 'tools_dropdown', tool: 'Feedback' });
+  expect(posthog.capture).toHaveBeenCalledWith('feedback_opened', { page: '/', is_authenticated: false });
+  describe('Feedback from the tools menu');
+  await submit();
+  expect(container.textContent).toContain('Your message has been sent.');
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Close feedback"]')!.click());
+  expect(container.querySelector('dialog')).toBeNull();
+  expect(document.activeElement).toBe(tools);
+  expect(document.body.style.overflow).not.toBe('hidden');
+  act(() => tools.click());
+  act(() => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Feedback')!.click());
+  expect(container.querySelector('textarea')!.value).toBe('');
 });

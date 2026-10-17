@@ -213,7 +213,7 @@ export default function GeneratedModel() {
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const params = new URLSearchParams(location.search);
-  const { user: currentUser, userProfile: currentUserProfile, updateUsername } = useAuth();
+  const { user: currentUser, userProfile: currentUserProfile, updateUsername, session } = useAuth();
   
   // Generation fetch state
   const { markViewed, refresh: refreshNotifications } = useGenerationNotifications();
@@ -1914,7 +1914,7 @@ export default function GeneratedModel() {
             {pendingGeneration && isGenerationActive(pendingGeneration.status) && <>
               <CancelGenerationButton generationId={pendingGeneration.generation_id}
                 isEdit={(pendingGeneration.version ?? 1) > 1} onCancelled={handleEditCancelled} />
-              <GetNotifiedButton generationId={pendingGeneration.generation_id} />
+              <GetNotifiedButton generationId={pendingGeneration.generation_id} promptOnStart />
             </>}
             <p className="mt-3 max-w-sm text-center text-sm text-slate-500">You can leave and come back. Your model keeps processing, and the notification bell will show when it is ready.</p>
             <button type="button" onClick={() => navigate('/')} className="mt-5 rounded-full border border-slate-300 px-5 py-2 text-sm text-slate-700 hover:bg-slate-50">Continue browsing</button>
@@ -2265,7 +2265,7 @@ export default function GeneratedModel() {
                       : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
                     {editGenerationId && <>
                       <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />
-                      <GetNotifiedButton generationId={editGenerationId} />
+                      <GetNotifiedButton generationId={editGenerationId} promptOnStart />
                     </>}
                   </div>
                 ) : undefined}
@@ -2297,6 +2297,8 @@ export default function GeneratedModel() {
 
         {!showVoxelEditor && mpdContent && (xyzrgbUrl || hasNovaGeometry) && currentGenerationId && (
           <VoxelPromptEditor
+            authToken={session?.access_token}
+            ownerId={session?.user.id || 'guest'}
             prompt={editPrompt}
             examplePrompt={pendingGeneration?.example_edit_prompt}
             modelName={modelName}

@@ -1,3 +1,5 @@
+import ImageToModelPage from './pages/ImageToModelPage';
+import { IMAGE_MODEL_PAGES } from './imageModelPages';
 import ModelToVoxelPage from './pages/ModelToVoxelPage';
 import { VOXEL_CONVERTERS } from './voxelConverters';
 import { AiConsentDialog } from "./components/AiConsentDialog";
@@ -28,9 +30,9 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import PetPreviewPage from './pages/PetPreviewPage';
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
-import { FeedbackWidget } from "./components/FeedbackWidget";
 import { PetProvider } from "./contexts/PetContext";
 import { PetCompanion } from "./components/PetCompanion";
+import { MobileAppBanner } from "./components/MobileAppBanner";
 // import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function ExternalRedirect({ to }: { to: string }) {
@@ -43,6 +45,7 @@ function ExternalRedirect({ to }: { to: string }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <MobileAppBanner />
       <PetProvider>
       <AiConsentDialog />
       <GenerationNotificationsProvider>
@@ -51,6 +54,7 @@ export default function App() {
         {/* <AnnouncementBanner /> */}
         <Routes>
           {/* Public */}
+          {IMAGE_MODEL_PAGES.map(({ path, output }) => <Route key={path} path={path} element={<ImageToModelPage key={path} output={output} />} />)}
           <Route path="/" element={<LandingPage />} />
           <Route path="/use-ai-to-edit-ldraw" element={<LandingPage imageLandingPath="use-ai-to-edit-ldraw" />} />
           <Route path="/image-to-lego" element={<LandingPage imageLandingPath="image-to-lego" />} />
@@ -94,7 +98,6 @@ export default function App() {
         </Routes>
         {/* </ProtectedRoute> */}
       </ChangeRequestProvider>
-      <FeedbackWidget />
       </GenerationNotificationsProvider>
       <PetCompanion />
       </PetProvider>

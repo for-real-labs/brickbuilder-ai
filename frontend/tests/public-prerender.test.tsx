@@ -4,12 +4,14 @@ import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it, vi } from 'vitest';
 import { publicPagePaths, renderPublicDocument } from '../src/public-prerender';
+import { IMAGE_MODEL_PAGES } from '../src/imageModelPages';
 import { getBlogPosts } from '../src/utils/blog-posts';
 
 vi.stubGlobal('React', React);
 vi.stubGlobal('localStorage', { clear() {}, getItem() { return null; }, setItem() {} });
 
 const shell = readFileSync('index.html', 'utf8');
+const landingPaths = ['/', '/image-to-lego', '/photo-to-lego', '/use-ai-to-edit-ldraw'];
 const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
 const sitemap = new JSDOM(readFileSync('public/sitemap.xml', 'utf8'), { contentType: 'text/xml' }).window.document;
 
@@ -20,6 +22,9 @@ describe('public page indexing', () => {
     expect(document.head.querySelectorAll('link[rel="canonical"]')).toHaveLength(1);
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(url);
     expect(document.head.querySelectorAll('title')).toHaveLength(1);
+    const appBanners = document.head.querySelectorAll('meta[name="apple-itunes-app"]');
+    expect(appBanners).toHaveLength(1);
+    expect(appBanners[0].getAttribute('content')).toBe('app-id=6815050463');
     for (const selector of ['meta[name="description"]', 'meta[name="robots"]', 'meta[property="og:url"]', 'meta[name="twitter:url"]']) {
       expect(document.head.querySelectorAll(selector)).toHaveLength(1);
     }
@@ -29,11 +34,23 @@ describe('public page indexing', () => {
     expect(document.querySelector('#root h1')).not.toBeNull();
     expect(document.querySelector('#root')?.textContent?.length).toBeGreaterThan(100);
     expect(document.querySelector('script[src="/src/main.tsx"]')).not.toBeNull();
+    if (landingPaths.includes(path)) {
+      expect(document.querySelector('footer')).toBeNull();
+      expect(document.querySelector('#how-it-works')).toBeNull();
+      expect(document.querySelector('[aria-label="Community models"]')).toBeNull();
+    } else {
+      expect(document.querySelector('footer a[href="https://apps.apple.com/app/brickbuilder-ai/id6815050463"]')?.textContent).toContain('Download for iOS');
+    }
     const schemas = Array.from(document.head.querySelectorAll('script[type="application/ld+json"]'));
     expect(schemas).toHaveLength(1);
     const schema = JSON.parse(schemas[0].textContent!);
     expect(JSON.stringify(schema)).toContain(url);
     expect(JSON.stringify(schema)).not.toContain('aggregateRating');
+  });
+
+  it.each(landingPaths)('omits the iOS download from the landing header before JavaScript at %s', path => {
+    const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
+    expect(document.querySelector('nav[aria-label="Main navigation"] a[href="https://apps.apple.com/app/brickbuilder-ai/id6815050463"]')).toBeNull();
   });
 
   it('pre-renders every sitemap URL and every native or imported blog article', () => {
@@ -86,9 +103,29 @@ describe('public page indexing', () => {
       expect(document.querySelector('main')?.textContent).toContain(question.acceptedAnswer.text);
     }
     expect(schemas[0].offers).toBeUndefined();
-    const homepage = new JSDOM(renderPublicDocument(shell, '/')).window.document;
-    expect(homepage.querySelector('a[href="/obj-to-lego"]')).not.toBeNull();
     expect(Array.from(sitemap.querySelectorAll('loc')).map(node => node.textContent)).toContain('https://brickbuilder.ai/obj-to-lego');
+  });
+
+  it.each(IMAGE_MODEL_PAGES)('publishes unique image conversion content, matching FAQ data, and LEGO links at $path', page => {
+    const document = new JSDOM(renderPublicDocument(shell, page.path)).window.document;
+    expect(document.title).toBe(page.title);
+    expect(document.querySelector('h1')?.textContent).toBe(page.name);
+    expect(document.querySelector('main')?.textContent).toContain(page.body);
+    const schemas = JSON.parse(document.querySelector('script[type="application/ld+json"]')!.textContent!);
+    expect(schemas[0].url).toBe(`https://brickbuilder.ai${page.path}`);
+    expect(schemas[0].offers).toBeUndefined();
+    expect(schemas[2]['@type']).toBe('BreadcrumbList');
+    for (const question of schemas[1].mainEntity) {
+      expect(document.querySelector('main')?.textContent).toContain(question.name);
+      expect(document.querySelector('main')?.textContent).toContain(question.acceptedAnswer.text);
+    }
+    for (const destination of ['/glb-to-lego', '/image-to-lego', '/#landing-build-prompt']) {
+      expect(document.querySelector(`aside a[href="${destination}"]`)).not.toBeNull();
+    }
+    for (const other of IMAGE_MODEL_PAGES) {
+      expect(document.querySelector(`a[href="${other.path}"]`)).not.toBeNull();
+      expect(Array.from(sitemap.querySelectorAll('loc')).map(node => node.textContent)).toContain(`https://brickbuilder.ai${other.path}`);
+    }
   });
 
   it('keeps successive article and converter renders independent', () => {

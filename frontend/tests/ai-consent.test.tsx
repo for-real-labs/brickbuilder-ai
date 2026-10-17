@@ -55,7 +55,7 @@ describe('AI sharing permission', () => {
     expect(renderToStaticMarkup(<AiConsentDialog />)).toBe('');
   });
 
-  it.each(['llmToBricks', 'llmToBricks/stream', 'llmRender/stream', 'textToBricks', 'imageToBricks', 'promptEditModel', 'glbToBricks', 'resizeModel', 'updateModel'])('protects %s', endpoint => {
+  it.each(['build-buddy/reply', 'llmToBricks', 'llmToBricks/stream', 'llmRender/stream', 'textToBricks', 'imageToBricks', 'promptEditModel', 'glbToBricks', 'resizeModel', 'updateModel'])('protects %s', endpoint => {
     expect(requiresAiConsent(`https://backend.test/${endpoint}`, 'POST')).toBe(true);
     expect(requiresAiConsent(`/${endpoint}`, 'GET')).toBe(false);
   });

@@ -1,3 +1,4 @@
+import { IMAGE_MODEL_PAGES } from '../imageModelPages';
 import { LegoDesignCallout } from './LegoDesignCallout';
 import { VOXEL_CONVERTERS, VOXEL_FORMATS } from '../voxelConverters';
 import { isNativeMobileShell } from '../utils/mobileShellAnalytics';
@@ -6,6 +7,7 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Github, Instagram, Youtube } from "lucide-react";
 import posthog from "posthog-js";
+import { AppStoreLink } from './AppStoreLink';
 
 // TikTok icon (not provided by lucide-react)
 function TikTokIcon({ className }: { className?: string }) {
@@ -29,6 +31,7 @@ export function SiteFooter() {
     <footer className="w-full py-6 text-center text-sm text-slate-500">
       <div className="flex flex-col items-center gap-3">
         {showDesignCallout && <div className="mb-6 w-full max-w-3xl"><LegoDesignCallout page={pathname} /></div>}
+        <AppStoreLink placement="footer" page={pathname} />
         <div className="flex items-center gap-4">
           <a
             href="https://www.instagram.com/trybrickbuilder/"
@@ -108,6 +111,11 @@ export function SiteFooter() {
             Terms of Service
           </Link>
         </div>
+        <nav aria-label="Image to 3D converters" className="flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 text-xs">
+          {IMAGE_MODEL_PAGES.map(({ path, name }) => <Link key={path} to={path}
+            onClick={() => posthog.capture('footer_image_model_converter_clicked', { destination: path })}
+            className="hover:text-[#f44336] transition-colors">{name}</Link>)}
+        </nav>
         <nav aria-label="Voxel converters" className="flex max-w-3xl flex-wrap justify-center gap-x-4 gap-y-2 text-xs">
           {VOXEL_CONVERTERS.map(({ path, input, output }) => <Link key={path} to={path}
             onClick={() => posthog.capture('footer_voxel_converter_clicked', { destination: path })}
