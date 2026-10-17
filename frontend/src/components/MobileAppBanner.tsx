@@ -9,15 +9,12 @@ const DISMISSAL_KEY = 'brickbuilder_app_banner_dismissed_until';
 const DISMISSAL_MS = 7 * 24 * 60 * 60 * 1000;
 const QUIET_ROUTES = new Set(['/login', '/signup', '/oauth/consent', '/order', '/success']);
 
-function needsFallbackBanner(): boolean {
+function shouldShowAppBanner(): boolean {
   const { userAgent, platform, maxTouchPoints } = navigator;
   const isIos = /iPhone|iPad|iPod/i.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
-  // Safari owns its native Smart App Banner, including installed-app detection and dismissal.
-  const isSafari = /Version\/\d.*Safari\//.test(userAgent)
-    && !/CriOS|FxiOS|EdgiOS|OPiOS|DuckDuckGo|GSA\/|FBAN|FBAV|Instagram/i.test(userAgent);
   const isStandalone = (navigator as Navigator & { standalone?: boolean }).standalone
     || window.matchMedia?.('(display-mode: standalone)').matches;
-  return isIos && !isSafari && !isStandalone && !isNativeMobileShell();
+  return isIos && !isStandalone && !isNativeMobileShell();
 }
 
 export function MobileAppBanner() {
@@ -26,7 +23,7 @@ export function MobileAppBanner() {
   const showBanner = visible && !QUIET_ROUTES.has(pathname);
 
   useEffect(() => {
-    if (!needsFallbackBanner()) return;
+    if (!shouldShowAppBanner()) return;
     try {
       const dismissedUntil = Number(localStorage.getItem(DISMISSAL_KEY));
       if (Number.isFinite(dismissedUntil) && dismissedUntil > Date.now()) return;
