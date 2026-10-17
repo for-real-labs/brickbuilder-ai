@@ -52,6 +52,7 @@ describe('mobile app download prompt', () => {
     browser(userAgent);
     render('/image-to-lego');
     const banner = container.querySelector('aside')!;
+    expect(banner.hasAttribute('data-app-banner')).toBe(true);
     expect(banner.getAttribute('aria-label')).toBe('Get the BrickBuilder AI app');
     expect(banner.textContent).toContain('Free on the App Store.');
     const link = banner.querySelector('a')!;

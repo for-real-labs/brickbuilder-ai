@@ -37,7 +37,7 @@ export function MobileAppBanner() {
 
   if (!showBanner) return null;
 
-  return <aside aria-label="Get the BrickBuilder AI app" className="w-full border-b border-slate-200 bg-slate-50">
+  return <aside data-app-banner aria-label="Get the BrickBuilder AI app" className="w-full border-b border-slate-200 bg-slate-50">
     <div className="mx-auto flex max-w-7xl items-center gap-2 px-2 py-3 sm:px-4">
       <button type="button" aria-label="Dismiss app download prompt"
         className="flex h-11 w-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-slate-500 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336]"

@@ -9,8 +9,11 @@ export function useLandingViewport(enabled: boolean) {
     if (!enabled || !element) return;
     const viewport = window.visualViewport;
     const updateViewport = () => {
-      element.style.setProperty('--landing-viewport-height', `${viewport?.height ?? window.innerHeight}px`);
-      element.style.setProperty('--landing-viewport-top', `${viewport?.offsetTop ?? 0}px`);
+      const top = viewport?.offsetTop ?? 0;
+      const banner = document.querySelector('[data-app-banner]');
+      const bannerHeight = Math.max(0, (banner?.getBoundingClientRect().bottom ?? 0) - top);
+      element.style.setProperty('--landing-viewport-height', `${Math.max(0, (viewport?.height ?? window.innerHeight) - bannerHeight)}px`);
+      element.style.setProperty('--landing-viewport-top', `${top + bannerHeight}px`);
     };
     const header = element.querySelector('header');
     const conversation = element.querySelector('.landing-model-conversation');
@@ -20,7 +23,11 @@ export function useLandingViewport(enabled: boolean) {
     };
     updateViewport();
     updatePanels();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(updatePanels);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
+      updateViewport();
+      updatePanels();
+    });
+    observer?.observe(document.body);
     if (header) observer?.observe(header);
     if (conversation) observer?.observe(conversation);
     viewport?.addEventListener('resize', updateViewport);

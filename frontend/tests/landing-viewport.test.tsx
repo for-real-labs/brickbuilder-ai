@@ -85,3 +85,35 @@ it('uses window height when the visual viewport API is unavailable and leaves di
   act(() => window.dispatchEvent(new Event('resize')));
   expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('500px');
 });
+
+it('fits below the iOS app banner and reclaims its space when dismissed or panned above the keyboard', () => {
+  let notify!: ResizeObserverCallback;
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(callback: ResizeObserverCallback) { notify = callback; }
+    observe = vi.fn();
+    disconnect = vi.fn();
+  });
+  const viewport = Object.assign(new EventTarget(), { height: 844, offsetTop: 0 });
+  vi.stubGlobal('visualViewport', viewport);
+  const banner = document.createElement('aside');
+  banner.dataset.appBanner = '';
+  vi.spyOn(banner, 'getBoundingClientRect').mockReturnValue({ bottom: 80 } as DOMRect);
+  document.body.prepend(banner);
+  try {
+    act(() => root.render(<Harness />));
+    const shell = container.firstElementChild as HTMLElement;
+    expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('764px');
+    expect(shell.style.getPropertyValue('--landing-viewport-top')).toBe('80px');
+    viewport.height = 390;
+    viewport.offsetTop = 120;
+    act(() => viewport.dispatchEvent(new Event('resize')));
+    expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('390px');
+    expect(shell.style.getPropertyValue('--landing-viewport-top')).toBe('120px');
+    viewport.height = 844;
+    viewport.offsetTop = 0;
+    banner.remove();
+    act(() => notify([], {} as ResizeObserver));
+    expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('844px');
+    expect(shell.style.getPropertyValue('--landing-viewport-top')).toBe('0px');
+  } finally { banner.remove(); }
+});
