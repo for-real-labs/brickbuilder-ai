@@ -1,4 +1,4 @@
-# BrickBuilder mobile (Expo, iOS-first)
+# BrickBuilder mobile (Expo, iOS and Android)
 
 This is a deliberately thin Expo shell around the production BrickBuilder web
 app. The generation form, generation/model view, order flow, dashboard, and
@@ -72,6 +72,14 @@ eas submit --platform ios --latest
 
 EAS can manage the distribution certificate and provisioning profile. The
 submitted build appears in TestFlight after Apple finishes processing it.
+
+## Google Play
+
+The same mobile app supports Android with package `ai.brickbuilder.app`.
+Build its signed App Bundle with `npx eas-cli@latest build --platform android
+--profile production` from this directory. The [Google Play release files](google-play/README.md)
+contain the adapted iOS artwork, listing text, verification commands, and
+submission status.
 
 ## In-app change requests
 

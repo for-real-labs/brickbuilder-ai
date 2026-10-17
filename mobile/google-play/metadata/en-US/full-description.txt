@@ -1,0 +1,10 @@
+Turn photos and text into LEGO-compatible 3D brick models with BrickBuilder AI.
+
+Create a design from a photo or a few words, refine your model with AI, and explore community builds for inspiration.
+
+- Create LEGO-compatible brick models from images or text.
+- View your model in 3D and zoom in on the details.
+- Refine your LEGO-compatible model with AI edits.
+- Discover LEGO-compatible builds shared by the community.
+
+LEGO® is a trademark of the LEGO Group. BrickBuilder AI is an independent app and is not sponsored, authorized, or endorsed by the LEGO Group.
