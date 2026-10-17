@@ -6,8 +6,11 @@ the same deployed BrickBuilder features as iOS.
 ## Listing assets
 
 `metadata/en-US/` contains the title, short description, full description,
-and initial release notes. The full description matches the saved App Store
-Connect description exactly, including the LEGO trademark notice.
+and initial release notes. The full description matches the published iOS
+1.0.1 description, including the LEGO trademark notice. The description and
+three screenshots were verified against the [public App Store listing](https://apps.apple.com/us/app/brickbuilder-ai/id6815050463)
+on October 17, 2026, after App Store Connect requested sign-in. The Play icon
+uses the current native app icon, including the concurrent Pip icon update.
 
 Upload `graphics/icon.png` (512 × 512), `graphics/feature-graphic.png`
 (1024 × 500), and the three numbered files in `graphics/phone/`, in order.
@@ -61,8 +64,7 @@ hosted frontend, so the control does not require a new Android bundle.
 Google requires [in-app reporting for AI-generated content](https://support.google.com/googleplay/android-developer/answer/13985936?hl=en).
 
 On October 17, 2026, `jake@brickbuilder.ai` opened developer-account
-registration rather than an existing Play Console. App Store Connect also
-required sign-in. Submission is pending access to the intended developer
+registration rather than an existing Play Console. Submission is pending access to the intended developer
 account; no Play app or review submission has been created yet.
 
 Google may require developer verification and, for newer personal accounts,

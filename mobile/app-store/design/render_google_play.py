@@ -14,6 +14,7 @@ import render as design
 OUTPUT = design.STORE.parent / "google-play"
 PHONE_SIZE = (1080, 1920)
 FEATURE_SIZE = (1024, 500)
+FILENAMES = ("01-imagine.png", "02-create.png", "03-explore.png")
 
 
 def phone_screenshot(source):
@@ -40,9 +41,9 @@ def main():
     images = OUTPUT / "graphics"
     phones = images / "phone"
     phones.mkdir(parents=True, exist_ok=True)
-    for name in design.FILENAMES:
-        with Image.open(design.STORE / "screenshots/iphone-6.5" / name) as source:
-            phone_screenshot(source).save(phones / name, optimize=True)
+    for source_name, output_name in zip(design.FILENAMES, FILENAMES, strict=True):
+        with Image.open(design.STORE / "screenshots/iphone-6.5" / source_name) as source:
+            phone_screenshot(source).save(phones / output_name, optimize=True)
     with Image.open(design.STORE.parent / "assets/icon.png") as source:
         source.convert("RGBA").resize((512, 512), Image.Resampling.LANCZOS).save(
             images / "icon.png", optimize=True

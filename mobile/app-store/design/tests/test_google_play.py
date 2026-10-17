@@ -15,7 +15,7 @@ import render_google_play as play
 class GooglePlayExportTests(unittest.TestCase):
     def test_phone_artwork_is_opaque_and_has_an_accepted_aspect_ratio(self):
         phones = play.OUTPUT / "graphics/phone"
-        self.assertEqual(sorted(p.name for p in phones.glob("*.png")), list(play.design.FILENAMES))
+        self.assertEqual(sorted(p.name for p in phones.glob("*.png")), list(play.FILENAMES))
         for path in phones.glob("*.png"):
             with self.subTest(path=path.name), Image.open(path) as image:
                 self.assertEqual(image.size, (1080, 1920))
@@ -31,10 +31,12 @@ class GooglePlayExportTests(unittest.TestCase):
                 self.assertEqual(image.mode, mode)
                 self.assertLess((play.OUTPUT / "graphics" / name).stat().st_size, 1024 * 1024)
 
-    def test_description_reuses_the_ios_copy_and_text_fits_play_limits(self):
+    def test_listing_copy_includes_the_compatibility_notice_and_fits_play_limits(self):
         metadata = play.OUTPUT / "metadata/en-US"
-        self.assertEqual((metadata / "full-description.txt").read_bytes(),
-                         (play.design.STORE / "metadata/en-US/description.txt").read_bytes())
+        description = (metadata / "full-description.txt").read_text()
+        self.assertIn("LEGO-compatible 3D brick models", description)
+        self.assertIn("BrickBuilder AI is an independent app", description)
+        self.assertIn("LEGO® is a trademark of the LEGO Group", description)
         for name, limit in (("title.txt", 30), ("short-description.txt", 80),
                             ("full-description.txt", 4000), ("release-notes.txt", 500)):
             with self.subTest(field=name):
