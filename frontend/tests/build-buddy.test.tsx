@@ -83,7 +83,7 @@ it.each(['failed', 'cancelled'])('speaks a terminal %s build without opening ano
     turns={[{ id: 1, text: 'Castle', reply: 'Great idea.', generationId: 'job', method: 'llm' }]}
     generations={[{ id: 'job', prompt: 'Castle', endpoint: 'llmToBricks', status, errorMessage: 'Internal runtime error' }]} state="idle" />));
   expect(container.textContent).toContain(status === 'failed'
-    ? 'Woops! Something in the brick verse is down. Try again later' : 'I’ve stopped this build.');
+    ? 'Woops! Something in the brickverse is down. Try again later' : 'I’ve stopped this build.');
   expect(container.textContent).not.toContain('Internal runtime error');
   expect(watch).not.toHaveBeenCalled();
 });
@@ -96,7 +96,7 @@ it.each([undefined, 'job'])('shows one pet failure message without infrastructur
     generations={generationId ? [{ id: generationId, prompt: 'A cat', endpoint: 'novaToBricks', status: 'failed' }] : []}
     state="idle" />));
   const message = container.querySelector('[role="status"]');
-  expect(message?.textContent).toBe('Woops! Something in the brick verse is down. Try again later');
+  expect(message?.textContent).toBe('Woops! Something in the brickverse is down. Try again later');
   expect(message?.closest('.pet-chat-message')).not.toBeNull();
   expect(container.querySelectorAll('[role="status"]')).toHaveLength(1);
   expect(container.textContent).not.toContain('Nova runtime');

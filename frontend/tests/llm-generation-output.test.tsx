@@ -17,7 +17,7 @@ it('speaks the pet failure message when a running build fails without displaying
   try {
     await act(async () => root.render(<LlmGenerationOutput generationId="job" active />));
     const message = container.querySelector('[role="status"]');
-    expect(message?.textContent).toBe('Woops! Something in the brick verse is down. Try again later');
+    expect(message?.textContent).toBe('Woops! Something in the brickverse is down. Try again later');
     expect(message?.closest('.pet-chat-message')).not.toBeNull();
     expect(container.textContent).not.toContain('Nova runtime');
     expect(container.textContent).not.toContain('Internal runtime diagnostics');

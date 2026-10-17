@@ -1,4 +1,4 @@
-export const BUILD_FAILURE_MESSAGE = 'Woops! Something in the brick verse is down. Try again later';
+export const BUILD_FAILURE_MESSAGE = 'Woops! Something in the brickverse is down. Try again later';
 
 /** Condense the latest streamed activity; never display the full reasoning log. */
 export function summarizeBuildProgress(notes: string, fallback = 'Planning your brick build'): string {

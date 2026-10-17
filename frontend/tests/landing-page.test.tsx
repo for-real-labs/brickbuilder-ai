@@ -255,8 +255,8 @@ describe('LandingPage', () => {
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
         const dialogue = container.querySelector('[aria-label="Build buddy conversation"]')!;
         expect(dialogue.querySelector('[role="status"]')?.textContent)
-          .toBe('Woops! Something in the brick verse is down. Try again later');
-        expect(container.textContent?.split('Woops! Something in the brick verse is down. Try again later')).toHaveLength(2);
+          .toBe('Woops! Something in the brickverse is down. Try again later');
+        expect(container.textContent?.split('Woops! Something in the brickverse is down. Try again later')).toHaveLength(2);
         expect(container.textContent).not.toContain('Submission failed');
         expect(container.textContent).not.toContain('Generation Failed');
         expect(container.textContent).not.toContain('Try Again');
@@ -500,7 +500,7 @@ describe('LandingPage', () => {
       await act(async () => { create.click(); await vi.waitFor(() => expect(nova).toHaveBeenCalledTimes(1)); });
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({ imageBase64: btoa('reference'), imageMediaType: 'image/png', model: DEFAULT_LLM_MODEL }), undefined);
       expect(container.querySelector('[aria-label="Build buddy conversation"] [role="status"]')?.textContent)
-        .toBe('Woops! Something in the brick verse is down. Try again later');
+        .toBe('Woops! Something in the brickverse is down. Try again later');
       expect(container.textContent).not.toContain('Test Nova request');
       expect(container.textContent).not.toContain('Generation Failed');
       act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());

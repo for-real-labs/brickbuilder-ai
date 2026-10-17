@@ -129,7 +129,7 @@ it('keeps the current model and edit text available after an edit request fails'
   expect(input().value).toBe('Add a bridge');
   expect(input().disabled).toBe(false);
   expect(buddy.updateTurn).toHaveBeenCalledWith(1, {
-    error: 'Woops! Something in the brick verse is down. Try again later', reply: undefined,
+    error: 'Woops! Something in the brickverse is down. Try again later', reply: undefined,
   });
   expect(container.textContent).not.toContain('Please try again');
   expect(container.textContent).not.toContain('Generation Failed');
