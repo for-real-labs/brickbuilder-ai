@@ -1,3 +1,6 @@
+export const IMAGE_PROMPT_SUGGESTION = 'Turn this image into LEGO';
+export const GIFT_PROMPT_SUGGESTION = 'Help me come up with a LEGO gift idea';
+
 // Short, curated build ideas: recognizable subjects mixed with scenes and designs.
 export const PROMPT_EXAMPLES: readonly string[] = [
   // Nintendo and video games

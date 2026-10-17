@@ -6,7 +6,7 @@ import LandingPage from '../src/pages/LandingPage';
 import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
-import { PROMPT_EXAMPLES } from '../src/utils/promptExamples';
+import { GIFT_PROMPT_SUGGESTION, IMAGE_PROMPT_SUGGESTION, PROMPT_EXAMPLES } from '../src/utils/promptExamples';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
@@ -38,7 +38,6 @@ beforeEach(() => {
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
-const suggestions = () => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Build suggestions"] button'));
 const input = () => container.querySelector<HTMLInputElement>('#landing-build-prompt')!;
 function type(text: string) {
   act(() => {
@@ -48,21 +47,55 @@ function type(text: string) {
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 
-it.each([undefined, 'photo-to-lego'] as const)('puts three suggestions above the dialogue and submits the random example on %s', async imageLandingPath => {
-  vi.spyOn(Math, 'random').mockReturnValue(0);
+it('fades the headline and statistics after the first message while keeping the header and dialogue mounted', async () => {
+  await act(async () => root.render(<LandingPage />));
+  const intro = container.querySelector('.landing-page-intro')!;
+  expect(intro.getAttribute('aria-hidden')).toBe('false');
+  expect(intro.querySelector('h1')?.textContent).toContain('Imagine. Create. Build.');
+  expect(intro.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+  act(() => input().focus());
+  type(IMAGE_PROMPT_SUGGESTION);
+  expect(intro.getAttribute('aria-hidden')).toBe('false');
+  await submit();
+  expect(intro.getAttribute('aria-hidden')).toBe('true');
+  expect(intro.classList.contains('landing-page-intro--hidden')).toBe(true);
+  expect(container.querySelector('.landing-page > .landing-page-shell > header')).not.toBeNull();
+  expect(container.querySelector('.landing-model-conversation form')).not.toBeNull();
+  expect(container.querySelector('[role="log"]')?.textContent).toContain(IMAGE_PROMPT_SUGGESTION);
+  act(() => input().blur());
+  expect(intro.getAttribute('aria-hidden')).toBe('true');
+});
+
+it.each([undefined, 'photo-to-lego'] as const)('removes suggestion buttons and submits typed build ideas on %s', async imageLandingPath => {
   await act(async () => root.render(<LandingPage imageLandingPath={imageLandingPath} />));
-  const buttons = suggestions();
-  expect(buttons.map(button => button.textContent)).toEqual([`Try ${PROMPT_EXAMPLES[0]}`, 'Gift idea?', 'Upload image']);
-  const group = container.querySelector('[aria-label="Build suggestions"]')!;
-  expect(group.compareDocumentPosition(container.querySelector('[role="log"]')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  type('Old draft');
-  await act(async () => buttons[0].click());
-  const expected = `create ${PROMPT_EXAMPLES[0]} out of LEGO`;
+  expect(container.querySelector('[aria-label="Build suggestions"]')).toBeNull();
+  const expected = `Create ${PROMPT_EXAMPLES[0]} out of LEGO`;
+  type(expected);
+  await submit();
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
   expect(container.querySelector('.pet-chat-message--user')?.textContent).toContain(expected);
   expect(NovaToBricksApiService.generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: expected, imageBase64: undefined }), undefined);
   expect(BuildBuddyApi.reply).toHaveBeenCalledWith(expect.objectContaining({ prompt: expected }), undefined, expect.any(AbortSignal));
-  expect(suggestions()[0].textContent).not.toBe(`Try ${PROMPT_EXAMPLES[0]}`);
-  expect(posthog.capture).toHaveBeenCalledWith('build_buddy_suggestion_clicked', { suggestion: 'random' });
+});
+
+it('animates the empty landing input and stops while the user focuses or types', async () => {
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  vi.useFakeTimers();
+  try {
+    await act(async () => root.render(<LandingPage />));
+    for (let i = 0; i < 6; i++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(70); });
+    }
+    expect(input().placeholder.replace('|', '')).toBe('Create');
+    expect(input().value).toBe('');
+    act(() => input().focus());
+    expect(input().placeholder).toBe('Tell Pip what you’d like to build…');
+    type('My own idea');
+    act(() => input().blur());
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(input().value).toBe('My own idea');
+    expect(input().placeholder).toBe('Tell Pip what you’d like to build…');
+  } finally { vi.useRealTimers(); }
 });
 
 it('plans a gift with follow-up context, blocks duplicate sends, and hands a complete idea back to Create', async () => {
@@ -70,8 +103,8 @@ it('plans a gift with follow-up context, blocks duplicate sends, and hands a com
   const plan = vi.spyOn(BuildBuddyApi, 'planGift').mockImplementationOnce(() => new Promise(resolve => { respond = resolve; }))
     .mockResolvedValueOnce({ reply: 'A tiny garden with a purple bench would be lovely. Want to change anything?', buildPrompt: 'A LEGO garden with sunflowers and a purple bench for Mum’s birthday' });
   await act(async () => root.render(<LandingPage />));
-  type('Old build draft');
-  act(() => suggestions()[1].click());
+  type(GIFT_PROMPT_SUGGESTION);
+  await submit();
   expect(input().value).toBe('');
   expect(container.querySelector('button[type="submit"]')?.getAttribute('aria-label')).toBe('Send');
   expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(true);
@@ -80,10 +113,11 @@ it('plans a gift with follow-up context, blocks duplicate sends, and hands a com
   await act(async () => respond({ reply: 'Who is the gift for, and what do they love?' }));
   await submit();
   expect(plan.mock.calls[1][0]).toEqual({ pet: 'pip', prompt: 'Mum loves gardening', history: [
-    { role: 'user', text: 'Help me come up with a custom LEGO gift idea.' },
+    { role: 'user', text: GIFT_PROMPT_SUGGESTION },
     { role: 'assistant', text: 'Who is the gift for, and what do they love?' },
   ] });
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('build_buddy_suggestion_submitted', { suggestion: 'gift' });
   expect(BuildBuddyApi.reply).not.toHaveBeenCalled();
   const useIdea = Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent === 'Use this gift idea')!;
   act(() => useIdea.click());
@@ -98,7 +132,8 @@ it('plans a gift with follow-up context, blocks duplicate sends, and hands a com
 it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) and opens the shared picker from the pet reply', async desktop => {
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: desktop && query.includes('pointer: fine'), addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   await act(async () => root.render(<LandingPage />));
-  act(() => suggestions()[2].click());
+  type(IMAGE_PROMPT_SUGGESTION);
+  await submit();
   const dialogue = container.querySelector('[role="log"]')!;
   expect(dialogue.textContent).toContain('click the Upload image button below'.replace(/^c/, desktop ? 'c' : 'C'));
   expect(dialogue.textContent?.includes('Drag and drop')).toBe(desktop);
@@ -114,11 +149,13 @@ it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) a
 it('recovers from a gift chat failure without starting a build and starts a fresh gift conversation on reselect', async () => {
   const plan = vi.spyOn(BuildBuddyApi, 'planGift').mockRejectedValueOnce(new Error('offline')).mockResolvedValue({ reply: 'Who is it for?' });
   await act(async () => root.render(<LandingPage />));
-  await act(async () => suggestions()[1].click());
+  type(GIFT_PROMPT_SUGGESTION);
+  await submit();
   expect(container.textContent).toContain('Please send your answer again');
   expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
   type('My dad'); await submit();
-  await act(async () => suggestions()[1].click());
+  type(GIFT_PROMPT_SUGGESTION);
+  await submit();
   expect(plan.mock.calls[2][0].history).toEqual([]);
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
 });

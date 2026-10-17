@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { PROMPT_EXAMPLES, pickPromptExampleIndex } from '../utils/promptExamples';
+import { GIFT_PROMPT_SUGGESTION, IMAGE_PROMPT_SUGGESTION, PROMPT_EXAMPLES, pickPromptExampleIndex } from '../utils/promptExamples';
 
 export function usePromptTypewriter(enabled: boolean) {
   const [idx, setIdx] = useState(() => pickPromptExampleIndex());
+  const [suggestionIndex, setSuggestionIndex] = useState(0);
   const [text, setText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [pause, setPause] = useState(false);
@@ -24,7 +25,11 @@ export function usePromptTypewriter(enabled: boolean) {
       return () => clearTimeout(t);
     }
 
-    const phrase = PROMPT_EXAMPLES[idx];
+    const phrase = [
+      `Create ${PROMPT_EXAMPLES[idx]} out of LEGO`,
+      IMAGE_PROMPT_SUGGESTION,
+      GIFT_PROMPT_SUGGESTION,
+    ][suggestionIndex];
     const speed = deleting ? 35 : 70;   // typing speed
     const nextTimer = setTimeout(() => {
       const nextLen = deleting ? text.length - 1 : text.length + 1;
@@ -35,12 +40,13 @@ export function usePromptTypewriter(enabled: boolean) {
         setDeleting(true);
       } else if (deleting && next.length === 0) {
         setDeleting(false);
-        setIdx(pickPromptExampleIndex(idx));
+        setSuggestionIndex((suggestionIndex + 1) % 3);
+        if (suggestionIndex === 2) setIdx(pickPromptExampleIndex(idx));
       }
     }, speed);
 
     return () => clearTimeout(nextTimer);
-  }, [enabled, text, deleting, pause, idx]);
+  }, [enabled, text, deleting, pause, idx, suggestionIndex]);
 
   const caret = enabled && showCaret ? "|" : "";
   return (text + caret).trim();

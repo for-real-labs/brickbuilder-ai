@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, expect, it, vi } from 'vitest';
-import { PROMPT_EXAMPLES, pickPromptExampleIndex } from '../src/utils/promptExamples';
+import { GIFT_PROMPT_SUGGESTION, IMAGE_PROMPT_SUGGESTION, PROMPT_EXAMPLES, pickPromptExampleIndex } from '../src/utils/promptExamples';
 import { usePromptTypewriter } from '../src/hooks/usePromptTypewriter';
 
 afterEach(() => vi.useRealTimers());
@@ -30,7 +30,7 @@ it('can select every example and skips the previous example at both random bound
   expect(pickPromptExampleIndex(PROMPT_EXAMPLES.length - 1)).toBe(PROMPT_EXAMPLES.length - 2);
 });
 
-it('types a random example, pauses when disabled, then picks another after deletion', async () => {
+it('cycles build, image, and gift prompts, pauses when disabled, and chooses a new build idea', async () => {
   vi.useFakeTimers();
   const random = vi.spyOn(Math, 'random').mockReturnValue(0);
   function Harness({ enabled }: {enabled: boolean}) { return <p>{usePromptTypewriter(enabled)}</p>; }
@@ -38,23 +38,27 @@ it('types a random example, pauses when disabled, then picks another after delet
   const root = createRoot(container);
   try {
     act(() => root.render(<Harness enabled />));
-    for (let i = 0; i < PROMPT_EXAMPLES[0].length; i++) {
+    const firstPhrase = `Create ${PROMPT_EXAMPLES[0]} out of LEGO`;
+    for (let i = 0; i < firstPhrase.length; i++) {
       await act(async () => { await vi.advanceTimersByTimeAsync(70); });
     }
-    expect(container.textContent?.replace('|', '')).toBe(PROMPT_EXAMPLES[0]);
+    expect(container.textContent?.replace('|', '')).toBe(firstPhrase);
     act(() => root.render(<Harness enabled={false} />));
     await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
-    expect(container.textContent).toBe(PROMPT_EXAMPLES[0]);
+    expect(container.textContent).toBe(firstPhrase);
     random.mockReturnValue(0.5);
     act(() => root.render(<Harness enabled />));
-    await act(async () => { await vi.advanceTimersByTimeAsync(900); });
-    for (let i = 0; i < PROMPT_EXAMPLES[0].length; i++) {
-      await act(async () => { await vi.advanceTimersByTimeAsync(35); });
+    const phrases = [firstPhrase, IMAGE_PROMPT_SUGGESTION, GIFT_PROMPT_SUGGESTION];
+    for (let index = 0; index < phrases.length; index++) {
+      await act(async () => { await vi.advanceTimersByTimeAsync(900); });
+      for (let i = 0; i < phrases[index].length; i++) {
+        await act(async () => { await vi.advanceTimersByTimeAsync(35); });
+      }
+      const nextPhrase = phrases[index + 1] ?? `Create ${PROMPT_EXAMPLES[pickPromptExampleIndex(0)]} out of LEGO`;
+      for (let i = 0; i < nextPhrase.length; i++) {
+        await act(async () => { await vi.advanceTimersByTimeAsync(70); });
+      }
+      expect(container.textContent?.replace('|', '')).toBe(nextPhrase);
     }
-    const selected = PROMPT_EXAMPLES[pickPromptExampleIndex(0)];
-    for (let i = 0; i < selected.length; i++) {
-      await act(async () => { await vi.advanceTimersByTimeAsync(70); });
-    }
-    expect(container.textContent?.replace('|', '')).toBe(selected);
   } finally { act(() => root.unmount()); }
 });

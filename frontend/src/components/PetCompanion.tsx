@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeftRight, Check, Pause, Play, X } from 'lucide-react';
+import { ArrowLeftRight, PawPrint, Check, Pause, Play, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { usePet } from '../contexts/PetContext';
 import { PETS, petVideoPath, petVideoSources, type PetId, type PetState } from '../pets';
@@ -62,8 +62,8 @@ export function PetSwitchButton({ source, className, onOpen, returnFocusRef }: {
   return <button type="button" className={className} onClick={() => {
     openPicker(source, returnFocusRef?.current);
     onOpen?.();
-  }} title="Build buddy / pet" aria-label={`Change build buddy / pet, currently ${pet.name}`} aria-haspopup="dialog" aria-expanded={pickerOpen}>
-    <ArrowLeftRight size={16} className="shrink-0" aria-hidden="true" /><span>Build buddy / pet</span>
+  }} title="Build Buddy" aria-label={`Change Build Buddy, currently ${pet.name}`} aria-haspopup="dialog" aria-expanded={pickerOpen}>
+    <PawPrint size={16} className="shrink-0" aria-hidden="true" /><span>Build Buddy</span>
   </button>;
 }
 

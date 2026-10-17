@@ -40,7 +40,7 @@ describe('build buddies', () => {
     expect(container.querySelector('.pet-greeting button')).toBeNull();
     const tools = container.querySelector<HTMLButtonElement>('button[aria-controls]')!;
     act(() => tools.click());
-    const switchPet = container.querySelector<HTMLButtonElement>('[aria-label="Change build buddy / pet, currently Pip"]')!;
+    const switchPet = container.querySelector<HTMLButtonElement>('[aria-label="Change Build Buddy, currently Pip"]')!;
     act(() => { switchPet.focus(); switchPet.click(); });
     expect(tools.getAttribute('aria-expanded')).toBe('false');
     expect(container.querySelector('ul[aria-label="Tools"]')).toBeNull();
@@ -65,7 +65,7 @@ describe('build buddies', () => {
   it('switches the pet across surfaces, persists it and tracks the choice without submitting a form', () => {
     const submit = vi.fn();
     render(<><Probe /><form onSubmit={submit}><PetPromptGreeting /><textarea /></form><PetCompanion /></>);
-    click('[aria-label="Change build buddy / pet, currently Pip"]');
+    click('[aria-label="Change Build Buddy, currently Pip"]');
     expect(container.querySelector('dialog')?.open).toBe(true);
     click('[aria-label="Choose Nib"]');
     expect(submit).not.toHaveBeenCalled();
@@ -112,9 +112,9 @@ describe('build buddies', () => {
     const frames: FrameRequestCallback[] = [];
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frames.push(callback); return frames.length; });
     render(<><PetPromptGreeting mode="edit" /><PetCompanion /></>);
-    const opener = container.querySelector<HTMLButtonElement>('[aria-label="Change build buddy / pet, currently Pip"]')!;
+    const opener = container.querySelector<HTMLButtonElement>('[aria-label="Change Build Buddy, currently Pip"]')!;
     opener.focus();
-    click('[aria-label="Change build buddy / pet, currently Pip"]');
+    click('[aria-label="Change Build Buddy, currently Pip"]');
     const dialog = container.querySelector('dialog')!;
     expect(opener.getAttribute('aria-expanded')).toBe('true');
     expect(container.querySelector(`#${dialog.getAttribute('aria-labelledby')}`)?.textContent).toBe('Choose your build buddy / pet');

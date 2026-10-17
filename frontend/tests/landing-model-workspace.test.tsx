@@ -92,6 +92,15 @@ it('shows a newly completed build inline, puts three suggestions above the dialo
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_create_new_clicked', { generation_id: 'castle' });
 });
 
+it('keeps the LDraw upload page intro visible when a previous chat workspace is saved', async () => {
+  sessionStorage.setItem('brickbuilder.landing-model:guest', 'castle');
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage imageLandingPath="use-ai-to-edit-ldraw" />));
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+  expect(container.querySelector('[aria-label="Choose LDraw file"]')).not.toBeNull();
+  expect(container.querySelector('.landing-page')).toBeNull();
+});
+
 it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its source API and retains the viewer until the replacement is ready', async endpoint => {
   activity.rows = [{ id: 'castle', status: 'completed', endpoint, prompt: 'Castle' }];
   let ready = false;

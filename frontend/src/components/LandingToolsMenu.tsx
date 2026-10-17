@@ -44,17 +44,21 @@ export function LandingToolsMenu({ page }: { page: string }) {
       trigger.current?.focus();
     }
   }}>
-    <button ref={trigger} type="button" aria-expanded={open} aria-controls={panelId}
-      className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-full border border-slate-200 bg-white/90 px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2"
+    <button ref={trigger} type="button" aria-label="Tools" title="Tools" aria-expanded={open} aria-controls={panelId}
+      className="inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/90 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 sm:w-auto sm:px-3"
       onClick={() => {
         if (!open) posthog.capture('landing_header_tools_opened', attribution());
         setOpen(!open);
       }}>
-      <Wrench aria-hidden="true" className="h-4 w-4" />Tools
-      <ChevronDown aria-hidden="true" className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+      <Wrench aria-hidden="true" className="h-4 w-4" /><span className="hidden sm:inline">Tools</span>
+      <ChevronDown aria-hidden="true" className={`hidden h-3.5 w-3.5 transition-transform sm:block ${open ? 'rotate-180' : ''}`} />
     </button>
-    {open && <div id={panelId} className="absolute left-1/2 top-full z-[60] mt-2 w-56 max-w-[calc(100vw-2rem)] -translate-x-1/2 rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
+    {open && <div id={panelId} className="absolute left-1/2 top-full z-[60] mt-2 max-h-[calc(var(--landing-viewport-height,100dvh)-5rem)] w-56 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl sm:left-auto sm:right-0 sm:translate-x-0">
       <ul aria-label="Tools" className="m-0 list-none p-0">
+        <li className="mb-1 border-b border-slate-100 pb-1">
+          <PetSwitchButton source="landing_tools" returnFocusRef={trigger} onOpen={() => setOpen(false)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]" />
+        </li>
         {tools.map(({ label, path, icon: Icon, event }) => <li key={path}>
           <Link to={path} className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
             onClick={() => {
@@ -90,10 +94,6 @@ export function LandingToolsMenu({ page }: { page: string }) {
             }}>
             <MessageSquare aria-hidden="true" className="h-4 w-4 shrink-0" />Feedback
           </button>
-        </li>
-        <li className="mt-1 border-t border-slate-100 pt-1">
-          <PetSwitchButton source="landing_tools" returnFocusRef={trigger} onOpen={() => setOpen(false)}
-            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]" />
         </li>
       </ul>
     </div>}

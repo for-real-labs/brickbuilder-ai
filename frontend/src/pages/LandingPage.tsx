@@ -4,7 +4,8 @@ import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
-import { BuildBuddySuggestions } from '../components/BuildBuddySuggestions';
+import { usePromptTypewriter } from '../hooks/usePromptTypewriter';
+import { GIFT_PROMPT_SUGGESTION, IMAGE_PROMPT_SUGGESTION } from '../utils/promptExamples';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { PetPromptGreeting } from '../components/PetCompanion';
@@ -14,9 +15,11 @@ import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
+import { useLandingViewport } from '../hooks/useLandingViewport';
+import './LandingPage.css';
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, Github, LayoutDashboard, ChevronDown, Settings } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -166,6 +169,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const { pet } = usePet();
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
+  const landingViewportRef = useLandingViewport(!ldrawLanding);
   const { session, userProfile, loading: authLoading } = useAuth();
   const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
@@ -790,7 +794,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     setPrompt('');
     clearSelectedImage();
     setInputValidationMessage(null);
-    const message = 'Help me come up with a custom LEGO gift idea.';
+    const message = GIFT_PROMPT_SUGGESTION;
     const id = buddyChat.startTurn(message, null, 'gift');
     void buddyChat.requestGiftReply(id, message, true);
     promptInputRef.current?.focus();
@@ -807,7 +811,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const suggestImageUpload = () => {
     setGiftPlanning(false);
     setPrompt('');
-    const id = buddyChat.startTurn('I’d like to build from an image.', null, 'upload');
+    const id = buddyChat.startTurn(IMAGE_PROMPT_SUGGESTION, null, 'upload');
     const desktop = window.matchMedia?.('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches ?? false;
     buddyChat.updateTurn(id, { reply: desktop
       ? 'Drag and drop an image anywhere on this page, or click the Upload image button below to choose one.'
@@ -826,10 +830,15 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
   const sendLabel = landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
+  const showTypewriter = !focused && !prompt && !imgFile && !imageLanding && !landingModel.model && !giftPlanning && !loading && !preparingImage;
+  const typedPlaceholder = usePromptTypewriter(showTypewriter);
+  const conversationStarted = !ldrawLanding && (buddyChat.turns.length > 0 || Boolean(landingModel.targetId) || loading
+    || displayedGenerations.some(row => isGenerationActive(row.status)));
 
   return (
     <div
-      className="min-h-screen overflow-x-hidden text-slate-900 relative"
+      ref={landingViewportRef}
+      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : "landing-page text-slate-900"}
       style={{ backgroundColor: "#fbfbfd" }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -873,11 +882,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
         setProviderLogin(null);
       }} />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-[calc(min(70dvh,40rem)+3rem)] pt-6 relative" style={{ zIndex: 10 }}>
+      <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
         <LandingHeader page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)} />
 
-        <main className="flex flex-1 flex-col items-center text-center w-full">
-          <div className="mt-4 flex w-full max-w-3xl flex-col items-center gap-6 sm:mt-8">
+        <main className={`flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
+          <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
+            <div className="landing-page-intro-content">
             <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl text-slate-900 landing-fade-in landing-delay-2">
               Imagine. Create. Build.
             </h1>
@@ -900,7 +910,11 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 <span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span>
               </div>
             </div>
+            </div>
+          </div>
 
+          <div className={ldrawLanding ? 'w-full' : 'landing-page-content'}>
+          <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6">
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
               <PetPromptGreeting mode="upload" state={petState} showPetSwitch={false} />
               <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding?.uploadTitle}</h2>
@@ -917,13 +931,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   setPrompt(suggestion);
                   promptInputRef.current?.focus();
                 }}>
-              {!landingModel.model && <BuildBuddySuggestions disabled={loading || preparingImage || checkingProvider || giftReplyPending}
-                onGift={startGiftPlanning} onUpload={suggestImageUpload} onRandom={idea => {
-                  setGiftPlanning(false);
-                  setPrompt(idea);
-                  clearSelectedImage();
-                  submitGeneration(idea, null);
-                }} />}
               <BuildBuddyDialogue modelName={landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'model' : undefined} turns={buddyChat.turns} generations={displayedGenerations}
                 state={focused && !loading && !modelBusy ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.username : null}
@@ -940,8 +947,18 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               onSubmit={event => {
                 event.preventDefault();
                 if (landingModel.model) void submitModelEdit();
-                else if (giftPlanning) sendGiftMessage();
-                else submitGeneration();
+                else {
+                  const submittedPrompt = prompt.trim().replace(/[.!?]+$/, '').toLowerCase();
+                  if (!imgFile && submittedPrompt === GIFT_PROMPT_SUGGESTION.toLowerCase()) {
+                    if (giftReplyPending) return;
+                    posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'gift' });
+                    startGiftPlanning();
+                  } else if (!imgFile && submittedPrompt === IMAGE_PROMPT_SUGGESTION.toLowerCase()) {
+                    posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'upload' });
+                    suggestImageUpload();
+                  } else if (giftPlanning) sendGiftMessage();
+                  else submitGeneration();
+                }
               }}
             >
               {imageLanding && !landingModel.model && <>
@@ -976,7 +993,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={giftPlanning ? `Tell ${pet.name} about your gift…` : landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : `Tell ${pet.name} what you’d like to build…`}
+                    placeholder={giftPlanning ? `Tell ${pet.name} about your gift…` : landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
                     className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
@@ -1173,6 +1190,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               </div>
             )}
           </section>
+          </div>
         </main>
 
       </div>
@@ -1181,7 +1199,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
 }
 
 function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page: string }) {
-  const navigate = useNavigate();
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
 
@@ -1252,34 +1269,19 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
         </span>
       </a>
 
-      <nav aria-label="Main navigation" className="order-last flex w-full items-center justify-center gap-2 sm:gap-3 xl:absolute xl:left-1/2 xl:top-1/2 xl:w-auto xl:-translate-x-1/2 xl:-translate-y-1/2">
-        <LandingToolsMenu page={page} />
-      </nav>
-
       {/* Login / Sign Up OR Account Menu */}
-      <div className="flex items-center gap-2 sm:gap-3">
+      <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
+        {githubStarLink}
+        <LandingToolsMenu page={page} />
         {showProfileMenu ? (
           // Logged in or no Supabase: show GitHub stars and account dropdown
           <>
-            {githubStarLink}
-
-            {/* Dashboard button */}
-            <button
-              aria-label="Dashboard"
-              className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-2 h-8 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px sm:px-3 sm:h-9"
-              onClick={() => navigate('/dashboard')}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              <span className="hidden sm:inline">Dashboard</span>
-            </button>
-
             {/* Account dropdown */}
             <ProfileMenu />
           </>
         ) : (
           // Not logged in: show login button
           <>
-            {githubStarLink}
             <button
               className="h-8 rounded-full border-none bg-[#f44336] px-3 text-xs font-medium text-white cursor-pointer transition-all duration-200 hover:-translate-y-px hover:bg-[#ff6b6b] sm:h-9 sm:px-4 sm:text-sm"
               onClick={onLoginClick}
@@ -1289,7 +1291,7 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
           </>
         )}
         {!showProfileMenu && <NotificationMenu />}
-      </div>
+      </nav>
 
     </header>
   );
