@@ -46,9 +46,24 @@ export function PetAvatar({ id, state = 'idle', still = false, videoSource }: { 
   </span>;
 }
 
+export function PetSwitchButton({ source, className, onOpen, returnFocusRef }: {
+  source: string;
+  className?: string;
+  onOpen?: () => void;
+  returnFocusRef?: React.RefObject<HTMLButtonElement | null>;
+}) {
+  const { pet, openPicker, pickerOpen } = usePet();
+  return <button type="button" className={className} onClick={() => {
+    openPicker(source, returnFocusRef?.current);
+    onOpen?.();
+  }} title="Switch pet" aria-label={`Change pet, currently ${pet.name}`} aria-haspopup="dialog" aria-expanded={pickerOpen}>
+    <ArrowLeftRight size={16} className="shrink-0" aria-hidden="true" /><span>Switch pet</span>
+  </button>;
+}
+
 /** Connects the prompt to its pet, and hands off to the floating companion when scrolled away. */
-export function PetPromptGreeting({ mode = 'build', state }: { mode?: 'build' | 'edit' | 'upload'; state?: PetState }) {
-  const { pet, activity, openPicker, pickerOpen, setInlineVisible } = usePet();
+export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true }: { mode?: 'build' | 'edit' | 'upload'; state?: PetState; showPetSwitch?: boolean }) {
+  const { pet, activity, setInlineVisible } = usePet();
   const ref = useRef<HTMLDivElement>(null);
   const current = state || activity;
   useEffect(() => {
@@ -63,9 +78,7 @@ export function PetPromptGreeting({ mode = 'build', state }: { mode?: 'build' | 
     <PetAvatar state={current} />
     <div className="pet-speech">
       <div className="pet-speech-heading"><span><i />{pet.name} · your build buddy</span>
-        <button type="button" onClick={() => openPicker(`${mode}_prompt`)} title="Switch pet" aria-label={`Change pet, currently ${pet.name}`} aria-haspopup="dialog" aria-expanded={pickerOpen}>
-          <ArrowLeftRight size={16} aria-hidden="true" /><span>Switch pet</span>
-        </button>
+        {showPetSwitch && <PetSwitchButton source={`${mode}_prompt`} />}
       </div>
       <p>{current === 'building' ? (mode === 'edit' ? 'On it! I’m working on your changes.' : 'On it! I’m bringing your idea to life.')
         : current === 'celebrating' ? 'Look what we made! What shall we build next?'
