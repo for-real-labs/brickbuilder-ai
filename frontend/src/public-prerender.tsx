@@ -1,3 +1,5 @@
+import ModelToVoxelPage from './pages/ModelToVoxelPage';
+import { VOXEL_CONVERTERS } from './voxelConverters';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -9,6 +11,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import GlbToLegoPage from './pages/GlbToLegoPage';
+import ObjToLegoPage from './pages/ObjToLegoPage';
 import ModelFormatConverterPage from './pages/ModelFormatConverterPage';
 import BlogIndexPage from './pages/BlogIndexPage';
 import UsingAiToDesignLego2026Page from './pages/UsingAiToDesignLego2026Page';
@@ -18,10 +21,12 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 
 const publicPages = [
+  ...VOXEL_CONVERTERS.map(({ path, input, output }) => ({ path, element: <ModelToVoxelPage input={input} output={output} /> })),
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },
   { path: '/glb-to-lego', element: <GlbToLegoPage /> },
+  { path: '/obj-to-lego', element: <ObjToLegoPage /> },
   { path: '/obj-to-glb', element: <ModelFormatConverterPage inputFormat="obj" /> },
   { path: '/glb-to-obj', element: <ModelFormatConverterPage inputFormat="glb" /> },
   { path: '/blog', element: <BlogIndexPage /> },

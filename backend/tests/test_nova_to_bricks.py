@@ -275,3 +275,35 @@ def test_saved_claude_session_keeps_only_a_key_fingerprint(monkeypatch):
     assert metadata['provider_key_id'] == module._anthropic_key_id()
     assert 'private-test-key' not in upload.call_args.kwargs['file'].decode()
     assert 'provider_key_id' not in session
+
+
+@pytest.mark.parametrize('endpoint, kind', [('glbToBricks', 'glb'), ('objToBricks', 'obj')])
+def test_owned_voxelized_upload_imports_into_full_parts_edit(monkeypatch, endpoint, kind):
+    session = AsyncMock(side_effect=AssertionError('A voxel model has no Nova session'))
+    monkeypatch.setattr(module, '_owned_session', session)
+    download = AsyncMock(return_value=b'1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat')
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': endpoint, 'ldr_url': 'voxel-model', 'input_type': kind, 'input_format': kind}),
+        download_file_from_storage=download))
+    request = module.NovaToBricksRequest(prompt='Rebuild with all parts', generation_id='mesh')
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert request._nova_source_ldr.startswith('1 4')
+    assert request._nova_uploaded_source is True and request._nova_session is None
+    assert request._nova_input_type == kind and request._nova_input_format == kind
+    download.assert_awaited_once_with('voxel-model')
+    session.assert_not_awaited()
+
+
+@pytest.mark.parametrize('endpoint', ['glbToBricks', 'objToBricks'])
+def test_another_users_upload_is_not_importable(monkeypatch, endpoint):
+    download = AsyncMock()
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'authenticated',
+            'status': 'completed', 'endpoint': endpoint, 'ldr_url': 'private-source'}),
+        download_file_from_storage=download))
+    request = module.NovaToBricksRequest(prompt='edit', generation_id='mesh')
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert error.value.status_code == 404
+    download.assert_not_awaited()

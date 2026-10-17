@@ -20,9 +20,9 @@ it('tracks GLB picker, upload acceptance, and conversion with page and generatio
   vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockResolvedValue({ status: 'completed', generation_id: 'glb-id' });
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   act(() => root.render(<MemoryRouter initialEntries={["/glb-to-lego"]}><GlbUploadCard /></MemoryRouter>));
-  act(() => (host.querySelector('button') as HTMLButtonElement).click());
+  act(() => Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Choose GLB file'))!.click());
   expect(posthog.capture).toHaveBeenCalledWith('glb_upload_picker_opened', expect.objectContaining({ page: '/glb-to-lego', input_type: 'glb' }));
-  const input = host.querySelector('input')!;
+  const input = host.querySelector('input[type=file]')!;
   await act(async () => { Object.defineProperty(input, 'files', { value: [new File(['glb'], 'castle.glb')] }); input.dispatchEvent(new Event('change', { bubbles: true })); });
   const convert = Array.from(host.querySelectorAll('button')).find(button => button.textContent?.includes('Convert to bricks'))!;
   await act(async () => convert.click());

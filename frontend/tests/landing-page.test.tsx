@@ -1,5 +1,6 @@
 import { getGuestSession } from '../src/utils/guestSession';
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act } from 'react-dom/test-utils';
@@ -69,6 +70,8 @@ import { GetCommunityGenerationsApiService } from '../src/services/getCommunityG
 import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
 import { LocalProvidersApiService, type LocalProviderStatus } from '../src/services/localProvidersApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
+import { PetProvider } from '../src/contexts/PetContext';
+import { PetCompanion } from '../src/components/PetCompanion';
 
 const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus => ({
   id, label: id, api_key_configured: false, cli_available: true, cli_connected: true,
@@ -76,6 +79,36 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
+  it('moves pet switching into settings and preserves the prompt without submitting', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const generate = vi.spyOn(LlmToBricksApiService, 'generate');
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function (this: HTMLDialogElement) { this.open = true; }) });
+    const container = document.createElement('div'); document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<MemoryRouter><PetProvider><LandingPage /><PetCompanion /></PetProvider></MemoryRouter>));
+      expect(container.querySelector('.pet-greeting button')).toBeNull();
+      const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
+      act(() => container.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!.click());
+      expect(panel.hidden).toBe(false);
+      const switchPet = panel.querySelector<HTMLButtonElement>('[aria-label="Change pet, currently Pip"]')!;
+      expect(switchPet.type).toBe('button');
+      act(() => { switchPet.focus(); switchPet.click(); });
+      expect(container.querySelector('dialog')?.open).toBe(true);
+      act(() => container.querySelector<HTMLButtonElement>('[aria-label="Choose Clik"]')!.click());
+      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Clik · your build buddy');
+      expect(panel.querySelector('[aria-label="Change pet, currently Clik"]')).not.toBeNull();
+      expect(container.querySelector('dialog')).toBeNull();
+      expect(generate).not.toHaveBeenCalled();
+      const capture = (await import('posthog-js')).default.capture;
+      expect(capture).toHaveBeenCalledWith('pet_picker_opened', { source: 'landing_settings' });
+      expect(capture).toHaveBeenCalledWith('pet_selected', { pet_id: 'clik', previous_pet_id: 'pip', source: 'landing_settings' });
+    } finally { act(() => root.unmount()); container.remove(); }
+  });
+
   it.each([
     { saved: undefined, expected: 'nova' },
     { saved: 'unknown', expected: 'nova' },
@@ -100,6 +133,24 @@ describe('LandingPage', () => {
     } finally {
       act(() => root.unmount());
       sessionStorage.removeItem('pendingLandingState');
+    }
+  });
+
+  it('honors the all-parts image handoff when restoring an older basic-bricks draft', async () => {
+    window.history.replaceState({}, '', '/image-to-lego?mode=all_parts');
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ generationMethod: 'llm', prompt: 'Castle' }));
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage imageLandingPath="image-to-lego" />));
+      expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
+    } finally {
+      act(() => root.unmount());
+      sessionStorage.removeItem('pendingLandingState');
+      window.history.replaceState({}, '', '/');
     }
   });
 
@@ -299,7 +350,19 @@ describe('LandingPage', () => {
       expect(container.textContent).toContain('Create');
       await act(async () => { finish(); await pending; });
       expect(container.querySelector('#how-it-works')).toBeTruthy();
+      const lower = container.querySelector<HTMLElement>('.landing-scroll-reveal')!;
+      expect(lower.style.visibility).toBe('hidden');
+      expect(lower.getAttribute('aria-hidden')).toBe('true');
+      act(() => window.dispatchEvent(new Event('scroll')));
+      expect(lower.style.visibility).toBe('hidden');
+      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(1);
+      act(() => window.dispatchEvent(new Event('scroll')));
+      expect(lower.style.visibility).toBe('');
+      expect(lower.getAttribute('aria-hidden')).toBe('false');
       expect(container.querySelector('.landing-scroll-reveal .landing-visible')).toBeTruthy();
+      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(0);
+      act(() => window.dispatchEvent(new Event('scroll')));
+      expect(lower.style.visibility).toBe('');
     } finally {
       act(() => root.unmount());
     }
@@ -321,7 +384,10 @@ describe('LandingPage', () => {
     const root = createRoot(document.createElement('div'));
     try {
       await act(async () => root.render(<LandingPage />));
-      const target = observe.mock.calls[0][0] as Element;
+      expect(observe.mock.calls.filter(([element]) => element.classList.contains('landing-fade-in'))).toHaveLength(0);
+      vi.spyOn(window, 'scrollY', 'get').mockReturnValue(10);
+      act(() => window.dispatchEvent(new Event('scroll')));
+      const target = observe.mock.calls.find(([element]) => element.classList.contains('landing-fade-in'))![0] as Element;
       expect(target.classList.contains('landing-visible')).toBe(false);
       callback([{ target, isIntersecting: false }] as IntersectionObserverEntry[], {} as IntersectionObserver);
       expect(target.classList.contains('landing-visible')).toBe(false);
@@ -493,9 +559,13 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<LandingPage />));
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_upload_control_shown', { page: '/', upload_position: 'input_left_icon' });
       const choose = vi.spyOn(fileInput, 'click');
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
       expect(choose).toHaveBeenCalledOnce();
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'input_left_icon' });
+      expect(llm).not.toHaveBeenCalled();
+      expect(nova).not.toHaveBeenCalled();
       await act(async () => {
         const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
         mode.querySelector<HTMLButtonElement>(`button[value="${modeValue}"]`)!.click();
@@ -636,6 +706,13 @@ describe('LandingPage', () => {
 
     expect(markup).toContain('Imagine. Create. Build.');
     expect(markup).not.toContain('Create and Build');
+    expect(markup).not.toContain('Turn images or text into buildable 3D brick models in seconds');
+    const container = document.createElement('div');
+    container.innerHTML = markup;
+    const form = container.querySelector('form[aria-label="Create a brick model"]')!;
+    const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
+    expect(form.compareDocumentPosition(stats) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(stats.previousElementSibling).toBe(form);
   });
 
   it('keeps settings collapsed and upload available in the browser and native shell', () => {
@@ -658,6 +735,11 @@ describe('LandingPage', () => {
       expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(mode.querySelector('select')).toBeNull();
       expect(upload.closest('#landing-generation-settings')).toBeNull();
+      expect(upload.parentElement).toBe(input.parentElement);
+      expect(upload.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(upload.textContent?.trim()).toBe('');
+      expect(upload.getAttribute('title')).toBe('Upload image');
+      expect(upload.getAttribute('type')).toBe('button');
       expect(model.closest('#landing-generation-settings')?.hasAttribute('hidden')).toBe(true);
       expect(input.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(container.querySelector('[aria-label="Generation settings"]')?.getAttribute('aria-expanded')).toBe('false');
@@ -737,24 +819,44 @@ describe('LandingPage', () => {
   });
 });
 
-it('links to image-to-lego immediately before GLB to LEGO in the header', async () => {
+it('groups the header links in Tools and tracks selections for comparison', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
   vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
   const container = document.createElement('div');
+  document.body.append(container);
   const root = createRoot(container);
   try {
-    await act(async () => root.render(<LandingPage />));
+    await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
     const nav = container.querySelector('header nav')!;
-    const imageLink = nav.querySelector<HTMLAnchorElement>('a')!;
-    expect(imageLink.getAttribute('href')).toBe('/image-to-lego');
-    expect(imageLink.textContent?.trim()).toBe('Image to LEGO');
-    expect(imageLink.nextElementSibling?.textContent?.trim()).toBe('GLB to LEGO');
-    imageLink.addEventListener('click', event => event.preventDefault());
-    act(() => imageLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
-    expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_header_image_to_lego_clicked');
-  } finally { act(() => root.unmount()); vi.unstubAllGlobals(); }
+    const trigger = nav.querySelector('button')!;
+    expect(trigger.textContent).toBe('Tools');
+    expect(nav.querySelector('a')).toBeNull();
+    act(() => trigger.click());
+    expect(trigger.getAttribute('aria-expanded')).toBe('true');
+    const links = Array.from(nav.querySelectorAll('a'));
+    expect(links.map(link => link.getAttribute('href'))).toEqual([
+      '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/use-ai-to-edit-ldraw', '/community',
+    ]);
+    const capture = (await import('posthog-js')).default.capture;
+    expect(capture).toHaveBeenCalledWith('landing_header_tools_opened', expect.objectContaining({ navigation_layout: 'tools_dropdown' }));
+    act(() => links[0].dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+    expect(capture).toHaveBeenCalledWith('landing_header_image_to_lego_clicked', expect.objectContaining({ destination: '/image-to-lego', navigation_layout: 'tools_dropdown' }));
+    expect(capture).toHaveBeenCalledWith('landing_header_tools_item_clicked', expect.objectContaining({ tool: 'Image to LEGO' }));
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    act(() => trigger.click());
+    act(() => nav.querySelector('a')!.focus());
+    act(() => nav.querySelector('a')!.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+    expect(document.activeElement).toBe(trigger);
+    act(() => trigger.click());
+    act(() => (nav.querySelector('a[href="/obj-to-lego"]') as HTMLAnchorElement).click());
+    expect(capture).toHaveBeenCalledWith('landing_header_obj_to_lego_clicked', expect.objectContaining({ destination: '/obj-to-lego', navigation_layout: 'tools_dropdown' }));
+    act(() => trigger.click());
+    act(() => document.body.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+    expect(trigger.getAttribute('aria-expanded')).toBe('false');
+  } finally { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); }
 });
 
 it('labels the top-right auth action Sign up', async () => {
