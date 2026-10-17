@@ -18,3 +18,16 @@
 .landing-model-loading { position: fixed; z-index: 1; inset: calc(var(--landing-header-height, 36px) + 40px) 24px calc(var(--landing-conversation-height, 200px) + var(--landing-order-banner-height, 0px) + 24px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; min-height: 0; pointer-events: none; text-align: center; }
 .landing-model-loading-animation { width: min(100%, 340px); height: 220px; min-height: 0; flex: 0 1 220px; overflow: hidden; border-radius: 24px; }
 .landing-model-loading p { max-width: 340px; flex-shrink: 0; margin: 0; font-size: 14px; line-height: 1.5; color: #64748b; }
+
+.landing-model-panel { width: 100%; min-width: 0; --landing-model-toolbar-height: 48px; }
+.landing-model-toolbar { display: flex; align-items: center; justify-content: center; margin-top: 12px; }
+.landing-action-button { display: inline-flex; height: 36px; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; border: 1px solid #e2e8f0; border-radius: 999px; background: #ffffffe6; padding: 0 12px; color: #334155; font-size: 14px; font-weight: 500; box-shadow: 0 1px 2px #0000000d; cursor: pointer; transition: color .15s, border-color .15s, background-color .15s; }
+.landing-action-button svg { flex-shrink: 0; }
+.landing-action-button:hover:enabled { border-color: #fecaca; background: #fef2f2; color: #f44336; }
+.landing-action-button:focus-visible { outline: 2px solid #f44336; outline-offset: 2px; }
+.landing-action-button:disabled { cursor: not-allowed; opacity: .5; }
+.landing-model-stage[data-view="model"], .landing-model-stage .instructions-canvas { touch-action: none; overscroll-behavior: contain; }
+.landing-model-stage[data-view="model"] { user-select: none; }
+.landing-model-workspace[data-view="instructions"] { grid-template-rows: auto minmax(0, 1fr); }
+.landing-model-workspace[data-view="instructions"] .landing-model-heading { position: relative; padding-block: 10px; }
+@media (max-width: 639px) { .landing-instructions-toggle { padding-inline: 10px; font-size: 12px; } }

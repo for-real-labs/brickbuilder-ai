@@ -37,7 +37,7 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
   requestReply: vi.fn(), updateTurn: buddy.updateTurn }) }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
-vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions</div> }));
+vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, onModelLoaded }: { modelContent: string; onModelLoaded?: () => void }) => {
   viewer.loaded = onModelLoaded;
   return <div data-testid="viewer">{modelContent}</div>;
@@ -563,4 +563,76 @@ it.each(['failed', 'cancelled'] as const)('removes the centered loading state af
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.landing-model-loading')).toBeNull();
   expect(container.querySelector('[role="alert"]')).not.toBeNull();
+});
+
+
+it('places a book button below the model, matches Create new, and switches views without navigating', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  const frame = container.querySelector('.landing-model-workspace')!;
+  const button = container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
+  const conversation = container.querySelector('.landing-model-conversation');
+  expect(button.textContent).toBe('Show instructions');
+  expect(button.querySelector('.lucide-book-open')).not.toBeNull();
+  expect(button.classList.contains('landing-action-button')).toBe(true);
+  expect(container.querySelector('.landing-create-new')?.classList.contains('landing-action-button')).toBe(true);
+  expect(frame.contains(button)).toBe(false);
+  expect(frame.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(button.closest('.landing-model-conversation')).toBeNull();
+  await act(async () => button.click());
+  expect(container.querySelector('[aria-label="Instructions viewer"]')).not.toBeNull();
+  expect(container.textContent).toContain('Building instructions');
+  expect(button.textContent).toBe('Show model');
+  expect(button.getAttribute('aria-pressed')).toBe('true');
+  expect(document.getElementById(button.getAttribute('aria-controls')!)).not.toBeNull();
+  expect(container.querySelector('.landing-model-conversation')).toBe(conversation);
+  expect(query.value).toBe('id=castle&exact=1');
+  expect(navigate).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_instructions_clicked', { generation_id: 'castle', source: 'viewer_footer' });
+  await act(async () => button.click());
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  expect(button.getAttribute('aria-pressed')).toBe('false');
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_3d_view_clicked', { generation_id: 'castle', source: 'viewer_footer' });
+});
+
+it('blocks scroll gestures on the model and instruction canvas, while allowing chat and parts scrolling', async () => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>
+    <div className="test-chat">Conversation</div></LandingModelWorkspace>));
+  const stage = container.querySelector('.landing-model-stage')!;
+  const scrollGesture = (target: Element, type: string) => {
+    const event = new Event(type, { bubbles: true, cancelable: true });
+    act(() => target.dispatchEvent(event));
+    return event.defaultPrevented;
+  };
+  for (const type of ['wheel', 'touchmove']) {
+    expect(scrollGesture(stage, type)).toBe(true);
+    expect(scrollGesture(container.querySelector('.test-chat')!, type)).toBe(false);
+  }
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  for (const type of ['wheel', 'touchmove']) {
+    expect(scrollGesture(stage.querySelector('canvas')!, type)).toBe(true);
+    expect(scrollGesture(stage.querySelector('.instructions-parts')!, type)).toBe(false);
+  }
+  const remove = vi.spyOn(stage, 'removeEventListener');
+  act(() => root.render(null));
+  expect(remove).toHaveBeenCalledWith('touchmove', expect.any(Function));
+  expect(remove).toHaveBeenCalledWith('wheel', expect.any(Function));
+});
+
+it('disables instruction toggling while editing and resets to the model when the selected build changes', async () => {
+  const render = (id: string, busy = false) => act(async () => root.render(<LandingModelWorkspace
+    model={{ generation: generation(id), content: id }} busy={busy}>{null}</LandingModelWorkspace>));
+  await render('castle', true);
+  const button = container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
+  expect(button.disabled).toBe(true);
+  act(() => button.click());
+  expect(container.querySelector('[aria-label="Instructions viewer"]')).toBeNull();
+  await render('castle');
+  await act(async () => button.click());
+  expect(button.getAttribute('aria-pressed')).toBe('true');
+  await render('rover');
+  expect(button.getAttribute('aria-pressed')).toBe('false');
+  expect(button.textContent).toBe('Show instructions');
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('rover');
 });

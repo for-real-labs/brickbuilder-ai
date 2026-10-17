@@ -1,3 +1,4 @@
+import { observeElementSize } from '../utils/observeElementSize';
 import React, { useEffect, useRef, useState } from 'react';
 import * as RAPIER from '@dimforge/rapier3d-compat';
 import * as THREE from 'three';
@@ -2009,18 +2010,11 @@ export function ThreeLDRViewer({
         animate();
 
         // Handle resize
-        const handleResize = () => {
-          if (!containerRef.current) return;
-          const newWidth = containerRef.current.clientWidth;
-          const newHeight = containerRef.current.clientHeight || 400; // Fallback height
+        removeResizeListener = observeElementSize(container, (newWidth, newHeight) => {
           camera.aspect = newWidth / newHeight;
           camera.updateProjectionMatrix();
           renderer.setSize(newWidth, newHeight);
-        };
-
-        window.addEventListener('resize', handleResize);
-
-        removeResizeListener = () => window.removeEventListener('resize', handleResize);
+        });
 
       } catch (error) {
         console.error('Failed to initialize Three.js LDR viewer:', error);

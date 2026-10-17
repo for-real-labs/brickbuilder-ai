@@ -1345,7 +1345,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew }: { 
         </span>
       </a>
 
-      {createNew && <button type="button" className="landing-create-new inline-flex h-9 items-center justify-center gap-1.5 whitespace-nowrap rounded-full border border-slate-200 bg-white/90 px-3 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+      {createNew && <button type="button" className="landing-create-new landing-action-button"
         disabled={createNew.disabled} onClick={createNew.onClick}>
         <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" /><span>Create new</span>
       </button>}

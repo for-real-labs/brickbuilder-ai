@@ -2,6 +2,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { expect, it, vi } from 'vitest';
+import { LandingModelWorkspace } from '../src/components/LandingModelWorkspace';
 import { InstructionsPage } from '../src/pages/InstructionsPage';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { LdrToMpdApiService } from '../src/services/ldrToMpdApi';
@@ -10,6 +11,7 @@ import { LDrawParser } from '../src/utils/ldrawParser';
 import type { LandingModel } from '../src/hooks/useLandingModel';
 
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, isSupabaseConfigured: false }) }));
+vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ markViewed: vi.fn() }) }));
 vi.mock('../src/components/LandingModelOrdering', () => ({ LandingModelOrdering: () => null }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: (props: { currentStepIndex?: number; highlightNewParts?: boolean; preserveOrientation?: boolean; initialCameraState?: {position: {x: number}}; onCameraChange?: (state: unknown) => void }) => <div data-testid={props.currentStepIndex === undefined ? 'model-viewer' : 'instructions-viewer'} data-highlight={String(props.highlightNewParts)} data-preserve-orientation={String(props.preserveOrientation)} data-camera-x={props.initialCameraState?.position.x}>Step {(props.currentStepIndex ?? 0) + 1}<button aria-label="Rotate test model" onClick={() => props.onCameraChange?.({position: {x: 12, y: 10, z: 10}, target: {x: 0, y: 0, z: 0}})} /></div> }));
 vi.mock('../src/components/MpdImageRenderer', () => ({ MpdImageRenderer: () => null }));
@@ -121,5 +123,39 @@ it('ignores instruction results from a model that has been replaced', async () =
     await act(async () => resolveOld(instructions));
     expect(convert).toHaveBeenCalledTimes(1);
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 1');
+  } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
+});
+
+
+it('opens instructions from the landing footer and preserves steps, colors and dialogue when toggling views', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(landingModel('nova').generation);
+  const get = vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(instructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: instructions } as never);
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  const button = (text: string) => Array.from(container.querySelectorAll('button')).find(el => el.textContent?.trim() === text)!;
+  try {
+    await act(async () => root.render(<MemoryRouter initialEntries={['/?id=nova&exact=1']}><LocationProbe />
+      <LandingModelWorkspace model={landingModel('nova')} busy={false}><input aria-label="Dialogue" defaultValue="Keep my conversation" /></LandingModelWorkspace>
+    </MemoryRouter>));
+    const dialogue = container.querySelector('input[aria-label="Dialogue"]');
+    const toggle = container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
+    await act(async () => { toggle.click(); await new Promise(resolve => setTimeout(resolve, 0)); });
+    expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 1');
+    act(() => button('Next').click());
+    expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
+    act(() => container.querySelector<HTMLButtonElement>('[title="Show all colors"]')!.click());
+    expect(container.querySelector('[data-testid="instructions-viewer"]')?.getAttribute('data-highlight')).toBe('false');
+    act(() => toggle.click());
+    expect(container.querySelector('[data-testid="model-viewer"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="instructions-viewer"]')).toBeNull();
+    act(() => toggle.click());
+    expect(get).toHaveBeenCalledTimes(1);
+    expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
+    expect(container.querySelector('[data-testid="instructions-viewer"]')?.getAttribute('data-highlight')).toBe('false');
+    expect(container.querySelector('input[aria-label="Dialogue"]')).toBe(dialogue);
+    expect((dialogue as HTMLInputElement).value).toBe('Keep my conversation');
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1');
+    expect(container.querySelector('iframe')).toBeNull();
   } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
 });
