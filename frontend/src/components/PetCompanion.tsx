@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowLeftRight, Check, Pause, Play, X } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { usePet } from '../contexts/PetContext';
-import { PETS, PIP_TRANSPARENT_IDLE, petVideoPath, type PetId, type PetState } from '../pets';
+import { PETS, petVideoPath, type PetId, type PetState } from '../pets';
 import './PetCompanion.css';
 
 export function PetAvatar({ id, state = 'idle', still = false, videoSource }: { id?: PetId; state?: PetState; still?: boolean; videoSource?: string }) {
@@ -15,7 +15,7 @@ export function PetAvatar({ id, state = 'idle', still = false, videoSource }: { 
   const [failedSource, setFailedSource] = useState<string | null>(null);
   const [readySource, setReadySource] = useState<string | null>(null);
   const source = videoSource || petVideoPath(petId, state);
-  const transparent = source === PIP_TRANSPARENT_IDLE;
+  const transparent = source.endsWith('-alpha.webm');
 
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');

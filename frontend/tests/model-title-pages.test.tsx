@@ -118,15 +118,13 @@ it('shows the saved server title on /order even when navigation contains an old 
   expect(LdrToMpdApiService.convertLdrToMpd).toHaveBeenCalledWith('ldr', 'Sunny Dachshund', 'token');
 });
 
-it.each(['basic_bricks', 'all_parts'])('shows a concise build warning only for %s checkout', async mode => {
+it.each(['basic_bricks', 'all_parts'])('shows the checkout summary without all-parts warnings for %s', async mode => {
   vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', mode, status: 'completed', name: 'Pirate ship', ldr_content: 'ldr' } as never);
   await act(async () => root.render(<MemoryRouter initialEntries={[{ pathname: '/order', state: { generation_id: 'g' } }]}><OrderKit /></MemoryRouter>));
-  const steps = Array.from(container.querySelectorAll('a')).find(link => link.textContent === 'Check the steps');
-  if (mode === 'all_parts') {
-    expect(steps?.getAttribute('href')).toBe('/instructions?id=g');
-    expect(steps?.parentElement?.textContent).toContain('Some pieces may not fit.');
-    expect(Array.from(container.querySelectorAll('a')).find(link => link.textContent === 'Basic bricks')?.getAttribute('href')).toBe('/');
-  } else expect(steps).toBeUndefined();
+  expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('Pirate ship');
+  expect(container.textContent).not.toContain('Some pieces may not fit');
+  expect(container.textContent).not.toContain('experimental');
+  expect(Array.from(container.querySelectorAll('a')).find(link => link.textContent === 'Check the steps')).toBeUndefined();
 });
 
 const revisionHistory = [

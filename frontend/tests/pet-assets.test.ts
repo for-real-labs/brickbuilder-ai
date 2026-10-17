@@ -10,11 +10,9 @@ it.each(PETS)('ships $name artwork and every animation without a remote runtime 
   for (const state of ['idle', 'building', 'celebrating'] as const) {
     const path = asset(petVideoPath(pet.id, state));
     const header = readFileSync(path);
-    if (path.endsWith('.webm')) {
-      expect(header.subarray(0, 4).toString('hex')).toBe('1a45dfa3');
-      expect(header.includes(Buffer.from('ALPHA_MODE'))).toBe(true);
-    }
-    else expect(header.subarray(4, 8).toString()).toBe('ftyp');
+    expect(path.endsWith('-alpha.webm')).toBe(true);
+    expect(header.subarray(0, 4).toString('hex')).toBe('1a45dfa3');
+    expect(header.includes(Buffer.from('ALPHA_MODE'))).toBe(true);
     expect(statSync(path).size).toBeLessThan(650_000);
   }
 });

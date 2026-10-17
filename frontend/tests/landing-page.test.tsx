@@ -93,7 +93,7 @@ describe('LandingPage', () => {
       await act(async () => root.render(<LandingPage />));
       const mode = container.querySelector('#landing-builder-mode')!;
       expect(mode.querySelector(`button[value="${expected === '3d' ? 'llm' : expected}"]`)?.getAttribute('aria-pressed')).toBe('true');
-      expect(Boolean(container.querySelector('#all-parts-warning'))).toBe(expected === 'nova');
+      expect(container.querySelector('#all-parts-warning')).toBeNull();
       expect((container.querySelector('#landing-render-model') as HTMLSelectElement).value).toBe(expected === '3d' ? 'sam3d' : DEFAULT_LLM_MODEL);
       expect((container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement).value).toBe('A red castle');
       expect(sessionStorage.getItem('pendingLandingState')).toBeNull();
@@ -446,11 +446,8 @@ describe('LandingPage', () => {
       expect(Array.from(mode.querySelectorAll('button')).map(button => button.textContent)).toEqual(['Basic bricks', 'All parts']);
       expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
-      expect(container.querySelector('#all-parts-warning')?.textContent).toContain('Warning: all parts mode is experimental. Generations take up to 30 minutes and output needs to be verified in instructions.');
-      expect(mode.getAttribute('aria-describedby')).toBe('all-parts-warning');
-      const warning = container.querySelector('#all-parts-warning')!;
-      expect(container.querySelector('[aria-label="Describe your model"]')!.compareDocumentPosition(warning) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(warning.compareDocumentPosition(mode) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(container.querySelector('#all-parts-warning')).toBeNull();
+      expect(mode.hasAttribute('aria-describedby')).toBe(false);
       const input = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
       act(() => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Spaceport with launch tower, rover, and research lab');
@@ -641,7 +638,7 @@ describe('LandingPage', () => {
     expect(markup).not.toContain('Create and Build');
   });
 
-  it('shows the compact controls in the browser and native shell', () => {
+  it('keeps settings collapsed and upload available in the browser and native shell', () => {
     expect(DEFAULT_GENERATION_METHOD).toBe('nova');
     expect(DEFAULT_LLM_MODEL).toBe('claude-opus-5-5');
     const verify = () => {
@@ -660,9 +657,10 @@ describe('LandingPage', () => {
       expect(model.parentElement!.parentElement).toBe(mode.parentElement);
       expect(mode.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(mode.querySelector('select')).toBeNull();
-      expect(upload.parentElement).toBe(model.parentElement!.parentElement);
+      expect(upload.closest('#landing-generation-settings')).toBeNull();
+      expect(model.closest('#landing-generation-settings')?.hasAttribute('hidden')).toBe(true);
       expect(input.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(container.querySelector('[aria-label="Toggle settings"]')).toBeNull();
+      expect(container.querySelector('[aria-label="Generation settings"]')?.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
       expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
       expect(Array.from(model.options).map(option => option.value)).toEqual(['claude-opus-5-5', 'claude-haiku-5-5', 'gpt-6-astra']);
@@ -670,6 +668,46 @@ describe('LandingPage', () => {
     verify();
     window.__BRICKBUILDER_NATIVE_APP__ = Object.freeze({ platform: 'ios', version: '0.1.0' });
     try { verify(); } finally { delete window.__BRICKBUILDER_NATIVE_APP__; }
+  });
+
+  it('opens settings without submitting, preserves selections when closed, and dismisses with Escape', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    const generate = vi.spyOn(LlmToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'settings-build', message: 'Started' });
+    const container = document.createElement('div'); document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const gear = container.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!;
+      const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
+      expect(panel.hidden).toBe(true);
+      expect(container.querySelector('[aria-label="Upload image"]')?.closest('[hidden]')).toBeNull();
+      act(() => gear.click());
+      expect(gear.getAttribute('aria-expanded')).toBe('true');
+      expect(panel.hidden).toBe(false);
+      const connections = container.querySelector('[aria-label="Local provider connections"]')!;
+      expect(connections.closest('form')).toBeNull();
+      expect(connections.closest('[hidden]')).toBeNull();
+      act(() => panel.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+      const model = panel.querySelector<HTMLSelectElement>('#landing-render-model')!;
+      act(() => { model.value = 'gpt-6-astra'; model.dispatchEvent(new Event('change', { bubbles: true })); });
+      act(() => model.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+      expect(panel.hidden).toBe(true);
+      expect(document.activeElement).toBe(gear);
+      expect(connections.closest('[hidden]')).not.toBeNull();
+      expect(generate).not.toHaveBeenCalled();
+      act(() => gear.click());
+      expect(model.value).toBe('gpt-6-astra');
+      expect(panel.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+      act(() => gear.click());
+      const input = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
+      act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red castle'); input.dispatchEvent(new Event('input', { bubbles: true })); });
+      await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
+      expect(generate).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-6-astra', prompt: 'A red castle' }), undefined);
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_settings_toggled', { expanded: false });
+    } finally { act(() => root.unmount()); container.remove(); }
   });
 
   it('model selection ignores unavailable models and disabled controls', async () => {

@@ -26,7 +26,7 @@ it('compares the original and transparent versions of the same Pip idle animatio
   ]);
   expect(container.querySelector('.pet-preview-stage--original .pet-avatar--transparent')).toBeNull();
   expect(container.querySelector('.pet-preview-grid--checkerboard')).not.toBeNull();
-  expect(container.textContent).toContain('This preview changes only Pip’s idle loop.');
+  expect(container.textContent).toContain('Pip, Nib, and Clik use transparent animations throughout the app');
 });
 
 it('changes the comparison background and records the selection', () => {
@@ -42,4 +42,16 @@ it('pauses both versions together and restores still posters', () => {
   expect(container.querySelector('video')).toBeNull();
   expect(container.querySelectorAll('.pet-preview-grid img')).toHaveLength(2);
   expect(container.querySelector('.pet-preview-motion')?.textContent).toBe('Play');
+});
+
+it.each(['pip', 'nib', 'clik'])('compares every transparent %s animation with its matching original', pet => {
+  const select = container.querySelectorAll('select');
+  act(() => { select[0].value = pet; select[0].dispatchEvent(new Event('change', { bubbles: true })); });
+  for (const state of ['idle', 'building', 'celebrating']) {
+    act(() => { select[1].value = state; select[1].dispatchEvent(new Event('change', { bubbles: true })); });
+    expect(Array.from(container.querySelectorAll('video')).map(video => video.getAttribute('src'))).toEqual([
+      `/pets/${pet}-${state}.mp4`, `/pets/${pet}-${state}-alpha.webm`,
+    ]);
+    expect(posthog.capture).toHaveBeenCalledWith('pet_preview_animation_selected', { pet_id: pet, state });
+  }
 });

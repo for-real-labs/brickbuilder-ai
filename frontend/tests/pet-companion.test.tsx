@@ -35,7 +35,7 @@ describe('build buddies', () => {
   it('validates stored identities and maps listening to the lightweight idle clip', () => {
     expect(isPetId('nib')).toBe(true);
     expect(isPetId('../../anything')).toBe(false);
-    expect(petVideoPath('clik', 'listening')).toBe('/pets/clik-idle.mp4');
+    expect(petVideoPath('clik', 'listening')).toBe('/pets/clik-idle-alpha.webm');
     localStorage.setItem(PET_STORAGE_KEY, '../../anything');
     render(<Probe />);
     expect(container.querySelector('output')?.textContent).toBe('pip:idle');
@@ -120,12 +120,12 @@ describe('build buddies', () => {
     expect(container.querySelector('img')).not.toBeNull();
   });
 
-  it('uses transparency for only Pip idle/listening and hides the still poster after playback starts', () => {
+  it('uses transparent clips for every pet state and hides the still poster after playback starts', () => {
     expect(petVideoPath('pip', 'idle')).toBe('/pets/pip-idle-alpha.webm');
     expect(petVideoPath('pip', 'listening')).toBe('/pets/pip-idle-alpha.webm');
-    expect(petVideoPath('pip', 'building')).toBe('/pets/pip-building.mp4');
-    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/pip-celebrating.mp4');
-    expect(petVideoPath('nib', 'idle')).toBe('/pets/nib-idle.mp4');
+    expect(petVideoPath('pip', 'building')).toBe('/pets/pip-building-alpha.webm');
+    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/pip-celebrating-alpha.webm');
+    expect(petVideoPath('nib', 'idle')).toBe('/pets/nib-idle-alpha.webm');
     render(<PetAvatar />);
     expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
     expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
@@ -134,6 +134,17 @@ describe('build buddies', () => {
     act(() => container.querySelector('video')?.dispatchEvent(new Event('error')));
     expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
     expect(container.querySelector('img')).not.toBeNull();
+  });
+
+  it.each(['pip', 'nib', 'clik'] as const)('uses normal alpha compositing for %s across activity changes', id => {
+    for (const state of ['idle', 'listening', 'building', 'celebrating'] as const) {
+      render(<PetAvatar id={id} state={state} />);
+      const video = container.querySelector('video')!;
+      expect(video.getAttribute('src')).toBe(petVideoPath(id, state));
+      expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
+      act(() => video.dispatchEvent(new Event('playing')));
+      expect(container.querySelector('.pet-avatar--alpha-playing')).not.toBeNull();
+    }
   });
 
   it('celebrates a successful build, then returns to idle; failures do not celebrate', () => {
