@@ -1,3 +1,5 @@
+import ModelToVoxelPage from './pages/ModelToVoxelPage';
+import { VOXEL_CONVERTERS } from './voxelConverters';
 import { AiConsentDialog } from "./components/AiConsentDialog";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
@@ -63,6 +65,7 @@ export default function App() {
           <Route path="/generated-model" element={<GeneratedModel />} />
           <Route path="/glb-to-lego" element={<GlbToLegoPage />} />
           <Route path="/obj-to-lego" element={<ObjToLegoPage />} />
+          {VOXEL_CONVERTERS.map(({ path, input, output }) => <Route key={path} path={path} element={<ModelToVoxelPage key={path} input={input} output={output} />} />)}
           <Route path="/obj-to-glb" element={<ModelFormatConverterPage inputFormat="obj" />} />
           <Route path="/glb-to-obj" element={<ModelFormatConverterPage inputFormat="glb" />} />
           <Route path="/instructions" element={<InstructionsPage />} />

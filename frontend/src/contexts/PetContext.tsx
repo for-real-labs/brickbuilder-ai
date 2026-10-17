@@ -20,7 +20,7 @@ const PetContext = createContext({
   setMotion: (_enabled: boolean) => {},
   setActivity: (_state: PetState) => {},
   setInlineVisible: (_visible: boolean) => {},
-  openPicker: (_source: string) => {},
+  openPicker: (_source: string, _returnTo?: HTMLElement | null) => {},
   closePicker: () => {},
 });
 
@@ -48,9 +48,9 @@ export function PetProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener('storage', sync);
   }, []);
 
-  const openPicker = useCallback((source: string) => {
+  const openPicker = useCallback((source: string, returnTo?: HTMLElement | null) => {
     pickerSource.current = source;
-    returnFocus.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    returnFocus.current = returnTo ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     setPickerOpen(true);
     posthog.capture('pet_picker_opened', { source });
   }, []);
