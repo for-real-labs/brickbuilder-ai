@@ -8,6 +8,7 @@ import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
 import { isAgentGeneration } from '../utils/agentGeneration';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
+import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
 export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
@@ -20,9 +21,10 @@ export function BuddyBuildMessages({ generationId, status }: { generationId: str
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onUploadImage, onUseGiftIdea, actionsDisabled = false, children }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onUploadImage, onUseGiftIdea, onViewGeneration, actionsDisabled = false, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onUploadImage?: () => void; onUseGiftIdea?: (prompt: string) => void; actionsDisabled?: boolean;
+  onViewGeneration?: (id: string) => void;
   children?: React.ReactNode;
 }) {
   const { pet } = usePet();
@@ -37,6 +39,20 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   }, [returning, welcome]);
   const log = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
+  useEffect(() => {
+    const element = log.current;
+    if (!element) return;
+    // Stream and email prompts can append nested messages independently of turns.
+    const updateSpeaker = () => {
+      const messages = element.querySelectorAll<HTMLElement>('.pet-greeting, .pet-chat-message:not(.pet-chat-message--user)');
+      element.querySelectorAll('[data-current-buddy-message]').forEach(message => message.removeAttribute('data-current-buddy-message'));
+      messages[messages.length - 1]?.setAttribute('data-current-buddy-message', 'true');
+    };
+    updateSpeaker();
+    const observer = new MutationObserver(updateSpeaker);
+    observer.observe(element, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
   useEffect(() => {
     const element = log.current;
     if (!element) return;
@@ -55,6 +71,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
         {returning ? formatBuddyGreeting(welcome, greetingName)
           : `Hi${greetingName ? `, ${greetingName}!` : ','} I’m ${pet.name} your build buddy! What would you like to build with LEGO?`}
       </PetPromptGreeting>
+      <BuddyCompletedBuilds onView={onViewGeneration} />
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
         <PetChatMessage user><p>{row.prompt || 'Image reference'}</p></PetChatMessage>
         <BuddyBuildMessages generationId={row.id} status={row.status} />

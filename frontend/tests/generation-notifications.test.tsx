@@ -62,7 +62,8 @@ it('shows unread badges, keeps dropdown links unread, and clears only on a model
   await act(async () => { await feed.markViewed('done'); });
   expect(mark).toHaveBeenCalledWith('done');
   expect(container.querySelector('[data-testid="notification-badge"]')).toBeNull();
-  expect(container.querySelector('a')).not.toBeNull();
+  expect(container.querySelector('a')).toBeNull();
+  expect(feed.notifications).toEqual([]);
   act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
   expect(container.querySelector('section')).toBeNull();
 });
@@ -111,7 +112,7 @@ it('keeps in-progress models linked after navigation and retries notification po
   expect(feed.error).toBeNull();
 });
 
-it('marks all unread completions as read only on explicit action, retaining model links and active builds', async () => {
+it('removes read completions only on explicit action and keeps active builds', async () => {
   vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({
     notifications: [ready('first'), ready('second'), ready('already', true)],
     active: [{ ...ready('running'), status: 'processing' }], unread_count: 2,
@@ -124,7 +125,7 @@ it('marks all unread completions as read only on explicit action, retaining mode
   await act(async () => action().click());
   expect(markAll).toHaveBeenCalledWith(['first', 'second']);
   expect(container.querySelector('[data-testid="notification-badge"]')).toBeNull();
-  expect(container.querySelectorAll('a')).toHaveLength(4);
+  expect(container.querySelectorAll('a')).toHaveLength(1);
   expect(container.textContent).toContain('Model in progress');
   expect(action().disabled).toBe(true);
   // An older in-flight feed response must not revive acknowledged badges.
@@ -287,7 +288,7 @@ it('closes the notifications submenu on Escape or outside click and reopens the 
   expect(container.querySelector('[aria-label="Model notifications"]')).toBeNull();
 });
 
-it('clears the profile unread indicator through mark all read while retaining notification links', async () => {
+it('clears the profile unread indicator and removes read notification links', async () => {
   vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('done')], active: [], unread_count: 1 });
   const markAll = vi.spyOn(GenerationNotificationsApi, 'markAllRead').mockResolvedValue({ seen_ids: ['done'] });
   await renderProfile();
@@ -297,7 +298,7 @@ it('clears the profile unread indicator through mark all read while retaining no
   expect(markAll).toHaveBeenCalledWith(['done']);
   expect(container.querySelector('[data-testid="profile-notification-indicator"]')).toBeNull();
   expect(accountButton().hasAttribute('aria-describedby')).toBe(false);
-  expect(container.querySelector('a')).not.toBeNull();
+  expect(container.querySelector('a')).toBeNull();
   expect(action.disabled).toBe(true);
 });
 

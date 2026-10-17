@@ -157,11 +157,34 @@ it.each(['processing', 'completed', 'cancelled', 'failed'])('keeps greetings, re
         expect(dimensions(message.querySelector('.pet-chat-bubble')!, bubbleProperties)).toEqual(expectedBubble);
         expect(dimensions(message.querySelector('.pet-avatar')!, ['width', 'height', 'margin-left'])).toEqual(expectedAvatar);
       }
+      const current = container.querySelector('[data-current-buddy-message]')!;
+      expect(current).toBe(messages[messages.length - 1]);
+      expect(container.querySelectorAll('[data-current-buddy-message]')).toHaveLength(1);
+      expect(current.querySelector('.pet-avatar')).not.toBeNull();
       expect(getComputedStyle(container.querySelector('.pet-chat-message--user .pet-chat-bubble')!).flexGrow).not.toBe('1');
     }
   } finally {
     style.remove();
   }
+});
+
+it('starts a fresh dialogue after reload instead of restoring the previous conversation', async () => {
+  let chat!: ReturnType<typeof useBuildBuddyChat>;
+  function Conversation() {
+    chat = useBuildBuddyChat('pip');
+    return <BuildBuddyDialogue turns={chat.turns} generations={[]} state="idle" />;
+  }
+  await act(async () => root.render(<Conversation />));
+  act(() => {
+    const id = chat.startTurn('Yesterday’s private castle', null);
+    chat.updateTurn(id, { reply: 'Let’s build that castle.' });
+  });
+  expect(container.textContent).toContain('Yesterday’s private castle');
+  act(() => root.unmount()); root = createRoot(container);
+  await act(async () => root.render(<Conversation />));
+  expect(chat.turns).toEqual([]);
+  expect(container.textContent).not.toContain('Yesterday’s private castle');
+  expect(container.textContent).toContain('Welcome back!');
 });
 
 it.each([undefined, 'job'])('shows one pet failure message without infrastructure details for generation %s', async generationId => {

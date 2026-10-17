@@ -71,7 +71,9 @@ def test_view_receipts_require_owner_and_completed_model_and_are_durable(storage
     assert error.value.status_code == 409
     asyncio.run(module.mark_generation_viewed('a', {'user_id': 'one', 'authenticated': True}))
     assert storage[0]['notification_seen'] is True
-    assert asyncio.run(module.list_generation_notifications({'user_id': 'one', 'authenticated': True}))['unread_count'] == 0
+    feed = asyncio.run(module.list_generation_notifications({'user_id': 'one', 'authenticated': True}))
+    assert feed['unread_count'] == 0
+    assert feed['notifications'] == []
 
 
 def test_guest_access_and_latest_edit_recovery(storage):
@@ -98,6 +100,7 @@ def test_old_unread_notifications_are_kept_outside_recent_history(storage):
     feed = asyncio.run(module.list_generation_notifications({'user_id': 'one', 'authenticated': True}))
     assert feed['unread_count'] == 1
     assert any(row['id'] == 'old' for row in feed['notifications'])
+    assert [row['id'] for row in feed['notifications']] == ['old']
 
 
 def test_cancelled_edits_do_not_resume_and_resizes_remain_cancellable(storage):

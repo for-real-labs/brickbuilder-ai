@@ -31,5 +31,4 @@
 }
 @media (max-width: 639px) and (max-height: 700px) {
   .landing-model-conversation .pet-dialogue { max-height: 120px; }
-  .landing-model-conversation .pet-greeting > .pet-avatar { width: 52px; height: 64px; }
 }

@@ -3,6 +3,7 @@ import { Plus, ShoppingBag } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
+import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
 
 const InstructionsViewer = lazy(() => import('../pages/InstructionsPage').then(module => ({ default: module.InstructionsViewer })));
@@ -23,6 +24,8 @@ export function LandingModelWorkspace({ model, busy, onSuggest, onCreateNew, onO
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
+  const { markViewed } = useGenerationNotifications();
+  const [readyId, setReadyId] = useState<string | null>(null);
   const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
   const [orderDialogId, setOrderDialogId] = useState<string | null>(null);
   const [instructionsId, setInstructionsId] = useState<string | null>(null);
@@ -32,6 +35,17 @@ export function LandingModelWorkspace({ model, busy, onSuggest, onCreateNew, onO
   const orderButton = useRef<HTMLButtonElement>(null);
   const orderable = generation?.orderable !== false && generation?.endpoint !== 'uploadLdraw';
   useEffect(() => { setOrderDialogId(null); setInstructionsId(null); setView('model'); }, [generation?.generation_id]);
+  useEffect(() => {
+    if (!generation || readyId !== generation.generation_id || busy) return;
+    let cancelled = false;
+    let retry: ReturnType<typeof setTimeout>;
+    const acknowledge = async () => {
+      try { await markViewed(readyId); }
+      catch { if (!cancelled) retry = setTimeout(acknowledge, 5000); }
+    };
+    void acknowledge();
+    return () => { cancelled = true; clearTimeout(retry); };
+  }, [generation?.generation_id, readyId, busy, markViewed]);
   return <>
     {model && generation && <section ref={workspace} className="landing-model-workspace" aria-label="Your model workspace">
       <div className="landing-model-heading">
@@ -46,6 +60,7 @@ export function LandingModelWorkspace({ model, busy, onSuggest, onCreateNew, onO
       <div className="landing-model-stage" aria-label={showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
         <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
           {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
+            onModelLoaded={() => setReadyId(generation.generation_id)}
             modelName={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
             animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} />}
           {instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>

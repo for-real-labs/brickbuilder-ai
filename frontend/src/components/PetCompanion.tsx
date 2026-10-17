@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { PawPrint, Check, Pause, Play, X } from 'lucide-react';
 import { usePet } from '../contexts/PetContext';
 import { PETS, petVideoPath, petVideoSources, type PetId, type PetState } from '../pets';
+import { PetResponseText, animatePetParagraphs } from './PetResponseText';
 import './PetCompanion.css';
 
 export function PetAvatar({ id, state = 'idle', still = false, videoSource }: { id?: PetId; state?: PetState; still?: boolean; videoSource?: string }) {
@@ -74,10 +75,10 @@ export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true,
     <PetAvatar state={current} />
     <div className="pet-speech">
       {showPetSwitch && <div className="pet-speech-heading"><PetSwitchButton source={`${mode}_prompt`} /></div>}
-      <p>{children ?? (current === 'building' ? (mode === 'edit' ? 'On it! I’m working on your changes.' : 'On it! I’m bringing your idea to life.')
+      <p><PetResponseText>{children ?? (current === 'building' ? (mode === 'edit' ? 'On it! I’m working on your changes.' : 'On it! I’m bringing your idea to life.')
         : current === 'celebrating' ? 'Look what we made! What shall we build next?'
         : mode === 'edit' ? 'What should we change? I’m all ears.'
-        : mode === 'upload' ? 'Show me your build. Let’s make it yours.' : 'Hi, I’m ' + pet.name + ' your build buddy! What would you like to build?')}</p>
+        : mode === 'upload' ? 'Show me your build. Let’s make it yours.' : 'Hi, I’m ' + pet.name + ' your build buddy! What would you like to build?')}</PetResponseText></p>
     </div>
   </div>;
 }
@@ -87,7 +88,7 @@ export function PetChatMessage({ children, user = false, state = 'idle' }: {
 }) {
   return <div className={`pet-chat-message${user ? ' pet-chat-message--user' : ''}`}>
     {!user && <PetAvatar state={state} />}
-    <div className="pet-chat-bubble"><span className="sr-only">{user ? 'You: ' : 'Build buddy: '}</span>{children}</div>
+    <div className="pet-chat-bubble"><span className="sr-only">{user ? 'You: ' : 'Build buddy: '}</span>{user ? children : animatePetParagraphs(children)}</div>
   </div>;
 }
 

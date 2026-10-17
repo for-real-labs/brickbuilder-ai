@@ -5,7 +5,7 @@ import { MemoryRouter, Link } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
 import { PetProvider, usePet, usePetActivity } from '../src/contexts/PetContext';
-import { PetAvatar, PetCompanion, PetPromptGreeting } from '../src/components/PetCompanion';
+import { PetAvatar, PetChatMessage, PetCompanion, PetPromptGreeting } from '../src/components/PetCompanion';
 import { LandingToolsMenu } from '../src/components/LandingToolsMenu';
 import { PET_MOTION_KEY, PET_STORAGE_KEY, isPetId, petVideoPath, petVideoSources } from '../src/pets';
 
@@ -33,6 +33,46 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 describe('build buddies', () => {
+  it('reveals buddy replies quickly while preserving formatted text and immediate actions', () => {
+    render(<PetChatMessage><p>I’ll email <strong>builder@example.com</strong> when your build is ready.</p><button type="button">View model</button></PetChatMessage>);
+    const paragraph = container.querySelector('p')!;
+    expect(paragraph.textContent).toBe('I’ll email builder@example.com when your build is ready.');
+    expect(paragraph.querySelector('strong')?.textContent).toBe('builder@example.com');
+    const bursts = [...paragraph.querySelectorAll<HTMLElement>('.pet-response-word')];
+    const delays = bursts.map(word => parseFloat(word.style.animationDelay));
+    expect(bursts).toHaveLength(8);
+    expect(delays[0]).toBe(0);
+    expect(delays[delays.length - 1]).toBeLessThanOrEqual(600);
+    expect(delays.every((delay, index) => !index || delay > delays[index - 1])).toBe(true);
+    expect(container.querySelector('button .pet-response-word')).toBeNull();
+    expect(container.querySelector('button')?.disabled).toBe(false);
+  });
+
+  it('does not replay the same reply on pet updates, and animates new replies without typing user messages', () => {
+    const reply = 'That castle will look great in bricks!';
+    render(<PetChatMessage state="listening"><p>{reply}</p></PetChatMessage>);
+    const first = container.querySelector('.pet-response-word');
+    render(<PetChatMessage state="celebrating"><p>{reply}</p></PetChatMessage>);
+    expect(container.querySelector('.pet-response-word')).toBe(first);
+    render(<PetChatMessage><p>Let’s add a drawbridge next.</p></PetChatMessage>);
+    expect(container.querySelector('.pet-response-word')).not.toBe(first);
+    render(<PetChatMessage user><p>Make the castle blue.</p></PetChatMessage>);
+    expect(container.querySelector('.pet-response-word')).toBeNull();
+    expect(container.querySelector('p')?.textContent).toBe('Make the castle blue.');
+  });
+
+  it('caps long replies at a quick reveal and keeps greeting text and emoji intact', () => {
+    render(<PetChatMessage><p>{'LEGO '.repeat(1000)}</p></PetChatMessage>);
+    const words = container.querySelectorAll<HTMLElement>('.pet-response-word');
+    expect(parseFloat(words[words.length - 1].style.animationDelay)).toBeLessThanOrEqual(600);
+    render(<PetChatMessage><p>{Array.from({ length: 100 }, (_, index) => <strong key={index}>LEGO</strong>)}</p></PetChatMessage>);
+    const formattedWords = container.querySelectorAll<HTMLElement>('.pet-response-word');
+    expect(parseFloat(formattedWords[formattedWords.length - 1].style.animationDelay)).toBeLessThanOrEqual(600);
+    render(<PetPromptGreeting showPetSwitch={false}>Hi 👋🏽! Let’s build a castle.</PetPromptGreeting>);
+    expect(container.querySelector('p')?.textContent).toBe('Hi 👋🏽! Let’s build a castle.');
+    expect(container.querySelector('.pet-response-text')).not.toBeNull();
+  });
+
   it('switches from Tools, closes the dropdown and restores focus to its trigger', () => {
     const frames: FrameRequestCallback[] = [];
     vi.spyOn(window, 'requestAnimationFrame').mockImplementation(callback => { frames.push(callback); return frames.length; });

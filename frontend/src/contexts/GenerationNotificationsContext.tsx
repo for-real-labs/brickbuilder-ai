@@ -23,6 +23,7 @@ export function GenerationNotificationsProvider({ children }: { children: React.
   const baseline = useRef({ owner, initialized: false });
   const [permission, setPermission] = useState(typeof Notification === 'undefined' ? 'unsupported' : Notification.permission);
   const viewed = useRef(new Set<string>());
+  const pendingViews = useRef(new Set<string>());
   const viewedOwner = useRef(owner);
   const ownerRef = useRef(owner);
   ownerRef.current = owner;
@@ -36,7 +37,7 @@ export function GenerationNotificationsProvider({ children }: { children: React.
     // A fresh browser starts with a baseline rather than notifying for old history.
     if (baseline.current.owner !== owner) baseline.current = { owner, initialized: false };
     let initialized = baseline.current.initialized || known.size > 0 || delivered.size > 0;
-    if (viewedOwner.current !== owner) { viewed.current.clear(); viewedOwner.current = owner; }
+    if (viewedOwner.current !== owner) { viewed.current.clear(); pendingViews.current.clear(); viewedOwner.current = owner; }
     const poll = async (signal: AbortSignal) => {
       try {
         const feed = await GenerationNotificationsApi.list(signal);
@@ -63,7 +64,8 @@ export function GenerationNotificationsProvider({ children }: { children: React.
           localStorage.setItem(knownKey, JSON.stringify([...known].slice(-1000)));
           localStorage.setItem(deliveredKey, JSON.stringify([...delivered].slice(-1000)));
         } catch { /* The server owns read receipts. */ }
-        const next = { owner, feed: { ...feed, unread_count: feed.notifications.filter(model => !model.seen).length }, error: null };
+        const notifications = feed.notifications.filter(model => !model.seen);
+        const next = { owner, feed: { ...feed, notifications, unread_count: notifications.length }, error: null };
         setState(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
         return feed.active.length ? 5_000 : 60_000;
       } catch (error) {
@@ -83,21 +85,23 @@ export function GenerationNotificationsProvider({ children }: { children: React.
     return () => { polling.stop(); window.removeEventListener('storage', onStorage); };
   }, [owner, session?.access_token, loading, revision, navigate, refresh]);
   const markViewed = useCallback(async (id: string) => {
-    if (viewed.current.has(id)) return;
-    viewed.current.add(id);
+    if (viewed.current.has(id) || pendingViews.current.has(id)) return;
+    pendingViews.current.add(id);
     try {
       await GenerationNotificationsApi.markViewed(id);
       if (ownerRef.current !== owner) return;
+      viewed.current.add(id);
       posthog.capture("generation_notification_read", { generation_id: id });
       setState(previous => previous.owner !== owner ? previous : ({ ...previous, feed: { ...previous.feed,
-        notifications: previous.feed.notifications.map(model => model.id === id ? { ...model, seen: true } : model),
+        notifications: previous.feed.notifications.filter(model => model.id !== id),
         unread_count: Math.max(0, previous.feed.unread_count - (previous.feed.notifications.some(model => model.id === id && !model.seen) ? 1 : 0)),
       } }));
     } catch (error) {
       // Public community models have no receipt in this owner's feed.
       if (error instanceof NotificationApiError && error.status === 404) return;
-      if (ownerRef.current === owner) viewed.current.delete(id);
       throw new Error('Unable to mark model as viewed');
+    } finally {
+      if (ownerRef.current === owner) pendingViews.current.delete(id);
     }
   }, [owner]);
   const enableBrowserNotifications = async () => {
@@ -115,7 +119,7 @@ export function GenerationNotificationsProvider({ children }: { children: React.
     seen_ids.forEach(id => viewed.current.add(id));
     setState(previous => {
       if (previous.owner !== owner) return previous;
-      const notifications = previous.feed.notifications.map(model => seen.has(model.id) ? { ...model, seen: true } : model);
+      const notifications = previous.feed.notifications.filter(model => !seen.has(model.id));
       return { ...previous, feed: { ...previous.feed, notifications, unread_count: notifications.filter(model => !model.seen).length } };
     });
   }, [owner, state]);

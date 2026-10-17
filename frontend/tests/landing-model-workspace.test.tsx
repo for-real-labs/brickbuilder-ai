@@ -1,5 +1,6 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
 import LandingPage from '../src/pages/LandingPage';
@@ -16,6 +17,8 @@ import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/La
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
 const navigate = vi.hoisted(() => vi.fn());
 const buddy = vi.hoisted(() => ({ updateTurn: vi.fn() }));
+const viewer = vi.hoisted(() => ({ loaded: undefined as undefined | (() => void), markViewed: vi.fn() }));
+vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ notifications: [], markViewed: viewer.markViewed }) }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
@@ -30,7 +33,10 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions</div> }));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent }: { modelContent: string }) => <div data-testid="viewer">{modelContent}</div> }));
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, onModelLoaded }: { modelContent: string; onModelLoaded?: () => void }) => {
+  viewer.loaded = onModelLoaded;
+  return <div data-testid="viewer">{modelContent}</div>;
+} }));
 vi.mock('../src/components/FallingBricks', () => ({ default: () => null }));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('../src/components/LoginModal', () => ({ default: () => null }));
@@ -51,6 +57,9 @@ beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = false; }) });
   buddy.updateTurn.mockClear();
+  viewer.loaded = undefined;
+  viewer.markViewed.mockReset().mockResolvedValue(undefined);
+  window.history.replaceState(null, '', '/');
   navigate.mockClear();
   vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({ generation_id: 'castle', total_price: 44.77, total_weight: .5263, total_parts: 370, currency: 'USD', parts_breakdown: [] } as never);
   vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
@@ -65,7 +74,7 @@ beforeEach(() => {
   activity.rows = [];
   activity.track.mockImplementation(row => { activity.rows = [row, ...activity.rows]; });
 });
-afterEach(() => { act(() => root.unmount()); container.remove(); vi.useRealTimers(); vi.unstubAllGlobals(); });
+afterEach(() => { act(() => root.unmount()); container.remove(); window.history.replaceState(null, '', '/'); vi.useRealTimers(); vi.unstubAllGlobals(); });
 const input = () => container.querySelector<HTMLInputElement>('#landing-build-prompt')!;
 function type(text: string) {
   act(() => {
@@ -404,11 +413,63 @@ it('restores the workspace for the same owner and clears the displayed model whe
   expect(sessionStorage.getItem('brickbuilder.landing-model:builder')).toBeNull();
 });
 
+it('cycles suggestions after reloading a saved model and keeps one edit suggestion after typing', async () => {
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  sessionStorage.setItem('brickbuilder.landing-model:guest', 'castle');
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  for (let i = 0; i < 6; i++) await act(async () => { await vi.advanceTimersByTimeAsync(70); });
+  expect(input().placeholder.replace('|', '')).toBe('Create');
+  type('Add a flag'); type('');
+  expect(input().placeholder).toBe('Add a drawbridge');
+  await act(async () => { await vi.advanceTimersByTimeAsync(2000); });
+  expect(input().placeholder).toBe('Add a drawbridge');
+});
+
 it('uses the saved edit suggestion or falls back to a color edit', () => {
   const model: LandingModel = { generation: { ...generation('castle'), example_edit_prompt: null }, content: 'mpd' };
   expect(modelEditSuggestion(model)).toBe('Change the colors of the Castle');
   model.generation.example_edit_prompt = 'Add more detail to the Castle';
   expect(modelEditSuggestion(model)).toBe('Add more detail to the Castle');
+});
+
+it('keeps landing-model initialization safe for public-page prerendering', () => {
+  const browserWindow = window;
+  function ServerProbe() { const model = useLandingModel('guest'); return <span>{model.targetId || 'New build'}</span>; }
+  try {
+    vi.stubGlobal('window', undefined);
+    expect(renderToStaticMarkup(<ServerProbe />)).toBe('<span>New build</span>');
+  } finally { vi.stubGlobal('window', browserWindow); }
+});
+
+it('opens an email-linked generation ahead of the saved model and other active builds, and clears the link on create new', async () => {
+  window.history.replaceState(null, '', '/?id=email-build&exact=1&utm_source=email');
+  sessionStorage.setItem('brickbuilder.landing-model:guest', 'saved-castle');
+  activity.rows = [{ id: 'another-build', status: 'processing', prompt: 'Car', endpoint: 'novaToBricks' }];
+  const load = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  expect(load.mock.calls.map(call => call[0])).toEqual(['email-build']);
+  expect(sessionStorage.getItem('brickbuilder.landing-model:guest')).toBe('email-build');
+  expect(viewer.markViewed).not.toHaveBeenCalled();
+  await act(async () => viewer.loaded!());
+  expect(viewer.markViewed).toHaveBeenCalledWith('email-build');
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-new-trigger')!.click());
+  expect(window.location.search).toBe('?utm_source=email');
+  expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+});
+
+it('waits for a rendered model before acknowledging notifications and retries a failed receipt', async () => {
+  viewer.markViewed.mockRejectedValueOnce(new Error('offline')).mockResolvedValue(undefined);
+  const model = { generation: generation('castle'), content: 'castle mpd' };
+  await act(async () => root.render(<LandingModelWorkspace model={model} busy={false} onSuggest={vi.fn()} onCreateNew={vi.fn()}>{null}</LandingModelWorkspace>));
+  expect(viewer.markViewed).not.toHaveBeenCalled();
+  await act(async () => viewer.loaded!());
+  expect(viewer.markViewed).toHaveBeenCalledTimes(1);
+  await act(async () => vi.advanceTimersByTimeAsync(5000));
+  expect(viewer.markViewed).toHaveBeenCalledTimes(2);
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('second'), content: 'second mpd' }} busy={false} onSuggest={vi.fn()} onCreateNew={vi.fn()}>{null}</LandingModelWorkspace>));
+  expect(viewer.markViewed).toHaveBeenCalledTimes(2);
 });
 
 it.each(['failed', 'cancelled'] as const)('preserves the previous model and allows retrying after a %s edit', async status => {

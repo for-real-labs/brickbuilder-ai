@@ -70,21 +70,13 @@ def _summary(row: dict) -> dict:
 
 
 async def list_generation_notifications(auth_info: dict) -> dict:
-    # Keep unread entries even when they are older than the recent read history.
+    # Read receipts remove completed builds from the notification inbox.
     unread = (
         await execute_query(
             _owned_query(auth_info)
             .eq("status", "completed")
             .eq("notification_seen", False)
             .order("updated_at", desc=True)
-        )
-    ).data or []
-    recent = (
-        await execute_query(
-            _owned_query(auth_info)
-            .eq("status", "completed")
-            .order("updated_at", desc=True)
-            .limit(30)
         )
     ).data or []
     active = (
@@ -97,9 +89,7 @@ async def list_generation_notifications(auth_info: dict) -> dict:
             .order("created_at", desc=True)
         )
     ).data or []
-    rows = {row["id"]: row for row in [*unread, *recent]}
-    return {"notifications": [_summary(row) for row in sorted(rows.values(),
-            key=lambda row: row.get("updated_at") or row.get("created_at") or "", reverse=True)],
+    return {"notifications": [_summary(row) for row in unread],
             "unread_count": len(unread), "active": [_summary(row) for row in active]}
 
 

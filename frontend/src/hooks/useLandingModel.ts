@@ -12,7 +12,8 @@ export interface LandingModel {
 /** Loads a selected build while retaining the previous geometry during an edit. */
 export function useLandingModel(owner: string, authToken?: string) {
   const storageKey = `brickbuilder.landing-model:${owner}`;
-  const [targetId, setTargetId] = useState<string | null>(null);
+  const [targetId, setTargetId] = useState<string | null>(() => typeof window === 'undefined'
+    ? null : new URLSearchParams(window.location.search).get('id')?.trim() || null);
   const [loadVersion, setLoadVersion] = useState(0);
   const [model, setModel] = useState<LandingModel | null>(null);
   const [busy, setBusy] = useState(false);
@@ -20,6 +21,11 @@ export function useLandingModel(owner: string, authToken?: string) {
   const revision = useRef(0);
   const open = useCallback((id: string, retainModel = false) => {
     try { sessionStorage.setItem(storageKey, id); } catch { /* The viewer works without storage. */ }
+    const url = new URL(window.location.href);
+    if (url.searchParams.has('id')) {
+      url.searchParams.set('id', id);
+      window.history.replaceState(window.history.state, '', url);
+    }
     revision.current++;
     if (!retainModel) setModel(null);
     setError(null);
@@ -29,6 +35,10 @@ export function useLandingModel(owner: string, authToken?: string) {
   }, [storageKey]);
   const reset = useCallback(() => {
     try { sessionStorage.removeItem(storageKey); } catch { /* Keep the reset for this visit. */ }
+    const url = new URL(window.location.href);
+    url.searchParams.delete('id');
+    url.searchParams.delete('exact');
+    window.history.replaceState(window.history.state, '', url);
     revision.current++;
     setTargetId(null);
     setModel(null);
@@ -38,6 +48,11 @@ export function useLandingModel(owner: string, authToken?: string) {
   useEffect(() => {
     let saved: string | null = null;
     try { saved = sessionStorage.getItem(storageKey); } catch { /* Start a fresh workspace. */ }
+    const linked = new URLSearchParams(window.location.search).get('id')?.trim();
+    if (linked) {
+      saved = linked;
+      try { sessionStorage.setItem(storageKey, linked); } catch { /* The link still opens without storage. */ }
+    }
     revision.current++;
     setTargetId(saved);
     setModel(null);
