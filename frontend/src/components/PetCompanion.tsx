@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowLeftRight, PawPrint, Check, Pause, Play, X } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { PawPrint, Check, Pause, Play, X } from 'lucide-react';
 import { usePet } from '../contexts/PetContext';
 import { PETS, petVideoPath, petVideoSources, type PetId, type PetState } from '../pets';
 import './PetCompanion.css';
@@ -67,20 +66,11 @@ export function PetSwitchButton({ source, className, onOpen, returnFocusRef }: {
   </button>;
 }
 
-/** Connects the prompt to its pet, and hands off to the floating companion when scrolled away. */
+/** Connects the prompt to its pet and the shared buddy picker. */
 export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true, children }: { mode?: 'build' | 'edit' | 'upload'; state?: PetState; showPetSwitch?: boolean; children?: React.ReactNode }) {
-  const { pet, activity, setInlineVisible } = usePet();
-  const ref = useRef<HTMLDivElement>(null);
+  const { pet, activity } = usePet();
   const current = state || activity;
-  useEffect(() => {
-    const observer = typeof IntersectionObserver === 'undefined' ? null : new IntersectionObserver(entries => {
-      setInlineVisible(entries.some(entry => entry.isIntersecting));
-    });
-    if (ref.current) observer?.observe(ref.current);
-    if (!observer) setInlineVisible(true);
-    return () => { observer?.disconnect(); setInlineVisible(false); };
-  }, [setInlineVisible]);
-  return <div ref={ref} className={`pet-greeting pet-greeting--${mode}`}>
+  return <div className={`pet-greeting pet-greeting--${mode}`}>
     <PetAvatar state={current} />
     <div className="pet-speech">
       {showPetSwitch && <div className="pet-speech-heading"><PetSwitchButton source={`${mode}_prompt`} /></div>}
@@ -92,10 +82,10 @@ export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true,
   </div>;
 }
 
-export function PetChatMessage({ children, user = false, state = 'idle', compact = false }: {
-  children: React.ReactNode; user?: boolean; state?: PetState; compact?: boolean;
+export function PetChatMessage({ children, user = false, state = 'idle' }: {
+  children: React.ReactNode; user?: boolean; state?: PetState;
 }) {
-  return <div className={`pet-chat-message${user ? ' pet-chat-message--user' : ''}${compact ? ' pet-chat-message--compact' : ''}`}>
+  return <div className={`pet-chat-message${user ? ' pet-chat-message--user' : ''}`}>
     {!user && <PetAvatar state={state} />}
     <div className="pet-chat-bubble"><span className="sr-only">{user ? 'You: ' : 'Build buddy: '}</span>{children}</div>
   </div>;
@@ -139,16 +129,5 @@ function PetPicker() {
 }
 
 export function PetCompanion() {
-  const { pet, activity, inlineVisible, openPicker, pickerOpen } = usePet();
-  const { pathname } = useLocation();
-  const purchasePage = pathname === '/generated-model' || pathname === '/order';
-  return <>
-    {!inlineVisible && <button type="button" className={`pet-dock ${purchasePage ? 'pet-dock--purchase' : ''}`}
-      onClick={() => openPicker('companion_dock')} aria-label={`${pet.name}, your build buddy. Change build buddy / pet`} aria-haspopup="dialog" aria-expanded={pickerOpen}>
-      <PetAvatar state={activity} />
-      <span className="pet-dock-label"><strong>{pet.name}</strong><span>{activity === 'building' ? 'Building with you' : 'Your build buddy'}</span></span>
-      <ArrowLeftRight size={13} aria-hidden="true" />
-    </button>}
-    <PetPicker />
-  </>;
+  return <PetPicker />;
 }

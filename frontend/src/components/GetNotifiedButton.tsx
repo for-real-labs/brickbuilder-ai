@@ -68,7 +68,7 @@ function BuddyNotification({ generationId, accountEmail, signedIn, promptOnStart
   }}>Get notified</button>;
 
   return <div className="pet-notification-conversation">
-    <PetChatMessage compact>
+    <PetChatMessage>
       <p>This might take a while, sometimes up to 30 minutes. Would you like an email when your build is ready?</p>
       {stage === 'prompt' && <div className="pet-chat-actions">
         <button type="button" disabled={busy} className={buttonClass} onClick={() => {
@@ -82,9 +82,9 @@ function BuddyNotification({ generationId, accountEmail, signedIn, promptOnStart
         }}>Not now</button>
       </div>}
     </PetChatMessage>
-    {answeredYes && stage !== 'declined' && <PetChatMessage compact user><p>Yes, email me.</p></PetChatMessage>}
+    {answeredYes && stage !== 'declined' && <PetChatMessage user><p>Yes, email me.</p></PetChatMessage>}
     {stage === 'email' && <>
-      <PetChatMessage compact>
+      <PetChatMessage>
         <p>What email should I use? I’ll send one message when it’s ready.</p>
         <label htmlFor={emailId} className="sr-only">Email address</label>
         <div className="pet-chat-email">
@@ -98,17 +98,17 @@ function BuddyNotification({ generationId, accountEmail, signedIn, promptOnStart
         }}>Not now</button>
       </PetChatMessage>
     </>}
-    {stage === 'success' && <PetChatMessage compact><p role="status">You’re all set! {recipient
+    {stage === 'success' && <PetChatMessage><p role="status">You’re all set! {recipient
       ? <>I’ll email <strong>{recipient}</strong> when your build is ready.</>
       : 'Your email notification is saved.'}</p></PetChatMessage>}
     {stage === 'declined' && <>
-      <PetChatMessage compact user><p>Not now.</p></PetChatMessage>
-      <PetChatMessage compact><p>Okay! Your build will keep running. You can check it here anytime.</p>
+      <PetChatMessage user><p>Not now.</p></PetChatMessage>
+      <PetChatMessage><p>Okay! Your build will keep running. You can check it here anytime.</p>
         <button type="button" className={buttonClass} onClick={() => {
           setAnsweredYes(false); setError(''); setStage('prompt'); posthog.capture('generation_email_notification_clicked', properties);
         }}>Get notified</button>
       </PetChatMessage>
     </>}
-    {error && <PetChatMessage compact><p role="alert">{error}</p></PetChatMessage>}
+    {error && <PetChatMessage><p role="alert">{error}</p></PetChatMessage>}
   </div>;
 }
