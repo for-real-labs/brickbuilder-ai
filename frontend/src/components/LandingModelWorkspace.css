@@ -2,7 +2,7 @@
 .landing-model-stage { position: absolute; inset: 0; }
 .landing-model-heading { position: relative; z-index: 1; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 20px; text-align: left; pointer-events: none; }
 .landing-model-heading a { pointer-events: auto; }
-.landing-model-conversation { position: fixed; z-index: 40; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; width: min(768px, calc(100% - 32px)); max-height: min(640px, calc(100dvh - 160px)); min-width: 0; padding: 16px; overflow-y: auto; overscroll-behavior: contain; transform: translateX(-50%); border: 1px solid #e2e8f0; border-radius: 28px; background: #fbfbfdf5; box-shadow: 0 12px 48px #0f172a1a; backdrop-filter: blur(20px); text-align: left; }
+.landing-model-conversation { position: fixed; z-index: 40; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; width: min(768px, calc(100% - 32px)); max-height: min(640px, calc(100dvh - 160px)); min-width: 0; padding: 16px; overflow-y: auto; overscroll-behavior: contain; transform: translateX(-50%); border: 1px solid transparent; border-radius: 28px; background: transparent; text-align: left; }
 .landing-model-conversation > * { flex-shrink: 0; }
 .landing-model-conversation .pet-dialogue { flex: 0 1 auto; min-height: 80px; max-height: min(280px, 28dvh); margin-bottom: 12px; }
 .landing-model-suggestions { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; align-items: stretch; gap: 8px; margin-top: 12px; }

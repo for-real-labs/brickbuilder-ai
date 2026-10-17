@@ -61,7 +61,7 @@ export function SiteFooter() {
             <TikTokIcon className="h-5 w-5" />
           </a>
           <a
-            href="https://github.com/jjohnson5253/brickbuilderai"
+            href="https://github.com/for-real-labs/brickbuilder-ai"
             target="_blank"
             rel="noopener noreferrer"
             aria-label="GitHub"

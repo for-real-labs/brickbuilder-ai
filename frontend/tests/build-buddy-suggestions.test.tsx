@@ -33,6 +33,9 @@ beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
   vi.spyOn(BuildBuddyApi, 'reply').mockResolvedValue('That sounds fun!');
+  vi.spyOn(BuildBuddyApi, 'classify').mockImplementation(async ({ prompt, giftPlanning }) => ({
+    intent: prompt === IMAGE_PROMPT_SUGGESTION ? 'upload' : prompt === GIFT_PROMPT_SUGGESTION || giftPlanning ? 'gift' : 'generate', confidence: 1,
+  }));
   vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'job', message: 'Started' });
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'job', status: 'processing' } as never);
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
@@ -47,16 +50,72 @@ function type(text: string) {
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 
-it('fades the headline and statistics after the first message while keeping the header and dialogue mounted', async () => {
+it.each([
+  { message: 'How do you choose the bricks?', intent: 'question' },
+  { message: 'Hi Pip, how are you?', intent: 'chat' },
+  { message: 'Do something', intent: 'clarify' },
+] as const)('replies to "$message" without generating a model', async ({ message, intent }) => {
+  vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent, confidence: 0.95 });
+  await act(async () => root.render(<LandingPage />));
+  type(message); await submit();
+  expect(BuildBuddyApi.classify).toHaveBeenCalledWith(expect.objectContaining({ prompt: message, hasImage: false }), undefined, expect.any(AbortSignal));
+  expect(BuildBuddyApi.reply).toHaveBeenCalledWith(expect.objectContaining({ prompt: message, intent }), undefined, expect.any(AbortSignal));
+  expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
+  expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(1);
+  expect(input().value).toBe('');
+});
+
+it('routes a natural upload command to the shared image-picker action', async () => {
+  vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'upload', confidence: 1 });
+  await act(async () => root.render(<LandingPage />));
+  type('Let me upload a photo'); await submit();
+  const picker = vi.spyOn(container.querySelector<HTMLInputElement>('input[type="file"]')!, 'click');
+  act(() => container.querySelector<HTMLButtonElement>('[role="log"] button')!.click());
+  expect(picker).toHaveBeenCalledOnce();
+  expect(BuildBuddyApi.reply).not.toHaveBeenCalled();
+  expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
+});
+
+it.each(['castle', 'Create a red fox in LEGO'])('starts exactly one build for the generation intent "%s"', async message => {
+  await act(async () => root.render(<LandingPage />));
+  type(message); await submit();
+  expect(NovaToBricksApiService.generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: message }), undefined);
+  expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(1);
+});
+
+it('blocks duplicate routing and keeps the prompt recoverable when Jev is unavailable', async () => {
+  let reject!: (error: Error) => void;
+  vi.mocked(BuildBuddyApi.classify).mockImplementationOnce(() => new Promise((_, fail) => { reject = fail; }));
+  await act(async () => root.render(<LandingPage />));
+  type('castle'); await submit(); await submit();
+  expect(BuildBuddyApi.classify).toHaveBeenCalledOnce();
+  expect(input().disabled).toBe(true);
+  await act(async () => reject(new Error('private upstream body')));
+  expect(input().disabled).toBe(false);
+  expect(input().value).toBe('castle');
+  expect(container.textContent).toContain('Please send it again');
+  expect(container.textContent).not.toContain('private upstream');
+  expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
+});
+
+it('docks the dialogue and fades the intro only after a user message is submitted', async () => {
   await act(async () => root.render(<LandingPage />));
   const intro = container.querySelector('.landing-page-intro')!;
+  const page = container.querySelector('.landing-page')!;
+  const dialogue = container.querySelector('.landing-model-conversation')!;
+  expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   expect(intro.getAttribute('aria-hidden')).toBe('false');
   expect(intro.querySelector('h1')?.textContent).toContain('Imagine. Create. Build.');
   expect(intro.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
   act(() => input().focus());
+  await submit();
+  expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   type(IMAGE_PROMPT_SUGGESTION);
+  expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   expect(intro.getAttribute('aria-hidden')).toBe('false');
   await submit();
+  expect(page.classList.contains('landing-page--conversation-started')).toBe(true);
+  expect(container.querySelector('.landing-model-conversation')).toBe(dialogue);
   expect(intro.getAttribute('aria-hidden')).toBe('true');
   expect(intro.classList.contains('landing-page-intro--hidden')).toBe(true);
   expect(container.querySelector('.landing-page > .landing-page-shell > header')).not.toBeNull();

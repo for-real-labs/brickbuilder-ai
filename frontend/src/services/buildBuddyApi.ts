@@ -7,9 +7,12 @@ export interface BuddyReplyRequest {
   imageBase64?: string;
   imageMediaType?: string;
   history: BuddyHistoryMessage[];
+  intent?: 'question' | 'chat' | 'clarify';
 }
 
 export interface GiftReply { reply: string; buildPrompt?: string }
+export type BuddyIntent = 'generate' | 'upload' | 'question' | 'chat' | 'gift' | 'clarify';
+export interface BuddyIntentDecision { intent: BuddyIntent; confidence: number }
 
 const mode = import.meta.env.VITE_API_MODE || 'local';
 const base = mode === 'local' ? (import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002')
@@ -25,7 +28,8 @@ async function sendReply(request: BuddyReplyRequest, authToken: string | undefin
     method: 'POST', headers, signal,
     body: JSON.stringify(gift ? { pet: request.pet, prompt: request.prompt, history: request.history, mode: 'gift' }
       : { pet: request.pet, prompt: request.prompt,
-        image_base64: request.imageBase64, image_media_type: request.imageMediaType || 'image/png', history: request.history }),
+        image_base64: request.imageBase64, image_media_type: request.imageMediaType || 'image/png', history: request.history,
+        ...(request.intent ? { mode: request.intent } : {}) }),
   });
   if (!response.ok) throw new Error('Your build buddy’s chat is unavailable.');
   const data = await response.json();
@@ -34,6 +38,22 @@ async function sendReply(request: BuddyReplyRequest, authToken: string | undefin
 }
 
 export const BuildBuddyApi = {
+  async classify(request: { prompt: string; history: BuddyHistoryMessage[]; hasImage: boolean; modelName?: string; giftPlanning?: boolean },
+    authToken: string | undefined, signal: AbortSignal): Promise<BuddyIntentDecision> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await apiFetch(`${base}/build-buddy/intent`, {
+      method: 'POST', headers, signal,
+      body: JSON.stringify({ prompt: request.prompt, history: request.history, has_image: request.hasImage,
+        model_name: request.modelName?.slice(0, 200), gift_planning: request.giftPlanning ?? false }),
+    });
+    if (!response.ok) throw new Error('Message routing is unavailable.');
+    const data = await response.json();
+    const intents: BuddyIntent[] = ['generate', 'upload', 'question', 'chat', 'gift', 'clarify'];
+    if (!intents.includes(data.intent) || typeof data.confidence !== 'number' || !Number.isFinite(data.confidence)
+      || data.confidence < 0 || data.confidence > 1) throw new Error('Invalid message routing response.');
+    return { intent: data.confidence < 0.5 ? 'clarify' : data.intent, confidence: data.confidence };
+  },
   async reply(request: BuddyReplyRequest, authToken: string | undefined, signal: AbortSignal): Promise<string> {
     return (await sendReply(request, authToken, signal)).reply;
   },

@@ -8,6 +8,8 @@ import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { apiFetch } from '../src/services/apiFetch';
+import greetings from '../src/data/buddy-welcome-greetings.json';
+import { formatBuddyGreeting } from '../src/utils/buddyGreetings';
 import petStyles from '../src/components/PetCompanion.css?raw';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
@@ -27,20 +29,23 @@ const renderDialogue = async (username?: string, authLoading = false) => act(asy
 
 it('introduces Pip in a message, remembers the visit, and removes the two old captions', async () => {
   await renderDialogue();
-  expect(container.textContent).toBe('Hi, I’m Pip your build buddy! What would you like to build?');
+  expect(container.textContent).toBe('Hi, I’m Pip your build buddy! What would you like to build with LEGO?');
   expect(container.querySelector('[role="log"]')?.getAttribute('aria-label')).toBe('Build buddy conversation');
   expect(container.querySelector('.pet-speech-heading')).toBeNull();
   expect(container.textContent).not.toContain('Ask Pip to build something');
   expect(localStorage.getItem(BUDDY_SEEN_KEY)).toBe('true');
   // A rerender in the same visit must not turn the introduction into a welcome back.
   await renderDialogue('Jake');
-  expect(container.textContent).toContain('Hi, I’m Pip');
+  expect(container.textContent).toContain('Hi, Jake! I’m Pip');
 });
 
 it.each([undefined, 'Jake'])('welcomes a returning visitor with username %s when available', async username => {
   localStorage.setItem(BUDDY_SEEN_KEY, 'true');
   await renderDialogue(username);
-  expect(container.textContent).toBe(`Welcome back${username ? ', Jake' : ''}! What would you like to build?`);
+  expect(greetings.map(greeting => formatBuddyGreeting(greeting, username))).toContain(container.textContent);
+  const welcome = container.textContent;
+  await renderDialogue(username);
+  expect(container.textContent).toBe(welcome);
 });
 
 it('waits for account details before including a name and works with blocked storage', async () => {
@@ -54,6 +59,29 @@ it('waits for account details before including a name and works with blocked sto
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
   await renderDialogue();
   expect(container.textContent).toContain('Hi, I’m Pip');
+});
+
+it('provides 1,000 distinct LEGO or bricks invitations with optional names', () => {
+  expect(greetings).toHaveLength(1000);
+  expect(new Set(greetings).size).toBe(1000);
+  for (const greeting of greetings) {
+    expect(greeting).toMatch(/LEGO|bricks/);
+    expect(greeting.endsWith('?')).toBe(true);
+    expect(formatBuddyGreeting(greeting, ' Jake ')).toContain('Welcome back, Jake!');
+    expect(formatBuddyGreeting(greeting)).toMatch(/^Welcome back!/);
+    expect(formatBuddyGreeting(greeting)).not.toContain('{name}');
+  }
+});
+
+it('changes the returning greeting on the next visit even if the random value repeats', async () => {
+  localStorage.setItem(BUDDY_SEEN_KEY, 'true');
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  await renderDialogue('Jake');
+  const first = container.textContent;
+  act(() => root.unmount()); root = createRoot(container);
+  await renderDialogue('Jake');
+  expect(container.textContent).not.toBe(first);
+  expect(container.textContent).toContain('Welcome back, Jake!');
 });
 
 it('shows text and images in order, speaks stream updates, and shows a completed model link', async () => {
@@ -211,6 +239,41 @@ it('uses authenticated backend transport for text/image chat and handles invalid
   await expect(BuildBuddyApi.reply({ pet: 'pip', prompt: 'Dragon', history: [] }, undefined, signal)).rejects.toThrow('Empty buddy reply');
   vi.mocked(apiFetch).mockResolvedValue({ ok: false } as Response);
   await expect(BuildBuddyApi.reply({ pet: 'pip', prompt: 'Dragon', history: [] }, undefined, signal)).rejects.toThrow('unavailable');
+});
+
+it('sends intent detection through the authenticated backend and rejects uncertain or invalid actions', async () => {
+  const signal = new AbortController().signal;
+  const request = { prompt: 'castle', hasImage: false, history: [] };
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ intent: 'generate', confidence: 0.95 }) } as Response);
+  await expect(BuildBuddyApi.classify(request, 'token', signal)).resolves.toEqual({ intent: 'generate', confidence: 0.95 });
+  expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining('/build-buddy/intent'), expect.objectContaining({
+    signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+    body: JSON.stringify({ prompt: 'castle', history: [], has_image: false, gift_planning: false }),
+  }));
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ intent: 'generate', confidence: 0.2 }) } as Response);
+  await expect(BuildBuddyApi.classify(request, undefined, signal)).resolves.toEqual({ intent: 'clarify', confidence: 0.2 });
+  for (const response of [{ intent: 'delete', confidence: 1 }, { intent: 'generate', confidence: -1 }, { intent: 'generate' }]) {
+    vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => response } as Response);
+    await expect(BuildBuddyApi.classify(request, undefined, signal)).rejects.toThrow('Invalid message routing');
+  }
+});
+
+it('cancels pending routing on an account change without acting on an old-owner decision', async () => {
+  let chat!: ReturnType<typeof useBuildBuddyChat>;
+  function Probe({ owner }: { owner: string }) { chat = useBuildBuddyChat('pip', owner, owner); return null; }
+  let respond!: (value: { intent: 'generate'; confidence: number }) => void;
+  const classify = vi.spyOn(BuildBuddyApi, 'classify').mockImplementationOnce(() => new Promise(resolve => { respond = resolve; }));
+  await act(async () => root.render(<Probe owner="one" />));
+  let pending!: ReturnType<typeof chat.routeMessage>;
+  act(() => { pending = chat.routeMessage('Private castle', null); });
+  expect(chat.routing).toBe(true);
+  const signal = classify.mock.calls[0][2];
+  await act(async () => root.render(<Probe owner="two" />));
+  expect(signal.aborted).toBe(true);
+  expect(chat.routing).toBe(false);
+  await act(async () => respond({ intent: 'generate', confidence: 1 }));
+  await expect(pending).resolves.toBeUndefined();
+  expect(chat.turns).toEqual([]);
 });
 
 it('clears conversation history and cancels old-account replies on an account change', async () => {

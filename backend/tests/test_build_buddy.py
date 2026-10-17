@@ -142,3 +142,17 @@ def test_endpoint_returns_gift_prompt_with_reply(monkeypatch):
     request = Request({'type': 'http', 'headers': [], 'client': ('127.0.0.1', 1234)})
     assert asyncio.run(buddy.buddy_reply(buddy.BuddyReplyRequest(mode='gift', prompt='Gift'), request,
                                        {'user_id': 'owner', 'is_anonymous': False})) == result
+
+
+@pytest.mark.parametrize('mode', ['question', 'chat', 'clarify'])
+def test_conversational_modes_answer_without_assuming_generation(monkeypatch, mode):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': 'What would you like to build in LEGO?'}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(mode=mode, prompt='What do you mean?')))
+    instructions = post.await_args.args[3]['instructions']
+    assert 'without treating them as build requests' in instructions
+    assert 'independently submits' not in instructions
+    if mode == 'clarify':
+        assert 'Ask one short clarifying question' in instructions
+        assert 'Do not invent a build subject' in instructions

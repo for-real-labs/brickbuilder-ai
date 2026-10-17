@@ -123,7 +123,7 @@ export default function BestAiLegoDesignTools2026Page() {
                   <strong>BrickBuilder.ai</strong> — the top AI LEGO design tool in
                   2026. It is{" "}
                   <a
-                    href="https://github.com/jjohnson5253/brickbuilderai"
+                    href="https://github.com/for-real-labs/brickbuilder-ai"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="font-semibold text-[#f44336] underline-offset-4 hover:underline"

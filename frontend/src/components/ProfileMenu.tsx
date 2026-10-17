@@ -80,18 +80,19 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
       <button
         ref={trigger}
         type="button"
-        aria-label="Account menu"
+        aria-label="Profile"
+        title="Profile"
         aria-expanded={dropdownOpen}
         aria-controls={panelId}
         aria-describedby={feed.unread_count > 0 ? unreadId : undefined}
         onClick={() => { setView("profile"); setDropdownOpen(!dropdownOpen); }}
-        className="relative flex h-8 items-center gap-1 rounded-full border-none bg-slate-100 px-2 cursor-pointer transition-colors hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-400 sm:h-9 sm:gap-2 sm:px-3"
+        className="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/90 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 sm:w-auto sm:px-3"
       >
-        <div className="flex h-5 w-5 items-center justify-center rounded-full bg-[#f44336] sm:h-6 sm:w-6">
-          <User className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
-        </div>
+        <User aria-hidden="true" className="h-4 w-4" />
+        <span className="hidden sm:inline">Profile</span>
         <ChevronDown
-          className={`h-3.5 w-3.5 text-slate-600 transition-transform sm:h-4 sm:w-4 ${
+          aria-hidden="true"
+          className={`hidden h-3.5 w-3.5 transition-transform sm:block ${
             dropdownOpen ? "rotate-180" : ""
           }`}
         />
