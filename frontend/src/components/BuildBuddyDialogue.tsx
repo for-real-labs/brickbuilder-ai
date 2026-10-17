@@ -18,8 +18,8 @@ export function BuddyBuildMessages({ generationId, status, error }: { generation
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false }: {
-  turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, modelName }: {
+  turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean; modelName?: string;
 }) {
   const { pet } = usePet();
   const [returning] = useState(() => {
@@ -44,8 +44,8 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
-      <PetPromptGreeting state={state} showPetSwitch={false}>
-        {returning ? `Welcome back${!authLoading && username?.trim() ? `, ${username.trim()}` : ''}! What would you like to build?`
+      <PetPromptGreeting mode={modelName ? 'edit' : undefined} state={state} showPetSwitch={false}>
+        {modelName ? `Your ${modelName} is ready! What would you like to change?` : returning ? `Welcome back${!authLoading && username?.trim() ? `, ${username.trim()}` : ''}! What would you like to build?`
           : `Hi, I’m ${pet.name} your build buddy! What would you like to build?`}
       </PetPromptGreeting>
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">

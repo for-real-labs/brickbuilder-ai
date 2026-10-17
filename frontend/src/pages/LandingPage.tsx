@@ -12,6 +12,8 @@ import { PetPromptGreeting, PetSwitchButton } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
+import { useLandingModel } from '../hooks/useLandingModel';
+import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 
 import React, { useEffect, useLayoutEffect, useRef, useState, memo } from "react";
 import { Sparkles, Image as ImageIcon, Users, Calendar, Eye, X, MessageSquare, Wand2, Package, Github, LayoutDashboard, ChevronLeft, ChevronRight, ChevronDown, Settings } from "lucide-react";
@@ -24,7 +26,6 @@ import { ImageToBricksApiService, StreamEvent, VoxelDataEvent, PipelineEvent } f
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import StreamingMeshViewer from "../components/StreamingMeshViewer";
-import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { useAuth } from "../contexts/AuthContext";
 import { SiteFooter } from "../components/SiteFooter";
 import { AppStoreLink } from "../components/AppStoreLink";
@@ -301,7 +302,20 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const { text: beatText, fade: beatFade } = useBeatText(loading);
 
   // Generated model state
-  const [generatedMpdContent, setGeneratedMpdContent] = useState<string | null>(null);
+  const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token);
+  const ignoredModelIds = useRef(new Set<string>());
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const editSubmittingRef = useRef(false);
+  const modelBusy = landingModel.busy || editSubmitting;
+  const displayedGenerations = generations.map(row => row.id === landingModel.model?.generation.generation_id
+    ? { ...row, status: 'completed', previewWaitUntil: undefined } : row);
+  useEffect(() => {
+    if (ldrawLanding || landingModel.targetId) return;
+    const latest = generations.filter(row => !ignoredModelIds.current.has(row.id)
+      && (row.status === 'completed' || isGenerationActive(row.status)))
+      .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0];
+    if (latest) landingModel.open(latest.id);
+  }, [generations, ldrawLanding, landingModel.targetId, landingModel.open]);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Streaming 3D preview state
@@ -434,30 +448,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       console.warn('Failed to parse pending landing state:', err);
     }
   }, []);
-
-  // Function to save model to localStorage (same as BrickBuilder)
-  const saveModelToStorage = (ldrContent?: string, mpdContent?: string, modelName?: string, generationId?: string) => {
-    try {
-      if (ldrContent) {
-        localStorage.setItem(STORAGE_KEYS.LDR_CONTENT, ldrContent);
-      }
-      if (mpdContent) {
-        localStorage.setItem(STORAGE_KEYS.MPD_CONTENT, mpdContent);
-      }
-      if (modelName) {
-        localStorage.setItem(STORAGE_KEYS.MODEL_NAME, modelName);
-      }
-      if (generationId && generationId.trim()) {
-        localStorage.setItem(STORAGE_KEYS.GENERATION_ID, generationId);
-      } else {
-        localStorage.removeItem(STORAGE_KEYS.GENERATION_ID);
-      }
-      localStorage.setItem(STORAGE_KEYS.GENERATED_AT, new Date().toISOString());
-      console.log('Model saved to localStorage');
-    } catch (error) {
-      console.error('Error saving model to localStorage:', error);
-    }
-  };
 
   const onPickImage = (uploadPosition: 'input_left_icon' | 'image_upload_section' = 'image_upload_section') => {
     posthog.capture('landing_image_picker_opened', { page: imageLandingPath ?? '/', upload_position: uploadPosition });
@@ -610,7 +600,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
 
     // Clear previous results and errors
-    setGeneratedMpdContent(null);
     setGenerationError(null);
     setPreviewImageUrl(null);
     setGenerationStatus(null);
@@ -790,6 +779,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       if (!session) recordAnonymousGeneration(generationId);
       
       if (generationMethod === 'llm' || generationMethod === 'nova') {
+        landingModel.open(generationId);
         trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks', createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
         setLoading(false);
@@ -816,51 +806,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       
       console.log('Generation completed:', completedGeneration.generation_id);
       
-      // Get MPD content - either from URL or convert LDR to MPD
-      let mpdContent: string | null = null;
-      if (completedGeneration.mpd_url) {
-        try {
-          const mpdResponse = await fetch(completedGeneration.mpd_url);
-          if (mpdResponse.ok) {
-            mpdContent = await mpdResponse.text();
-          }
-        } catch (mpdError) {
-          console.warn('Failed to fetch MPD from URL:', mpdError);
-        }
-      }
-      
-      // Fallback: convert LDR to MPD if MPD URL wasn't available or failed
-      if (!mpdContent && completedGeneration.ldr_content) {
-        try {
-          const mpdData = await LdrToMpdApiService.convertLdrToMpd(
-            completedGeneration.ldr_content,
-            modelName,
-            authToken
-          );
-          mpdContent = mpdData.mpd_content;
-        } catch (mpdError) {
-          console.warn('Failed to convert LDR to MPD:', mpdError);
-        }
-      }
-      
       if (controller.signal.aborted) return;
-      setGeneratedMpdContent(mpdContent);
       setLoading(false);
       setActiveLoadingMethod(null);
       setPreviewImageUrl(null);
       setGenerationStatus(null);
-      
-      // Save to localStorage for persistence across browser refreshes
-      saveModelToStorage(
-        completedGeneration.ldr_content,
-        mpdContent || undefined,
-        modelName,
-        completedGeneration.generation_id
-      );
-      
-      // Navigate to generated model page since this completed from loading state
+      landingModel.open(completedGeneration.generation_id);
       if (!session) recordAnonymousGeneration(completedGeneration.generation_id);
-      navigate(`/generated-model?id=${completedGeneration.generation_id}`);
       
     } catch (error) {
       if (controller.signal.aborted) return;
@@ -902,6 +854,53 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   };
 
+  const submitModelEdit = async () => {
+    const model = landingModel.model;
+    if (!model || modelBusy || editSubmittingRef.current || !prompt.trim()) return;
+    editSubmittingRef.current = true;
+    setEditSubmitting(true);
+    setGenerationError(null);
+    const submittedPrompt = prompt.trim();
+    const sourceId = model.generation.generation_id;
+    const turnId = buddyChat.startTurn(submittedPrompt, null);
+    buddyChat.requestReply(turnId, submittedPrompt);
+    posthog.capture('landing_model_ai_edit_submitted', { generation_id: sourceId, prompt_length: submittedPrompt.length });
+    try {
+      const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
+      const response = nova
+        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token)
+        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt }, session?.access_token);
+      const id = response.generation_id;
+      localStorage.setItem(STORAGE_KEYS.GENERATION_ID, id);
+      if (!session) recordAnonymousGeneration(id);
+      buddyChat.updateTurn(turnId, { generationId: id, method: nova ? 'nova' : 'llm' });
+      trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks', createdAt: new Date().toISOString() });
+      landingModel.open(id, true);
+      setNotificationPromptId(id);
+      setPrompt('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unable to edit this model. Please try again.';
+      setGenerationError(message);
+      buddyChat.updateTurn(turnId, { error: message, reply: 'Let’s try that change again.' });
+      posthog.capture('landing_model_ai_edit_failed', { generation_id: sourceId });
+    } finally {
+      editSubmittingRef.current = false;
+      setEditSubmitting(false);
+    }
+  };
+
+  const createNewModel = () => {
+    posthog.capture('landing_model_create_new_clicked', { generation_id: landingModel.model?.generation.generation_id });
+    generations.forEach(row => ignoredModelIds.current.add(row.id));
+    if (landingModel.targetId) ignoredModelIds.current.add(landingModel.targetId);
+    landingModel.reset();
+    setPrompt('');
+    setGenerationError(null);
+    setInputValidationMessage(null);
+    clearSelectedImage();
+    requestAnimationFrame(() => promptInputRef.current?.focus());
+  };
+
   const submitGeneration = () => {
     if (loading) return;
     posthog.capture('landing_generate_clicked', {
@@ -926,7 +925,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pendingGenerateAfterLogin, session, authLoading]);
 
-  const petState = usePetActivity(loading || generations.some(row => isGenerationActive(row.status)));
+  const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
   return (
     <div
@@ -994,18 +993,24 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full landing-fade-in landing-delay-3">
-              <BuildBuddyDialogue turns={buddyChat.turns} generations={generations}
-                state={focused && !loading ? 'listening' : petState} authLoading={authLoading}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy}
+                onCreateNew={createNewModel} onSuggest={suggestion => {
+                  setPrompt(suggestion);
+                  promptInputRef.current?.focus();
+                }}>
+              <BuildBuddyDialogue modelName={landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'model' : undefined} turns={buddyChat.turns} generations={displayedGenerations}
+                state={focused && !loading && !modelBusy ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.username : null} />
             <form
-              aria-label="Create a brick model"
+              aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
               onSubmit={event => {
                 event.preventDefault();
-                submitGeneration();
+                if (landingModel.model) void submitModelEdit();
+                else submitGeneration();
               }}
             >
-              {imageLanding && <>
+              {imageLanding && !landingModel.model && <>
                 <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
                 <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
                 <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || preparingImage}
@@ -1014,14 +1019,14 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <button type="button" aria-label="Upload image" title="Upload image"
-                    disabled={loading || preparingImage} onClick={() => onPickImage('input_left_icon')}
+                    disabled={loading || preparingImage || Boolean(landingModel.model)} onClick={() => onPickImage('input_left_icon')}
                     className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50">
                     <ImageIcon aria-hidden="true" className="h-5 w-5" />
                   </button>
                   <input
                     id="landing-build-prompt"
                     ref={promptInputRef}
-                    aria-label="Describe your model"
+                    aria-label={landingModel.model ? "Describe changes to your model" : "Describe your model"}
                     maxLength={2000}
                     aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
                     value={prompt}
@@ -1037,17 +1042,17 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
+                    placeholder={landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
                     className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-28 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50 sm:pr-36"
-                    disabled={loading || preparingImage}
+                    disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   <button
                     type="submit"
-                    disabled={loading || preparingImage}
+                    disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                     className="absolute right-2 top-1/2 inline-flex h-12 -translate-y-1/2 items-center justify-center gap-2 rounded-xl bg-[#f44336] px-4 text-sm font-semibold text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 sm:px-6 sm:text-base"
                   >
                     <Sparkles aria-hidden="true" className="h-4 w-4 sm:h-5 sm:w-5" />
-                    Create
+                    {landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : 'Create'}
                   </button>
                 </div>
                 <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
@@ -1076,7 +1081,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
                       <button key={value} type="button" value={value}
                         aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                        disabled={loading || checkingProvider || generationMethod === '3d'}
+                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider || generationMethod === '3d'}
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);
@@ -1097,12 +1102,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (generationMethod === '3d') setGenerationMethod('llm');
                       if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
                     }
-                  }} disabled={loading || checkingProvider} />
+                  }} disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider} />
                 </div>
                 {localDevelopment && generationMethod === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>
-                    <select id="nova-connection" value={novaOptions.authMode} disabled={loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
+                    <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
                       const provider = getLlmModelOption(llmModel)?.provider as NovaLoginProvider;
                       if (event.target.value === 'native') { delete providerChoices.current[provider]; void checkNovaConnection(llmModel); }
                       else { providerChoices.current[provider] = 'api_key'; setNovaOptions(current => ({ ...current, authMode: 'api_key' })); }
@@ -1113,9 +1118,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   </div>
                 )}
               </div>
-              <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage} />
+              <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
-            </form></div>}
+            </form>
+              {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
+              {modelBusy && <p role="status" className="mt-3 text-left text-sm text-slate-500">{landingModel.model ? 'Updating your model… You can keep viewing it while your edit builds.' : 'Your model will appear here when it’s ready.'}</p>}
+              </LandingModelWorkspace>
+            </div>}
             <div
               className="flex items-center justify-center gap-8 text-slate-600 landing-fade-in landing-delay-2"
               aria-label="BrickBuilder generation statistics"
@@ -1213,14 +1222,14 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             )}
           </div>
 
-            <GenerationActivityList generations={generations} error={activityError} onDismiss={dismissGeneration} buddyDialogue
+            <GenerationActivityList generations={displayedGenerations} error={activityError} onDismiss={dismissGeneration} buddyDialogue
               notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
-              onOpen={id => navigate(`/generated-model?id=${id}`)}
+              onOpen={id => { landingModel.open(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               onResumed={(sourceId, newId) => {
                 const row = generations.find(generation => generation.id === sourceId);
                 if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
                   createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
-                if (row) setNotificationPromptId(newId);
+                if (row) { setNotificationPromptId(newId); landingModel.open(newId); }
               }}
               onCancelled={id => {
                 const row = generations.find(generation => generation.id === id);
