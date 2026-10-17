@@ -1021,7 +1021,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
-              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} loading={modelBusy}
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
@@ -1156,7 +1156,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form>
               {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
-              {modelBusy && <p role="status" className="mt-3 text-left text-sm text-slate-500">{landingModel.model ? 'Updating your model… You can keep viewing it while your edit builds.' : 'Your model will appear here when it’s ready.'}</p>}
+              {modelBusy && landingModel.model && <p role="status" className="mt-3 text-left text-sm text-slate-500">Updating your model… You can keep viewing it while your edit builds.</p>}
               {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
                 <LocalProviderSettings />
               </div>}

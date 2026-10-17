@@ -1,6 +1,7 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
+import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LandingModelOrdering } from './LandingModelOrdering';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
@@ -13,9 +14,10 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, onOrderBarHeightChange, children }: {
+export function LandingModelWorkspace({ model, busy, loading = false, onOrderBarHeightChange, children }: {
   model: LandingModel | null;
   busy: boolean;
+  loading?: boolean;
   onOrderBarHeightChange?: (height: number) => void;
   children: React.ReactNode;
 }) {
@@ -36,6 +38,10 @@ export function LandingModelWorkspace({ model, busy, onOrderBarHeightChange, chi
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
   return <>
+    {!model && loading && <section className="landing-model-loading" role="status" aria-label="Loading your model">
+      <div className="landing-model-loading-animation" aria-hidden="true"><LlmPreviewLoader compact /></div>
+      <p>Your model will appear here when it’s ready.</p>
+    </section>}
     {model && generation && <section className="landing-model-workspace" aria-label="Your model workspace">
       <div className="landing-model-heading">
         <span className="landing-model-name truncate font-semibold text-slate-800" title={generation.name || generation.prompt || 'Your model'}>{generation.name || generation.prompt || 'Your model'}</span>

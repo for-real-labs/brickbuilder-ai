@@ -182,10 +182,16 @@ it('keeps a linked pending model selected until its geometry is ready', async ()
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), status: ready ? 'completed' : 'processing' }));
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
-  expect(container.textContent).toContain('Your model will appear here');
+  const loading = container.querySelector('[aria-label="Loading your model"]')!;
+  expect(loading.getAttribute('role')).toBe('status');
+  expect(loading.querySelector('.brick-build-scene')).not.toBeNull();
+  expect(loading.textContent).toContain('Your model will appear here');
+  expect(loading.closest('.landing-model-conversation')).toBeNull();
+  expect(container.querySelector('.landing-model-conversation')?.textContent).not.toContain('Your model will appear here');
   ready = true;
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  expect(container.querySelector('[aria-label="Loading your model"]')).toBeNull();
 });
 
 it('shows a completed build without suggestions and resets from the centered header button', async () => {
@@ -531,4 +537,30 @@ it('passes the displayed model name into the greeting and replaces it with a pre
   expect(conversation.textContent).toContain('Castle’s red flags');
   expect(Array.from(conversation.querySelectorAll('strong')).map(el => el.textContent)).toEqual(['edit', 'order']);
   expect(conversation.querySelectorAll('.pet-greeting')).toHaveLength(1);
+});
+
+
+it('shows the shared LEGO animation only while opening a model, and keeps an existing model visible during edits', async () => {
+  const render = (model: LandingModel | null, loading: boolean, busy = loading) => act(async () => root.render(
+    <LandingModelWorkspace model={model} loading={loading} busy={busy}><p>Conversation</p></LandingModelWorkspace>));
+  await render(null, false);
+  expect(container.querySelector('.landing-model-loading')).toBeNull();
+  await render(null, false, true);
+  expect(container.querySelector('.landing-model-loading')).toBeNull();
+  await render(null, true);
+  expect(container.querySelectorAll('.landing-model-loading .brick-build-scene')).toHaveLength(1);
+  const initialScene = container.querySelector('.landing-model-loading svg');
+  await act(async () => vi.advanceTimersByTimeAsync(6800));
+  expect(container.querySelector('.landing-model-loading svg')).not.toBe(initialScene);
+  await render({ generation: generation('castle'), content: 'castle mpd' }, true);
+  expect(container.querySelector('.landing-model-loading')).toBeNull();
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+});
+
+it.each(['failed', 'cancelled'] as const)('removes the centered loading state after a linked build is %s', async status => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('castle'), status });
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-loading')).toBeNull();
+  expect(container.querySelector('[role="alert"]')).not.toBeNull();
 });
