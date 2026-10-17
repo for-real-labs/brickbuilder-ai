@@ -27,6 +27,7 @@ import StreamingMeshViewer from "../components/StreamingMeshViewer";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { useAuth } from "../contexts/AuthContext";
 import { SiteFooter } from "../components/SiteFooter";
+import { AppStoreLink } from "../components/AppStoreLink";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity, isGenerationActive } from "../hooks/useGenerationActivity";
@@ -1514,8 +1515,9 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
         </span>
       </a>
 
-      <nav aria-label="Main navigation" className="order-last flex w-full justify-center lg:absolute lg:left-1/2 lg:top-1/2 lg:w-auto lg:-translate-x-1/2 lg:-translate-y-1/2">
+      <nav aria-label="Main navigation" className="order-last flex w-full items-center justify-center gap-2 sm:gap-3 xl:absolute xl:left-1/2 xl:top-1/2 xl:w-auto xl:-translate-x-1/2 xl:-translate-y-1/2">
         <LandingToolsMenu page={page} />
+        <AppStoreLink placement="header" page={page} />
       </nav>
 
       {/* Login / Sign Up OR Account Menu */}
