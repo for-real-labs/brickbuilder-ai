@@ -46,8 +46,15 @@ upload keystore. Do not commit or publish keystores or service-account keys.
 The Expo SDK 57 / React Native toolchain targets Android API 36.
 
 Initial release build: [Expo Android production build](https://expo.dev/accounts/jakesessiongalaxys-team/projects/brickbuilder/builds/2b62562d-60d7-4568-92fa-93becf3d340e),
-version `1.0.2`, version code `4`. Check the linked build's status before using
-its download; starting a build is not confirmation that it succeeded.
+version `1.0.2`, version code `4`, **finished successfully** on October 17, 2026.
+The [signed Android App Bundle](https://expo.dev/artifacts/eas/AH0ysGkePpaHkFG7NldfQEFbO91BWklrmwIcKuaXM3U.aab)
+is 48,755,656 bytes. Google bundletool validation, ZIP integrity, and Java
+signature verification pass. Its actual manifest confirms package
+`ai.brickbuilder.app`, target API 36, minimum API 24, and version code 4.
+It contains arm64-v8a, armeabi-v7a, x86, and x86_64 native libraries.
+
+SHA-256: `7b42c51d2c301ac93693205d2d7f3ca0597a88ec8aaacf38fab2adf4f5eceaab`.
+The bundle has not been uploaded to Google Play or submitted for review.
 
 Download the successful build's `.aab`, create or open the app in the correct
 Google Play developer account, upload the bundle, and finish the listing and
