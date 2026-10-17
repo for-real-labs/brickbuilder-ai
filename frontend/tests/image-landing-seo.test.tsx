@@ -16,8 +16,8 @@ describe('image landing SEO', () => {
     expect(document).toContain(`href="https://brickbuilder.ai/${path}"`);
     expect(document).toContain('content="index, follow"');
     expect(document).toContain(IMAGE_LANDING_PAGES[path].uploadTitle);
-    expect(document).toContain('How It Works');
-    expect(document).toContain('Build It In Real Life');
+    expect(document).not.toContain('How It Works');
+    expect(document).not.toContain('Build It In Real Life');
     expect(document).toContain(path === 'use-ai-to-edit-ldraw' ? 'Upload LDraw model' : 'add optional instructions');
     expect(document).toContain('application/ld+json');
     expect(document).not.toContain('aggregateRating');
