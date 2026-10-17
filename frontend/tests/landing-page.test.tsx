@@ -253,7 +253,13 @@ describe('LandingPage', () => {
       } else {
         expect(document.querySelector('[role="dialog"]')).toBeNull();
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
-        expect(container.textContent).toContain('Submission failed');
+        const dialogue = container.querySelector('[aria-label="Build buddy conversation"]')!;
+        expect(dialogue.querySelector('[role="status"]')?.textContent)
+          .toBe('Woops! Something in the brickverse is down. Try again later');
+        expect(container.textContent?.split('Woops! Something in the brickverse is down. Try again later')).toHaveLength(2);
+        expect(container.textContent).not.toContain('Submission failed');
+        expect(container.textContent).not.toContain('Generation Failed');
+        expect(container.textContent).not.toContain('Try Again');
         expect(URL.revokeObjectURL).not.toHaveBeenCalled();
       }
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ has_image: true, has_prompt: true }));
@@ -493,6 +499,10 @@ describe('LandingPage', () => {
       const create = container.querySelector<HTMLButtonElement>('button[type=submit]')!;
       await act(async () => { create.click(); await vi.waitFor(() => expect(nova).toHaveBeenCalledTimes(1)); });
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({ imageBase64: btoa('reference'), imageMediaType: 'image/png', model: DEFAULT_LLM_MODEL }), undefined);
+      expect(container.querySelector('[aria-label="Build buddy conversation"] [role="status"]')?.textContent)
+        .toBe('Woops! Something in the brickverse is down. Try again later');
+      expect(container.textContent).not.toContain('Test Nova request');
+      expect(container.textContent).not.toContain('Generation Failed');
       act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
       await act(async () => { create.click(); await vi.waitFor(() => expect(llm).toHaveBeenCalledTimes(1)); });
       expect(llm).toHaveBeenCalledWith(expect.objectContaining({ imageBase64: btoa('reference'), model: DEFAULT_LLM_MODEL }), undefined);

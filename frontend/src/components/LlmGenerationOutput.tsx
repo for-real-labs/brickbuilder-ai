@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { LlmToBricksApiService } from '../services/llmToBricksApi';
 import { PetChatMessage } from './PetCompanion';
-import { summarizeBuildProgress } from '../utils/buildProgress';
+import { BUILD_FAILURE_MESSAGE, summarizeBuildProgress } from '../utils/buildProgress';
 
-export function LlmGenerationOutput({ generationId, active, status, error }: { generationId: string; active: boolean; status?: string; error?: string }) {
+export function LlmGenerationOutput({ generationId, active, status }: { generationId: string; active: boolean; status?: string }) {
   const [notes, setNotes] = useState('');
   const [summary, setSummary] = useState<string | undefined>('');
   const [reconnecting, setReconnecting] = useState(false);
   const [finished, setFinished] = useState(false);
   const [outputStatus, setOutputStatus] = useState('');
-  const [outputError, setOutputError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -19,7 +18,6 @@ export function LlmGenerationOutput({ generationId, active, status, error }: { g
     setSummary('');
     setFinished(false);
     setOutputStatus('');
-    setOutputError(null);
     setReconnecting(false);
     if (!active) return () => controller.abort();
     const connect = async () => {
@@ -32,7 +30,6 @@ export function LlmGenerationOutput({ generationId, active, status, error }: { g
           setSummary(typeof output.summary === 'string' ? output.summary : undefined);
           setFinished(['completed', 'failed', 'cancelled'].includes(output.status));
           setOutputStatus(output.status);
-          setOutputError(output.error || null);
           setReconnecting(false);
           retryDelay = 1_000;
         }, controller.signal);
@@ -56,7 +53,7 @@ export function LlmGenerationOutput({ generationId, active, status, error }: { g
   const activity = summary === undefined ? summarizeBuildProgress(notes, '') : summary.trim();
   const update = currentStatus === 'completed' ? 'Look what we made! Your build is ready.'
     : currentStatus === 'cancelled' ? 'I’ve stopped this build. We can try another idea whenever you’re ready.'
-    : currentStatus === 'failed' ? `I couldn’t finish this build. ${error || outputError || 'Please try again.'}`
+    : currentStatus === 'failed' ? BUILD_FAILURE_MESSAGE
     : activity ? `I’m ${activity.charAt(0).toLowerCase() + activity.slice(1).replace(/[.!…]+$/, '')}…`
     : 'I’m getting your build ready. I’ll share updates here as I work.';
   return <PetChatMessage compact state={currentStatus === 'completed' ? 'celebrating' : active && !finished ? 'building' : 'idle'}>

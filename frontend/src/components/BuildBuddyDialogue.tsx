@@ -7,13 +7,14 @@ import { GetNotifiedButton } from './GetNotifiedButton';
 import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
 import { isAgentGeneration } from '../utils/agentGeneration';
+import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 
 export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
 
-export function BuddyBuildMessages({ generationId, status, error }: { generationId: string; status: string; error?: string }) {
+export function BuddyBuildMessages({ generationId, status }: { generationId: string; status: string }) {
   const active = isGenerationActive(status);
   return <div className="pet-build-messages">
-    <LlmGenerationOutput generationId={generationId} active={active} status={status} error={error} />
+    <LlmGenerationOutput generationId={generationId} active={active} status={status} />
     {active && <GetNotifiedButton generationId={generationId} promptOnStart />}
   </div>;
 }
@@ -50,7 +51,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       </PetPromptGreeting>
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
         <PetChatMessage user><p>{row.prompt || 'Image reference'}</p></PetChatMessage>
-        <BuddyBuildMessages generationId={row.id} status={row.status} error={row.errorMessage} />
+        <BuddyBuildMessages generationId={row.id} status={row.status} />
       </div>)}
       {turns.map(turn => {
         const generation = generations.find(row => row.id === turn.generationId);
@@ -60,12 +61,12 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
             {turn.text && <p>{turn.text}</p>}
             {!turn.text && <p>{turn.imageName || 'Image reference'}</p>}
           </PetChatMessage>
-          <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
-            <p>{turn.reply || 'Let me take a look…'}</p>
-          </PetChatMessage>
-          {turn.error && <PetChatMessage><p role="status">I couldn’t start this build. {turn.error}</p></PetChatMessage>}
-          {turn.generationId && (turn.method === 'llm' || turn.method === 'nova') && <BuddyBuildMessages
-            generationId={turn.generationId} status={generation?.status || 'started'} error={generation?.errorMessage} />}
+          {turn.error ? <PetChatMessage><p role="status">{BUILD_FAILURE_MESSAGE}</p></PetChatMessage>
+            : <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
+              <p>{turn.reply || 'Let me take a look…'}</p>
+            </PetChatMessage>}
+          {!turn.error && turn.generationId && (turn.method === 'llm' || turn.method === 'nova') && <BuddyBuildMessages
+            generationId={turn.generationId} status={generation?.status || 'started'} />}
         </div>;
       })}
     </div>

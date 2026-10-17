@@ -12,6 +12,7 @@ import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
 import { modelEditSuggestions } from '../src/components/LandingModelWorkspace';
 
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
+const buddy = vi.hoisted(() => ({ updateTurn: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
@@ -20,7 +21,7 @@ vi.mock('../src/hooks/useGenerationActivity', async () => ({
   useGenerationActivity: () => ({ generations: activity.rows, trackGeneration: activity.track, dismissGeneration: vi.fn() }),
 }));
 vi.mock('../src/services/localProvidersApi', () => ({ isLocalDevelopment: () => false }));
-vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ turns: [], startTurn: () => 1, requestReply: vi.fn(), updateTurn: vi.fn() }) }));
+vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ turns: [], startTurn: () => 1, requestReply: vi.fn(), updateTurn: buddy.updateTurn }) }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent }: { modelContent: string }) => <div data-testid="viewer">{modelContent}</div> }));
@@ -42,6 +43,7 @@ const generation = (id: string, endpoint = 'novaToBricks'): GetGenerationRespons
   xyzrgb_url: null, problematic_xyzrgb_url: null, error_message: null,
 });
 beforeEach(() => {
+  buddy.updateTurn.mockClear();
   sessionStorage.clear();
   vi.useFakeTimers();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -126,7 +128,11 @@ it('keeps the current model and edit text available after an edit request fails'
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
   expect(input().value).toBe('Add a bridge');
   expect(input().disabled).toBe(false);
-  expect(container.textContent).toContain('Please try again');
+  expect(buddy.updateTurn).toHaveBeenCalledWith(1, {
+    error: 'Woops! Something in the brickverse is down. Try again later', reply: undefined,
+  });
+  expect(container.textContent).not.toContain('Please try again');
+  expect(container.textContent).not.toContain('Generation Failed');
 });
 
 it('falls back to LDR conversion and ignores a late model response after reset', async () => {

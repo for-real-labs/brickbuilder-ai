@@ -7,6 +7,24 @@ import { LlmGenerationOutput } from '../src/components/LlmGenerationOutput';
 
 afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
 
+it('speaks the pet failure message when a running build fails without displaying server details', async () => {
+  vi.spyOn(LlmToBricksApiService, 'watchOutput').mockImplementation(async (_id, update) => {
+    update({ text: 'Internal runtime diagnostics', status: 'failed', error: 'Cannot reach the Nova runtime' });
+    return true;
+  });
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LlmGenerationOutput generationId="job" active />));
+    const message = container.querySelector('[role="status"]');
+    expect(message?.textContent).toBe('Woops! Something in the brickverse is down. Try again later');
+    expect(message?.closest('.pet-chat-message')).not.toBeNull();
+    expect(container.textContent).not.toContain('Nova runtime');
+    expect(container.textContent).not.toContain('Internal runtime diagnostics');
+    expect(container.textContent).not.toContain('reconnecting');
+  } finally { act(() => root.unmount()); }
+});
+
 it('reads split SSE snapshots, CRLF and keep-alives, replacing replayed text', async () => {
   const encoder = new TextEncoder();
   const data = ': keep-alive\r\n\r\ndata: {"type":"output","text":"Build","status":"processing"}\r\n\r\ndata: {"type":"output","text":"Building a castle","status":"completed"}\n\n';
