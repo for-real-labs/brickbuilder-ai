@@ -268,3 +268,25 @@ def test_model_greeting_rejects_invalid_ids_and_honors_request_limits(monkeypatc
         asyncio.run(buddy.buddy_model_greeting(buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID), model_request(), {}))
     assert error.value.status_code == 429
     storage.get_generation.assert_not_awaited()
+
+
+@pytest.mark.parametrize('reply', [
+    'I love those wrinkles on your Shar Pei’s sweet face!',
+    'Fun fact: Shar Peis were first bred in China!',
+])
+def test_model_greeting_invites_personal_praise_or_a_subject_fact_instead_of_plain_description(monkeypatch, reply):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': reply}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    assert asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(
+        mode='model', prompt='Shar Pei Dog'))) == reply
+    instructions = post.await_args.args[3]['instructions']
+    assert 'what YOU like about this model' in instructions
+    assert 'start with "I love", "I like", or "My favorite"' in instructions
+    assert 'start with "Fun fact:"' in instructions
+    assert 'about the real subject, not its appearance in this model' in instructions
+    assert 'Never merely describe the model or list its colors, parts, or traits' in instructions
+    assert 'Only share facts you are confident are true' in instructions
+    assert 'otherwise choose a personal reaction' in instructions
+    assert 'do not guess visual details' in instructions
+    assert 'at most 14 words' in instructions
