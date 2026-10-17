@@ -57,7 +57,7 @@ it('shows unread badges, keeps dropdown links unread, and clears only on a model
   await render();
   expect(container.querySelector('[data-testid="notification-badge"]')?.textContent).toBe('1');
   act(() => container.querySelector('button')!.click());
-  expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=done&exact=1');
+  expect(container.querySelector('a')?.getAttribute('href')).toBe('/?id=done&exact=1');
   expect(mark).not.toHaveBeenCalled();
   await act(async () => { await feed.markViewed('done'); });
   expect(mark).toHaveBeenCalledWith('done');
@@ -107,7 +107,7 @@ it('keeps in-progress models linked after navigation and retries notification po
   await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
   act(() => container.querySelector('button')!.click());
   expect(container.textContent).toContain('Model in progress');
-  expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=running&exact=1');
+  expect(container.querySelector('a')?.getAttribute('href')).toBe('/?id=running&exact=1');
   expect(feed.error).toBeNull();
 });
 
@@ -201,8 +201,8 @@ it.each(['default', 'denied', 'granted', 'unsupported'])('keeps new completions 
   expect(mark).not.toHaveBeenCalled();
   expect(native).toHaveBeenCalledTimes(permission === 'granted' ? 2 : 0);
   await act(async () => container.querySelector('button')!.click());
-  expect(container.querySelector('a[href="/generated-model?id=edit&exact=1"]')).not.toBeNull();
-  expect(container.querySelector('a[href="/generated-model?id=model&exact=1"]')).not.toBeNull();
+  expect(container.querySelector('a[href="/?id=edit&exact=1"]')).not.toBeNull();
+  expect(container.querySelector('a[href="/?id=model&exact=1"]')).not.toBeNull();
   expect(container.querySelectorAll('[aria-label="Unread"]')).toHaveLength(2);
   await act(async () => { feed.refresh(); });
   expect(container.querySelector('[role="status"]')).toBeNull();
@@ -256,7 +256,7 @@ it('replaces the separate bell with an unread profile indicator and returns from
   expect(document.getElementById(accountButton().getAttribute('aria-describedby')!)?.textContent).toBe('1 unread notifications');
   await openProfileNotifications();
   expect(container.textContent).not.toContain('My Generations');
-  expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=done&exact=1');
+  expect(container.querySelector('a')?.getAttribute('href')).toBe('/?id=done&exact=1');
   expect(posthog.capture).toHaveBeenCalledWith('generation_notifications_opened', { unread_count: 1, source: 'profile_menu' });
   const back = container.querySelector<HTMLButtonElement>('[aria-label="Back to account menu"]')!;
   expect(document.activeElement).toBe(back);
@@ -307,7 +307,7 @@ it('uses guarded navigation and closes the profile submenu when opening a notifi
   await renderProfile(onNavigate);
   await openProfileNotifications();
   act(() => container.querySelector('a')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
-  expect(onNavigate).toHaveBeenCalledWith('/generated-model?id=model%20%26%20edit&exact=1');
+  expect(onNavigate).toHaveBeenCalledWith('/?id=model%20%26%20edit&exact=1');
   expect(accountButton().getAttribute('aria-expanded')).toBe('false');
   expect(container.querySelector('[aria-label="Model notifications"]')).toBeNull();
   act(() => accountButton().click());

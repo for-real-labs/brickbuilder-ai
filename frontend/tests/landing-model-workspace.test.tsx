@@ -15,9 +15,10 @@ import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/La
 
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
 const navigate = vi.hoisted(() => vi.fn());
+const query = vi.hoisted(() => ({ value: '', set: vi.fn() }));
 const buddy = vi.hoisted(() => ({ updateTurn: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useSearchParams: () => [new URLSearchParams(query.value), query.set] }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
 vi.mock('../src/hooks/useGenerationActivity', async () => ({
   ...await vi.importActual('../src/hooks/useGenerationActivity'),
@@ -52,6 +53,9 @@ beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = false; }) });
   buddy.updateTurn.mockClear();
   navigate.mockClear();
+  query.value = '';
+  query.set.mockReset();
+  query.set.mockImplementation(next => { query.value = next(new URLSearchParams(query.value)).toString(); });
   vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({ generation_id: 'castle', total_price: 44.77, total_weight: .5263, total_parts: 370, currency: 'USD', parts_breakdown: [] } as never);
   vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
   vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
@@ -74,6 +78,45 @@ function type(text: string) {
   });
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+
+it('loads the linked model instead of the saved workspace or newest dashboard generation', async () => {
+  query.value = 'id=linked%20%26%20model&exact=1';
+  sessionStorage.setItem('brickbuilder.landing-model:guest', 'saved');
+  activity.rows = [{ id: 'newest', status: 'completed', endpoint: 'novaToBricks', prompt: 'Newest' }];
+  const get = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), name: id }));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-name')?.textContent).toBe('linked & model');
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('castle mpd');
+  expect(get.mock.calls.every(([id]) => id === 'linked & model')).toBe(true);
+  expect(sessionStorage.getItem('brickbuilder.landing-model:guest')).toBe('linked & model');
+});
+
+it('loads a different model when the landing link changes and clears the link when creating a new model', async () => {
+  query.value = 'id=first&exact=1&campaign=share';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), name: id }));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-name')?.textContent).toBe('first');
+  query.value = 'id=second&exact=1&campaign=share';
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-name')?.textContent).toBe('second');
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-create-new')!.click());
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  expect(sessionStorage.getItem('brickbuilder.landing-model:guest')).toBeNull();
+  expect(query.value).toBe('campaign=share');
+});
+
+it('keeps a linked pending model selected until its geometry is ready', async () => {
+  query.value = 'id=pending';
+  let ready = false;
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), status: ready ? 'completed' : 'processing' }));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  expect(container.textContent).toContain('Your model will appear here');
+  ready = true;
+  await act(async () => vi.advanceTimersByTimeAsync(5000));
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+});
 
 it('shows a newly completed build inline, puts three suggestions below the dialogue input, and resets without reopening old builds', async () => {
   vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'castle', message: 'Started' });
@@ -99,7 +142,7 @@ it('shows a newly completed build inline, puts three suggestions below the dialo
   expect(conversation.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(input().compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(conversation.closest('.landing-model-conversation')).not.toBeNull();
-  expect(container.querySelector('a[href="/generated-model?id=castle&exact=1"]')).not.toBeNull();
+  expect(container.querySelector('a[href="/?id=castle&exact=1"]')).not.toBeNull();
   act(() => buttons[0].click());
   expect(input().value).toBe('Add a drawbridge');
   expect(document.activeElement).toBe(input());
@@ -348,7 +391,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its so
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(input().disabled).toBe(false);
   expect(container.querySelector('[aria-label="Model suggestions"] button')?.textContent).toBe('Add flags');
-  expect(container.querySelector('a[href="/generated-model?id=edited&exact=1"]')).not.toBeNull();
+  expect(container.querySelector('a[href="/?id=edited&exact=1"]')).not.toBeNull();
 });
 
 it('keeps the current model and edit text available after an edit request fails', async () => {

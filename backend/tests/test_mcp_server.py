@@ -150,7 +150,7 @@ def test_creation_and_edit_use_existing_pipeline_with_verified_identity(client, 
         assert data["generation_id"] == GENERATION_ID
         assert data["status"] == "started"
         assert data["next_tool"] == "get_lego_model"
-        assert "exact=1" in data["model_url"]
+        assert data["model_url"] == f"{SETTINGS.website_url}/?id={GENERATION_ID}&exact=1"
         schema = next(tool for tool in asyncio.run(server.list_tools()) if tool.name == name).outputSchema
         validate(data, schema)
     request, identity = start.call_args.args
@@ -176,6 +176,7 @@ def test_invalid_generation_inputs_never_start_a_job(client, monkeypatch, args):
 def test_reads_only_expose_owner_artifacts_when_completed(client):
     http, _, storage = client
     result = call(http, "get_lego_model", {"generation_id": GENERATION_ID})["structuredContent"]
+    assert result["model_url"] == f"{SETTINGS.website_url}/?id={GENERATION_ID}&exact=1"
     assert result["poll_after_seconds"] == 10
     assert "ldr_url" not in result
     storage.get_generation.return_value.update(
@@ -184,6 +185,7 @@ def test_reads_only_expose_owner_artifacts_when_completed(client):
         error_message="secret-provider-error", llm_output_snapshot_url="private-thinking", prompt="private prompt",
     )
     result = call(http, "get_lego_model", {"generation_id": GENERATION_ID})["structuredContent"]
+    assert result["model_url"] == f"{SETTINGS.website_url}/?id={GENERATION_ID}&exact=1"
     assert result["brick_count"] == 20
     assert result["ldr_url"].endswith(".ldr")
     assert "secret-provider-error" not in str(result) and "private-thinking" not in str(result)
@@ -213,6 +215,7 @@ def test_interrupted_jobs_do_not_poll_forever(client, timestamp):
     row = storage.get_generation.return_value
     row["updated_at"] = timestamp
     result = call(http, "get_lego_model", {"generation_id": GENERATION_ID})["structuredContent"]
+    assert result["model_url"] == f"{SETTINGS.website_url}/?id={GENERATION_ID}&exact=1"
     assert result["status"] == "failed"
     assert "poll_after_seconds" not in result
     # A progress read does not alter stored state; a fresh heartbeat can resume.

@@ -14,16 +14,17 @@ import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel } from '../hooks/useLandingModel';
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { TextToBricksApiService } from "../services/textToBricksApi";
 import { ImageToBricksApiService, StreamEvent, VoxelDataEvent, PipelineEvent } from "../services/imageToBricksApi";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
@@ -253,7 +254,18 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const { text: beatText, fade: beatFade } = useBeatText(loading);
 
   // Generated model state
-  const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedModelId = searchParams.get('id');
+  const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
+  const openModel = useCallback((id: string, retainModel = false) => {
+    landingModel.open(id, retainModel);
+    setSearchParams(current => {
+      const next = new URLSearchParams(current);
+      next.set('id', id);
+      next.set('exact', '1');
+      return next;
+    }, { replace: true });
+  }, [landingModel.open, setSearchParams]);
   const ignoredModelIds = useRef(new Set<string>());
   const [editSubmitting, setEditSubmitting] = useState(false);
   const editSubmittingRef = useRef(false);
@@ -261,12 +273,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const displayedGenerations = generations.map(row => row.id === landingModel.model?.generation.generation_id
     ? { ...row, status: 'completed', previewWaitUntil: undefined } : row);
   useEffect(() => {
-    if (ldrawLanding || landingModel.targetId) return;
+    if (ldrawLanding || requestedModelId || landingModel.targetId) return;
     const latest = generations.filter(row => !ignoredModelIds.current.has(row.id)
       && (row.status === 'completed' || isGenerationActive(row.status)))
       .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))[0];
-    if (latest) landingModel.open(latest.id);
-  }, [generations, ldrawLanding, landingModel.targetId, landingModel.open]);
+    if (latest) openModel(latest.id);
+  }, [generations, ldrawLanding, requestedModelId, landingModel.targetId, openModel]);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
   // Streaming 3D preview state
@@ -675,7 +687,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       if (!session) recordAnonymousGeneration(generationId);
       
       if (generationMethod === 'llm' || generationMethod === 'nova') {
-        landingModel.open(generationId);
+        openModel(generationId);
         trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks', createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
         setLoading(false);
@@ -707,7 +719,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       setActiveLoadingMethod(null);
       setPreviewImageUrl(null);
       setGenerationStatus(null);
-      landingModel.open(completedGeneration.generation_id);
+      openModel(completedGeneration.generation_id);
       if (!session) recordAnonymousGeneration(completedGeneration.generation_id);
       
     } catch (error) {
@@ -755,7 +767,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       if (!session) recordAnonymousGeneration(id);
       buddyChat.updateTurn(turnId, { generationId: id, method: nova ? 'nova' : 'llm' });
       trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks', createdAt: new Date().toISOString() });
-      landingModel.open(id, true);
+      openModel(id, true);
       setNotificationPromptId(id);
       setPrompt('');
     } catch (error) {
@@ -774,6 +786,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     generations.forEach(row => ignoredModelIds.current.add(row.id));
     if (landingModel.targetId) ignoredModelIds.current.add(landingModel.targetId);
     landingModel.reset();
+    setSearchParams(current => {
+      const next = new URLSearchParams(current);
+      next.delete('id');
+      next.delete('exact');
+      return next;
+    }, { replace: true });
     setGiftPlanning(false);
     setPrompt('');
     setGenerationError(null);
@@ -880,12 +898,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const generationActivity = (
     <GenerationActivityList generations={displayedGenerations} error={activityError} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
       notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
-      onOpen={id => { landingModel.open(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+      onOpen={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
       onResumed={(sourceId, newId) => {
         const row = generations.find(generation => generation.id === sourceId);
         if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
           createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
-        if (row) { setNotificationPromptId(newId); landingModel.open(newId); }
+        if (row) { setNotificationPromptId(newId); openModel(newId); }
       }}
       onCancelled={id => {
         const row = generations.find(generation => generation.id === id);
@@ -985,7 +1003,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               <LDrawUploadSection authToken={session?.access_token} onImported={id => {
                 localStorage.setItem('lastGenerationId', id);
                 if (!session) recordAnonymousGeneration(id);
-                navigate(`/generated-model?id=${encodeURIComponent(id)}&exact=1`);
+                navigate(getGeneratedModelPath(id, true));
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">

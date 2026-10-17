@@ -216,7 +216,7 @@ export default function OrderKit() {
   return <div className="order-checkout">
     <SEO title={`Order Kit — ${name}`} description="Review and order your custom brick kit." url="https://brickbuilder.ai/order" noIndex />
     <header className="checkout-header"><div className="checkout-header-inner">
-      <Link to="/" aria-label="BrickBuilder home" className="checkout-brand"><span><b>BRICK</b>BUILDER</span></Link>
+      <Link to={getOrderReturnModelPath(state.generation_id, lastGenerationId)} aria-label="BrickBuilder home" className="checkout-brand"><span><b>BRICK</b>BUILDER</span></Link>
       <span className="checkout-header-secure"><LockKeyhole size={16} />Secure checkout</span>
     </div></header>
     <main className="checkout-main">

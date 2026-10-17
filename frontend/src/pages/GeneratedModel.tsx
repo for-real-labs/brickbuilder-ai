@@ -364,7 +364,7 @@ export default function GeneratedModel() {
     modelLoadAbortRef.current?.abort();
     refreshNotifications();
     const previousId = pendingGeneration?.previous_completed_generation_id || retainedEditSourceId;
-    navigate(previousId ? `/generated-model?id=${encodeURIComponent(previousId)}&exact=1` : '/', { replace: true });
+    navigate(previousId ? getGeneratedModelPath(previousId, true) : '/', { replace: true });
   };
   const isLDrawUpload = pendingGeneration?.endpoint === 'uploadLdraw';
   const orderable = pendingGeneration?.orderable !== false && !isLDrawUpload;
@@ -459,7 +459,7 @@ export default function GeneratedModel() {
             const edit = await GenerationNotificationsApi.latestEdit(urlGenerationId, controller.signal);
             if (controller.signal.aborted) return;
             if (edit.generation_id && searchParams.get("exact") !== "1") {
-              navigate(`/generated-model?id=${encodeURIComponent(edit.generation_id)}`, { replace: true });
+              navigate(getGeneratedModelPath(edit.generation_id), { replace: true });
               return;
             }
           } catch { /* The original model is still usable if edit lookup is temporarily unavailable. */ }
@@ -499,7 +499,7 @@ export default function GeneratedModel() {
                 setPendingGeneration(response);
                 if (response.status === 'cancelled') {
                   controller.abort();
-                  navigate(response.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(response.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
+                  navigate(response.previous_completed_generation_id ? getGeneratedModelPath(response.previous_completed_generation_id, true) : '/', { replace: true });
                   return;
                 }
                 if (response.external_image_url) {
@@ -525,7 +525,7 @@ export default function GeneratedModel() {
           
           // If failed, show error
           if (statusResponse.status === 'cancelled') {
-            navigate(statusResponse.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
+            navigate(statusResponse.previous_completed_generation_id ? getGeneratedModelPath(statusResponse.previous_completed_generation_id, true) : '/', { replace: true });
             return;
           }
           if (statusResponse.status === 'failed') {
@@ -618,7 +618,7 @@ export default function GeneratedModel() {
           }
           
           if (statusResponse.status === 'cancelled') {
-            navigate(statusResponse.previous_completed_generation_id ? `/generated-model?id=${encodeURIComponent(statusResponse.previous_completed_generation_id)}&exact=1` : '/', { replace: true });
+            navigate(statusResponse.previous_completed_generation_id ? getGeneratedModelPath(statusResponse.previous_completed_generation_id, true) : '/', { replace: true });
             return;
           }
           if (statusResponse.status === 'failed') {
@@ -1673,7 +1673,7 @@ export default function GeneratedModel() {
       localStorage.setItem('lastGenerationId', newGenerationId);
       if (!currentUser) recordAnonymousGeneration(newGenerationId);
       refreshNotifications();
-      navigate(`/generated-model?id=${encodeURIComponent(newGenerationId)}`, { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? 'novaToBricks' : 'llmToBricks' } });
+      navigate(getGeneratedModelPath(newGenerationId), { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? 'novaToBricks' : 'llmToBricks' } });
       setEditPrompt('');
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
@@ -1936,7 +1936,7 @@ export default function GeneratedModel() {
                 <p className="text-sm text-slate-700">
                   This generation might be hosted on the live BrickBuilder site.{' '}
                   <a
-                    href={`${LIVE_SITE_URL}/generated-model?id=${searchParams.get('id')}`}
+                    href={`${LIVE_SITE_URL}${getGeneratedModelPath(currentGenerationId || searchParams.get('id') || '', true)}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-[#f44336] hover:text-[#ff6b6b] underline"

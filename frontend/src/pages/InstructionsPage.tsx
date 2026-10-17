@@ -1,3 +1,4 @@
+import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { NotificationMenu } from "../components/NotificationMenu";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
@@ -1401,7 +1402,7 @@ export function InstructionsViewer({ generationId, initialStep = 1, navigationSt
         {/* Back to Model Button */}
         {generationId && (
           <button
-            onClick={() => navigate(`/generated-model?id=${generationId}`)}
+            onClick={() => navigate(getGeneratedModelPath(generationId))}
             className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mt-4 mb-2 transition-colors landing-fade-in landing-delay-2"
           >
             <ArrowLeft className="h-4 w-4" />

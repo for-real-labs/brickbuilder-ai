@@ -9,7 +9,7 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GIFT_PROMPT_SUGGESTION, IMAGE_PROMPT_SUGGESTION, PROMPT_EXAMPLES } from '../src/utils/promptExamples';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), useSearchParams: () => [new URLSearchParams(), vi.fn()] }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
 vi.mock('../src/hooks/useGenerationActivity', async () => ({
   ...await vi.importActual('../src/hooks/useGenerationActivity'),

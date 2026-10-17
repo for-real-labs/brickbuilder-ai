@@ -54,7 +54,7 @@ it.each(['3d', 'glb', 'obj'] as const)('generates from /image-to-%s using the cu
   act(() => obj.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
   expect(posthog.capture).toHaveBeenCalledWith('image_model_download_clicked', expect.objectContaining({ download_format: 'obj' }));
   expect(startImageModel).toHaveBeenCalledTimes(1);
-  expect(host.querySelector('a[href="/generated-model?id=generation-id"]')).not.toBeNull();
+  expect(host.querySelector('a[href="/?id=generation-id"]')).not.toBeNull();
 });
 
 it('retries polling or storage failures without starting another credit-consuming generation', async () => {

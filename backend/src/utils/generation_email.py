@@ -27,7 +27,7 @@ def sender():
 
 def email_payload(row):
     title = ' '.join(row['title'].split())[:120] or 'Your brick model'
-    url = row['origin'] + '/generated-model?' + urlencode({'id': row['generation_id'], 'exact': '1'})
+    url = row['origin'] + '/?' + urlencode({'id': row['generation_id'], 'exact': '1'})
     escaped_url = html.escape(url, quote=True)
     escaped_title = html.escape(title)
     preview = row.get('preview_image_url')

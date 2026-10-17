@@ -10,7 +10,7 @@ export interface LandingModel {
 }
 
 /** Loads a selected build while retaining the previous geometry during an edit. */
-export function useLandingModel(owner: string, authToken?: string) {
+export function useLandingModel(owner: string, authToken?: string, requestedId?: string | null) {
   const storageKey = `brickbuilder.landing-model:${owner}`;
   const [targetId, setTargetId] = useState<string | null>(null);
   const [loadVersion, setLoadVersion] = useState(0);
@@ -18,7 +18,9 @@ export function useLandingModel(owner: string, authToken?: string) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const revision = useRef(0);
+  const selection = useRef<{ storageKey: string; id: string | null } | null>(null);
   const open = useCallback((id: string, retainModel = false) => {
+    selection.current = { storageKey, id };
     try { sessionStorage.setItem(storageKey, id); } catch { /* The viewer works without storage. */ }
     revision.current++;
     if (!retainModel) setModel(null);
@@ -28,6 +30,7 @@ export function useLandingModel(owner: string, authToken?: string) {
     setLoadVersion(current => current + 1);
   }, [storageKey]);
   const reset = useCallback(() => {
+    selection.current = { storageKey, id: null };
     try { sessionStorage.removeItem(storageKey); } catch { /* Keep the reset for this visit. */ }
     revision.current++;
     setTargetId(null);
@@ -38,12 +41,19 @@ export function useLandingModel(owner: string, authToken?: string) {
   useEffect(() => {
     let saved: string | null = null;
     try { saved = sessionStorage.getItem(storageKey); } catch { /* Start a fresh workspace. */ }
+    const id = requestedId || saved;
+    if (selection.current?.storageKey === storageKey && selection.current.id === id) return;
+    selection.current = { storageKey, id };
+    if (requestedId) {
+      try { sessionStorage.setItem(storageKey, requestedId); } catch { /* Deep links work without storage. */ }
+    }
     revision.current++;
-    setTargetId(saved);
+    setTargetId(id);
     setModel(null);
-    setBusy(Boolean(saved));
+    setBusy(Boolean(id));
     setError(null);
-  }, [storageKey]);
+    setLoadVersion(current => current + 1);
+  }, [storageKey, requestedId]);
 
   useEffect(() => {
     if (!targetId) return;
