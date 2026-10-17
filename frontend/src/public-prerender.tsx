@@ -1,3 +1,5 @@
+import ModelToVoxelPage from './pages/ModelToVoxelPage';
+import { VOXEL_CONVERTERS } from './voxelConverters';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -17,6 +19,7 @@ import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 
 const publicPages = [
+  ...VOXEL_CONVERTERS.map(({ path, input, output }) => ({ path, element: <ModelToVoxelPage input={input} output={output} /> })),
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },
