@@ -9,13 +9,15 @@ import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { useLandingModel, type LandingModel } from '../src/hooks/useLandingModel';
 import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
+import { GetPriceApiService } from '../src/services/getPriceApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
-import { modelEditSuggestions } from '../src/components/LandingModelWorkspace';
+import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
 
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
+const navigate = vi.hoisted(() => vi.fn());
 const buddy = vi.hoisted(() => ({ updateTurn: vi.fn() }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn() }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
 vi.mock('../src/hooks/useGenerationActivity', async () => ({
   ...await vi.importActual('../src/hooks/useGenerationActivity'),
@@ -27,6 +29,7 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
   requestReply: vi.fn(), updateTurn: buddy.updateTurn }) }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
+vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions</div> }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent }: { modelContent: string }) => <div data-testid="viewer">{modelContent}</div> }));
 vi.mock('../src/components/FallingBricks', () => ({ default: () => null }));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
@@ -45,7 +48,11 @@ const generation = (id: string, endpoint = 'novaToBricks'): GetGenerationRespons
   xyzrgb_url: null, problematic_xyzrgb_url: null, error_message: null,
 });
 beforeEach(() => {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = false; }) });
   buddy.updateTurn.mockClear();
+  navigate.mockClear();
+  vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({ generation_id: 'castle', total_price: 44.77, total_weight: .5263, total_parts: 370, currency: 'USD', parts_breakdown: [] } as never);
   vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
   vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
   sessionStorage.clear();
@@ -72,14 +79,22 @@ it('shows a newly completed build inline, puts three suggestions below the dialo
   vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'castle', message: 'Started' });
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[aria-label="Upload image"]')).not.toBeNull();
   type('A castle'); await submit();
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('castle mpd');
+  expect(container.querySelector('[aria-label="Upload image"]')).toBeNull();
+  expect(input().classList.contains('pl-4')).toBe(true);
   const suggestions = container.querySelector('[aria-label="Model suggestions"]')!;
   const buttons = Array.from(suggestions.querySelectorAll('button'));
   expect(buttons).toHaveLength(3);
   expect(buttons[0].textContent).toBe('Add a drawbridge');
-  expect(buttons[1].textContent).toContain('Castle');
+  expect(buttons[1].textContent).toBe('Show instructions');
   expect(buttons[2].textContent).toBe('Create new?');
+  act(() => buttons[1].click());
+  expect(navigate).not.toHaveBeenCalled();
+  expect(container.querySelector('[aria-label="Instructions viewer"]')).not.toBeNull();
+  expect(buttons[1].textContent).toBe('Show model');
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_instructions_clicked', { generation_id: 'castle', suggestion_index: 1 });
   const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
   expect(conversation.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(input().compareDocumentPosition(suggestions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -88,9 +103,13 @@ it('shows a newly completed build inline, puts three suggestions below the dialo
   act(() => buttons[0].click());
   expect(input().value).toBe('Add a drawbridge');
   expect(document.activeElement).toBe(input());
-  act(() => buttons[2].click());
+  expect(container.querySelector('.landing-model-heading')?.children[0].textContent).toBe('Create new');
+  expect(container.querySelector('.landing-model-heading')?.children[1].textContent).toBe('Castle');
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-new-trigger')!.click());
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
   expect(input().getAttribute('aria-label')).toBe('Describe your model');
+  expect(container.querySelector('[aria-label="Upload image"]')).not.toBeNull();
+  expect(input().classList.contains('pl-14')).toBe(true);
   expect(input().value).toBe('');
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
@@ -128,9 +147,11 @@ it('keeps the same dialogue, greeting and restored build messages when the model
   const originalPrompt = dialogue.querySelector('.pet-chat-message--user')!;
   expect(originalPrompt.textContent).toContain('A castle');
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).toBeNull();
   ready = true;
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).not.toBeNull();
   expect(container.querySelectorAll('[aria-label="Build buddy conversation"]')).toHaveLength(1);
   expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
   expect(dialogue.querySelector('.pet-greeting')).toBe(greeting);
@@ -142,6 +163,154 @@ it('keeps the same dialogue, greeting and restored build messages when the model
   expect(input().value).toBe('Add a drawbridge');
   expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
   expect(greeting.textContent).toBe(greetingText);
+});
+
+it('orders the ready landing model using its displayed quote and dismisses only the mobile banner', async () => {
+  activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  const dialogue = container.querySelector('[aria-label="Build buddy conversation"]');
+  const banner = container.querySelector('[aria-label="Order your brick kit"]')!;
+  expect(banner.textContent).toContain('$22.39');
+  await act(async () => banner.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.click());
+  expect(navigate).toHaveBeenCalledWith('/order', { state: expect.objectContaining({
+    generation_id: 'castle', name: 'Castle', priceData: expect.objectContaining({ total_price: 44.77 }),
+  }) });
+  act(() => banner.querySelector<HTMLButtonElement>('[aria-label="Dismiss order banner"]')!.click());
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_order_banner_dismissed', { generation_id: 'castle' });
+});
+
+it('replaces model details with an order popup that uses the same quote and checkout model as the footer', async () => {
+  let finish!: (quote: Awaited<ReturnType<typeof GetPriceApiService.getPrice>>) => void;
+  vi.mocked(GetPriceApiService.getPrice).mockImplementation(() => new Promise(resolve => { finish = resolve; }));
+  activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  const dialogue = container.querySelector('[aria-label="Build buddy conversation"]');
+  const order = container.querySelector<HTMLButtonElement>('.landing-model-order-trigger')!;
+  expect(order.textContent).toBe('Order this');
+  expect(order.getAttribute('aria-haspopup')).toBe('dialog');
+  expect(container.querySelector('.landing-model-heading a')).toBeNull();
+  const overflow = document.body.style.overflow;
+  act(() => { order.focus(); order.click(); });
+  const popup = document.querySelector<HTMLDialogElement>('dialog[aria-label="Order Castle"]')!;
+  expect(popup.open).toBe(true);
+  expect(document.body.style.overflow).toBe('hidden');
+  expect(popup.textContent).toContain('Bring it to life');
+  expect(popup.textContent).toContain('Calculating your kit price');
+  const purchase = popup.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')!;
+  expect(purchase.disabled).toBe(true);
+  const quote = { generation_id: 'castle', total_price: 44.77, total_weight: .5263, total_parts: 370, parts_breakdown: [] };
+  await act(async () => finish(quote as never));
+  expect(popup.querySelector('.model-order-total')?.textContent).toBe('$22.39');
+  expect(popup.querySelector('.model-order-original')?.textContent).toBe('$44.77');
+  expect(popup.textContent).toContain('370 Pieces');
+  expect(popup.textContent).toContain('Shipping included'.toLowerCase());
+  expect(popup.textContent).toContain('8–12 business days');
+  expect(popup.querySelector('.model-mobile-order')).toBeNull();
+  expect(GetPriceApiService.getPrice).toHaveBeenCalledOnce();
+  expect(purchase.disabled).toBe(false);
+  act(() => purchase.click());
+  expect(navigate).toHaveBeenCalledWith('/order', { state: expect.objectContaining({ generation_id: 'castle', priceData: quote }) });
+  act(() => popup.querySelector<HTMLButtonElement>('[aria-label="Close order popup"]')!.click());
+  expect(document.querySelector('dialog[aria-label="Order Castle"]')).toBeNull();
+  expect(document.body.style.overflow).toBe(overflow);
+  expect(document.activeElement).toBe(order);
+  expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_order_dialog_opened', { generation_id: 'castle', source: 'viewer_header' });
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_order_clicked', { generation_id: 'castle', source: 'card' });
+});
+
+it.each(['escape', 'backdrop'])('dismisses the order popup through %s and restores focus', async dismissal => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }}
+    busy={false} onSuggest={vi.fn()} onCreateNew={vi.fn()}><div>Conversation</div></LandingModelWorkspace>));
+  const order = container.querySelector<HTMLButtonElement>('.landing-model-order-trigger')!;
+  act(() => { order.focus(); order.click(); });
+  const popup = document.querySelector('dialog[aria-label="Order Castle"]')!;
+  act(() => {
+    if (dismissal === 'escape') popup.dispatchEvent(new Event('cancel', { cancelable: true }));
+    else popup.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: -1, clientY: -1 }));
+  });
+  expect(document.querySelector('dialog[aria-label="Order Castle"]')).toBeNull();
+  expect(document.activeElement).toBe(order);
+  expect(navigate).not.toHaveBeenCalled();
+});
+
+it('keeps the popup available after dismissing the footer and closes it when a different model is displayed', async () => {
+  const renderModel = (id: string) => act(async () => root.render(<LandingModelWorkspace model={{ generation: generation(id), content: 'model' }}
+    busy={false} onSuggest={vi.fn()} onCreateNew={vi.fn()}><div>Conversation</div></LandingModelWorkspace>));
+  await renderModel('first');
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Dismiss order banner"]')!.click());
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-order-trigger')!.click());
+  expect(document.querySelector('dialog[aria-label="Order Castle"]')).not.toBeNull();
+  expect(GetPriceApiService.getPrice).toHaveBeenCalledOnce();
+  await renderModel('second');
+  expect(document.querySelector('dialog[aria-label="Order Castle"]')).toBeNull();
+  await renderModel('first');
+  expect(document.querySelector('dialog[aria-label="Order Castle"]')).toBeNull();
+});
+
+it('keeps a dismissed banner closed for the current model and shows it for the next completed model', async () => {
+  const renderModel = (id: string, busy = false) => act(async () => root.render(<LandingModelWorkspace
+    model={{ generation: generation(id), content: 'model' }} busy={busy} onSuggest={vi.fn()}
+    onCreateNew={vi.fn()}><div>Conversation</div></LandingModelWorkspace>));
+  await renderModel('first');
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Dismiss order banner"]')!.click());
+  await renderModel('first', true);
+  await renderModel('first');
+  expect(container.querySelector('.model-mobile-order')).toBeNull();
+  await renderModel('second');
+  expect(container.querySelector('.model-mobile-order')).not.toBeNull();
+  expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('second', undefined);
+});
+
+it('never applies a late quote to a different displayed model', async () => {
+  let finish!: (quote: Awaited<ReturnType<typeof GetPriceApiService.getPrice>>) => void;
+  vi.mocked(GetPriceApiService.getPrice).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
+    .mockResolvedValue({ generation_id: 'second', total_price: 20, total_weight: 0, total_parts: 10, parts_breakdown: [] } as never);
+  const renderModel = (id: string) => act(async () => root.render(<LandingModelWorkspace
+    model={{ generation: generation(id), content: 'model' }} busy={false} onSuggest={vi.fn()}
+    onCreateNew={vi.fn()}><div>Conversation</div></LandingModelWorkspace>));
+  await renderModel('first');
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.disabled).toBe(true);
+  await renderModel('second');
+  await act(async () => finish({ generation_id: 'first', total_price: 100, total_weight: 0, total_parts: 100, parts_breakdown: [] } as never));
+  expect(container.querySelector('.model-mobile-order strong')?.textContent).toBe('$10.00');
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.click());
+  expect(navigate).toHaveBeenCalledWith('/order', { state: expect.objectContaining({
+    generation_id: 'second', priceData: expect.objectContaining({ total_price: 20 }),
+  }) });
+});
+
+it('keeps a failed landing quote unorderable while allowing the banner to be dismissed', async () => {
+  vi.mocked(GetPriceApiService.getPrice).mockRejectedValue(new Error('Pricing unavailable'));
+  activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.disabled).toBe(true);
+  expect(container.querySelector('.model-mobile-order')?.textContent).toContain('Price unavailable right now');
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-order-trigger')!.click());
+  const popup = document.querySelector('dialog[aria-label="Order Castle"]')!;
+  expect(popup.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')!.disabled).toBe(true);
+  expect(popup.textContent).toContain('Price unavailable right now');
+  act(() => popup.querySelector<HTMLButtonElement>('[aria-label="Close order popup"]')!.click());
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Dismiss order banner"]')!.click());
+  expect(container.querySelector('.model-mobile-order')).toBeNull();
+  expect(navigate).not.toHaveBeenCalled();
+});
+
+it.each([{ orderable: false }, { endpoint: 'uploadLdraw' }])('keeps ordering unavailable for imported or unapproved models: %o', async patch => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('castle'), ...patch });
+  activity.rows = [{ id: 'castle', status: 'completed', endpoint: patch.endpoint || 'novaToBricks', prompt: 'Castle' }];
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.model-mobile-order')).toBeNull();
+  const order = container.querySelector<HTMLButtonElement>('.landing-model-order-trigger')!;
+  expect(order.disabled).toBe(true);
+  act(() => order.click());
+  expect(document.querySelector('.model-order-dialog')).toBeNull();
+  expect(GetPriceApiService.getPrice).not.toHaveBeenCalled();
 });
 
 it('keeps the LDraw upload page intro visible when a previous chat workspace is saved', async () => {
@@ -173,6 +342,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its so
   }
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
   expect(input().disabled).toBe(true);
+  expect(container.querySelector<HTMLButtonElement>('.landing-model-order-trigger')!.disabled).toBe(true);
   expect(container.textContent).toContain('Updating your model');
   ready = true;
   await act(async () => vi.advanceTimersByTimeAsync(5000));
@@ -234,11 +404,11 @@ it('restores the workspace for the same owner and clears the displayed model whe
   expect(sessionStorage.getItem('brickbuilder.landing-model:builder')).toBeNull();
 });
 
-it('provides two distinct model suggestions when an example is missing or matches the detail suggestion', () => {
+it('uses the saved edit suggestion or falls back to a color edit', () => {
   const model: LandingModel = { generation: { ...generation('castle'), example_edit_prompt: null }, content: 'mpd' };
-  expect(modelEditSuggestions(model)).toEqual(['Change the colors of the Castle', 'Add more detail to the Castle']);
+  expect(modelEditSuggestion(model)).toBe('Change the colors of the Castle');
   model.generation.example_edit_prompt = 'Add more detail to the Castle';
-  expect(new Set(modelEditSuggestions(model)).size).toBe(2);
+  expect(modelEditSuggestion(model)).toBe('Add more detail to the Castle');
 });
 
 it.each(['failed', 'cancelled'] as const)('preserves the previous model and allows retrying after a %s edit', async status => {

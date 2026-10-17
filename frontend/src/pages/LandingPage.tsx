@@ -1,5 +1,5 @@
 import { startPolling } from '../utils/polling';
-import { LandingToolsMenu } from '../components/LandingToolsMenu';
+import { LandingToolsMenu, type GenerationSettingsAction } from '../components/LandingToolsMenu';
 import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
@@ -19,7 +19,7 @@ import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
 import React, { useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -180,19 +180,26 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
   useEffect(() => { setGiftPlanning(false); }, [session?.user.id]);
   const [notificationPromptId, setNotificationPromptId] = useState<string | null>(null);
+  const [orderBarHeight, setOrderBarHeight] = useState(0);
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
+  const settingsReturnFocus = useRef<HTMLButtonElement | null>(null);
+  const settingsCloseRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const toggleSettings = (expanded: boolean) => {
     setSettingsOpen(expanded);
     posthog.capture('landing_generation_settings_toggled', { expanded });
   };
+  const dismissSettings = () => {
+    toggleSettings(false);
+    (settingsReturnFocus.current || settingsButtonRef.current)?.focus();
+  };
+  useEffect(() => { if (settingsOpen) settingsCloseRef.current?.focus(); }, [settingsOpen]);
   const handleSettingsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
     if (event.key !== 'Escape') return;
     event.preventDefault();
-    toggleSettings(false);
-    settingsButtonRef.current?.focus();
+    dismissSettings();
   };
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
@@ -348,6 +355,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     });
   }, [imageLandingPath, ldrawLanding]);
   const selectImage = async (file: File, source: 'picker' | 'drop') => {
+    if (settingsOpen) toggleSettings(false);
     const revision = ++uploadRevision.current;
     setPreparingImage(true); setImageUploadError(null);
     try {
@@ -889,7 +897,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     <div
       ref={landingViewportRef}
       className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${conversationStarted ? ' landing-page--conversation-started' : ''}`}
-      style={{ backgroundColor: "#fbfbfd" }}
+      style={{ backgroundColor: "#fbfbfd", '--landing-order-banner-height': `${orderBarHeight}px` } as React.CSSProperties}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
       onDragOver={handleDragOver}
@@ -933,7 +941,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       }} />
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
-        <LandingHeader page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)} />
+        <LandingHeader page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
+          generationSettings={ldrawLanding ? undefined : {
+            open: settingsOpen,
+            controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
+            onOpen: trigger => { settingsReturnFocus.current = trigger; toggleSettings(true); },
+          }} />
 
         <main className={`flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
           <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
@@ -977,8 +990,10 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing}
+                onOrderBarHeightChange={setOrderBarHeight}
                 onCreateNew={createNewModel} onSuggest={suggestion => {
                   setPrompt(suggestion);
+                  if (settingsOpen) toggleSettings(false);
                   promptInputRef.current?.focus();
                 }}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
@@ -989,6 +1004,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   posthog.capture('build_buddy_gift_idea_selected');
                   setGiftPlanning(false);
                   setPrompt(idea);
+                  if (settingsOpen) toggleSettings(false);
                   promptInputRef.current?.focus();
                 }}>
                 {generationActivity}
@@ -998,6 +1014,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               className="w-full"
               onSubmit={event => {
                 event.preventDefault();
+                if (settingsOpen) toggleSettings(false);
                 void handleUserMessage();
               }}
             >
@@ -1009,11 +1026,11 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               </>}
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
-                  <button type="button" aria-label="Upload image" title="Upload image"
-                    disabled={loading || buddyChat.routing || preparingImage || Boolean(landingModel.model)} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
+                  {!landingModel.model && <button type="button" aria-label="Upload image" title="Upload image"
+                    disabled={loading || buddyChat.routing || preparingImage} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
                     className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50">
                     <ImageIcon aria-hidden="true" className="h-5 w-5" />
-                  </button>
+                  </button>}
                   <input
                     id="landing-build-prompt"
                     ref={promptInputRef}
@@ -1025,6 +1042,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     onBlur={() => setFocused(false)}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       setPrompt(event.target.value);
+                      if (settingsOpen) toggleSettings(false);
                       if (event.target.value.trim()) setInputValidationMessage(null);
                     }}
                     onKeyDown={event => {
@@ -1034,7 +1052,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       event.currentTarget.form?.requestSubmit();
                     }}
                     placeholder={giftPlanning ? `Tell ${pet.name} about your gift…` : landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
-                    className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                    className={`pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white ${landingModel.model ? 'pl-4' : 'pl-14'} pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
                     disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   <button
@@ -1047,8 +1065,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 </div>
                 <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
                   aria-expanded={settingsOpen} aria-controls={localDevelopment ? "landing-generation-settings landing-local-provider-settings" : "landing-generation-settings"}
-                  onClick={() => toggleSettings(!settingsOpen)}
-                  className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 ${settingsOpen ? 'border-red-200 bg-red-50 text-[#f44336]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
+                  onClick={event => { settingsReturnFocus.current = event.currentTarget; toggleSettings(!settingsOpen); }}
+                  className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 sm:inline-flex ${settingsOpen ? 'border-red-200 bg-red-50 text-[#f44336]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
                   <Settings aria-hidden="true" className="h-5 w-5" />
                 </button>
               </div>
@@ -1060,7 +1078,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               )}
               <div id="landing-generation-settings" hidden={!settingsOpen}
                 onKeyDown={handleSettingsKeyDown} className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
-                <h3 className="mb-3 text-sm font-semibold text-slate-900">Generation settings</h3>
+                <div className="-ml-2 -mt-2 mb-3 flex items-center gap-1">
+                  <button ref={settingsCloseRef} type="button" aria-label="Dismiss generation settings" onClick={dismissSettings}
+                    className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300">
+                    <X size={18} aria-hidden="true" />
+                  </button>
+                  <h3 className="text-sm font-semibold text-slate-900">Generation settings</h3>
+                </div>
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
@@ -1093,7 +1117,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                 {localDevelopment && generationMethod === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>
-                    <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
+                    <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} className="min-h-11 min-w-0 max-w-full rounded-full border border-slate-200 bg-white px-3" onChange={event => {
                       const provider = getLlmModelOption(llmModel)?.provider as NovaLoginProvider;
                       if (event.target.value === 'native') { delete providerChoices.current[provider]; void checkNovaConnection(llmModel); }
                       else { providerChoices.current[provider] = 'api_key'; setNovaOptions(current => ({ ...current, authMode: 'api_key' })); }
@@ -1226,7 +1250,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   );
 }
 
-function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page: string }) {
+function LandingHeader({ onLoginClick, page, generationSettings }: { onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction }) {
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
 
@@ -1300,7 +1324,7 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         {githubStarLink}
-        <LandingToolsMenu page={page} />
+        <LandingToolsMenu page={page} generationSettings={generationSettings} />
         {showProfileMenu ? (
           // Logged in or no Supabase: show GitHub stars and account dropdown
           <>

@@ -106,7 +106,8 @@ describe('LandingPage', () => {
       expect(switchPet.type).toBe('button');
       expect(switchPet.textContent).toBe('Build Buddy');
       expect(switchPet.querySelector('.lucide-paw-print')).not.toBeNull();
-      expect(container.querySelector('ul[aria-label="Tools"] li:first-child button')).toBe(switchPet);
+      expect(container.querySelector('ul[aria-label="Tools"] li:first-child button')?.textContent).toBe('Generation settings');
+      expect(switchPet.closest('li')?.previousElementSibling?.classList.contains('sm:hidden')).toBe(true);
       act(() => { switchPet.focus(); switchPet.click(); });
       expect(tools.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('dialog')?.open).toBe(true);
@@ -540,6 +541,8 @@ describe('LandingPage', () => {
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'input_left_icon' });
       expect(llm).not.toHaveBeenCalled();
       expect(nova).not.toHaveBeenCalled();
+      act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
+      expect(container.querySelector<HTMLDivElement>('#landing-generation-settings')!.hidden).toBe(false);
       await act(async () => {
         const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
         mode.querySelector<HTMLButtonElement>(`button[value="${modeValue}"]`)!.click();
@@ -547,6 +550,7 @@ describe('LandingPage', () => {
         fileInput.dispatchEvent(new Event('change', { bubbles: true }));
       });
       expect(container.querySelector('img[alt="Uploaded preview"]')).not.toBeNull();
+      expect(container.querySelector<HTMLDivElement>('#landing-generation-settings')!.hidden).toBe(true);
       await act(async () => {
         container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click();
         await new Promise(resolve => setTimeout(resolve, 20));
@@ -684,6 +688,60 @@ describe('LandingPage', () => {
       await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
       expect(generate).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-6-astra', prompt: 'A red castle' }), undefined);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_settings_toggled', { expanded: false });
+    } finally { act(() => root.unmount()); container.remove(); }
+  });
+
+  it('opens mobile settings from the first Tools option, restores focus on dismissal, and closes when typing', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    const generate = vi.spyOn(LlmToBricksApiService, 'generate');
+    const container = document.createElement('div'); document.body.append(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
+      const gear = container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!;
+      expect(gear.classList.contains('hidden')).toBe(true);
+      expect(gear.classList.contains('sm:inline-flex')).toBe(true);
+      const tools = container.querySelector<HTMLButtonElement>('[aria-label="Tools"]')!;
+      const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
+      const openSettings = () => {
+        act(() => tools.click());
+        const option = container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] li:first-child button')!;
+        expect(option.textContent).toBe('Generation settings');
+        expect(option.closest('li')?.classList.contains('sm:hidden')).toBe(true);
+        expect(option.getAttribute('aria-controls')).toContain('landing-generation-settings');
+        act(() => option.click());
+        expect(panel.hidden).toBe(false);
+        expect(container.querySelector('ul[aria-label="Tools"]')).toBeNull();
+      };
+      openSettings();
+      const close = panel.querySelector<HTMLButtonElement>('[aria-label="Dismiss generation settings"]')!;
+      expect(document.activeElement).toBe(close);
+      act(() => panel.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+      const model = panel.querySelector<HTMLSelectElement>('#landing-render-model')!;
+      act(() => { model.value = 'gpt-6-astra'; model.dispatchEvent(new Event('change', { bubbles: true })); });
+      act(() => close.click());
+      expect(panel.hidden).toBe(true);
+      expect(document.activeElement).toBe(tools);
+      openSettings();
+      expect(model.value).toBe('gpt-6-astra');
+      const input = container.querySelector<HTMLInputElement>('#landing-build-prompt')!;
+      act(() => {
+        input.focus();
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A blue castle');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      expect(panel.hidden).toBe(true);
+      expect(input.value).toBe('A blue castle');
+      expect(document.activeElement).toBe(input);
+      expect(container.querySelector('[aria-label="Local provider connections"]')?.closest('[hidden]')).not.toBeNull();
+      openSettings();
+      act(() => close.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+      expect(panel.hidden).toBe(true);
+      expect(document.activeElement).toBe(tools);
+      expect(generate).not.toHaveBeenCalled();
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_header_tools_item_clicked', expect.objectContaining({ tool: 'Generation settings' }));
     } finally { act(() => root.unmount()); container.remove(); }
   });
 

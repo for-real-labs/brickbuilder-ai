@@ -1,5 +1,5 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { Box, ChevronDown, Github, Image, MessageSquare, Users, Wrench } from 'lucide-react';
+import { Box, ChevronDown, Github, Image, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import posthog from 'posthog-js';
 import { PetSwitchButton } from './PetCompanion';
@@ -13,7 +13,13 @@ const tools = [
   { label: 'Community', path: '/community', icon: Users, event: 'landing_header_community_clicked' },
 ];
 
-export function LandingToolsMenu({ page }: { page: string }) {
+export interface GenerationSettingsAction {
+  open: boolean;
+  controls: string;
+  onOpen: (returnFocusTo: HTMLButtonElement) => void;
+}
+
+export function LandingToolsMenu({ page, generationSettings }: { page: string; generationSettings?: GenerationSettingsAction }) {
   const [open, setOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState<boolean | null>(null);
   const container = useRef<HTMLDivElement>(null);
@@ -55,6 +61,17 @@ export function LandingToolsMenu({ page }: { page: string }) {
     </button>
     {open && <div id={panelId} className="absolute left-1/2 top-full z-[60] mt-2 max-h-[calc(var(--landing-viewport-height,100dvh)-5rem)] w-56 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl sm:left-auto sm:right-0 sm:translate-x-0">
       <ul aria-label="Tools" className="m-0 list-none p-0">
+        {generationSettings && <li className="sm:hidden">
+          <button type="button" aria-label="Generation settings" aria-expanded={generationSettings.open} aria-controls={generationSettings.controls}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
+            onClick={() => {
+              posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Generation settings' });
+              setOpen(false);
+              if (trigger.current) generationSettings.onOpen(trigger.current);
+            }}>
+            <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />Generation settings
+          </button>
+        </li>}
         <li className="mb-1 border-b border-slate-100 pb-1">
           <PetSwitchButton source="landing_tools" returnFocusRef={trigger} onOpen={() => setOpen(false)}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]" />
