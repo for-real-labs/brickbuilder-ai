@@ -1,7 +1,7 @@
 import { GenerationDuration } from '../components/GenerationDuration';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
-import { NotificationMenu } from "../components/NotificationMenu";
+import { ProfileMenu } from "../components/ProfileMenu";
 
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
@@ -812,7 +812,7 @@ const UserDashboard: React.FC = () => {
                       <span className="hidden sm:inline">Create New Model</span>
                       <span className="sm:hidden">Create</span>
                     </button>
-                    <NotificationMenu />
+                    <ProfileMenu />
                   </div>
                 </div>
               </div>
