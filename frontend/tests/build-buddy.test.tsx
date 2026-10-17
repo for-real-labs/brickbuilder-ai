@@ -319,7 +319,7 @@ it('clears conversation history and cancels old-account replies on an account ch
   expect(reply.mock.calls[1][0].history).toEqual([]);
 });
 
-it('restores older active agent builds before new messages without duplicating their streams', async () => {
+it('keeps older builds out of a fresh conversation and streams only current turns', async () => {
   const watch = vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
   await act(async () => root.render(<BuildBuddyDialogue state="idle"
     turns={[{ id: 1, text: 'Newest castle', reply: 'Great idea.', generationId: 'new', method: 'nova' }]}
@@ -328,8 +328,31 @@ it('restores older active agent builds before new messages without duplicating t
       { id: 'old', prompt: 'Older car', endpoint: 'llmToBricks', status: 'processing', createdAt: '2026-10-17T13:00:00Z' },
     ]} />));
   const text = container.textContent!;
-  expect(text.indexOf('Older car')).toBeLessThan(text.indexOf('Newest castle'));
-  expect(watch.mock.calls.map(call => call[0])).toEqual(['old', 'new']);
+  expect(text).not.toContain('Older car');
+  expect(text).toContain('Newest castle');
+  expect(watch.mock.calls.map(call => call[0])).toEqual(['new']);
+});
+
+it.each(['failed', 'cancelled', 'processing'])('does not rebuild a prior %s job as chat history on a fresh visit', async status => {
+  const watch = vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
+  await act(async () => root.render(<BuildBuddyDialogue state="idle" turns={[]}
+    generations={[{ id: 'old', prompt: 'Old concert stage', endpoint: 'novaToBricks', status }]} />));
+  expect(container.querySelector('.pet-chat-message--user')).toBeNull();
+  expect(container.textContent).not.toContain('Old concert stage');
+  expect(container.textContent).not.toContain('Woops!');
+  expect(watch).not.toHaveBeenCalled();
+});
+
+it('shows progress only for the explicitly selected build when returning from a model link', async () => {
+  const watch = vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
+  await act(async () => root.render(<BuildBuddyDialogue state="building" turns={[]} selectedGenerationId="selected"
+    generations={[
+      { id: 'old', prompt: 'Old concert stage', endpoint: 'novaToBricks', status: 'failed' },
+      { id: 'selected', prompt: 'Selected castle', endpoint: 'novaToBricks', status: 'processing' },
+    ]} />));
+  expect(container.textContent).toContain('Selected castle');
+  expect(container.textContent).not.toContain('Old concert stage');
+  expect(watch.mock.calls.map(call => call[0])).toEqual(['selected']);
 });
 
 it('sends gift mode through authenticated transport and only accepts a usable build prompt', async () => {

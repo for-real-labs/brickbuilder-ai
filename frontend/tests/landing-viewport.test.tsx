@@ -8,7 +8,7 @@ let root: ReturnType<typeof createRoot>;
 
 function Harness({ enabled = true }) {
   const ref = useLandingViewport(enabled);
-  return <div ref={ref}><header /><section className="landing-model-conversation" /></div>;
+  return <div ref={ref}><header /><div className="landing-page-intro" /><section className="landing-model-conversation" /></div>;
 }
 
 beforeEach(() => {
@@ -62,13 +62,19 @@ it('reserves the dialogue height as content grows and disconnects its observer o
   const shell = container.firstElementChild as HTMLElement;
   const conversation = container.querySelector('section')!;
   const header = container.querySelector('header')!;
+  const intro = container.querySelector('.landing-page-intro')!;
   expect(observe).toHaveBeenCalledWith(conversation);
   expect(observe).toHaveBeenCalledWith(header);
+  expect(observe).toHaveBeenCalledWith(intro);
   vi.spyOn(conversation, 'getBoundingClientRect').mockReturnValue({ height: 380 } as DOMRect);
   vi.spyOn(header, 'getBoundingClientRect').mockReturnValue({ height: 44 } as DOMRect);
   act(() => notify([], {} as ResizeObserver));
   expect(shell.style.getPropertyValue('--landing-conversation-height')).toBe('380px');
   expect(shell.style.getPropertyValue('--landing-header-height')).toBe('44px');
+  vi.spyOn(shell, 'getBoundingClientRect').mockReturnValue({ top: 80 } as DOMRect);
+  vi.spyOn(intro, 'getBoundingClientRect').mockReturnValue({ bottom: 320 } as DOMRect);
+  act(() => notify([], {} as ResizeObserver));
+  expect(shell.style.getPropertyValue('--landing-intro-bottom')).toBe('240px');
   act(() => root.render(null));
   expect(disconnect).toHaveBeenCalledOnce();
 });

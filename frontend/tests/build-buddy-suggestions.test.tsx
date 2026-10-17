@@ -99,7 +99,7 @@ it('blocks duplicate routing and keeps the prompt recoverable when Jev is unavai
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
 });
 
-it('docks the dialogue and fades the intro only after a user message is submitted', async () => {
+it('docks the dialogue and fades the intro after user input, keeping it hidden until a fresh visit', async () => {
   await act(async () => root.render(<LandingPage />));
   const intro = container.querySelector('.landing-page-intro')!;
   const page = container.querySelector('.landing-page')!;
@@ -112,8 +112,8 @@ it('docks the dialogue and fades the intro only after a user message is submitte
   await submit();
   expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   type(IMAGE_PROMPT_SUGGESTION);
-  expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
-  expect(intro.getAttribute('aria-hidden')).toBe('false');
+  expect(page.classList.contains('landing-page--conversation-started')).toBe(true);
+  expect(intro.getAttribute('aria-hidden')).toBe('true');
   await submit();
   expect(page.classList.contains('landing-page--conversation-started')).toBe(true);
   expect(container.querySelector('.landing-model-conversation')).toBe(dialogue);
@@ -184,6 +184,45 @@ it('keeps one conversational hint after chatting and brings cycling examples bac
     expect(input().placeholder.replace('|', '')).toBe('Create');
     expect(container.querySelector('.pet-chat-message--user')).toBeNull();
   } finally { vi.useRealTimers(); }
+});
+
+it('resets a Safari back-cache visit to a fresh greeting, visible stats and cycling suggestions', async () => {
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  vi.useFakeTimers();
+  vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'chat', confidence: 1 });
+  vi.mocked(BuildBuddyApi.reply).mockResolvedValue('That sounds fun! What colors do you like?');
+  try {
+    await act(async () => root.render(<LandingPage />));
+    type('An old castle conversation'); await submit();
+    expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.textContent).toContain('An old castle conversation');
+    const restored = new Event('pageshow');
+    Object.defineProperty(restored, 'persisted', { value: true });
+    await act(async () => window.dispatchEvent(restored));
+    expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+    expect(container.querySelector('.pet-chat-message--user')).toBeNull();
+    expect(container.textContent).not.toContain('An old castle conversation');
+    expect(input().value).toBe('');
+    for (let i = 0; i < 6; i++) await act(async () => { await vi.advanceTimersByTimeAsync(70); });
+    expect(input().placeholder.replace('|', '')).toBe('Create');
+    expect(posthog.capture).toHaveBeenCalledWith('landing_visit_reset', { source: 'history_restore' });
+  } finally { vi.useRealTimers(); }
+});
+
+it('cancels replies from the previous cached visit and ignores a late response', async () => {
+  vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'chat', confidence: 1 });
+  let respond!: (text: string) => void;
+  vi.mocked(BuildBuddyApi.reply).mockImplementationOnce(() => new Promise(resolve => { respond = resolve; }));
+  await act(async () => root.render(<LandingPage />));
+  type('Old pending message'); await submit();
+  const signal = vi.mocked(BuildBuddyApi.reply).mock.calls[0][2];
+  const restored = new Event('pageshow');
+  Object.defineProperty(restored, 'persisted', { value: true });
+  await act(async () => window.dispatchEvent(restored));
+  expect(signal.aborted).toBe(true);
+  await act(async () => respond('An old reply that must stay cleared'));
+  expect(container.textContent).not.toContain('An old reply that must stay cleared');
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
 });
 
 it('derives a single useful next step from gifts, uploads, model edits and the latest topic', () => {
