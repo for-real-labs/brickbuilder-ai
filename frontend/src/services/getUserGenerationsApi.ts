@@ -69,6 +69,7 @@ export interface GetUserGenerationsRequest {
   limit?: number;
   offset?: number;
   processing?: boolean;
+  include_details?: boolean;
 }
 
 export interface GetUserGenerationsResponse {
@@ -81,7 +82,7 @@ export interface GetUserGenerationsResponse {
 
 export class GetUserGenerationsApiService {
   static async getResumableNovaGenerations(authToken?: string, signal?: AbortSignal): Promise<GenerationWithOrder[]> {
-    const page = await this.getUserGenerations(authToken, 50, 0, false, signal);
+    const page = await this.getUserGenerations(authToken, 50, 0, false, signal, false);
     return page.generations.filter(row => row.endpoint === 'novaToBricks'
       && ['failed', 'cancelled'].includes(row.status));
   }
@@ -90,7 +91,7 @@ export class GetUserGenerationsApiService {
     const generations = new Map<string, GenerationWithOrder>();
     let offset = 0;
     while (true) {
-      const page = await this.getUserGenerations(authToken, 50, offset, true, signal);
+      const page = await this.getUserGenerations(authToken, 50, offset, true, signal, false);
       for (const generation of page.generations) generations.set(generation.id, generation);
       if (!page.has_more || page.generations.length === 0) break;
       offset += page.generations.length;
@@ -104,6 +105,7 @@ export class GetUserGenerationsApiService {
     offset: number = 0,
     processing?: boolean,
     signal?: AbortSignal,
+    includeDetails: boolean = true,
   ): Promise<GetUserGenerationsResponse> {
     const url = `${API_BASE_URL}/getUserGenerations`;
 
@@ -111,6 +113,7 @@ export class GetUserGenerationsApiService {
       limit,
       offset,
       ...(processing !== undefined && { processing }),
+      ...(!includeDetails && { include_details: false }),
     };
 
     // Build headers conditionally - only add Authorization if token exists

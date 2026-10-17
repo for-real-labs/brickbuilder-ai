@@ -1,14 +1,38 @@
 import asyncio
 import sys
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pgserver
 import psycopg
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from src.requests import getGenerationStats
 from src.utils.generation_storage import GenerationStorage
+from src.utils.generation_stats_cache import GenerationStatsCache
+
+
+@pytest.fixture(autouse=True)
+def fresh_stats_cache(monkeypatch):
+    monkeypatch.setattr(getGenerationStats, "stats_cache", GenerationStatsCache())
+
+
+@pytest.mark.parametrize("failure", [TimeoutError("offline"), None])
+def test_remote_stats_failure_does_not_download_rows_or_publish_incomplete_totals(failure):
+    query = Mock()
+    if failure:
+        query.execute.side_effect = failure
+    else:
+        query.execute.return_value = SimpleNamespace(data=[])
+    client = SimpleNamespace(rpc=Mock(return_value=query), table=Mock())
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = client
+    with pytest.raises((TimeoutError, RuntimeError)):
+        asyncio.run(storage.get_generation_stats())
+    client.table.assert_not_called()
 
 
 class FakeGenerationStorage:

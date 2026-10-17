@@ -31,6 +31,24 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.useRealTimers(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 const render = () => act(async () => { root.render(<MemoryRouter><GenerationNotificationsProvider><Harness /></GenerationNotificationsProvider></MemoryRouter>); });
 
+it('keeps opted-in background notifications working while polling idle feeds only once a minute', async () => {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('hidden');
+  const native = vi.fn(function() { return { close: vi.fn() }; });
+  Object.assign(native, { permission: 'granted' });
+  vi.stubGlobal('Notification', native);
+  const list = vi.spyOn(GenerationNotificationsApi, 'list')
+    .mockResolvedValueOnce({ notifications: [], active: [], unread_count: 0 })
+    .mockResolvedValueOnce({ notifications: [], active: [{ ...ready('build'), status: 'queued' }], unread_count: 0 })
+    .mockResolvedValue({ notifications: [ready('build')], active: [], unread_count: 1 });
+  await render();
+  await act(async () => { await vi.advanceTimersByTimeAsync(59_999); });
+  expect(list).toHaveBeenCalledOnce();
+  await act(async () => { await vi.advanceTimersByTimeAsync(1); });
+  expect(list).toHaveBeenCalledTimes(2);
+  await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
+  expect(native).toHaveBeenCalledOnce();
+});
+
 it('shows unread badges, keeps dropdown links unread, and clears only on a model read receipt', async () => {
   vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [ready('done')], active: [], unread_count: 1 });
   const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockResolvedValue({});
@@ -84,7 +102,7 @@ it('keeps in-progress models linked after navigation and retries notification po
     .mockResolvedValue({ notifications: [], active: [{ ...ready('running'), status: 'processing' }], unread_count: 0 });
   await render();
   expect(feed.error).toContain('Retrying');
-  await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(10000); });
   act(() => container.querySelector('button')!.click());
   expect(container.textContent).toContain('Model in progress');
   expect(container.querySelector('a')?.getAttribute('href')).toBe('/generated-model?id=running&exact=1');
@@ -171,7 +189,7 @@ it('shows a new completion as a snackbar without system permission and marks it 
   const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
   await render();
   expect(container.querySelector('[role="status"]')).toBeNull();
-  await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
   const snackbar = container.querySelector('[role="status"]')!;
   expect(snackbar.textContent).toContain('Your edit is ready');
   act(() => snackbar.querySelector('button')!.click());
@@ -216,7 +234,7 @@ it('keeps an alert actionable when its read receipt fails and allows retry', asy
     .mockResolvedValue({notifications: [ready('new')], active: [], unread_count: 1});
   const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockRejectedValueOnce(new Error('offline')).mockResolvedValue({});
   await render();
-  await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
   await act(async () => container.querySelector('[role="status"] button')!.click());
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again');
   expect(feed.unread_count).toBe(1);
@@ -234,7 +252,7 @@ it('hides snackbar alerts on account change and prevents a pending click from na
   let finish!: (value: object) => void;
   vi.spyOn(GenerationNotificationsApi, 'markViewed').mockImplementation(() => new Promise(resolve => { finish = resolve; }));
   await render();
-  await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(60000); });
   act(() => container.querySelector('[role="status"] button')!.click());
   auth = {user: {id: 'another'}, session: {access_token: 'another-token'}, loading: false};
   vi.mocked(GenerationNotificationsApi.list).mockResolvedValue({notifications: [], active: [], unread_count: 0});

@@ -1,3 +1,4 @@
+import { startPolling } from '../utils/polling';
 import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
@@ -311,27 +312,18 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const [featuredCommunityModels, setFeaturedCommunityModels] = useState<FeaturedItem[]>([]);
 
   useEffect(() => {
-    const controller = new AbortController();
-
-    const loadGenerationStats = () => {
-      GetGenerationStatsApiService.getGenerationStats(controller.signal)
-        .then(setGenerationStats)
-        .catch((error) => {
-          if (error instanceof DOMException && error.name === "AbortError") return;
-          console.warn("Unable to load generation stats", error);
-        })
-        .finally(() => {
-          if (!controller.signal.aborted) setStatsReady(true);
-        });
-    };
-
-    loadGenerationStats();
-    const interval = window.setInterval(loadGenerationStats, 30_000);
-
-    return () => {
-      window.clearInterval(interval);
-      controller.abort();
-    };
+    const polling = startPolling(async (signal) => {
+      try {
+        const stats = await GetGenerationStatsApiService.getGenerationStats(signal);
+        if (!signal.aborted) setGenerationStats(stats);
+      } catch (error) {
+        if (!signal.aborted) console.warn("Unable to load generation stats", error);
+        throw error;
+      } finally {
+        if (!signal.aborted) setStatsReady(true);
+      }
+    }, { intervalMs: 30_000 });
+    return polling.stop;
   }, []);
 
   useEffect(() => {

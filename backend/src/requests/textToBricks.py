@@ -14,6 +14,7 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 
 # Import auth functions and utilities
+from ..utils.database import execute_query
 from ..utils.auth import get_user_with_optional_auth, verify_and_deduct_credits, handle_auth_and_tracking, deduct_credits
 from ..utils.posthog_client import track_api_call, track_image_conversion, track_error
 from ..utils.pack_ldraw_model import LDrawPacker
@@ -103,9 +104,13 @@ async def process_text_to_bricks_task(
                 await asyncio.sleep(5)
                 # Only update timestamp, don't override the actual status from fal.ai
                 try:
-                    generation_storage.client.table("generations").update({
-                        "updated_at": datetime.utcnow().isoformat()
-                    }).eq("id", generation_id).execute()
+                    (
+                        await execute_query(
+                            generation_storage.client.table("generations")
+                            .update({"updated_at": datetime.utcnow().isoformat()})
+                            .eq("id", generation_id)
+                        )
+                    )
                 except Exception as e:
                     logger.warning(f"Heartbeat update failed: {e}")
         

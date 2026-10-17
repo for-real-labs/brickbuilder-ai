@@ -13,6 +13,7 @@ from typing import Optional, Dict, Any, Union, List
 from datetime import datetime
 from supabase import Client
 from fastapi import HTTPException
+from .database import execute_query
 from .auth import supabase_client
 from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
@@ -28,6 +29,61 @@ logger = logging.getLogger(__name__)
 # Generation columns holding voxel sources that derived (resized/edited) generations must keep so
 # they can be resized again.
 RESIZE_SOURCE_KEYS = ("sam3d_voxel_data_url", "design_voxels_url")
+
+# List and polling responses never need private email fields or full generation
+# configuration. Keep projections explicit instead of transferring every column.
+GENERATION_LIST_COLUMNS = ",".join(
+    (
+        "id",
+        "generation_id",
+        "version",
+        "user_id",
+        "user_type",
+        "prompt",
+        "name",
+        "generation_duration_seconds",
+        "detail_level",
+        "endpoint",
+        "mode",
+        "created_at",
+        "status",
+        "error_message",
+        "ldr_url",
+        "xyzrgb_url",
+        "parts_list_csv_url",
+        "original_image_url",
+        "processed_image_url",
+        "preview_image_url",
+        "external_image_url",
+        "external_glb_url",
+        "model_used_image",
+        "model_used_3d",
+        "ordered",
+        "updated_at",
+        "is_community",
+    )
+)
+GENERATION_ACTIVITY_COLUMNS = ",".join(
+    (
+        "id",
+        "generation_id",
+        "version",
+        "user_id",
+        "user_type",
+        "prompt",
+        "name",
+        "generation_duration_seconds",
+        "detail_level",
+        "endpoint",
+        "mode",
+        "created_at",
+        "status",
+        "error_message",
+        "processed_image_url",
+        "preview_image_url",
+        "external_image_url",
+    )
+)
 
 class GenerationStorage:
     """Handles storing and retrieving generation data in Supabase Storage + Database"""
@@ -117,7 +173,9 @@ class GenerationStorage:
             if model_3d:
                 generation_data["model_used_3d"] = model_3d
                 
-            result = self.client.table("generations").insert(generation_data).execute()
+            result = await execute_query(
+                self.client.table("generations").insert(generation_data)
+            )
             
             logger.info(f"Created generation record: {generation_id}")
             return generation_id
@@ -324,7 +382,13 @@ class GenerationStorage:
         
         if external_data:
             try:
-                self.client.table("generations").update(external_data).eq("id", generation_id).execute()
+                (
+                    await execute_query(
+                        self.client.table("generations")
+                        .update(external_data)
+                        .eq("id", generation_id)
+                    )
+                )
                 logger.info(f"Saved external image URL for generation {generation_id}")
             except Exception as e:
                 logger.error(f"Failed to save external image URL for generation {generation_id}")
@@ -353,7 +417,11 @@ class GenerationStorage:
                 update_data["processed_image_url"] = storage_url
                 
             if update_data:
-                result = self.client.table("generations").update(update_data).eq("id", generation_id).execute()
+                result = await execute_query(
+                    self.client.table("generations")
+                    .update(update_data)
+                    .eq("id", generation_id)
+                )
                 logger.info(f"Updated generation {generation_id} with image data")
                 
         except Exception as e:
@@ -365,7 +433,13 @@ class GenerationStorage:
         # Same path pattern as /updateImagePreview (timestamp busts CDN cache)
         file_path = f"generations/{generation_id}/preview_image_{int(time.time())}.png"
         preview_image_url = await self._upload_file_to_storage(png, file_path, "image/png")
-        self.client.table("generations").update({"preview_image_url": preview_image_url}).eq("id", generation_id).execute()
+        (
+            await execute_query(
+                self.client.table("generations")
+                .update({"preview_image_url": preview_image_url})
+                .eq("id", generation_id)
+            )
+        )
         return preview_image_url
 
     async def store_reference_images(
@@ -393,11 +467,10 @@ class GenerationStorage:
             **(generation.get("reference_images") or {}),
             **stored_images,
         }
-        result = (
+        result = await execute_query(
             self.client.table("generations")
             .update({"reference_images": merged_images})
             .eq("id", generation_id)
-            .execute()
         )
         if not result.data:
             raise ValueError(f"Generation {generation_id} was not found")
@@ -437,7 +510,11 @@ class GenerationStorage:
             # If use_external_url is True, skip Supabase upload and use external URL directly
             if use_external_url and external_url:
                 update_data[f"{file_type}_url"] = external_url
-                result = self.client.table("generations").update(update_data).eq("id", generation_id).execute()
+                result = await execute_query(
+                    self.client.table("generations")
+                    .update(update_data)
+                    .eq("id", generation_id)
+                )
                 logger.info(f"Updated generation {generation_id} with external {file_type} URL (skipped Supabase upload)")
                 return external_url
             
@@ -485,7 +562,11 @@ class GenerationStorage:
             # Store the Supabase Storage URL in database
             update_data[f"{file_type}_url"] = storage_url
                 
-            result = self.client.table("generations").update(update_data).eq("id", generation_id).execute()
+            result = await execute_query(
+                self.client.table("generations")
+                .update(update_data)
+                .eq("id", generation_id)
+            )
             logger.info(f"Updated generation {generation_id} with {file_type} file URL")
             return storage_url
             
@@ -533,7 +614,11 @@ class GenerationStorage:
                 "parts_list_csv_url": storage_url,
                 "brick_count": brick_count,
             }
-            result = self.client.table("generations").update(update_data).eq("id", generation_id).execute()
+            result = await execute_query(
+                self.client.table("generations")
+                .update(update_data)
+                .eq("id", generation_id)
+            )
             logger.info(
                 "Updated generation %s with parts_list_csv_url and brick_count=%s",
                 generation_id,
@@ -553,22 +638,21 @@ class GenerationStorage:
         try:
             rpc = getattr(self.client, "rpc", None)
             if callable(rpc):
-                try:
-                    result = rpc("get_generation_stats").execute()
-                    if result.data:
-                        row = result.data[0] if isinstance(result.data, list) else result.data
-                        return {
-                            "generation_count": int(row.get("generation_count") or 0),
-                            "brick_count": int(row.get("brick_count") or 0),
-                        }
-                except Exception as exc:
-                    # This also makes local development and rolling deploys work
-                    # before the production database migration has been applied.
-                    logger.warning("Generation stats RPC unavailable; using query fallback: %s", exc)
+                result = await execute_query(rpc("get_generation_stats"))
+                if not result.data:
+                    raise RuntimeError("Generation stats returned no aggregate")
+                row = result.data[0] if isinstance(result.data, list) else result.data
+                return {
+                    "generation_count": int(row.get("generation_count") or 0),
+                    "brick_count": int(row.get("brick_count") or 0),
+                }
 
-            result = self.client.table("generations").select(
-                "brick_count", count="exact"
-            ).execute()
+            # The local adapter has no RPC interface or PostgREST row cap. A
+            # remote RPC failure must reach the cache instead of downloading a
+            # capped, incomplete set of rows while the database is struggling.
+            result = await execute_query(
+                self.client.table("generations").select("brick_count", count="exact")
+            )
             return {
                 "generation_count": int(result.count or 0),
                 "brick_count": sum(
@@ -611,7 +695,12 @@ class GenerationStorage:
             if prompt_enhancement:
                 update_data["prompt_enhancement"] = prompt_enhancement
                 
-            result = self.client.table("generations").update(update_data).eq("id", generation_id).neq("status", "cancelled").execute()
+            result = await execute_query(
+                self.client.table("generations")
+                .update(update_data)
+                .eq("id", generation_id)
+                .neq("status", "cancelled")
+            )
             # A cancelled job stays cancelled even if an executor finishes later.
             
         except Exception as e:
@@ -626,37 +715,76 @@ class GenerationStorage:
                 return
             details = await generate_title_details(row, self.client.storage)
             if not row.get('name'):
-                (self.client.table("generations").update(details)
-                 .eq("id", generation_id).is_("name", "null").neq("status", "cancelled").execute())
+                (
+                    (
+                        await execute_query(
+                            self.client.table("generations")
+                            .update(details)
+                            .eq("id", generation_id)
+                            .is_("name", "null")
+                            .neq("status", "cancelled")
+                        )
+                    )
+                )
             else:
-                (self.client.table("generations").update({'example_edit_prompt': details['example_edit_prompt']})
-                 .eq("id", generation_id).eq('name', row['name']).is_('example_edit_prompt', 'null')
-                 .neq("status", "cancelled").execute())
+                (
+                    (
+                        await execute_query(
+                            self.client.table("generations")
+                            .update(
+                                {"example_edit_prompt": details["example_edit_prompt"]}
+                            )
+                            .eq("id", generation_id)
+                            .eq("name", row["name"])
+                            .is_("example_edit_prompt", "null")
+                            .neq("status", "cancelled")
+                        )
+                    )
+                )
         except Exception:
             # Naming must never prevent a completed build from being delivered.
             logger.warning("Unable to save model title for %s", generation_id)
 
     async def save_generation_usage(self, generation_id: str, values: dict) -> None:
         # Usage also belongs to failed/cancelled jobs; never change their status.
-        self.client.table('generations').update(values).eq('id', generation_id).execute()
+        (
+            await execute_query(
+                self.client.table("generations").update(values).eq("id", generation_id)
+            )
+        )
     
     async def cancel_generation(self, generation_id: str) -> bool:
         from .generation_tasks import ACTIVE_STATUSES
 
-        result = self.client.table("generations").update({
+        result = await execute_query(
+            self.client.table("generations")
+            .update(
+                {
             "status": "cancelled",
             "updated_at": datetime.utcnow().isoformat(),
             "error_message": None,
-        }).eq("id", generation_id).in_("status", list(ACTIVE_STATUSES)).execute()
+                }
+            )
+            .eq("id", generation_id)
+            .in_("status", list(ACTIVE_STATUSES))
+        )
         return bool(result.data)
 
     async def update_detail_level(self, generation_id: str, detail_level: float) -> None:
         """Record the model's actual size so the resize slider starts at it."""
         try:
-            self.client.table("generations").update({
+            (
+                await execute_query(
+                    self.client.table("generations")
+                    .update(
+                        {
                 "detail_level": detail_level,
                 "updated_at": datetime.utcnow().isoformat(),
-            }).eq("id", generation_id).execute()
+                        }
+                    )
+                    .eq("id", generation_id)
+                )
+            )
         except Exception as e:
             logger.error(f"Failed to update detail level for generation {generation_id}: {e}")
 
@@ -716,7 +844,9 @@ class GenerationStorage:
                 order_data["shipping_info"] = shipping_info
             
             # Insert into orders table
-            order_result = self.client.table("orders").insert(order_data).execute()
+            order_result = await execute_query(
+                self.client.table("orders").insert(order_data)
+            )
             
             if not order_result.data:
                 # The database suppresses duplicate Stripe checkout/payment
@@ -733,7 +863,11 @@ class GenerationStorage:
                 "updated_at": datetime.utcnow().isoformat()
             }
             
-            generation_result = self.client.table("generations").update(generation_update).eq("id", generation_id).execute()
+            generation_result = await execute_query(
+                self.client.table("generations")
+                .update(generation_update)
+                .eq("id", generation_id)
+            )
             
             if generation_result.data:
                 logger.info(f"Created order {order_id} and updated generation {generation_id}: ${amount_paid/100:.2f} paid")
@@ -757,7 +891,9 @@ class GenerationStorage:
             Generation data dictionary or None if not found
         """
         try:
-            result = self.client.table("generations").select("*").eq("id", generation_id).execute()
+            result = await execute_query(
+                self.client.table("generations").select("*").eq("id", generation_id)
+            )
             if result.data:
                 return result.data[0]
             return None
@@ -772,7 +908,8 @@ class GenerationStorage:
         user_type: str,
         limit: int = 10,
         status_filter: Optional[List[str]] = None,
-        offset: int = 0
+        offset: int = 0,
+        include_details: bool = True,
     ) -> list[Dict[str, Any]]:
         """
         Retrieve the latest version per model, or every job for an activity filter
@@ -788,18 +925,28 @@ class GenerationStorage:
             List of generation data dictionaries
         """
         try:
-            query = (self.client.table("generations" if status_filter else "latest_generations")
-                     .select("*")
+            query = (
+                self.client.table(
+                    "generations" if status_filter else "latest_generations"
+                )
+                .select(
+                    GENERATION_LIST_COLUMNS
+                    if include_details
+                    else GENERATION_ACTIVITY_COLUMNS
+                )
                      .eq("user_id", user_id)
-                     .eq("user_type", user_type))
+                .eq("user_type", user_type)
+            )
             
             # Apply status filter if provided
             if status_filter:
                 query = query.in_("status", status_filter)
             
-            result = (query.order("created_at", desc=True).order("id", desc=True)
+            result = await execute_query(
+                query.order("created_at", desc=True)
+                .order("id", desc=True)
                      .range(offset, offset + limit - 1)
-                     .execute())
+            )
             
             return result.data or []
             
@@ -833,7 +980,7 @@ class GenerationStorage:
             if status_filter:
                 query = query.in_("status", status_filter)
 
-            result = query.execute()
+            result = await execute_query(query)
             return result.count or 0
 
         except Exception as e:
@@ -859,10 +1006,15 @@ class GenerationStorage:
             List of generation data dictionaries
         """
         try:
-            def build_query(sort_order: str):
+
+            def build_query(sort_order: str, legacy: bool = False):
                 query = (
                     self.client.table("generations")
-                    .select("*")
+                    .select(
+                        GENERATION_LIST_COLUMNS
+                        if legacy
+                        else GENERATION_LIST_COLUMNS + ",like_count"
+                    )
                     .eq("is_community", True)
                 )
 
@@ -877,13 +1029,19 @@ class GenerationStorage:
                 return query
 
             try:
-                result = build_query(sort).range(offset, offset + limit - 1).execute()
+                result = await execute_query(
+                    build_query(sort).range(offset, offset + limit - 1)
+                )
             except Exception as error:
-                if sort == "top" and is_community_likes_schema_error(error):
+                if is_community_likes_schema_error(error):
                     logger.warning(
                         "Community likes schema unavailable; falling back to recent community generations"
                     )
-                    result = build_query("recent").range(offset, offset + limit - 1).execute()
+                    result = await execute_query(
+                        build_query("recent", legacy=True).range(
+                            offset, offset + limit - 1
+                        )
+                    )
                 else:
                     raise
 
@@ -895,11 +1053,19 @@ class GenerationStorage:
 
     async def get_previous_completed_generation(self, generation: dict) -> Optional[dict]:
         """Find a usable earlier version after an edit is cancelled or fails."""
-        rows = (self.client.table("generations").select("*")
+        rows = (
+            await execute_query(
+                self.client.table("generations")
+                .select("*")
                 .eq("generation_id", generation["generation_id"])
-                .eq("user_id", generation["user_id"]).eq("user_type", generation["user_type"])
-                .eq("status", "completed").lt("version", generation["version"])
-                .order("version", desc=True).limit(1).execute().data or [])
+                .eq("user_id", generation["user_id"])
+                .eq("user_type", generation["user_type"])
+                .eq("status", "completed")
+                .lt("version", generation["version"])
+                .order("version", desc=True)
+                .limit(1)
+            )
+        ).data or []
         return rows[0] if rows else None
 
     async def get_generation_versions(
@@ -910,11 +1076,17 @@ class GenerationStorage:
         offset = 0
         # PostgREST caps individual responses; preserve history beyond that cap.
         while True:
-            batch = (self.client.table("generations").select("*")
+            batch = (
+                await execute_query(
+                    self.client.table("generations")
+                    .select("*")
                      .eq("generation_id", generation_id)
-                     .eq("user_id", user_id).eq("user_type", user_type)
-                     .order("version", desc=True).range(offset, offset + 499)
-                     .execute().data or [])
+                    .eq("user_id", user_id)
+                    .eq("user_type", user_type)
+                    .order("version", desc=True)
+                    .range(offset, offset + 499)
+                )
+            ).data or []
             rows.extend(batch)
             if len(batch) < 500:
                 return rows
@@ -981,12 +1153,15 @@ class GenerationStorage:
         try:
             # Join orders with generations to filter by user_id
             # Select orders.* and include generation data for enrichment
-            result = (self.client.table("orders")
-                     .select("*, generations!inner(user_id, user_type, processed_image_url, external_image_url, prompt)")
+            result = await execute_query(
+                self.client.table("orders")
+                .select(
+                    "*, generations!inner(user_id, user_type, processed_image_url, external_image_url, prompt)"
+                )
                      .eq("generations.user_id", user_id)
                      .eq("generations.user_type", user_type)
                      .order("created_at", desc=True)
-                     .execute())
+            )
             
             return result.data if result.data else []
             

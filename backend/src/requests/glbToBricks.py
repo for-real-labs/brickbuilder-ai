@@ -16,6 +16,7 @@ from typing import Optional
 from fastapi import UploadFile, File, Form, Depends, HTTPException
 from pydantic import BaseModel
 
+from ..utils.database import execute_query
 from ..utils.auth import get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.posthog_client import track_image_conversion, track_error
 from ..utils.pack_ldraw_model import LDrawPacker
@@ -50,9 +51,19 @@ async def process_glb_to_bricks_task(
             while True:
                 await asyncio.sleep(5)
                 try:
-                    generation_storage.client.table("generations").update(
-                        {"updated_at": __import__("datetime").datetime.utcnow().isoformat()}
-                    ).eq("id", generation_id).execute()
+                    (
+                        await execute_query(
+                            generation_storage.client.table("generations")
+                            .update(
+                                {
+                                    "updated_at": __import__("datetime")
+                                    .datetime.utcnow()
+                                    .isoformat()
+                                }
+                            )
+                            .eq("id", generation_id)
+                        )
+                    )
                 except Exception as e:
                     logger.warning(f"Heartbeat update failed: {e}")
 

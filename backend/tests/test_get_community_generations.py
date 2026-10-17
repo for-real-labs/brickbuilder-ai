@@ -1,4 +1,6 @@
 import asyncio
+import pytest
+from pydantic import ValidationError
 import sys
 from pathlib import Path
 from types import ModuleType
@@ -18,6 +20,12 @@ sys.modules["src.utils.posthog_client"].track_error = lambda **_kwargs: None
 
 from src.requests import getCommunityGenerations as community_module
 from src.requests.getCommunityGenerations import GetCommunityGenerationsRequest
+
+
+@pytest.mark.parametrize("options", [{"limit": 0}, {"limit": 201}, {"offset": -1}])
+def test_community_requests_cannot_fetch_unbounded_pages(options):
+    with pytest.raises(ValidationError):
+        GetCommunityGenerationsRequest(**options)
 
 
 class FakeCommunityQuery:

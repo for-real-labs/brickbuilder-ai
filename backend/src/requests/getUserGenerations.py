@@ -4,6 +4,7 @@ from typing import Optional, List
 from pydantic import BaseModel, Field
 from fastapi import HTTPException, Request
 
+from ..utils.database import execute_query
 from ..utils.generation_mode import GenerationMode, generation_mode
 from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_api_call, track_error
@@ -67,6 +68,7 @@ class GetUserGenerationsRequest(BaseModel):
     limit: int = Field(default=50, ge=1, le=200)
     offset: int = Field(default=0, ge=0)  # Offset for pagination (number of unique generations to skip)
     processing: Optional[bool] = None  # If True, return only processing/queued generations
+    include_details: bool = True  # Polling needs rows, not dashboard counts and orders.
 
 
 class GetUserGenerationsResponse(BaseModel):
@@ -116,9 +118,13 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
         # users' anonymous generations into whoever loads this endpoint first.
 
         # Get the total number of generations for this user (unfiltered)
-        total_user_generations = await generation_storage.count_user_generations(
+        total_user_generations = (
+            await generation_storage.count_user_generations(
             user_id=user_id,
             user_type=user_type,
+            )
+            if request.include_details
+            else 0
         )
 
         # Get generations for the user (authenticated or anonymous)
@@ -128,8 +134,12 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
         # Storage selects the highest version per model before applying pagination.
         # The activity feed still lists every active job, including simultaneous edits.
         rows = await generation_storage.get_user_generations(
-            user_id=user_id, user_type=user_type, limit=request.limit + 1,
-            status_filter=status_filter, offset=request.offset,
+            user_id=user_id,
+            user_type=user_type,
+            limit=request.limit + 1,
+            status_filter=status_filter,
+            offset=request.offset,
+            **({} if request.include_details else {"include_details": False}),
         )
         generations = rows[:request.limit]
         has_more = len(rows) > request.limit
@@ -144,7 +154,14 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
             )
         
         # Fetch ALL orders for this user using JOIN (single query, no duplication)
-        all_orders_data = await generation_storage.get_user_orders(user_id=user_id, user_type=user_type)
+        all_orders_data = (
+            await generation_storage.get_user_orders(
+                user_id=user_id,
+                user_type=user_type,
+            )
+            if request.include_details
+            else []
+        )
         
         # Build a map of generation_id -> order for quick lookup
         orders_by_generation = {}
@@ -170,7 +187,11 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
         generations_with_orders = []
         for gen in generations:
             previous_completed = None
-            if gen.get("version", 1) > 1 and gen.get("status") in ACTIVE_GENERATION_STATUSES:
+            if (
+                request.include_details
+                and gen.get("version", 1) > 1
+                and gen.get("status") in ACTIVE_GENERATION_STATUSES
+            ):
                 previous_completed = await generation_storage.get_previous_completed_generation(gen)
             # If this generation has an order, enrich it with generation data
             order_info = None
@@ -254,10 +275,11 @@ async def _get_orders_for_generations(generation_ids: List[str]) -> dict:
     
     try:
         # Query orders table for all matching generation_ids
-        result = (generation_storage.client.table("orders")
+        result = await execute_query(
+            generation_storage.client.table("orders")
                   .select("*")
                   .in_("generation_id", generation_ids)
-                  .execute())
+        )
         
         # Map orders by generation_id
         orders_by_generation = {}

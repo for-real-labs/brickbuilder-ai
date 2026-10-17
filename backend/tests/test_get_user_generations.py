@@ -7,6 +7,40 @@ import pytest
 from src.requests import getUserGenerations as module
 
 
+def test_activity_polling_skips_counts_orders_and_revision_lookups(monkeypatch):
+    row = dict(
+        id="job",
+        generation_id="root",
+        version=2,
+        user_id="owner",
+        user_type="authenticated",
+        prompt="Castle",
+        detail_level=40,
+        endpoint="llmToBricks",
+        created_at="2026-10-01",
+        status="processing",
+    )
+    storage = SimpleNamespace(
+        get_user_generations=AsyncMock(return_value=[row]),
+        count_user_generations=AsyncMock(),
+        get_user_orders=AsyncMock(),
+        get_previous_completed_generation=AsyncMock(),
+    )
+    monkeypatch.setattr(module, "generation_storage", storage)
+    result = asyncio.run(
+        module.get_user_generations(
+            module.GetUserGenerationsRequest(processing=True, include_details=False),
+            {"authenticated": True, "user_id": "owner"},
+        )
+    )
+    assert result.generations[0].id == "job"
+    assert result.all_orders == []
+    storage.count_user_generations.assert_not_awaited()
+    storage.get_user_orders.assert_not_awaited()
+    storage.get_previous_completed_generation.assert_not_awaited()
+    assert storage.get_user_generations.await_args.kwargs["include_details"] is False
+
+
 def test_dashboard_exposes_cancelled_orders_and_preserves_replacement_fulfillment(monkeypatch):
     row = dict(id="original", user_id="owner", user_type="authenticated",
                prompt="Tabby Cat", detail_level=40, endpoint="llmToBricks",

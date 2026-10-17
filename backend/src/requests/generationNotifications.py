@@ -5,10 +5,15 @@ from fastapi import HTTPException
 from pydantic import BaseModel, Field
 from uuid import UUID
 
+from ..utils.database import execute_query
 from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
 
 logger = logging.getLogger(__name__)
+NOTIFICATION_COLUMNS = (
+    "id,name,prompt,status,notification_seen,updated_at,created_at,"
+    "preview_image_url,processed_image_url,version"
+)
 
 
 class MarkNotificationsReadRequest(BaseModel):
@@ -24,23 +29,36 @@ async def mark_notifications_read(request: MarkNotificationsReadRequest, auth_in
     # Only acknowledge the displayed snapshot, preserving new completions and
     # never changing another owner's receipts or in-progress models.
     try:
-        result = (generation_storage.client.table("generations").update({"notification_seen": True})
+        result = await execute_query(
+            generation_storage.client.table("generations")
+            .update({"notification_seen": True})
                   .eq("user_id", user_id)
-                  .eq("user_type", "authenticated" if auth_info.get("authenticated") else "anonymous")
-                  .eq("status", "completed").in_("id", [str(id) for id in request.generation_ids]).execute())
+            .eq(
+                "user_type",
+                "authenticated" if auth_info.get("authenticated") else "anonymous",
+            )
+            .eq("status", "completed")
+            .in_("id", [str(id) for id in request.generation_ids])
+        )
     except Exception as error:
         logger.error("Unable to mark notifications read (%s)", type(error).__name__)
         raise HTTPException(status_code=503, detail="Unable to mark notifications as read. Please try again.") from error
     return {"seen_ids": [row["id"] for row in result.data or []]}
 
 
-def _owned_query(auth_info: dict):
+def _owned_query(auth_info: dict, columns: str = NOTIFICATION_COLUMNS):
     user_id = auth_info.get("user_id")
     if not user_id:
         raise HTTPException(status_code=401, detail="Account or guest session required")
-    return (generation_storage.client.table("generations").select("*")
+    return (
+        generation_storage.client.table("generations")
+        .select(columns)
             .eq("user_id", user_id)
-            .eq("user_type", "authenticated" if auth_info.get("authenticated") else "anonymous"))
+        .eq(
+            "user_type",
+            "authenticated" if auth_info.get("authenticated") else "anonymous",
+        )
+    )
 
 
 def _summary(row: dict) -> dict:
@@ -53,12 +71,32 @@ def _summary(row: dict) -> dict:
 
 async def list_generation_notifications(auth_info: dict) -> dict:
     # Keep unread entries even when they are older than the recent read history.
-    unread = (_owned_query(auth_info).eq("status", "completed")
-              .eq("notification_seen", False).order("updated_at", desc=True).execute().data or [])
-    recent = (_owned_query(auth_info).eq("status", "completed")
-              .order("updated_at", desc=True).limit(30).execute().data or [])
-    active = (_owned_query(auth_info).in_("status", ["queued", "started", "processing", "ldr_processing", "resizing"])
-              .order("created_at", desc=True).execute().data or [])
+    unread = (
+        await execute_query(
+            _owned_query(auth_info)
+            .eq("status", "completed")
+            .eq("notification_seen", False)
+            .order("updated_at", desc=True)
+        )
+    ).data or []
+    recent = (
+        await execute_query(
+            _owned_query(auth_info)
+            .eq("status", "completed")
+            .order("updated_at", desc=True)
+            .limit(30)
+        )
+    ).data or []
+    active = (
+        await execute_query(
+            _owned_query(auth_info)
+            .in_(
+                "status",
+                ["queued", "started", "processing", "ldr_processing", "resizing"],
+            )
+            .order("created_at", desc=True)
+        )
+    ).data or []
     rows = {row["id"]: row for row in [*unread, *recent]}
     return {"notifications": [_summary(row) for row in sorted(rows.values(),
             key=lambda row: row.get("updated_at") or row.get("created_at") or "", reverse=True)],
@@ -72,8 +110,17 @@ async def mark_generation_viewed(generation_id: str, auth_info: dict) -> dict:
     require_generation_access(row, auth_info)
     if row.get("status") != "completed":
         raise HTTPException(status_code=409, detail="The model is still processing")
-    (generation_storage.client.table("generations").update({"notification_seen": True})
-     .eq("id", generation_id).eq("user_id", row["user_id"]).eq("user_type", row["user_type"]).execute())
+    (
+        (
+            await execute_query(
+                generation_storage.client.table("generations")
+                .update({"notification_seen": True})
+                .eq("id", generation_id)
+                .eq("user_id", row["user_id"])
+                .eq("user_type", row["user_type"])
+            )
+        )
+    )
     return {"generation_id": generation_id, "seen": True}
 
 
@@ -82,8 +129,24 @@ async def latest_generation_edit(generation_id: str, auth_info: dict) -> dict:
     if not row:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(row, auth_info)
-    edits = (_owned_query(auth_info).eq("generation_id", row.get("generation_id", generation_id))
+    edits = (
+        await execute_query(
+            _owned_query(auth_info, "id")
+            .eq("generation_id", row.get("generation_id", generation_id))
              .gt("version", row.get("version", 1))
-             .in_("status", ["queued", "started", "processing", "ldr_processing", "resizing", "completed"])
-             .order("version", desc=True).limit(1).execute().data or [])
+            .in_(
+                "status",
+                [
+                    "queued",
+                    "started",
+                    "processing",
+                    "ldr_processing",
+                    "resizing",
+                    "completed",
+                ],
+            )
+            .order("version", desc=True)
+            .limit(1)
+        )
+    ).data or []
     return {"generation_id": edits[0]["id"] if edits else None}

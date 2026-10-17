@@ -13,7 +13,13 @@ class Query:
         self.payload = None
         self.maximum = None
         self.sort = None
-    def select(self, *args, **kwargs): return self
+
+    def select(self, columns, **kwargs):
+        assert columns == "id" or (
+            "*" not in columns and "notification_email" not in columns
+        )
+        return self
+
     def eq(self, field, value): self.filters.append(lambda row: row.get(field) == value); return self
     def gt(self, field, value): self.filters.append(lambda row: row.get(field, 0) > value); return self
     def in_(self, field, values): self.filters.append(lambda row: row.get(field) in values); return self

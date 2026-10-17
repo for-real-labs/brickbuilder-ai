@@ -119,7 +119,15 @@ async def email_worker(client):
 
 
 def start_email_worker(client):
-    enabled = os.getenv('GENERATION_NOTIFICATION_WORKER', 'true' if os.getenv('RAILWAY_ENVIRONMENT_NAME') else 'false') == 'true'
+    environment = os.getenv("RAILWAY_ENVIRONMENT_NAME")
+    # PR environments inherit production variables. They must not each poll
+    # and deliver from the production outbox under the production origin.
+    if environment and environment not in {"production", "staging"}:
+        return None
+    enabled = (
+        os.getenv("GENERATION_NOTIFICATION_WORKER", "true" if environment else "false")
+        == "true"
+    )
     if client and enabled and sender() and os.getenv('RESEND_API_KEY'):
         return asyncio.create_task(email_worker(client))
     return None
