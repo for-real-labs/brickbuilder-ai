@@ -37,6 +37,7 @@ export function LandingModelWorkspace({ model, busy, onSuggest, onCreateNew, chi
       </div>
     </section>}
     <section className="landing-model-conversation" aria-label="Build dialogue">
+      {children}
       {model && generation && <div className="landing-model-suggestions" role="group" aria-label="Model suggestions">
         {modelEditSuggestions(model).map((suggestion, index) => <button key={index} type="button" disabled={busy}
           onClick={() => {
@@ -45,7 +46,6 @@ export function LandingModelWorkspace({ model, busy, onSuggest, onCreateNew, chi
           }}>{suggestion}</button>)}
         <button type="button" disabled={busy} className="landing-model-create-new" onClick={onCreateNew}>Create new?</button>
       </div>}
-      {children}
     </section>
   </>;
 }
