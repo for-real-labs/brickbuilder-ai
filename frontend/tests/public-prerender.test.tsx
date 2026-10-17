@@ -21,6 +21,9 @@ describe('public page indexing', () => {
     expect(document.head.querySelectorAll('link[rel="canonical"]')).toHaveLength(1);
     expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(url);
     expect(document.head.querySelectorAll('title')).toHaveLength(1);
+    const appBanners = document.head.querySelectorAll('meta[name="apple-itunes-app"]');
+    expect(appBanners).toHaveLength(1);
+    expect(appBanners[0].getAttribute('content')).toBe('app-id=6815050463');
     for (const selector of ['meta[name="description"]', 'meta[name="robots"]', 'meta[property="og:url"]', 'meta[name="twitter:url"]']) {
       expect(document.head.querySelectorAll(selector)).toHaveLength(1);
     }

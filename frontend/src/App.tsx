@@ -32,6 +32,7 @@ import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
 import { PetProvider } from "./contexts/PetContext";
 import { PetCompanion } from "./components/PetCompanion";
+import { MobileAppBanner } from "./components/MobileAppBanner";
 // import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function ExternalRedirect({ to }: { to: string }) {
@@ -44,6 +45,7 @@ function ExternalRedirect({ to }: { to: string }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <MobileAppBanner />
       <PetProvider>
       <AiConsentDialog />
       <GenerationNotificationsProvider>
