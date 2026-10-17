@@ -21,6 +21,7 @@ from .utils.authorization import require_generation_access
 
 from .requests.imageToBricks import image_to_bricks, image_to_bricks_stream, ImageToBricksRequest, ImageToBricksResponse
 from .requests.glbToBricks import glb_to_bricks, GlbToBricksResponse
+from .requests.meshToVoxels import mesh_to_voxels
 from .requests.textToBricks import text_to_bricks, text_to_bricks_stream, TextToBricksRequest
 from .requests.ldrToBrickOwl import ldr_to_brickowl, LdrToBrickOwlRequest, LdrToBrickOwlResponse
 from .requests.estimatePrice import estimate_price, EstimatePriceRequest, EstimatePriceResponse
@@ -340,6 +341,17 @@ async def generation_output_endpoint(
         output_events(generation_id, auth_info), media_type="text/event-stream",
         headers={"Cache-Control": "private, no-store", "X-Accel-Buffering": "no"},
     )
+
+
+@app.post("/meshToVoxels")
+async def mesh_to_voxels_endpoint(
+    file: UploadFile = File(...),
+    input_format: str = Form(...),
+    output_format: str = Form("vox"),
+    resolution: int = Form(40),
+    auth_info: dict = Depends(get_user_with_optional_auth),
+) -> Response:
+    return await mesh_to_voxels(file, input_format, output_format, resolution, auth_info)
 
 
 @app.post("/glbToBricks", response_model=GlbToBricksResponse)

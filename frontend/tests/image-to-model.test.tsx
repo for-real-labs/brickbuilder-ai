@@ -9,7 +9,7 @@ import { convertModelFormat } from '../src/services/modelFormatConversion';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: { access_token: 'owner-token' } }) }));
-vi.mock('../src/components/GlbUploadCard', () => ({ GlbViewer: () => <div>3D preview</div> }));
+vi.mock('../src/components/ModelMeshPreview', () => ({ ModelMeshPreview: () => <div>3D preview</div> }));
 vi.mock('../src/services/imageToModel', () => ({ startImageModel: vi.fn(), waitForImageModel: vi.fn(), downloadImageModel: vi.fn() }));
 vi.mock('../src/services/modelFormatConversion', () => ({ convertModelFormat: vi.fn() }));
 let root: ReturnType<typeof createRoot>;

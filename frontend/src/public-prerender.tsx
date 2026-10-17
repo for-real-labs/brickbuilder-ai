@@ -1,5 +1,7 @@
 import ImageToModelPage from './pages/ImageToModelPage';
 import { IMAGE_MODEL_PAGES } from './imageModelPages';
+import ModelToVoxelPage from './pages/ModelToVoxelPage';
+import { VOXEL_CONVERTERS } from './voxelConverters';
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
@@ -21,6 +23,7 @@ import TermsOfServicePage from './pages/TermsOfServicePage';
 
 const publicPages = [
   ...IMAGE_MODEL_PAGES.map(({ path, output }) => ({ path, element: <ImageToModelPage output={output} /> })),
+  ...VOXEL_CONVERTERS.map(({ path, input, output }) => ({ path, element: <ModelToVoxelPage input={input} output={output} /> })),
   { path: '/', element: <LandingPage /> },
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },

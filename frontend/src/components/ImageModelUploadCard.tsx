@@ -3,7 +3,7 @@ import { Box, Download, Loader2, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
-import { GlbViewer } from './GlbUploadCard';
+import { ModelMeshPreview } from './ModelMeshPreview';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { downloadImageModel, startImageModel, waitForImageModel } from '../services/imageToModel';
 import type { ImageModelOutput } from '../imageModelPages';
@@ -118,7 +118,7 @@ export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
       {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Box className="h-4 w-4" />}{busy ? 'Processing…' : generationId ? 'Load existing result' : 'Generate 3D model'}</button>}
     <div role="status" aria-live="polite" aria-busy={busy}>{status && <p className="mt-3 text-sm text-slate-500">{status}</p>}</div>
     {modelUrl && <div className="mt-6 space-y-4">
-      <GlbViewer objectUrl={modelUrl} />
+      <ModelMeshPreview objectUrl={modelUrl} format="glb" />
       <p className="text-sm font-semibold text-emerald-700">Your 3D model is ready. Drag the preview to rotate it.</p>
       <div className="flex flex-wrap gap-3">
         <a href={modelUrl} download="image-model.glb" onClick={() => track('image_model_download_clicked', { download_format: 'glb' })} className={downloadClass}><Download className="h-4 w-4" />Download GLB</a>

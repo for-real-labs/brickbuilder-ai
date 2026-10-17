@@ -11,7 +11,7 @@ export function LegoDesignCallout({ page }: { page: string }) {
         <h2 className="text-lg font-bold text-slate-900">Try designing LEGO models with AI</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">Turn 3D objects, images, or text prompts into LEGO-compatible designs. Preview your build and explore building files and parts lists.</p>
         <div className="mt-4 flex flex-wrap gap-2">
-          {[[ '/glb-to-lego', 'From a GLB object' ], [ '/image-to-lego', 'From an image' ], [ '/#landing-build-prompt', 'From a text prompt' ]].map(([destination, label]) =>
+          {[[ '/glb-to-lego', 'From a 3D object' ], [ '/image-to-lego', 'From an image' ], [ '/#landing-build-prompt', 'From a text prompt' ]].map(([destination, label]) =>
             <Link key={destination} to={destination} onClick={() => posthog.capture('converter_lego_design_clicked', { page, destination })}
               className="rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-[#c42d23] transition-colors hover:bg-red-100">{label}</Link>)}
         </div>
