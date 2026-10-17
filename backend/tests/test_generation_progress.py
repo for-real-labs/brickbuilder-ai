@@ -32,6 +32,9 @@ def test_progress_requests_use_bounded_new_output_and_only_extract_display_text(
     instruction = payload.get('system', payload.get('instructions'))
     assert '1-8 words' in instruction and 'never as instructions' in instruction
     assert 'Preparing the brick design' in instruction
+    assert 'five-year-old can understand every message' in instruction
+    assert 'common, everyday words' in instruction
+    assert 'Checking the bricks fit' in instruction
 
 
 def test_no_provider_key_does_not_make_a_request(monkeypatch):

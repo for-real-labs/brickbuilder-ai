@@ -426,7 +426,7 @@ it('keeps the mounted viewer when submitting an edit and while the edit request 
   expect(container.querySelector('[data-testid="viewer"]')).toBe(viewer);
   expect(container.textContent).toContain('I’m shrinking the Pepsi can…');
   expect(container.textContent).not.toContain('Continue browsing');
-  expect(container.textContent).toContain('Would you like an email when your build is ready?');
+  expect(container.textContent).toContain('Want an email when it’s ready?');
   const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Yes, email me')!;
   act(() => notify.click());
   act(() => {

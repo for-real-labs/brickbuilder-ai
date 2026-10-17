@@ -7,6 +7,7 @@ import re
 import httpx
 
 from .llm_tool_conversation import ANTHROPIC_URL, ANTHROPIC_API_VERSION, OPENAI_URL, post_json
+from .pet_language import PET_LANGUAGE_INSTRUCTIONS
 
 MAX_PROGRESS_INPUT_CHARS = 4_000
 MAX_PROGRESS_CONTEXT_CHARS = 1_500
@@ -24,7 +25,10 @@ SUMMARY_INSTRUCTION = (
     "for fragments. When the new output is voxel design JSON, describe the shape, "
     "color, or part currently being specified instead of mentioning JSON or tools. "
     "Use design_context to identify the subject and interpret fragments. Do not invent "
-    "parts that do not belong to that subject, or guess color names from numeric codes."
+    "parts that do not belong to that subject, or guess color names from numeric codes. "
+    + PET_LANGUAGE_INSTRUCTIONS
+    + "Use simple actions like 'Adding the red roof' or 'Making the tail round'. "
+    "Say 'Checking the bricks fit' instead of 'Verifying structural integrity'."
 )
 
 

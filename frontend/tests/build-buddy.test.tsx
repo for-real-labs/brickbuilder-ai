@@ -29,7 +29,7 @@ const renderDialogue = async (username?: string, authLoading = false) => act(asy
 
 it('introduces Pip in a message, remembers the visit, and removes the two old captions', async () => {
   await renderDialogue();
-  expect(container.textContent).toBe('Hi, I’m Pip your build buddy! What would you like to build with LEGO?');
+  expect(container.textContent).toBe('Hi! I’m Pip. What do you want to build with LEGO?');
   expect(container.querySelector('[role="log"]')?.getAttribute('aria-label')).toBe('Build buddy conversation');
   expect(container.querySelector('.pet-speech-heading')).toBeNull();
   expect(container.textContent).not.toContain('Ask Pip to build something');
@@ -58,7 +58,7 @@ it('waits for account details before including a name and works with blocked sto
   vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('blocked'); });
   vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw new Error('blocked'); });
   await renderDialogue();
-  expect(container.textContent).toContain('Hi, I’m Pip');
+  expect(container.textContent).toContain('Hi! I’m Pip');
 });
 
 it('provides 1,000 distinct LEGO or bricks invitations with optional names', () => {
@@ -70,6 +70,11 @@ it('provides 1,000 distinct LEGO or bricks invitations with optional names', () 
     expect(formatBuddyGreeting(greeting, ' Jake ')).toContain('Welcome back, Jake!');
     expect(formatBuddyGreeting(greeting)).toMatch(/^Welcome back!/);
     expect(formatBuddyGreeting(greeting)).not.toContain('{name}');
+    expect(greeting.split(/\s+/).length).toBeLessThanOrEqual(22);
+    for (const sentence of greeting.split(/[.!?]/).filter(part => part.trim())) {
+      expect(sentence.trim().split(/\s+/).length).toBeLessThanOrEqual(10);
+    }
+    expect(greeting).not.toMatch(/imagination|creation|recreate|explore|generation|treatment/i);
   }
 });
 
@@ -99,7 +104,7 @@ it('shows text and images in order, speaks stream updates, and shows a completed
   act(() => update({ text: 'private implementation', summary: 'Shaping the dragon wings', status: 'processing' }));
   expect(container.textContent).toContain('I’m shaping the dragon wings…');
   expect(container.textContent).not.toContain('private implementation');
-  expect(container.textContent).toContain('sometimes up to 30 minutes');
+  expect(container.textContent).toContain('up to 30 minutes');
   const dialogue = container.querySelector('[role="log"]');
   const greeting = container.querySelector('.pet-greeting')?.textContent;
   const originalPrompt = container.querySelector('.pet-chat-message--user');
@@ -128,7 +133,7 @@ it.each(['failed', 'cancelled'])('speaks a terminal %s build without opening ano
     turns={[{ id: 1, text: 'Castle', reply: 'Great idea.', generationId: 'job', method: 'llm' }]}
     generations={[{ id: 'job', prompt: 'Castle', endpoint: 'llmToBricks', status, errorMessage: 'Internal runtime error' }]} state="idle" />));
   expect(container.textContent).toContain(status === 'failed'
-    ? 'Woops! Something in the brickverse is down. Try again later' : 'I’ve stopped this build.');
+    ? 'Oops! I couldn’t make your build. Please try again.' : 'I stopped this build.');
   expect(container.textContent).not.toContain('Internal runtime error');
   expect(watch).not.toHaveBeenCalled();
 });
@@ -195,7 +200,7 @@ it.each([undefined, 'job'])('shows one pet failure message without infrastructur
     generations={generationId ? [{ id: generationId, prompt: 'A cat', endpoint: 'novaToBricks', status: 'failed' }] : []}
     state="idle" />));
   const message = container.querySelector('[role="status"]');
-  expect(message?.textContent).toBe('Woops! Something in the brickverse is down. Try again later');
+  expect(message?.textContent).toBe('Oops! I couldn’t make your build. Please try again.');
   expect(message?.closest('.pet-chat-message')).not.toBeNull();
   expect(container.querySelectorAll('[role="status"]')).toHaveLength(1);
   expect(container.textContent).not.toContain('Nova runtime');
@@ -240,7 +245,7 @@ it('recovers from a reply failure independently and does not overwrite a generat
   let id!: number;
   act(() => { id = chat.startTurn('Castle', null); });
   await act(async () => chat.requestReply(id, 'Castle'));
-  expect(chat.turns[0].reply).toContain('I couldn’t reply');
+  expect(chat.turns[0].reply).toContain('I can’t chat right now');
   expect(chat.turns[0].error).toBeUndefined();
   let respond!: (value: string) => void;
   reply.mockImplementationOnce(() => new Promise(resolve => { respond = resolve; }));
@@ -339,7 +344,7 @@ it.each(['failed', 'cancelled', 'processing'])('does not rebuild a prior %s job 
     generations={[{ id: 'old', prompt: 'Old concert stage', endpoint: 'novaToBricks', status }]} />));
   expect(container.querySelector('.pet-chat-message--user')).toBeNull();
   expect(container.textContent).not.toContain('Old concert stage');
-  expect(container.textContent).not.toContain('Woops!');
+  expect(container.textContent).not.toContain('Oops!');
   expect(watch).not.toHaveBeenCalled();
 });
 

@@ -30,7 +30,7 @@ afterEach(() => { act(() => root.unmount()); container.remove(); vi.useRealTimer
 it('asks about unread completions on reload, reveals their previews, and opens the selected inline model', async () => {
   const mark = vi.spyOn(GenerationNotificationsApi, 'markViewed').mockResolvedValue({});
   await render();
-  expect(container.textContent).toContain('2 generations that are done building. Want to view them?');
+  expect(container.textContent).toContain('2 builds are ready! Want to see them?');
   expect(container.querySelector('[aria-label="Completed builds"]')).toBeNull();
   showBuilds();
   expect(container.querySelectorAll('.pet-completed-builds li')).toHaveLength(2);
@@ -44,17 +44,17 @@ it('asks about unread completions on reload, reveals their previews, and opens t
   expect(mark).not.toHaveBeenCalled();
   expect(feed.unread_count).toBe(2);
   await act(async () => feed.markViewed('ship'));
-  expect(container.textContent).toContain('a generation that’s done building. Want to view it?');
+  expect(container.textContent).toContain('Your build is ready! Want to see it?');
   expect(container.querySelector('img[alt="Preview of LEGO ship"]')).toBeNull();
   expect(container.querySelectorAll('.pet-completed-builds li')).toHaveLength(1);
   act(() => root.unmount()); root = createRoot(container);
   vi.mocked(GenerationNotificationsApi.list).mockResolvedValue({ notifications: [ready('castle')], active: [], unread_count: 1 });
   await render();
-  expect(container.textContent).toContain('a generation that’s done building');
+  expect(container.textContent).toContain('Your build is ready!');
   expect(container.querySelector('.pet-completed-builds')).toBeNull();
   showBuilds();
   await act(async () => feed.markViewed('castle'));
-  expect(container.textContent).not.toContain('done building');
+  expect(container.textContent).not.toContain('Want to see');
 });
 
 it('preserves native new-tab navigation and provides a card when a preview is unavailable', async () => {

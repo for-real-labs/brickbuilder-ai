@@ -55,7 +55,7 @@ function BuddyNotification({ generationId, accountEmail, signedIn, promptOnStart
     posthog.capture('generation_email_notification_requested', properties);
     try {
       const result = await GenerationEmailApi.subscribe(generationId, signedIn ? undefined : email.trim());
-      if (!result.subscribed) throw new Error('I couldn’t save that notification. Please try again.');
+      if (!result.subscribed) throw new Error('I couldn’t save your email. Please try again.');
       setRecipient(result.email); setStage('success');
       posthog.capture('generation_email_notification_subscribed', properties);
     } catch (reason) {
@@ -69,7 +69,7 @@ function BuddyNotification({ generationId, accountEmail, signedIn, promptOnStart
 
   return <div className="pet-notification-conversation">
     <PetChatMessage>
-      <p>This might take a while, sometimes up to 30 minutes. Would you like an email when your build is ready?</p>
+      <p>This can take up to 30 minutes. Want an email when it’s ready?</p>
       {stage === 'prompt' && <div className="pet-chat-actions">
         <button type="button" disabled={busy} className={buttonClass} onClick={() => {
           setAnsweredYes(true);
@@ -100,10 +100,10 @@ function BuddyNotification({ generationId, accountEmail, signedIn, promptOnStart
     </>}
     {stage === 'success' && <PetChatMessage><p role="status">You’re all set! {recipient
       ? <>I’ll email <strong>{recipient}</strong> when your build is ready.</>
-      : 'Your email notification is saved.'}</p></PetChatMessage>}
+      : 'I’ll email you when your build is ready.'}</p></PetChatMessage>}
     {stage === 'declined' && <>
       <PetChatMessage user><p>Not now.</p></PetChatMessage>
-      <PetChatMessage><p>Okay! Your build will keep running. You can check it here anytime.</p>
+      <PetChatMessage><p>Okay! I’ll keep building. You can look here later.</p>
         <button type="button" className={buttonClass} onClick={() => {
           setAnsweredYes(false); setError(''); setStage('prompt'); posthog.capture('generation_email_notification_clicked', properties);
         }}>Get notified</button>

@@ -73,7 +73,7 @@ export function useBuildBuddyChat(pet: PetId, authToken?: string, owner = authTo
       return { ...decision, id };
     } catch {
       if (!controller.signal.aborted) {
-        updateTurn(id, { reply: 'I couldn’t understand that message just now. Please send it again.' });
+        updateTurn(id, { reply: 'I missed that. Can you try again?' });
         posthog.capture('build_buddy_message_routing_failed', { pet_id: pet });
       }
     } finally {
@@ -101,7 +101,7 @@ export function useBuildBuddyChat(pet: PetId, authToken?: string, owner = authTo
       })
       .catch(() => {
         if (!controller.signal.aborted) setTurns(current => current.map(turn => turn.id === id && !turn.error
-          ? { ...turn, reply: 'I couldn’t reply just now. Please send your message again.' } : turn));
+          ? { ...turn, reply: 'I can’t chat right now. Please try again.' } : turn));
       }).finally(() => requests.current.delete(controller));
   };
 
@@ -118,7 +118,7 @@ export function useBuildBuddyChat(pet: PetId, authToken?: string, owner = authTo
       const result = await BuildBuddyApi.planGift({ pet, prompt: text, history: context }, authToken, controller.signal);
       if (!controller.signal.aborted) updateTurn(id, { reply: result.reply, buildPrompt: result.buildPrompt });
     } catch {
-      if (!controller.signal.aborted) updateTurn(id, { reply: 'I couldn’t reply just now. Please send your answer again so we can keep planning your gift.' });
+      if (!controller.signal.aborted) updateTurn(id, { reply: 'I missed your answer. Can you send it again?' });
     } finally { requests.current.delete(controller); }
   };
 

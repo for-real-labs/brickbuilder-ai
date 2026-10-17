@@ -31,8 +31,8 @@ it('asks about a 30-minute wait in the conversation and opts in only after a gue
   await act(async () => root.render(<GetNotifiedButton generationId="build" promptOnStart onPromptShown={shown} />));
   expect(document.querySelector('[role="dialog"]')).toBeNull();
   expect(document.body.style.overflow).toBe('');
-  expect(container.textContent).toContain('sometimes up to 30 minutes');
-  expect(container.textContent).toContain('Would you like an email');
+  expect(container.textContent).toContain('up to 30 minutes');
+  expect(container.textContent).toContain('Want an email');
   expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
   expect(shown).toHaveBeenCalledOnce();
   await click('Yes, email me');
@@ -51,7 +51,7 @@ it('declines without a request, keeps the dialogue, and permits a later opt-in',
   await act(async () => root.render(<GetNotifiedButton generationId="build" promptOnStart />));
   await click('Not now');
   expect(container.querySelector('.pet-chat-message--user')?.textContent).toContain('Not now.');
-  expect(container.textContent).toContain('Your build will keep running');
+  expect(container.textContent).toContain('I’ll keep building');
   expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
   await act(async () => root.render(<GetNotifiedButton generationId="build" promptOnStart />));
   expect(button('Yes, email me')).toBeUndefined();
@@ -133,7 +133,7 @@ it('keeps the prompt retryable if the server did not save a subscription', async
 it('handles legacy servers that omit the recipient', async () => {
   vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: true, email: null });
   await act(async () => root.render(<GetNotifiedButton generationId="build" />));
-  expect(container.textContent).toContain('Your email notification is saved.');
+  expect(container.textContent).toContain('I’ll email you when your build is ready.');
   expect(container.textContent).not.toContain('email to when');
 });
 

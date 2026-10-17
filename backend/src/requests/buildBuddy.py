@@ -12,6 +12,7 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from ..utils.auth import get_optional_identity, get_anonymous_user_id, check_anonymous_short_window_limit
 from ..utils.llm_tool_conversation import OPENAI_URL, post_json
 from ..utils.buddy_intent import classify_buddy_message
+from ..utils.pet_language import PET_LANGUAGE_INSTRUCTIONS
 
 router = APIRouter()
 
@@ -100,11 +101,11 @@ async def generate_buddy_reply(request: BuddyReplyRequest) -> str | dict:
         payload['instructions'] = (
             f'You are {request.pet.capitalize()}, a warm, concise LEGO gift planning buddy in BrickBuilder. '
             'Help the user discover a thoughtful custom LEGO gift through conversation. '
-            'Start by asking who the gift is for and what they love. Ask one or two focused questions per turn, '
+            'Start by asking who the gift is for. Ask one simple question per turn, '
             'using their previous answers, about the occasion, interests, meaningful memories, favorite colors, '
             'and preferred style or size. Do not ask everything at once or repeat answered questions. '
             'Once you know enough, propose a specific personalized build and invite refinements. '
-            'Keep replies to two or three short sentences. Set build_prompt to null while gathering information; '
+            'Set build_prompt to null while gathering information; '
             'when proposing a concrete idea, provide a self-contained LEGO build prompt with all the relevant '
             'visual and personal details, at most 2000 characters. The user can click Use this gift idea to put '
             'that prompt in the input, then Create to start building. Planning does not generate a model. '
@@ -121,6 +122,12 @@ async def generate_buddy_reply(request: BuddyReplyRequest) -> str | dict:
                 'required': ['reply', 'build_prompt'],
             },
         }}
+    payload['instructions'] += (
+        ' ' + PET_LANGUAGE_INSTRUCTIONS
+        + 'Keep the spoken reply to one or two short sentences, at most 30 words total. '
+        'Ask at most one simple question per reply. '
+        'These reply limits do not shorten the build_prompt, which should keep the needed build details.'
+    )
     try:
         async with httpx.AsyncClient(timeout=15) as client:
             result = await post_json(client, OPENAI_URL, {'Authorization': f'Bearer {key}'}, payload, 'OpenAI')

@@ -107,7 +107,7 @@ def test_gift_planning_uses_questions_history_and_structured_build_handoff(monke
     result = asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(mode='gift', prompt='Gardening', history=history)))
     assert result == {'reply': reply, 'build_prompt': build_prompt}
     payload = post.await_args.args[3]
-    assert 'Ask one or two focused questions per turn' in payload['instructions']
+    assert 'Ask one simple question per turn' in payload['instructions']
     assert 'Planning does not generate a model' in payload['instructions']
     assert 'independently submits' not in payload['instructions']
     assert payload['input'][0] == {'role': 'user', 'content': 'For Mum'}
@@ -156,3 +156,19 @@ def test_conversational_modes_answer_without_assuming_generation(monkeypatch, mo
     if mode == 'clarify':
         assert 'Ask one short clarifying question' in instructions
         assert 'Do not invent a build subject' in instructions
+
+
+@pytest.mark.parametrize('mode', ['build', 'question', 'chat', 'clarify', 'gift'])
+def test_every_reply_mode_keeps_pet_language_simple(monkeypatch, mode):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    text = json.dumps({'reply': 'Who is the gift for?', 'build_prompt': None}) if mode == 'gift' else 'What do you want to make?'
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': text}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(mode=mode, prompt='Use complex technical words')))
+    instructions = post.await_args.args[3]['instructions']
+    assert 'five-year-old can understand every message' in instructions
+    assert 'common, everyday words' in instructions
+    assert 'without baby talk' in instructions
+    assert 'at most 30 words total' in instructions
+    assert 'Ask at most one simple question' in instructions
+    assert 'even when the user uses technical words' in instructions

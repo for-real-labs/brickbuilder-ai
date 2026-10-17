@@ -110,8 +110,8 @@ it('starts fresh on reload and return despite cached models, failed history, bac
     expect(container.textContent).not.toContain('Old concert stage');
     expect(container.textContent).not.toContain('Background car');
     expect(container.textContent).not.toContain('Cancelled dragon');
-    expect(container.textContent).not.toContain('Woops!');
-    expect(container.textContent).toContain('done building');
+    expect(container.textContent).not.toContain('Oops!');
+    expect(container.textContent).toContain('Want to see');
     act(() => root.render(null));
   }
   expect(get).not.toHaveBeenCalled();
@@ -484,7 +484,7 @@ it('keeps the current model and edit text available after an edit request fails'
   expect(input().value).toBe('Add a bridge');
   expect(input().disabled).toBe(false);
   expect(buddy.updateTurn).toHaveBeenCalledWith(1, {
-    error: 'Woops! Something in the brickverse is down. Try again later', reply: undefined,
+    error: 'Oops! I couldn’t make your build. Please try again.', reply: undefined,
   });
   expect(container.textContent).not.toContain('Please try again');
   expect(container.textContent).not.toContain('Generation Failed');

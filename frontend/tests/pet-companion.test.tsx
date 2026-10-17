@@ -110,7 +110,7 @@ describe('build buddies', () => {
     click('[aria-label="Choose Nib"]');
     expect(submit).not.toHaveBeenCalled();
     expect(container.querySelector('output')?.textContent).toBe('nib:idle');
-    expect(container.textContent).toContain('Hi, I’m Nib your build buddy!');
+    expect(container.textContent).toContain('Hi! I’m Nib.');
     expect(localStorage.getItem(PET_STORAGE_KEY)).toBe('nib');
     expect(container.querySelector('dialog')).toBeNull();
     expect(posthog.capture).toHaveBeenCalledWith('pet_selected', { pet_id: 'nib', previous_pet_id: 'pip', source: 'build_prompt' });
@@ -253,7 +253,7 @@ describe('build buddies', () => {
     localStorage.setItem(PET_STORAGE_KEY, 'clik');
     render(<PetPromptGreeting mode="edit" state="building" />);
     expect(container.textContent).not.toContain('Clik · your build buddy');
-    expect(container.textContent).toContain('On it! I’m working on your changes.');
+    expect(container.textContent).toContain('I’m making your changes.');
     expect(container.querySelector('[data-pet="clik"]')).not.toBeNull();
   });
 });
