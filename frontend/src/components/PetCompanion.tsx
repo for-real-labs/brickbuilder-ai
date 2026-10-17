@@ -78,7 +78,7 @@ export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true,
       <p><PetResponseText>{children ?? (current === 'building' ? (mode === 'edit' ? 'I’m making your changes.' : 'I’m making your build.')
         : current === 'celebrating' ? 'Look what we made! What should we build next?'
         : mode === 'edit' ? 'What do you want to change?'
-        : mode === 'upload' ? 'Show me your build. What should we change?' : 'Hi! I’m ' + pet.name + '. What do you want to build?')}</PetResponseText></p>
+        : mode === 'upload' ? 'Show me your build. What should we change?' : 'Hi! I’m ' + pet.name + '. Tell me what to build!')}</PetResponseText></p>
     </div>
   </div>;
 }
