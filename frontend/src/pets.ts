@@ -17,3 +17,13 @@ export function petVideoPath(id: PetId, state: PetState) {
   const clip = state === 'listening' ? 'idle' : state;
   return `/pets/${id}-${clip}-alpha.webm`;
 }
+
+export function petVideoSources(id: PetId, state: PetState) {
+  const webm = petVideoPath(id, state);
+  return [
+    // Safari supports QuickTime HEVC alpha. Chromium skips this MIME type,
+    // avoiding its HEVC decoder, which can play the color layer without alpha.
+    { src: webm.replace(/\.webm$/, '.mov'), type: 'video/quicktime; codecs="hvc1"' },
+    { src: webm, type: 'video/webm; codecs="vp9"' },
+  ];
+}

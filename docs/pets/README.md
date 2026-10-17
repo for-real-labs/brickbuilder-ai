@@ -12,7 +12,8 @@ Only the selected visible pet loads a clip. The picker uses still images.
 
 ## Media
 
-`frontend/public/pets/` contains three WebP posters and nine silent VP9 alpha WebM clips,
+`frontend/public/pets/` contains three WebP posters and nine silent animations in both VP9 alpha WebM
+and Apple HEVC alpha QuickTime formats,
 plus the original MP4s for comparison.
 Each pet has `idle`, `building` and `celebrating` clips. Listening uses the idle
 clip while the prompt is focused. A successful build or edit plays a five-second
@@ -40,8 +41,9 @@ prompts, source URLs, request IDs, filenames, duration and cost. Nine completed
 five-second generations cost $0.35 each ($3.15 total), verified against the
 account credit change from $14.53 to $11.38. No retries were charged.
 
-The shipped animations are 512 × 512, 24 fps VP9 with alpha and no audio,
-under 650 KiB each. They use normal alpha compositing on every app surface. The original high-resolution generations and
+The shipped animations are 512 × 512, 24 fps with alpha and no audio.
+WebM files stay under 650 KB and HEVC files under 1.2 MB. Only the browser-selected
+format loads. Both use normal alpha compositing on every app surface. The original high-resolution generations and
 visual QA evidence are preserved locally under
 `/Users/jakejohnson/.codex/artifacts/brickbuilder-pets-01a146dc/`.
 
@@ -57,7 +59,7 @@ they do not submit paid model-generation or edit requests.
 
 ## Transparent animations
 
-Pip, Nib and Clik use transparent WebM for idle/listening, building and celebrating.
+Pip, Nib and Clik use transparent video for idle/listening, building and celebrating.
 Bria video background removal on fal.ai processed the nine existing animations;
 the character motion was not regenerated. `transparency-ledger.json` records
 source URLs, output URLs, request IDs, per-request costs and alpha validation.
@@ -75,4 +77,23 @@ error restores the transparent still. Unsupported video browsers use that still.
 checkerboard, cream or midnight backgrounds. Browser checks verify all nine clips
 start at 512 × 512 and hide their poster. Decoding alpha at five points per clip
 confirms clear background, opaque subject and soft edges. Mobile and desktop
-layouts were checked in Chromium; Safari alpha playback is not verified.
+layouts were checked in Chromium and native Safari.
+
+## Safari / Apple video support
+
+Safari can play VP9 WebM without compositing its alpha channel. Each animation
+also ships as HEVC with alpha in QuickTime. `petVideoSources` lists that source
+first with `video/quicktime; codecs="hvc1"`; Safari selects it and Chromium skips
+that MIME type in favor of WebM. This avoids browser-name detection and avoids
+Chromium selecting an HEVC color layer without its alpha layer.
+
+The HEVC files were transcoded locally from the existing alpha WebM files using
+Apple VideoToolbox, with no additional fal.ai charges. RGBA is premultiplied before
+encoding to match Apple's default alpha mode and prevent bright edge fringes.
+The exact command, file hashes and decoded alpha samples are recorded in
+`safari-transparency.json`. AVFoundation confirms alpha metadata and verifies
+five decoded frames for all nine clips. Unit tests check both HEVC parameter-set
+layers, source ordering, state changes, and poster fallback after source failures.
+Native Safari checks cover all nine MOV files on checkerboard/dark backgrounds,
+plus the app's comparison page at desktop and 375px mobile widths. Native Chrome
+checks confirm all nine source pairs select and play their WebM version.

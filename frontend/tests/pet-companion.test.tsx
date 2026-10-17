@@ -7,7 +7,7 @@ import posthog from 'posthog-js';
 import { PetProvider, usePet, usePetActivity } from '../src/contexts/PetContext';
 import { PetAvatar, PetCompanion, PetPromptGreeting } from '../src/components/PetCompanion';
 import { LandingToolsMenu } from '../src/components/LandingToolsMenu';
-import { PET_MOTION_KEY, PET_STORAGE_KEY, isPetId, petVideoPath } from '../src/pets';
+import { PET_MOTION_KEY, PET_STORAGE_KEY, isPetId, petVideoPath, petVideoSources } from '../src/pets';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 
@@ -141,6 +141,21 @@ describe('build buddies', () => {
     expect(container.querySelector('img')).not.toBeNull();
   });
 
+  it('tries the WebM source if QuickTime fails, then restores the still when all sources fail', () => {
+    render(<PetAvatar />);
+    const sources = container.querySelectorAll('source');
+    expect(sources[0].getAttribute('type')).toBe('video/quicktime; codecs="hvc1"');
+    expect(sources[1].getAttribute('type')).toBe('video/webm; codecs="vp9"');
+    act(() => sources[0].dispatchEvent(new Event('error')));
+    expect(container.querySelector('video')).not.toBeNull();
+    act(() => container.querySelector('video')?.dispatchEvent(new Event('playing')));
+    expect(container.querySelector('.pet-avatar--alpha-playing')).not.toBeNull();
+    act(() => sources[1].dispatchEvent(new Event('error')));
+    expect(container.querySelector('video')).toBeNull();
+    expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/pets/pip.webp');
+  });
+
   it('uses transparent clips for every pet state and hides the still poster after playback starts', () => {
     expect(petVideoPath('pip', 'idle')).toBe('/pets/pip-idle-alpha.webm');
     expect(petVideoPath('pip', 'listening')).toBe('/pets/pip-idle-alpha.webm');
@@ -161,7 +176,7 @@ describe('build buddies', () => {
     for (const state of ['idle', 'listening', 'building', 'celebrating'] as const) {
       render(<PetAvatar id={id} state={state} />);
       const video = container.querySelector('video')!;
-      expect(video.getAttribute('src')).toBe(petVideoPath(id, state));
+      expect(Array.from(video.querySelectorAll('source')).map(source => ({ src: source.getAttribute('src'), type: source.getAttribute('type') }))).toEqual(petVideoSources(id, state));
       expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
       act(() => video.dispatchEvent(new Event('playing')));
       expect(container.querySelector('.pet-avatar--alpha-playing')).not.toBeNull();

@@ -21,7 +21,7 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 it('compares the original and transparent versions of the same Pip idle animation', () => {
-  expect(Array.from(container.querySelectorAll('video')).map(video => video.getAttribute('src'))).toEqual([
+  expect(Array.from(container.querySelectorAll('video')).map(video => video.querySelector('source:last-child')?.getAttribute('src'))).toEqual([
     '/pets/pip-idle.mp4', '/pets/pip-idle-alpha.webm',
   ]);
   expect(container.querySelector('.pet-preview-stage--original .pet-avatar--transparent')).toBeNull();
@@ -49,7 +49,7 @@ it.each(['pip', 'nib', 'clik'])('compares every transparent %s animation with it
   act(() => { select[0].value = pet; select[0].dispatchEvent(new Event('change', { bubbles: true })); });
   for (const state of ['idle', 'building', 'celebrating']) {
     act(() => { select[1].value = state; select[1].dispatchEvent(new Event('change', { bubbles: true })); });
-    expect(Array.from(container.querySelectorAll('video')).map(video => video.getAttribute('src'))).toEqual([
+    expect(Array.from(container.querySelectorAll('video')).map(video => video.querySelector('source:last-child')?.getAttribute('src'))).toEqual([
       `/pets/${pet}-${state}.mp4`, `/pets/${pet}-${state}-alpha.webm`,
     ]);
     expect(posthog.capture).toHaveBeenCalledWith('pet_preview_animation_selected', { pet_id: pet, state });

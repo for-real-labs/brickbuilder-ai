@@ -1,0 +1,410 @@
+{
+  "date": "2026-10-17",
+  "format": "QuickTime HEVC with alpha (hvc1)",
+  "encoder": "FFmpeg hevc_videotoolbox / Apple VideoToolbox",
+  "additional_service_cost_usd": 0,
+  "command": [
+    "ffmpeg",
+    "-c:v",
+    "libvpx-vp9",
+    "-i",
+    "SOURCE-alpha.webm",
+    "-an",
+    "-vf",
+    "format=rgba,premultiply=inplace=1,format=bgra",
+    "-c:v",
+    "hevc_videotoolbox",
+    "-allow_sw",
+    "1",
+    "-alpha_quality",
+    "0.9",
+    "-b:v",
+    "450k",
+    "-tag:v",
+    "hvc1",
+    "-movflags",
+    "+faststart",
+    "OUTPUT-alpha.mov"
+  ],
+  "validation": "Apple AVFoundation reports ContainsAlphaChannel for each file; decoded five frames per clip to verify clear, opaque and soft-alpha pixels. Native Safari playback confirms all nine active sources use MOV. Safari responsive design checked at 375x812. Native Chrome confirms all nine active sources use WebM (checked in batches to avoid concurrent decoder limits).",
+  "clips": [
+    {
+      "asset": "frontend/public/pets/clik-building-alpha.mov",
+      "source": "frontend/public/pets/clik-building-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 857509,
+      "sha256": "73a56b051859ab04bf476ce2019046a5c7d3fda678d20e33706d7a326d42cf9c",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 171566,
+          "opaque_pixels": 82922,
+          "soft_pixels": 7656
+        },
+        {
+          "second": 1,
+          "clear_pixels": 169817,
+          "opaque_pixels": 82326,
+          "soft_pixels": 10001
+        },
+        {
+          "second": 2,
+          "clear_pixels": 169787,
+          "opaque_pixels": 80307,
+          "soft_pixels": 12050
+        },
+        {
+          "second": 3,
+          "clear_pixels": 169347,
+          "opaque_pixels": 81551,
+          "soft_pixels": 11246
+        },
+        {
+          "second": 4,
+          "clear_pixels": 172916,
+          "opaque_pixels": 78682,
+          "soft_pixels": 10546
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/clik-celebrating-alpha.mov",
+      "source": "frontend/public/pets/clik-celebrating-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 904424,
+      "sha256": "231ca7028c6ce758ece3cf5f9821f2533c98b022f8c37aaccd61aea725e8386b",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 171521,
+          "opaque_pixels": 82932,
+          "soft_pixels": 7691
+        },
+        {
+          "second": 1,
+          "clear_pixels": 169869,
+          "opaque_pixels": 80354,
+          "soft_pixels": 11921
+        },
+        {
+          "second": 2,
+          "clear_pixels": 170044,
+          "opaque_pixels": 80640,
+          "soft_pixels": 11460
+        },
+        {
+          "second": 3,
+          "clear_pixels": 172067,
+          "opaque_pixels": 79946,
+          "soft_pixels": 10131
+        },
+        {
+          "second": 4,
+          "clear_pixels": 170526,
+          "opaque_pixels": 80635,
+          "soft_pixels": 10983
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/clik-idle-alpha.mov",
+      "source": "frontend/public/pets/clik-idle-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 893875,
+      "sha256": "e849b2959c21860488c19e080d8807f42e314518d9d43f195ef25648710db9de",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 171711,
+          "opaque_pixels": 83015,
+          "soft_pixels": 7418
+        },
+        {
+          "second": 1,
+          "clear_pixels": 171253,
+          "opaque_pixels": 80610,
+          "soft_pixels": 10281
+        },
+        {
+          "second": 2,
+          "clear_pixels": 170104,
+          "opaque_pixels": 81009,
+          "soft_pixels": 11031
+        },
+        {
+          "second": 3,
+          "clear_pixels": 170310,
+          "opaque_pixels": 81164,
+          "soft_pixels": 10670
+        },
+        {
+          "second": 4,
+          "clear_pixels": 170671,
+          "opaque_pixels": 81208,
+          "soft_pixels": 10265
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/nib-building-alpha.mov",
+      "source": "frontend/public/pets/nib-building-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 733239,
+      "sha256": "423e0ddf994229a7259020f4516ab96feac0d8f947d942e98664f6ae81d53d3c",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 183072,
+          "opaque_pixels": 72264,
+          "soft_pixels": 6808
+        },
+        {
+          "second": 1,
+          "clear_pixels": 183550,
+          "opaque_pixels": 70453,
+          "soft_pixels": 8141
+        },
+        {
+          "second": 2,
+          "clear_pixels": 182171,
+          "opaque_pixels": 70367,
+          "soft_pixels": 9606
+        },
+        {
+          "second": 3,
+          "clear_pixels": 181561,
+          "opaque_pixels": 71358,
+          "soft_pixels": 9225
+        },
+        {
+          "second": 4,
+          "clear_pixels": 181010,
+          "opaque_pixels": 70883,
+          "soft_pixels": 10251
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/nib-celebrating-alpha.mov",
+      "source": "frontend/public/pets/nib-celebrating-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 738519,
+      "sha256": "c6b2de76e116eb1828b458a6cd7fda7322a0ed89723ae5954852d1092c596154",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 182885,
+          "opaque_pixels": 72200,
+          "soft_pixels": 7059
+        },
+        {
+          "second": 1,
+          "clear_pixels": 180561,
+          "opaque_pixels": 71664,
+          "soft_pixels": 9919
+        },
+        {
+          "second": 2,
+          "clear_pixels": 184591,
+          "opaque_pixels": 68588,
+          "soft_pixels": 8965
+        },
+        {
+          "second": 3,
+          "clear_pixels": 181082,
+          "opaque_pixels": 71475,
+          "soft_pixels": 9587
+        },
+        {
+          "second": 4,
+          "clear_pixels": 181429,
+          "opaque_pixels": 71347,
+          "soft_pixels": 9368
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/nib-idle-alpha.mov",
+      "source": "frontend/public/pets/nib-idle-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 667378,
+      "sha256": "64575b348209bd89728059d15254ed0360932ea2cba3544f115588bf4d12c5da",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 183025,
+          "opaque_pixels": 72335,
+          "soft_pixels": 6784
+        },
+        {
+          "second": 1,
+          "clear_pixels": 183349,
+          "opaque_pixels": 70296,
+          "soft_pixels": 8499
+        },
+        {
+          "second": 2,
+          "clear_pixels": 184988,
+          "opaque_pixels": 69279,
+          "soft_pixels": 7877
+        },
+        {
+          "second": 3,
+          "clear_pixels": 184511,
+          "opaque_pixels": 69642,
+          "soft_pixels": 7991
+        },
+        {
+          "second": 4,
+          "clear_pixels": 182233,
+          "opaque_pixels": 71327,
+          "soft_pixels": 8584
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/pip-building-alpha.mov",
+      "source": "frontend/public/pets/pip-building-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 576908,
+      "sha256": "fc55b7c5d7e6db4da9b782b0ab4618271feaec654a9f54bab40051fe02c7aedb",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 194344,
+          "opaque_pixels": 63285,
+          "soft_pixels": 4515
+        },
+        {
+          "second": 1,
+          "clear_pixels": 195110,
+          "opaque_pixels": 61172,
+          "soft_pixels": 5862
+        },
+        {
+          "second": 2,
+          "clear_pixels": 196966,
+          "opaque_pixels": 59776,
+          "soft_pixels": 5402
+        },
+        {
+          "second": 3,
+          "clear_pixels": 192915,
+          "opaque_pixels": 62886,
+          "soft_pixels": 6343
+        },
+        {
+          "second": 4,
+          "clear_pixels": 190048,
+          "opaque_pixels": 64944,
+          "soft_pixels": 7152
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/pip-celebrating-alpha.mov",
+      "source": "frontend/public/pets/pip-celebrating-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 634393,
+      "sha256": "0ca9863c76633a93ab002fd1b02beb8afa941b062e761b0b4e799364aa64b2e8",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 194239,
+          "opaque_pixels": 63399,
+          "soft_pixels": 4506
+        },
+        {
+          "second": 1,
+          "clear_pixels": 190638,
+          "opaque_pixels": 64095,
+          "soft_pixels": 7411
+        },
+        {
+          "second": 2,
+          "clear_pixels": 193780,
+          "opaque_pixels": 62098,
+          "soft_pixels": 6266
+        },
+        {
+          "second": 3,
+          "clear_pixels": 189437,
+          "opaque_pixels": 65966,
+          "soft_pixels": 6741
+        },
+        {
+          "second": 4,
+          "clear_pixels": 194871,
+          "opaque_pixels": 60409,
+          "soft_pixels": 6864
+        }
+      ]
+    },
+    {
+      "asset": "frontend/public/pets/pip-idle-alpha.mov",
+      "source": "frontend/public/pets/pip-idle-alpha.webm",
+      "width": 512,
+      "height": 512,
+      "fps": 24,
+      "size_bytes": 555409,
+      "sha256": "adcc7beb1a8361097d4c22fa2165320b94db77c4d1f6bc48228741de4dbc48b5",
+      "contains_alpha_channel": true,
+      "samples": [
+        {
+          "second": 0,
+          "clear_pixels": 194345,
+          "opaque_pixels": 63447,
+          "soft_pixels": 4352
+        },
+        {
+          "second": 1,
+          "clear_pixels": 194105,
+          "opaque_pixels": 62947,
+          "soft_pixels": 5092
+        },
+        {
+          "second": 2,
+          "clear_pixels": 195009,
+          "opaque_pixels": 61505,
+          "soft_pixels": 5630
+        },
+        {
+          "second": 3,
+          "clear_pixels": 190748,
+          "opaque_pixels": 65177,
+          "soft_pixels": 6219
+        },
+        {
+          "second": 4,
+          "clear_pixels": 190650,
+          "opaque_pixels": 65272,
+          "soft_pixels": 6222
+        }
+      ]
+    }
+  ]
+}
