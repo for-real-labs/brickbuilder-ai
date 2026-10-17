@@ -61,7 +61,7 @@
 .landing-page .landing-model-workspace {
   height: min(460px, max(160px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-conversation-height, 240px) - var(--landing-order-banner-height, 0px) - 64px)));
 }
-.landing-page:has(.landing-model-workspace) .pet-dialogue { max-height: min(180px, 26dvh); }
+.landing-page:has(.landing-model-workspace) .pet-dialogue { max-height: min(240px, 36dvh); }
 .landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(320px, 40dvh); }
 @media (max-width: 639px) {
   .landing-page .landing-model-workspace { max-height: 380px; }

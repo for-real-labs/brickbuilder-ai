@@ -440,3 +440,68 @@ it('clears earlier chat when a model opens, keeps new edits visible, and clears 
   expect(container.textContent).not.toContain('Add a drawbridge');
   expect(container.querySelectorAll('.pet-greeting')).toHaveLength(1);
 });
+
+it('animates a preview-specific compliment and keeps every edit and order word bold', async () => {
+  const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('City of Troy’s tall towers and red flags look grand!');
+  await act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]} state="idle"
+    model={{ id: 'castle', name: 'City of Troy', orderable: true }} />));
+  expect(greet).toHaveBeenCalledWith({ generationId: 'castle', pet: 'pip' }, undefined, expect.any(AbortSignal));
+  expect(container.textContent).toContain('City of Troy’s tall towers and red flags look grand!');
+  expect(container.querySelectorAll('.pet-greeting')).toHaveLength(1);
+  const strong = Array.from(container.querySelectorAll('strong'));
+  expect(strong.map(el => el.textContent)).toEqual(['edit', 'order']);
+  expect(strong.every(el => el.querySelector('.pet-response-word'))).toBe(true);
+  expect(container.querySelector('.pet-response-word')?.textContent).toBe('City');
+});
+
+it('ignores late compliments after switching models and cancels the old request', async () => {
+  let finish!: (text: string) => void;
+  const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
+    .mockResolvedValueOnce('Moon Rover’s big wheels look ready for a trip!');
+  const render = (id: string, name: string) => act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]}
+    state="idle" model={{ id, name, orderable: true }} />));
+  await render('castle', 'City of Troy');
+  await render('rover', 'Moon Rover');
+  expect(greet.mock.calls[0][2].aborted).toBe(true);
+  await act(async () => finish('Old castle compliment'));
+  expect(container.textContent).toContain('Moon Rover’s big wheels');
+  expect(container.textContent).not.toContain('Old castle');
+});
+
+it('falls back to the actual name without inventing image details if a greeting fails', async () => {
+  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockRejectedValue(new Error('Unavailable'));
+  await act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]} state="idle"
+    model={{ id: 'castle', name: 'City of Troy', orderable: true }} />));
+  expect(container.textContent).toContain('Here’s City of Troy!');
+  expect(container.textContent).not.toContain('fun build');
+  expect(Array.from(container.querySelectorAll('strong')).map(el => el.textContent)).toEqual(['edit', 'order']);
+});
+
+it('ends a stalled model greeting with a name-based fallback', async () => {
+  vi.useFakeTimers();
+  const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockImplementation(() => new Promise(() => {}));
+  try {
+    await act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]} state="idle"
+      model={{ id: 'castle', name: 'City of Troy', orderable: true }} />));
+    expect(container.textContent).toContain('I’m looking at City of Troy');
+    await act(async () => vi.advanceTimersByTimeAsync(22000));
+    expect(greet.mock.calls[0][2].aborted).toBe(true);
+    expect(container.textContent).toContain('Here’s City of Troy!');
+  } finally { vi.useRealTimers(); }
+});
+
+it('requests model greetings by id without accepting client-supplied image URLs or names', async () => {
+  const signal = new AbortController().signal;
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ reply: 'City of Troy’s tall towers look grand!' }) } as Response);
+  await expect(BuildBuddyApi.modelGreeting({ generationId: 'castle', pet: 'pip' }, 'token', signal))
+    .resolves.toBe('City of Troy’s tall towers look grand!');
+  expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining('/build-buddy/model-greeting'), expect.objectContaining({
+    method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer token' }), signal,
+    body: JSON.stringify({ generation_id: 'castle', pet: 'pip' }),
+  }));
+});
+
+it.each([{ ok: false }, { ok: true, reply: '' }, { ok: true, reply: 42 }])('rejects unavailable or invalid model greetings: %o', async result => {
+  vi.mocked(apiFetch).mockResolvedValue({ ok: result.ok, json: async () => ({ reply: result.reply }) } as Response);
+  await expect(BuildBuddyApi.modelGreeting({ generationId: 'castle', pet: 'pip' }, undefined, new AbortController().signal)).rejects.toThrow();
+});

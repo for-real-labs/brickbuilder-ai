@@ -55,10 +55,10 @@ def fallback_title(prompt: str | None) -> str:
     return text[0].upper() + text[1:]
 
 
-async def _reference_image(row: dict, storage_client) -> str | None:
+async def read_generation_reference_image(row: dict, storage_client, *, prefer_preview: bool = False) -> str | None:
     # Read only this generation's files from our storage bucket. Never fetch a
-    # user-supplied URL or send an arbitrary file to a title provider.
-    url = row.get("processed_image_url") or row.get("original_image_url") or ""
+    # user-supplied URL or send an arbitrary file to an AI provider.
+    url = (row.get("preview_image_url") if prefer_preview else None) or row.get("processed_image_url") or row.get("original_image_url") or ""
     path = unquote(urlparse(url).path)
     markers = ("/storage/v1/object/public/generations/", "/local-storage/generations/")
     relative = next((path.split(marker, 1)[1] for marker in markers if marker in path), "")
@@ -82,7 +82,7 @@ async def _request_title(row: dict, storage_client) -> str:
     provider = "openai" if os.getenv("OPENAI_API_KEY") else "anthropic"
     if not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("OPENAI_API_KEY"):
         return ""
-    image = await _reference_image(row, storage_client)
+    image = await read_generation_reference_image(row, storage_client)
     context = json.dumps({"name": (row.get('name') or '')[:80], "prompt": (row.get("prompt") or "")[:2000],
                           "design": (row.get("prompt_enhancement") or "")[:2000]})
     model = os.getenv('GENERATION_TITLE_MODEL', 'claude-opus-5-5' if provider == 'anthropic' else 'gpt-5.6-sol')

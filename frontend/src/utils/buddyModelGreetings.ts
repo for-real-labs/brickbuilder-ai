@@ -1,12 +1,12 @@
 const LAST_MODEL_GREETING_KEY = 'brickbuilder.last-model-greeting';
 
 export const MODEL_GREETINGS = [
-  'This build looks great! Tell me if you want to edit this model, or click the order button to get it delivered!',
-  'What a lovely build! Tell me what you’d like to edit, or click the order button to have this model delivered!',
-  'I love how this build came together! Tell me if you’d like any edits, or click the order button to get it delivered!',
-  'This is such a fun build! Tell me what you want to change, or click the order button to have it delivered!',
-  'Your build looks wonderful! Tell me if you want to edit it, or click the order button to get this model delivered!',
-  'This build has so much charm! Tell me what you’d like to edit, or click the order button to get it delivered!',
+  'Tell me if you want to edit this model, or click the order button to get it delivered!',
+  'Tell me what you’d like to edit, or click the order button to have this model delivered!',
+  'Tell me if you’d like to edit anything, or click the order button to get it delivered!',
+  'Tell me how you’d like to edit it, or click the order button to have it delivered!',
+  'Tell me if you want to edit it, or click the order button to get this model delivered!',
+  'Tell me what you’d like to edit, or click the order button to get it delivered!',
 ];
 
 /** Keep the message stable for a displayed build and vary it across visits. */

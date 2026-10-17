@@ -10,6 +10,7 @@ import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { useLandingModel, type LandingModel } from '../src/hooks/useLandingModel';
 import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
+import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { GetPriceApiService } from '../src/services/getPriceApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
@@ -518,4 +519,16 @@ it('keeps Create new centered in the header for guests alongside sign up, tools 
   expect(container.querySelector('header.landing-header--guest-model')).not.toBeNull();
   expect(container.querySelector('header .landing-create-new')?.textContent).toBe('Create new');
   expect(container.querySelector('header nav')?.textContent).toContain('Sign up');
+});
+
+
+it('passes the displayed model name into the greeting and replaces it with a preview-specific compliment', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Castle’s red flags look great above those tall walls!');
+  await act(async () => root.render(<LandingPage />));
+  const conversation = container.querySelector('.pet-dialogue')!;
+  expect(conversation.textContent).toContain('Castle’s red flags');
+  expect(Array.from(conversation.querySelectorAll('strong')).map(el => el.textContent)).toEqual(['edit', 'order']);
+  expect(conversation.querySelectorAll('.pet-greeting')).toHaveLength(1);
 });

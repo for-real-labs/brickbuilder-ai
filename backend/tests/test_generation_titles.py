@@ -77,9 +77,10 @@ def test_title_request_uses_reference_data_and_extracts_only_text(monkeypatch, p
     'https://db.example/storage/v1/object/public/generations/generations/other/image.png',
     'https://db.example/storage/v1/object/public/generations/generations/g/%2e%2e/secret.png',
 ])
-def test_reference_image_never_fetches_arbitrary_urls_or_other_models(url):
+@pytest.mark.parametrize('field', ['processed_image_url', 'preview_image_url'])
+def test_reference_image_never_fetches_arbitrary_urls_or_other_models(url, field):
     client = Mock()
-    assert asyncio.run(titles._reference_image({'id': 'g', 'processed_image_url': url}, client)) is None
+    assert asyncio.run(titles.read_generation_reference_image({'id': 'g', field: url}, client, prefer_preview=True)) is None
     client.from_.assert_not_called()
 
 
@@ -88,7 +89,7 @@ def test_reference_image_reads_only_the_models_storage_path_and_resizes_it():
     Image.new('RGB', (1024, 800)).save(output, 'PNG')
     bucket = SimpleNamespace(download=Mock(return_value=output.getvalue()))
     client = SimpleNamespace(from_=Mock(return_value=bucket))
-    image = asyncio.run(titles._reference_image({'id': 'g', 'original_image_url':
+    image = asyncio.run(titles.read_generation_reference_image({'id': 'g', 'original_image_url':
         'https://db.example/storage/v1/object/public/generations/generations/g/original.png'}, client))
     client.from_.assert_called_once_with('generations')
     bucket.download.assert_called_once_with('generations/g/original.png')
@@ -249,3 +250,15 @@ def test_titles_prefer_openai_when_anthropic_is_also_configured(monkeypatch):
     asyncio.run(titles._request_title({'id': 'g', 'prompt': 'rocket'}, None))
     assert post.await_args.args[1] == titles.OPENAI_URL
     assert post.await_args.args[3]['model'] == 'gpt-5.6-sol'
+
+
+def test_preview_reader_uses_the_saved_preview_instead_of_the_input_image():
+    output = io.BytesIO()
+    Image.new('RGB', (800, 800), 'red').save(output, 'PNG')
+    bucket = SimpleNamespace(download=Mock(return_value=output.getvalue()))
+    client = SimpleNamespace(from_=Mock(return_value=bucket))
+    prefix = 'https://db.example/storage/v1/object/public/generations/generations/g/'
+    row = {'id': 'g', 'preview_image_url': prefix + 'preview.png', 'processed_image_url': prefix + 'input.png'}
+    image = asyncio.run(titles.read_generation_reference_image(row, client, prefer_preview=True))
+    bucket.download.assert_called_once_with('generations/g/preview.png')
+    assert image

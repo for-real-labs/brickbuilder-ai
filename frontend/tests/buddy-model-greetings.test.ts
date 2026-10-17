@@ -1,11 +1,11 @@
 import { expect, it, vi } from 'vitest';
 import { MODEL_GREETINGS, pickModelGreeting, rememberModelGreeting } from '../src/utils/buddyModelGreetings';
 
-it('offers varied compliments with an invitation to edit or order delivery', () => {
+it('offers varied invitations that always use the action words edit and order', () => {
   expect(new Set(MODEL_GREETINGS).size).toBeGreaterThan(1);
   for (const message of MODEL_GREETINGS) {
-    expect(message).toMatch(/build.*!/i);
-    expect(message).toMatch(/edit|change/);
+    expect(message).toMatch(/\bedit\b/);
+    expect(message).not.toMatch(/fun build|looks great/i);
     expect(message).toContain('order button');
     expect(message).toContain('delivered');
   }
