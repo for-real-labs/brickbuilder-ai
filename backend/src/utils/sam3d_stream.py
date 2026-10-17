@@ -11,6 +11,7 @@ from typing import AsyncGenerator, AsyncIterator, Optional, Tuple, Union
 
 import httpx
 
+from .database import execute_query
 from .conversions.glb2brick import glb2brick
 from .conversions.voxel_utils import downsample_xyzrgb
 from .color_conversions import convert_xyzrgb_to_ldr_colors
@@ -415,9 +416,13 @@ async def _pipeline_worker(
             while True:
                 await asyncio.sleep(5)
                 try:
-                    generation_storage.client.table("generations").update({
-                        "updated_at": datetime.utcnow().isoformat()
-                    }).eq("id", generation_id).execute()
+                    (
+                        await execute_query(
+                            generation_storage.client.table("generations")
+                            .update({"updated_at": datetime.utcnow().isoformat()})
+                            .eq("id", generation_id)
+                        )
+                    )
                 except Exception as e:
                     logger.warning(f"Heartbeat update failed: {e}")
 

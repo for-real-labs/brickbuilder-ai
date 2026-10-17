@@ -111,6 +111,35 @@ def test_local_preview_does_not_deliver_shared_database_mail(monkeypatch,email_c
     assert mail.start_email_worker(Mock()) is None
 
 
+@pytest.mark.parametrize(
+    "environment", ["brickbuilder-ai-pr-244", "preview", "development"]
+)
+def test_railway_previews_do_not_poll_or_deliver_production_mail(
+    monkeypatch, email_config, environment
+):
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", environment)
+    monkeypatch.setenv(
+        "GENERATION_NOTIFICATION_WORKER", "true"
+    )  # inherited from production
+    assert mail.start_email_worker(Mock()) is None
+
+
+@pytest.mark.parametrize("environment", ["production", "staging"])
+def test_persistent_environments_keep_the_completion_worker(
+    monkeypatch, email_config, environment
+):
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT_NAME", environment)
+    monkeypatch.delenv("GENERATION_NOTIFICATION_WORKER", raising=False)
+
+    async def run():
+        worker = mail.start_email_worker(Mock())
+        assert worker is not None
+        worker.cancel()
+        await asyncio.gather(worker, return_exceptions=True)
+
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize('preview', [None, '', 'javascript:alert(1)', 'http://example.com/model.png', 'https://[invalid'])
 def test_missing_or_unsafe_preview_keeps_completion_link(email_config, preview):
     payload = mail.email_payload({'generation_id': str(uuid4()), 'email': 'delivered@resend.dev',

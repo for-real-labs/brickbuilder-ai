@@ -15,6 +15,7 @@ class FakeCommunityQuery:
         self.range_values = None
 
     def select(self, _fields):
+        self.fields = _fields
         return self
 
     def eq(self, key, value):
@@ -67,6 +68,9 @@ def test_get_community_generations_falls_back_to_recent_when_like_count_is_missi
     assert len(client.queries) == 2
     assert ("like_count", True) in client.queries[0].ordering
     assert client.queries[1].ordering == [("created_at", True)]
+    assert "like_count" not in client.queries[1].fields.split(",")
+    assert "*" not in client.queries[0].fields
+    assert "notification_email" not in client.queries[0].fields
 
 
 def test_store_preview_image_uploads_png_and_saves_its_url():

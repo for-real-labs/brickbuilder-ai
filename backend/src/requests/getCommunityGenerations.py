@@ -1,9 +1,10 @@
 import logging
 from typing import Literal, Optional, List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from fastapi import HTTPException
 
+from ..utils.database import execute_query
 from ..utils.community_likes import is_community_likes_schema_error
 from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_api_call, track_error
@@ -42,8 +43,8 @@ class CommunityGeneration(BaseModel):
 
 
 class GetCommunityGenerationsRequest(BaseModel):
-    limit: int = 50
-    offset: int = 0  # Offset for pagination (number of unique generations to skip)
+    limit: int = Field(default=50, ge=1, le=200)
+    offset: int = Field(default=0, ge=0)
     processing: Optional[bool] = None  # If True, return only processing/queued generations
     sort: Literal["recent", "top"] = "recent"
 
@@ -120,12 +121,10 @@ async def get_community_generations(
         })
         if owner_ids:
             try:
-                profile_result = (
-                    generation_storage.client
-                    .table("user_profiles")
+                profile_result = await execute_query(
+                    generation_storage.client.table("user_profiles")
                     .select("id, username")
                     .in_("id", owner_ids)
-                    .execute()
                 )
                 for row in (profile_result.data or []):
                     if row.get("id") and row.get("username"):
@@ -144,13 +143,11 @@ async def get_community_generations(
             generation_ids = [gen.get("id") for gen in generations if gen.get("id")]
             if generation_ids:
                 try:
-                    likes_result = (
-                        generation_storage.client
-                        .table("generation_likes")
+                    likes_result = await execute_query(
+                        generation_storage.client.table("generation_likes")
                         .select("generation_id")
                         .eq("user_id", viewer_user_id)
                         .in_("generation_id", generation_ids)
-                        .execute()
                     )
                     viewer_likes = {
                         row.get("generation_id")

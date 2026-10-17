@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import posthog from 'posthog-js';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { startPolling } from '../utils/polling';
 import { getGuestSession } from '../utils/guestSession';
 import { GenerationNotificationsApi, NotificationFeed, NotificationApiError, ModelNotification } from '../services/generationNotificationsApi';
 import { GenerationNotificationSnackbar } from '../components/GenerationNotificationSnackbar';
@@ -31,8 +32,6 @@ export function GenerationNotificationsProvider({ children }: { children: React.
   const refresh = useCallback(() => setRevision(value => value + 1), []);
   useEffect(() => {
     if (loading) return;
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
     const knownKey = `generation_notification_known:${owner}`;
     const deliveredKey = `generation_notification_delivered:${owner}`;
     const known = readIds(knownKey);
@@ -41,10 +40,10 @@ export function GenerationNotificationsProvider({ children }: { children: React.
     if (baseline.current.owner !== owner) baseline.current = { owner, initialized: false };
     let initialized = baseline.current.initialized || known.size > 0 || delivered.size > 0;
     if (viewedOwner.current !== owner) { viewed.current.clear(); viewedOwner.current = owner; }
-    const poll = async () => {
+    const poll = async (signal: AbortSignal) => {
       try {
-        const feed = await GenerationNotificationsApi.list(controller.signal);
-        if (controller.signal.aborted) return;
+        const feed = await GenerationNotificationsApi.list(signal);
+        if (signal.aborted) return;
         for (const id of readIds(deliveredKey)) delivered.add(id);
         const arrivals: ModelNotification[] = [];
         for (const model of feed.notifications) {
@@ -69,23 +68,30 @@ export function GenerationNotificationsProvider({ children }: { children: React.
           localStorage.setItem(knownKey, JSON.stringify([...known].slice(-1000)));
           localStorage.setItem(deliveredKey, JSON.stringify([...delivered].slice(-1000)));
         } catch { /* The server owns read receipts. */ }
-        setAlerts(previous => ({ owner, notifications: [
-          ...(previous.owner === owner ? previous.notifications.filter(model =>
-            !viewed.current.has(model.id) && !feed.notifications.some(current => current.id === model.id && current.seen)) : []),
-          ...arrivals,
-        ] }));
-        setState({ owner, feed: { ...feed, unread_count: feed.notifications.filter(model => !model.seen).length }, error: null });
-      } catch {
-        if (!controller.signal.aborted) setState(previous => ({ ...previous, error: 'Unable to load notifications. Retrying…' }));
-      } finally {
-        if (!controller.signal.aborted) timer = setTimeout(poll, 5000);
+        setAlerts(previous => {
+          const retained = previous.owner === owner ? previous.notifications.filter(model =>
+            !viewed.current.has(model.id) && !feed.notifications.some(current => current.id === model.id && current.seen)) : [];
+          if (previous.owner === owner && !arrivals.length && retained.length === previous.notifications.length) return previous;
+          return { owner, notifications: [...retained, ...arrivals] };
+        });
+        const next = { owner, feed: { ...feed, unread_count: feed.notifications.filter(model => !model.seen).length }, error: null };
+        setState(previous => JSON.stringify(previous) === JSON.stringify(next) ? previous : next);
+        return feed.active.length ? 5_000 : 60_000;
+      } catch (error) {
+        if (!signal.aborted) setState(previous => ({ ...previous, error: 'Unable to load notifications. Retrying…' }));
+        throw error;
       }
     };
-    const onFocus = () => { refresh(); };
-    window.addEventListener('focus', onFocus);
-    window.addEventListener('storage', onFocus);
-    void poll();
-    return () => { controller.abort(); clearTimeout(timer); window.removeEventListener('focus', onFocus); window.removeEventListener('storage', onFocus); };
+    const polling = startPolling(poll, {
+      intervalMs: 5_000,
+      // Keep opted-in completion notifications working for background builds.
+      allowBackground: () => typeof Notification !== 'undefined' && Notification.permission === 'granted',
+    });
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === deliveredKey || event.key === knownKey) polling.refresh();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => { polling.stop(); window.removeEventListener('storage', onStorage); };
   }, [owner, session?.access_token, loading, revision, navigate, refresh]);
   const markViewed = useCallback(async (id: string) => {
     if (viewed.current.has(id)) return;

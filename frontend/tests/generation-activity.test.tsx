@@ -81,7 +81,7 @@ it('loads all pages of active generations and forwards auth and cancellation', a
   const controller = new AbortController();
   const jobs = await GetUserGenerationsApiService.getProcessingGenerations('token', controller.signal);
   expect(jobs.map(row => row.id)).toEqual(['one', 'two']);
-  expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ processing: true, limit: 50, offset: 1 });
+  expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({ processing: true, limit: 50, offset: 1, include_details: false });
   expect(fetch.mock.calls[0][1]).toMatchObject({ headers: { authorization: 'Bearer token' }, signal: controller.signal });
 });
 
@@ -227,11 +227,16 @@ it('keeps submitted jobs during refresh, retries network errors, and cancels on 
   await act(async () => { await vi.advanceTimersByTimeAsync(5_000); });
   expect(container.textContent).toContain('Retrying');
   expect(container.textContent).toContain('Build new');
-  const signal = fetchJobs.mock.calls[0][1]!;
+  let finishPending!: (rows: never[]) => void;
+  fetchJobs.mockImplementationOnce(() => new Promise(resolve => { finishPending = resolve; }));
+  await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+  const signal = fetchJobs.mock.calls[2][1]!;
+  expect(signal.aborted).toBe(false);
   act(() => root.unmount());
   expect(signal.aborted).toBe(true);
+  await act(async () => finishPending([]));
   await vi.advanceTimersByTimeAsync(10_000);
-  expect(fetchJobs).toHaveBeenCalledTimes(2);
+  expect(fetchJobs).toHaveBeenCalledTimes(3);
   root = createRoot(container);
 });
 

@@ -8,6 +8,7 @@ from datetime import datetime
 from pydantic import BaseModel
 from fastapi import HTTPException, Depends
 
+from ..utils.database import execute_query
 from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import RESIZE_SOURCE_KEYS, generation_storage
 from ..utils.authorization import get_generation_or_404
@@ -47,9 +48,13 @@ async def process_update_model_task(
             await asyncio.sleep(5)
             # Only update timestamp, don't override the actual status
             try:
-                generation_storage.client.table("generations").update({
-                    "updated_at": datetime.utcnow().isoformat()
-                }).eq("id", generation_id).execute()
+                (
+                    await execute_query(
+                        generation_storage.client.table("generations")
+                        .update({"updated_at": datetime.utcnow().isoformat()})
+                        .eq("id", generation_id)
+                    )
+                )
             except Exception as e:
                 logger.warning(f"Heartbeat update failed: {e}")
     

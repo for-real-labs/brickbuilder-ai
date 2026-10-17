@@ -1,3 +1,4 @@
+import { startPolling } from '../utils/polling';
 import { getGuestSession } from '../utils/guestSession';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GetGenerationApiService } from '../services/getGenerationApi';
@@ -58,6 +59,7 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
   const [generations, setGenerations] = useState<GenerationActivity[]>([]);
   const [error, setError] = useState<string | null>(null);
   const rows = useRef<GenerationActivity[]>([]);
+  const refreshPolling = useRef<(() => void) | null>(null);
   const currentOwner = useRef(owner);
   const dismissed = useRef(restoreDismissed(owner));
 
@@ -89,11 +91,10 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
     rows.current = [generation, ...rows.current.filter(row => row.id !== generation.id && row.id !== replacesId)];
     persist(owner, rows.current);
     setGenerations(rows.current);
+    refreshPolling.current?.();
   }, [owner]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    let timer: ReturnType<typeof setTimeout>;
     let recoveredResumable = false;
     if (currentOwner.current !== owner || rows.current.length === 0) {
       dismissed.current = restoreDismissed(owner);
@@ -104,22 +105,22 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
     setError(null);
     if (!enabled) return;
 
-    const refresh = async () => {
+    const refresh = async (signal: AbortSignal) => {
       try {
         const recovery = !recoveredResumable
-          ? GetUserGenerationsApiService.getResumableNovaGenerations(authToken, controller.signal).catch(() => [])
+          ? GetUserGenerationsApiService.getResumableNovaGenerations(authToken, signal).catch(() => [])
           : Promise.resolve([]);
         recoveredResumable = true;
         const [active, resumable] = await Promise.all([
-          GetUserGenerationsApiService.getProcessingGenerations(authToken, controller.signal), recovery,
+          GetUserGenerationsApiService.getProcessingGenerations(authToken, signal), recovery,
         ]);
-        if (controller.signal.aborted) return;
+        if (signal.aborted) return;
         const activeIds = new Set(active.map(row => row.id));
         // Jobs absent from the active list may have completed while this page
         // was closed. Keep their result cards so the user can open each model.
         const missing = rows.current.filter(row => (isGenerationActive(row.status) || isPreviewPending(row)) && !activeIds.has(row.id));
         const settled = await Promise.allSettled(missing.map(async row => {
-          const status = await GetGenerationApiService.getGeneration(row.id, controller.signal);
+          const status = await GetGenerationApiService.getGeneration(row.id, signal);
           const previewWaitUntil = status.status === 'completed' && !status.preview_image_url
             ? row.previewWaitUntil ?? Date.now() + PREVIEW_WAIT_MS : undefined;
           return { ...row, status: status.status, prompt: status.prompt || row.prompt, name: status.name || row.name,
@@ -129,7 +130,7 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
             imageUrl: status.preview_image_url || status.processed_image_url || status.external_image_url || row.imageUrl,
             errorMessage: status.error_message || undefined };
         }));
-        if (controller.signal.aborted) return;
+        if (signal.aborted) return;
         const updates = new Map<string, GenerationActivity>([...resumable, ...active].map(row => [row.id, {
           durationSeconds: row.generation_duration_seconds,
           id: row.id, prompt: row.prompt, name: row.name, status: row.status, endpoint: row.endpoint,
@@ -151,21 +152,17 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
         setGenerations(rows.current);
         setError(settled.some(result => result.status === 'rejected')
           ? 'Some statuses could not be refreshed. Retrying…' : null);
-      } catch {
-        if (!controller.signal.aborted) setError('Unable to refresh generations. Retrying…');
-      } finally {
-        if (!controller.signal.aborted) {
-          // Expire the spinner even when an API refresh fails. Preserve the deadline
-          // so a missing preview never starts another waiting period.
-          setGenerations([...rows.current]);
-          timer = setTimeout(refresh, 5_000);
-        }
+        return rows.current.some(row => isGenerationActive(row.status) || isPreviewPending(row)) ? 5_000 : 60_000;
+      } catch (error) {
+        if (!signal.aborted) setError('Unable to refresh generations. Retrying…');
+        throw error;
       }
     };
-    void refresh();
+    const polling = startPolling(refresh, { intervalMs: 5_000 });
+    refreshPolling.current = polling.refresh;
     return () => {
-      controller.abort();
-      clearTimeout(timer);
+      refreshPolling.current = null;
+      polling.stop();
     };
   }, [owner, authToken, enabled]);
 
