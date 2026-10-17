@@ -4,7 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import { FeedbackWidget } from '../src/components/FeedbackWidget';
-import { FEEDBACK_ENDPOINT, sendFeedback } from '../src/services/feedbackApi';
+import { contentReportPage, CONTENT_REPORT_PREFIX, FEEDBACK_ENDPOINT, MAX_FEEDBACK_LENGTH, sendFeedback } from '../src/services/feedbackApi';
 import posthog from 'posthog-js';
 
 const auth = vi.hoisted(() => ({ user: null as { email: string } | null, loading: false }));
@@ -29,8 +29,8 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function render(path = '/community') {
-  act(() => root.render(<MemoryRouter initialEntries={[path]}><FeedbackWidget /></MemoryRouter>));
+function render(path = '/community', variant: 'feedback' | 'content-report' = 'feedback') {
+  act(() => root.render(<MemoryRouter initialEntries={[path]}><FeedbackWidget variant={variant} /></MemoryRouter>));
 }
 function open() {
   act(() => container.querySelector<HTMLButtonElement>('[aria-haspopup="dialog"]')!.click());
@@ -108,4 +108,42 @@ it('rejects invalid descriptions and reports network errors', async () => {
   expect(fetch).not.toHaveBeenCalled();
   vi.mocked(fetch).mockRejectedValue(new Error('offline'));
   await expect(sendFeedback('Feedback', undefined, '/')).rejects.toThrow('Please try again');
+});
+
+it('lets guests report a model in-app and sends its reference without private query data', async () => {
+  const model = 'e3438737-7c21-4d67-9d04-b19412fe3ca2';
+  render(`/generated-model?id=${model}&access_token=private&email=private@example.com`, 'content-report');
+  expect(container.querySelector('button')!.textContent).toContain('Report model');
+  open();
+  expect(container.querySelector('dialog')!.open).toBe(true);
+  expect(container.textContent).toContain('Report this model');
+  describe('  This model contains offensive content.  ');
+  await submit();
+  const body = JSON.parse(vi.mocked(fetch).mock.calls[0][1]!.body as string);
+  expect(body).toEqual({ description: `${CONTENT_REPORT_PREFIX}This model contains offensive content.`, user: 'anon user', page: `/generated-model?id=${model}` });
+  expect(container.textContent).toContain('Your report has been sent for review.');
+  expect(posthog.capture).toHaveBeenCalledWith('content_report_submitted', { page: '/generated-model', is_authenticated: false });
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Close report"]')!.click());
+  expect(document.activeElement).toBe(container.querySelector('button'));
+});
+
+it('keeps unsuccessful reports available for retry and respects the transport length limit', async () => {
+  vi.mocked(fetch).mockResolvedValueOnce({ ok: false } as Response);
+  render('/generated-model', 'content-report');
+  open();
+  const maximum = MAX_FEEDBACK_LENGTH - CONTENT_REPORT_PREFIX.length;
+  expect(container.querySelector('textarea')!.maxLength).toBe(maximum);
+  describe('x'.repeat(maximum));
+  await submit();
+  expect(container.querySelector('textarea')!.value).toHaveLength(maximum);
+  expect(container.querySelector('[role="alert"]')).not.toBeNull();
+  await submit();
+  expect(container.textContent).toContain('Your report has been sent for review.');
+  expect(JSON.parse(vi.mocked(fetch).mock.calls[1][1]!.body as string).description).toHaveLength(MAX_FEEDBACK_LENGTH);
+});
+
+it('excludes unrecognized model identifiers and unrelated query parameters from reports', () => {
+  expect(contentReportPage('/generated-model', '?id=invalid&token=private')).toBe('/generated-model');
+  expect(contentReportPage('/generated-model', '?token=private')).toBe('/generated-model');
+  expect(contentReportPage('/generated-model', '?id=%3Cscript%3E')).toBe('/generated-model');
 });

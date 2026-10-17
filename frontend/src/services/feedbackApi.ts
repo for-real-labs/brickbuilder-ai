@@ -1,5 +1,14 @@
 export const FEEDBACK_ENDPOINT = 'https://formspree.io/f/meaorrye';
 export const MAX_FEEDBACK_LENGTH = 5000;
+export const CONTENT_REPORT_PREFIX = 'Content report:\n';
+
+// Include the model reference, while excluding tokens or other query data.
+export function contentReportPage(pathname: string, search: string): string {
+  const id = new URLSearchParams(search).get('id');
+  return id && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+    ? `${pathname}?id=${id}`
+    : pathname;
+}
 
 export async function sendFeedback(description: string, email: string | undefined, page: string): Promise<void> {
   const message = description.trim();
