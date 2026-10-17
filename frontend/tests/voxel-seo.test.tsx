@@ -30,7 +30,7 @@ it.each(VOXEL_CONVERTERS)('publishes distinct useful SEO content at $path', ({ p
   }
 });
 
-it.each(['/glb-to-lego', '/image-to-lego', '/photo-to-lego', ...VOXEL_CONVERTERS.map(({ path }) => path)])('promotes LEGO design from objects, images, and text at %s', path => {
+it.each(['/obj-to-glb', '/glb-to-obj', '/glb-to-lego', '/image-to-lego', '/photo-to-lego', ...VOXEL_CONVERTERS.map(({ path }) => path)])('promotes LEGO design from objects, images, and text at %s', path => {
   const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
   const callout = document.querySelector('aside[aria-label="Design LEGO models"]')!;
   expect(callout).not.toBeNull();

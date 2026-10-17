@@ -17,6 +17,7 @@ import UserDashboard from "./pages/UserDashboard"; // NEW
 import CommunityPage from "./pages/CommunityPage";
 import CompetitionsPage from "./pages/CompetitionsPage";
 import GlbToLegoPage from "./pages/GlbToLegoPage";
+import ModelFormatConverterPage from "./pages/ModelFormatConverterPage";
 import BlogIndexPage from "./pages/BlogIndexPage";
 import UsingAiToDesignLego2026Page from "./pages/UsingAiToDesignLego2026Page";
 import BestAiLegoDesignTools2026Page from "./pages/BestAiLegoDesignTools2026Page";
@@ -63,6 +64,8 @@ export default function App() {
           <Route path="/generated-model" element={<GeneratedModel />} />
           <Route path="/glb-to-lego" element={<GlbToLegoPage />} />
           {VOXEL_CONVERTERS.map(({ path, input, output }) => <Route key={path} path={path} element={<ModelToVoxelPage key={path} input={input} output={output} />} />)}
+          <Route path="/obj-to-glb" element={<ModelFormatConverterPage inputFormat="obj" />} />
+          <Route path="/glb-to-obj" element={<ModelFormatConverterPage inputFormat="glb" />} />
           <Route path="/instructions" element={<InstructionsPage />} />
           <Route path="/order" element={<OrderKit />} />
           <Route path="/success" element={<Success />} />
