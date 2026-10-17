@@ -28,12 +28,15 @@
   overscroll-behavior-y: contain;
   scrollbar-width: thin;
   padding-top: 24px;
-  padding-bottom: calc(var(--landing-conversation-height, 240px) + 32px);
+  padding-bottom: calc(var(--landing-conversation-height, 240px) + var(--landing-order-banner-height, 0px) + 32px);
 }
 .landing-page .landing-model-conversation {
-  max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - 56px));
+  max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 56px));
 }
 .landing-page .landing-model-conversation .pet-dialogue { min-height: 0; }
+@media (max-width: 1023px) {
+  .landing-page .landing-model-conversation { bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--landing-order-banner-height, 0px)); }
+}
 @media (min-width: 640px) {
   .landing-page-intro { margin-top: 32px; }
   .landing-page-intro--hidden { margin-top: 0; }
@@ -55,4 +58,14 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .landing-page-intro, .landing-page .landing-model-conversation { transition: none; }
+}
+/* Keep both viewer modes clear of the dialogue at normal phone and desktop heights. */
+.landing-page:has(.landing-model-workspace) .pet-dialogue { max-height: 100px; }
+/* Short screens can scroll the workspace and conversation together without overlapping controls. */
+@media (max-height: 740px) {
+  .landing-page-content:has(.landing-model-workspace) { padding-bottom: calc(var(--landing-order-banner-height, 0px) + 16px); }
+  .landing-page:has(.landing-model-workspace) .landing-model-workspace { flex-shrink: 0; }
+  .landing-page:has(.landing-model-workspace) .landing-model-conversation {
+    position: relative; left: auto; bottom: auto; width: 100%; max-height: none; margin-top: 16px; transform: none;
+  }
 }

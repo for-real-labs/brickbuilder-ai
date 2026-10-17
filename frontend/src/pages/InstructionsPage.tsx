@@ -1,5 +1,5 @@
 import { NotificationMenu } from "../components/NotificationMenu";
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import * as THREE from 'three';
 import { LDrawParser, LDrawModel } from '../utils/ldrawParser';
@@ -17,6 +17,7 @@ import posthog from 'posthog-js';
 import { SEO } from '../components/SEO';
 import { SiteFooter } from '../components/SiteFooter';
 import { ProfileMenu } from '../components/ProfileMenu';
+import './InstructionsViewer.css';
 
 function Header() {
   const navigate = useNavigate();
@@ -259,17 +260,35 @@ const getSingleStepMpd = (parsed: ParsedMpd, stepIndex: number): string => {
 
 export function InstructionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const location = useLocation();
+  const onStepChange = useCallback((step: number) => {
+    if (searchParams.get('step') === String(step)) return;
+    setSearchParams(previous => {
+      const next = new URLSearchParams(previous);
+      next.set('step', String(step));
+      return next;
+    }, { replace: true });
+  }, [searchParams, setSearchParams]);
+  return <InstructionsViewer key={searchParams.get('id') || 'local'} generationId={searchParams.get('id')}
+    initialStep={Number(searchParams.get('step')) || 1} navigationState={location.state}
+    onStepChange={onStepChange} />;
+}
+
+export function InstructionsViewer({ generationId, initialStep = 1, navigationState, onStepChange, embedded = false, active = true }: {
+  generationId: string | null;
+  initialStep?: number;
+  navigationState?: unknown;
+  onStepChange?: (step: number) => void;
+  embedded?: boolean;
+  active?: boolean;
+}) {
+  const navigate = useNavigate();
   const { user } = useAuth();
-  
-  // Extract id param outside effects so we can use it as a stable dependency
-  const generationId = searchParams.get('id');
-  
   // Core state
   const [model, setModel] = useState<LDrawModel | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [stepInputValue, setStepInputValue] = useState('1'); // Separate state for input field
   const [parsedMpd, setParsedMpd] = useState<ParsedMpd | null>(null);
@@ -307,22 +326,17 @@ export function InstructionsPage() {
     }
   }, [currentStepIndex]);
 
-  // Sync step to URL when it changes (only after model is loaded)
   useEffect(() => {
-    if (!model) return; // Don't sync before model loads - would overwrite URL param
-    
-    const currentStepParam = searchParams.get('step');
-    const newStepParam = String(currentStepIndex + 1);
-    if (currentStepParam !== newStepParam) {
-      setSearchParams((prev) => {
-        prev.set('step', newStepParam);
-        return prev;
-      }, { replace: true });
-    }
-  }, [currentStepIndex, model, searchParams, setSearchParams]);
+    if (model && !loading) onStepChange?.(currentStepIndex + 1);
+  }, [currentStepIndex, model, loading, onStepChange]);
 
   // Get LDR content from navigation state, URL params, or localStorage
   useEffect(() => {
+    let disposed = false;
+    setModel(null);
+    setMpdContent(null);
+    setCameraState(null);
+    setShowAllColors(false);
     const parseModel = async () => {
       // Check for id parameter in URL
       
@@ -333,11 +347,13 @@ export function InstructionsPage() {
           setError(null);
           
           const generationData = await GetGenerationApiService.getGeneration(generationId);
-          const { prompt, xyzrgb_url } = generationData;
+          if (disposed) return;
+          const { prompt } = generationData;
           const ldr_content = generationData.endpoint === 'novaToBricks'
             ? await NovaToBricksApiService.instructions(generationId)
             : generationData.ldr_content;
           
+          if (disposed) return;
           if (!ldr_content) {
             throw new Error('No LDR content found in generation data');
           }
@@ -349,11 +365,10 @@ export function InstructionsPage() {
           setLdrContent(ldr_content);
           
           // Initialize step from URL param if valid, otherwise start at 0
-          const stepParam = searchParams.get('step');
-          const stepFromUrl = stepParam ? parseInt(stepParam) - 1 : 0;
-          const initialStep = (stepFromUrl >= 0 && stepFromUrl < parsedModel.steps.length) ? stepFromUrl : 0;
-          setCurrentStepIndex(initialStep);
-          setStepInputValue(String(initialStep + 1));
+          const stepFromUrl = Math.trunc(initialStep) - 1;
+          const initialIndex = (stepFromUrl >= 0 && stepFromUrl < parsedModel.steps.length) ? stepFromUrl : 0;
+          setCurrentStepIndex(initialIndex);
+          setStepInputValue(String(initialIndex + 1));
           
           // Convert LDR to MPD
           try {
@@ -363,17 +378,20 @@ export function InstructionsPage() {
               prompt || 'Generated Model', 
               authToken
             );
+            if (disposed) return;
             if (mpdData.mpd_content) {
               setMpdContent(mpdData.mpd_content);
             }
           } catch (mpdError) {
-            console.warn('Failed to convert LDR to MPD:');
+            if (disposed) return;
+            throw new Error('Failed to prepare building instructions');
           }
           
           setLoading(false);
           return;
           
         } catch (err) {
+          if (disposed) return;
           console.error('Failed to fetch generation data:');
           setError(err instanceof NovaInstructionPlanError ? err.message : 'Failed to load generation');
           setLoading(false);
@@ -382,7 +400,7 @@ export function InstructionsPage() {
       }
       
       // First, try to get LDR content from navigation state
-      const stateData = location.state as { 
+      const stateData = navigationState as {
         ldrContent?: string,
         modelName?: string,
         mpdContent?: string
@@ -414,11 +432,10 @@ export function InstructionsPage() {
         setLdrContent(ldrContent);
         
         // Initialize step from URL param if valid, otherwise start at 0
-        const stepParam = searchParams.get('step');
-        const stepFromUrl = stepParam ? parseInt(stepParam) - 1 : 0;
-        const initialStep = (stepFromUrl >= 0 && stepFromUrl < parsedModel.steps.length) ? stepFromUrl : 0;
-        setCurrentStepIndex(initialStep);
-        setStepInputValue(String(initialStep + 1));
+        const stepFromUrl = Math.trunc(initialStep) - 1;
+        const initialIndex = (stepFromUrl >= 0 && stepFromUrl < parsedModel.steps.length) ? stepFromUrl : 0;
+        setCurrentStepIndex(initialIndex);
+        setStepInputValue(String(initialIndex + 1));
         
         // Also load MPD content if available for BrickOwl wishlist
         // First try navigation state, then localStorage
@@ -443,7 +460,8 @@ export function InstructionsPage() {
     };
 
     parseModel();
-  }, [generationId, location.state]);
+    return () => { disposed = true; };
+  }, [generationId, navigationState, loadAttempt]);
 
   // Helper to export LDR for a single step
   function exportStepLdr(model: LDrawModel, stepIndex: number): string {
@@ -1122,6 +1140,7 @@ export function InstructionsPage() {
   };
 
   if (loading) {
+    if (embedded) return <div className="instructions-inline-message" role="status"><Loader2 size={24} className="animate-spin" /><p>Loading building instructions…</p></div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1138,6 +1157,10 @@ export function InstructionsPage() {
   }
 
   if (error) {
+    if (embedded) return <div className="instructions-inline-message" role="alert"><p>{error}</p><button type="button" className="instructions-retry" onClick={() => {
+      posthog.capture('instructions_retry_clicked', { generation_id: generationId, source: 'landing' });
+      setLoadAttempt(attempt => attempt + 1);
+    }}>Try again</button></div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1163,6 +1186,7 @@ export function InstructionsPage() {
 
 
   if (!model || model.steps.length === 0) {
+    if (embedded) return <div className="instructions-inline-message" role="status"><p>No building steps found in this model.</p></div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1186,144 +1210,15 @@ export function InstructionsPage() {
     );
   }
 
-  return (
-    <>
-    <SEO title="Building Instructions — BrickBuilder" description="Step-by-step building instructions for your brick model." url="https://brickbuilder.ai/instructions" />
-    <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
-        <Header />
-        
-        {/* Back to Model Button */}
-        {generationId && (
-          <button
-            onClick={() => navigate(`/generated-model?id=${generationId}`)}
-            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mt-4 mb-2 transition-colors landing-fade-in landing-delay-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Back to Model
-          </button>
-        )}
-      
-      {pdfGenerating ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center max-w-md w-full px-6">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f44336] mx-auto mb-6"></div>
-            <h2 className="text-xl font-semibold text-slate-900 mb-2">Generating PDF...</h2>
-            <p className="text-slate-600 mb-6">{pdfProgressText}</p>
-            
-            {/* Progress Bar */}
-            <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
-              <div 
-                className="bg-[#f44336] h-3 rounded-full transition-all duration-500 ease-out"
-                style={{ width: `${pdfProgress}%` }}
-              ></div>
-            </div>
-          </div>
-        </div>
-      ) : (
-      <div className="flex-1 mt-6">
-        {/* Page Title */}
-        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
-          Building Instructions
-        </h1>
-        <p className="text-sm text-slate-500 mb-6">
-          {generationId && `id: ${generationId} • `}
-          {model.steps.length} steps • {model.parts.length} parts
-        </p>
-              
-        {/* Download and Action Buttons */}
-        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8">
-          {/* Download PDF button hidden
-          <button
-            onClick={() => {
-              posthog.capture('instructions_download_full_pdf_clicked', {
-                model_name: model?.filename || 'unknown',
-                total_steps: model?.steps.length || 0,
-                total_parts: model?.parts.length || 0
-              });
-              generatePDF();
-            }}
-            disabled={pdfGenerating}
-            className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed text-white hover:bg-[#ff6b6b] disabled:bg-slate-300 disabled:text-slate-500"
-            style={{ 
-              backgroundColor: pdfGenerating ? undefined : '#f44336'
-            }}
-          >
-            {pdfGenerating ? 'Generating PDF...' : 'Download PDF'}
-          </button>
-          */}
-          {/* Download Parts List button hidden
-          <button
-            onClick={() => {
-              posthog.capture('instructions_download_parts_list_clicked', {
-                model_name: model?.filename || 'unknown',
-                total_steps: model?.steps.length || 0,
-                total_parts: model?.parts.length || 0
-              });
-              generatePartsListPDF();
-            }}
-            disabled={pdfGenerating}
-            className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed text-white hover:bg-[#ff6b6b] disabled:bg-slate-300 disabled:text-slate-500"
-            style={{ 
-              backgroundColor: pdfGenerating ? undefined : '#f44336'
-            }}
-          >
-            {pdfGenerating ? 'Generating PDF...' : 'Download Parts List'}
-          </button>
-          */}
-          {/* LDR buttons hidden
-          {showLdrButtons && (
-            <>
-              <button
-                onClick={() => {
-                  posthog.capture('instructions_download_ldr_clicked', {
-                    model_name: model?.filename || 'unknown',
-                    total_steps: model?.steps.length || 0,
-                    total_parts: model?.parts.length || 0
-                  });
-                  downloadLDR();
-                }}
-                disabled={!ldrContent}
-                className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed text-white hover:bg-[#ff6b6b] disabled:bg-slate-300 disabled:text-slate-500"
-                style={{ 
-                  backgroundColor: !ldrContent ? undefined : '#f44336'
-                }}
-              >
-                Export .LDR
-              </button>
-              <input
-                type="file"
-                ref={fileInputRef}
-                accept=".ldr"
-                onChange={handleLdrUpload}
-                className="hidden"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-              >
-                Upload .LDR
-              </button>
-              <button
-                onClick={() => setShowLdrButtons(false)}
-                className="p-2 rounded-full text-sm font-medium transition-all duration-200 border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
-                title="Hide LDR buttons"
-              >
-                <X size={16} />
-              </button>
-            </>
-          )}
-          */}
-        </div>
-
-        {/* Instructions Content */}
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+  const instructionsContent = (
+    <>        {/* Instructions Content */}
+        <div className={embedded ? "instructions-embedded-content" : "bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6"}>
             <div className="space-y-1">
 
             {/* Current Step Display */}
             {model.steps[currentStepIndex] && (
-              <div className="border border-slate-200 rounded-xl p-6">
-              <div className="flex justify-between items-center mb-4">
+              <div className={embedded ? "instructions-step" : "border border-slate-200 rounded-xl p-6"}>
+              <div className="instructions-step-heading flex justify-between items-center mb-4">
                 <h4 className="text-lg font-semibold text-[#f44336]">
                 Step {model.steps[currentStepIndex].stepNumber}
                 </h4>
@@ -1331,11 +1226,11 @@ export function InstructionsPage() {
                 Add {model.steps[currentStepIndex].parts.length} part
                 </div>
               </div>
-              
-              <div className="mb-4 relative">
-                {mpdContent ? (
+
+              <div className={embedded ? "instructions-canvas" : "mb-4 relative h-[380px] sm:h-[460px]"}>
+                {mpdContent && active ? (
                   <>
-                    <ThreeLDRViewer 
+                    <ThreeLDRViewer
                     modelContent={mpdContent}
                     modelName={``}
                     autoRotate={false}
@@ -1348,13 +1243,17 @@ export function InstructionsPage() {
                     totalSteps={model.steps.length}
                     showBaseplate={true}
                     softenEdges={false}
+                    showModelControls={false}
                     />
                     <div className="absolute top-3 right-3 flex flex-col items-center gap-1">
                       <button
-                        onClick={() => setShowAllColors(!showAllColors)}
+                        onClick={() => {
+                          setShowAllColors(!showAllColors);
+                          posthog.capture('instructions_colors_toggled', { generation_id: generationId, show_all_colors: !showAllColors, source: embedded ? 'landing' : 'instructions' });
+                        }}
                         className={`p-2 rounded-lg transition-all duration-200 shadow-md ${
-                          showAllColors 
-                            ? 'bg-[#f44336] text-white' 
+                          showAllColors
+                            ? 'bg-[#f44336] text-white'
                             : 'bg-white text-slate-600 hover:bg-slate-100'
                         }`}
                         title={showAllColors ? 'Show new parts highlighted' : 'Show all colors'}
@@ -1372,11 +1271,12 @@ export function InstructionsPage() {
               </div>
 
               {/* Step Navigation */}
-              <div className="bg-slate-50 p-3 sm:p-4 rounded-xl mb-4">
+              <div className="instructions-navigation bg-slate-50 p-3 sm:p-4 rounded-xl mb-4">
                 <div className="flex items-center justify-center space-x-2 sm:space-x-4">
                 <button
                   onClick={() => {
                     const newIndex = Math.max(0, currentStepIndex - 1);
+                    posthog.capture('instructions_step_changed', { generation_id: generationId, step: newIndex + 1, source: embedded ? 'landing' : 'instructions' });
                     setCurrentStepIndex(newIndex);
                     setStepInputValue(String(newIndex + 1));
                   }}
@@ -1390,21 +1290,23 @@ export function InstructionsPage() {
                 >
                   Previous
                 </button>
-                
+
                 <div className="flex items-center space-x-1 sm:space-x-2">
                   <span className="text-slate-600 text-xs sm:text-base">Step</span>
                   <input
                     type="number"
-                    min="0"
+                    min="1"
+                    aria-label="Instruction step"
                     max={model.steps.length}
                     value={stepInputValue}
                     onChange={(e) => {
                       const value = e.target.value;
                       setStepInputValue(value); // Always update the input display
-                      
+
                       // Only update the actual step if it's a valid number
                       const stepNumber = parseInt(value);
                       if (!isNaN(stepNumber) && stepNumber >= 1 && stepNumber <= model.steps.length) {
+                        posthog.capture('instructions_step_changed', { generation_id: generationId, step: stepNumber, source: embedded ? 'landing' : 'instructions' });
                         setCurrentStepIndex(stepNumber - 1);
                       }
                     }}
@@ -1416,10 +1318,11 @@ export function InstructionsPage() {
                   />
                   <span className="text-slate-600 text-xs sm:text-base">of {model.steps.length}</span>
                 </div>
-                
+
                 <button
                   onClick={() => {
                     const newIndex = Math.min(model.steps.length - 1, currentStepIndex + 1);
+                    posthog.capture('instructions_step_changed', { generation_id: generationId, step: newIndex + 1, source: embedded ? 'landing' : 'instructions' });
                     setCurrentStepIndex(newIndex);
                     setStepInputValue(String(newIndex + 1));
                   }}
@@ -1437,19 +1340,19 @@ export function InstructionsPage() {
               </div>
 
               {/* Parts added in this step - Shows only new parts */}
-              {currentLastStepMpd && (
-                <div className="bg-slate-50 p-4 rounded-xl">
+              {currentLastStepMpd && active && (
+                <div className="instructions-parts bg-slate-50 p-4 rounded-xl">
                   <h5 className="font-medium mb-3 text-slate-900">Parts added in this step:</h5>
                   <div className="flex gap-4">
                     <div className="shrink-0 w-[88px] h-[56px] sm:w-44 sm:h-28 rounded-xl border border-slate-200 overflow-hidden" style={{ backgroundColor: '#deebed' }}>
-                      <MpdImageRenderer 
+                      <MpdImageRenderer
                         mpdContent={currentLastStepMpd}
                         width={176}
                         height={112}
                         className=""
                       />
                     </div>
-                    <div className="pt-2">
+                    <div className="instructions-parts-list pt-2">
                     {(() => {
                       const stepParts = LDrawParser.getPartsListForStep(model.steps[currentStepIndex]).map(part => ({ ...part, count: part.quantity }));
                       return (
@@ -1484,7 +1387,141 @@ export function InstructionsPage() {
               </div>
             )}
             </div>
+        </div></>
+  );
+  if (embedded) return <div className="instructions-embedded" aria-label="Building instructions">{instructionsContent}</div>;
+
+  return (
+    <>
+    <SEO title="Building Instructions — BrickBuilder" description="Step-by-step building instructions for your brick model." url="https://brickbuilder.ai/instructions" />
+    <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
+        <Header />
+
+        {/* Back to Model Button */}
+        {generationId && (
+          <button
+            onClick={() => navigate(`/generated-model?id=${generationId}`)}
+            className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-700 mt-4 mb-2 transition-colors landing-fade-in landing-delay-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Model
+          </button>
+        )}
+
+      {pdfGenerating ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center max-w-md w-full px-6">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#f44336] mx-auto mb-6"></div>
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Generating PDF...</h2>
+            <p className="text-slate-600 mb-6">{pdfProgressText}</p>
+
+            {/* Progress Bar */}
+            <div className="w-full bg-slate-200 rounded-full h-3 mb-2">
+              <div
+                className="bg-[#f44336] h-3 rounded-full transition-all duration-500 ease-out"
+                style={{ width: `${pdfProgress}%` }}
+              ></div>
+            </div>
+          </div>
         </div>
+      ) : (
+      <div className="flex-1 mt-6">
+        {/* Page Title */}
+        <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-2">
+          Building Instructions
+        </h1>
+        <p className="text-sm text-slate-500 mb-6">
+          {generationId && `id: ${generationId} • `}
+          {model.steps.length} steps • {model.parts.length} parts
+        </p>
+
+        {/* Download and Action Buttons */}
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-8">
+          {/* Download PDF button hidden
+          <button
+            onClick={() => {
+              posthog.capture('instructions_download_full_pdf_clicked', {
+                model_name: model?.filename || 'unknown',
+                total_steps: model?.steps.length || 0,
+                total_parts: model?.parts.length || 0
+              });
+              generatePDF();
+            }}
+            disabled={pdfGenerating}
+            className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed text-white hover:bg-[#ff6b6b] disabled:bg-slate-300 disabled:text-slate-500"
+            style={{
+              backgroundColor: pdfGenerating ? undefined : '#f44336'
+            }}
+          >
+            {pdfGenerating ? 'Generating PDF...' : 'Download PDF'}
+          </button>
+          */}
+          {/* Download Parts List button hidden
+          <button
+            onClick={() => {
+              posthog.capture('instructions_download_parts_list_clicked', {
+                model_name: model?.filename || 'unknown',
+                total_steps: model?.steps.length || 0,
+                total_parts: model?.parts.length || 0
+              });
+              generatePartsListPDF();
+            }}
+            disabled={pdfGenerating}
+            className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed text-white hover:bg-[#ff6b6b] disabled:bg-slate-300 disabled:text-slate-500"
+            style={{
+              backgroundColor: pdfGenerating ? undefined : '#f44336'
+            }}
+          >
+            {pdfGenerating ? 'Generating PDF...' : 'Download Parts List'}
+          </button>
+          */}
+          {/* LDR buttons hidden
+          {showLdrButtons && (
+            <>
+              <button
+                onClick={() => {
+                  posthog.capture('instructions_download_ldr_clicked', {
+                    model_name: model?.filename || 'unknown',
+                    total_steps: model?.steps.length || 0,
+                    total_parts: model?.parts.length || 0
+                  });
+                  downloadLDR();
+                }}
+                disabled={!ldrContent}
+                className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed text-white hover:bg-[#ff6b6b] disabled:bg-slate-300 disabled:text-slate-500"
+                style={{
+                  backgroundColor: !ldrContent ? undefined : '#f44336'
+                }}
+              >
+                Export .LDR
+              </button>
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept=".ldr"
+                onChange={handleLdrUpload}
+                className="hidden"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+              >
+                Upload .LDR
+              </button>
+              <button
+                onClick={() => setShowLdrButtons(false)}
+                className="p-2 rounded-full text-sm font-medium transition-all duration-200 border border-slate-300 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-700"
+                title="Hide LDR buttons"
+              >
+                <X size={16} />
+              </button>
+            </>
+          )}
+          */}
+        </div>
+
+        {instructionsContent}
       </div>
       )}
       </div>

@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { ArrowRight, Package, Truck } from 'lucide-react';
 import type { GetPriceResponse } from '../services/getPriceApi';
 import { formatOrderPrice, getOrderPricing } from '../utils/orderCheckout';
+import { MobileModelOrderBar } from './MobileModelOrderBar';
+import './ModelOrderCard.css';
 
 interface Props {
   quote: GetPriceResponse | null;
@@ -10,9 +12,12 @@ interface Props {
   error: string | null;
   onOrder: (source: 'card' | 'mobile_bar') => void;
   onResize?: () => void;
+  onMobileDismiss?: () => void;
+  showMobileBar?: boolean;
 }
 
-export function ModelOrderCard({ quote, loading, updating, error, onOrder, onResize }: Props) {
+export function ModelOrderCard({ quote, loading, updating, error, onOrder, onResize, onMobileDismiss, showMobileBar = true }: Props) {
+  const [mobileDismissed, setMobileDismissed] = useState(false);
   const pricing = getOrderPricing(quote);
   const unavailable = loading || updating || !!error || !pricing;
   const price = pricing ? formatOrderPrice(pricing.totalCents) : '—';
@@ -40,11 +45,7 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
       </div>
       {onResize && <button type="button" className="model-resize-link" onClick={onResize} disabled={unavailable}>Adjust size &amp; price</button>}
     </section>
-    <div className="model-mobile-order" aria-label="Order your brick kit">
-      <div><strong>{loading ? 'Pricing…' : price}</strong><span>Shipping included</span></div>
-      <button type="button" aria-label="Order this model" className="model-order-button" disabled={unavailable} onClick={() => onOrder('mobile_bar')}>
-        Order my kit <ArrowRight size={18} aria-hidden="true" />
-      </button>
-    </div>
+    {showMobileBar && !mobileDismissed && <MobileModelOrderBar quote={quote} loading={loading} updating={updating} error={error}
+      onOrder={() => onOrder('mobile_bar')} onDismiss={() => { setMobileDismissed(true); onMobileDismiss?.(); }} />}
   </>;
 }

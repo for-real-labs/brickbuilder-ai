@@ -1,0 +1,13 @@
+.model-order-button { display: flex; width: 100%; align-items: center; justify-content: center; gap: 12px; border-radius: 13px; background: #f44336; color: #fff; min-height: 50px; margin-top: 14px; font-size: 15px; font-weight: 500; box-shadow: 0 4px 10px #f443361a; transition: background .15s, transform .15s; }
+.model-order-button:hover:enabled { background: #e7392c; transform: translateY(-1px); }
+.model-order-button:disabled { opacity: .5; cursor: not-allowed; box-shadow: none; }
+.model-mobile-order { position: fixed; z-index: 45; bottom: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 44px 18px calc(12px + env(safe-area-inset-bottom)); background: #fffffff5; border-top: 1px solid #e5e7eb; backdrop-filter: blur(14px); box-shadow: 0 -4px 24px #10182808; text-align: left; }
+.model-mobile-order > div { min-width: 0; display: grid; gap: 2px; }
+.model-mobile-order strong { font-size: 20px; color: #20232a; letter-spacing: -.03em; }
+.model-mobile-order span { font-size: 10px; color: #737b88; }
+.model-mobile-order .model-order-button { width: auto; flex-shrink: 0; min-width: 166px; margin: 0; padding: 0 16px; min-height: 46px; }
+.model-mobile-order-dismiss { position: absolute; top: 0; left: 4px; display: grid; place-items: center; width: 44px; height: 44px; color: #64748b; border-radius: 12px; cursor: pointer; }
+.model-mobile-order-dismiss:hover { background: #f1f5f9; color: #0f172a; }
+.model-mobile-order button:focus-visible { outline: 2px solid #f44336; outline-offset: 2px; }
+@media (min-width: 1024px) { .model-mobile-order { display: none; } }
+@media (prefers-reduced-motion: reduce) { .model-order-button { transition: none; } }

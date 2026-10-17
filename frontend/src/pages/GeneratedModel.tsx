@@ -1887,7 +1887,7 @@ export default function GeneratedModel() {
         onSuccess={() => { void handleCommunityLoginSuccess(); }}
       />
 
-      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-28 lg:pb-16 pt-3">
+      <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-[calc(112px+env(safe-area-inset-bottom))] lg:pb-16 pt-3">
         <Header onGuardedNavigate={(path) => guardUnsavedChanges(() => navigate(path))} />
         
         {/* Generate Another Button */}
@@ -2319,11 +2319,12 @@ export default function GeneratedModel() {
           {!orderable ? <section className="model-refine-card" aria-label="Imported model ordering">
             <h2 className="text-lg font-semibold text-slate-900">Edit your model before ordering</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">This uploaded model has not been checked against Brickwith’s available parts and colors. Use AI editing to adapt the model; ordering becomes available after the edited model passes the parts check.</p>
-          </section> : <ModelOrderCard
+          </section> : <ModelOrderCard key={currentGenerationId}
             quote={priceData}
             loading={priceLoading || isSavePolling}
             updating={isModelEditing || isResizing}
             error={priceError}
+            onMobileDismiss={() => posthog.capture('generated_model_order_banner_dismissed', { generation_id: currentGenerationId })}
             onOrder={source => {
               posthog.capture('generated_model_order_clicked', {
                 generation_id: currentGenerationId, is_demo_model: isDemoModel, source,
