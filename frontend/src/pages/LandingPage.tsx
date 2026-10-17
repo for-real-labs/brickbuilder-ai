@@ -12,6 +12,7 @@ import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
+import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 
@@ -827,24 +828,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
         return;
       }
       console.error('Generation failed:', error);
-      // Check if error is a network error - if user is online but fetch failed, backend is likely not running
-      const isNetworkError = error instanceof TypeError && error.message === 'Failed to fetch';
-      const errorMsg = error instanceof Error ? error.message : '';
-      
-      let errorMessage = 'Generation failed. Please try again';
-      if (isNetworkError) {
-        errorMessage = navigator.onLine 
-          ? 'Backend services not running. Check terminal for errors.' 
-          : 'No internet connection';
-      } else if (errorMsg.includes('FAL_KEY')) {
-        // Backend is running but FAL_KEY is not configured
-        errorMessage = 'FAL_KEY not configured. Set FAL_KEY in .env file and restart the backend server.';
-      } else if (errorMsg) {
-        // Use the error message from the backend
-        errorMessage = errorMsg;
-      }
-      setGenerationError(errorMessage);
-      buddyChat.updateTurn(turnId, { error: errorMessage, reply: 'Let’s give your idea another try.' });
+      setGenerationError(BUILD_FAILURE_MESSAGE);
+      buddyChat.updateTurn(turnId, { error: BUILD_FAILURE_MESSAGE, reply: undefined });
       setLoading(false);
       setActiveLoadingMethod(null);
       setPreviewImageUrl(null);
@@ -879,9 +864,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       setNotificationPromptId(id);
       setPrompt('');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Unable to edit this model. Please try again.';
-      setGenerationError(message);
-      buddyChat.updateTurn(turnId, { error: message, reply: 'Let’s try that change again.' });
+      console.error('Model edit failed:', error);
+      setGenerationError(BUILD_FAILURE_MESSAGE);
+      buddyChat.updateTurn(turnId, { error: BUILD_FAILURE_MESSAGE, reply: undefined });
       posthog.capture('landing_model_ai_edit_failed', { generation_id: sourceId });
     } finally {
       editSubmittingRef.current = false;
@@ -1300,22 +1285,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            {generationError && (
-              <div className="flex flex-col items-center gap-4 mb-4">
-                <div className="text-red-600 text-center">
-                  <h3 className="text-lg font-semibold mb-2">Generation Failed</h3>
-                  <p>{generationError}</p>
-                </div>
-                <button
-                  onClick={() => {
-                    setGenerationError(null);
-                  }}
-                  className="px-4 py-2 border border-slate-300 text-slate-700 rounded-full hover:bg-slate-50 transition-colors"
-                >
-                  Try Again
-                </button>
               </div>
             )}
           </section>
