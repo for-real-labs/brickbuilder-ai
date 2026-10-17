@@ -9,6 +9,7 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import GlbToLegoPage from './pages/GlbToLegoPage';
+import ObjToLegoPage from './pages/ObjToLegoPage';
 import BlogIndexPage from './pages/BlogIndexPage';
 import UsingAiToDesignLego2026Page from './pages/UsingAiToDesignLego2026Page';
 import BestAiLegoDesignTools2026Page from './pages/BestAiLegoDesignTools2026Page';
@@ -21,6 +22,7 @@ const publicPages = [
   { path: '/login', element: <LoginPage /> },
   { path: '/signup', element: <SignupPage /> },
   { path: '/glb-to-lego', element: <GlbToLegoPage /> },
+  { path: '/obj-to-lego', element: <ObjToLegoPage /> },
   { path: '/blog', element: <BlogIndexPage /> },
   { path: '/blog/using-ai-to-design-lego-in-2026', element: <UsingAiToDesignLego2026Page /> },
   { path: '/blog/best-ai-lego-design-tools-2026', element: <BestAiLegoDesignTools2026Page /> },

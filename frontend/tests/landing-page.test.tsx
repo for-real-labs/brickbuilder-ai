@@ -103,6 +103,24 @@ describe('LandingPage', () => {
     }
   });
 
+  it('honors the all-parts image handoff when restoring an older basic-bricks draft', async () => {
+    window.history.replaceState({}, '', '/image-to-lego?mode=all_parts');
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ generationMethod: 'llm', prompt: 'Castle' }));
+    const container = document.createElement('div');
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage imageLandingPath="image-to-lego" />));
+      expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
+    } finally {
+      act(() => root.unmount());
+      sessionStorage.removeItem('pendingLandingState');
+      window.history.replaceState({}, '', '/');
+    }
+  });
+
   it.each(['gpt-6.1-sol', 'gpt-6-astra', 'claude-opus-5-5', 'claude-opus-5', 'gpt-5.5', 'sam3d', 'trellis'])('restores saved model %s to the Opus default and submits it', async savedModel => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });

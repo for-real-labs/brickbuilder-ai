@@ -1,5 +1,7 @@
 import { apiFetch } from './apiFetch';
-// API service for uploading a GLB file and converting it to bricks via glb2brick.
+
+export type MeshFormat = 'glb' | 'obj';
+// API service for uploading a GLB or OBJ file and converting it to bricks via glb2brick.
 
 export interface GlbToBricksResponse {
   generation_id: string;
@@ -19,7 +21,7 @@ const getBaseUrl = (): string => {
 
 export class GlbToBricksApiService {
   /**
-   * Upload a GLB file and start a brick conversion.
+   * Upload a mesh file and start a brick conversion.
    * Returns the generation_id; poll GET /generation/{id} for status.
    */
   static async uploadGlb(
@@ -27,9 +29,10 @@ export class GlbToBricksApiService {
     voxelizer: 'trimesh' | 'obj2voxel' = 'trimesh',
     detailLevel: number = 40,
     authToken?: string,
+    format: MeshFormat = 'glb',
   ): Promise<GlbToBricksResponse> {
     if (!file) {
-      throw new Error('A GLB file is required');
+      throw new Error(`A ${format.toUpperCase()} file is required`);
     }
 
     const formData = new FormData();
@@ -42,14 +45,14 @@ export class GlbToBricksApiService {
       headers['Authorization'] = `Bearer ${authToken}`;
     }
 
-    const response = await apiFetch(`${getBaseUrl()}/glbToBricks`, {
+    const response = await apiFetch(`${getBaseUrl()}/${format}ToBricks`, {
       method: 'POST',
       headers,
       body: formData,
     });
 
     if (!response.ok) {
-      let errorMessage = 'Failed to convert GLB to bricks';
+      let errorMessage = `Failed to convert ${format.toUpperCase()} to bricks`;
       try {
         const errorText = await response.text();
         try {

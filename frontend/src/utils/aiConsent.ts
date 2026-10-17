@@ -8,7 +8,7 @@ export const AI_SHARED_DATA = 'Your text prompts and edit instructions, referenc
 const AI_ENDPOINTS = new Set([
   'llmToBricks', 'llmRender', 'textToBricks', 'imageToBricks', 'promptEditModel',
   // Conversions and saved edits can also generate an AI model title.
-  'glbToBricks', 'resizeModel', 'updateModel',
+  'glbToBricks', 'objToBricks', 'resizeModel', 'updateModel',
 ]);
 
 type ConsentPrompt = () => Promise<boolean>;

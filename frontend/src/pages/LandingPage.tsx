@@ -242,7 +242,8 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   };
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
-  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
+  const startWithAllParts = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'all_parts';
+  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(startWithAllParts ? 'nova' : DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
@@ -389,7 +390,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      setGenerationMethod(payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
+      setGenerationMethod(startWithAllParts ? 'nova' : payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
         ? payload.generationMethod : DEFAULT_GENERATION_METHOD);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
         setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, model: DEFAULT_LLM_MODEL, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
@@ -1498,6 +1499,11 @@ function LandingHeader({ onLoginClick }: { onLoginClick: () => void }) {
           <Box className="h-4 w-4" />
           GLB to LEGO
         </button>
+        <a href="/obj-to-lego"
+          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
+          onClick={() => posthog.capture('landing_header_obj_to_lego_clicked')}>
+          <Box aria-hidden="true" className="h-4 w-4" />OBJ to LEGO
+        </a>
         <a href="/use-ai-to-edit-ldraw"
           className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
           onClick={() => posthog.capture('landing_header_upload_ldraw_clicked')}>

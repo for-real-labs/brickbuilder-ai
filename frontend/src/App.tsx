@@ -15,6 +15,7 @@ import UserDashboard from "./pages/UserDashboard"; // NEW
 import CommunityPage from "./pages/CommunityPage";
 import CompetitionsPage from "./pages/CompetitionsPage";
 import GlbToLegoPage from "./pages/GlbToLegoPage";
+import ObjToLegoPage from "./pages/ObjToLegoPage";
 import BlogIndexPage from "./pages/BlogIndexPage";
 import UsingAiToDesignLego2026Page from "./pages/UsingAiToDesignLego2026Page";
 import BestAiLegoDesignTools2026Page from "./pages/BestAiLegoDesignTools2026Page";
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/dashboard" element={<UserDashboard />} /> {/* NEW */}
           <Route path="/generated-model" element={<GeneratedModel />} />
           <Route path="/glb-to-lego" element={<GlbToLegoPage />} />
+          <Route path="/obj-to-lego" element={<ObjToLegoPage />} />
           <Route path="/instructions" element={<InstructionsPage />} />
           <Route path="/order" element={<OrderKit />} />
           <Route path="/success" element={<Success />} />

@@ -358,6 +358,17 @@ async def glbToBricks_endpoint(
     return await glb_to_bricks(file, voxelizer, detail_level, auth_info, entry_page)
 
 
+@app.post("/objToBricks", response_model=GlbToBricksResponse)
+async def obj_to_bricks_endpoint(
+    file: UploadFile = File(...),
+    detail_level: float = Form(40.0),
+    entry_page: str | None = Form(None, max_length=128),
+    auth_info: dict = Depends(get_user_with_optional_auth),
+) -> GlbToBricksResponse:
+    """Convert a standalone OBJ through the same voxel pipeline as GLB."""
+    return await glb_to_bricks(file, "trimesh", detail_level, auth_info, entry_page, "obj")
+
+
 @app.post("/ldrToMpd", response_model=LdrToMpdResponse)
 async def ldr_to_mpd_endpoint(
     request: LdrToMpdRequest,
