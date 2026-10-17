@@ -19,8 +19,9 @@ export function BuddyBuildMessages({ generationId, status }: { generationId: str
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, modelName }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, modelName, onUploadImage, onUseGiftIdea, actionsDisabled = false }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean; modelName?: string;
+  onUploadImage?: () => void; onUseGiftIdea?: (prompt: string) => void; actionsDisabled?: boolean;
 }) {
   const { pet } = usePet();
   const [returning] = useState(() => {
@@ -63,7 +64,11 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
           </PetChatMessage>
           {turn.error ? <PetChatMessage><p role="status">{BUILD_FAILURE_MESSAGE}</p></PetChatMessage>
             : <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
-              <p>{turn.reply || 'Let me take a look…'}</p>
+              <p>{turn.reply || (turn.kind === 'gift' ? 'Let’s find a gift they’ll love…' : 'Let me take a look…')}</p>
+              {turn.kind === 'upload' && onUploadImage && <button type="button" className="pet-chat-action" disabled={actionsDisabled}
+                onClick={onUploadImage}>Upload image</button>}
+              {turn.buildPrompt && onUseGiftIdea && <button type="button" className="pet-chat-action" disabled={actionsDisabled}
+                onClick={() => onUseGiftIdea(turn.buildPrompt!)}>Use this gift idea</button>}
             </PetChatMessage>}
           {!turn.error && turn.generationId && (turn.method === 'llm' || turn.method === 'nova') && <BuddyBuildMessages
             generationId={turn.generationId} status={generation?.status || 'started'} />}
