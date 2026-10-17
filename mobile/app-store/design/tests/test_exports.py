@@ -1,5 +1,6 @@
 """Validate the actual upload artifacts, capture provenance and readable copy."""
 import importlib.util
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -76,6 +77,24 @@ class ScreenshotExportTests(unittest.TestCase):
         self.assertEqual(manifest['model_url'],'https://brickbuilder.ai/generated-model?id=923b8062-6a0c-4313-9d4e-8ce157b7a379')
         self.assertEqual(set(manifest['screenshots']),set(design.SOURCES))
         self.assertEqual(manifest['capture_method'],'xcrun simctl screenshot and recordVideo')
+
+    def test_selected_draft_has_only_the_three_warm_studio_screenshots(self):
+        proof=json.loads((design.STORE/'proof/app-store-draft.json').read_text())
+        self.assertEqual(proof['status'],'PREPARE_FOR_SUBMISSION')
+        self.assertFalse(proof['submittedForReview'])
+        self.assertEqual(sum(s['count'] for s in proof['previews']),0)
+        folders={'APP_IPHONE_61':'iphone-6.3','APP_IPHONE_67':'iphone-6.9','APP_IPAD_PRO_3GEN_129':'ipad-13'}
+        self.assertEqual({s['display'] for s in proof['screenshots']},set(folders))
+        for screenshot_set in proof['screenshots']:
+            self.assertEqual(screenshot_set['count'],3)
+            self.assertEqual([f['name'] for f in screenshot_set['files']],list(design.FILENAMES))
+            for file in screenshot_set['files']:
+                path=design.STORE/'screenshots'/folders[screenshot_set['display']]/file['name']
+                self.assertEqual(file['state']['state'],'COMPLETE')
+                self.assertEqual(file['checksum'],hashlib.md5(path.read_bytes()).hexdigest())
+        review=(design.STORE/'review.html').read_text()
+        self.assertIn('Warm Studio',review)
+        self.assertNotIn('<video',review)
 
 
 if __name__=='__main__':

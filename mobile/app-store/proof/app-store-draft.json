@@ -1,5 +1,5 @@
 {
-  "verifiedAt": "2026-10-17T17:00:33.889Z",
+  "verifiedAt": "2026-10-17T17:53:23.569Z",
   "versionId": "f6ea1171-cafa-4156-87ae-46cc88987d41",
   "version": "1.0.2",
   "status": "PREPARE_FOR_SUBMISSION",
@@ -122,66 +122,18 @@
   "previews": [
     {
       "display": "IPHONE_61",
-      "count": 1,
-      "files": [
-        {
-          "id": "11c00019-6356-8adf-8118-fd9532074f0a",
-          "name": "brickbuilder-iphone-preview.mp4",
-          "posterTime": "00:00:05:01",
-          "assetState": {
-            "errors": [],
-            "warnings": null,
-            "state": "COMPLETE"
-          },
-          "videoState": {
-            "errors": null,
-            "warnings": null,
-            "state": "COMPLETE"
-          }
-        }
-      ]
+      "count": 0,
+      "files": []
     },
     {
       "display": "IPHONE_67",
-      "count": 1,
-      "files": [
-        {
-          "id": "61c00019-6356-8adf-8122-f316f325aa49",
-          "name": "brickbuilder-iphone-preview.mp4",
-          "posterTime": "00:00:05:01",
-          "assetState": {
-            "errors": [],
-            "warnings": null,
-            "state": "COMPLETE"
-          },
-          "videoState": {
-            "errors": null,
-            "warnings": null,
-            "state": "COMPLETE"
-          }
-        }
-      ]
+      "count": 0,
+      "files": []
     },
     {
       "display": "IPAD_PRO_3GEN_129",
-      "count": 1,
-      "files": [
-        {
-          "id": "f7000019-6356-8adf-8133-831c3098ec65",
-          "name": "brickbuilder-ipad-preview.mp4",
-          "posterTime": "00:00:05:01",
-          "assetState": {
-            "errors": [],
-            "warnings": null,
-            "state": "COMPLETE"
-          },
-          "videoState": {
-            "errors": null,
-            "warnings": null,
-            "state": "COMPLETE"
-          }
-        }
-      ]
+      "count": 0,
+      "files": []
     }
   ],
   "metadata": {
