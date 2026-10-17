@@ -47,7 +47,7 @@ export function LandingModelWorkspace({ model, busy, onSuggest, onCreateNew, onO
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
   return <>
-    {model && generation && <section ref={workspace} className="landing-model-workspace" aria-label="Your model workspace">
+    {model && generation && <section ref={workspace} className="landing-model-workspace" data-view={showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
       <div className="landing-model-heading">
         <button type="button" className="landing-model-new-trigger" disabled={busy} onClick={onCreateNew}><Plus size={16} aria-hidden="true" />Create new</button>
         <span className="landing-model-name truncate font-semibold text-slate-800" title={generation.name || generation.prompt || 'Your model'}>{generation.name || generation.prompt || 'Your model'}</span>

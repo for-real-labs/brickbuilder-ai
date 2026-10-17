@@ -13,6 +13,7 @@ import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
 import { GetPriceApiService } from '../src/services/getPriceApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
+import { readFileSync } from 'node:fs';
 
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
 const navigate = vi.hoisted(() => vi.fn());
@@ -87,6 +88,26 @@ function type(text: string) {
   });
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+
+it('floats transparent controls over the 3D viewer while reserving space for the instructions toolbar', async () => {
+  const style = document.createElement('style');
+  style.textContent = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  document.head.append(style);
+  try {
+    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }}
+      busy={false} onSuggest={vi.fn()} onCreateNew={vi.fn()}><div>Conversation</div></LandingModelWorkspace>));
+    const heading = container.querySelector<HTMLElement>('.landing-model-heading')!;
+    const name = container.querySelector<HTMLElement>('.landing-model-name')!;
+    expect(getComputedStyle(heading).position).toBe('absolute');
+    expect(getComputedStyle(heading).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(getComputedStyle(name).backgroundColor).toBe('rgba(0, 0, 0, 0)');
+    expect(getComputedStyle(heading).pointerEvents).toBe('none');
+    expect(getComputedStyle(heading.querySelector('button')!).pointerEvents).toBe('auto');
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Model suggestions"] button:nth-child(2)')!.click());
+    expect(getComputedStyle(heading).position).toBe('relative');
+    expect(container.querySelector('[aria-label="Instructions viewer"]')).not.toBeNull();
+  } finally { style.remove(); }
+});
 
 it('loads the linked model instead of the saved workspace or newest dashboard generation', async () => {
   query.value = 'id=linked%20%26%20model&exact=1';
