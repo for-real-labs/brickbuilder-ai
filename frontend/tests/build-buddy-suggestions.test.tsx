@@ -7,6 +7,7 @@ import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { GIFT_PROMPT_SUGGESTION, IMAGE_PROMPT_SUGGESTION, PROMPT_EXAMPLES } from '../src/utils/promptExamples';
+import { buddyPromptSuggestion } from '../src/utils/buddyPromptSuggestion';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('react-router-dom', () => ({ useNavigate: () => vi.fn(), useSearchParams: () => [new URLSearchParams(), vi.fn()] }));
@@ -153,8 +154,45 @@ it('animates the empty landing input and stops while the user focuses or types',
     act(() => input().blur());
     await act(async () => { await vi.advanceTimersByTimeAsync(500); });
     expect(input().value).toBe('My own idea');
-    expect(input().placeholder).toBe('Tell Pip what you’d like to build…');
+    expect(input().placeholder).toBe('Tell Pip more about your idea…');
+    type('');
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(input().placeholder).toBe('Tell Pip more about your idea…');
   } finally { vi.useRealTimers(); }
+});
+
+it('keeps one conversational hint after chatting and brings cycling examples back on reload', async () => {
+  vi.spyOn(Math, 'random').mockReturnValue(0);
+  vi.useFakeTimers();
+  vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'question', confidence: 1 });
+  vi.mocked(BuildBuddyApi.reply).mockResolvedValue('I can help you pick bricks. What colors would you like for your castle?');
+  try {
+    await act(async () => root.render(<LandingPage />));
+    type('Can you help me choose bricks for a castle?'); await submit();
+    act(() => input().blur());
+    expect(input().placeholder).toBe('What colors would you like for your castle?');
+    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
+    expect(input().placeholder).toBe('What colors would you like for your castle?');
+    expect(posthog.capture).toHaveBeenCalledWith('build_buddy_contextual_suggestion_shown');
+    expect(vi.mocked(posthog.capture).mock.calls.filter(call => call[0] === 'build_buddy_contextual_suggestion_shown')).toHaveLength(1);
+    vi.mocked(BuildBuddyApi.reply).mockResolvedValue('Blue and gold will work well. Would you like a blue roof?');
+    type('Blue and gold'); await submit();
+    expect(input().placeholder).toBe('Would you like a blue roof?');
+    act(() => root.unmount()); root = createRoot(container);
+    await act(async () => root.render(<LandingPage />));
+    for (let i = 0; i < 6; i++) await act(async () => { await vi.advanceTimersByTimeAsync(70); });
+    expect(input().placeholder.replace('|', '')).toBe('Create');
+    expect(container.querySelector('.pet-chat-message--user')).toBeNull();
+  } finally { vi.useRealTimers(); }
+});
+
+it('derives a single useful next step from gifts, uploads, model edits and the latest topic', () => {
+  expect(buddyPromptSuggestion([{ id: 1, text: 'Gift', kind: 'gift', buildPrompt: 'A LEGO garden for Mum' }], 'Pip')).toBe('A LEGO garden for Mum');
+  expect(buddyPromptSuggestion([{ id: 1, text: 'Upload', kind: 'upload' }], 'Pip')).toContain('image');
+  expect(buddyPromptSuggestion([{ id: 1, text: 'Castle' }], 'Pip', 'Add a drawbridge')).toBe('Add a drawbridge');
+  expect(buddyPromptSuggestion([{ id: 1, text: 'Castle', reply: 'What colors would you like?' }], 'Pip', 'Add a drawbridge')).toBe('What colors would you like?');
+  expect(buddyPromptSuggestion([{ id: 1, text: 'Red  dragons!' }], 'Pip')).toBe('Tell me more about “Red dragons”…');
+  expect(buddyPromptSuggestion([{ id: 1, text: 'Castle', error: 'Failed' }], 'Pip')).toBe('Try your message again…');
 });
 
 it('plans a gift with follow-up context, blocks duplicate sends, and hands a complete idea back to Create', async () => {

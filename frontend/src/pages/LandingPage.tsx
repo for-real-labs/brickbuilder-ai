@@ -10,12 +10,14 @@ import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
+import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel } from '../hooks/useLandingModel';
+import { LandingModelWorkspace, modelEditSuggestion } from '../components/LandingModelWorkspace';
+import { buddyPromptSuggestion } from '../utils/buddyPromptSuggestion';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
-import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
@@ -168,6 +170,7 @@ function useBeatText(active: boolean) {
 
 export default function LandingPage({ imageLandingPath }: { imageLandingPath?: ImageLandingPath } = {}) {
   const { pet } = usePet();
+  const { unread_count: unreadCompletions } = useGenerationNotifications();
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const landingViewportRef = useLandingViewport(!ldrawLanding);
@@ -177,9 +180,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
   const [prompt, setPrompt] = useState("");
+  const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [giftPlanning, setGiftPlanning] = useState(false);
   const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
-  useEffect(() => { setGiftPlanning(false); }, [session?.user.id]);
+  useEffect(() => { setGiftPlanning(false); setHasEnteredChat(false); }, [session?.user.id]);
+  useEffect(() => {
+    if (hasEnteredChat) posthog.capture('build_buddy_contextual_suggestion_shown');
+  }, [hasEnteredChat]);
   const [notificationPromptId, setNotificationPromptId] = useState<string | null>(null);
   const [orderBarHeight, setOrderBarHeight] = useState(0);
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
@@ -374,6 +381,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       const prepared = await prepareImageUpload(file);
       if (revision !== uploadRevision.current) return;
       setGiftPlanning(false); setImgFile(prepared); setInputValidationMessage(null);
+      setHasEnteredChat(true);
       posthog.capture('landing_image_uploaded', { page: imageLandingPath ?? '/', source, format: prepared.type });
     } catch (error) {
       if (revision === uploadRevision.current) setImageUploadError(error instanceof Error ? error.message : 'Unable to read this image. Please try another file.');
@@ -849,6 +857,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
     const text = prompt.trim();
     const image = imgFile;
+    setHasEnteredChat(true);
     const result = await buddyChat.routeMessage(text, image,
       landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'Current model' : undefined,
       giftPlanning);
@@ -890,9 +899,11 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
   const sendLabel = buddyChat.routing ? 'Sending…' : landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
-  const showTypewriter = !focused && !prompt && !imgFile && !imageLanding && !landingModel.model && !giftPlanning && !loading && !preparingImage;
+  const showTypewriter = !hasEnteredChat && buddyChat.turns.length === 0 && !focused && !prompt && !imgFile && !imageLanding && !giftPlanning && !loading && !preparingImage;
   const typedPlaceholder = usePromptTypewriter(showTypewriter);
-  const conversationStarted = !ldrawLanding && (buddyChat.turns.length > 0 || Boolean(landingModel.targetId) || loading
+  const contextualPlaceholder = buddyPromptSuggestion(buddyChat.turns, pet.name,
+    landingModel.model ? modelEditSuggestion(landingModel.model) : undefined);
+  const conversationStarted = !ldrawLanding && (unreadCompletions > 0 || buddyChat.turns.length > 0 || Boolean(landingModel.targetId) || loading
     || displayedGenerations.some(row => isGenerationActive(row.status)));
 
   const generationActivity = (
@@ -1015,6 +1026,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   promptInputRef.current?.focus();
                 }}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
+                onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}
                 actionsDisabled={loading || buddyChat.routing || preparingImage || modelBusy || giftReplyPending || Boolean(landingModel.model)}
@@ -1060,6 +1072,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     onBlur={() => setFocused(false)}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       setPrompt(event.target.value);
+                      if (event.target.value.trim()) setHasEnteredChat(true);
                       if (settingsOpen) toggleSettings(false);
                       if (event.target.value.trim()) setInputValidationMessage(null);
                     }}
@@ -1069,7 +1082,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={giftPlanning ? `Tell ${pet.name} about your gift…` : landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
+                    placeholder={imgFile ? "Add optional image instructions" : hasEnteredChat || buddyChat.turns.length > 0 ? contextualPlaceholder : imageLanding ? "add optional instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
                     className={`pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white ${landingModel.model ? 'pl-4' : 'pl-14'} pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
                     disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />

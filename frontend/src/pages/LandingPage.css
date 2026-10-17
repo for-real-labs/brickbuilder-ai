@@ -60,7 +60,8 @@
   .landing-page-intro, .landing-page .landing-model-conversation { transition: none; }
 }
 /* Keep both viewer modes clear of the dialogue at normal phone and desktop heights. */
-.landing-page:has(.landing-model-workspace) .pet-dialogue { max-height: 100px; }
+.landing-page:has(.landing-model-workspace) .pet-dialogue { max-height: 128px; }
+.landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(320px, 40dvh); }
 /* Short screens can scroll the workspace and conversation together without overlapping controls. */
 @media (max-height: 740px) {
   .landing-page-content:has(.landing-model-workspace) { padding-bottom: calc(var(--landing-order-banner-height, 0px) + 16px); }

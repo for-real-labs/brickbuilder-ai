@@ -157,8 +157,10 @@ def test_preview_is_responsive_escaped_and_links_to_exact_generation(email_confi
     assert '<img src="https://example.com/model.png?size=560&amp;view=&quot;front&quot;"' in payload['html']
     assert 'alt="Preview of Ship &quot;Red&quot; &lt;roof&gt;"' in payload['html']
     assert 'max-width:560px;height:auto' in payload['html']
-    assert payload['html'].count(f'https://brickbuilder.ai/?id={id}&amp;exact=1') == 2
+    assert payload['html'].count(f'id={id}&amp;exact=1') == 2
     assert f'https://brickbuilder.ai/?id={id}&exact=1' in payload['text']
+    assert payload['html'].count(f'https://brickbuilder.ai/?id={id}&amp;exact=1') == 2
+    assert '/generated-model' not in payload['html']
 
 
 def test_completion_email_has_order_branding_support_and_plain_text(email_config):

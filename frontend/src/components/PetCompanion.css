@@ -61,11 +61,17 @@
 .pet-dialogue { width: 100%; max-height: min(560px, 58dvh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin-bottom: 16px; padding: 4px 4px 8px; text-align: left; }
 .pet-dialogue-content, .pet-dialogue-turn, .pet-build-messages, .pet-notification-conversation { display: grid; gap: 12px; min-width: 0; }
 .pet-dialogue .pet-greeting { margin: 0; }
-.pet-chat-message, .pet-dialogue .pet-greeting { display: flex; align-items: flex-end; gap: 8px; min-width: 0; width: 100%; text-align: left; animation: pet-message-in .22s ease-out; }
+.pet-chat-message, .pet-dialogue .pet-greeting { display: flex; align-items: stretch; gap: 12px; min-width: 0; width: 100%; text-align: left; animation: pet-message-in .22s ease-out; }
 .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { width: 52px; height: 60px; margin-left: 0; }
+.pet-dialogue { --buddy-width: 52px; --buddy-height: 60px; --buddy-gap: 8px; }
+.pet-dialogue .pet-chat-message:not(.pet-chat-message--user), .pet-dialogue .pet-greeting { position: relative; padding-left: calc(var(--buddy-width) + var(--buddy-gap)); }
+.pet-dialogue .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { display: none; position: absolute; inset: 0 auto 0 0; width: var(--buddy-width); height: 100%; min-height: 0; overflow: hidden; }
+.pet-dialogue [data-current-buddy-message] > .pet-avatar { display: block; }
+.pet-dialogue [data-current-buddy-message] { min-height: var(--buddy-height); }
 .pet-chat-bubble, .pet-dialogue .pet-speech { min-width: 0; max-width: calc(100% - 60px); padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 18px 18px 18px 5px; background: #fff; color: #334155; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; box-shadow: 0 2px 6px #0f172a04; }
-.pet-chat-message:not(.pet-chat-message--user) .pet-chat-bubble, .pet-dialogue .pet-speech { flex: 1; }
+.pet-chat-message:not(.pet-chat-message--user) .pet-chat-bubble, .pet-dialogue .pet-speech { flex: 1; max-width: 100%; }
 .pet-chat-bubble p, .pet-dialogue .pet-speech p { margin: 0; white-space: pre-wrap; color: inherit; font-size: inherit; line-height: inherit; font-weight: 400; }
+.pet-dialogue .pet-speech { display: flex; flex-direction: column; justify-content: center; }
 .pet-chat-message--user { justify-content: flex-end; }
 .pet-chat-message--user .pet-chat-bubble { background: #fff1ef; border-color: #fddbd6; border-radius: 18px 18px 5px 18px; color: #7f332c; }
 .pet-chat-reference { display: block; width: min(220px, 100%); max-height: 180px; object-fit: contain; border-radius: 10px; margin-bottom: 8px; }
@@ -78,10 +84,27 @@
 .pet-chat-email input { flex: 1 1 160px; min-width: 0; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 12px; font-size: 16px; background: #fff; color: #0f172a; }
 .pet-chat-bubble .pet-chat-meta { margin-top: 8px; font-size: 12px; color: #64748b; }
 .pet-dialogue .pet-greeting, .pet-speech { animation: pet-message-in .22s ease-out; }
+.pet-completed-builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px; padding: 0; margin: 12px 0 0; list-style: none; }
+.pet-completed-builds li { min-width: 0; }
+.pet-completed-builds a { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; text-decoration: none; }
+.pet-completed-builds a:hover { border-color: #f44336; background: #fff5f4; }
+.pet-completed-builds a:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; }
+.pet-completed-build-preview { display: grid; place-items: center; height: 120px; background: #f8fafc; color: #94a3b8; }
+.pet-completed-build-preview img { width: 100%; height: 120px; object-fit: contain; }
+.pet-completed-build-title { padding: 10px 12px; font-weight: 500; overflow-wrap: anywhere; }
+.pet-completed-build-title > span { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; color: #b42318; }
 @keyframes pet-message-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+.pet-response-word { animation: pet-response-word-in 60ms ease-out both; }
+@keyframes pet-response-word-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .pet-response-word { animation: none; } }
 @media (max-width: 639px) {
   .pet-dialogue { max-height: 54dvh; padding-left: 0; padding-right: 0; }
-  .pet-chat-bubble, .pet-dialogue .pet-speech { padding: 10px 12px; max-width: calc(100% - 48px); }
-  .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { width: 40px; height: 48px; }
+  .pet-chat-bubble, .pet-dialogue .pet-speech { padding: 10px 12px; }
+  .pet-dialogue { --buddy-width: 64px; --buddy-height: 100px; }
+  .pet-completed-builds { grid-template-columns: minmax(0, 1fr); }
+  .pet-completed-builds a { flex-direction: row; align-items: center; }
+  .pet-completed-build-preview { flex: 0 0 72px; height: 88px; }
+  .pet-completed-build-preview img { height: 88px; }
+  .pet-completed-build-title { min-width: 0; padding: 8px; }
 }
 @media (prefers-reduced-motion: reduce) { .pet-chat-message, .pet-dialogue .pet-greeting, .pet-speech { animation: none; } }
