@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { JSDOM } from 'jsdom';
 import { describe, expect, it, vi } from 'vitest';
 import { publicPagePaths, renderPublicDocument } from '../src/public-prerender';
+import { IMAGE_MODEL_PAGES } from '../src/imageModelPages';
 import { getBlogPosts } from '../src/utils/blog-posts';
 
 vi.stubGlobal('React', React);
@@ -89,6 +90,30 @@ describe('public page indexing', () => {
     const homepage = new JSDOM(renderPublicDocument(shell, '/')).window.document;
     expect(homepage.querySelector('a[href="/obj-to-lego"]')).not.toBeNull();
     expect(Array.from(sitemap.querySelectorAll('loc')).map(node => node.textContent)).toContain('https://brickbuilder.ai/obj-to-lego');
+  });
+
+  it.each(IMAGE_MODEL_PAGES)('publishes unique image conversion content, matching FAQ data, and LEGO links at $path', page => {
+    const document = new JSDOM(renderPublicDocument(shell, page.path)).window.document;
+    expect(document.title).toBe(page.title);
+    expect(document.querySelector('h1')?.textContent).toBe(page.name);
+    expect(document.querySelector('main')?.textContent).toContain(page.body);
+    const schemas = JSON.parse(document.querySelector('script[type="application/ld+json"]')!.textContent!);
+    expect(schemas[0].url).toBe(`https://brickbuilder.ai${page.path}`);
+    expect(schemas[0].offers).toBeUndefined();
+    expect(schemas[2]['@type']).toBe('BreadcrumbList');
+    for (const question of schemas[1].mainEntity) {
+      expect(document.querySelector('main')?.textContent).toContain(question.name);
+      expect(document.querySelector('main')?.textContent).toContain(question.acceptedAnswer.text);
+    }
+    for (const destination of ['/glb-to-lego', '/image-to-lego', '/#landing-build-prompt']) {
+      expect(document.querySelector(`aside a[href="${destination}"]`)).not.toBeNull();
+    }
+    for (const other of IMAGE_MODEL_PAGES) {
+      expect(document.querySelector(`a[href="${other.path}"]`)).not.toBeNull();
+      expect(Array.from(sitemap.querySelectorAll('loc')).map(node => node.textContent)).toContain(`https://brickbuilder.ai${other.path}`);
+    }
+    const homepage = new JSDOM(renderPublicDocument(shell, '/')).window.document;
+    expect(homepage.querySelector(`a[href="${page.path}"]`)).not.toBeNull();
   });
 
   it('keeps successive article and converter renders independent', () => {

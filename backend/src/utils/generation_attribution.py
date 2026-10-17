@@ -1,7 +1,8 @@
 """Input origin is independent of the rendering pipeline and composer mode."""
 INPUT_TYPES = frozenset({'text', 'image', 'glb', 'obj', 'ldraw', 'unknown'})
 ENTRY_PAGES = frozenset({'/', '/image-to-lego', '/photo-to-lego', '/glb-to-lego', '/obj-to-lego',
-                         '/use-ai-to-edit-ldraw', '/generated-model'})
+                         '/use-ai-to-edit-ldraw', '/generated-model',
+                         '/image-to-3d', '/image-to-glb', '/image-to-obj'})
 
 
 def infer_input_type(endpoint: str) -> str:

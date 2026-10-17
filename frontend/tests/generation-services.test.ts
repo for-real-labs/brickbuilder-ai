@@ -99,6 +99,16 @@ describe('generation services', () => {
     expect(JSON.parse((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body as string)).toMatchObject({ prompt: 'castle', detail_level: 2, use_red_bricks: true });
   });
 
+  it('preserves the original image for model downloads while keeping brick preprocessing enabled by default', async () => {
+    vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'image', message: 'queued' }) as unknown as Response);
+    await ImageToBricksApiService.generateBricksFromImage('pixels');
+    await ImageToBricksApiService.generateBricksFromImage('pixels', 1.6, 'token', 'b', 'a', undefined, false);
+    const bodies = vi.mocked(fetch).mock.calls.map(([, init]) => JSON.parse(init?.body as string));
+    expect(bodies[0].edit_image).toBe(true);
+    expect(bodies[1]).toMatchObject({ image_base64: 'pixels', edit_image: false, model_option: 'b' });
+    expect(new Headers(vi.mocked(fetch).mock.calls[1][1]?.headers).get('Authorization')).toBe('Bearer token');
+  });
+
   it('parses streaming image and text completion events', async () => {
     const events = [{ stage: 'voxels', voxel_count: 2 }, { type: 'pipeline', stage: 'pipeline_complete', generation_id: 'g1' }];
     const onImageEvent = vi.fn();

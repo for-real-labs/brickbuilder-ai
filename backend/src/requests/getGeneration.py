@@ -35,6 +35,7 @@ class GetGenerationResponse(BaseModel):
     detail_level: Optional[float] = None
     ldr_content: Optional[str] = None  # Only available when completed
     mpd_url: Optional[str] = None  # Only available when completed
+    glb_url: Optional[str] = None  # Original generated mesh, available when completed
     external_image_url: Optional[str] = None  # Available during processing and completed
     processed_image_url: Optional[str] = None  # Available when image processing is done
     preview_image_url: Optional[str] = None  # User-uploaded preview image, if set
@@ -153,7 +154,8 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             xyzrgb_url=xyzrgb_url,
             problematic_xyzrgb_url=problematic_xyzrgb_url,
             error_message=error_message,
-            mpd_url=mpd_url
+            mpd_url=mpd_url,
+            glb_url=generation.get("glb_url") if status == "completed" else None,
         )
 
         # Only download and include LDR content when completed
