@@ -20,13 +20,15 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
-it('compares the original and transparent versions of the same Pip idle animation', () => {
+it('compares the original Pip clip with its new seamless transparent loop', () => {
   expect(Array.from(container.querySelectorAll('video')).map(video => video.querySelector('source:last-child')?.getAttribute('src'))).toEqual([
-    '/pets/pip-idle.mp4', '/pets/pip-idle-alpha.webm',
+    '/pets/pip-idle.mp4', '/pets/loops-v2/pip-idle-alpha.webm',
   ]);
+  expect(container.querySelector('h1')?.textContent).toBe('Little buddies. Smooth loops.');
+  expect(container.querySelectorAll('figcaption strong')[1].textContent).toBe('Seamless + transparent');
   expect(container.querySelector('.pet-preview-stage--original .pet-avatar--transparent')).toBeNull();
   expect(container.querySelector('.pet-preview-grid--checkerboard')).not.toBeNull();
-  expect(container.textContent).toContain('Pip, Nib, and Clik use transparent animations throughout the app');
+  expect(container.textContent).toContain('Pip, Nib, and Clik use seamless, transparent animations throughout the app');
 });
 
 it('changes the comparison background and records the selection', () => {
@@ -50,7 +52,7 @@ it.each(['pip', 'nib', 'clik'])('compares every transparent %s animation with it
   for (const state of ['idle', 'building', 'celebrating']) {
     act(() => { select[1].value = state; select[1].dispatchEvent(new Event('change', { bubbles: true })); });
     expect(Array.from(container.querySelectorAll('video')).map(video => video.querySelector('source:last-child')?.getAttribute('src'))).toEqual([
-      `/pets/${pet}-${state}.mp4`, `/pets/${pet}-${state}-alpha.webm`,
+      `/pets/${pet}-${state}.mp4`, `/pets/loops-v2/${pet}-${state}-alpha.webm`,
     ]);
     expect(posthog.capture).toHaveBeenCalledWith('pet_preview_animation_selected', { pet_id: pet, state });
   }

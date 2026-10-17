@@ -1,0 +1,1029 @@
+{
+  "version": 2,
+  "date": "2026-10-17",
+  "provider": "fal.ai",
+  "additional_provider_cost_usd": 9.554999579999999,
+  "cost_verification": "Completed queue response x-fal-billable-units multiplied by authenticated account pricing: Kling $0.07/second and Bria $0.14/second. Billing-events permission is unavailable; no account-balance inference.",
+  "method": "Regenerate every activity with the same approved reference image supplied as image_url and tail_image_url. Gestures finish before the endpoint and ease into the identical resting pose. Bria removes the background. No dissolves, reversed playback, endpoint freezing or runtime loop tricks. Clik idle HEVC also receives a small premultiplied endpoint matte correction over 12 frames before encoding.",
+  "encoding": {
+    "webm": "ffmpeg -c:v libvpx-vp9 -i INPUT -vf scale=512:512,fps=24 -an -c:v libvpx-vp9 -pix_fmt yuva420p -auto-alt-ref 0 -crf 36 -b:v 0 -row-mt 1 -cpu-used 4 OUTPUT.webm",
+    "hevc": "ffmpeg -c:v libvpx-vp9 -i INPUT -an -vf scale=512:512,fps=24,format=rgba,premultiply=inplace=1,format=bgra -c:v hevc_videotoolbox -allow_sw 1 -alpha_quality 1 -q:v 85 -b:v 0 -tag:v hvc1 -force_key_frames expr:eq(n,121) -movflags +faststart OUTPUT.mov"
+  },
+  "validation": {
+    "sample_size": [
+      128,
+      128
+    ],
+    "fps": 24,
+    "frames": 122,
+    "duration_seconds": 5.083333333333333,
+    "metric": "Mean absolute difference of premultiplied RGB over the union of foreground pixels. Use the worse of black and white composites. Compare final to first frame, every adjacent frame, and the six steps on either side of the join.",
+    "seam_mae_max": 2,
+    "seam_relative_max": "median_step_mae * 0.5 + 0.35",
+    "boundary_step_max": "max(median_step_mae * 3, 2)",
+    "every_frame_alpha_minimum_fraction": {
+      "clear": 0.4,
+      "opaque": 0.05,
+      "soft": 0.001
+    },
+    "hevc_decoder": "AVAssetReader, BGRA with 128px output, unpremultiplied to RGBA; alpha metadata and every frame validated.",
+    "browser_checks": "Native Safari 27: all nine QuickTime sources play at 512px through six repeated loops on a checkerboard. App preview verified at desktop and 375\u00d7812 mobile."
+  },
+  "clips": [
+    {
+      "clip": "pip-idle",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b1f-c3b4-7870-8f65-c2d99099b416",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec63b/vqDorScBFUT49gigEpEXs_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec63b/vqDorScBFUT49gigEpEXs_pip-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact red plush brick pet with one round stud, cream mitten hands and dark red feet. Gentle soft breathing, a small curious head tilt, one natural blink in the middle, and a tiny friendly paw movement. Keep the motion calm and subtle. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec647/5KvaZsWtX4_SOLxPZpzQT_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b1f-c3b4-7870-8f65-c2d99099b416",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b21-88e4-7bb3-9f12-d013306a0b17",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec64b/nImKH1TkkacGn4tVIoEFT_ec229500-99a9-400b-94e4-c51e0b86fadb.webm",
+      "alpha_billing": {
+        "request_id": "01a14b21-88e4-7bb3-9f12-d013306a0b17",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "pip-idle",
+        "frames": 121,
+        "seam_mae": 10.624838545703046,
+        "median_step_mae": 4.525857270234912,
+        "max_step_mae": 13.959184353724494,
+        "boundary_step_max": 4.713507717862616
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/pip-idle-alpha.webm",
+        "sha256": "cf42b3007444f4b04ae90ccf2432d3f21e228b5189023530ea502d3505b5a1c3",
+        "size_bytes": 99196,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.73492431640625,
+            "opaque": 0.235595703125,
+            "soft": 0.02276611328125
+          },
+          "seam_mae": 0.01600026066775378,
+          "median_step_mae": 0.6815975971172523,
+          "max_step_mae": 7.661616821364094,
+          "boundary_step_max": 0.409394702816545
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/pip-idle-alpha.mov",
+        "sha256": "820432b0aa309bae85d611420dfe7858dbc0f022ecfaef3c7c0d64140c4be3a2",
+        "size_bytes": 1113371,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.731201171875,
+            "opaque": 0.2313232421875,
+            "soft": 0.03173828125
+          },
+          "seam_mae": 0.5253672323881051,
+          "median_step_mae": 0.7775271323658406,
+          "max_step_mae": 6.803137490803517,
+          "boundary_step_max": 0.9589159733372246
+        },
+        "alpha_samples": [
+          {
+            "clear": 12015,
+            "frame": 0,
+            "opaque": 3824,
+            "soft": 545
+          },
+          {
+            "clear": 12031,
+            "frame": 24,
+            "opaque": 3828,
+            "soft": 525
+          },
+          {
+            "clear": 12061,
+            "frame": 48,
+            "opaque": 3796,
+            "soft": 527
+          },
+          {
+            "clear": 11988,
+            "frame": 72,
+            "opaque": 3867,
+            "soft": 529
+          },
+          {
+            "clear": 12009,
+            "frame": 96,
+            "opaque": 3839,
+            "soft": 536
+          },
+          {
+            "clear": 12016,
+            "frame": 120,
+            "opaque": 3828,
+            "soft": 540
+          }
+        ]
+      }
+    },
+    {
+      "clip": "pip-building",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b20-f3d9-7d03-b2f0-300be408e77a",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec644/wlEQ58jhodOJZpvwFdgRU_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec644/wlEQ58jhodOJZpvwFdgRU_pip-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact red plush brick pet with one round stud, cream mitten hands and dark red feet. A little builder concentrating on an imaginary tiny project between its paws: look down, bring its paws together in two small deliberate assembly motions, give a satisfied nod, and lift its gaze back. Empty hands throughout, no objects or loose bricks appear. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec650/eRZb2JShbnZQbOYkoQbhP_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b20-f3d9-7d03-b2f0-300be408e77a",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b22-adc1-7bf1-81ef-a09b069bb371",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec652/XiZ8Xdy7Mj0mivwToG3Qg_74b7562c-9678-4541-85cb-dad446d2996c.webm",
+      "alpha_billing": {
+        "request_id": "01a14b22-adc1-7bf1-81ef-a09b069bb371",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "pip-building",
+        "frames": 121,
+        "seam_mae": 37.159561436008445,
+        "median_step_mae": 6.206132438440499,
+        "max_step_mae": 21.899999050007604,
+        "boundary_step_max": 3.369436844505243
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/pip-building-alpha.webm",
+        "sha256": "f1bd260683f476da57268ed1eda09046bf749c1076d3012e2ef11f3af6a520a9",
+        "size_bytes": 84671,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.737060546875,
+            "opaque": 0.234375,
+            "soft": 0.0225830078125
+          },
+          "seam_mae": 0.054178963059523605,
+          "median_step_mae": 0.7289138739521663,
+          "max_step_mae": 8.694365988931734,
+          "boundary_step_max": 0.8616334437745556
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/pip-building-alpha.mov",
+        "sha256": "30fbd0f98ece0808963ff1cc76449ef9b45c489c29304b787931117d1461777e",
+        "size_bytes": 1107411,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.7320556640625,
+            "opaque": 0.23095703125,
+            "soft": 0.03167724609375
+          },
+          "seam_mae": 0.5367017910116466,
+          "median_step_mae": 0.7579902635675648,
+          "max_step_mae": 7.644128895247867,
+          "boundary_step_max": 1.0588892188357666
+        },
+        "alpha_samples": [
+          {
+            "clear": 12015,
+            "frame": 0,
+            "opaque": 3824,
+            "soft": 545
+          },
+          {
+            "clear": 12041,
+            "frame": 24,
+            "opaque": 3806,
+            "soft": 537
+          },
+          {
+            "clear": 12049,
+            "frame": 48,
+            "opaque": 3804,
+            "soft": 531
+          },
+          {
+            "clear": 12000,
+            "frame": 72,
+            "opaque": 3842,
+            "soft": 542
+          },
+          {
+            "clear": 12013,
+            "frame": 96,
+            "opaque": 3828,
+            "soft": 543
+          },
+          {
+            "clear": 12017,
+            "frame": 120,
+            "opaque": 3823,
+            "soft": 544
+          }
+        ]
+      }
+    },
+    {
+      "clip": "pip-celebrating",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b20-f498-7920-8266-64148eaeec5e",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec644/lKdtZNhW243cxM_QzX3HJ_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec644/lKdtZNhW243cxM_QzX3HJ_pip-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact red plush brick pet with one round stud, cream mitten hands and dark red feet. One small delighted bounce and a proud little cheer with raised paws, a happy blink in the middle, then gently lower the paws and settle back down. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec64d/FoG05I5L2X5ArocOd0Xfg_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b20-f498-7920-8266-64148eaeec5e",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b22-adb2-7130-882b-165f145240ed",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec652/hSlHEJnhdB7Y_YlYHDPms_f03ad8f2-ce38-4b56-b076-4ff2c92ce6dc.webm",
+      "alpha_billing": {
+        "request_id": "01a14b22-adb2-7130-882b-165f145240ed",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "pip-celebrating",
+        "frames": 121,
+        "seam_mae": 28.343041906715776,
+        "median_step_mae": 7.1656014115250475,
+        "max_step_mae": 35.099353636402135,
+        "boundary_step_max": 2.9997340994244976
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/pip-celebrating-alpha.webm",
+        "sha256": "ab92f79117e5e4e4e4e30c114792cb84980781068ebffd0a09facd0f2c581a96",
+        "size_bytes": 96084,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.7364501953125,
+            "opaque": 0.23651123046875,
+            "soft": 0.02294921875
+          },
+          "seam_mae": 0.06549395305567482,
+          "median_step_mae": 0.890917358427556,
+          "max_step_mae": 14.297577346023575,
+          "boundary_step_max": 0.6043238037307382
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/pip-celebrating-alpha.mov",
+        "sha256": "1a05ec78da22e9d2f4efd30bdad329a07df47d4949f63603fb4b2b4226bb4454",
+        "size_bytes": 1159985,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.73187255859375,
+            "opaque": 0.23260498046875,
+            "soft": 0.0316162109375
+          },
+          "seam_mae": 0.5212736081919572,
+          "median_step_mae": 0.8080976578781652,
+          "max_step_mae": 12.869018248034928,
+          "boundary_step_max": 0.9386525483101412
+        },
+        "alpha_samples": [
+          {
+            "clear": 12016,
+            "frame": 0,
+            "opaque": 3824,
+            "soft": 544
+          },
+          {
+            "clear": 12010,
+            "frame": 24,
+            "opaque": 3841,
+            "soft": 533
+          },
+          {
+            "clear": 12009,
+            "frame": 48,
+            "opaque": 3850,
+            "soft": 525
+          },
+          {
+            "clear": 12009,
+            "frame": 72,
+            "opaque": 3844,
+            "soft": 531
+          },
+          {
+            "clear": 12014,
+            "frame": 96,
+            "opaque": 3831,
+            "soft": 539
+          },
+          {
+            "clear": 12016,
+            "frame": 120,
+            "opaque": 3828,
+            "soft": 540
+          }
+        ]
+      }
+    },
+    {
+      "clip": "nib-idle",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b20-f9f0-7393-a8ae-ae955b0fb73e",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec644/XhXZ6kPNJWv330FFWatBZ_nib-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec644/XhXZ6kPNJWv330FFWatBZ_nib-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact chestnut plush beaver with a cream muzzle and tummy, two teeth and a broad navy tail. Gentle soft breathing, a small curious head tilt, one natural blink in the middle, and a tiny friendly paw movement. Keep the motion calm and subtle. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec64e/VE7dRaRc_22z3osZCi8IL_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b20-f9f0-7393-a8ae-ae955b0fb73e",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b22-adb3-7d02-a4cb-e9bdaa945fb7",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec653/pVsBSCfdA6bGSPmLp-Ux__48818699-8b47-4e84-bbc3-1e9763ac6f90.webm",
+      "alpha_billing": {
+        "request_id": "01a14b22-adb3-7d02-a4cb-e9bdaa945fb7",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "nib-idle",
+        "frames": 121,
+        "seam_mae": 23.822327766012624,
+        "median_step_mae": 5.97164664304497,
+        "max_step_mae": 16.224386783724356,
+        "boundary_step_max": 3.7099869098285936
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/nib-idle-alpha.webm",
+        "sha256": "872bc5f71c40870acc0062787ef5834e197e535908ffa286fc1844b383c44865",
+        "size_bytes": 107926,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.6954345703125,
+            "opaque": 0.2701416015625,
+            "soft": 0.02947998046875
+          },
+          "seam_mae": 0.03912218536880117,
+          "median_step_mae": 1.5241580035082354,
+          "max_step_mae": 5.847079659385847,
+          "boundary_step_max": 0.5107639336534238
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/nib-idle-alpha.mov",
+        "sha256": "1cbf709fce7f2532eec049a66364db55810a25fa4f0fadd524750c45a53a2fc0",
+        "size_bytes": 1428237,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.6883544921875,
+            "opaque": 0.26416015625,
+            "soft": 0.043212890625
+          },
+          "seam_mae": 0.5155924973063298,
+          "median_step_mae": 1.3096696584828251,
+          "max_step_mae": 5.168649440117763,
+          "boundary_step_max": 1.0527891927270305
+        },
+        "alpha_samples": [
+          {
+            "clear": 11291,
+            "frame": 0,
+            "opaque": 4354,
+            "soft": 739
+          },
+          {
+            "clear": 11286,
+            "frame": 24,
+            "opaque": 4368,
+            "soft": 730
+          },
+          {
+            "clear": 11320,
+            "frame": 48,
+            "opaque": 4336,
+            "soft": 728
+          },
+          {
+            "clear": 11301,
+            "frame": 72,
+            "opaque": 4358,
+            "soft": 725
+          },
+          {
+            "clear": 11293,
+            "frame": 96,
+            "opaque": 4353,
+            "soft": 738
+          },
+          {
+            "clear": 11297,
+            "frame": 120,
+            "opaque": 4350,
+            "soft": 737
+          }
+        ]
+      }
+    },
+    {
+      "clip": "nib-building",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b21-e97c-7da1-b907-19c77dd50fec",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec64b/rPjS0bSbs3vg4DjkBeZ9L_nib-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec64b/rPjS0bSbs3vg4DjkBeZ9L_nib-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact chestnut plush beaver with a cream muzzle and tummy, two teeth and a broad navy tail. A little builder concentrating on an imaginary tiny project between its paws: look down, bring its paws together in two small deliberate assembly motions, give a satisfied nod, and lift its gaze back. Empty hands throughout, no objects or loose bricks appear. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec654/8ofaxjwHA96iJa-C9Mqbz_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b21-e97c-7da1-b907-19c77dd50fec",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b23-5d77-7961-bf74-12c1d5f7a4bb",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec657/mERn9PwLQYeV32_ngVGhK_2c853f22-08f7-495c-92cd-6621c0ce3b28.webm",
+      "alpha_billing": {
+        "request_id": "01a14b23-5d77-7961-bf74-12c1d5f7a4bb",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "nib-building",
+        "frames": 121,
+        "seam_mae": 33.71809855727715,
+        "median_step_mae": 8.264275734312935,
+        "max_step_mae": 18.701225032313438,
+        "boundary_step_max": 5.2549509411450614
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/nib-building-alpha.webm",
+        "sha256": "29d71be521e98339cf4b10c86cc337d628e3c2b2c85c578c2a42be421173eb5f",
+        "size_bytes": 114855,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.696044921875,
+            "opaque": 0.268310546875,
+            "soft": 0.03021240234375
+          },
+          "seam_mae": 0.11804562347814947,
+          "median_step_mae": 0.7654499551454573,
+          "max_step_mae": 7.15731257208765,
+          "boundary_step_max": 0.6996316801230297
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/nib-building-alpha.mov",
+        "sha256": "3e8f788b0fbd21e4990f21ee979ae2b1bba596726811df9ab3bb4d2b4d207dc7",
+        "size_bytes": 1391973,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.68902587890625,
+            "opaque": 0.26385498046875,
+            "soft": 0.04376220703125
+          },
+          "seam_mae": 0.5074077047469401,
+          "median_step_mae": 0.7077510044766587,
+          "max_step_mae": 6.204360951503483,
+          "boundary_step_max": 1.0702887719070218
+        },
+        "alpha_samples": [
+          {
+            "clear": 11294,
+            "frame": 0,
+            "opaque": 4354,
+            "soft": 736
+          },
+          {
+            "clear": 11298,
+            "frame": 24,
+            "opaque": 4354,
+            "soft": 732
+          },
+          {
+            "clear": 11325,
+            "frame": 48,
+            "opaque": 4327,
+            "soft": 732
+          },
+          {
+            "clear": 11312,
+            "frame": 72,
+            "opaque": 4351,
+            "soft": 721
+          },
+          {
+            "clear": 11298,
+            "frame": 96,
+            "opaque": 4359,
+            "soft": 727
+          },
+          {
+            "clear": 11298,
+            "frame": 120,
+            "opaque": 4351,
+            "soft": 735
+          }
+        ]
+      }
+    },
+    {
+      "clip": "nib-celebrating",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b21-ec86-7980-9fe6-2939268b6871",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec64b/2-ekmm_KHGWLYIlXLVenk_nib-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec64b/2-ekmm_KHGWLYIlXLVenk_nib-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact chestnut plush beaver with a cream muzzle and tummy, two teeth and a broad navy tail. One small delighted bounce and a proud little cheer with raised paws, a happy blink in the middle, then gently lower the paws and settle back down. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec654/YEoO9JdPjE6fhEYweh7jG_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b21-ec86-7980-9fe6-2939268b6871",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b23-849a-7a93-bc6d-1cba4b71ea83",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec658/smp8rXcbH7p9U1Km4UNQT_468acbef-5dc7-4a98-bbaf-e0f7c6b3bd22.webm",
+      "alpha_billing": {
+        "request_id": "01a14b23-849a-7a93-bc6d-1cba4b71ea83",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "nib-celebrating",
+        "frames": 121,
+        "seam_mae": 14.63505184717387,
+        "median_step_mae": 11.463527952971432,
+        "max_step_mae": 33.0011705430866,
+        "boundary_step_max": 3.4160991683955233
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/nib-celebrating-alpha.webm",
+        "sha256": "d67f009efa934244656f588afa4e70917a2e34e989a32f633b27d5e9d1bb838b",
+        "size_bytes": 192258,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.6846923828125,
+            "opaque": 0.26910400390625,
+            "soft": 0.02825927734375
+          },
+          "seam_mae": 0.03816085344942659,
+          "median_step_mae": 2.2931794094259565,
+          "max_step_mae": 19.396676922936514,
+          "boundary_step_max": 0.7123847595709021
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/nib-celebrating-alpha.mov",
+        "sha256": "b211c39a323b478511d38bddcff1090d9ac17c441939bf8dc72345db4daabc6e",
+        "size_bytes": 1787195,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.67864990234375,
+            "opaque": 0.2633056640625,
+            "soft": 0.04071044921875
+          },
+          "seam_mae": 0.45147646547758974,
+          "median_step_mae": 1.9884955963271465,
+          "max_step_mae": 17.95388903085127,
+          "boundary_step_max": 0.9947696518514734
+        },
+        "alpha_samples": [
+          {
+            "clear": 11294,
+            "frame": 0,
+            "opaque": 4354,
+            "soft": 736
+          },
+          {
+            "clear": 11297,
+            "frame": 24,
+            "opaque": 4347,
+            "soft": 740
+          },
+          {
+            "clear": 11329,
+            "frame": 48,
+            "opaque": 4314,
+            "soft": 741
+          },
+          {
+            "clear": 11146,
+            "frame": 72,
+            "opaque": 4514,
+            "soft": 724
+          },
+          {
+            "clear": 11292,
+            "frame": 96,
+            "opaque": 4358,
+            "soft": 734
+          },
+          {
+            "clear": 11295,
+            "frame": 120,
+            "opaque": 4354,
+            "soft": 735
+          }
+        ]
+      }
+    },
+    {
+      "clip": "clik-idle",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b21-ec00-7191-8b0a-8ed40e7beb8e",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec64b/_DNCsKpNKjbFlHCKdL8IN_clik-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec64b/_DNCsKpNKjbFlHCKdL8IN_clik-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact navy plush baby dragon with a cream belly, red stud bumps, small red-membrane wings and curled tail. Gentle soft breathing, a small curious head tilt, one natural blink in the middle, and a tiny friendly paw movement. Keep the motion calm and subtle. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec658/noFFljlNdvjMbO3ZK-Cct_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b21-ec00-7191-8b0a-8ed40e7beb8e",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b24-20f7-7252-841f-572e851bc1e6",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec65c/KVIV-_JGhFMlLCQEWg6GO_1b047f6b-f35c-4cb7-9c40-f5bdf470bbdc.webm",
+      "alpha_billing": {
+        "request_id": "01a14b24-20f7-7252-841f-572e851bc1e6",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "clik-idle",
+        "frames": 121,
+        "seam_mae": 9.430162492061275,
+        "median_step_mae": 8.38151091283671,
+        "max_step_mae": 22.573722811304837,
+        "boundary_step_max": 3.3207425448919397
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/clik-idle-alpha.webm",
+        "sha256": "00a6ee6eaa806383eb57e4be15f9ec12d6c0b0fddd535035b8c94296c5193720",
+        "size_bytes": 122933,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.64453125,
+            "opaque": 0.3082275390625,
+            "soft": 0.03857421875
+          },
+          "seam_mae": 0.5395716648250349,
+          "median_step_mae": 0.569965035370949,
+          "max_step_mae": 10.118723965176798,
+          "boundary_step_max": 0.37420406130049855
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/clik-idle-alpha.mov",
+        "sha256": "46203bcec936ae10e4a6fbd710785bf01e5f93e1fcfe54e5e158f0d78583ee6b",
+        "size_bytes": 1518199,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.635498046875,
+            "opaque": 0.29986572265625,
+            "soft": 0.05670166015625
+          },
+          "seam_mae": 0,
+          "median_step_mae": 0.6539819471389781,
+          "max_step_mae": 9.248559391736194,
+          "boundary_step_max": 0.7111820584782097
+        },
+        "alpha_samples": [
+          {
+            "clear": 10495,
+            "frame": 0,
+            "opaque": 4945,
+            "soft": 944
+          },
+          {
+            "clear": 10427,
+            "frame": 24,
+            "opaque": 5002,
+            "soft": 955
+          },
+          {
+            "clear": 10434,
+            "frame": 48,
+            "opaque": 4977,
+            "soft": 973
+          },
+          {
+            "clear": 10489,
+            "frame": 72,
+            "opaque": 4932,
+            "soft": 963
+          },
+          {
+            "clear": 10496,
+            "frame": 96,
+            "opaque": 4952,
+            "soft": 936
+          },
+          {
+            "clear": 10495,
+            "frame": 120,
+            "opaque": 4945,
+            "soft": 944
+          }
+        ],
+        "endpoint_normalization": {
+          "helper": "frontend/scripts/pets/normalize-endpoint.mjs",
+          "window_frames": 12,
+          "method": "On the 512px RGBA master, add smoothstep(t) times the premultiplied first-minus-last residual over the final 12 frames. Clamp valid premultiplied color/alpha, unpremultiply, and use the exact first frame as the last frame. Apply only to the HEVC encode to remove subpixel matte/color drift; frame count and timing stay fixed."
+        }
+      }
+    },
+    {
+      "clip": "clik-building",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b21-eb4d-7861-a929-2333311c835c",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec64b/AIuBWhm9fRhLAIxLgUJgu_clik-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec64b/AIuBWhm9fRhLAIxLgUJgu_clik-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact navy plush baby dragon with a cream belly, red stud bumps, small red-membrane wings and curled tail. A little builder concentrating on an imaginary tiny project between its paws: look down, bring its paws together in two small deliberate assembly motions, give a satisfied nod, and lift its gaze back. Empty hands throughout, no objects or loose bricks appear. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec655/t25Qv4kCtoQE-QV7_Cwuj_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b21-eb4d-7861-a929-2333311c835c",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b23-84a1-7942-a9b1-e521ff18a0eb",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec658/nfIBXsdssuP_9Nv8A4OTf_30d4a78e-648e-4dd1-bf92-2725365ffdef.webm",
+      "alpha_billing": {
+        "request_id": "01a14b23-84a1-7942-a9b1-e521ff18a0eb",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "clik-building",
+        "frames": 121,
+        "seam_mae": 40.3928829767725,
+        "median_step_mae": 9.462631205026781,
+        "max_step_mae": 24.700418989909,
+        "boundary_step_max": 5.184843567578818
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/clik-building-alpha.webm",
+        "sha256": "cc77a975eb85e3613857365b917f56ff3ccf9fb324c6379a201b116141b11939",
+        "size_bytes": 163947,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.64691162109375,
+            "opaque": 0.30780029296875,
+            "soft": 0.03704833984375
+          },
+          "seam_mae": 0.0780255847333327,
+          "median_step_mae": 1.3345021194980196,
+          "max_step_mae": 12.39915890110649,
+          "boundary_step_max": 0.7877495212939148
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/clik-building-alpha.mov",
+        "sha256": "8c1ab6a8732c9344311687660d3838269d9c09457cb06f3a1ccf49b33738e31e",
+        "size_bytes": 1665343,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.6380615234375,
+            "opaque": 0.29962158203125,
+            "soft": 0.05462646484375
+          },
+          "seam_mae": 0.4536236261483574,
+          "median_step_mae": 1.1618710434785309,
+          "max_step_mae": 11.331126451957102,
+          "boundary_step_max": 1.0792434617169093
+        },
+        "alpha_samples": [
+          {
+            "clear": 10495,
+            "frame": 0,
+            "opaque": 4949,
+            "soft": 940
+          },
+          {
+            "clear": 10477,
+            "frame": 24,
+            "opaque": 4968,
+            "soft": 939
+          },
+          {
+            "clear": 10548,
+            "frame": 48,
+            "opaque": 4924,
+            "soft": 912
+          },
+          {
+            "clear": 10474,
+            "frame": 72,
+            "opaque": 4962,
+            "soft": 948
+          },
+          {
+            "clear": 10487,
+            "frame": 96,
+            "opaque": 4960,
+            "soft": 937
+          },
+          {
+            "clear": 10498,
+            "frame": 120,
+            "opaque": 4955,
+            "soft": 931
+          }
+        ]
+      }
+    },
+    {
+      "clip": "clik-celebrating",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a14b21-ea42-7952-b5f5-21760fc80c55",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0aaec64b/hB5Fajq5w1zzVz_6Gq7uk_clik-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0aaec64b/hB5Fajq5w1zzVz_6Gq7uk_clik-reference.png",
+        "prompt": "One complete five-second seamless looping character animation of this exact navy plush baby dragon with a cream belly, red stud bumps, small red-membrane wings and curled tail. One small delighted bounce and a proud little cheer with raised paws, a happy blink in the middle, then gently lower the paws and settle back down. Begin completely relaxed in the supplied first frame pose. Complete the gesture by 4 seconds and smoothly settle into the EXACT supplied last frame pose: identical head angle, gaze, facial expression, paw positions, body proportions, feet and tail. Both ends are relaxed and almost motionless, with gentle easing. Locked camera, pure white background, same centered full body position and size for every frame, all limbs stay visible. Preserve exact plush texture, colors and anatomy. No camera motion, no zoom, no cuts, no props, no text, no extra limbs.",
+        "duration": "5",
+        "cfg_scale": 0.6,
+        "negative_prompt": "camera movement, zoom, cuts, scene changes, drifting position, changing size, morphing, extra limbs, objects, text, blur, low quality"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0aaec657/KLzM8kfZYVbNdoXNAlZiv_output.mp4",
+      "generation_billing": {
+        "request_id": "01a14b21-ea42-7952-b5f5-21760fc80c55",
+        "billable_seconds": 5,
+        "unit_price_usd": 0.07,
+        "cost_usd": 0.35
+      },
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a14b23-d2f2-7262-95a1-0358ec96a1ba",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0aaec65a/G8cFeKSdSNJAKZZ9P6xQ__84fd1321-068b-4753-8a57-00ba87cc85e7.webm",
+      "alpha_billing": {
+        "request_id": "01a14b23-d2f2-7262-95a1-0358ec96a1ba",
+        "billable_seconds": 5.083333,
+        "unit_price_usd": 0.14,
+        "cost_usd": 0.71166662
+      },
+      "before": {
+        "clip": "clik-celebrating",
+        "frames": 121,
+        "seam_mae": 13.113826147168602,
+        "median_step_mae": 10.416218101366315,
+        "max_step_mae": 30.580385570248737,
+        "boundary_step_max": 1.8307468206921036
+      },
+      "webm": {
+        "path": "frontend/public/pets/loops-v2/clik-celebrating-alpha.webm",
+        "sha256": "343c265d12156ad7e6fff2387e5b7a2c0c9b1e333cd7874f73840456816b7c8c",
+        "size_bytes": 165259,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.646240234375,
+            "opaque": 0.29974365234375,
+            "soft": 0.03875732421875
+          },
+          "seam_mae": 0.22885490393092742,
+          "median_step_mae": 1.1937365229940278,
+          "max_step_mae": 23.96342588077685,
+          "boundary_step_max": 0.8195085479557311
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/loops-v2/clik-celebrating-alpha.mov",
+        "sha256": "4af51c9316db499adcd6f1b33a1dccb8398aad08534d39d2864590bdba7eb733",
+        "size_bytes": 1685227,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.63629150390625,
+            "opaque": 0.29180908203125,
+            "soft": 0.056640625
+          },
+          "seam_mae": 0.8702030323984548,
+          "median_step_mae": 1.0445358617645102,
+          "max_step_mae": 22.760875145037083,
+          "boundary_step_max": 0.7120317304048541
+        },
+        "alpha_samples": [
+          {
+            "clear": 10492,
+            "frame": 0,
+            "opaque": 4944,
+            "soft": 948
+          },
+          {
+            "clear": 10463,
+            "frame": 24,
+            "opaque": 4969,
+            "soft": 952
+          },
+          {
+            "clear": 10623,
+            "frame": 48,
+            "opaque": 4817,
+            "soft": 944
+          },
+          {
+            "clear": 10462,
+            "frame": 72,
+            "opaque": 4978,
+            "soft": 944
+          },
+          {
+            "clear": 10492,
+            "frame": 96,
+            "opaque": 4956,
+            "soft": 936
+          },
+          {
+            "clear": 10494,
+            "frame": 120,
+            "opaque": 4957,
+            "soft": 933
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@ export function isPetId(value: unknown): value is PetId {
 
 export function petVideoPath(id: PetId, state: PetState) {
   const clip = state === 'listening' ? 'idle' : state;
-  return `/pets/${id}-${clip}-alpha.webm`;
+  return `/pets/loops-v2/${id}-${clip}-alpha.webm`;
 }
 
 export function petVideoSources(id: PetId, state: PetState) {

@@ -56,7 +56,7 @@ describe('build buddies', () => {
   it('validates stored identities and maps listening to the lightweight idle clip', () => {
     expect(isPetId('nib')).toBe(true);
     expect(isPetId('../../anything')).toBe(false);
-    expect(petVideoPath('clik', 'listening')).toBe('/pets/clik-idle-alpha.webm');
+    expect(petVideoPath('clik', 'listening')).toBe('/pets/loops-v2/clik-idle-alpha.webm');
     localStorage.setItem(PET_STORAGE_KEY, '../../anything');
     render(<Probe />);
     expect(container.querySelector('output')?.textContent).toBe('pip:idle');
@@ -157,11 +157,11 @@ describe('build buddies', () => {
   });
 
   it('uses transparent clips for every pet state and hides the still poster after playback starts', () => {
-    expect(petVideoPath('pip', 'idle')).toBe('/pets/pip-idle-alpha.webm');
-    expect(petVideoPath('pip', 'listening')).toBe('/pets/pip-idle-alpha.webm');
-    expect(petVideoPath('pip', 'building')).toBe('/pets/pip-building-alpha.webm');
-    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/pip-celebrating-alpha.webm');
-    expect(petVideoPath('nib', 'idle')).toBe('/pets/nib-idle-alpha.webm');
+    expect(petVideoPath('pip', 'idle')).toBe('/pets/loops-v2/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'listening')).toBe('/pets/loops-v2/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'building')).toBe('/pets/loops-v2/pip-building-alpha.webm');
+    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/loops-v2/pip-celebrating-alpha.webm');
+    expect(petVideoPath('nib', 'idle')).toBe('/pets/loops-v2/nib-idle-alpha.webm');
     render(<PetAvatar />);
     expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();
     expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
