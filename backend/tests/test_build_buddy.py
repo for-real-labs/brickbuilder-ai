@@ -1,5 +1,6 @@
 import asyncio
 import base64
+import json
 from unittest.mock import AsyncMock
 
 import pytest
@@ -92,3 +93,52 @@ def test_endpoint_limits_every_identity_and_rejects_before_provider(monkeypatch,
         asyncio.run(buddy.buddy_reply(body, request, identity))
     assert exc.value.status_code == 429
     generate.assert_not_called()
+
+
+@pytest.mark.parametrize('build_prompt', [None, 'A LEGO garden with a purple bench for Mum'])
+def test_gift_planning_uses_questions_history_and_structured_build_handoff(monkeypatch, build_prompt):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    reply = 'Who is the gift for, and what do they love?' if build_prompt is None else 'A purple garden bench would be lovely!'
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': json.dumps({
+        'reply': reply, 'build_prompt': build_prompt,
+    })}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    history = [{'role': 'user', 'text': 'For Mum'}, {'role': 'assistant', 'text': 'What does she love?'}]
+    result = asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(mode='gift', prompt='Gardening', history=history)))
+    assert result == {'reply': reply, 'build_prompt': build_prompt}
+    payload = post.await_args.args[3]
+    assert 'Ask one or two focused questions per turn' in payload['instructions']
+    assert 'Planning does not generate a model' in payload['instructions']
+    assert 'independently submits' not in payload['instructions']
+    assert payload['input'][0] == {'role': 'user', 'content': 'For Mum'}
+    assert payload['input'][-1]['content'][0]['text'] == 'Gardening'
+    assert payload['text']['format']['strict'] is True
+    assert payload['text']['format']['schema']['required'] == ['reply', 'build_prompt']
+    assert payload['store'] is False
+
+
+@pytest.mark.parametrize('reply', ['not json', 'null', '[]', '{"reply": ""}', '{"reply": 42}'])
+def test_gift_planning_rejects_malformed_provider_output(monkeypatch, reply):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    monkeypatch.setattr(buddy, 'post_json', AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': reply}]}]}))
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(mode='gift', prompt='Gift idea?')))
+    assert exc.value.status_code == 503
+
+
+def test_gift_history_is_bounded_and_mode_is_validated():
+    history = [{'role': 'user', 'text': 'answer'}] * 16
+    assert len(buddy.BuddyReplyRequest(mode='gift', prompt='Gift', history=history).history) == 16
+    with pytest.raises(ValidationError):
+        buddy.BuddyReplyRequest(mode='gift', prompt='Gift', history=history + history)
+    with pytest.raises(ValidationError):
+        buddy.BuddyReplyRequest(mode='untrusted', prompt='Gift')
+
+
+def test_endpoint_returns_gift_prompt_with_reply(monkeypatch):
+    result = {'reply': 'A purple garden bench!', 'build_prompt': 'A LEGO garden with a purple bench'}
+    monkeypatch.setattr(buddy, 'check_anonymous_short_window_limit', lambda _: None)
+    monkeypatch.setattr(buddy, 'generate_buddy_reply', AsyncMock(return_value=result))
+    request = Request({'type': 'http', 'headers': [], 'client': ('127.0.0.1', 1234)})
+    assert asyncio.run(buddy.buddy_reply(buddy.BuddyReplyRequest(mode='gift', prompt='Gift'), request,
+                                       {'user_id': 'owner', 'is_anonymous': False})) == result

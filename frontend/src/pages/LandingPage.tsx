@@ -4,7 +4,7 @@ import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
-import { usePromptTypewriter as useTypewriter } from '../hooks/usePromptTypewriter';
+import { BuildBuddySuggestions } from '../components/BuildBuddySuggestions';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { PetPromptGreeting } from '../components/PetCompanion';
@@ -172,6 +172,9 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
   const [prompt, setPrompt] = useState("");
+  const [giftPlanning, setGiftPlanning] = useState(false);
+  const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
+  useEffect(() => { setGiftPlanning(false); }, [session?.user.id]);
   const [notificationPromptId, setNotificationPromptId] = useState<string | null>(null);
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
@@ -228,8 +231,6 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   const uploadRevision = useRef(0);
 
   const [focused, setFocused] = useState(false);
-  const showTypewriter = !focused && prompt.length === 0;
-  const typedPlaceholder = useTypewriter(showTypewriter);
 
   // NEW: in‑place loading state
   const [loading, setLoading] = useState(false);
@@ -333,7 +334,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   }, []);
 
-  const onPickImage = (uploadPosition: 'input_left_icon' | 'image_upload_section' = 'image_upload_section') => {
+  const onPickImage = (uploadPosition: 'input_left_icon' | 'image_upload_section' | 'buddy_dialogue' = 'image_upload_section') => {
     posthog.capture('landing_image_picker_opened', { page: imageLandingPath ?? '/', upload_position: uploadPosition });
     fileInputRef.current?.click();
   };
@@ -348,7 +349,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     try {
       const prepared = await prepareImageUpload(file);
       if (revision !== uploadRevision.current) return;
-      setImgFile(prepared); setInputValidationMessage(null);
+      setGiftPlanning(false); setImgFile(prepared); setInputValidationMessage(null);
       posthog.capture('landing_image_uploaded', { page: imageLandingPath ?? '/', source, format: prepared.type });
     } catch (error) {
       if (revision === uploadRevision.current) setImageUploadError(error instanceof Error ? error.message : 'Unable to read this image. Please try another file.');
@@ -445,18 +446,18 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   };
 
-  const onGenerate = async () => {
+  const onGenerate = async (requestedPrompt = prompt, requestedImage = imgFile) => {
     // Prevent multiple simultaneous calls
     if (loading || preparingImage || checkingProviderRef.current || providerLogin) return;
 
-    if (imageLanding && !imgFile) {
+    if (imageLanding && !requestedImage && !requestedPrompt.trim()) {
       setImageUploadError('Upload an image to get started. You can add optional instructions below.');
       posthog.capture('landing_generation_image_required', { page: imageLandingPath });
       return;
     }
 
     // Validate input: either text prompt or image required
-    if (!imgFile && !prompt.trim()) {
+    if (!requestedImage && !requestedPrompt.trim()) {
       setGenerationError(null);
       setInputValidationMessage("Describe what you’d like to build, or upload an image to get started.");
       promptInputRef.current?.focus();
@@ -499,12 +500,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     generationAbortRef.current = controller;
     setActiveGenerationId(null);
     const generationStartedAt = new Date().toISOString();
-    const submittedPrompt = prompt.trim();
-    const turnId = buddyChat.startTurn(submittedPrompt, imgFile);
+    const submittedPrompt = requestedPrompt.trim();
+    const turnId = buddyChat.startTurn(submittedPrompt, requestedImage);
     
     try {
-      const imageBase64 = imgFile ? await fileToBase64(imgFile) : undefined;
-      buddyChat.requestReply(turnId, submittedPrompt, imageBase64, imgFile?.type);
+      const imageBase64 = requestedImage ? await fileToBase64(requestedImage) : undefined;
+      buddyChat.requestReply(turnId, submittedPrompt, imageBase64, requestedImage?.type);
       // Convert size to voxelSize (similar to BrickBuilder component)
       // scale conversion from: https://chatgpt.com/share/690f88ae-7234-8006-bca8-a56e991721fb
       const getVoxelSize = (size: SizeValue): number => {
@@ -592,29 +593,29 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
           ...novaOptions,
           model: llmModel,
           authMode: localDevelopment ? novaAuthMode : 'api_key',
-          prompt: prompt.trim() || undefined,
+          prompt: requestedPrompt.trim() || undefined,
           imageBase64,
-          imageMediaType: imgFile?.type || 'image/png',
+          imageMediaType: requestedImage?.type || 'image/png',
           detailLevel: getVoxelSize(size),
         }, authToken);
-        modelName = prompt.trim() || imgFile?.name.replace(/\.[^/.]+$/, '') || 'full-set-model';
+        modelName = requestedPrompt.trim() || requestedImage?.name.replace(/\.[^/.]+$/, '') || 'full-set-model';
       } else if (generationMethod === 'llm') {
         const llmLabel = getLlmModelOption(llmModel)?.label ?? 'The AI model';
         setGenerationStatus(`${llmLabel} is designing your brick model…`);
         postResponse = await LlmToBricksApiService.generate(
           {
-            prompt: prompt.trim() || undefined,
+            prompt: requestedPrompt.trim() || undefined,
             imageBase64,
-            imageMediaType: imgFile?.type || 'image/png',
+            imageMediaType: requestedImage?.type || 'image/png',
             detailLevel: getVoxelSize(size),
             model: llmModel,
           },
           authToken,
         );
-        modelName = prompt.trim() || imgFile?.name.replace(/\.[^/.]+$/, '') || 'llm-model';
-      } else if (imgFile) {
-        console.log(`Generating from image (3D model: ${threeDModel}):`, imgFile.name);
-        const imageBase64 = await fileToBase64(imgFile);
+        modelName = requestedPrompt.trim() || requestedImage?.name.replace(/\.[^/.]+$/, '') || 'llm-model';
+      } else if (requestedImage) {
+        console.log(`Generating from image (3D model: ${threeDModel}):`, requestedImage.name);
+        const imageBase64 = await fileToBase64(requestedImage);
         postResponse = await ImageToBricksApiService.generateBricksFromImageStream(
           imageBase64,
           getVoxelSize(size),
@@ -624,14 +625,14 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
           handleStreamEvent,
           stream3d,
           'trimesh',
-          prompt.trim(),
+          requestedPrompt.trim(),
           controller.signal,
         );
-        modelName = prompt.trim() || imgFile.name.replace(/\.[^/.]+$/, ''); // Remove file extension
+        modelName = requestedPrompt.trim() || requestedImage.name.replace(/\.[^/.]+$/, ''); // Remove file extension
       } else {
-        console.log(`Generating from text prompt (3D model: ${threeDModel}):`, prompt.trim());
+        console.log(`Generating from text prompt (3D model: ${threeDModel}):`, requestedPrompt.trim());
         postResponse = await TextToBricksApiService.generateBricksFromTextStream(
-          prompt.trim(),
+          requestedPrompt.trim(),
           getVoxelSize(size),
           authToken,
           modelOption,
@@ -641,7 +642,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
           'trimesh',
           controller.signal,
         );
-        modelName = prompt.trim();
+        modelName = requestedPrompt.trim();
       }
       
       if (controller.signal.aborted) return;
@@ -649,7 +650,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       buddyChat.updateTurn(turnId, { generationId, method: generationMethod });
       setPrompt('');
       posthog.capture('generation_started', { generation_id: generationId, page: window.location.pathname,
-        input_type: imgFile ? 'image' : 'text', generation_method: generationMethod });
+        input_type: requestedImage ? 'image' : 'text', generation_method: generationMethod });
       clearSelectedImage();
       setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
@@ -761,6 +762,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     generations.forEach(row => ignoredModelIds.current.add(row.id));
     if (landingModel.targetId) ignoredModelIds.current.add(landingModel.targetId);
     landingModel.reset();
+    setGiftPlanning(false);
     setPrompt('');
     setGenerationError(null);
     setInputValidationMessage(null);
@@ -768,19 +770,48 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     requestAnimationFrame(() => promptInputRef.current?.focus());
   };
 
-  const submitGeneration = () => {
+  const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile) => {
     if (loading) return;
     posthog.capture('landing_generate_clicked', {
       page: window.location.pathname,
-      input_type: imgFile ? 'image' : 'text',
+      input_type: requestedImage ? 'image' : 'text',
       generation_method: generationMethod,
       model: generationMethod === '3d' ? threeDModel : llmModel,
-      has_prompt: Boolean(prompt.trim()),
-      has_image: Boolean(imgFile),
+      has_prompt: Boolean(requestedPrompt.trim()),
+      has_image: Boolean(requestedImage),
       size,
       is_authenticated: Boolean(session),
     });
-    void onGenerate();
+    void onGenerate(requestedPrompt, requestedImage);
+  };
+
+  const startGiftPlanning = () => {
+    setGiftPlanning(true);
+    setPrompt('');
+    clearSelectedImage();
+    setInputValidationMessage(null);
+    const message = 'Help me come up with a custom LEGO gift idea.';
+    const id = buddyChat.startTurn(message, null, 'gift');
+    void buddyChat.requestGiftReply(id, message, true);
+    promptInputRef.current?.focus();
+  };
+
+  const sendGiftMessage = () => {
+    if (giftReplyPending || !prompt.trim()) return;
+    const message = prompt.trim();
+    const id = buddyChat.startTurn(message, null, 'gift');
+    setPrompt('');
+    void buddyChat.requestGiftReply(id, message);
+  };
+
+  const suggestImageUpload = () => {
+    setGiftPlanning(false);
+    setPrompt('');
+    const id = buddyChat.startTurn('I’d like to build from an image.', null, 'upload');
+    const desktop = window.matchMedia?.('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches ?? false;
+    buddyChat.updateTurn(id, { reply: desktop
+      ? 'Drag and drop an image anywhere on this page, or click the Upload image button below to choose one.'
+      : 'Click the Upload image button below to choose a picture you’d like to turn into LEGO.' });
   };
 
   // After a successful login from the modal, automatically continue generation
@@ -794,7 +825,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
 
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
-  const sendLabel = landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : 'Create';
+  const sendLabel = landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
 
   return (
     <div
@@ -886,15 +917,30 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   setPrompt(suggestion);
                   promptInputRef.current?.focus();
                 }}>
+              {!landingModel.model && <BuildBuddySuggestions disabled={loading || preparingImage || checkingProvider || giftReplyPending}
+                onGift={startGiftPlanning} onUpload={suggestImageUpload} onRandom={idea => {
+                  setGiftPlanning(false);
+                  setPrompt(idea);
+                  clearSelectedImage();
+                  submitGeneration(idea, null);
+                }} />}
               <BuildBuddyDialogue modelName={landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'model' : undefined} turns={buddyChat.turns} generations={displayedGenerations}
                 state={focused && !loading && !modelBusy ? 'listening' : petState} authLoading={authLoading}
-                username={session ? userProfile?.username || session.user.user_metadata?.username : null} />
+                username={session ? userProfile?.username || session.user.user_metadata?.username : null}
+                actionsDisabled={loading || preparingImage || modelBusy || giftReplyPending || Boolean(landingModel.model)}
+                onUploadImage={() => onPickImage('buddy_dialogue')} onUseGiftIdea={idea => {
+                  posthog.capture('build_buddy_gift_idea_selected');
+                  setGiftPlanning(false);
+                  setPrompt(idea);
+                  promptInputRef.current?.focus();
+                }} />
             <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
               onSubmit={event => {
                 event.preventDefault();
                 if (landingModel.model) void submitModelEdit();
+                else if (giftPlanning) sendGiftMessage();
                 else submitGeneration();
               }}
             >
@@ -907,7 +953,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <button type="button" aria-label="Upload image" title="Upload image"
-                    disabled={loading || preparingImage || Boolean(landingModel.model)} onClick={() => onPickImage('input_left_icon')}
+                    disabled={loading || preparingImage || Boolean(landingModel.model)} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
                     className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50">
                     <ImageIcon aria-hidden="true" className="h-5 w-5" />
                   </button>
@@ -930,13 +976,13 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : (showTypewriter ? typedPlaceholder : "")}
+                    placeholder={giftPlanning ? `Tell ${pet.name} about your gift…` : landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : `Tell ${pet.name} what you’d like to build…`}
                     className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
                     disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   <button
                     type="submit" aria-label={sendLabel} title={sendLabel}
-                    disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
+                    disabled={loading || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
                     className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#f44336] text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ArrowUp aria-hidden="true" className="h-5 w-5" />

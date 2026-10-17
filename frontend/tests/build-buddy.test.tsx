@@ -197,3 +197,36 @@ it('restores older active agent builds before new messages without duplicating t
   expect(text.indexOf('Older car')).toBeLessThan(text.indexOf('Newest castle'));
   expect(watch.mock.calls.map(call => call[0])).toEqual(['old', 'new']);
 });
+
+it('sends gift mode through authenticated transport and only accepts a usable build prompt', async () => {
+  const signal = new AbortController().signal;
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ reply: 'Who is it for?', build_prompt: null }) } as Response);
+  await expect(BuildBuddyApi.planGift({ pet: 'nib', prompt: 'Gift idea?', history: [] }, 'token', signal)).resolves.toEqual({ reply: 'Who is it for?', buildPrompt: undefined });
+  expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining('/build-buddy/reply'), expect.objectContaining({
+    signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+    body: JSON.stringify({ pet: 'nib', prompt: 'Gift idea?', history: [], mode: 'gift' }),
+  }));
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ reply: 'A garden!', build_prompt: ' A LEGO garden ' }) } as Response);
+  await expect(BuildBuddyApi.planGift({ pet: 'nib', prompt: 'Flowers', history: [] }, undefined, signal)).resolves.toEqual({ reply: 'A garden!', buildPrompt: 'A LEGO garden' });
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ reply: '' }) } as Response);
+  await expect(BuildBuddyApi.planGift({ pet: 'nib', prompt: 'Gift', history: [] }, undefined, signal)).rejects.toThrow('Empty buddy reply');
+});
+
+it('aborts pending gift replies on an account change and keeps the previous owner’s gift private', async () => {
+  let chat!: ReturnType<typeof useBuildBuddyChat>;
+  function Probe({ owner }: { owner: string }) { chat = useBuildBuddyChat('pip', 'token', owner); return null; }
+  let respond!: (value: { reply: string; buildPrompt: string }) => void;
+  const plan = vi.spyOn(BuildBuddyApi, 'planGift').mockImplementationOnce(() => new Promise(resolve => { respond = resolve; })).mockResolvedValue({ reply: 'Who is it for?' });
+  await act(async () => root.render(<Probe owner="one" />));
+  let id!: number;
+  act(() => { id = chat.startTurn('A private gift idea', null, 'gift'); });
+  act(() => { void chat.requestGiftReply(id, 'A private gift idea', true); });
+  const signal = plan.mock.calls[0][2];
+  await act(async () => root.render(<Probe owner="two" />));
+  expect(signal.aborted).toBe(true);
+  await act(async () => respond({ reply: 'Old gift', buildPrompt: 'Old private gift prompt' }));
+  expect(chat.turns).toEqual([]);
+  act(() => { id = chat.startTurn('Gift', null, 'gift'); });
+  await act(async () => chat.requestGiftReply(id, 'Gift', true));
+  expect(plan.mock.calls[1][0].history).toEqual([]);
+});
