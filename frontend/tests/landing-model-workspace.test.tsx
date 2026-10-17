@@ -21,7 +21,9 @@ vi.mock('../src/hooks/useGenerationActivity', async () => ({
   useGenerationActivity: () => ({ generations: activity.rows, trackGeneration: activity.track, dismissGeneration: vi.fn() }),
 }));
 vi.mock('../src/services/localProvidersApi', () => ({ isLocalDevelopment: () => false }));
-vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ turns: [], startTurn: () => 1, requestReply: vi.fn(), updateTurn: buddy.updateTurn }) }));
+vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ turns: [], startTurn: () => 1,
+  routing: false, routeMessage: async () => ({ id: 1, intent: 'generate', confidence: 1 }),
+  requestReply: vi.fn(), updateTurn: buddy.updateTurn }) }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent }: { modelContent: string }) => <div data-testid="viewer">{modelContent}</div> }));
@@ -110,6 +112,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its so
   const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'edited', message: 'Started' });
   await act(async () => root.render(<LandingPage />));
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Model suggestions"] button')!.click());
+  expect(container.querySelector('.landing-page--conversation-started')).not.toBeNull();
   await submit(); await submit();
   if (endpoint === 'llmToBricks') {
     expect(llm).toHaveBeenCalledExactlyOnceWith({ sourceGenerationId: 'castle', prompt: 'Add a drawbridge' }, undefined);

@@ -71,10 +71,10 @@ export function LandingToolsMenu({ page }: { page: string }) {
           </Link>
         </li>)}
         <li className="sm:hidden">
-          <a href="https://github.com/jjohnson5253/brickbuilderai" target="_blank" rel="noopener noreferrer"
+          <a href="https://github.com/for-real-labs/brickbuilder-ai" target="_blank" rel="noopener noreferrer"
             className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
             onClick={() => {
-              const properties = { ...attribution(), destination: 'https://github.com/jjohnson5253/brickbuilderai', tool: 'GitHub' };
+              const properties = { ...attribution(), destination: 'https://github.com/for-real-labs/brickbuilder-ai', tool: 'GitHub' };
               posthog.capture('landing_header_tools_item_clicked', properties);
               posthog.capture('landing_header_github_clicked', properties);
               setOpen(false);

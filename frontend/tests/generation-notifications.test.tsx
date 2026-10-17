@@ -178,7 +178,7 @@ it('opens dashboard notifications through its profile menu with an unread indica
   </MemoryRouter>));
   expect(container.querySelector('header [data-testid="profile-notification-indicator"]')).not.toBeNull();
   expect(container.querySelector('header [aria-label="Notifications, 1 unread"]')).toBeNull();
-  await act(async () => container.querySelector<HTMLButtonElement>('header [aria-label="Account menu"]')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('header [aria-label="Profile"]')!.click());
   await act(async () => container.querySelector<HTMLButtonElement>('header [aria-label="Notifications, 1 unread"]')!.click());
   expect(container.querySelector('[aria-label="Model notifications"]')).not.toBeNull();
 });
@@ -269,7 +269,7 @@ it('hides snackbar alerts on account change and prevents a pending click from na
 const renderProfile = (onNavigate?: (path: string) => void) => act(async () => {
   root.render(<MemoryRouter><GenerationNotificationsProvider><ProfileMenu onNavigate={onNavigate} /></GenerationNotificationsProvider></MemoryRouter>);
 });
-const accountButton = () => container.querySelector<HTMLButtonElement>('[aria-label="Account menu"]')!;
+const accountButton = () => container.querySelector<HTMLButtonElement>('[aria-label="Profile"]')!;
 const notificationsButton = () => container.querySelector<HTMLButtonElement>('button[aria-label^="Notifications"]')!;
 const openProfileNotifications = async () => {
   await act(async () => accountButton().click());

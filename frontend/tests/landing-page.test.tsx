@@ -4,7 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act } from 'react-dom/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('posthog-js', () => ({
   default: {
@@ -72,6 +72,11 @@ import { LocalProvidersApiService, type LocalProviderStatus } from '../src/servi
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { PetProvider } from '../src/contexts/PetContext';
 import { PetCompanion } from '../src/components/PetCompanion';
+import { BuildBuddyApi } from '../src/services/buildBuddyApi';
+
+beforeEach(() => {
+  vi.spyOn(BuildBuddyApi, 'classify').mockResolvedValue({ intent: 'generate', confidence: 1 });
+});
 
 const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus => ({
   id, label: id, api_key_configured: false, cli_available: true, cli_connected: true,
@@ -736,10 +741,16 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     ]);
     const capture = (await import('posthog-js')).default.capture;
     expect(capture).toHaveBeenCalledWith('landing_header_tools_opened', expect.objectContaining({ navigation_layout: 'tools_dropdown' }));
-    const github = nav.querySelector<HTMLAnchorElement>('ul a[href="https://github.com/jjohnson5253/brickbuilderai"]')!;
+    const github = nav.querySelector<HTMLAnchorElement>('ul a[href="https://github.com/for-real-labs/brickbuilder-ai"]')!;
     expect(github.textContent).toBe('GitHub');
     expect(github.getAttribute('target')).toBe('_blank');
-    expect(container.querySelector('[aria-label="View BrickBuilder on GitHub"]')?.classList.contains('hidden')).toBe(true);
+    const starLink = container.querySelector<HTMLAnchorElement>('[aria-label="View BrickBuilder on GitHub"]')!;
+    expect(starLink.classList.contains('hidden')).toBe(true);
+    expect(starLink.href).toBe('https://github.com/for-real-labs/brickbuilder-ai');
+    expect(starLink.textContent).toBe('10');
+    expect(fetch).toHaveBeenCalledWith('https://api.github.com/repos/for-real-labs/brickbuilder-ai', {
+      headers: { Accept: 'application/vnd.github+json' },
+    });
     act(() => github.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
     expect(capture).toHaveBeenCalledWith('landing_header_github_clicked', {
       page: '/', navigation_layout: 'tools_dropdown', destination: github.href, tool: 'GitHub',

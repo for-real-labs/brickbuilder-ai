@@ -8,6 +8,7 @@ import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
 import { isAgentGeneration } from '../utils/agentGeneration';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
+import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
 export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
 
@@ -27,9 +28,12 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   const [returning] = useState(() => {
     try { return localStorage.getItem(BUDDY_SEEN_KEY) === 'true'; } catch { return false; }
   });
+  const [welcome] = useState(pickBuddyGreeting);
+  const greetingName = !authLoading && typeof username === 'string' ? username.trim().slice(0, 80) : '';
   useEffect(() => {
     try { localStorage.setItem(BUDDY_SEEN_KEY, 'true'); } catch { /* Chat also works without storage. */ }
-  }, []);
+    if (returning) rememberBuddyGreeting(welcome);
+  }, [returning, welcome]);
   const log = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
   useEffect(() => {
@@ -47,8 +51,8 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
       <PetPromptGreeting mode={modelName ? 'edit' : undefined} state={state} showPetSwitch={false}>
-        {modelName ? `Your ${modelName} is ready! What would you like to change?` : returning ? `Welcome back${!authLoading && username?.trim() ? `, ${username.trim()}` : ''}! What would you like to build?`
-          : `Hi, I’m ${pet.name} your build buddy! What would you like to build?`}
+        {modelName ? `Your ${modelName} is ready! What would you like to change?` : returning ? formatBuddyGreeting(welcome, greetingName)
+          : `Hi${greetingName ? `, ${greetingName}!` : ','} I’m ${pet.name} your build buddy! What would you like to build with LEGO?`}
       </PetPromptGreeting>
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
         <PetChatMessage user><p>{row.prompt || 'Image reference'}</p></PetChatMessage>

@@ -20,7 +20,7 @@ describe('BestAiLegoDesignTools2026Page', () => {
 
     expect(markup).toContain('Best AI LEGO design tools in 2026 (ranked)');
     expect(markup).toContain('<strong>BrickBuilder.ai</strong>');
-    expect(markup).toContain('https://github.com/jjohnson5253/brickbuilderai');
+    expect(markup).toContain('https://github.com/for-real-labs/brickbuilder-ai');
     expect(markup).toContain('https://www.sam3d.com/');
     expect(markup).toContain('https://trellis3d.github.io/');
     expect(markup).toContain('https://arxiv.org/abs/2509.14917');

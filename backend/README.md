@@ -26,6 +26,27 @@ The direct Python examples below use `.venv/bin/python`; on Windows use
 ## Endpoints
 Developer API keys are for local curl and server-side callers only. Browser clients should authenticate with Supabase JWT bearer tokens instead of sending `X-API-Key`.
 
+### Build buddy conversation
+
+Set `TYPESAFE_API_KEY` in the backend environment for Jev intent detection, and
+`OPENAI_API_KEY` for conversational replies and gift planning. Keys stay on the
+server. `BUILD_BUDDY_INTENT_MODEL` defaults to `jev-1.13.0`;
+`BUILD_BUDDY_MODEL` selects the reply model.
+
+The landing page calls `/build-buddy/intent` before acting on a message. Jev
+classifies it as generation, image upload, a question, casual chat, gift planning,
+or clarification using [TypeSafe's Choice API](https://docs.typesafe.ai/primitives/choice).
+A bare noun such as “castle” implies generation. Questions and chat go to
+`/build-buddy/reply`; upload commands offer the existing image picker. Gift
+planning keeps its conversation and explicit build-prompt handoff. Decisions
+below 0.5 confidence ask for clarification. Failed or invalid classification
+preserves the draft and never starts a build. Both endpoints share the existing
+per-identity short-window rate limit.
+
+Returning greetings are chosen once per visit from 1,000 local invitations in
+`frontend/src/data/buddy-welcome-greetings.json`. Each mentions LEGO or bricks;
+the current user's profile name is inserted after authentication settles.
+
 ### Brick Generation
 #### /imageToBricks
 ```bash

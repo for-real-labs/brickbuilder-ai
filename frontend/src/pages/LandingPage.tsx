@@ -5,7 +5,7 @@ import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
 import { usePromptTypewriter } from '../hooks/usePromptTypewriter';
-import { GIFT_PROMPT_SUGGESTION, IMAGE_PROMPT_SUGGESTION } from '../utils/promptExamples';
+import { GIFT_PROMPT_SUGGESTION } from '../utils/promptExamples';
 import { NotificationMenu } from "../components/NotificationMenu";
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { PetPromptGreeting } from '../components/PetCompanion';
@@ -403,7 +403,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     e.stopPropagation();
     setIsDragging(false);
     dragCounter.current = 0;
-    if (loading) return;
+    if (loading || buddyChat.routing) return;
     const file = e.dataTransfer.files?.[0];
     if (file) void selectImage(file, 'drop');
   };
@@ -450,7 +450,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   };
 
-  const onGenerate = async (requestedPrompt = prompt, requestedImage = imgFile) => {
+  const onGenerate = async (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number) => {
     // Prevent multiple simultaneous calls
     if (loading || preparingImage || checkingProviderRef.current || providerLogin) return;
 
@@ -505,7 +505,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     setActiveGenerationId(null);
     const generationStartedAt = new Date().toISOString();
     const submittedPrompt = requestedPrompt.trim();
-    const turnId = buddyChat.startTurn(submittedPrompt, requestedImage);
+    const turnId = existingTurnId ?? buddyChat.startTurn(submittedPrompt, requestedImage);
     
     try {
       const imageBase64 = requestedImage ? await fileToBase64(requestedImage) : undefined;
@@ -726,15 +726,15 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     }
   };
 
-  const submitModelEdit = async () => {
+  const submitModelEdit = async (existingTurnId?: number, requestedPrompt = prompt) => {
     const model = landingModel.model;
-    if (!model || modelBusy || editSubmittingRef.current || !prompt.trim()) return;
+    if (!model || modelBusy || editSubmittingRef.current || !requestedPrompt.trim()) return;
     editSubmittingRef.current = true;
     setEditSubmitting(true);
     setGenerationError(null);
-    const submittedPrompt = prompt.trim();
+    const submittedPrompt = requestedPrompt.trim();
     const sourceId = model.generation.generation_id;
-    const turnId = buddyChat.startTurn(submittedPrompt, null);
+    const turnId = existingTurnId ?? buddyChat.startTurn(submittedPrompt, null);
     buddyChat.requestReply(turnId, submittedPrompt);
     posthog.capture('landing_model_ai_edit_submitted', { generation_id: sourceId, prompt_length: submittedPrompt.length });
     try {
@@ -774,7 +774,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
     requestAnimationFrame(() => promptInputRef.current?.focus());
   };
 
-  const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile) => {
+  const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number) => {
     if (loading) return;
     posthog.capture('landing_generate_clicked', {
       page: window.location.pathname,
@@ -786,36 +786,70 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
       size,
       is_authenticated: Boolean(session),
     });
-    void onGenerate(requestedPrompt, requestedImage);
+    void onGenerate(requestedPrompt, requestedImage, existingTurnId);
   };
 
-  const startGiftPlanning = () => {
+  const startGiftPlanning = (message: string, id: number) => {
     setGiftPlanning(true);
     setPrompt('');
     clearSelectedImage();
     setInputValidationMessage(null);
-    const message = GIFT_PROMPT_SUGGESTION;
-    const id = buddyChat.startTurn(message, null, 'gift');
+    buddyChat.updateTurn(id, { kind: 'gift' });
     void buddyChat.requestGiftReply(id, message, true);
     promptInputRef.current?.focus();
   };
 
-  const sendGiftMessage = () => {
-    if (giftReplyPending || !prompt.trim()) return;
-    const message = prompt.trim();
-    const id = buddyChat.startTurn(message, null, 'gift');
+  const sendGiftMessage = (message: string, id: number) => {
+    if (giftReplyPending || !message) return;
+    buddyChat.updateTurn(id, { kind: 'gift' });
     setPrompt('');
     void buddyChat.requestGiftReply(id, message);
   };
 
-  const suggestImageUpload = () => {
+  const suggestImageUpload = (id: number) => {
     setGiftPlanning(false);
     setPrompt('');
-    const id = buddyChat.startTurn(IMAGE_PROMPT_SUGGESTION, null, 'upload');
     const desktop = window.matchMedia?.('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches ?? false;
-    buddyChat.updateTurn(id, { reply: desktop
+    buddyChat.updateTurn(id, { kind: 'upload', reply: desktop
       ? 'Drag and drop an image anywhere on this page, or click the Upload image button below to choose one.'
       : 'Click the Upload image button below to choose a picture you’d like to turn into LEGO.' });
+  };
+
+  const handleUserMessage = async () => {
+    if (buddyChat.routing || loading || preparingImage || (landingModel.model && modelBusy) || giftReplyPending) return;
+    if (!prompt.trim() && !imgFile) {
+      if (!landingModel.model) submitGeneration();
+      return;
+    }
+    const text = prompt.trim();
+    const image = imgFile;
+    const result = await buddyChat.routeMessage(text, image,
+      landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'Current model' : undefined,
+      giftPlanning);
+    if (!result) return;
+    if (result.intent === 'generate') {
+      setGiftPlanning(false);
+      if (landingModel.model) void submitModelEdit(result.id, text);
+      else submitGeneration(text, image, result.id);
+    } else if (result.intent === 'upload') {
+      posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'upload' });
+      suggestImageUpload(result.id);
+    } else if (result.intent === 'gift') {
+      if (giftPlanning && text.toLowerCase().replace(/[.!?]+$/, '') !== GIFT_PROMPT_SUGGESTION.toLowerCase()) {
+        sendGiftMessage(text, result.id);
+      } else {
+        posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'gift' });
+        startGiftPlanning(text, result.id);
+      }
+    } else {
+      setPrompt('');
+      try {
+        const imageBase64 = image ? await fileToBase64(image) : undefined;
+        buddyChat.requestReply(result.id, text, imageBase64, image?.type, result.intent);
+      } catch {
+        buddyChat.updateTurn(result.id, { reply: 'I couldn’t read that image. Please choose it again.' });
+      }
+    }
   };
 
   // After a successful login from the modal, automatically continue generation
@@ -829,7 +863,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
 
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
-  const sendLabel = landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
+  const sendLabel = buddyChat.routing ? 'Sending…' : landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
   const showTypewriter = !focused && !prompt && !imgFile && !imageLanding && !landingModel.model && !giftPlanning && !loading && !preparingImage;
   const typedPlaceholder = usePromptTypewriter(showTypewriter);
   const conversationStarted = !ldrawLanding && (buddyChat.turns.length > 0 || Boolean(landingModel.targetId) || loading
@@ -838,7 +872,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
   return (
     <div
       ref={landingViewportRef}
-      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : "landing-page text-slate-900"}
+      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${conversationStarted ? ' landing-page--conversation-started' : ''}`}
       style={{ backgroundColor: "#fbfbfd" }}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -926,15 +960,15 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
-              <LandingModelWorkspace model={landingModel.model} busy={modelBusy}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing}
                 onCreateNew={createNewModel} onSuggest={suggestion => {
                   setPrompt(suggestion);
                   promptInputRef.current?.focus();
                 }}>
               <BuildBuddyDialogue modelName={landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'model' : undefined} turns={buddyChat.turns} generations={displayedGenerations}
-                state={focused && !loading && !modelBusy ? 'listening' : petState} authLoading={authLoading}
-                username={session ? userProfile?.username || session.user.user_metadata?.username : null}
-                actionsDisabled={loading || preparingImage || modelBusy || giftReplyPending || Boolean(landingModel.model)}
+                state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
+                username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}
+                actionsDisabled={loading || buddyChat.routing || preparingImage || modelBusy || giftReplyPending || Boolean(landingModel.model)}
                 onUploadImage={() => onPickImage('buddy_dialogue')} onUseGiftIdea={idea => {
                   posthog.capture('build_buddy_gift_idea_selected');
                   setGiftPlanning(false);
@@ -946,31 +980,19 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
               className="w-full"
               onSubmit={event => {
                 event.preventDefault();
-                if (landingModel.model) void submitModelEdit();
-                else {
-                  const submittedPrompt = prompt.trim().replace(/[.!?]+$/, '').toLowerCase();
-                  if (!imgFile && submittedPrompt === GIFT_PROMPT_SUGGESTION.toLowerCase()) {
-                    if (giftReplyPending) return;
-                    posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'gift' });
-                    startGiftPlanning();
-                  } else if (!imgFile && submittedPrompt === IMAGE_PROMPT_SUGGESTION.toLowerCase()) {
-                    posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'upload' });
-                    suggestImageUpload();
-                  } else if (giftPlanning) sendGiftMessage();
-                  else submitGeneration();
-                }
+                void handleUserMessage();
               }}
             >
               {imageLanding && !landingModel.model && <>
                 <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
                 <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
-                <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || preparingImage}
+                <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || buddyChat.routing || preparingImage}
                   error={imageUploadError} onPick={() => onPickImage('image_upload_section')} onRemove={clearSelectedImage} />
               </>}
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <button type="button" aria-label="Upload image" title="Upload image"
-                    disabled={loading || preparingImage || Boolean(landingModel.model)} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
+                    disabled={loading || buddyChat.routing || preparingImage || Boolean(landingModel.model)} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
                     className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50">
                     <ImageIcon aria-hidden="true" className="h-5 w-5" />
                   </button>
@@ -995,11 +1017,11 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     }}
                     placeholder={giftPlanning ? `Tell ${pet.name} about your gift…` : landingModel.model ? `Tell ${pet.name} what you’d like to change…` : imageLanding ? "add optional instructions" : imgFile ? "Add optional image instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
                     className="pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-                    disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)}
+                    disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   <button
                     type="submit" aria-label={sendLabel} title={sendLabel}
-                    disabled={loading || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
+                    disabled={loading || buddyChat.routing || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
                     className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#f44336] text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ArrowUp aria-hidden="true" className="h-5 w-5" />
@@ -1027,7 +1049,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                     {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
                       <button key={value} type="button" value={value}
                         aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider || generationMethod === '3d'}
+                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d'}
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);
@@ -1048,12 +1070,12 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                       if (generationMethod === '3d') setGenerationMethod('llm');
                       if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
                     }
-                  }} disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider} />
+                  }} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} />
                 </div>
                 {localDevelopment && generationMethod === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>
-                    <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
+                    <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} className="min-h-11 rounded-full border border-slate-200 bg-white px-3" onChange={event => {
                       const provider = getLlmModelOption(llmModel)?.provider as NovaLoginProvider;
                       if (event.target.value === 'native') { delete providerChoices.current[provider]; void checkNovaConnection(llmModel); }
                       else { providerChoices.current[provider] = 'api_key'; setNovaOptions(current => ({ ...current, authMode: 'api_key' })); }
@@ -1064,7 +1086,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
                   </div>
                 )}
               </div>
-              <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
+              <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form>
               {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
@@ -1208,7 +1230,7 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
   useEffect(() => {
     let cancelled = false;
 
-    fetch("https://api.github.com/repos/jjohnson5253/brickbuilderai", {
+    fetch("https://api.github.com/repos/for-real-labs/brickbuilder-ai", {
       headers: { Accept: "application/vnd.github+json" },
     })
       .then((response) => {
@@ -1238,7 +1260,7 @@ function LandingHeader({ onLoginClick, page }: { onLoginClick: () => void; page:
 
   const githubStarLink = (
     <a
-      href="https://github.com/jjohnson5253/brickbuilderai"
+      href="https://github.com/for-real-labs/brickbuilder-ai"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="View BrickBuilder on GitHub"

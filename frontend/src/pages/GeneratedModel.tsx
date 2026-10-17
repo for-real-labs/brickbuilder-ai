@@ -100,7 +100,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
   React.useEffect(() => {
     let cancelled = false;
 
-    fetch("https://api.github.com/repos/jjohnson5253/brickbuilderai", {
+    fetch("https://api.github.com/repos/for-real-labs/brickbuilder-ai", {
       headers: { Accept: "application/vnd.github+json" },
     })
       .then((response) => {
@@ -130,7 +130,7 @@ function Header({ onGuardedNavigate }: HeaderProps) {
 
   const githubStarLink = (
     <a
-      href="https://github.com/jjohnson5253/brickbuilderai"
+      href="https://github.com/for-real-labs/brickbuilder-ai"
       target="_blank"
       rel="noopener noreferrer"
       aria-label="View BrickBuilder on GitHub"
