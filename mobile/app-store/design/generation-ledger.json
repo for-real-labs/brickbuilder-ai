@@ -1,0 +1,64 @@
+{
+  "budget_usd": 100,
+  "generated_on": "2026-10-17",
+  "provider": "fal.ai, signed-in Brave playground",
+  "requests": [
+    {
+      "purpose": "Warm Studio panorama",
+      "request_id": "01a14aa1-e0f6-78d2-a53b-d10937294166",
+      "model": "fal-ai/flux-2-flex",
+      "output_size": [
+        2048,
+        1536
+      ],
+      "cost_usd": 0.12505,
+      "file": "wallpapers/01-warm-studio.jpg",
+      "url": "https://v3b.fal.media/files/b/0aaec306/dwsvqfqPpjMbDaJD5Q4R8_oNCWNkHb.jpg"
+    },
+    {
+      "purpose": "Midnight Workshop panorama",
+      "request_id": "01a14aa3-04cf-7ee1-b9d1-b7ffae796409",
+      "model": "fal-ai/flux-2-flex",
+      "output_size": [
+        2048,
+        1536
+      ],
+      "cost_usd": 0.12505,
+      "file": "wallpapers/02-midnight-workshop.jpg",
+      "url": "https://v3b.fal.media/files/b/0aaec30d/g1LzJujhEWGX28zMOpDFC_Mj0Y0vgb.jpg"
+    },
+    {
+      "purpose": "Pastel Playground panorama",
+      "request_id": "01a14aa3-a90f-71b3-80a6-4fd901aea7c4",
+      "model": "fal-ai/flux-2-flex",
+      "output_size": [
+        2048,
+        1536
+      ],
+      "cost_usd": 0.12505,
+      "file": "wallpapers/03-pastel-playground.jpg",
+      "url": "https://v3b.fal.media/files/b/0aaec311/tYurAyiz-ux1IkXHTeC1u_1Uxq2CzO.jpg"
+    },
+    {
+      "purpose": "Pip welcome animation",
+      "request_id": "01a14aa4-f562-79c3-9735-61206b4a4305",
+      "model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "duration_seconds": 5,
+      "cost_usd": 0.35,
+      "file": "../video/sources/pip-welcome-fal.mp4",
+      "url": "https://v3b.fal.media/files/b/0aaec31d/OxqT8kN0_1Fg99CfaBUJS_output.mp4"
+    },
+    {
+      "purpose": "Original instrumental preview soundtrack",
+      "model": "fal-ai/elevenlabs/music",
+      "duration_seconds": 25,
+      "cost_usd": 0.6,
+      "file": "../video/sources/build-buddy-music-fal.mp3",
+      "url": "https://v3b.fal.media/files/b/0aaec325/5Tgh5deoiCEdQ05W1nmAO_music_generated.mp3",
+      "force_instrumental": true
+    }
+  ],
+  "total_usd": 1.32515,
+  "charged_retries": 0,
+  "notes": "FLUX price verified in request details for Warm Studio and Midnight Workshop; same settings for all three. Pip cost verified in request details. Music billed at the displayed $0.60 minimum per output minute. Existing in-app pet artwork and animations were reused without new generation charges. Pip welcome clip is a separate mascot asset; App Store previews use real app capture and the generated soundtrack."
+}

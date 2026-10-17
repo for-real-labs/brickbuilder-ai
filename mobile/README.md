@@ -104,3 +104,52 @@ for uploaded images, account data, purchases, and analytics; add support and
 privacy-policy URLs; and provide a review account or explain the email-code
 login flow in the review notes. Since the app renders server-hosted features,
 keep `https://brickbuilder.ai` available during review.
+
+## App Store media (Pip refresh)
+
+`app-store/review.html` presents the three connected Warm Studio screenshots
+and the white Pip app icon. The selected listing uses screenshots only, with
+no App Store preview videos. Open it locally or serve this `mobile/` directory
+on localhost. Each screenshot set has
+exactly three RGB portrait PNGs; ZIP files preserve their upload order.
+
+The screenshots use original pet artwork, the first fal.ai wallpaper concept
+(Warm Studio), and captures of the production app on iPhone 16 Pro and iPad
+Pro 13-inch.
+`app-store/design/capture-manifest.json` records capture provenance. The iPad
+model still is frame 35 of the original simulator recording. Source recordings
+remain in the local `brickbuilder-app-store-pip/raw` artifact directory; the
+trimmed capture clips are included under `app-store/video/sources/`.
+
+The unused video concepts are retained under `app-store/video/` as source
+artifacts and are excluded from the App Store Connect draft and review page.
+The two preview exports are 24 seconds, H.264 High Level 4.0, progressive,
+30 fps, with stereo AAC at 48 kHz. The iPhone export is 886 × 1920; iPad is
+1200 × 1600. They use actual app captures, explanatory text, and original music
+created on fal.ai. Idle shots hold their last captured frame when the simulator
+stops producing frames. Example prompts are typed without submitting a build
+or edit. The separate five-second fal.ai Pip welcome clip is supplied as a
+mascot asset; it is not uploaded as the App Store preview.
+
+`app-store/design/generation-ledger.json` records requests and spending: about
+$1.33 of the authorized $100 budget. Existing pet media was reused without
+additional generation charges. The icon uses the original high-resolution Pip
+art, centered on an opaque white 1024 × 1024 canvas.
+
+Regenerate with Python, Pillow, and numpy:
+
+```sh
+python app-store/design/icon.py
+python app-store/design/render.py
+python app-store/video/encode.py
+python -m unittest discover -s app-store/design/tests
+python -m unittest discover -s app-store/video/tests
+```
+
+The submitted App Store Connect version is **1.0.2 (4)**. Its three Warm Studio
+screenshots per device and listing copy are uploaded, with zero preview videos.
+The processed build includes the Pip icon.
+Jake approved submission on October 17, 2026. Apple reports **Waiting for Review**,
+with automatic release after approval. The submission verification is in
+`app-store/proof/app-store-submission.json`; `app-store/proof/app-store-draft.json`
+preserves the screenshot-only draft check before submission.

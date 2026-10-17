@@ -1,0 +1,36 @@
+{
+  "iphone": {
+    "landing": {
+      "start": 0
+    },
+    "buddies": {
+      "start": 0
+    },
+    "model": {
+      "start": 0
+    },
+    "community": {
+      "start": 0
+    },
+    "edit": {
+      "start": 0
+    }
+  },
+  "ipad": {
+    "landing": {
+      "start": 0
+    },
+    "buddies": {
+      "start": 0
+    },
+    "model": {
+      "start": 0
+    },
+    "community": {
+      "start": 0
+    },
+    "edit": {
+      "start": 0
+    }
+  }
+}

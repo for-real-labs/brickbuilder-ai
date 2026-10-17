@@ -1,0 +1,147 @@
+{
+  "verifiedAt": "2026-10-17T17:53:23.569Z",
+  "versionId": "f6ea1171-cafa-4156-87ae-46cc88987d41",
+  "version": "1.0.2",
+  "status": "PREPARE_FOR_SUBMISSION",
+  "releaseType": "AFTER_APPROVAL",
+  "build": {
+    "id": "3388a756-8882-45b9-883c-e7e7f5cac30f",
+    "number": "4",
+    "processingState": "VALID"
+  },
+  "screenshots": [
+    {
+      "display": "APP_IPAD_PRO_3GEN_129",
+      "count": 3,
+      "files": [
+        {
+          "id": "d8800019-6356-8adf-8000-e525dbcd8d68",
+          "name": "01-buddies.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "73129e219ad16268a9861b054d3bc73b"
+        },
+        {
+          "id": "f5c00019-6356-8adf-8011-42e43fcc3152",
+          "name": "02-create.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "65b14847d8f5c103c8e796996cbfbee2"
+        },
+        {
+          "id": "a9c00019-6356-8adf-801b-910edb3e4d2f",
+          "name": "03-explore.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "8c61b3d8e4eaea82a5cdfde08d0bb1c3"
+        }
+      ]
+    },
+    {
+      "display": "APP_IPHONE_61",
+      "count": 3,
+      "files": [
+        {
+          "id": "cf000019-6356-8adf-802e-7809bbeb5be5",
+          "name": "01-buddies.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "9aca94df19b89fe181e3a674cea91df0"
+        },
+        {
+          "id": "96800019-6356-8adf-803f-125089a6184a",
+          "name": "02-create.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "3cc08bba29391ba26b2a6613a9ef5061"
+        },
+        {
+          "id": "24400019-6356-8adf-8039-61cab35b30ad",
+          "name": "03-explore.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "60db75add8368973bf0ac12539a6f5f7"
+        }
+      ]
+    },
+    {
+      "display": "APP_IPHONE_67",
+      "count": 3,
+      "files": [
+        {
+          "id": "2f000019-6356-8adf-803d-7328ad757cfe",
+          "name": "01-buddies.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "5a81ef9b2c3c2e412ccbc8d24bfdc422"
+        },
+        {
+          "id": "ff400019-6356-8adf-802f-fcf786060370",
+          "name": "02-create.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "9aa266fbb6c428485685ef9006224ce7"
+        },
+        {
+          "id": "f0800019-6356-8adf-801a-670822d0ad87",
+          "name": "03-explore.png",
+          "state": {
+            "errors": [],
+            "warnings": null,
+            "state": "COMPLETE"
+          },
+          "checksum": "5f0b01bb10bdb0347fb81f6ae6c85cd9"
+        }
+      ]
+    }
+  ],
+  "previews": [
+    {
+      "display": "IPHONE_61",
+      "count": 0,
+      "files": []
+    },
+    {
+      "display": "IPHONE_67",
+      "count": 0,
+      "files": []
+    },
+    {
+      "display": "IPAD_PRO_3GEN_129",
+      "count": 0,
+      "files": []
+    }
+  ],
+  "metadata": {
+    "locale": "en-US",
+    "description": "Turn photos and text into LEGO-compatible 3D brick models with BrickBuilder AI — now with a little build buddy by your side.\n\nMEET YOUR BUILD BUDDY\nChoose Pip, the curious red brick; Nib, the clever beaver; or Clik, the imagination dragon. Describe your idea in the conversation box and follow along as your buddy responds and your build takes shape.\n\nFROM AN IDEA TO 3D BRICKS\nStart with a photo or a few words. Create LEGO-compatible brick models, explore them in 3D, and zoom in on the details.\n\nMAKE IT YOURS\nRefine your LEGO-compatible model with AI edits. Try another direction and keep building on your imagination.\n\nFIND YOUR NEXT BUILD\nExplore community creations for inspiration and discover what other builders are making.\n\n- Three build buddies: Pip, Nib and Clik.\n- A conversation box for your ideas and build progress.\n- LEGO-compatible 3D models from images or text.\n- Interactive 3D viewing and AI model edits.\n- Community builds to explore.\n\nLEGO® is a trademark of the LEGO Group. BrickBuilder AI is an independent app and is not sponsored, authorized, or endorsed by the LEGO Group.",
+    "promotionalText": "Meet Pip, Nib and Clik, your new build buddies. Describe an idea or add a photo, then create and refine LEGO-compatible 3D models with AI.",
+    "keywords": "brick,AI,3D,model,creator,photo,text,design,build,pet,creative,LEGO-compatible",
+    "whatsNew": "Meet your new build buddies: Pip, Nib and Clik.\n\n- Choose a buddy to accompany your creations.\n- Describe ideas in the new conversation box and follow your build's progress.\n- A fresh red Pip app icon on a clean white background.\n- Updated App Store screenshots and a new preview video."
+  },
+  "submittedForReview": false
+}

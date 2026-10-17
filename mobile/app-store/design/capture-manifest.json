@@ -1,0 +1,23 @@
+{
+  "app_version": "1.0.2",
+  "native_bundle": "ai.brickbuilder.app",
+  "web_origin": "https://brickbuilder.ai",
+  "model_url": "https://brickbuilder.ai/generated-model?id=923b8062-6a0c-4313-9d4e-8ce157b7a379",
+  "capture_method": "xcrun simctl screenshot and recordVideo",
+  "screenshots": [
+    "landing-ios.png",
+    "model-ios.png",
+    "edit-ios.png",
+    "community-ios.png",
+    "landing-ipad.png",
+    "model-ipad.png",
+    "edit-ipad.png",
+    "community-ipad.png"
+  ],
+  "devices": {
+    "iphone": "iPhone 16 Pro / iOS 18.3",
+    "ipad": "iPad Pro 13-inch (M4) / iOS 18.3"
+  },
+  "model_ipad_source": "Frame at 35 seconds of raw/ipad-model.mov, captured with xcrun simctl recordVideo.",
+  "notes": "Real production app, guest session. Treehouse and Blue lights are unsubmitted example prompts. UI pixels were only cropped and scaled; no interface was generated or redrawn."
+}
