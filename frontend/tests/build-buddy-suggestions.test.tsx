@@ -94,7 +94,7 @@ it('blocks duplicate routing and keeps the prompt recoverable when Jev is unavai
   await act(async () => reject(new Error('private upstream body')));
   expect(input().disabled).toBe(false);
   expect(input().value).toBe('castle');
-  expect(container.textContent).toContain('Please send it again');
+  expect(container.textContent).toContain('Can you try again?');
   expect(container.textContent).not.toContain('private upstream');
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
 });
@@ -271,8 +271,8 @@ it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) a
   type(IMAGE_PROMPT_SUGGESTION);
   await submit();
   const dialogue = container.querySelector('[role="log"]')!;
-  expect(dialogue.textContent).toContain('click the Upload image button below'.replace(/^c/, desktop ? 'c' : 'C'));
-  expect(dialogue.textContent?.includes('Drag and drop')).toBe(desktop);
+  expect(dialogue.textContent).toContain(desktop ? 'click Upload image below.' : 'Tap Upload image below');
+  expect(dialogue.textContent?.includes('Drop a picture here')).toBe(desktop);
   const picker = container.querySelector<HTMLInputElement>('input[type="file"]')!;
   const pick = vi.spyOn(picker, 'click');
   act(() => dialogue.querySelector<HTMLButtonElement>('button')!.click());
@@ -287,7 +287,7 @@ it('recovers from a gift chat failure without starting a build and starts a fres
   await act(async () => root.render(<LandingPage />));
   type(GIFT_PROMPT_SUGGESTION);
   await submit();
-  expect(container.textContent).toContain('Please send your answer again');
+  expect(container.textContent).toContain('Can you send it again?');
   expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')?.disabled).toBe(false);
   type('My dad'); await submit();
   type(GIFT_PROMPT_SUGGESTION);

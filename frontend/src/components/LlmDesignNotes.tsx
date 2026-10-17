@@ -10,7 +10,7 @@ export function LlmDesignNotes({ notes, summary, isThinking = false }: { notes: 
     <div role="status" aria-live="polite" aria-atomic="true" className="flex min-w-0 items-start gap-2.5 text-sm text-slate-500">
       <ActivityIcon aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
       <span className={`min-w-0 break-words ${isThinking ? 'build-thinking-shimmer' : ''}`}>
-        {activity || 'Waiting for design output'}
+        {activity || 'Getting your build ready'}
       </span>
     </div>
   );

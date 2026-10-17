@@ -12,7 +12,7 @@ export function BuddyCompletedBuilds({ onView }: { onView?: (id: string) => void
   if (!completed.length) return null;
 
   return <PetChatMessage state="celebrating">
-    <p>{completed.length === 1 ? 'You have a generation that’s done building.' : `You have ${completed.length} generations that are done building.`} Want to view {completed.length === 1 ? 'it' : 'them'}?</p>
+    <p>{completed.length === 1 ? 'Your build is ready!' : `Your ${completed.length} builds are ready!`} Want to see {completed.length === 1 ? 'it' : 'them'}?</p>
     {!showBuilds ? <button type="button" className="pet-chat-action" onClick={() => {
       setShowBuilds(true);
       posthog.capture('build_buddy_completed_builds_shown', { unread_count: completed.length });

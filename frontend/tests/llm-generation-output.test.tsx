@@ -17,11 +17,11 @@ it('speaks the pet failure message when a running build fails without displaying
   try {
     await act(async () => root.render(<LlmGenerationOutput generationId="job" active />));
     const message = container.querySelector('[role="status"]');
-    expect(message?.textContent).toBe('Woops! Something in the brickverse is down. Try again later');
+    expect(message?.textContent).toBe('Oops! I couldn’t make your build. Please try again.');
     expect(message?.closest('.pet-chat-message')).not.toBeNull();
     expect(container.textContent).not.toContain('Nova runtime');
     expect(container.textContent).not.toContain('Internal runtime diagnostics');
-    expect(container.textContent).not.toContain('reconnecting');
+    expect(container.textContent).not.toContain('checking for updates');
   } finally { act(() => root.unmount()); }
 });
 
@@ -47,11 +47,11 @@ it('reconnects without duplicating notes and aborts observation on unmount', asy
   const container = document.createElement('div');
   const root = createRoot(container);
   await act(async () => root.render(<LlmGenerationOutput generationId="job" active />));
-  expect(container.textContent).toContain('reconnecting');
+  expect(container.textContent).toContain('checking for updates');
   await act(async () => { await vi.advanceTimersByTimeAsync(1_000); });
   expect(container.textContent).toContain('Your build is ready');
   expect(container.textContent).not.toContain('BuildBuilding');
-  expect(container.textContent).not.toContain('reconnecting');
+  expect(container.textContent).not.toContain('checking for updates');
   const signal = watch.mock.calls[0][2];
   act(() => root.unmount());
   expect(signal.aborted).toBe(true);
@@ -64,7 +64,7 @@ it('shows a reconnect state for a failed output connection without failing the j
   const container = document.createElement('div');
   const root = createRoot(container);
   await act(async () => root.render(<LlmGenerationOutput generationId="job" active />));
-  expect(container.textContent).toContain('Your build keeps running');
+  expect(container.textContent).toContain('Your build is still going');
   expect(container.textContent).not.toContain('Generation Failed');
   act(() => root.unmount());
 });
@@ -79,7 +79,7 @@ it('speaks successive generated summaries as buddy messages while new raw output
   const root = createRoot(container);
   try {
     await act(async () => root.render(<LlmGenerationOutput generationId="job" active />));
-    expect(container.textContent).not.toContain('Planning your brick build');
+    expect(container.textContent).not.toContain('Planning your build');
     expect(container.textContent).not.toContain('Preparing the brick design');
     act(() => update({ text: 'Long reasoning about the tail radius.', summary: 'Shaping the lizard tail', status: 'processing' }));
     expect(container.querySelector('[role="status"]')?.textContent).toBe('I’m shaping the lizard tail…');

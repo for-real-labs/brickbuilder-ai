@@ -1,7 +1,7 @@
-export const BUILD_FAILURE_MESSAGE = 'Woops! Something in the brickverse is down. Try again later';
+export const BUILD_FAILURE_MESSAGE = 'Oops! I couldn’t make your build. Please try again.';
 
 /** Condense the latest streamed activity; never display the full reasoning log. */
-export function summarizeBuildProgress(notes: string, fallback = 'Planning your brick build'): string {
+export function summarizeBuildProgress(notes: string, fallback = 'Planning your build'): string {
   const phrases = notes.slice(-4000).replace(/```[\s\S]*?(?:```|$)/g, '')
     .split(/\n+|[.!?]\s+/)
     .map(line => line.replace(/^[\s#>*\-]+/, '').replace(/[*_\x60]/g, '').trim())

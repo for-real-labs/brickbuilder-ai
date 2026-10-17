@@ -849,8 +849,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setPrompt('');
     const desktop = window.matchMedia?.('(min-width: 768px) and (hover: hover) and (pointer: fine)').matches ?? false;
     buddyChat.updateTurn(id, { kind: 'upload', reply: desktop
-      ? 'Drag and drop an image anywhere on this page, or click the Upload image button below to choose one.'
-      : 'Click the Upload image button below to choose a picture you’d like to turn into LEGO.' });
+      ? 'Drop a picture here, or click Upload image below.'
+      : 'Tap Upload image below to pick a picture.' });
   };
 
   const handleUserMessage = async () => {

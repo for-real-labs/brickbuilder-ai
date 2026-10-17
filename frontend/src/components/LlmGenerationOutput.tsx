@@ -53,13 +53,13 @@ export function LlmGenerationOutput({ generationId, active, status }: { generati
   const currentStatus = status && ['completed', 'failed', 'cancelled'].includes(status) ? status : outputStatus;
   const activity = summary === undefined ? summarizeBuildProgress(notes, '') : summary.trim();
   const update = currentStatus === 'completed' ? 'Look what we made! Your build is ready.'
-    : currentStatus === 'cancelled' ? 'I’ve stopped this build. We can try another idea whenever you’re ready.'
+    : currentStatus === 'cancelled' ? 'I stopped this build. Want to try again?'
     : currentStatus === 'failed' ? BUILD_FAILURE_MESSAGE
     : activity ? `I’m ${activity.charAt(0).toLowerCase() + activity.slice(1).replace(/[.!…]+$/, '')}…`
-    : 'I’m getting your build ready. I’ll share updates here as I work.';
+    : 'I’m getting your build ready.';
   return <PetChatMessage state={currentStatus === 'completed' ? 'celebrating' : active && !finished ? 'building' : 'idle'}>
     <p role="status" className={active && !finished ? 'build-thinking-shimmer' : undefined}>{update}</p>
     {currentStatus === 'completed' && <a className="pet-chat-action relative z-20" href={getGeneratedModelPath(generationId, true)}>View model</a>}
-    {reconnecting && active && !finished && <p className="pet-chat-meta">I’m reconnecting to live updates. Your build keeps running.</p>}
+    {reconnecting && active && !finished && <p className="pet-chat-meta">I’m checking for updates. Your build is still going.</p>}
   </PetChatMessage>;
 }

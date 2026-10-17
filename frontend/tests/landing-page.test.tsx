@@ -113,7 +113,7 @@ describe('LandingPage', () => {
       expect(tools.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('dialog')?.open).toBe(true);
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Choose Clik"]')!.click());
-      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Hi, I’m Clik your build buddy!');
+      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Hi! I’m Clik.');
       expect(panel.querySelector('[aria-label^="Change Build Buddy"]')).toBeNull();
       expect(container.querySelector('dialog')).toBeNull();
       act(() => tools.click());
@@ -245,7 +245,7 @@ describe('LandingPage', () => {
         else reject(new Error('Submission failed'));
       });
       if (outcome === 'accepted') {
-        expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('Would you like an email when your build is ready?');
+        expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('Want an email when it’s ready?');
         expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
           generation_id: 'submitted', is_authenticated: false, source: 'build_buddy_chat',
         });
@@ -265,8 +265,8 @@ describe('LandingPage', () => {
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
         const dialogue = container.querySelector('[aria-label="Build buddy conversation"]')!;
         expect(dialogue.querySelector('[role="status"]')?.textContent)
-          .toBe('Woops! Something in the brickverse is down. Try again later');
-        expect(container.textContent?.split('Woops! Something in the brickverse is down. Try again later')).toHaveLength(2);
+          .toBe('Oops! I couldn’t make your build. Please try again.');
+        expect(container.textContent?.split('Oops! I couldn’t make your build. Please try again.')).toHaveLength(2);
         expect(container.textContent).not.toContain('Submission failed');
         expect(container.textContent).not.toContain('Generation Failed');
         expect(container.textContent).not.toContain('Try Again');
@@ -448,7 +448,7 @@ describe('LandingPage', () => {
       await act(async () => { create.click(); await vi.waitFor(() => expect(nova).toHaveBeenCalledTimes(1)); });
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({ imageBase64: btoa('reference'), imageMediaType: 'image/png', model: DEFAULT_LLM_MODEL }), undefined);
       expect(container.querySelector('[aria-label="Build buddy conversation"] [role="status"]')?.textContent)
-        .toBe('Woops! Something in the brickverse is down. Try again later');
+        .toBe('Oops! I couldn’t make your build. Please try again.');
       expect(container.textContent).not.toContain('Test Nova request');
       expect(container.textContent).not.toContain('Generation Failed');
       act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
@@ -563,7 +563,7 @@ describe('LandingPage', () => {
       }), undefined);
       if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
-      expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('sometimes up to 30 minutes');
+      expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('up to 30 minutes');
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
         generation_id: modeValue === 'nova' ? 'image-nova' : 'image-basic', is_authenticated: false, source: 'build_buddy_chat',
       });

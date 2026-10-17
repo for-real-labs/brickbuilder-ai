@@ -9,7 +9,7 @@ import { summarizeBuildProgress } from '../src/utils/buildProgress';
 describe('LlmDesignNotes', () => {
   it('shows a short activity with an icon and shimmer while thinking', () => {
     const markup = renderToStaticMarkup(<LlmDesignNotes notes="" isThinking />);
-    expect(markup).toContain('Planning your brick build');
+    expect(markup).toContain('Planning your build');
     expect(markup).toContain('build-thinking-shimmer');
     expect(markup).toContain('lucide-blocks');
     expect(markup).toContain('aria-atomic="true"');
@@ -28,7 +28,7 @@ describe('LlmDesignNotes', () => {
   });
   it('waits for a generated summary without displaying partial reasoning', () => {
     const markup = renderToStaticMarkup(<LlmDesignNotes notes="I should think about" summary="" isThinking />);
-    expect(markup).toContain('Waiting for design output');
+    expect(markup).toContain('Getting your build ready');
     expect(markup).not.toContain('I should think');
   });
   it.each([
@@ -77,7 +77,7 @@ describe('LlmDesignNotes', () => {
     ['Adding the roof. Checking the brick connections.', 'Checking the brick connections'],
     ['Adding the roof. Ch', 'Adding the roof'],
     ['Preparing the brick design…\n```json\n{"bricks": []}\n```', 'Preparing the brick design'],
-    ['', 'Planning your brick build'],
+    ['', 'Planning your build'],
   ])('summarizes current work in one to eight words: %s', (input, expected) => {
     const summary = summarizeBuildProgress(input);
     expect(summary).toBe(expected);
