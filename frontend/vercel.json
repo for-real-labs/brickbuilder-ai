@@ -13,11 +13,19 @@
     {"source": "/terms.html", "destination": "/terms", "permanent": true},
     {"source": "/login.html", "destination": "/login", "permanent": true},
     {"source": "/signup.html", "destination": "/signup", "permanent": true},
-    {"source": "/obj-to-glb.html", "destination": "/obj-to-glb", "permanent": true},
-    {"source": "/glb-to-obj.html", "destination": "/glb-to-obj", "permanent": true},
     {"source": "/glb-to-lego.html", "destination": "/glb-to-lego", "permanent": true},
+    {"source": "/glb-to-vox.html", "destination": "/glb-to-vox", "permanent": true},
+    {"source": "/glb-to-qb.html", "destination": "/glb-to-qb", "permanent": true},
+    {"source": "/glb-to-binvox.html", "destination": "/glb-to-binvox", "permanent": true},
+    {"source": "/glb-to-xyzrgb.html", "destination": "/glb-to-xyzrgb", "permanent": true},
+    {"source": "/obj-to-vox.html", "destination": "/obj-to-vox", "permanent": true},
+    {"source": "/obj-to-qb.html", "destination": "/obj-to-qb", "permanent": true},
+    {"source": "/obj-to-binvox.html", "destination": "/obj-to-binvox", "permanent": true},
+    {"source": "/obj-to-xyzrgb.html", "destination": "/obj-to-xyzrgb", "permanent": true},
     {"source": "/blog.html", "destination": "/blog", "permanent": true},
-    {"source": "/blog/:slug.html", "destination": "/blog/:slug", "permanent": true}
+    {"source": "/blog/:slug.html", "destination": "/blog/:slug", "permanent": true},
+    {"source": "/obj-to-glb.html", "destination": "/obj-to-glb", "permanent": true},
+    {"source": "/glb-to-obj.html", "destination": "/glb-to-obj", "permanent": true}
   ],
   "rewrites": [
     {"source": "/use-ai-to-edit-ldraw", "destination": "/use-ai-to-edit-ldraw.html"},
@@ -27,11 +35,19 @@
     {"source": "/terms", "destination": "/terms.html"},
     {"source": "/login", "destination": "/login.html"},
     {"source": "/signup", "destination": "/signup.html"},
-    {"source": "/obj-to-glb", "destination": "/obj-to-glb.html"},
-    {"source": "/glb-to-obj", "destination": "/glb-to-obj.html"},
     {"source": "/glb-to-lego", "destination": "/glb-to-lego.html"},
     {"source": "/blog", "destination": "/blog.html"},
     {"source": "/blog/:slug", "destination": "/blog/:slug.html"},
-    {"source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|use-ai-to-edit-ldraw\\.html|image-to-lego\\.html|photo-to-lego\\.html|glb-to-lego\\.html|obj-to-glb\\.html|glb-to-obj\\.html|login\\.html|signup\\.html|blog(?:/[^/]+)?\\.html|assets/).*)", "destination": "/index.html"}
+    {"source": "/glb-to-vox", "destination": "/glb-to-vox.html"},
+    {"source": "/glb-to-qb", "destination": "/glb-to-qb.html"},
+    {"source": "/glb-to-binvox", "destination": "/glb-to-binvox.html"},
+    {"source": "/glb-to-xyzrgb", "destination": "/glb-to-xyzrgb.html"},
+    {"source": "/obj-to-vox", "destination": "/obj-to-vox.html"},
+    {"source": "/obj-to-qb", "destination": "/obj-to-qb.html"},
+    {"source": "/obj-to-binvox", "destination": "/obj-to-binvox.html"},
+    {"source": "/obj-to-xyzrgb", "destination": "/obj-to-xyzrgb.html"},
+    {"source": "/obj-to-glb", "destination": "/obj-to-glb.html"},
+    {"source": "/glb-to-obj", "destination": "/glb-to-obj.html"},
+    {"source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|use-ai-to-edit-ldraw\\.html|image-to-lego\\.html|photo-to-lego\\.html|glb-to-lego\\.html|obj-to-glb\\.html|glb-to-obj\\.html|login\\.html|signup\\.html|blog(?:/[^/]+)?\\.html|glb-to-vox\\.html|glb-to-qb\\.html|glb-to-binvox\\.html|glb-to-xyzrgb\\.html|obj-to-vox\\.html|obj-to-qb\\.html|obj-to-binvox\\.html|obj-to-xyzrgb\\.html|assets/).*)", "destination": "/index.html"}
   ]
 }
