@@ -290,7 +290,7 @@ export function BrickBuilderWebView() {
           )}
         </View>
 
-        <View accessibilityRole="toolbar" style={styles.toolbar}>
+        {Platform.OS !== 'ios' && <View accessibilityRole="toolbar" style={styles.toolbar}>
           <ToolbarButton
             label="Back"
             symbol="‹"
@@ -317,7 +317,7 @@ export function BrickBuilderWebView() {
             />
           )}
           <ToolbarButton label="Reload" symbol="↻" onPress={reload} />
-        </View>
+        </View>}
       </View>
     </SafeAreaView>
   );

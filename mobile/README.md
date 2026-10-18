@@ -6,8 +6,8 @@ block editor all run from the existing React web code. The mobile project adds
 only native presentation concerns:
 
 - iOS safe-area and status-bar handling
-- a small native Create / Dashboard / Back / Reload toolbar
-- an allowlisted Request an app change control backed by the web flow
+- an edge-to-edge iOS web view with navigation in the web app and swipe-back gestures
+- a small native navigation toolbar on Android
 - persistent web authentication and browser storage
 - image/file upload support through the system picker
 - WebGL support for the model viewer and block editor
@@ -75,8 +75,9 @@ submitted build appears in TestFlight after Apple finishes processing it.
 
 ## In-app change requests
 
-For signed-in users on the private change-request allowlist, the native toolbar
-shows **Change**. It opens the same React form and Supabase Edge Function used
+For signed-in users on the private change-request allowlist, the web profile menu
+offers **Request an app change** (also available in the Android toolbar).
+It opens the same React form and Supabase Edge Function used
 by the website; the native app does not duplicate submission or approval
 logic.
 

@@ -95,6 +95,26 @@ function type(text: string) {
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 
+it('keeps the welcome dialogue centered until input and stays docked after clearing it', async () => {
+  await act(async () => root.render(<LandingPage />));
+  const shell = container.querySelector('.landing-page')!;
+  expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
+  act(() => input().focus());
+  expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
+  type('A little castle');
+  expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
+  type('');
+  expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
+});
+
+it('starts docked for a generation URL before the model finishes loading', async () => {
+  query.value = 'id=castle';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockReturnValue(new Promise(() => {}));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-page--conversation-started')).not.toBeNull();
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
+});
+
 it('starts fresh on reload and return despite cached models, failed history, background builds and unread notifications', async () => {
   sessionStorage.setItem('brickbuilder.landing-model:guest', 'saved-castle');
   activity.rows = [
