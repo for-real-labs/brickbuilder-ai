@@ -293,3 +293,13 @@ it('recovers from a gift chat failure without starting a build and starts a fres
   expect(plan.mock.calls[2][0].history).toEqual([]);
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
 });
+
+it('routes a pet download request to the tool and shows its missing-model error', async () => {
+ vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'export_csv', confidence: 0.95 });
+ await act(async () => root.render(<LandingPage />));
+ type('Download my parts as CSV'); await submit();
+ expect(container.textContent).toContain('Open or create a model first');
+ expect(BuildBuddyApi.reply).not.toHaveBeenCalled();
+ expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
+ expect(posthog.capture).toHaveBeenCalledWith('build_buddy_tool_failed', expect.objectContaining({ action: 'export_csv' }));
+});

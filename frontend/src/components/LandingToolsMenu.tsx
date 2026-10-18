@@ -1,6 +1,8 @@
-import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import React, { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { Box, ChevronDown, Download, Upload, Github, Image, LifeBuoy, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { usePet } from '../contexts/PetContext';
+import { BUDDY_TOOL_ROUTES, type BuddyToolIntent } from '../utils/buddyTools';
 import posthog from 'posthog-js';
 import { PetSwitchButton } from './PetCompanion';
 import { FeedbackWidget } from './FeedbackWidget';
@@ -20,7 +22,16 @@ export interface GenerationSettingsAction {
   onOpen: (returnFocusTo: HTMLButtonElement) => void;
 }
 
-export function LandingToolsMenu({ page, generationSettings, model, busy = false }: { page: string; generationSettings?: GenerationSettingsAction; model?: LandingModel | null; busy?: boolean }) {
+export interface LandingToolsHandle {
+  runTool: (action: BuddyToolIntent, expectedGenerationId?: string) => string;
+}
+
+export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
+  page: string; generationSettings?: GenerationSettingsAction; model?: LandingModel | null; busy?: boolean;
+}>(function LandingToolsMenu({ page, generationSettings, model, busy = false }, ref) {
+  const navigate = useNavigate();
+  const { openPicker } = usePet();
+  const focusChoices = useRef(false);
   const [open, setOpen] = useState(false);
   const [submenu, setSubmenu] = useState<'export' | 'import' | null>(null);
   const [exportError, setExportError] = useState<string | null>(null);
@@ -38,7 +49,65 @@ export function LandingToolsMenu({ page, generationSettings, model, busy = false
     posthog.capture('landing_header_tools_shown', { page, navigation_layout: 'tools_dropdown' });
   }, [page]);
 
-  useEffect(() => { setSubmenu(null); setExportError(null); }, [open, model?.generation.generation_id]);
+  useEffect(() => { if (!open) { setSubmenu(null); setExportError(null); } }, [open]);
+  useEffect(() => { setSubmenu(null); setExportError(null); }, [model?.generation.generation_id]);
+  useLayoutEffect(() => {
+    if (open && focusChoices.current) {
+      focusChoices.current = false;
+      (container.current?.querySelector<HTMLElement>('ul ul button:not(:disabled), ul ul a') ?? trigger.current)?.focus();
+    }
+  }, [open, submenu]);
+
+  const exportModel = (format: ModelExportFormat, source = 'tools_dropdown') => {
+    if (!model) throw new Error('Open or create a model first, then ask me to download it.');
+    if (busy) throw new Error('Your model is still updating. Try the download when it finishes.');
+    posthog.capture('landing_model_export_clicked', { ...attribution(), generation_id: model.generation.generation_id, format, source });
+    downloadModel(model.content, model.generation.name || model.generation.prompt || 'model', format);
+    setOpen(false);
+  };
+
+  useImperativeHandle(ref, () => ({ runTool(action, expectedGenerationId) {
+    try {
+      let reply: string;
+      const route = BUDDY_TOOL_ROUTES[action];
+      if (route) {
+        setOpen(false);
+        navigate(route);
+        reply = action === 'community' ? 'Opening Community.' : 'Choose your file on the page I opened.';
+      } else if (action.startsWith('export_')) {
+        if (expectedGenerationId !== model?.generation.generation_id) throw new Error('The selected model changed. Ask again to download the model now shown.');
+        exportModel(action.slice(7) as ModelExportFormat, 'buddy_chat');
+        reply = 'Starting your download.';
+      } else if (action === 'export' || action === 'import') {
+        focusChoices.current = true;
+        setOpen(true);
+        setSubmenu(action);
+        reply = action === 'export' ? 'Choose a download format in Tools.' : 'Choose LDraw or IO in Tools.';
+      } else {
+        setOpen(false);
+        switch (action) {
+          case 'generation_settings':
+            if (!generationSettings || !trigger.current) throw new Error('Generation settings are available on the builder page.');
+            generationSettings.onOpen(trigger.current);
+            reply = 'Generation settings are open.';
+            break;
+          case 'buddy_settings':
+            openPicker('buddy_chat', trigger.current);
+            reply = 'Choose your Build Buddy or motion settings.';
+            break;
+          case 'feedback': setFeedbackOpen(true); reply = 'The feedback form is open. Add your message and press Send.'; break;
+          case 'support': setSupportOpen(true); reply = 'The support form is open. Add your email and message, then press Send.'; break;
+          case 'github': window.location.assign('https://github.com/for-real-labs/brickbuilder-ai'); reply = 'Opening GitHub.'; break;
+          default: throw new Error('I couldn’t open that tool. Try the Tools menu.');
+        }
+      }
+      posthog.capture('build_buddy_tool_used', { action, has_model: Boolean(model) });
+      return reply;
+    } catch (error) {
+      posthog.capture('build_buddy_tool_failed', { action, has_model: Boolean(model) });
+      return error instanceof Error ? error.message : 'I couldn’t use that tool. Try the Tools menu.';
+    }
+  } }));
 
   useLayoutEffect(() => {
     if (!open) return;
@@ -97,10 +166,8 @@ export function LandingToolsMenu({ page, generationSettings, model, busy = false
               {([['ldraw', 'Download LDraw'], ['io', 'Download IO'], ['csv', 'Download parts list CSV'], ['xml', 'Download parts list XML']] as [ModelExportFormat, string][]).map(([format, label]) => <li key={format} className={format === 'csv' ? 'mt-1 border-t border-slate-200 pt-1' : ''}>
                 <button type="button" className={rowClass} disabled={!model || busy} onClick={() => {
                   if (!model) return;
-                  posthog.capture('landing_model_export_clicked', { ...attribution(), generation_id: model.generation.generation_id, format });
                   try {
-                    downloadModel(model.content, model.generation.name || model.generation.prompt || 'model', format);
-                    setOpen(false);
+                    exportModel(format);
                   } catch (error) {
                     setExportError(error instanceof Error ? error.message : 'Unable to download this model. Please try again.');
                     posthog.capture('landing_model_export_failed', { ...attribution(), generation_id: model.generation.generation_id, format });
@@ -148,19 +215,6 @@ export function LandingToolsMenu({ page, generationSettings, model, busy = false
         </li>
         <li role="separator" className="my-1 border-t border-slate-200" />
         <li>
-          <button type="button" aria-haspopup="dialog" aria-expanded={Boolean(feedbackOpen)}
-            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
-            onClick={() => {
-              const properties = { ...attribution(), tool: 'Feedback' };
-              posthog.capture('landing_header_tools_item_clicked', properties);
-              posthog.capture('landing_header_feedback_clicked', properties);
-              setFeedbackOpen(true);
-              setOpen(false);
-            }}>
-            <MessageSquare aria-hidden="true" className="h-4 w-4 shrink-0" />Feedback
-          </button>
-        </li>
-        <li>
           <Link to="/community" className={rowClass} onClick={() => {
             const properties = { ...attribution(), destination: '/community', tool: 'Community' };
             posthog.capture('landing_header_tools_item_clicked', properties);
@@ -182,6 +236,19 @@ export function LandingToolsMenu({ page, generationSettings, model, busy = false
         </li>
         <li role="separator" className="my-1 border-t border-slate-200" />
         <li>
+          <button type="button" aria-haspopup="dialog" aria-expanded={Boolean(feedbackOpen)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
+            onClick={() => {
+              const properties = { ...attribution(), tool: 'Feedback' };
+              posthog.capture('landing_header_tools_item_clicked', properties);
+              posthog.capture('landing_header_feedback_clicked', properties);
+              setFeedbackOpen(true);
+              setOpen(false);
+            }}>
+            <MessageSquare aria-hidden="true" className="h-4 w-4 shrink-0" />Feedback
+          </button>
+        </li>
+        <li>
           <button type="button" aria-haspopup="dialog" aria-expanded={Boolean(supportOpen)} className={rowClass} onClick={() => {
             posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Support' });
             setSupportOpen(true);
@@ -193,4 +260,4 @@ export function LandingToolsMenu({ page, generationSettings, model, busy = false
     {feedbackOpen !== null && <FeedbackWidget open={feedbackOpen} onClose={() => setFeedbackOpen(false)} returnFocusRef={trigger} />}
     {supportOpen !== null && <SupportDialog open={supportOpen} onClose={() => setSupportOpen(false)} generationId={model?.generation.generation_id} returnFocusRef={trigger} />}
   </div>;
-}
+});
