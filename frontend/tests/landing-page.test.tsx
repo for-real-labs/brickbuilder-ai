@@ -353,6 +353,19 @@ describe('LandingPage', () => {
       if (path !== 'use-ai-to-edit-ldraw') {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
         expect(container.querySelector('button[type="submit"][aria-label="Create"]')).not.toBeNull();
+        const help = container.querySelector('.landing-page-help')!;
+        expect(help.getAttribute('aria-hidden')).toBe('true');
+        const heading = container.querySelector('h1')!;
+        act(() => heading.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
+        expect(help.getAttribute('aria-hidden')).toBe('false');
+        expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
+        expect(help.querySelector('a')?.tabIndex).toBe(0);
+        const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
+        act(() => dialogue.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+        expect(help.getAttribute('aria-hidden')).toBe('true');
+        expect(help.querySelector('a')?.tabIndex).toBe(-1);
+        expect(container.querySelector('h1')).toBe(heading);
+        expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
       expect(container.querySelector('[aria-label="Community models"]')).toBeNull();
       expect(container.querySelector('#how-it-works')).toBeNull();

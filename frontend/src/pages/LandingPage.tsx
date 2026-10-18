@@ -18,6 +18,7 @@ import { LandingModelWorkspace, modelEditSuggestion } from '../components/Landin
 import { buddyPromptSuggestion } from '../utils/buddyPromptSuggestion';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { useLandingViewport } from '../hooks/useLandingViewport';
+import { useLandingHelp } from '../hooks/useLandingHelp';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -186,6 +187,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const landingViewportRef = useLandingViewport(!ldrawLanding);
+  const helpVisible = useLandingHelp(landingViewportRef, !ldrawLanding);
   const { session, userProfile, loading: authLoading } = useAuth();
   const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
@@ -928,7 +930,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   return (
     <div
       ref={landingViewportRef}
-      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${conversationStarted ? ' landing-page--conversation-started' : ''}`}
+      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${conversationStarted ? ' landing-page--conversation-started' : ''}${helpVisible ? ' landing-page--help-visible' : ''}`}
       style={{ backgroundColor: "#fbfbfd", '--landing-order-banner-height': `${orderBarHeight}px` } as React.CSSProperties}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -1269,7 +1271,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           </div>
         </main>
 
-      </div>
+        {!ldrawLanding && <div className="landing-page-help" aria-hidden={!helpVisible}>
+          Need help?{' '}
+          <a href="mailto:support@brickbuilder.ai" tabIndex={helpVisible ? 0 : -1}
+            onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a>
+        </div>
     </div>
   );
 }
