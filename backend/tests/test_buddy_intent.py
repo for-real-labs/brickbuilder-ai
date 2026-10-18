@@ -32,7 +32,7 @@ def test_jev_returns_only_a_routing_decision_with_bounded_context(monkeypatch, i
     assert payload['state'] == {'message': 'castle', 'has_image': False, 'current_model': 'My model',
                                 'gift_planning': True, 'recent_messages': history[-4:]}
     assert payload['questions']['intent']['type'] == 'choice'
-    assert set(payload['questions']['intent']['criteria']) == {'generate', 'upload', 'question', 'chat', 'gift', 'clarify'}
+    assert set(payload['questions']['intent']['criteria']) == {'generate', 'upload', 'question', 'chat', 'gift', 'clarify', *routing.TOOL_CRITERIA}
 
 
 def test_ambiguous_decisions_request_clarification_instead_of_starting_a_build(monkeypatch):
@@ -149,3 +149,34 @@ def test_invalid_backup_decisions_still_fail_without_generation(monkeypatch, rep
     with pytest.raises(HTTPException) as exc:
         asyncio.run(routing.classify_buddy_message('castle', [], False, None))
     assert exc.value.status_code == 503
+
+
+@pytest.mark.parametrize('intent', routing.TOOL_CRITERIA)
+def test_tool_requests_return_only_allowlisted_actions(monkeypatch, intent):
+    monkeypatch.setenv('TYPESAFE_API_KEY', 'test-key')
+    post = AsyncMock(return_value={'answers': {'intent': {'choice': intent, 'confidence': 0.95}}})
+    monkeypatch.setattr(routing, 'post_json', post)
+    result = asyncio.run(routing.classify_buddy_message('Please use this tool', [], False, 'Castle'))
+    assert result.model_dump() == {'intent': intent, 'confidence': 0.95}
+    instructions = post.await_args.args[3]['questions']['intent']['instructions']
+    assert 'Pure explanations' in instructions
+    assert 'negated' in instructions
+    assert 'cannot send messages' in instructions
+
+
+@pytest.mark.parametrize('intent', routing.TOOL_CRITERIA)
+def test_uncertain_tool_requests_ask_before_acting(monkeypatch, intent):
+    monkeypatch.setenv('TYPESAFE_API_KEY', 'test-key')
+    monkeypatch.setattr(routing, 'post_json', AsyncMock(return_value={'answers': {'intent': {'choice': intent, 'confidence': 0.7}}}))
+    assert asyncio.run(routing.classify_buddy_message('do that', [], False, None)).intent == 'clarify'
+
+
+def test_reply_knowledge_explains_tools_without_claiming_actions(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-key')
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': 'Use Tools → Export.'}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(prompt='How does export work?', mode='question')))
+    instructions = post.await_args.args[3]['instructions']
+    for feature in ['Studio IO', 'BrickLink XML', 'Generation settings', 'Build Buddy settings', 'Community', 'GitHub', 'Feedback', 'Support']:
+        assert feature in instructions
+    assert 'must review and submit' in instructions

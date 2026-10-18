@@ -12,7 +12,30 @@ from .llm_tool_conversation import OPENAI_URL, post_json
 
 logger = logging.getLogger(__name__)
 
-BuddyIntent = Literal['generate', 'upload', 'question', 'chat', 'gift', 'clarify']
+TOOL_CRITERIA = {
+    'export': 'Show download/export format choices when no specific format was requested, including a parts list without a format.',
+    'export_ldraw': 'Download or export the current model as LDraw (.ldr or .mpd).',
+    'export_io': 'Download or export the current model as a Studio .io file.',
+    'export_csv': 'Download the current model’s parts list as CSV.',
+    'export_xml': 'Download the current model’s parts list as BrickLink XML.',
+    'import': 'Open model import choices when the format is unspecified. This is not reference image upload.',
+    'import_ldraw': 'Import, upload or open an existing LDraw (.ldr/.mpd) model file.',
+    'import_io': 'Import, upload or open an existing Studio .io model file.',
+    'convert_image': 'Open the Image to LEGO converter. Choosing a reference photo instead is upload.',
+    'convert_glb': 'Open the GLB to LEGO converter for an existing .glb model.',
+    'convert_obj': 'Open the OBJ to LEGO converter for an existing .obj model.',
+    'generation_settings': 'Open generation settings to choose model generation options. Do not change any option automatically.',
+    'buddy_settings': 'Open Build Buddy settings to change the pet or its motion. Do not choose a pet automatically.',
+    'community': 'Open the community gallery or browse other people’s models.',
+    'github': 'Open BrickBuilder’s GitHub repository or source code.',
+    'feedback': 'Open the feedback form to report a bug, request a feature or leave feedback. Never submit it automatically.',
+    'support': 'Open the support form to contact support or get account/order help. Never send an email automatically.',
+}
+
+BuddyIntent = Literal['generate', 'upload', 'question', 'chat', 'gift', 'clarify',
+    'export', 'export_ldraw', 'export_io', 'export_csv', 'export_xml',
+    'import', 'import_ldraw', 'import_io', 'convert_image', 'convert_glb', 'convert_obj',
+    'generation_settings', 'buddy_settings', 'community', 'github', 'feedback', 'support']
 
 
 class IntentDecision(BaseModel):
@@ -30,7 +53,16 @@ INTENT_QUESTION = {
         'A bare object name or noun phrase implies generating that object in LEGO. '
         'A polite request such as "can you build a castle?" requests generation; '
         '"how do you build a castle?" asks for an explanation. '
-        'Only generate when a concrete build subject or an edit to the current model is specified.'
+        'Only generate when a concrete build subject or an edit to the current model is specified. '
+        'The Tools dropdown supports the tool actions below. Route direct requests and polite action questions '
+        '("can you download my parts as CSV?", "take me to community", "where can I contact support?") '
+        'to the matching tool action. Pure explanations such as "what is IO?", "how does XML export work?", '
+        'or "what are generation settings?" are question. Do not execute a tool just because it is mentioned. '
+        'Tool actions take precedence over generation for exporting, importing, settings and navigation. '
+        'Use clarify for conflicting actions, multiple distinct actions, unsupported conversions or a negated '
+        'action without another clear request. "Do not download; explain CSV" is question. '
+        'You can only open forms, pickers and settings; you cannot send messages, alter account data, '
+        'choose files, change settings or publish community models.'
     ),
     'criteria': {
         'generate': 'Create a specific LEGO model, convert the attached image, or edit the current model. '
@@ -39,7 +71,7 @@ INTENT_QUESTION = {
                     'An image by itself requests generation. Excludes questions about building and negated requests.',
         'upload': 'The user wants to choose or upload a reference image, such as "upload an image", '
                   '"let me add a photo", or "turn this image into LEGO" when no image is attached. '
-                  'Excludes asking how uploads work.',
+                  'Excludes model-file imports and asking how uploads work.',
         'question': 'A question seeking an answer, explanation or clarification, including questions about '
                     'LEGO, bricks, app features, the current model, or earlier replies. '
                     'Examples: "what bricks do you use?", "how do I upload?", "what do you mean?".',
@@ -51,6 +83,7 @@ INTENT_QUESTION = {
         'clarify': 'The intended action or build subject is unclear, incomplete, unsupported or ambiguous. '
                    'Examples: "create something", "do it" without a concrete subject, an unknown app '
                    'command, or "yes" without a clear request. Ask a focused question before acting.',
+        **TOOL_CRITERIA,
     },
 }
 
@@ -103,7 +136,7 @@ async def classify_buddy_message(prompt: str, history: list[dict], has_image: bo
     try:
         if decision is None:
             decision = await classify_with_chat(state)
-        if decision.confidence < 0.5:
+        if decision.confidence < (0.75 if decision.intent in TOOL_CRITERIA else 0.5):
             decision.intent = 'clarify'
         return decision
     except Exception:

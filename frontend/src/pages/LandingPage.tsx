@@ -1,5 +1,6 @@
 import { startPolling } from '../utils/polling';
-import { LandingToolsMenu, type GenerationSettingsAction } from '../components/LandingToolsMenu';
+import { LandingToolsMenu, type LandingToolsHandle, type GenerationSettingsAction } from '../components/LandingToolsMenu';
+import { isBuddyToolIntent } from '../utils/buddyTools';
 import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
@@ -204,6 +205,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [notificationPromptId, setNotificationPromptId] = useState<string | null>(null);
   const [orderBarHeight, setOrderBarHeight] = useState(0);
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
+  const toolsRef = useRef<LandingToolsHandle>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
   const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsReturnFocus = useRef<HTMLButtonElement | null>(null);
@@ -870,7 +872,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'Current model' : undefined,
       giftPlanning);
     if (!result) return;
-    if (result.intent === 'generate') {
+    if (isBuddyToolIntent(result.intent)) {
+      setPrompt('');
+      setGiftPlanning(false);
+      const reply = toolsRef.current?.runTool(result.intent, landingModel.model?.generation.generation_id)
+        || 'I couldn’t open that tool. Try the Tools menu.';
+      buddyChat.updateTurn(result.id, { reply });
+    } else if (result.intent === 'generate') {
       setGiftPlanning(false);
       if (landingModel.model) void submitModelEdit(result.id, text);
       else submitGeneration(text, image, result.id);
@@ -977,7 +985,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }} />
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
-        <LandingHeader model={landingModel.model} modelBusy={modelBusy} createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: modelBusy || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
+        <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: modelBusy || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
           generationSettings={ldrawLanding ? undefined : {
             open: settingsOpen,
             controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
@@ -1284,7 +1292,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   );
 }
 
-function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy }: { model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
+function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy, toolsRef }: { toolsRef?: React.RefObject<LandingToolsHandle | null>; model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
 
@@ -1362,7 +1370,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         {githubStarLink}
-        <LandingToolsMenu page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
+        <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
         {showProfileMenu ? (
           // Logged in or no Supabase: show GitHub stars and account dropdown
           <>

@@ -505,3 +505,13 @@ it.each([{ ok: false }, { ok: true, reply: '' }, { ok: true, reply: 42 }])('reje
   vi.mocked(apiFetch).mockResolvedValue({ ok: result.ok, json: async () => ({ reply: result.reply }) } as Response);
   await expect(BuildBuddyApi.modelGreeting({ generationId: 'castle', pet: 'pip' }, undefined, new AbortController().signal)).rejects.toThrow();
 });
+
+it.each(['export', 'export_ldraw', 'export_io', 'export_csv', 'export_xml', 'import', 'import_ldraw', 'import_io',
+  'convert_image', 'convert_glb', 'convert_obj', 'generation_settings', 'buddy_settings', 'community', 'github', 'feedback', 'support'])('accepts the %s tool intent only with sufficient confidence', async intent => {
+  const request = { prompt: 'Use the tool', history: [], hasImage: false };
+  const signal = new AbortController().signal;
+  vi.mocked(apiFetch).mockResolvedValueOnce({ ok: true, json: async () => ({ intent, confidence: 0.95 }) } as Response);
+  await expect(BuildBuddyApi.classify(request, undefined, signal)).resolves.toEqual({ intent, confidence: 0.95 });
+  vi.mocked(apiFetch).mockResolvedValueOnce({ ok: true, json: async () => ({ intent, confidence: 0.7 }) } as Response);
+  await expect(BuildBuddyApi.classify(request, undefined, signal)).resolves.toEqual({ intent: 'clarify', confidence: 0.7 });
+});

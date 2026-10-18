@@ -1,4 +1,5 @@
 import { apiFetch } from './apiFetch';
+import { BUDDY_TOOL_INTENTS, isBuddyToolIntent, type BuddyToolIntent } from '../utils/buddyTools';
 
 export interface BuddyHistoryMessage { role: 'user' | 'assistant'; text: string }
 export interface BuddyReplyRequest {
@@ -11,7 +12,7 @@ export interface BuddyReplyRequest {
 }
 
 export interface GiftReply { reply: string; buildPrompt?: string }
-export type BuddyIntent = 'generate' | 'upload' | 'question' | 'chat' | 'gift' | 'clarify';
+export type BuddyIntent = BuddyToolIntent | 'generate' | 'upload' | 'question' | 'chat' | 'gift' | 'clarify';
 export interface BuddyIntentDecision { intent: BuddyIntent; confidence: number }
 
 const mode = import.meta.env.VITE_API_MODE || 'local';
@@ -61,10 +62,10 @@ export const BuildBuddyApi = {
     });
     if (!response.ok) throw new Error('Message routing is unavailable.');
     const data = await response.json();
-    const intents: BuddyIntent[] = ['generate', 'upload', 'question', 'chat', 'gift', 'clarify'];
+    const intents: BuddyIntent[] = ['generate', 'upload', 'question', 'chat', 'gift', 'clarify', ...BUDDY_TOOL_INTENTS];
     if (!intents.includes(data.intent) || typeof data.confidence !== 'number' || !Number.isFinite(data.confidence)
       || data.confidence < 0 || data.confidence > 1) throw new Error('Invalid message routing response.');
-    return { intent: data.confidence < 0.5 ? 'clarify' : data.intent, confidence: data.confidence };
+    return { intent: data.confidence < (isBuddyToolIntent(data.intent) ? 0.75 : 0.5) ? 'clarify' : data.intent, confidence: data.confidence };
   },
   async reply(request: BuddyReplyRequest, authToken: string | undefined, signal: AbortSignal): Promise<string> {
     return (await sendReply(request, authToken, signal)).reply;
