@@ -151,7 +151,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
     </button>
     {open && <div id={panelId} style={{ left: panelLeft }} className="absolute top-full z-[60] mt-2 max-h-[calc(var(--landing-viewport-height,100dvh)-5rem)] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
       <ul aria-label="Tools" className="m-0 list-none p-0">
-        {(['export', 'import'] as const).map(action => <li key={action}>
+        {(['import', 'export'] as const).map(action => <li key={action}>
           <button type="button" className={rowClass} aria-expanded={submenu === action} aria-controls={`${panelId}-${action}`}
             onClick={() => {
               posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: action === 'export' ? 'Export' : 'Import' });

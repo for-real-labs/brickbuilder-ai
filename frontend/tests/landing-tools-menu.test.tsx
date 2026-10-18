@@ -18,10 +18,10 @@ afterEach(() => { act(() => root.unmount()); host.remove(); vi.restoreAllMocks()
 const mount = (selected: LandingModel | null = model, busy = false) => act(() => root.render(<MemoryRouter><LandingToolsMenu page="/" model={selected} busy={busy}
   generationSettings={{ open: false, controls: 'settings', onOpen: vi.fn() }} /></MemoryRouter>));
 
-it('puts export/import first, separates groups, and keeps Community/GitHub together above Feedback/Support', () => {
+it('puts Import first and Export second, separates groups, and keeps Community/GitHub together above Feedback/Support', () => {
   mount(); act(() => button('Tools').click());
   const rows = [...host.querySelectorAll('ul[aria-label="Tools"] > li')];
-  expect(rows.map(row => row.textContent)).toEqual(['Export', 'Import', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Generation settings', 'Build Buddy', '', 'Community', 'GitHub', '', 'Feedback', 'Support']);
+  expect(rows.map(row => row.textContent)).toEqual(['Import', 'Export', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Generation settings', 'Build Buddy', '', 'Community', 'GitHub', '', 'Feedback', 'Support']);
   expect(host.querySelectorAll('[role="separator"]')).toHaveLength(4);
   expect(button('Export').querySelector('.lucide-download')).not.toBeNull();
   act(() => button('Import').click());
