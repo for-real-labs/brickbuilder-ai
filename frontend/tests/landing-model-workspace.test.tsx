@@ -59,6 +59,7 @@ const generation = (id: string, endpoint = 'novaToBricks'): GetGenerationRespons
   xyzrgb_url: null, problematic_xyzrgb_url: null, error_message: null,
 });
 beforeEach(() => {
+  Object.defineProperty(HTMLDialogElement.prototype, 'show', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = false; }) });
   auth.isSupabaseConfigured = false;
@@ -635,4 +636,66 @@ it('disables instruction toggling while editing and resets to the model when the
   expect(button.getAttribute('aria-pressed')).toBe('false');
   expect(button.textContent).toBe('Show instructions');
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('rover');
+});
+
+it.each(['model', 'instructions'] as const)('expands %s and returns with the same viewer and focus', async view => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
+  if (view === 'instructions') await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  const content = container.querySelector(view === 'model' ? '[data-testid="viewer"]' : '.landing-instructions-view');
+  const expand = container.querySelector<HTMLButtonElement>('.landing-view-expand')!;
+  const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  const back = container.querySelector<HTMLButtonElement>('.landing-view-back')!;
+  const overflow = document.body.style.overflow;
+  expect(expand.getAttribute('aria-label')).toBe(view === 'model' ? 'Expand 3D viewer' : 'Expand instructions');
+  await act(async () => expand.click());
+  expect(dialog.showModal).toHaveBeenCalled();
+  expect(dialog.getAttribute('aria-modal')).toBe('true');
+  expect(dialog.dataset.expanded).toBe('true');
+  expect(document.activeElement).toBe(back);
+  expect(back.textContent).toBe('Back to builder');
+  expect(document.body.style.overflow).toBe('hidden');
+  expect(dialog.contains(content)).toBe(true);
+  expect(expand.hidden).toBe(true);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_expanded', { generation_id: 'castle', view, source: 'viewer_footer' });
+  await act(async () => back.click());
+  expect(dialog.dataset.expanded).toBe('false');
+  expect(dialog.open).toBe(true);
+  expect(dialog.getAttribute('aria-modal')).toBeNull();
+  expect(dialog.contains(content)).toBe(true);
+  expect(document.body.style.overflow).toBe(overflow);
+  expect(document.activeElement).toBe(expand);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_collapsed', { generation_id: 'castle', view, source: 'back_button' });
+  expect(navigate).not.toHaveBeenCalled();
+});
+
+it('supports Escape and view switching while expanded, then restores scrolling on unmount', async () => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
+  const expand = container.querySelector<HTMLButtonElement>('.landing-view-expand')!;
+  const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  await act(async () => expand.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  expect(dialog.dataset.expanded).toBe('true');
+  expect(dialog.getAttribute('aria-label')).toBe('Expanded instructions');
+  const cancel = new Event('cancel', { cancelable: true });
+  act(() => dialog.dispatchEvent(cancel));
+  expect(cancel.defaultPrevented).toBe(true);
+  expect(dialog.dataset.expanded).toBe('false');
+  expect(dialog.dataset.view).toBe('instructions');
+  expect(document.activeElement).toBe(expand);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_collapsed', { generation_id: 'castle', view: 'instructions', source: 'escape' });
+  document.body.style.overflow = 'clip';
+  await act(async () => expand.click());
+  act(() => root.render(null));
+  expect(document.body.style.overflow).toBe('clip');
+  document.body.style.overflow = '';
+});
+
+it('returns to the inline model when the selected build changes while expanded', async () => {
+  const render = (id: string) => act(async () => root.render(<LandingModelWorkspace model={{ generation: generation(id), content: id }} busy={false}>{null}</LandingModelWorkspace>));
+  await render('castle');
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
+  await render('rover');
+  expect(container.querySelector('.landing-model-panel')?.getAttribute('data-expanded')).toBe('false');
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('rover');
+  expect(document.body.style.overflow).toBe('');
 });
