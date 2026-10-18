@@ -346,6 +346,19 @@ and edit pipeline to remote AI clients. See [deployment, OAuth, and client setup
 It is disabled until `MCP_ENABLED=true` and the documented Supabase/Railway
 configuration is complete.
 
+## Support form emails
+
+Tools → Support sends to `support@brickbuilder.ai` through `POST /support-email`.
+It uses `RESEND_API_KEY` and `SUPPORT_EMAIL_FROM`, falling back to
+`GENERATION_NOTIFICATION_FROM` for the sender. The entered address is Reply-To.
+No database migration is needed.
+
+The backend derives the user ID from account or guest authentication and includes
+the currently viewed accessible generation, or the latest three owned models.
+Model lookup failures do not block support mail. Provider failures return a
+retryable error; the form retains the draft and offers the direct email link.
+Tests mock the email provider and do not send real messages.
+
 ## Generation completion emails
 
 Landing cards let each owner request one email for an active generation. Signed-in

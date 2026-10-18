@@ -1,9 +1,10 @@
 import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
-import { Box, ChevronDown, Download, Upload, Github, Image, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
+import { Box, ChevronDown, Download, Upload, Github, Image, LifeBuoy, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import posthog from 'posthog-js';
 import { PetSwitchButton } from './PetCompanion';
 import { FeedbackWidget } from './FeedbackWidget';
+import { SupportDialog } from './SupportDialog';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { downloadModel, type ModelExportFormat } from '../utils/modelExport';
 
@@ -25,6 +26,7 @@ export function LandingToolsMenu({ page, generationSettings, model, busy = false
   const [exportError, setExportError] = useState<string | null>(null);
   const rowClass = 'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336] disabled:cursor-not-allowed disabled:opacity-40';
   const [feedbackOpen, setFeedbackOpen] = useState<boolean | null>(null);
+  const [supportOpen, setSupportOpen] = useState<boolean | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panelId = useId();
@@ -178,8 +180,17 @@ export function LandingToolsMenu({ page, generationSettings, model, busy = false
             <Github aria-hidden="true" className="h-4 w-4 shrink-0" />GitHub
           </a>
         </li>
+        <li role="separator" className="my-1 border-t border-slate-200" />
+        <li>
+          <button type="button" aria-haspopup="dialog" aria-expanded={Boolean(supportOpen)} className={rowClass} onClick={() => {
+            posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Support' });
+            setSupportOpen(true);
+            setOpen(false);
+          }}><LifeBuoy aria-hidden="true" className="h-4 w-4 shrink-0" />Support</button>
+        </li>
       </ul>
     </div>}
     {feedbackOpen !== null && <FeedbackWidget open={feedbackOpen} onClose={() => setFeedbackOpen(false)} returnFocusRef={trigger} />}
+    {supportOpen !== null && <SupportDialog open={supportOpen} onClose={() => setSupportOpen(false)} generationId={model?.generation.generation_id} returnFocusRef={trigger} />}
   </div>;
 }

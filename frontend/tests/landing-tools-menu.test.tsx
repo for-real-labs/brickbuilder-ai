@@ -21,8 +21,8 @@ const mount = (selected: LandingModel | null = model, busy = false) => act(() =>
 it('puts export/import first, separates groups, and keeps Community/GitHub last', () => {
   mount(); act(() => button('Tools').click());
   const rows = [...host.querySelectorAll('ul[aria-label="Tools"] > li')];
-  expect(rows.map(row => row.textContent)).toEqual(['Export', 'Import', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Generation settings', 'Build Buddy', '', 'Feedback', 'Community', 'GitHub']);
-  expect(host.querySelectorAll('[role="separator"]')).toHaveLength(3);
+  expect(rows.map(row => row.textContent)).toEqual(['Export', 'Import', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Generation settings', 'Build Buddy', '', 'Feedback', 'Community', 'GitHub', '', 'Support']);
+  expect(host.querySelectorAll('[role="separator"]')).toHaveLength(4);
   expect(button('Export').querySelector('.lucide-download')).not.toBeNull();
   act(() => button('Import').click());
   expect([...host.querySelectorAll('[aria-label="Import options"] a')].map(node => node.getAttribute('href'))).toEqual(['/use-ai-to-edit-ldraw?format=ldraw', '/use-ai-to-edit-ldraw?format=io']);
