@@ -19,8 +19,8 @@
 .landing-model-loading-animation { width: min(100%, 340px); height: 220px; min-height: 0; flex: 0 1 220px; overflow: hidden; border-radius: 24px; }
 .landing-model-loading p { max-width: 340px; flex-shrink: 0; margin: 0; font-size: 14px; line-height: 1.5; color: #64748b; }
 
-.landing-model-panel { width: 100%; min-width: 0; --landing-model-toolbar-height: 48px; }
-.landing-model-toolbar { display: flex; align-items: center; justify-content: center; margin-top: 12px; }
+.landing-model-panel { position: static; width: 100%; max-width: none; max-height: none; min-width: 0; margin: 0; padding: 0; border: 0; background: transparent; color: inherit; --landing-model-toolbar-height: 56px; }
+.landing-model-toolbar { display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 12px; }
 .landing-action-button { display: inline-flex; height: 36px; align-items: center; justify-content: center; gap: 6px; white-space: nowrap; border: 1px solid #e2e8f0; border-radius: 999px; background: #ffffffe6; padding: 0 12px; color: #334155; font-size: 14px; font-weight: 500; box-shadow: 0 1px 2px #0000000d; cursor: pointer; transition: color .15s, border-color .15s, background-color .15s; }
 .landing-action-button svg { flex-shrink: 0; }
 .landing-action-button:hover:enabled { border-color: #fecaca; background: #fef2f2; color: #f44336; }
@@ -31,3 +31,25 @@
 .landing-model-workspace[data-view="instructions"] { grid-template-rows: auto minmax(0, 1fr); }
 .landing-model-workspace[data-view="instructions"] .landing-model-heading { position: relative; padding-block: 10px; }
 @media (max-width: 639px) { .landing-instructions-toggle { padding-inline: 10px; font-size: 12px; } }
+
+.landing-model-toolbar .landing-action-button { min-height: 44px; }
+.landing-model-panel [hidden] { display: none; }
+.landing-expanded-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-bottom: 12px; }
+.landing-view-back { min-height: 44px; border-color: #fecaca; background: #fff; color: #b91c1c; font-weight: 600; }
+.landing-expanded-label { font-size: 14px; font-weight: 600; color: #64748b; }
+.landing-model-panel[data-expanded="true"] { position: fixed; inset: 0; display: flex; flex-direction: column; width: 100%; height: 100dvh; padding: max(16px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); overflow: hidden; background: #f8fafc; }
+.landing-model-panel[data-expanded="true"]::backdrop { background: #f8fafc; }
+.landing-model-panel[data-expanded="true"] > .landing-model-workspace { flex: 1; height: auto; max-height: none; min-height: 0; }
+.landing-model-panel[data-expanded="true"] > .landing-model-toolbar, .landing-expanded-header { flex-shrink: 0; }
+@media (max-width: 639px) {
+  .landing-model-panel[data-expanded="true"] { padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+  .landing-expanded-header { padding-bottom: 8px; }
+  .landing-expanded-label { padding-right: 4px; font-size: 12px; }
+}
+@media (min-width: 640px) and (max-height: 500px) {
+  .landing-model-panel[data-expanded="true"] .instructions-step { grid-template-columns: minmax(0, 1fr) minmax(180px, 26%); grid-template-rows: auto minmax(0, 1fr) auto; }
+  .landing-model-panel[data-expanded="true"] .instructions-step-heading { grid-column: 1; grid-row: 1; }
+  .landing-model-panel[data-expanded="true"] .instructions-canvas { grid-column: 1; grid-row: 2; }
+  .landing-model-panel[data-expanded="true"] .instructions-navigation { grid-column: 1; grid-row: 3; }
+  .landing-model-panel[data-expanded="true"] .instructions-parts { grid-column: 2; grid-row: 1 / 4; max-height: none; margin-left: 0; }
+}
