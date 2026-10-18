@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LandingModelOrdering } from './LandingModelOrdering';
+import { ModelShareMenu } from './ModelShareMenu';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
 
@@ -109,6 +110,9 @@ export function LandingModelWorkspace({ model, busy, loading = false, onOrderBar
         <div className="landing-model-heading">
           <span className="landing-model-name truncate font-semibold text-slate-800" title={generation.name || generation.prompt || 'Your model'}>{generation.name || generation.prompt || 'Your model'}</span>
         </div>
+        {!showingInstructions && !busy && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share">
+          <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} />
+        </div>}
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={showingInstructions ? 'instructions' : 'model'} aria-label={showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
           <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}

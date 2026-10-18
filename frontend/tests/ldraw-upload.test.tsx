@@ -66,3 +66,16 @@ it('rejects unsupported or oversized files before upload', async () => {
   await expect(UploadLdrawApiService.upload(file)).rejects.toThrow('16 MB');
   expect(fetch).not.toHaveBeenCalled();
 });
+
+it.each([['io', '.io', 'castle.ldr'], ['ldraw', '.ldr,.mpd', 'castle.io']] as const)('filters %s imports and rejects other formats', async (format, accept, filename) => {
+  const upload = vi.spyOn(UploadLdrawApiService, 'upload').mockResolvedValue({ generation_id: 'model' });
+  act(() => root.render(<LDrawUploadSection format={format} onImported={vi.fn()} />));
+  const input = container.querySelector('input')!;
+  expect(input.accept).toBe(accept);
+  await act(async () => {
+    Object.defineProperty(input, 'files', { value: [new File(['model'], filename)] });
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect(upload).not.toHaveBeenCalled();
+  expect(container.querySelector('[role="alert"]')?.textContent).toContain(accept);
+});

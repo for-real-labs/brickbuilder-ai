@@ -1,16 +1,16 @@
-import React, { useEffect, useId, useRef, useState } from 'react';
-import { Box, ChevronDown, Github, Image, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
+import React, { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
+import { Box, ChevronDown, Download, Upload, Github, Image, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import posthog from 'posthog-js';
 import { PetSwitchButton } from './PetCompanion';
 import { FeedbackWidget } from './FeedbackWidget';
+import type { LandingModel } from '../hooks/useLandingModel';
+import { downloadModel, type ModelExportFormat } from '../utils/modelExport';
 
 const tools = [
   { label: 'Image to LEGO', path: '/image-to-lego', icon: Image, event: 'landing_header_image_to_lego_clicked' },
   { label: 'GLB to LEGO', path: '/glb-to-lego', icon: Box, event: 'landing_header_glb_to_lego_clicked' },
   { label: 'OBJ to LEGO', path: '/obj-to-lego', icon: Box, event: 'landing_header_obj_to_lego_clicked' },
-  { label: 'Upload LDraw', path: '/use-ai-to-edit-ldraw', icon: Box, event: 'landing_header_upload_ldraw_clicked' },
-  { label: 'Community', path: '/community', icon: Users, event: 'landing_header_community_clicked' },
 ];
 
 export interface GenerationSettingsAction {
@@ -19,18 +19,37 @@ export interface GenerationSettingsAction {
   onOpen: (returnFocusTo: HTMLButtonElement) => void;
 }
 
-export function LandingToolsMenu({ page, generationSettings }: { page: string; generationSettings?: GenerationSettingsAction }) {
+export function LandingToolsMenu({ page, generationSettings, model, busy = false }: { page: string; generationSettings?: GenerationSettingsAction; model?: LandingModel | null; busy?: boolean }) {
   const [open, setOpen] = useState(false);
+  const [submenu, setSubmenu] = useState<'export' | 'import' | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
+  const rowClass = 'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336] disabled:cursor-not-allowed disabled:opacity-40';
   const [feedbackOpen, setFeedbackOpen] = useState<boolean | null>(null);
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const panelId = useId();
+  const [panelLeft, setPanelLeft] = useState(0);
   const attribution = () => ({ page, navigation_layout: 'tools_dropdown' });
 
   useEffect(() => {
     setOpen(false);
     posthog.capture('landing_header_tools_shown', { page, navigation_layout: 'tools_dropdown' });
   }, [page]);
+
+  useEffect(() => { setSubmenu(null); setExportError(null); }, [open, model?.generation.generation_id]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    const position = () => {
+      const bounds = container.current?.getBoundingClientRect();
+      if (!bounds) return;
+      const width = Math.min(256, window.innerWidth - 32);
+      setPanelLeft(Math.max(16, Math.min(bounds.right - width, window.innerWidth - width - 16)) - bounds.left);
+    };
+    position();
+    window.addEventListener('resize', position);
+    return () => window.removeEventListener('resize', position);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -59,23 +78,45 @@ export function LandingToolsMenu({ page, generationSettings }: { page: string; g
       <Wrench aria-hidden="true" className="h-4 w-4" /><span className="hidden sm:inline">Tools</span>
       <ChevronDown aria-hidden="true" className={`hidden h-3.5 w-3.5 transition-transform sm:block ${open ? 'rotate-180' : ''}`} />
     </button>
-    {open && <div id={panelId} className="absolute left-1/2 top-full z-[60] mt-2 max-h-[calc(var(--landing-viewport-height,100dvh)-5rem)] w-56 max-w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl sm:left-auto sm:right-0 sm:translate-x-0">
+    {open && <div id={panelId} style={{ left: panelLeft }} className="absolute top-full z-[60] mt-2 max-h-[calc(var(--landing-viewport-height,100dvh)-5rem)] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
       <ul aria-label="Tools" className="m-0 list-none p-0">
-        {generationSettings && <li className="sm:hidden">
-          <button type="button" aria-label="Generation settings" aria-expanded={generationSettings.open} aria-controls={generationSettings.controls}
-            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
+        {(['export', 'import'] as const).map(action => <li key={action}>
+          <button type="button" className={rowClass} aria-expanded={submenu === action} aria-controls={`${panelId}-${action}`}
             onClick={() => {
-              posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Generation settings' });
-              setOpen(false);
-              if (trigger.current) generationSettings.onOpen(trigger.current);
+              posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: action === 'export' ? 'Export' : 'Import' });
+              setSubmenu(submenu === action ? null : action);
+              setExportError(null);
             }}>
-            <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />Generation settings
+            {action === 'export' ? <Download aria-hidden="true" className="h-4 w-4 shrink-0" /> : <Upload aria-hidden="true" className="h-4 w-4 shrink-0" />}
+            {action === 'export' ? 'Export' : 'Import'}<ChevronDown aria-hidden="true" className={`ml-auto h-4 w-4 ${submenu === action ? 'rotate-180' : ''}`} />
           </button>
-        </li>}
-        <li className="mb-1 border-b border-slate-100 pb-1">
-          <PetSwitchButton source="landing_tools" returnFocusRef={trigger} onOpen={() => setOpen(false)}
-            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]" />
-        </li>
+          {submenu === action && <ul id={`${panelId}-${action}`} aria-label={action === 'export' ? 'Export options' : 'Import options'} className="mx-1 mb-1 list-none rounded-xl bg-slate-50 p-1">
+            {action === 'export' ? <>
+              {([['ldraw', 'Download LDraw'], ['io', 'Download IO'], ['csv', 'Download parts list CSV'], ['xml', 'Download parts list XML']] as [ModelExportFormat, string][]).map(([format, label]) => <li key={format} className={format === 'csv' ? 'mt-1 border-t border-slate-200 pt-1' : ''}>
+                <button type="button" className={rowClass} disabled={!model || busy} onClick={() => {
+                  if (!model) return;
+                  posthog.capture('landing_model_export_clicked', { ...attribution(), generation_id: model.generation.generation_id, format });
+                  try {
+                    downloadModel(model.content, model.generation.name || model.generation.prompt || 'model', format);
+                    setOpen(false);
+                  } catch (error) {
+                    setExportError(error instanceof Error ? error.message : 'Unable to download this model. Please try again.');
+                    posthog.capture('landing_model_export_failed', { ...attribution(), generation_id: model.generation.generation_id, format });
+                  }
+                }}>{label}</button>
+              </li>)}
+              {(!model || busy) && <li className="px-3 py-2 text-xs text-slate-500">{busy ? 'Downloads will be ready when your model finishes.' : 'Open or generate a model to download it.'}</li>}
+              {exportError && <li role="alert" className="px-3 py-2 text-xs text-red-600">{exportError}</li>}
+            </> : (['ldraw', 'io'] as const).map(format => <li key={format}>
+              <Link className={rowClass} to={`/use-ai-to-edit-ldraw?format=${format}`} onClick={() => {
+                posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: `Import ${format === 'io' ? 'IO' : 'LDraw'}`, format });
+                posthog.capture('landing_header_upload_ldraw_clicked', { ...attribution(), format });
+                setOpen(false);
+              }}>Import {format === 'io' ? 'IO' : 'LDraw'}</Link>
+            </li>)}
+          </ul>}
+        </li>)}
+        <li role="separator" className="my-1 border-t border-slate-200" />
         {tools.map(({ label, path, icon: Icon, event }) => <li key={path}>
           <Link to={path} className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
             onClick={() => {
@@ -87,18 +128,23 @@ export function LandingToolsMenu({ page, generationSettings }: { page: string; g
             <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />{label}
           </Link>
         </li>)}
-        <li className="sm:hidden">
-          <a href="https://github.com/for-real-labs/brickbuilder-ai" target="_blank" rel="noopener noreferrer"
-            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
+        <li role="separator" className="my-1 border-t border-slate-200" />
+        {generationSettings && <li>
+          <button type="button" aria-label="Generation settings" aria-expanded={generationSettings.open} aria-controls={generationSettings.controls}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
             onClick={() => {
-              const properties = { ...attribution(), destination: 'https://github.com/for-real-labs/brickbuilder-ai', tool: 'GitHub' };
-              posthog.capture('landing_header_tools_item_clicked', properties);
-              posthog.capture('landing_header_github_clicked', properties);
+              posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Generation settings' });
               setOpen(false);
+              if (trigger.current) generationSettings.onOpen(trigger.current);
             }}>
-            <Github aria-hidden="true" className="h-4 w-4 shrink-0" />GitHub
-          </a>
+            <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />Generation settings
+          </button>
+        </li>}
+        <li>
+          <PetSwitchButton source="landing_tools" returnFocusRef={trigger} onOpen={() => setOpen(false)}
+            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]" />
         </li>
+        <li role="separator" className="my-1 border-t border-slate-200" />
         <li>
           <button type="button" aria-haspopup="dialog" aria-expanded={Boolean(feedbackOpen)}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
@@ -111,6 +157,26 @@ export function LandingToolsMenu({ page, generationSettings }: { page: string; g
             }}>
             <MessageSquare aria-hidden="true" className="h-4 w-4 shrink-0" />Feedback
           </button>
+        </li>
+        <li>
+          <Link to="/community" className={rowClass} onClick={() => {
+            const properties = { ...attribution(), destination: '/community', tool: 'Community' };
+            posthog.capture('landing_header_tools_item_clicked', properties);
+            posthog.capture('landing_header_community_clicked', properties);
+            setOpen(false);
+          }}><Users aria-hidden="true" className="h-4 w-4 shrink-0" />Community</Link>
+        </li>
+        <li>
+          <a href="https://github.com/for-real-labs/brickbuilder-ai" target="_blank" rel="noopener noreferrer"
+            className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
+            onClick={() => {
+              const properties = { ...attribution(), destination: 'https://github.com/for-real-labs/brickbuilder-ai', tool: 'GitHub' };
+              posthog.capture('landing_header_tools_item_clicked', properties);
+              posthog.capture('landing_header_github_clicked', properties);
+              setOpen(false);
+            }}>
+            <Github aria-hidden="true" className="h-4 w-4 shrink-0" />GitHub
+          </a>
         </li>
       </ul>
     </div>}

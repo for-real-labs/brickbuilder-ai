@@ -107,8 +107,8 @@ describe('LandingPage', () => {
       expect(switchPet.type).toBe('button');
       expect(switchPet.textContent).toBe('Build Buddy');
       expect(switchPet.querySelector('.lucide-paw-print')).not.toBeNull();
-      expect(container.querySelector('ul[aria-label="Tools"] li:first-child button')?.textContent).toBe('Generation settings');
-      expect(switchPet.closest('li')?.previousElementSibling?.classList.contains('sm:hidden')).toBe(true);
+      expect(container.querySelector('ul[aria-label="Tools"] [aria-label="Generation settings"]')?.textContent).toBe('Generation settings');
+      expect(switchPet.closest('li')?.previousElementSibling?.textContent).toBe('Generation settings');
       act(() => { switchPet.focus(); switchPet.click(); });
       expect(tools.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('dialog')?.open).toBe(true);
@@ -705,7 +705,7 @@ describe('LandingPage', () => {
     } finally { act(() => root.unmount()); container.remove(); }
   });
 
-  it('opens mobile settings from the first Tools option, restores focus on dismissal, and closes when typing', async () => {
+  it('opens mobile settings from the Tools settings section, restores focus on dismissal, and closes when typing', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -721,9 +721,9 @@ describe('LandingPage', () => {
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
       const openSettings = () => {
         act(() => tools.click());
-        const option = container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] li:first-child button')!;
+        const option = container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] [aria-label="Generation settings"]')!;
         expect(option.textContent).toBe('Generation settings');
-        expect(option.closest('li')?.classList.contains('sm:hidden')).toBe(true);
+        expect(option.closest('li')?.classList.contains('sm:hidden')).toBe(false);
         expect(option.getAttribute('aria-controls')).toContain('landing-generation-settings');
         act(() => option.click());
         expect(panel.hidden).toBe(false);
@@ -809,7 +809,7 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     const links = Array.from(nav.querySelectorAll('a[href^="/"]'));
     expect(links.map(link => link.getAttribute('href'))).toEqual([
-      '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/use-ai-to-edit-ldraw', '/community',
+      '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/community',
     ]);
     const capture = (await import('posthog-js')).default.capture;
     expect(capture).toHaveBeenCalledWith('landing_header_tools_opened', expect.objectContaining({ navigation_layout: 'tools_dropdown' }));

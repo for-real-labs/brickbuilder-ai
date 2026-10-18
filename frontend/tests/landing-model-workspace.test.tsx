@@ -699,3 +699,23 @@ it('returns to the inline model when the selected build changes while expanded',
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('rover');
   expect(document.body.style.overflow).toBe('');
 });
+
+it('restores Share in the top-right viewer overlay, including expanded view', async () => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
+  const overlay = container.querySelector('.landing-model-workspace > .landing-model-share')!;
+  expect(overlay).not.toBeNull();
+  await act(async () => overlay.querySelector('button')!.click());
+  expect(overlay.querySelector<HTMLInputElement>('input')?.value).toContain('/?id=castle&exact=1');
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_share_opened', { generation_id: 'castle' });
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
+  expect(container.querySelector('.landing-model-panel')?.contains(overlay)).toBe(true);
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  expect(container.querySelector('.landing-model-share')).toBeNull();
+});
+
+it('keeps share unavailable for pending edits and uploaded models', async () => {
+  for (const [busy, endpoint] of [[true, 'novaToBricks'], [false, 'uploadLdraw']] as const) {
+    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle', endpoint), content: 'model' }} busy={busy}>{null}</LandingModelWorkspace>));
+    expect(container.querySelector('.landing-model-share')).toBeNull();
+  }
+});

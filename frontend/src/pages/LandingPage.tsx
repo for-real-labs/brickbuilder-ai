@@ -13,7 +13,7 @@ import { usePet, usePetActivity } from '../contexts/PetContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
-import { useLandingModel } from '../hooks/useLandingModel';
+import { useLandingModel, type LandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace, modelEditSuggestion } from '../components/LandingModelWorkspace';
 import { buddyPromptSuggestion } from '../utils/buddyPromptSuggestion';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
@@ -975,7 +975,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }} />
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
-        <LandingHeader createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: modelBusy || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
+        <LandingHeader model={landingModel.model} modelBusy={modelBusy} createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: modelBusy || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
           generationSettings={ldrawLanding ? undefined : {
             open: settingsOpen,
             controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
@@ -1016,7 +1016,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               <PetPromptGreeting mode="upload" state={petState} showPetSwitch={false} />
               <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding?.uploadTitle}</h2>
               <p className="mb-4 text-left text-sm text-slate-600">{imageLanding?.uploadDescription}</p>
-              <LDrawUploadSection authToken={session?.access_token} onImported={id => {
+              <LDrawUploadSection format={searchParams.get('format') === 'io' ? 'io' : searchParams.get('format') === 'ldraw' ? 'ldraw' : undefined} authToken={session?.access_token} onImported={id => {
                 localStorage.setItem('lastGenerationId', id);
                 if (!session) recordAnonymousGeneration(id);
                 navigate(getGeneratedModelPath(id, true));
@@ -1275,12 +1275,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           Need help?{' '}
           <a href="mailto:support@brickbuilder.ai" tabIndex={helpVisible ? 0 : -1}
             onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a>
-        </div>
+        </div>}
+      </div>
     </div>
   );
 }
 
-function LandingHeader({ onLoginClick, page, generationSettings, createNew }: { onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
+function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy }: { model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
 
@@ -1358,7 +1359,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew }: { 
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         {githubStarLink}
-        <LandingToolsMenu page={page} generationSettings={generationSettings} />
+        <LandingToolsMenu page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
         {showProfileMenu ? (
           // Logged in or no Supabase: show GitHub stars and account dropdown
           <>

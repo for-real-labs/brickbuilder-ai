@@ -3,6 +3,11 @@
 .landing-instructions-view { width: 100%; height: 100%; }
 .landing-model-heading { position: absolute; z-index: 1; inset: 0 0 auto; padding: 16px 20px; background: transparent; text-align: center; pointer-events: none; }
 .landing-model-name { display: block; min-width: 0; background: transparent; }
+.landing-model-share { position: absolute; z-index: 3; top: 12px; right: 12px; text-align: left; }
+.landing-model-workspace:has(.landing-model-share) .landing-model-heading { padding-right: 132px; text-align: left; }
+.landing-model-share [role="dialog"] { max-width: min(288px, calc(100vw - 64px)); max-height: min(340px, calc(100dvh - 180px)); overflow-y: auto; overscroll-behavior: contain; }
+.landing-model-workspace:has(.landing-model-share [role="dialog"]) { overflow: visible; z-index: 45; }
+.landing-model-stage { border-radius: inherit; }
 .landing-model-conversation { position: fixed; z-index: 40; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; width: min(768px, calc(100% - 32px)); max-height: min(640px, calc(100dvh - 160px)); min-width: 0; padding: 16px; overflow-y: auto; overscroll-behavior: contain; transform: translateX(-50%); border: 1px solid transparent; border-radius: 28px; background: transparent; text-align: left; }
 .landing-model-conversation > * { flex-shrink: 0; }
 .landing-model-conversation .pet-dialogue { flex: 0 1 auto; min-height: 80px; max-height: min(280px, 28dvh); margin-bottom: 12px; }
