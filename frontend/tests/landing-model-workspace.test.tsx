@@ -567,6 +567,51 @@ it.each(['failed', 'cancelled'] as const)('removes the centered loading state af
 });
 
 
+it('opens an emailed instructions link in a dialog after the model loads and lets the buyer return', async () => {
+  query.value = 'id=castle&exact=1&instructions=1';
+  let finish!: (value: GetGenerationResponse) => void;
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[aria-modal="true"]')).toBeNull();
+  await act(async () => finish(generation('castle')));
+  const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  expect(dialog.getAttribute('aria-label')).toBe('Expanded instructions');
+  expect(dialog.getAttribute('aria-modal')).toBe('true');
+  expect(dialog.showModal).toHaveBeenCalled();
+  expect(container.textContent).toContain('Building instructions');
+  expect(document.body.style.overflow).toBe('hidden');
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_expanded', { generation_id: 'castle', view: 'instructions', source: 'url' });
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-back')!.click());
+  await act(async () => root.render(<LandingPage />));
+  expect(dialog.dataset.expanded).toBe('false');
+  expect(document.body.style.overflow).toBe('');
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-create-new')!.click());
+  expect(query.value).toBe('');
+});
+
+it('responds to instructions URL navigation for the same model and resets for another model', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
+  query.value = 'id=castle&instructions=0';
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-panel')?.getAttribute('data-view')).toBe('model');
+  query.value = 'id=castle&instructions=1';
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-panel')?.getAttribute('aria-modal')).toBe('true');
+  query.value = 'id=rover';
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-panel')?.getAttribute('data-view')).toBe('model');
+  expect(container.querySelector('.landing-model-panel')?.getAttribute('aria-modal')).toBeNull();
+  expect(document.body.style.overflow).toBe('');
+});
+
+it('does not open instructions without an explicit model ID', async () => {
+  query.value = 'instructions=1';
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-model-panel')).toBeNull();
+});
+
 it('places a book button below the model, matches Create new, and switches views without navigating', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));

@@ -1,6 +1,7 @@
 import os
 import json
 import logging
+from html import escape
 from typing import Optional
 from urllib.parse import urlencode
 
@@ -280,6 +281,8 @@ async def handle_checkout_session_completed(session):
                         resend.api_key = resend_api_key
                         
                         # Construct order confirmation email HTML
+                        model_url = 'https://brickbuilder.ai/?' + urlencode({'id': generation_id, 'exact': '1'})
+                        instructions_url = model_url + '&instructions=1'
                         email_html = f"""
                             <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                               <div style="text-align: center; margin-bottom: 32px;">
@@ -304,7 +307,7 @@ async def handle_checkout_session_completed(session):
                                 <p style="color: #475569; line-height: 1.6; margin-bottom: 16px;">
                                   You can view your instructions at:
                                 </p>
-                                <a href="https://brickbuilder.ai/instructions?id={generation_id}" 
+                                <a href="{escape(instructions_url, quote=True)}"
                                    style="display: inline-block; background-color: #ef4444; color: white; padding: 12px 24px; 
                                           text-decoration: none; border-radius: 6px; font-weight: 600;">
                                   View Instructions
@@ -359,6 +362,7 @@ async def handle_checkout_session_completed(session):
                                         <tr><td style="padding: 8px; font-weight: bold;">Instructions Post Card:</td><td style="padding: 8px;">{"Include 6 × 4 inch QR instructions postcard" if shipping_info.get("instructions_postcard") else "Not requested"}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Stripe Session:</td><td style="padding: 8px;">{full_session.id}</td></tr>
                                     </table>
+                                    <p style="margin-top: 16px;"><a href="{escape(model_url, quote=True)}" style="color: #ef4444;">View model in BrickBuilder</a></p>
                                     <p style="margin-top: 16px;"><a href="https://dashboard.stripe.com/payments/{payment_intent}" style="color: #ef4444;">View in Stripe</a></p>
                                 </div>
                             """

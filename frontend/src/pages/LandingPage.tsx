@@ -284,6 +284,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       const next = new URLSearchParams(current);
       next.set('id', id);
       next.set('exact', '1');
+      next.delete('instructions');
       return next;
     }, { replace: true });
   }, [landingModel.open, setSearchParams]);
@@ -804,6 +805,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       const next = new URLSearchParams(current);
       next.delete('id');
       next.delete('exact');
+      next.delete('instructions');
       return next;
     }, { replace: true });
     setGiftPlanning(false);
@@ -1024,6 +1026,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} loading={modelBusy}
+                requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}

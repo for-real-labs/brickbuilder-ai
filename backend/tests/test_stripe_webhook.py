@@ -1,4 +1,6 @@
 import asyncio
+from html.parser import HTMLParser
+from urllib.parse import parse_qs, urlparse
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -6,6 +8,17 @@ import pytest
 import stripe
 
 from src.requests import stripeWebhook as webhook
+
+
+class EmailLinks(HTMLParser):
+    def __init__(self, html):
+        super().__init__()
+        self.links = []
+        self.feed(html)
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'a':
+            self.links.append(dict(attrs).get('href'))
 
 
 @pytest.fixture(autouse=True)
@@ -148,3 +161,31 @@ def test_repeated_paid_checkout_sends_each_confirmation_only_once(monkeypatch):
     assert send.call_args_list[0].args[0]['to'] == ['buyer@example.com']
     assert send.call_args_list[1].args[0]['to'] == ['jakejohnson3700@gmail.com']
     assert send.call_args_list[1].args[0]['subject'] == 'New Order #95 - $20.17'
+
+
+@pytest.mark.parametrize('generation_id', ['castle', 'g/123 &instructions=0"<>'])
+def test_order_emails_link_to_landing_model_and_instructions_dialog(monkeypatch, generation_id):
+    session = stripe.StripeObject.construct_from({
+        'id': 'cs_links', 'metadata': {'generationId': generation_id}, 'amount_total': 2500,
+        'payment_intent': 'pi_links', 'customer_details': {'email': 'buyer@example.com'},
+        'collected_information': {'shipping_details': {'name': 'Builder', 'address': {'line1': '123 Main'}}},
+    }, None)
+    monkeypatch.setattr(webhook.stripe.checkout.Session, 'retrieve', Mock(return_value=session))
+    monkeypatch.setattr(webhook, 'generation_storage', SimpleNamespace(update_payment_status=AsyncMock(return_value=95)))
+    monkeypatch.setenv('RESEND_API_KEY', 'test-only')
+    send = Mock()
+    monkeypatch.setattr(webhook.resend.Emails, 'send', send)
+    asyncio.run(webhook.handle_checkout_session_completed(session))
+    assert send.call_count == 2
+    for call, recipient, instructions in zip(send.call_args_list, ['buyer@example.com', 'jakejohnson3700@gmail.com'], [True, False]):
+        message = call.args[0]
+        assert message['to'] == [recipient]
+        links = [urlparse(link) for link in EmailLinks(message['html']).links]
+        model_links = [link for link in links if link.netloc == 'brickbuilder.ai']
+        assert len(model_links) == 1
+        assert model_links[0].scheme == 'https'
+        assert model_links[0].path == '/'
+        expected = {'id': [generation_id], 'exact': ['1']}
+        if instructions:
+            expected['instructions'] = ['1']
+        assert parse_qs(model_links[0].query) == expected

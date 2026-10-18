@@ -17,10 +17,11 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, loading = false, onOrderBarHeightChange, children }: {
+export function LandingModelWorkspace({ model, busy, loading = false, requestedInstructionsId, onOrderBarHeightChange, children }: {
   model: LandingModel | null;
   busy: boolean;
   loading?: boolean;
+  requestedInstructionsId?: string | null;
   onOrderBarHeightChange?: (height: number) => void;
   children: React.ReactNode;
 }) {
@@ -37,7 +38,15 @@ export function LandingModelWorkspace({ model, busy, loading = false, onOrderBar
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
   const showingInstructions = instructionsId === generation?.generation_id && view === 'instructions';
-  useEffect(() => { setInstructionsId(null); setView('model'); setExpanded(false); }, [generation?.generation_id]);
+  useEffect(() => {
+    const openInstructions = Boolean(generation && requestedInstructionsId === generation.generation_id);
+    setInstructionsId(openInstructions ? generation!.generation_id : null);
+    setView(openInstructions ? 'instructions' : 'model');
+    setExpanded(openInstructions);
+    if (openInstructions) posthog.capture('landing_model_view_expanded', {
+      generation_id: generation!.generation_id, view: 'instructions', source: 'url',
+    });
+  }, [generation?.generation_id, requestedInstructionsId]);
   useEffect(() => {
     const dialog = panel.current;
     if (!expanded || !dialog) return;
@@ -53,7 +62,7 @@ export function LandingModelWorkspace({ model, busy, loading = false, onOrderBar
       document.body.style.overflow = previousOverflow;
       expandButton.current?.focus();
     };
-  }, [expanded]);
+  }, [expanded, generation?.generation_id]);
   const collapse = (source: 'back_button' | 'escape') => {
     posthog.capture('landing_model_view_collapsed', {
       generation_id: generation?.generation_id, view: showingInstructions ? 'instructions' : 'model', source,
