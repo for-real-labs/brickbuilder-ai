@@ -33,12 +33,18 @@
 .landing-model-stage[data-view="model"], .landing-model-stage .instructions-canvas { touch-action: none; overscroll-behavior: contain; }
 .landing-model-stage[data-view="model"] { user-select: none; }
 .landing-model-panel:not([data-expanded="true"]) .landing-model-workspace[data-view="instructions"] .instructions-embedded { padding-top: 64px; }
-@media (max-width: 639px) { .landing-instructions-toggle { padding-inline: 10px; font-size: 12px; } }
+@media (max-width: 639px) {
+  .landing-instructions-toggle { padding-inline: 10px; font-size: 12px; }
+}
 
 .landing-model-toolbar .landing-action-button { min-height: 44px; }
 .landing-view-expand { width: 44px; min-width: 44px; padding: 0; }
 .landing-model-bottom-toolbar { position: absolute; z-index: 45; right: 12px; bottom: 12px; left: 12px; display: flex; align-items: end; justify-content: flex-end; gap: 12px; pointer-events: none; }
 .landing-model-bottom-toolbar > * { pointer-events: auto; }
+.landing-model-share button[aria-haspopup="dialog"] { font-weight: 500; line-height: 21px; }
+@media (max-width: 639px) {
+  .landing-model-share button[aria-haspopup="dialog"] { font-size: 12px; line-height: 18px; }
+}
 .landing-model-panel [hidden] { display: none; }
 .landing-expanded-footer { display: flex; flex-shrink: 0; justify-content: center; padding-top: 12px; }
 .landing-view-back { min-height: 44px; border-color: #fecaca; background: #fff; color: #b91c1c; font-weight: 600; }

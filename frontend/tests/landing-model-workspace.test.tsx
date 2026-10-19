@@ -1092,8 +1092,11 @@ it('shows icon only expand control and Share at the bottom right of the model', 
     expect(controls.querySelector('button:first-child')?.textContent).toBe('Show instructions');
     expect(controls.querySelector('button:last-child')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
     expect(controls.querySelector('button:last-child')?.textContent).toBe('');
-    expect(container.querySelector('.landing-model-bottom-toolbar .landing-model-share button')?.textContent).toContain('Share');
+    const shareButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-model-share button')!;
+    expect(shareButton.textContent).toContain('Share');
     expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).justifyContent).toBe('flex-end');
+    expect(getComputedStyle(shareButton).fontWeight).toBe(getComputedStyle(controls.querySelector('.landing-instructions-toggle')!).fontWeight);
+    expect(getComputedStyle(shareButton).lineHeight).toBe('21px');
     expect(container.querySelector('.landing-model-export')).toBeNull();
     await act(async () => (container.querySelector('.landing-model-share button') as HTMLButtonElement).click());
     expect(container.querySelector('[role="dialog"][aria-label="Share model"]')?.className).toContain('bottom-full');
