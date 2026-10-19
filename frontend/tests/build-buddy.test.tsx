@@ -107,7 +107,7 @@ it('shows text and images in order, speaks stream updates, and shows a completed
   act(() => update({ text: 'private implementation', summary: 'Shaping the dragon wings', status: 'processing' }));
   expect(container.textContent).toContain('I’m shaping the dragon wings…');
   expect(container.textContent).not.toContain('private implementation');
-  expect(container.textContent).toContain('up to 30 minutes');
+  expect(container.textContent).not.toContain('email');
   const dialogue = container.querySelector('[role="log"]');
   const greeting = container.querySelector('.pet-greeting')?.textContent;
   const originalPrompt = container.querySelector('.pet-chat-message--user');

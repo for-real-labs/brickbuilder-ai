@@ -92,7 +92,7 @@ it('uses window height when the visual viewport API is unavailable and leaves di
   expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('500px');
 });
 
-it('tracks the top third and overlap of a viewer that appears after the landing page mounts', async () => {
+it('limits dialogue overlap to the bottom third of a viewer that appears after mount', async () => {
   let notify!: ResizeObserverCallback;
   const observe = vi.fn();
   vi.stubGlobal('ResizeObserver', class {
@@ -112,8 +112,10 @@ it('tracks the top third and overlap of a viewer that appears after the landing 
   const conversation = container.querySelector('.landing-model-conversation')!;
   vi.spyOn(conversation, 'getBoundingClientRect').mockReturnValue({ top: 550 } as DOMRect);
   act(() => notify([], {} as ResizeObserver));
-  expect(parseFloat(shell.style.getPropertyValue('--landing-workspace-overlay-limit'))).toBeCloseTo(253.33, 1);
+  expect(parseFloat(shell.style.getPropertyValue('--landing-workspace-overlay-limit'))).toBeCloseTo(406.67, 1);
   expect((conversation as HTMLElement).dataset.overlapsWorkspace).toBe('true');
+  expect(parseFloat((conversation as HTMLElement).style.getPropertyValue('--landing-dialogue-fade-start'))).toBeCloseTo(-63.33, 1);
+  expect(parseFloat((conversation as HTMLElement).style.getPropertyValue('--landing-dialogue-fade-end'))).toBeCloseTo(90, 1);
   vi.spyOn(conversation, 'getBoundingClientRect').mockReturnValue({ top: 700 } as DOMRect);
   act(() => notify([], {} as ResizeObserver));
   expect((conversation as HTMLElement).dataset.overlapsWorkspace).toBe('false');

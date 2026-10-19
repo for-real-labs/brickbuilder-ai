@@ -16,6 +16,7 @@ import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel, type LandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace, modelEditSuggestion } from '../components/LandingModelWorkspace';
+import { PendingEditActions } from '../components/PendingEditActions';
 import { buddyPromptSuggestion } from '../utils/buddyPromptSuggestion';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { useLandingViewport } from '../hooks/useLandingViewport';
@@ -318,6 +319,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [editSubmitting, setEditSubmitting] = useState(false);
   const editSubmittingRef = useRef(false);
   const modelBusy = landingModel.busy || editSubmitting;
+  const pendingEdit = Boolean(landingModel.model && (editSubmitting || (landingModel.busy
+    && landingModel.targetId !== landingModel.model.generation.generation_id)));
+  const pendingEditId = pendingEdit && landingModel.targetId !== landingModel.model?.generation.generation_id
+    ? landingModel.targetId : null;
   const visitGenerationIds = new Set(buddyChat.turns.map(turn => turn.generationId));
   const displayedGenerations = generations.filter(row => ldrawLanding || row.id === landingModel.targetId || visitGenerationIds.has(row.id))
     .map(row => row.id === landingModel.model?.generation.generation_id
@@ -1010,7 +1015,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }} />
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
-        <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: modelBusy || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
+        <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: editSubmitting || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
           generationSettings={ldrawLanding ? undefined : {
             open: settingsOpen,
             controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
@@ -1058,7 +1063,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
-              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} composerFocused={focused}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} composerFocused={focused}
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 activity={!landingModel.model && displayedGenerations.length > 0 ? generationActivity : null}
                 onOrderBarHeightChange={setOrderBarHeight}>
@@ -1066,12 +1071,20 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 selectedGenerationId={requestedModelId || landingModel.targetId}
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id, name: landingModel.model.generation.name,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
+                reasoningOnly={pendingEdit}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>
-                {landingModel.model && generationActivity}
+                {landingModel.model && !pendingEdit && generationActivity}
               </BuildBuddyDialogue>
-            <form
+            {pendingEdit ? <PendingEditActions key={pendingEditId || 'starting'} generationId={pendingEditId}
+              onCancelled={() => {
+                const row = generations.find(generation => generation.id === pendingEditId);
+                if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
+                setNotificationPromptId(null);
+                if (landingModel.model) openModel(landingModel.model.generation.generation_id, true);
+              }}
+              onStartNew={createNewModel} /> : <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
               onSubmit={event => {
@@ -1193,9 +1206,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               </div>
               <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
-            </form>
+            </form>}
               {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
-              {modelBusy && landingModel.model && <p role="status" className="mt-3 text-left text-sm text-slate-500">Updating your model… You can keep viewing it while your edit builds.</p>}
               {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
                 <LocalProviderSettings />
               </div>}

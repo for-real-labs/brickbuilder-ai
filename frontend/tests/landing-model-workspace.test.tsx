@@ -413,7 +413,7 @@ it('keeps the LDraw upload page intro visible when a previous chat workspace is 
   expect(container.querySelector('.landing-page')).toBeNull();
 });
 
-it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its source API and retains the viewer until the replacement is ready', async endpoint => {
+it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s with animation and restores the new viewer when ready', async endpoint => {
   query.value = 'id=castle&exact=1';
   activity.rows = [{ id: 'castle', status: 'completed', endpoint, prompt: 'Castle' }];
   let ready = false;
@@ -424,7 +424,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its so
   await act(async () => root.render(<LandingPage />));
   type('Add a drawbridge');
   expect(container.querySelector('.landing-page--conversation-started')).not.toBeNull();
-  await submit(); await submit();
+  await submit();
   if (endpoint === 'llmToBricks') {
     expect(llm).toHaveBeenCalledExactlyOnceWith({ sourceGenerationId: 'castle', prompt: 'Add a drawbridge' }, undefined);
     expect(nova).not.toHaveBeenCalled();
@@ -432,15 +432,51 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its so
     expect(nova).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined);
     expect(llm).not.toHaveBeenCalled();
   }
-  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
-  expect(input().disabled).toBe(true);
-  expect(container.querySelector<HTMLButtonElement>('.landing-create-new')!.disabled).toBe(true);
-  expect(container.textContent).toContain('Updating your model');
+  expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Building your edited model"] .brick-build-scene')).not.toBeNull();
+  expect(container.querySelector('#landing-build-prompt')).toBeNull();
+  expect(container.querySelector('[aria-label="Edit in progress actions"]')?.textContent).toContain('Email me');
+  expect(container.querySelector('[aria-label="Edit in progress actions"]')?.textContent).toContain('Cancel');
+  expect(container.querySelector('[aria-label="Edit in progress actions"]')?.textContent).toContain('Start new');
+  expect(container.querySelector('.landing-model-toolbar')).toBeNull();
+  expect(container.querySelector('.model-mobile-order')).toBeNull();
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('email');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Your generations');
+  expect(container.textContent).not.toContain('Updating your model');
+  expect(container.querySelector<HTMLButtonElement>('.landing-create-new')!.disabled).toBe(false);
   ready = true;
   await act(async () => vi.advanceTimersByTimeAsync(5000));
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
   expect(input().disabled).toBe(false);
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
   expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle with bridge');
+});
+
+it.each(['Cancel', 'Start new'])('%s leaves an in-progress edit without keeping its animation on screen', async action => {
+  query.value = 'id=castle&exact=1';
+  activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), status: id === 'edited' ? 'processing' : 'completed' }));
+  vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'edited', message: 'Started' });
+  const cancel = vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue(undefined);
+  await act(async () => root.render(<LandingPage />));
+  type('Add a drawbridge');
+  await submit();
+  expect(container.querySelector('[aria-label="Building your edited model"] .brick-build-scene')).not.toBeNull();
+  const actionButton = Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Edit in progress actions"] button'))
+    .find(button => button.textContent === action)!;
+  await act(async () => actionButton.click());
+  expect(container.querySelector('[aria-label="Building your edited model"]')).toBeNull();
+  if (action === 'Cancel') {
+    expect(cancel).toHaveBeenCalledExactlyOnceWith('edited');
+    expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+    expect(input().getAttribute('aria-label')).toBe('Describe changes to your model');
+    expect(query.value).toContain('id=castle');
+  } else {
+    expect(cancel).not.toHaveBeenCalled();
+    expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+    expect(input().getAttribute('aria-label')).toBe('Describe your model');
+    expect(query.value).not.toContain('id=');
+  }
 });
 
 it('keeps the current model and edit text available after an edit request fails', async () => {
@@ -593,15 +629,17 @@ it('passes the displayed model name into the greeting and replaces it with a pre
 });
 
 
-it('keeps the workspace clear of a second animation and leaves the model visible during edits', async () => {
-  const render = (model: LandingModel | null, busy: boolean) => act(async () => root.render(
-    <LandingModelWorkspace model={model} busy={busy}><p>Conversation</p></LandingModelWorkspace>));
+it('replaces the old model with only the build animation during an edit', async () => {
+  const render = (model: LandingModel | null, pendingEdit: boolean) => act(async () => root.render(
+    <LandingModelWorkspace model={model} busy={pendingEdit} pendingEdit={pendingEdit}><p>Conversation</p></LandingModelWorkspace>));
   await render(null, false);
   await render(null, true);
   expect(container.querySelector('.brick-build-scene')).toBeNull();
   await render({ generation: generation('castle'), content: 'castle mpd' }, true);
-  expect(container.querySelector('.landing-model-loading')).toBeNull();
-  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  expect(container.querySelectorAll('.brick-build-scene')).toHaveLength(1);
+  expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  expect(container.querySelector('.landing-model-toolbar')).toBeNull();
+  expect(container.querySelector('.model-mobile-order')).toBeNull();
 });
 
 it.each(['failed', 'cancelled'] as const)('removes the centered loading state after a linked build is %s', async status => {

@@ -245,11 +245,8 @@ describe('LandingPage', () => {
         else reject(new Error('Submission failed'));
       });
       if (outcome === 'accepted') {
-        expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('Want an email when it’s ready?');
-        expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
-          generation_id: 'submitted', is_authenticated: false, source: 'build_buddy_chat',
-        });
-        act(() => Array.from(container.querySelectorAll('.pet-notification-conversation button')).find(button => button.textContent === 'Not now')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+        expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
+        expect(container.querySelector('[aria-label="Your generations"]')!.textContent).toContain('Anime girl');
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeNull();
         expect(container.querySelector('[aria-label="Remove image"]')).toBeNull();
         expect(fileInput.value).toBe('');
@@ -576,10 +573,8 @@ describe('LandingPage', () => {
       }), undefined);
       if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
-      expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).toContain('up to 30 minutes');
-      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
-        generation_id: modeValue === 'nova' ? 'image-nova' : 'image-basic', is_authenticated: false, source: 'build_buddy_chat',
-      });
+      expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
+      expect(container.querySelector('[aria-label="Your generations"]')!.textContent).toContain('up to 30 minutes');
     } finally { act(() => root.unmount()); container.remove(); }
   });
 

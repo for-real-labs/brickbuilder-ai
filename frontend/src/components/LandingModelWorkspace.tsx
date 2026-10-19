@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, Box, Maximize2 } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
+import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
 
@@ -15,9 +16,10 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, activity, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, activity, children }: {
   model: LandingModel | null;
   busy: boolean;
+  pendingEdit?: boolean;
   composerFocused?: boolean;
   requestedInstructionsId?: string | null;
   onOrderBarHeightChange?: (height: number) => void;
@@ -36,7 +38,7 @@ export function LandingModelWorkspace({ model, busy, composerFocused = false, re
   const panel = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
-  const showingInstructions = instructionsId === generation?.generation_id && view === 'instructions';
+  const showingInstructions = !pendingEdit && instructionsId === generation?.generation_id && view === 'instructions';
   useEffect(() => {
     const openInstructions = Boolean(generation && requestedInstructionsId === generation.generation_id);
     setInstructionsId(openInstructions ? generation!.generation_id : null);
@@ -113,8 +115,9 @@ export function LandingModelWorkspace({ model, busy, composerFocused = false, re
         </button>
         <span className="landing-expanded-label">{showingInstructions ? 'Instructions' : '3D viewer'}</span>
       </div>
-      <section className="landing-model-workspace" data-view={showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
-        <div ref={stage} id={stageId} className="landing-model-stage" data-view={showingInstructions ? 'instructions' : 'model'} aria-label={showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
+      <section className="landing-model-workspace" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
+        <div ref={stage} id={stageId} className="landing-model-stage" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label={pendingEdit ? 'Building your edited model' : showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
+          {pendingEdit ? <LlmPreviewLoader compact /> :
           <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}
@@ -123,10 +126,10 @@ export function LandingModelWorkspace({ model, busy, composerFocused = false, re
             {instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id} embedded active={showingInstructions} />
             </div>}
-          </Suspense>
+          </Suspense>}
         </div>
       </section>
-      <div className="landing-model-toolbar">
+      {!pendingEdit && <div className="landing-model-toolbar">
         <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
           aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
             posthog.capture(showingInstructions ? 'landing_model_3d_view_clicked' : 'landing_model_instructions_clicked', {
@@ -148,12 +151,12 @@ export function LandingModelWorkspace({ model, busy, composerFocused = false, re
           }}>
           <Maximize2 size={16} aria-hidden="true" /><span>Expand view</span>
         </button>
-      </div>
+      </div>}
     </dialog>}
     <section className="landing-model-conversation" aria-label="Build dialogue">
       {children}
     </section>
-    {model && generation && orderable && <LandingModelOrdering key={generation.generation_id}
+    {model && generation && orderable && !pendingEdit && <LandingModelOrdering key={generation.generation_id}
         model={model} busy={busy} showMobileBar={dismissedOrderId !== generation.generation_id && !composerFocused}
         onHeightChange={onOrderBarHeightChange} onDismiss={() => {
           setDismissedOrderId(generation.generation_id);

@@ -123,7 +123,7 @@
   pointer-events: none;
 }
 .landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation[data-overlaps-workspace="true"] .pet-dialogue {
-  mask-image: linear-gradient(to bottom, transparent, #000 120px);
+  mask-image: linear-gradient(to bottom, transparent var(--landing-dialogue-fade-start), #000 var(--landing-dialogue-fade-end));
 }
 .landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(320px, 40dvh); }
 @media (max-width: 639px) {

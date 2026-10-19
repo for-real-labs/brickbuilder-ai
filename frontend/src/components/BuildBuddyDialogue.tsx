@@ -5,7 +5,6 @@ import { usePet } from '../contexts/PetContext';
 import { type PetState } from '../pets';
 import { PetChatMessage, PetPromptGreeting } from './PetCompanion';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
-import { GetNotifiedButton } from './GetNotifiedButton';
 import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
 import { isAgentGeneration } from '../utils/agentGeneration';
@@ -20,7 +19,6 @@ export function BuddyBuildMessages({ generationId, status }: { generationId: str
   const active = isGenerationActive(status);
   return <div className="pet-build-messages">
     <LlmGenerationOutput generationId={generationId} active={active} status={status} />
-    {active && <GetNotifiedButton generationId={generationId} promptOnStart />}
   </div>;
 }
 
@@ -55,11 +53,12 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   </PetPromptGreeting>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, children }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
   model?: DialogueModel | null;
+  reasoningOnly?: boolean;
   children?: React.ReactNode;
 }) {
   const { pet } = usePet();
@@ -109,7 +108,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
       {children}
-      {model ? <ModelGreeting key={model.id} state={state} model={model} />
+      {reasoningOnly ? null : model ? <ModelGreeting key={model.id} state={state} model={model} />
         : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
         : <PetPromptGreeting state={state} showPetSwitch={false}>
         {returning ? formatBuddyGreeting(welcome, greetingName)

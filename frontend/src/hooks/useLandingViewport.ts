@@ -31,11 +31,22 @@ export function useLandingViewport(enabled: boolean) {
       element.style.setProperty('--landing-intro-bottom', `${Math.max(0, (intro?.getBoundingClientRect().bottom ?? 0) - element.getBoundingClientRect().top)}px`);
       if (workspace) {
         const bounds = workspace.getBoundingClientRect();
-        element.style.setProperty('--landing-workspace-overlay-limit', `${Math.max(0, bounds.top - element.getBoundingClientRect().top + bounds.height / 3)}px`);
-        if (conversation) conversation.dataset.overlapsWorkspace = String(conversation.getBoundingClientRect().top < bounds.bottom);
+        const fadeStart = bounds.top + bounds.height * 2 / 3;
+        element.style.setProperty('--landing-workspace-overlay-limit', `${Math.max(0, fadeStart - element.getBoundingClientRect().top)}px`);
+        if (conversation) {
+          const conversationTop = conversation.getBoundingClientRect().top;
+          const dialogueTop = conversation.querySelector('.pet-dialogue')?.getBoundingClientRect().top ?? conversationTop;
+          conversation.dataset.overlapsWorkspace = String(conversationTop < bounds.bottom);
+          conversation.style.setProperty('--landing-dialogue-fade-start', `${fadeStart - dialogueTop}px`);
+          conversation.style.setProperty('--landing-dialogue-fade-end', `${bounds.bottom - dialogueTop}px`);
+        }
       } else {
         element.style.removeProperty('--landing-workspace-overlay-limit');
-        if (conversation) delete conversation.dataset.overlapsWorkspace;
+        if (conversation) {
+          delete conversation.dataset.overlapsWorkspace;
+          conversation.style.removeProperty('--landing-dialogue-fade-start');
+          conversation.style.removeProperty('--landing-dialogue-fade-end');
+        }
       }
     };
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {
@@ -54,12 +65,14 @@ export function useLandingViewport(enabled: boolean) {
     viewport?.addEventListener('resize', updateViewport);
     viewport?.addEventListener('scroll', updateViewport);
     window.addEventListener('resize', updateViewport);
+    window.addEventListener('scroll', updatePanels, { passive: true });
     return () => {
       observer?.disconnect();
       mutations.disconnect();
       viewport?.removeEventListener('resize', updateViewport);
       viewport?.removeEventListener('scroll', updateViewport);
       window.removeEventListener('resize', updateViewport);
+      window.removeEventListener('scroll', updatePanels);
     };
   }, [enabled]);
 
