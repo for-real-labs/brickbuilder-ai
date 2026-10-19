@@ -974,11 +974,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             : <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
               <div className="landing-page-intro-content">
                 <h1 className="text-4xl font-extrabold leading-tight text-slate-900 landing-fade-in landing-delay-2 sm:text-5xl">Imagine. Create. Build.</h1>
-                {!focused && <div className="flex items-center justify-center gap-4 text-slate-600 landing-fade-in landing-delay-2 sm:gap-8" aria-label="BrickBuilder generation statistics">
+                <div className="flex items-center justify-center gap-4 text-slate-600 landing-fade-in landing-delay-2 sm:gap-8" aria-label="BrickBuilder generation statistics">
                   <div className="min-w-0"><span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="whitespace-nowrap text-xs sm:text-sm">models generated</span></div>
                   <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
                   <div className="min-w-0"><span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span></div>
-                </div>}
+                </div>
               </div>
             </div>}
           <div className={ldrawLanding ? 'w-full' : 'landing-page-content'}>

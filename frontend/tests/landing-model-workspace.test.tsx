@@ -115,12 +115,12 @@ it('keeps the welcome dialogue centered until input and stays docked after clear
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
 });
 
-it('restores the landing headline and stats, hiding stats while the prompt is focused', async () => {
+it('keeps the landing headline and stats visible while the prompt is focused', async () => {
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
   expect(container.textContent).toContain('Imagine. Create. Build.');
   act(() => input().focus());
-  expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).toBeNull();
+  expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
   act(() => input().blur());
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
 });
