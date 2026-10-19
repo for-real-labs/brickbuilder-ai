@@ -37,6 +37,16 @@ it('handles UTC timestamps without an offset and updates from wall time after a 
   act(() => root.unmount());
 });
 
+it('supports the generation time label in the model viewer', () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-10-01T18:00:30Z'));
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  act(() => root.render(<GenerationElapsedTime startedAt="2026-10-01T18:00:00Z" label="Generation time:" />));
+  expect(container.textContent).toBe('Generation time: 30s');
+  act(() => root.unmount());
+});
+
 it.each([undefined, '', 'not a timestamp'])('hides the clock when no valid start exists: %s', startedAt => {
   const container = document.createElement('div');
   const root = createRoot(container);
