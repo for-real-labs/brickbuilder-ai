@@ -94,7 +94,16 @@
 /* Keep the stage full size and let the conversation cover only its lower half. */
 .landing-page .landing-model-workspace,
 .landing-page .landing-generation-workspace {
-  height: min(460px, max(160px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 112px)));
+  height: min(720px, max(260px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 84px)));
+}
+.landing-page .landing-model-panel { position: relative; }
+.landing-page .landing-model-panel[data-expanded="true"] { position: fixed; }
+.landing-page .landing-model-panel:not([data-expanded="true"]) .landing-model-toolbar {
+  position: absolute;
+  z-index: 4;
+  top: 56px;
+  right: 12px;
+  margin: 0;
 }
 .landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation {
   max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-workspace-midpoint, 50dvh) - var(--landing-conversation-bottom)));
@@ -110,10 +119,6 @@
 }
 .landing-page:has(.landing-model-workspace) .pet-dialogue { max-height: min(240px, 36dvh); }
 .landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(320px, 40dvh); }
-@media (max-width: 639px) {
-  .landing-page .landing-model-workspace { max-height: 380px; }
-}
-
 .landing-header--model { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 12px; }
 .landing-header--model > nav { justify-self: end; }
 @media (max-width: 639px) {
