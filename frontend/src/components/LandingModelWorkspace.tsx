@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, Box, Maximize2 } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
+import { ModelShareMenu } from './ModelShareMenu';
 import { LdrawGenerationAnimation } from './LdrawGenerationAnimation';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
@@ -38,6 +39,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const panel = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
+  const collapseRef = useRef<(source: 'back_button' | 'escape') => void>(() => {});
   const showingInstructions = !pendingEdit && instructionsId === generation?.generation_id && view === 'instructions';
   useEffect(() => {
     const openInstructions = Boolean(generation && requestedInstructionsId === generation.generation_id);
@@ -51,15 +53,28 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   useEffect(() => {
     const dialog = panel.current;
     if (!expanded || !dialog) return;
-    // Promote the same panel to the top layer so camera and instruction state survive.
-    dialog.close();
-    dialog.showModal();
+    const header = dialog.closest('.landing-page')?.querySelector('.landing-page-shell > header');
+    const updateTop = () => {
+      if (!header) return;
+      const pageTop = dialog.closest('.landing-page')?.getBoundingClientRect().top ?? 0;
+      dialog.style.setProperty('--landing-expanded-top', `${Math.ceil(header.getBoundingClientRect().bottom - pageTop) + 16}px`);
+    };
+    updateTop();
+    const observer = header && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateTop) : null;
+    if (header) observer?.observe(header);
+    window.addEventListener('resize', updateTop);
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); collapseRef.current('escape'); }
+    };
+    document.addEventListener('keydown', onKeyDown);
     backButton.current?.focus();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      dialog.close();
-      if (dialog.isConnected) dialog.show();
+      observer?.disconnect();
+      window.removeEventListener('resize', updateTop);
+      document.removeEventListener('keydown', onKeyDown);
+      dialog.style.removeProperty('--landing-expanded-top');
       document.body.style.overflow = previousOverflow;
       expandButton.current?.focus();
     };
@@ -70,6 +85,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     });
     setExpanded(false);
   };
+  useEffect(() => { collapseRef.current = collapse; });
   useEffect(() => {
     const element = stage.current;
     if (!element) return;
@@ -104,17 +120,12 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     {!model && building && <section className="landing-generation-workspace" aria-label="Build progress workspace">
       <LdrawGenerationAnimation />
     </section>}
-    {model && generation && <dialog ref={panel} open className="landing-model-panel"
+    {model && generation && <div className={`landing-model-layout${orderable ? ' landing-model-layout--orderable' : ''}`}>
+    <dialog ref={panel} open className="landing-model-panel"
       data-expanded={expanded} data-view={showingInstructions ? 'instructions' : 'model'}
-      role={expanded ? 'dialog' : 'region'} aria-modal={expanded || undefined}
+      role={expanded ? 'dialog' : 'region'}
       aria-label={expanded ? (showingInstructions ? 'Expanded instructions' : 'Expanded 3D viewer') : 'Model preview'}
       onCancel={event => { event.preventDefault(); collapse('escape'); }}>
-      <div className="landing-expanded-header" hidden={!expanded}>
-        <button ref={backButton} type="button" className="landing-action-button landing-view-back" onClick={() => collapse('back_button')}>
-          <ArrowLeft size={20} aria-hidden="true" /><span>Back to builder</span>
-        </button>
-        <span className="landing-expanded-label">{showingInstructions ? 'Instructions' : '3D viewer'}</span>
-      </div>
       <section className="landing-model-workspace" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label={pendingEdit ? 'Building your edited model' : showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
           {pendingEdit ? <LdrawGenerationAnimation /> :
@@ -142,25 +153,37 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
         </button>
         <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded}
-          aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'} aria-haspopup="dialog"
+          aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'}
+          title={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'} aria-haspopup="dialog"
           onClick={() => {
             posthog.capture('landing_model_view_expanded', {
               generation_id: generation.generation_id, view: showingInstructions ? 'instructions' : 'model', source: 'viewer_footer',
             });
             setExpanded(true);
           }}>
-          <Maximize2 size={16} aria-hidden="true" /><span>Expand view</span>
+          <Maximize2 size={18} aria-hidden="true" />
         </button>
       </div>}
-    </dialog>}
-    <section className="landing-model-conversation" aria-label="Build dialogue">
-      {children}
-    </section>
-    {model && generation && orderable && !pendingEdit && <LandingModelOrdering key={generation.generation_id}
+      {!pendingEdit && <div className="landing-model-bottom-toolbar">
+        {!busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share">
+          <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
+        </div>}
+      </div>}
+      <div className="landing-expanded-footer" hidden={!expanded}>
+        <button ref={backButton} type="button" className="landing-action-button landing-view-back" onClick={() => collapse('back_button')}>
+          <ArrowLeft size={20} aria-hidden="true" /><span>Go Back</span>
+        </button>
+      </div>
+    </dialog>
+    {orderable && !pendingEdit && <LandingModelOrdering key={generation.generation_id}
         model={model} busy={busy} showMobileBar={dismissedOrderId !== generation.generation_id && !composerFocused}
         onHeightChange={onOrderBarHeightChange} onDismiss={() => {
           setDismissedOrderId(generation.generation_id);
           posthog.capture('landing_model_order_banner_dismissed', { generation_id: generation.generation_id });
         }} />}
+    </div>}
+    <section className={`landing-model-conversation${model ? ' landing-model-conversation--model-card' : ''}`} aria-label="Build dialogue">
+      {children}
+    </section>
   </>;
 }

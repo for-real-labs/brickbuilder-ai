@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { GetPriceApiService, type GetPriceResponse } from '../services/getPriceApi';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { MobileModelOrderBar } from './MobileModelOrderBar';
+import { ModelOrderCard } from './ModelOrderCard';
 import { getOrderPricing } from '../utils/orderCheckout';
 
 export function LandingModelOrdering({ model, busy, showMobileBar, onDismiss, onHeightChange }: {
@@ -38,7 +39,11 @@ export function LandingModelOrdering({ model, busy, showMobileBar, onDismiss, on
     } });
   };
   return <>
-    {showMobileBar && <MobileModelOrderBar showOnDesktop quote={quote} loading={loading} updating={busy} error={error}
+    <aside className="landing-desktop-order" aria-label="Order pane">
+      <ModelOrderCard quote={quote} loading={loading} updating={busy} error={error}
+        onOrder={() => order('card')} showMobileBar={false} />
+    </aside>
+    {showMobileBar && <MobileModelOrderBar quote={quote} loading={loading} updating={busy} error={error}
       onHeightChange={onHeightChange} onDismiss={onDismiss} onOrder={() => order('mobile_bar')} />}
   </>;
 }

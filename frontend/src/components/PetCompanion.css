@@ -5,7 +5,7 @@
 .pet-avatar--transparent { mix-blend-mode: normal; }
 .pet-avatar--alpha-playing > img { visibility: hidden; }
 /* Match the app's white cards, slate typography, red accents and pill controls. */
-.pet-greeting { display: flex; align-items: center; gap: 8px; text-align: left; width: 100%; margin: -12px 0 8px; }
+.pet-greeting { display: flex; align-items: flex-end; gap: 8px; text-align: left; width: 100%; margin: -12px 0 8px; }
 .pet-greeting--edit { gap: 0; margin: -8px 0 8px; }
 .pet-greeting--edit .pet-avatar { width: 88px; height: 88px; margin-left: -12px; }
 .pet-speech { position: relative; min-width: 0; flex: 1; padding: 12px 16px 16px; border: 1px solid #e2e8f0; border-radius: 16px 16px 16px 4px; background: #fff; }
@@ -61,11 +61,11 @@
 .pet-dialogue { width: 100%; max-height: min(560px, 58dvh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin-bottom: 16px; padding: 4px 4px 8px; text-align: left; }
 .pet-dialogue-content, .pet-dialogue-turn, .pet-build-messages, .pet-notification-conversation { display: grid; gap: 12px; min-width: 0; }
 .pet-dialogue .pet-greeting { margin: 0; }
-.pet-chat-message, .pet-dialogue .pet-greeting { display: flex; align-items: stretch; gap: 12px; min-width: 0; width: 100%; text-align: left; animation: pet-message-in .22s ease-out; }
+.pet-chat-message, .pet-dialogue .pet-greeting { display: flex; align-items: flex-end; gap: 12px; min-width: 0; width: 100%; text-align: left; animation: pet-message-in .22s ease-out; }
 .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { width: 52px; height: 60px; margin-left: 0; }
 .pet-dialogue { --buddy-width: 52px; --buddy-height: 60px; --buddy-gap: 8px; }
 .pet-dialogue .pet-chat-message:not(.pet-chat-message--user), .pet-dialogue .pet-greeting { position: relative; padding-left: calc(var(--buddy-width) + var(--buddy-gap)); }
-.pet-dialogue .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { display: none; position: absolute; inset: 0 auto 0 0; width: var(--buddy-width); height: 100%; min-height: 0; overflow: hidden; }
+.pet-dialogue .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { display: none; position: absolute; top: auto; right: auto; bottom: 0; left: 0; width: var(--buddy-width); height: var(--buddy-height); min-height: 0; overflow: hidden; }
 .pet-dialogue [data-current-buddy-message] > .pet-avatar { display: block; }
 .pet-dialogue [data-current-buddy-message] { min-height: var(--buddy-height); }
 .pet-chat-bubble, .pet-dialogue .pet-speech { min-width: 0; max-width: calc(100% - 60px); padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 18px 18px 18px 5px; background: #fff; color: #334155; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; box-shadow: 0 2px 6px #0f172a04; }

@@ -17,6 +17,39 @@ const available = new Set(catalog.split(/\r?\n/).slice(1).map(line => {
   return `${part?.toLowerCase()}:${color}`;
 }));
 
+const brickSizes: Record<string, { studsX: number; studsZ: number; height: number }> = {
+  '3001': { studsX: 4, studsZ: 2, height: 24 },
+  '3003': { studsX: 2, studsZ: 2, height: 24 },
+  '3005': { studsX: 1, studsZ: 1, height: 24 },
+  '3020': { studsX: 4, studsZ: 2, height: 8 },
+  '3034': { studsX: 8, studsZ: 2, height: 8 },
+};
+
+function placement(line: string) {
+  const fields = line.trim().split(/\s+/);
+  const part = fields[14].replace(/\.dat$/i, '');
+  const dimensions = brickSizes[part];
+  expect(dimensions).toBeDefined();
+  expect(fields.slice(5, 14).map(Number)).toEqual([1, 0, 0, 0, 1, 0, 0, 0, 1]);
+  return { x: Number(fields[2]), y: Number(fields[3]), z: Number(fields[4]), ...dimensions };
+}
+
+function studs(center: number, count: number) {
+  return Array.from({ length: count }, (_, index) => center + (index - (count - 1) / 2) * 20);
+}
+
+function sharesStud(first: ReturnType<typeof placement>, second: ReturnType<typeof placement>) {
+  return studs(first.x, first.studsX).some(x => studs(second.x, second.studsX).includes(x))
+    && studs(first.z, first.studsZ).some(z => studs(second.z, second.studsZ).includes(z));
+}
+
+function bodiesOverlap(first: ReturnType<typeof placement>, second: ReturnType<typeof placement>) {
+  const axisOverlap = (a: number, aSize: number, b: number, bSize: number) => Math.abs(a - b) * 2 < aSize + bSize;
+  return axisOverlap(first.x, first.studsX * 20, second.x, second.studsX * 20)
+    && axisOverlap(first.z, first.studsZ * 20, second.z, second.studsZ * 20)
+    && first.y < second.y + second.height && second.y < first.y + first.height;
+}
+
 it.each(LDRAW_GENERATION_SCENES)('packs the %s scene with renderable LDraw parts sold by Brickwith', async scene => {
   const source = readFileSync(`scripts/ldraw-generation-scenes/${scene}.ldr`, 'utf8');
   const placed = source.split(/\r?\n/).filter(line => line.startsWith('1 '));
@@ -27,6 +60,15 @@ it.each(LDRAW_GENERATION_SCENES)('packs the %s scene with renderable LDraw parts
   }
   const packed = readFileSync(`public/assets/ldraw-generation-scenes/${scene}.mpd`, 'utf8');
   expect(packed).toContain(`0 FILE ${scene}.ldr`);
+  const packedPlacements = packed.split('\n0 FILE parts/')[0].split(/\r?\n/)
+    .filter(line => line.startsWith('1 ')).map(line => line.replace(' parts/', ' '));
+  expect(packedPlacements).toEqual(placed);
+  const build = placed.map(placement);
+  build.forEach((part, index) => {
+    expect(build.slice(0, index).some(previous => bodiesOverlap(part, previous))).toBe(false);
+    if (index > 0) expect(build.slice(0, index).some(previous =>
+      part.y + part.height === previous.y && sharesStud(part, previous))).toBe(true);
+  });
   const loader = new LDrawLoader();
   loader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
   const model = await new Promise<import('three').Group>((resolve, reject) => loader.parse(packed, resolve, reject));
@@ -56,7 +98,7 @@ it('cycles packed 3D scenes without repeating the current scene', async () => {
   const viewer = () => container.querySelector<HTMLElement>('[data-testid="viewer"]')!;
   expect(viewer().dataset.path).toBe('/assets/ldraw-generation-scenes/house.mpd');
   expect(viewer().dataset.style).toBe('fade');
-  expect(viewer().dataset.presentation).toBe('model');
+  expect(viewer().dataset.presentation).toBe('room');
   await act(async () => vi.advanceTimersByTimeAsync(8_000));
   expect(viewer().dataset.path).toBe('/assets/ldraw-generation-scenes/tree.mpd');
 });

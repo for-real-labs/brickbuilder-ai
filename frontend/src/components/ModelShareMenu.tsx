@@ -3,9 +3,9 @@ import { Check, ChevronDown, Facebook, Instagram, Link, Share2 } from 'lucide-re
 import posthog from 'posthog-js';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 
-interface Props { generationId: string; modelName: string }
+interface Props { generationId: string; modelName: string; placement?: 'above' | 'below' }
 
-export function ModelShareMenu({ generationId, modelName }: Props) {
+export function ModelShareMenu({ generationId, modelName, placement = 'below' }: Props) {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [copied, setCopied] = useState(false);
@@ -55,7 +55,7 @@ export function ModelShareMenu({ generationId, modelName }: Props) {
       }}>
       <Share2 size={16} aria-hidden="true" /> Share <ChevronDown size={14} aria-hidden="true" />
     </button>
-    {open && <div id={menuId} role="dialog" aria-label="Share model" className="absolute right-0 top-full z-40 mt-2 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl">
+    {open && <div id={menuId} role="dialog" aria-label="Share model" className={`absolute right-0 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${placement === 'above' ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
       <button type="button" data-share-action className={rowClass} onClick={() => void copy('url')}>
         {copied ? <Check size={18} aria-hidden="true" /> : <Link size={18} aria-hidden="true" />} {copied ? 'Link copied' : 'Copy link'}
       </button>

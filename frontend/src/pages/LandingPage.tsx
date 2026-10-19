@@ -997,7 +997,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               </div>
             </div>}
           <div className={ldrawLanding ? 'w-full' : 'landing-page-content'}>
-          <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6">
+          <div className={`mx-auto flex w-full flex-col items-center gap-6 ${landingModel.model ? 'max-w-6xl' : 'max-w-3xl'}`}>
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
               <PetPromptGreeting mode="upload" state={petState} showPetSwitch={false} />
               <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding?.uploadTitle}</h2>
@@ -1008,7 +1008,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 navigate(getGeneratedModelPath(id, true));
               }} />
             </div>}
-            {!ldrawLanding && <div className="relative z-20 w-full">
+            {!ldrawLanding && <div className="landing-model-host relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 onOrderBarHeightChange={setOrderBarHeight}>
@@ -1105,7 +1105,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   {!imageLanding && !imgFile && !prompt && !focused && !loading && !buddyChat.routing &&
-                    <span className={`landing-empty-input-hint${landingModel.model ? ' landing-empty-input-hint--edit' : ''}`} aria-hidden="true">build anything<span className="landing-empty-input-caret" /></span>}
+                    <span className={`landing-empty-input-hint${landingModel.model ? ' landing-empty-input-hint--edit' : ''}`} aria-hidden="true">{landingModel.model ? 'edit model' : 'build anything'}<span className="landing-empty-input-caret" /></span>}
                   <button
                     type="submit" aria-label={sendLabel} title={sendLabel}
                     onPointerDown={event => {

@@ -1,4 +1,5 @@
 import React from 'react';
+import { readFileSync } from 'node:fs';
 import { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Link } from 'react-router-dom';
@@ -33,6 +34,20 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 describe('build buddies', () => {
+  it('aligns the pet with the bottom of standalone greeting and reply bubbles', () => {
+    const style = document.createElement('style');
+    style.textContent = readFileSync('src/components/PetCompanion.css', 'utf8');
+    document.head.append(style);
+    try {
+      render(<><PetPromptGreeting showPetSwitch={false}>Tell me what to build.</PetPromptGreeting>
+        <PetChatMessage><p>That is a fun idea.</p></PetChatMessage></>);
+      expect(getComputedStyle(container.querySelector('.pet-greeting')!).alignItems).toBe('flex-end');
+      expect(getComputedStyle(container.querySelector('.pet-chat-message')!).alignItems).toBe('flex-end');
+    } finally {
+      style.remove();
+    }
+  });
+
   it('reveals buddy replies quickly while preserving formatted text and immediate actions', () => {
     render(<PetChatMessage><p>I’ll email <strong>builder@example.com</strong> when your build is ready.</p><button type="button">View model</button></PetChatMessage>);
     const paragraph = container.querySelector('p')!;

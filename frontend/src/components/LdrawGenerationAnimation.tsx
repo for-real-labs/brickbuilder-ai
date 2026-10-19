@@ -28,7 +28,7 @@ export function LdrawGenerationAnimation() {
     <Suspense fallback={null}>
       <ThreeLDRViewer key={scene} modelPath={`/assets/ldraw-generation-scenes/${scene}.mpd`}
         autoRotate={false} showExplodeControl={false} showModelControls={false}
-        presentation="model" animateModelBuild={!reducedMotion} buildAnimationStyle="fade" />
+        presentation="room" animateModelBuild={!reducedMotion} buildAnimationStyle="fade" />
     </Suspense>
   </div>;
 }
