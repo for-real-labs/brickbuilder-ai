@@ -611,6 +611,37 @@ it('shows the saved generation duration on the dashboard card', async () => {
   expect(container.textContent).toContain('Generation time: 2m 5s');
 });
 
+it('shows elapsed generation time in the viewer while a first build is processing', async () => {
+  const created_at = new Date(Date.now() - 65_000).toISOString();
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({
+    generation_id: 'g', status: 'processing', endpoint: 'llmToBricks', version: 1, created_at,
+  } as never);
+  vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.textContent).toContain('Generation time: 1m 5s');
+  expect(container.textContent).not.toContain('Building for');
+});
+
+it('shows the active edit time over the completed model instead of its saved duration', async () => {
+  const created_at = new Date(Date.now() - 65_000).toISOString();
+  vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id => id === 'old'
+    ? { ...completedEditSource, generation_duration_seconds: 80 }
+    : { ...pendingEdit, created_at } as never);
+  vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('[data-testid="viewer"]')?.closest('figure')?.textContent).toContain('Generation time: 1m 5s');
+  expect(container.textContent).not.toContain('Generation time: 1m 20s');
+});
+
+it('shows the saved generation duration in the completed viewer', async () => {
+  vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({
+    generation_id: 'g', status: 'completed', name: 'Fish', prompt: 'fish', ldr_content: 'ldr',
+    generation_duration_seconds: 125,
+  } as never);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('.model-workspace-title')?.textContent).toContain('Generation time: 2m 5s');
+});
+
 it('loads the saved edit example from the generated model response', async () => {
   vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({generation_id: 'g', status: 'completed',
     endpoint: 'novaToBricks', name: 'Fish', prompt: 'image reference', ldr_content: 'ldr',

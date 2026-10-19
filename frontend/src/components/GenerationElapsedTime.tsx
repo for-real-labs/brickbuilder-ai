@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Clock3 } from 'lucide-react';
 
-export function GenerationElapsedTime({ startedAt }: { startedAt?: string | null }) {
+export function GenerationElapsedTime({ startedAt, label = 'Building for' }: { startedAt?: string | null; label?: string }) {
   const [now, setNow] = useState(Date.now);
   // Older backend rows use naive UTC timestamps. Interpret those as UTC too.
   const start = startedAt ? Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(startedAt) ? startedAt : `${startedAt}Z`) : NaN;
@@ -18,6 +18,6 @@ export function GenerationElapsedTime({ startedAt }: { startedAt?: string | null
   const duration = seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
   return <p className="mt-2 flex items-center gap-2 text-xs tabular-nums text-slate-500">
     <Clock3 aria-hidden="true" className="h-3.5 w-3.5 shrink-0" />
-    <span>Building for {duration}</span>
+    <span>{label} {duration}</span>
   </p>;
 }

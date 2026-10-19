@@ -1,4 +1,6 @@
 import { GenerationTitle } from '../components/GenerationTitle';
+import { GenerationDuration } from '../components/GenerationDuration';
+import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
 import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { GetNotifiedButton } from '../components/GetNotifiedButton';
 import { LlmPreviewLoader } from '../components/LlmPreviewLoader';
@@ -971,7 +973,7 @@ export default function GeneratedModel() {
     try {
       const completedGeneration = await GetGenerationApiService.pollUntilComplete(
         response.generation_id,
-        undefined,
+        setPendingGeneration,
         undefined,
         undefined,
         abortController.signal
@@ -1529,7 +1531,7 @@ export default function GeneratedModel() {
         // Poll until generation completes (LDR processing finishes)
         const completedGeneration = await GetGenerationApiService.pollUntilComplete(
           response.generation_id,
-          undefined,
+          setPendingGeneration,
           undefined,
           undefined,
           abortController.signal
@@ -1909,6 +1911,11 @@ export default function GeneratedModel() {
                 ? <LlmGenerationOutput generationId={pendingGeneration.generation_id} active />
                 : <p className="text-center text-sm text-slate-500">Preparing your model…</p>}
             </div>
+            {pendingGeneration && isGenerationActive(pendingGeneration.status) && (
+              <div className="flex justify-center">
+                <GenerationElapsedTime startedAt={pendingGeneration.created_at} label="Generation time:" />
+              </div>
+            )}
             {pendingGeneration && isGenerationActive(pendingGeneration.status) && <>
               <CancelGenerationButton generationId={pendingGeneration.generation_id}
                 isEdit={(pendingGeneration.version ?? 1) > 1} onCancelled={handleEditCancelled} />
@@ -1965,6 +1972,9 @@ export default function GeneratedModel() {
               refreshNotifications();
             }}
           />
+          {pendingGeneration?.generation_id === currentGenerationId && pendingGeneration.status === 'completed' && (
+            <GenerationDuration seconds={pendingGeneration.generation_duration_seconds} />
+          )}
           </div>
           {currentGenerationId && mpdContent && !isSavePolling && !isLDrawUpload && (
             <ModelShareMenu generationId={currentGenerationId} modelName={modelName} />
@@ -2244,6 +2254,9 @@ export default function GeneratedModel() {
                 <div className="flex flex-col items-center gap-3">
                   <div className="w-8 h-8 border-[3px] border-gray-300 border-t-black rounded-full animate-spin"></div>
                   <span className="text-xs text-slate-500">Processing build...</span>
+                  {pendingGeneration?.generation_id === currentGenerationId && isGenerationActive(pendingGeneration.status) && (
+                    <GenerationElapsedTime startedAt={pendingGeneration.created_at} label="Generation time:" />
+                  )}
                 </div>
               </div>
             ) : mpdContent ? (
@@ -2261,6 +2274,9 @@ export default function GeneratedModel() {
                     {editGenerationId && pendingGeneration && isAgentGeneration(pendingGeneration.endpoint)
                       ? <LlmGenerationOutput generationId={editGenerationId} active />
                       : <p role="status" className="pt-3 text-sm text-slate-500">{editGenerationId ? 'Updating your model…' : 'Starting your edit…'}</p>}
+                    {editGenerationId === pendingGeneration?.generation_id && isGenerationActive(pendingGeneration.status) && (
+                      <GenerationElapsedTime startedAt={pendingGeneration.created_at} label="Generation time:" />
+                    )}
                     {editGenerationId && <>
                       <CancelGenerationButton generationId={editGenerationId} isEdit onCancelled={handleEditCancelled} />
                       <GetNotifiedButton generationId={editGenerationId} promptOnStart />
