@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { BuildBuddyApi } from '../services/buildBuddyApi';
 import { usePet } from '../contexts/PetContext';
 import { type PetState } from '../pets';
-import { PetChatMessage, PetPromptGreeting } from './PetCompanion';
+import { PetChatMessage, PetPromptGreeting, PetTypingIndicator } from './PetCompanion';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
 import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
@@ -53,7 +53,7 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   </PetPromptGreeting>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, children }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
@@ -65,6 +65,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   welcomeMessage?: string;
   landingWelcome?: boolean;
   welcomeActions?: React.ReactNode;
+  onBackToWelcome?: () => void;
   children?: React.ReactNode;
 }) {
   const { pet } = usePet();
@@ -124,8 +125,11 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     ? <BuddyBuildMessages key={activeGeneration.id} generationId={activeGeneration.id} status={activeGeneration.status} />
     : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p></PetChatMessage>
     : latestTurn ? <PetChatMessage state={latestTurn.reply ? 'idle' : 'listening'}>
-      <p role={latestTurn.error ? 'status' : undefined}>{latestTurn.error ? BUILD_FAILURE_MESSAGE
-        : latestTurn.reply || (latestTurn.kind === 'gift' ? 'Let’s find a gift they’ll love…' : 'Let me take a look…')}</p>
+      {latestTurn.error ? <p role="status">{BUILD_FAILURE_MESSAGE}</p>
+        : latestTurn.reply ? <p>{latestTurn.reply}</p> : <PetTypingIndicator />}
+      {onBackToWelcome && <div className="pet-chat-actions">
+        <button type="button" className="pet-chat-action" onClick={onBackToWelcome}>Go back</button>
+      </div>}
     </PetChatMessage>
     : model && !reasoningOnly ? <ModelGreeting key={model.id} state={state} model={model} />
     : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
@@ -157,7 +161,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
           </PetChatMessage>
           {turn.error ? <PetChatMessage><p role="status">{BUILD_FAILURE_MESSAGE}</p></PetChatMessage>
             : <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
-              <p>{turn.reply || (turn.kind === 'gift' ? 'Let’s find a gift they’ll love…' : 'Let me take a look…')}</p>
+              {turn.reply ? <p>{turn.reply}</p> : <PetTypingIndicator />}
             </PetChatMessage>}
           {!turn.error && turn.generationId && (turn.method === 'llm' || turn.method === 'nova') && <BuddyBuildMessages
             generationId={turn.generationId} status={generation?.status || 'started'} />}

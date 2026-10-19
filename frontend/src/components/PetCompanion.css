@@ -70,12 +70,19 @@
 .pet-dialogue [data-current-buddy-message] { min-height: var(--buddy-height); }
 .pet-chat-bubble, .pet-dialogue .pet-speech { min-width: 0; max-width: calc(100% - 60px); padding: 12px 16px; border: 1px solid #e2e8f0; border-radius: 18px 18px 18px 5px; background: #fff; color: #334155; font-size: 14px; line-height: 1.6; overflow-wrap: anywhere; box-shadow: 0 2px 6px #0f172a04; }
 .pet-chat-message:not(.pet-chat-message--user) .pet-chat-bubble, .pet-dialogue .pet-speech { flex: 1; max-width: 100%; }
+.pet-chat-message:has(.pet-typing-indicator) .pet-chat-bubble { flex: 0 0 auto; min-width: 58px; }
 .pet-chat-bubble p, .pet-dialogue .pet-speech p { margin: 0; white-space: pre-wrap; color: inherit; font-size: inherit; line-height: inherit; font-weight: 400; }
+.pet-typing-indicator { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; vertical-align: middle; }
+.pet-typing-indicator > span { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; animation: pet-typing-pulse 1.2s ease-in-out infinite; }
+.pet-typing-indicator > span:nth-child(2) { animation-delay: .16s; }
+.pet-typing-indicator > span:nth-child(3) { animation-delay: .32s; }
+@keyframes pet-typing-pulse { 0%, 60%, 100% { opacity: .4; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
 .pet-dialogue .pet-speech { display: flex; flex-direction: column; justify-content: center; }
 .pet-chat-message--user { justify-content: flex-end; }
 .pet-chat-message--user .pet-chat-bubble { background: #fff1ef; border-color: #fddbd6; border-radius: 18px 18px 5px 18px; color: #7f332c; }
 .pet-chat-reference { display: block; width: min(220px, 100%); max-height: 180px; object-fit: contain; border-radius: 10px; margin-bottom: 8px; }
 .pet-chat-actions, .pet-chat-email { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.pet-random-build-loading-actions { padding-left: calc(var(--buddy-width) + var(--buddy-gap)); }
 .pet-chat-action { position: relative; z-index: 20; display: inline-flex; min-height: 44px; align-items: center; justify-content: center; margin-top: 8px; padding: 8px 14px; border: 1px solid #e2e8f0; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; }
 .pet-chat-actions .pet-chat-action, .pet-chat-email .pet-chat-action { margin-top: 0; }
 .pet-more-builds { align-items: center; }
@@ -116,4 +123,4 @@
   .pet-completed-build-preview img { height: 88px; }
   .pet-completed-build-title { min-width: 0; padding: 8px; }
 }
-@media (prefers-reduced-motion: reduce) { .pet-chat-message, .pet-dialogue .pet-greeting, .pet-speech { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .pet-chat-message, .pet-dialogue .pet-greeting, .pet-speech, .pet-typing-indicator > span { animation: none; } }

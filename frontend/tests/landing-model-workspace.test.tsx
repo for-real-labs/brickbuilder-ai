@@ -103,7 +103,7 @@ function type(text: string) {
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 
-it('keeps the welcome dialogue centered until input and stays docked after clearing it', async () => {
+it('keeps the landing dialogue in the centered layout while typing and after clearing the input', async () => {
   await act(async () => root.render(<LandingPage />));
   const shell = container.querySelector('.landing-page')!;
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
@@ -111,6 +111,8 @@ it('keeps the welcome dialogue centered until input and stays docked after clear
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
   type('A little castle');
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
+  expect(shell.querySelector('.landing-model-workspace, .landing-generation-workspace')).toBeNull();
+  expect(shell.querySelector('.landing-model-conversation')).not.toBeNull();
   type('');
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
 });
@@ -182,14 +184,17 @@ it('shows processing and recent completed builds inside pet dialogue only after 
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
     .find(button => button.textContent === 'Show builds')!.click());
+  expect(container.querySelector('.landing-page--conversation-started')).not.toBeNull();
+  expect(container.querySelector('.landing-model-workspace, .landing-generation-workspace')).toBeNull();
   const rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
   expect(rows).toHaveLength(2);
   expect(rows[0].textContent).toContain('Rocket');
   expect(rows[1].textContent).toContain('Ready car');
   expect(container.querySelector('.pet-dialogue')?.contains(rows[0])).toBe(true);
+  expect(container.querySelector('.pet-chat-message .pet-chat-bubble button')?.textContent).toBe('Go back');
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
-    .find(button => button.textContent === 'Back')!.click());
+    .find(button => button.textContent === 'Go back')!.click());
   expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
   expect(input().getAttribute('aria-label')).toBe('Describe your model');
@@ -349,7 +354,7 @@ it('suggests random builds before starting one and offers a new idea or a way ba
   expect(suggest).toHaveBeenCalledWith([], undefined, expect.any(AbortSignal));
   expect(generate).not.toHaveBeenCalled();
   expect(container.querySelector('#landing-build-prompt')).toBeNull();
-  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Something else')!.click());
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'No')!.click());
   expect(container.querySelector('.pet-dialogue p')?.textContent).toBe('How about the Millennium Falcon?');
   expect(suggest).toHaveBeenLastCalledWith(['a Pikachu riding a skateboard'], undefined, expect.any(AbortSignal));
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
@@ -368,7 +373,8 @@ it('shows loading and retry states without using an old or failed random suggest
     .mockResolvedValueOnce('a dancing R2-D2');
   await act(async () => root.render(<LandingPage />));
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Build something random')!.click());
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('I’m thinking of something fun to build');
+  expect(container.querySelector('.pet-dialogue [role="status"][aria-label="Build buddy is typing"]')?.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(3);
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('I’m thinking of something fun to build');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Yes');
   const firstSignal = suggest.mock.calls[0][2];
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
@@ -380,6 +386,7 @@ it('shows loading and retry states without using an old or failed random suggest
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('private upstream');
   await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Try again')!.click());
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('How about a dancing R2-D2?');
+  expect(container.querySelector('.pet-dialogue [aria-label="Build buddy is typing"]')).toBeNull();
   expect(suggest).toHaveBeenCalledTimes(3);
 });
 
@@ -391,7 +398,7 @@ it('shows an empty build list only when requested and returns to the opening que
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('You don’t have any builds yet.');
   expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
   expect(container.querySelector('#landing-build-prompt')).toBeNull();
-  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Back')!.click());
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
   expect(input()).not.toBeNull();
   expect(posthog.capture).toHaveBeenCalledWith('landing_builds_opened', { surface: 'pet_dialogue', processing_count: 0, completed_count: 0 });

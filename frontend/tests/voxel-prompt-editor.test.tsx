@@ -18,6 +18,8 @@ it('submits a requested edit and prevents empty or duplicate submissions', () =>
     render('red roof');
     act(() => container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     expect(submit).toHaveBeenCalledOnce();
+    expect(container.querySelector('[aria-label="Build buddy is typing"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('Let me take a look');
     render('red roof', true);
     act(() => container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
     expect(submit).toHaveBeenCalledOnce();

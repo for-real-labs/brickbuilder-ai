@@ -811,6 +811,15 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     posthog.capture('landing_community_models_clicked', { surface: 'pet_dialogue' });
     navigate('/community');
   };
+  const returnToWelcome = () => {
+    posthog.capture('landing_chat_back_clicked', { surface: 'pet_dialogue' });
+    buddyChat.resetConversation();
+    setHasEnteredChat(false);
+    setGiftPlanning(false);
+    setPrompt('');
+    setInputValidationMessage(null);
+    clearSelectedImage();
+  };
 
   const startGiftPlanning = (message: string, id: number) => {
     setGiftPlanning(true);
@@ -894,6 +903,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
   const sendLabel = buddyChat.routing ? 'Sending…' : landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
+  const latestChatTurn = buddyChat.turns.at(-1);
+  const canReturnToWelcome = Boolean(latestChatTurn?.reply || latestChatTurn?.error)
+    && !buddyChat.turns.some(turn => turn.generationId)
+    && !landingModel.model && !pendingGeneration && !pendingEdit && !loading && !buddyChat.routing
+    && !createNewStage && !randomSuggestion;
   const conversationStarted = !ldrawLanding
     && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage));
 
@@ -1016,6 +1030,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <button type="button" className="pet-chat-action" onClick={showBuilds}>Show builds</button>
                   <button type="button" className="pet-chat-action" onClick={showCommunityModels}>Show me community models</button>
                 </div>}
+                onBackToWelcome={canReturnToWelcome ? returnToWelcome : undefined}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>

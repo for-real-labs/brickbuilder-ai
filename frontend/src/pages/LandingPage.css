@@ -70,7 +70,10 @@
   .landing-page-intro { margin-top: 32px; }
   .landing-page-intro--hidden { margin-top: 0; }
   .landing-page:not(.landing-page--conversation-started) {
-    --landing-conversation-bottom: max(16px, calc((var(--landing-viewport-height, 100dvh) - var(--landing-intro-bottom, 240px) - var(--landing-conversation-height, 240px)) / 2));
+    --landing-conversation-bottom: max(16px, min(calc((var(--landing-viewport-height, 100dvh) - var(--landing-conversation-height, 240px)) / 2), calc(var(--landing-viewport-height, 100dvh) - var(--landing-intro-bottom, 240px) - var(--landing-conversation-height, 240px) - 16px)));
+  }
+  .landing-page--conversation-started:not(:has(.landing-model-workspace, .landing-generation-workspace)) {
+    --landing-conversation-bottom: max(16px, calc((var(--landing-viewport-height, 100dvh) - var(--landing-conversation-height, 240px)) / 2));
   }
   .landing-page:not(.landing-page--conversation-started) .landing-model-conversation {
     transform: translateX(-50%);

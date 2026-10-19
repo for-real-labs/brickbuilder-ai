@@ -45,6 +45,6 @@ export function CreateNewBuildsPrompt({ processing, completed, page, pageSize, o
         }}>Yes, show more</button>
       </div>}
     </>}
-    <button type="button" className="pet-chat-action" onClick={onBack}>Back</button>
+    <button type="button" className="pet-chat-action" onClick={onBack}>Go back</button>
   </PetChatMessage>;
 }
