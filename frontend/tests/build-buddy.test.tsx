@@ -37,11 +37,13 @@ it('shows only the current pet message and reserves opening copy for an explicit
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
     turns={[]} generations={[]} selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
   expect(container.querySelector('[role="status"][aria-label="Build buddy is typing"]')).not.toBeNull();
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
   expect(container.textContent).not.toContain('I’m opening your build');
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
     turns={[]} generations={[{ id: 'linked', prompt: 'A car', status: 'processing', endpoint: 'textTo3d' }]}
     selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
   expect(container.textContent).toContain('I’m getting your build ready.');
+  expect(container.querySelector('.pet-avatar--building')).not.toBeNull();
   expect(container.textContent).not.toContain('opening your build');
 });
 
@@ -50,11 +52,22 @@ it.each([true, false])('shows a typing bubble instead of waiting copy when curre
     turns={[{ id: 1, text: 'A castle' }]} generations={[]} /></PetProvider>));
   const typing = container.querySelector('[role="status"][aria-label="Build buddy is typing"]');
   expect(typing?.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(3);
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
   expect(container.textContent).not.toContain('Let me take a look');
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'A castle', reply: 'Let’s make a castle.' }]} generations={[]} /></PetProvider>));
   expect(container.querySelector('[aria-label="Build buddy is typing"]')).toBeNull();
   expect(container.textContent).toContain('Let’s make a castle.');
+});
+
+it('uses listening motion while typing after a reply and building motion once generation starts', async () => {
+  const turn = { id: 1, text: 'A castle', reply: 'A castle sounds fun.' };
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="listening"
+    turns={[turn]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
+    turns={[turn]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('.pet-avatar--building')).not.toBeNull();
 });
 
 it('introduces Pip in a message, remembers the visit, and removes the two old captions', async () => {
@@ -583,6 +596,7 @@ it('ends a stalled model greeting with a name-based fallback', async () => {
     await act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]} state="idle"
       model={{ id: 'castle', name: 'City of Troy', orderable: true }} />));
     expect(container.querySelector('[role="status"][aria-label="Build buddy is typing"]')).not.toBeNull();
+    expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
     expect(container.textContent).not.toContain('I’m looking at City of Troy');
     await act(async () => vi.advanceTimersByTimeAsync(22000));
     expect(greet.mock.calls[0][2].aborted).toBe(true);

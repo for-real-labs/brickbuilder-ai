@@ -4,6 +4,8 @@
 .pet-avatar > .pet-video-ready { opacity: 1; }
 .pet-avatar--transparent { mix-blend-mode: normal; }
 .pet-avatar--alpha-playing > img { visibility: hidden; }
+.pet-avatar--listening-motion > img, .pet-avatar--listening-motion > video { transform-origin: center bottom; animation: pet-listening 1.8s ease-in-out infinite; }
+@keyframes pet-listening { 0%, 100% { transform: rotate(-2deg); } 50% { transform: translateY(-2px) rotate(2deg); } }
 /* Match the app's white cards, slate typography, red accents and pill controls. */
 .pet-greeting { display: flex; align-items: flex-end; gap: 8px; text-align: left; width: 100%; margin: -12px 0 8px; }
 .pet-greeting--edit { gap: 0; margin: -8px 0 8px; }
@@ -56,7 +58,7 @@
   .pet-choice-description { display: none; }
   .pet-picker-footer { margin-top: 20px; }
 }
-@media (prefers-reduced-motion: reduce) { .pet-avatar > video { display: none; } .pet-choice, .pet-avatar > video { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .pet-avatar > video { display: none; } .pet-choice, .pet-avatar > video { transition: none; } .pet-avatar--listening-motion > img, .pet-avatar--listening-motion > video { animation: none; } }
 
 .pet-dialogue { width: 100%; max-height: min(560px, 58dvh); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin-bottom: 16px; padding: 4px 4px 8px; text-align: left; }
 .pet-dialogue-content, .pet-dialogue-turn, .pet-build-messages, .pet-notification-conversation { display: grid; gap: 12px; min-width: 0; }

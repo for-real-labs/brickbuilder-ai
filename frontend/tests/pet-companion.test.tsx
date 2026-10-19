@@ -227,6 +227,26 @@ describe('build buddies', () => {
     expect(container.querySelector('img')).not.toBeNull();
   });
 
+  it('animates the listening loop separately from the building clip and respects paused motion', () => {
+    const style = document.createElement('style');
+    style.textContent = readFileSync('src/components/PetCompanion.css', 'utf8');
+    document.head.append(style);
+    try {
+      render(<PetAvatar state="listening" />);
+      const listening = container.querySelector('.pet-avatar--listening-motion')!;
+      expect(listening.querySelector('source[src$="pip-idle-alpha.webm"]')).not.toBeNull();
+      expect(getComputedStyle(listening.querySelector('video')!).animation).toContain('pet-listening');
+      render(<PetAvatar state="building" />);
+      expect(container.querySelector('.pet-avatar--listening-motion')).toBeNull();
+      expect(container.querySelector('source[src$="pip-building-alpha.webm"]')).not.toBeNull();
+      expect(getComputedStyle(container.querySelector('video')!).animation).toBe('');
+      render(<PetAvatar state="listening" still />);
+      expect(container.querySelector('.pet-avatar--listening-motion')).toBeNull();
+    } finally {
+      style.remove();
+    }
+  });
+
   it.each(['pip', 'nib', 'clik'] as const)('uses normal alpha compositing for %s across activity changes', id => {
     for (const state of ['idle', 'listening', 'building', 'celebrating'] as const) {
       render(<PetAvatar id={id} state={state} />);

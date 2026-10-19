@@ -110,6 +110,7 @@ it('keeps the landing dialogue in the centered layout while typing and after cle
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
   act(() => input().focus());
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
   type('A little castle');
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
   expect(shell.querySelector('.landing-model-workspace, .landing-generation-workspace')).toBeNull();
@@ -375,6 +376,7 @@ it('shows loading and retry states without using an old or failed random suggest
   await act(async () => root.render(<LandingPage />));
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Build something random')!.click());
   expect(container.querySelector('.pet-dialogue [role="status"][aria-label="Build buddy is typing"]')?.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(3);
+  expect(container.querySelector('.pet-dialogue .pet-avatar--listening')).not.toBeNull();
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('I’m thinking of something fun to build');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Yes');
   const firstSignal = suggest.mock.calls[0][2];
@@ -442,6 +444,7 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only a 3D assembly i
   await act(async () => root.render(<LandingPage />));
   const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
   const workspace = container.querySelector('[aria-label="Build progress workspace"]')!;
+  expect(conversation.querySelector('.pet-avatar--building')).not.toBeNull();
   expect(workspace.querySelector('[aria-label="3D brick model assembling"]')).not.toBeNull();
   expect(workspace.querySelector('[data-testid="generation-3d-animation"]')?.getAttribute('data-scene')).toMatch(/\.mpd$/);
   expect(workspace.querySelector('article')).toBeNull();
