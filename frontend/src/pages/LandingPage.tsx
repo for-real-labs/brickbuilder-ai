@@ -977,7 +977,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }} />
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
-        <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={requestedModelId || landingModel.model ? { onClick: createNewModel, disabled: editSubmitting || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
+        <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={(requestedModelId || landingModel.model) && (!landingModel.model || pendingEdit) ? { onClick: createNewModel, disabled: editSubmitting || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
           generationSettings={ldrawLanding ? undefined : {
             open: settingsOpen,
             controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
@@ -1011,6 +1011,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             {!ldrawLanding && <div className="landing-model-host relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
+                onCreateNew={createNewModel} createNewDisabled={editSubmitting || buddyChat.routing}
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}

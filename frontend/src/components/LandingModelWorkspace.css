@@ -39,7 +39,7 @@
 
 .landing-model-toolbar .landing-action-button { min-height: 44px; }
 .landing-view-expand { width: 44px; min-width: 44px; padding: 0; }
-.landing-model-bottom-toolbar { position: absolute; z-index: 45; right: 12px; bottom: 12px; left: 12px; display: flex; align-items: end; justify-content: flex-end; gap: 12px; pointer-events: none; }
+.landing-model-bottom-toolbar { position: absolute; z-index: 45; right: 12px; bottom: 12px; left: 12px; display: flex; align-items: end; justify-content: space-between; gap: 12px; pointer-events: none; }
 .landing-model-bottom-toolbar > * { pointer-events: auto; }
 .landing-model-share button[aria-haspopup="dialog"] { font-weight: 500; line-height: 21px; }
 @media (max-width: 639px) {
@@ -50,8 +50,9 @@
 .landing-view-back { min-height: 44px; border-color: #fecaca; background: #fff; color: #b91c1c; font-weight: 600; }
 .landing-model-panel[data-expanded="true"] { position: fixed; z-index: 50; inset: var(--landing-expanded-top, 80px) 0 0; display: flex; flex-direction: column; width: 100%; height: auto; padding: 12px max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); overflow: hidden; background: #f8fafc; }
 .landing-model-panel[data-expanded="true"] > .landing-model-workspace { flex: 1; height: auto; max-height: none; min-height: 0; }
-.landing-model-panel[data-expanded="true"] > .landing-model-toolbar { flex-shrink: 0; }
-.landing-model-panel[data-expanded="true"] .landing-model-bottom-toolbar { bottom: 144px; justify-content: flex-end; }
+.landing-model-panel[data-expanded="true"] > .landing-model-toolbar { position: absolute; z-index: 4; top: 24px; right: max(32px, env(safe-area-inset-right)); left: max(32px, env(safe-area-inset-left)); justify-content: space-between; margin: 0; pointer-events: none; }
+.landing-model-panel[data-expanded="true"] > .landing-model-toolbar button { pointer-events: auto; }
+.landing-model-panel[data-expanded="true"] .landing-model-bottom-toolbar { bottom: 144px; }
 @media (max-width: 639px) {
   .landing-model-panel[data-expanded="true"] { padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
 }
