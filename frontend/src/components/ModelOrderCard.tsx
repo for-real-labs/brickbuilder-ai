@@ -27,7 +27,7 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
     <section className="model-order-card" aria-label="Your brick kit">
       <div className="model-order-heading">
         <span className="model-order-icon"><Package size={20} aria-hidden="true" /></span>
-        <div><h2>Bring it to life</h2><p>Your model, delivered as a brick kit.</p></div>
+        <div><h2>Bring it to life</h2><p>Your model, delivered to your door.</p></div>
       </div>
       <div className="model-order-price">
         <span className="model-order-total">{price}</span>

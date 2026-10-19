@@ -1,5 +1,7 @@
 .landing-page {
   --landing-conversation-bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--landing-order-banner-height, 0px));
+  --landing-sidebar-card-background: #fffaf9;
+  --landing-sidebar-card-border: #f6dfda;
   position: fixed;
   inset: 0;
   height: var(--landing-viewport-height, 100dvh);
@@ -123,9 +125,9 @@
     transform: none;
     translate: 0;
     transition: none;
-    border: 1px solid #f6dfda;
+    border: 1px solid var(--landing-sidebar-card-border);
     border-radius: 22px;
-    background: #fffaf9;
+    background: var(--landing-sidebar-card-background);
     box-shadow: 0 12px 24px #0f172a1a;
   }
   .landing-page:has(.landing-model-layout) .landing-page-content { padding-bottom: 24px; }

@@ -14,6 +14,7 @@ afterEach(() => act(() => root.unmount()));
 it('uses the checkout cent rounding and launch discount with shipping included', () => {
   const order = vi.fn();
   act(() => root.render(<ModelOrderCard quote={quote} loading={false} updating={false} error={null} onOrder={order} />));
+  expect(container.querySelector('.model-order-heading p')?.textContent).toBe('Your model, delivered to your door.');
   expect(container.querySelector('.model-order-total')?.textContent).toBe('$22.39');
   expect(container.querySelector('.model-order-original')?.textContent).toBe('$44.77');
   const priceRow = container.querySelector('.model-order-price')!;
