@@ -626,7 +626,7 @@ it('keeps the dialogue outside the viewer alongside the order pane', async () =>
   expect(order.querySelector('[aria-label="Your brick kit"]')).not.toBeNull();
 });
 
-it('places the desktop order card above the dialogue with compact top padding', () => {
+it('places the desktop dialogue above the order card with room from the top', () => {
   const pageCss = readFileSync('src/pages/LandingPage.css', 'utf8');
   const workspaceCss = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
   const layoutRule = pageCss.match(/\.landing-model-host:has\(\.landing-model-layout\)\s*\{([^}]+)\}/)?.[1];
@@ -635,9 +635,11 @@ it('places the desktop order card above the dialogue with compact top padding', 
 
   expect(pageCss).toMatch(/grid-template-rows:\s*auto minmax\(0, 1fr\)/);
   expect(layoutRule).toMatch(/row-gap:\s*16px\s*;/);
-  expect(dialogueRule).toMatch(/grid-row:\s*2\s*;/);
+  expect(dialogueRule).toMatch(/grid-row:\s*1\s*;/);
+  expect(dialogueRule).toMatch(/margin-top:\s*24px\s*;/);
   expect(dialogueRule).toMatch(/padding:\s*12px 18px 18px\s*;/);
-  expect(orderRule).toMatch(/grid-row:\s*1\s*;/);
+  expect(orderRule).toMatch(/grid-row:\s*2\s*;/);
+  expect(orderRule).toMatch(/align-self:\s*end\s*;/);
   expect(pageCss).toMatch(/\.landing-model-conversation--model-card \.pet-conversation-input\s*\{\s*height:\s*50px\s*;\s*\}/);
 });
 
