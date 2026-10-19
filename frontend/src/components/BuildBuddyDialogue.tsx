@@ -12,6 +12,7 @@ import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { pickModelGreeting, rememberModelGreeting } from '../utils/buddyModelGreetings';
+import { recentModelFacts, rememberModelFact } from '../utils/buddyModelFacts';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
 export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
@@ -42,16 +43,18 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
     const controller = new AbortController();
     const fallback = `Here’s ${name}!`;
     const timeout = setTimeout(() => { controller.abort(); setFact(fallback); }, 22000);
-    void BuildBuddyApi.modelGreeting({ generationId: model.id, pet: pet.id }, session?.access_token, controller.signal)
-      .then(reply => { if (!controller.signal.aborted) setFact(reply); })
+    void BuildBuddyApi.modelGreeting({ generationId: model.id, pet: pet.id, previousFacts: recentModelFacts(model.id) },
+      session?.access_token, controller.signal)
+      .then(reply => { if (!controller.signal.aborted) { rememberModelFact(model.id, reply); setFact(reply); } })
       .catch(() => { if (!controller.signal.aborted) setFact(fallback); })
       .finally(() => clearTimeout(timeout));
     return () => { controller.abort(); clearTimeout(timeout); };
   }, [model.id, name, pet.id, session?.access_token]);
   const action = model.orderable ? invitation : 'Tell me if you want to edit this model!';
-  return <PetPromptGreeting state={fact ? state : 'listening'} showPetSwitch={false}>
-    {fact ? emphasizeModelActions(`${fact} ${action}`) : <PetTypingIndicator />}
-  </PetPromptGreeting>;
+  return <div className="pet-dialogue-turn pet-model-greeting">
+    <PetChatMessage state={fact ? state : 'listening'}><p>{fact || <PetTypingIndicator />}</p></PetChatMessage>
+    {fact && <PetPromptGreeting state={state} showPetSwitch={false}>{emphasizeModelActions(action)}</PetPromptGreeting>}
+  </div>;
 }
 
 export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, children }: {

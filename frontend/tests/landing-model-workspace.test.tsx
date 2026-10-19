@@ -511,7 +511,7 @@ it('restores the order banner when a returning phone app has closed its keyboard
   expect(document.activeElement).not.toBe(input());
 });
 
-it('replaces loading messages with one animated model greeting when a linked build is ready', async () => {
+it('replaces loading messages with separate fact and edit bubbles when a linked build is ready', async () => {
   query.value = 'id=castle&exact=1';
   localStorage.setItem('brickbuilder.build-buddy-seen', 'true');
   inbox.notifications = [{ id: 'other', prompt: 'Other model', status: 'completed', seen: false, updated_at: '2026-10-17', is_edit: false }];
@@ -528,7 +528,8 @@ it('replaces loading messages with one animated model greeting when a linked bui
   expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
   expect(dialogue.querySelectorAll('.pet-greeting')).toHaveLength(1);
   expect(dialogue.querySelector('.pet-response-word')).not.toBeNull();
-  expect(dialogue.querySelector('.pet-chat-message')).toBeNull();
+  expect(dialogue.querySelectorAll('.pet-model-greeting .pet-chat-bubble')).toHaveLength(1);
+  expect(dialogue.querySelectorAll('.pet-model-greeting .pet-speech')).toHaveLength(1);
   expect(dialogue.textContent).toContain('order button');
   expect(dialogue.textContent).toContain('delivered');
   expect(dialogue.textContent).not.toContain('Welcome back');
