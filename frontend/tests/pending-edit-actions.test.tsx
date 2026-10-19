@@ -27,6 +27,7 @@ afterEach(() => {
   container.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
+  vi.useRealTimers();
 });
 
 const button = (label: string) => Array.from(container.querySelectorAll('button')).find(element => element.textContent === label)!;
@@ -49,7 +50,7 @@ it('keeps edit actions visible while awaiting an ID, then saves a guest email ou
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('edit', 'builder@example.com');
   expect(button('Email set').disabled).toBe(true);
-  expect(container.textContent).toContain('We’ll email you when your build is ready.');
+  expect(container.textContent).toContain('Email will be sent to builder@example.com when ready.');
   expect(container.querySelector('input[type="email"]')).toBeNull();
   expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_subscribed', expect.objectContaining({ generation_id: 'edit', source: 'landing_edit_actions' }));
 });
@@ -78,4 +79,15 @@ it('uses generation actions and analytics for a new build', async () => {
   act(() => button('Start new').click());
   expect(startNew).toHaveBeenCalledOnce();
   expect(posthog.capture).toHaveBeenCalledWith('landing_generation_start_new_clicked', { generation_id: 'new-build' });
+});
+
+it('shows the active build duration and saved notification address', async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-10-19T18:01:00Z'));
+  vi.mocked(GenerationEmailApi.status).mockResolvedValue({ subscribed: true, email: 'saved@example.com' });
+  await act(async () => root.render(<PendingEditActions generationId="new-build" isEdit={false}
+    startedAt="2026-10-19T18:00:00Z" onCancelled={vi.fn()} onStartNew={vi.fn()} />));
+  expect(container.textContent).toContain('Building for 1m 0s');
+  expect(container.textContent).toContain('Email will be sent to saved@example.com when ready.');
+  expect(button('Email set').disabled).toBe(true);
 });

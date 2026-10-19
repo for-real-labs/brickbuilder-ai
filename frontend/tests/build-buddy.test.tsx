@@ -1,4 +1,5 @@
 import React, { act } from 'react';
+import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { BuildBuddyDialogue, BUDDY_SEEN_KEY } from '../src/components/BuildBuddyDialogue';
@@ -10,7 +11,7 @@ import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { apiFetch } from '../src/services/apiFetch';
 import greetings from '../src/data/buddy-welcome-greetings.json';
 import { formatBuddyGreeting } from '../src/utils/buddyGreetings';
-import petStyles from '../src/components/PetCompanion.css?raw';
+const petStyles = readFileSync('src/components/PetCompanion.css', 'utf8');
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null }) }));
@@ -35,7 +36,8 @@ it('shows only the current pet message and reserves opening copy for an explicit
   expect(container.textContent).not.toContain('opening your build');
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
     turns={[]} generations={[]} selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
-  expect(container.textContent).toContain('I’m opening your build');
+  expect(container.querySelector('[role="status"][aria-label="Build buddy is typing"]')).not.toBeNull();
+  expect(container.textContent).not.toContain('I’m opening your build');
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
     turns={[]} generations={[{ id: 'linked', prompt: 'A car', status: 'processing', endpoint: 'textTo3d' }]}
     selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
@@ -216,6 +218,10 @@ it.each(['processing', 'completed', 'cancelled', 'failed'])('keeps greetings, re
       expect(current).toBe(messages[messages.length - 1]);
       expect(container.querySelectorAll('[data-current-buddy-message]')).toHaveLength(1);
       expect(current.querySelector('.pet-avatar')).not.toBeNull();
+      const currentAvatar = getComputedStyle(current.querySelector('.pet-avatar')!);
+      expect(currentAvatar.bottom).toBe('0px');
+      expect(currentAvatar.top).toBe('auto');
+      expect(currentAvatar.height).toBe('var(--buddy-height)');
       expect(getComputedStyle(container.querySelector('.pet-chat-message--user .pet-chat-bubble')!).flexGrow).not.toBe('1');
     }
   } finally {
@@ -576,10 +582,12 @@ it('ends a stalled model greeting with a name-based fallback', async () => {
   try {
     await act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]} state="idle"
       model={{ id: 'castle', name: 'City of Troy', orderable: true }} />));
-    expect(container.textContent).toContain('I’m looking at City of Troy');
+    expect(container.querySelector('[role="status"][aria-label="Build buddy is typing"]')).not.toBeNull();
+    expect(container.textContent).not.toContain('I’m looking at City of Troy');
     await act(async () => vi.advanceTimersByTimeAsync(22000));
     expect(greet.mock.calls[0][2].aborted).toBe(true);
     expect(container.textContent).toContain('Here’s City of Troy!');
+    expect(container.querySelector('[aria-label="Build buddy is typing"]')).toBeNull();
   } finally { vi.useRealTimers(); }
 });
 

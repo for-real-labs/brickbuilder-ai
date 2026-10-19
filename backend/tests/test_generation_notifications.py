@@ -57,6 +57,7 @@ def test_notifications_are_owner_scoped_and_do_not_deduplicate_edits(storage):
     assert feed['unread_count'] == 2
     assert {row['id'] for row in feed['notifications']} == {'a', 'b'}
     assert feed['active'][0]['id'] == 'pending'
+    assert feed['active'][0]['created_at'] == 'pending'
     assert next(row for row in feed['notifications'] if row['id'] == 'b')['is_edit']
     assert not storage[0]['notification_seen']  # opening the list does not mark anything read
 

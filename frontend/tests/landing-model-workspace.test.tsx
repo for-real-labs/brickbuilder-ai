@@ -191,7 +191,7 @@ it('shows processing and recent completed builds inside pet dialogue only after 
   expect(rows[0].textContent).toContain('Rocket');
   expect(rows[1].textContent).toContain('Ready car');
   expect(container.querySelector('.pet-dialogue')?.contains(rows[0])).toBe(true);
-  expect(container.querySelector('.pet-chat-message .pet-chat-bubble button')?.textContent).toBe('Go back');
+  expect(Array.from(container.querySelectorAll('.pet-chat-message .pet-chat-bubble button')).some(button => button.textContent === 'Go back')).toBe(true);
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
     .find(button => button.textContent === 'Go back')!.click());
@@ -405,10 +405,12 @@ it('shows an empty build list only when requested and returns to the opening que
 });
 
 it('keeps the opening question independent of build counts', async () => {
-  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket' }];
+  vi.setSystemTime(new Date('2026-10-19T18:01:00Z'));
+  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket', createdAt: '2026-10-19T18:00:00Z' }];
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Rocket');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Building for 1m 0s');
   act(() => root.render(null));
   activity.rows = [];
   vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
@@ -464,6 +466,27 @@ it('hides the order banner while editing and restores it after focus leaves the 
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
   act(() => input().blur());
   expect(container.querySelector('[aria-label="Order your brick kit"]')).not.toBeNull();
+});
+
+it('submits a focused model edit on the first touch before the order banner returns', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), status: id === 'edited' ? 'processing' : 'completed' }));
+  const edit = vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'edited', message: 'Started' });
+  await act(async () => root.render(<LandingPage />));
+  act(() => input().focus());
+  type('Add a drawbridge');
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).toBeNull();
+  const send = container.querySelector<HTMLButtonElement>('button[aria-label="Apply edit"]')!;
+  const touch = new Event('pointerdown', { bubbles: true, cancelable: true });
+  Object.defineProperty(touch, 'pointerType', { value: 'touch' });
+  await act(async () => {
+    send.dispatchEvent(touch);
+    input().blur();
+    send.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+  });
+  expect(touch.defaultPrevented).toBe(true);
+  expect(edit).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined);
+  expect(container.querySelector('[aria-label="Building your edited model"]')).not.toBeNull();
 });
 
 it('restores the order banner when a returning phone app has closed its keyboard', async () => {
@@ -529,17 +552,44 @@ it('orders the ready landing model using its displayed quote and dismisses only 
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_order_banner_dismissed', { generation_id: 'castle' });
 });
 
-it('keeps the header free of order buttons and shows piece count in the order bar', async () => {
+it('shows the model beside a desktop order pane and keeps the mobile banner for phones', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.landing-model-heading')).toBeNull();
   expect(container.querySelector('.model-order-dialog')).toBeNull();
+  const layout = container.querySelector('.landing-model-layout--orderable')!;
+  expect(layout.querySelector('.landing-model-panel')).not.toBeNull();
+  expect(layout.querySelector('[aria-label="Order pane"] .model-order-card')).not.toBeNull();
+  expect(layout.querySelector('[aria-label="Order pane"]')?.textContent).toContain('$22.39');
   const banner = container.querySelector('.model-mobile-order')!;
-  expect(banner.classList.contains('model-mobile-order--all-screens')).toBe(true);
+  expect(banner.classList.contains('model-mobile-order--all-screens')).toBe(false);
   expect(banner.textContent).toContain('370 pieces');
   expect(banner.textContent).not.toContain('Shipping included');
   expect(banner.querySelector('strong')?.textContent).toBe('$22.39');
+});
+
+it('keeps the dialogue outside the viewer alongside the order pane', async () => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>
+    <div>Model conversation</div>
+  </LandingModelWorkspace>));
+  const viewer = container.querySelector('[aria-label="Model preview"]')!;
+  const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
+  const order = container.querySelector('[aria-label="Order pane"]')!;
+  expect(viewer.contains(dialogue)).toBe(false);
+  expect(viewer.contains(order)).toBe(false);
+  expect(dialogue.textContent).toBe('Model conversation');
+  expect(order.querySelector('[aria-label="Your brick kit"]')).not.toBeNull();
+});
+
+it('marks only model dialogue for the desktop sidebar card', async () => {
+  const renderWorkspace = (model: LandingModel | null) => act(async () => root.render(
+    <LandingModelWorkspace model={model} busy={false}><div>Conversation</div></LandingModelWorkspace>,
+  ));
+  await renderWorkspace(null);
+  expect(container.querySelector('[aria-label="Build dialogue"]')?.classList.contains('landing-model-conversation--model-card')).toBe(false);
+  await renderWorkspace({ generation: generation('castle'), content: 'model' });
+  expect(container.querySelector('[aria-label="Build dialogue"]')?.classList.contains('landing-model-conversation--model-card')).toBe(true);
 });
 
 it('keeps a dismissed banner closed for the current model and shows it for the next completed model', async () => {
@@ -731,16 +781,16 @@ it('ignores saved workspaces on plain visits and clears the displayed model when
   expect(sessionStorage.getItem('brickbuilder.landing-model:builder')).toBeNull();
 });
 
-it('shows build anything with a cursor on model links without cycling suggestions', async () => {
+it('shows edit model with a cursor on model links without cycling suggestions', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
   expect(input().placeholder).toBe('');
-  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('build anything');
+  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('edit model');
   type('Add a flag'); type('');
   await act(async () => vi.advanceTimersByTimeAsync(2000));
   expect(input().placeholder).toBe('');
-  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('build anything');
+  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('edit model');
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
 });
 
@@ -858,8 +908,10 @@ it('opens an emailed instructions link in a dialog after the model loads and let
   await act(async () => finish(generation('castle')));
   const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
   expect(dialog.getAttribute('aria-label')).toBe('Expanded instructions');
-  expect(dialog.getAttribute('aria-modal')).toBe('true');
-  expect(dialog.showModal).toHaveBeenCalled();
+  expect(dialog.getAttribute('aria-modal')).toBeNull();
+  expect(dialog.dataset.expanded).toBe('true');
+  expect(container.querySelector('.landing-page-shell > header .landing-create-new')).not.toBeNull();
+  expect(container.querySelector('.landing-expanded-footer .landing-view-back')?.textContent).toBe('Go Back');
   expect(container.textContent).toContain('Building instructions');
   expect(document.body.style.overflow).toBe('hidden');
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_expanded', { generation_id: 'castle', view: 'instructions', source: 'url' });
@@ -880,7 +932,7 @@ it('responds to instructions URL navigation for the same model and resets for an
   expect(container.querySelector('.landing-model-panel')?.getAttribute('data-view')).toBe('model');
   query.value = 'id=castle&instructions=1';
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.landing-model-panel')?.getAttribute('aria-modal')).toBe('true');
+  expect(container.querySelector('.landing-model-panel')?.getAttribute('data-expanded')).toBe('true');
   query.value = 'id=rover';
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.landing-model-panel')?.getAttribute('data-view')).toBe('model');
@@ -975,11 +1027,12 @@ it.each(['model', 'instructions'] as const)('expands %s and returns with the sam
   const overflow = document.body.style.overflow;
   expect(expand.getAttribute('aria-label')).toBe(view === 'model' ? 'Expand 3D viewer' : 'Expand instructions');
   await act(async () => expand.click());
-  expect(dialog.showModal).toHaveBeenCalled();
-  expect(dialog.getAttribute('aria-modal')).toBe('true');
+  expect(dialog.showModal).not.toHaveBeenCalled();
+  expect(dialog.getAttribute('aria-modal')).toBeNull();
   expect(dialog.dataset.expanded).toBe('true');
   expect(document.activeElement).toBe(back);
-  expect(back.textContent).toBe('Back to builder');
+  expect(back.textContent).toBe('Go Back');
+  expect(back.closest('.landing-expanded-footer')).not.toBeNull();
   expect(document.body.style.overflow).toBe('hidden');
   expect(dialog.contains(content)).toBe(true);
   expect(expand.hidden).toBe(true);
@@ -1003,9 +1056,9 @@ it('supports Escape and view switching while expanded, then restores scrolling o
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
   expect(dialog.dataset.expanded).toBe('true');
   expect(dialog.getAttribute('aria-label')).toBe('Expanded instructions');
-  const cancel = new Event('cancel', { cancelable: true });
-  act(() => dialog.dispatchEvent(cancel));
-  expect(cancel.defaultPrevented).toBe(true);
+  const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
+  act(() => document.dispatchEvent(escape));
+  expect(escape.defaultPrevented).toBe(true);
   expect(dialog.dataset.expanded).toBe('false');
   expect(dialog.dataset.view).toBe('instructions');
   expect(document.activeElement).toBe(expand);
@@ -1027,15 +1080,19 @@ it('returns to the inline model when the selected build changes while expanded',
   expect(document.body.style.overflow).toBe('');
 });
 
-it('shows instructions and expand controls without a share button', async () => {
+it('shows icon only expand control and Share at the bottom right of the model', async () => {
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
   const controls = container.querySelector('.landing-model-toolbar')!;
   expect(controls.querySelectorAll('button')).toHaveLength(2);
   expect(controls.querySelector('button:first-child')?.textContent).toBe('Show instructions');
   expect(controls.querySelector('button:last-child')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
-  expect(container.querySelector('[aria-label="Share"]')).toBeNull();
+  expect(controls.querySelector('button:last-child')?.textContent).toBe('');
+  expect(container.querySelector('.landing-model-bottom-toolbar .landing-model-share button')?.textContent).toContain('Share');
+  expect(container.querySelector('.landing-model-export')).toBeNull();
+  await act(async () => (container.querySelector('.landing-model-share button') as HTMLButtonElement).click());
+  expect(container.querySelector('[role="dialog"][aria-label="Share model"]')?.className).toContain('bottom-full');
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
-  expect(container.querySelector('[aria-label="Share"]')).toBeNull();
+  expect(container.querySelector('.landing-model-share')).not.toBeNull();
 });
 
 it('keeps share unavailable for pending edits and uploaded models', async () => {

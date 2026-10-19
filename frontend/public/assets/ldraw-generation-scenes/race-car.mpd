@@ -740,15 +740,14 @@
 0 STEP
 1 15 0 -56 0 1 0 0 0 1 0 0 0 1 parts/3020.dat
 0 STEP
-1 0 -30 0 -50 1 0 0 0 1 0 0 0 1 parts/3005.dat
+1 0 -50 -24 -10 1 0 0 0 1 0 0 0 1 parts/3005.dat
 0 STEP
-1 0 30 0 -50 1 0 0 0 1 0 0 0 1 parts/3005.dat
+1 0 -50 -24 10 1 0 0 0 1 0 0 0 1 parts/3005.dat
 0 STEP
-1 0 -30 0 50 1 0 0 0 1 0 0 0 1 parts/3005.dat
+1 0 50 -24 -10 1 0 0 0 1 0 0 0 1 parts/3005.dat
 0 STEP
-1 0 30 0 50 1 0 0 0 1 0 0 0 1 parts/3005.dat
+1 0 50 -24 10 1 0 0 0 1 0 0 0 1 parts/3005.dat
 0 STEP
-
 0 FILE parts/3005.dat
 0 Brick  1 x  1
 0 Name: 3005.dat

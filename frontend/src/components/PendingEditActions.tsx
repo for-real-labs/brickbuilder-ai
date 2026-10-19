@@ -3,10 +3,12 @@ import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
 import { GenerationEmailApi } from '../services/generationEmailApi';
 import { CancelGenerationButton } from './CancelGenerationButton';
+import { GenerationElapsedTime } from './GenerationElapsedTime';
 
 /** Actions while a new build or model edit runs in the background. */
-export function PendingEditActions({ generationId, onCancelled, onStartNew, isEdit = true }: {
+export function PendingEditActions({ generationId, startedAt, onCancelled, onStartNew, isEdit = true }: {
   generationId: string | null;
+  startedAt?: string;
   onCancelled: () => void;
   onStartNew: () => void;
   isEdit?: boolean;
@@ -15,6 +17,7 @@ export function PendingEditActions({ generationId, onCancelled, onStartNew, isEd
   const [emailOpen, setEmailOpen] = useState(false);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [recipient, setRecipient] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,7 +25,10 @@ export function PendingEditActions({ generationId, onCancelled, onStartNew, isEd
     if (!generationId) return;
     const controller = new AbortController();
     void GenerationEmailApi.status(generationId, controller.signal)
-      .then(result => { if (!controller.signal.aborted) setSubscribed(current => current || result.subscribed); })
+      .then(result => { if (!controller.signal.aborted) {
+        setSubscribed(current => current || result.subscribed);
+        if (result.email) setRecipient(result.email);
+      } })
       .catch(() => {});
     return () => controller.abort();
   }, [generationId]);
@@ -37,6 +43,7 @@ export function PendingEditActions({ generationId, onCancelled, onStartNew, isEd
       const result = await GenerationEmailApi.subscribe(generationId, session ? undefined : email.trim());
       if (!result.subscribed) throw new Error('Could not save your email. Please try again.');
       setSubscribed(true);
+      setRecipient(result.email);
       setEmailOpen(false);
       posthog.capture('generation_email_notification_subscribed', properties);
     } catch (cause) {
@@ -46,8 +53,10 @@ export function PendingEditActions({ generationId, onCancelled, onStartNew, isEd
 
   const buttonClass = 'min-h-11 min-w-0 rounded-full border border-slate-300 bg-white px-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm';
   return <div className="mb-3 w-full" aria-label="Generation in progress actions">
+    <GenerationElapsedTime startedAt={startedAt} />
     <p className="mb-3 text-sm leading-6 text-slate-700">
-      {subscribed ? 'We’ll email you when your build is ready.' : 'This can take up to 30 minutes. Do you want an email when it’s ready?'}
+      {subscribed ? recipient ? `Email will be sent to ${recipient} when ready.` : 'Email will be sent when ready.'
+        : 'This can take up to 30 minutes. Do you want an email when it’s ready?'}
     </p>
     {emailOpen && !subscribed && <form className="mb-3 flex gap-2" onSubmit={event => { event.preventDefault(); void subscribe(); }}>
       <label className="sr-only" htmlFor="landing-generation-email">Email address</label>

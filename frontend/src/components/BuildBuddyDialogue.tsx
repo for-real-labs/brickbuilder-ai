@@ -10,6 +10,7 @@ import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerat
 import { isAgentGeneration } from '../utils/agentGeneration';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
+import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { pickModelGreeting, rememberModelGreeting } from '../utils/buddyModelGreetings';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
@@ -49,7 +50,7 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   }, [model.id, name, pet.id, session?.access_token]);
   const action = model.orderable ? invitation : 'Tell me if you want to edit this model!';
   return <PetPromptGreeting state={state} showPetSwitch={false}>
-    {emphasizeModelActions(`${compliment || `I’m looking at ${name}…`} ${action}`)}
+    {compliment ? emphasizeModelActions(`${compliment} ${action}`) : <PetTypingIndicator />}
   </PetPromptGreeting>;
 }
 
@@ -122,8 +123,10 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     : `Hi${greetingName ? `, ${greetingName}` : ''}! I’m ${pet.name}.`;
   const resolvedCurrentMessage = typeof currentMessage === 'function' ? currentMessage(buildsGreeting) : currentMessage;
   const currentDialogue = resolvedCurrentMessage ?? (activeGeneration && isAgentGeneration(activeGeneration.endpoint)
-    ? <BuddyBuildMessages key={activeGeneration.id} generationId={activeGeneration.id} status={activeGeneration.status} />
-    : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p></PetChatMessage>
+    ? <div key={activeGeneration.id}><BuddyBuildMessages generationId={activeGeneration.id} status={activeGeneration.status} />
+      <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></div>
+    : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p>
+      <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></PetChatMessage>
     : latestTurn ? <PetChatMessage state={latestTurn.reply ? 'idle' : 'listening'}>
       {latestTurn.error ? <p role="status">{BUILD_FAILURE_MESSAGE}</p>
         : latestTurn.reply ? <p>{latestTurn.reply}</p> : <PetTypingIndicator />}
@@ -132,7 +135,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       </div>}
     </PetChatMessage>
     : model && !reasoningOnly ? <ModelGreeting key={model.id} state={state} model={model} />
-    : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
+    : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
     : <PetPromptGreeting state={state} showPetSwitch={false} actions={welcomeActions}>
       {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
     </PetPromptGreeting>);
@@ -142,7 +145,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       {currentOnly ? currentDialogue : <>
       {children}
       {reasoningOnly ? null : model ? <ModelGreeting key={model.id} state={state} model={model} />
-        : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
+        : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
         : <PetPromptGreeting state={state} showPetSwitch={false}>
         {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
       </PetPromptGreeting>}
