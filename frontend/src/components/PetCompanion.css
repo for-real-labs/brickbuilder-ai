@@ -65,7 +65,7 @@
 .pet-dialogue .pet-greeting { margin: 0; }
 .pet-chat-message, .pet-dialogue .pet-greeting { display: flex; align-items: flex-end; gap: 12px; min-width: 0; width: 100%; text-align: left; animation: pet-message-in .22s ease-out; }
 .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { width: 52px; height: 60px; margin-left: 0; }
-.pet-dialogue { --buddy-width: 52px; --buddy-height: 60px; --buddy-gap: 8px; }
+.pet-dialogue { --buddy-width: 48px; --buddy-height: 60px; --buddy-gap: 6px; }
 .pet-dialogue .pet-chat-message:not(.pet-chat-message--user), .pet-dialogue .pet-greeting { position: relative; padding-left: calc(var(--buddy-width) + var(--buddy-gap)); }
 .pet-dialogue .pet-chat-message > .pet-avatar, .pet-dialogue .pet-greeting > .pet-avatar { display: none; position: absolute; top: auto; right: auto; bottom: 0; left: 0; width: var(--buddy-width); height: var(--buddy-height); min-height: 0; overflow: hidden; }
 .pet-dialogue [data-current-buddy-message] > .pet-avatar { display: block; }
@@ -127,7 +127,7 @@
 @media (max-width: 639px) {
   .pet-dialogue { max-height: 54dvh; padding-left: 0; padding-right: 0; }
   .pet-chat-bubble, .pet-dialogue .pet-speech { padding: 10px 12px; }
-  .pet-dialogue { --buddy-width: 64px; --buddy-height: 100px; }
+  .pet-dialogue { --buddy-width: 56px; --buddy-height: 100px; }
   .pet-completed-builds { grid-template-columns: minmax(0, 1fr); }
   .pet-completed-builds a { flex-direction: row; align-items: center; }
   .pet-completed-build-preview { flex: 0 0 72px; height: 88px; }

@@ -27,8 +27,8 @@ export function LdrawGenerationAnimation() {
   return <div className="ldraw-generation-animation" role="img" aria-label="3D brick model assembling">
     <Suspense fallback={null}>
       <ThreeLDRViewer key={scene} modelPath={`/assets/ldraw-generation-scenes/${scene}.mpd`}
-        autoRotate={false} showExplodeControl={false} showModelControls={false}
-        presentation="room" animateModelBuild={!reducedMotion} buildAnimationStyle="fade" />
+        autoRotate={!reducedMotion} showExplodeControl={false} showModelControls={false}
+        presentation="room" animateModelBuild={!reducedMotion} buildAnimationStyle="drop" />
     </Suspense>
   </div>;
 }
