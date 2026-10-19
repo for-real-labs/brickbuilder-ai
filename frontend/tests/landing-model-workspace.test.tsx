@@ -107,6 +107,15 @@ it('keeps the welcome dialogue centered until input and stays docked after clear
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
 });
 
+it('hides generation statistics while the prompt is focused and restores them on blur', async () => {
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+  act(() => input().focus());
+  expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).toBeNull();
+  act(() => input().blur());
+  expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+});
+
 it('starts docked for a generation URL before the model finishes loading', async () => {
   query.value = 'id=castle';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockReturnValue(new Promise(() => {}));
@@ -203,12 +212,7 @@ it('keeps a linked pending model selected until its geometry is ready', async ()
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), status: ready ? 'completed' : 'processing' }));
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
-  const loading = container.querySelector('[aria-label="Loading your model"]')!;
-  expect(loading.getAttribute('role')).toBe('status');
-  expect(loading.querySelector('.brick-build-scene')).not.toBeNull();
-  expect(loading.textContent).toContain('Your model will appear here');
-  expect(loading.closest('.landing-model-conversation')).toBeNull();
-  expect(container.querySelector('.landing-model-conversation')?.textContent).not.toContain('Your model will appear here');
+  expect(container.querySelector('[aria-label="Loading your model"]')).toBeNull();
   ready = true;
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
@@ -249,6 +253,9 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('keeps the %s generation ca
   const card = conversation.querySelector('article')!;
   expect(card).not.toBeNull();
   expect(card.textContent).toContain('A cat');
+  expect(container.querySelector('.landing-model-loading')).toBeNull();
+  expect(card.querySelector('.brick-build-scene')).not.toBeNull();
+  expect(card.compareDocumentPosition(conversation.querySelector('.pet-greeting')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(container.querySelectorAll('[aria-label="Your generations"]')).toHaveLength(1);
   expect(conversation.contains(container.querySelector('[aria-label="Your generations"]'))).toBe(true);
   expect(conversation.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -561,18 +568,12 @@ it('passes the displayed model name into the greeting and replaces it with a pre
 });
 
 
-it('shows the shared LEGO animation only while opening a model, and keeps an existing model visible during edits', async () => {
-  const render = (model: LandingModel | null, loading: boolean, busy = loading) => act(async () => root.render(
-    <LandingModelWorkspace model={model} loading={loading} busy={busy}><p>Conversation</p></LandingModelWorkspace>));
+it('keeps the workspace clear of a second animation and leaves the model visible during edits', async () => {
+  const render = (model: LandingModel | null, busy: boolean) => act(async () => root.render(
+    <LandingModelWorkspace model={model} busy={busy}><p>Conversation</p></LandingModelWorkspace>));
   await render(null, false);
-  expect(container.querySelector('.landing-model-loading')).toBeNull();
-  await render(null, false, true);
-  expect(container.querySelector('.landing-model-loading')).toBeNull();
   await render(null, true);
-  expect(container.querySelectorAll('.landing-model-loading .brick-build-scene')).toHaveLength(1);
-  const initialScene = container.querySelector('.landing-model-loading svg');
-  await act(async () => vi.advanceTimersByTimeAsync(6800));
-  expect(container.querySelector('.landing-model-loading svg')).not.toBe(initialScene);
+  expect(container.querySelector('.brick-build-scene')).toBeNull();
   await render({ generation: generation('castle'), content: 'castle mpd' }, true);
   expect(container.querySelector('.landing-model-loading')).toBeNull();
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();

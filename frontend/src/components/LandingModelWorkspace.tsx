@@ -2,7 +2,6 @@ import React, { lazy, Suspense, useEffect, useId, useRef, useState } from 'react
 import { ArrowLeft, BookOpen, Box, Maximize2 } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
-import { LlmPreviewLoader } from './LlmPreviewLoader';
 import { LandingModelOrdering } from './LandingModelOrdering';
 import { ModelShareMenu } from './ModelShareMenu';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
@@ -17,10 +16,9 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, loading = false, requestedInstructionsId, onOrderBarHeightChange, children }: {
+export function LandingModelWorkspace({ model, busy, requestedInstructionsId, onOrderBarHeightChange, children }: {
   model: LandingModel | null;
   busy: boolean;
-  loading?: boolean;
   requestedInstructionsId?: string | null;
   onOrderBarHeightChange?: (height: number) => void;
   children: React.ReactNode;
@@ -100,10 +98,6 @@ export function LandingModelWorkspace({ model, busy, loading = false, requestedI
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
   return <>
-    {!model && loading && <section className="landing-model-loading" role="status" aria-label="Loading your model">
-      <div className="landing-model-loading-animation" aria-hidden="true"><LlmPreviewLoader compact /></div>
-      <p>Your model will appear here when it’s ready.</p>
-    </section>}
     {model && generation && <dialog ref={panel} open className="landing-model-panel"
       data-expanded={expanded} data-view={showingInstructions ? 'instructions' : 'model'}
       role={expanded ? 'dialog' : 'region'} aria-modal={expanded || undefined}

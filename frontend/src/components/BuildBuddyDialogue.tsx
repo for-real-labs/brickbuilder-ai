@@ -108,6 +108,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
+      {children}
       {model ? <ModelGreeting key={model.id} state={state} model={model} />
         : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
         : <PetPromptGreeting state={state} showPetSwitch={false}>
@@ -135,7 +136,6 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
             generationId={turn.generationId} status={generation?.status || 'started'} />}
         </div>;
       })}
-      {children}
     </div>
   </div>;
 }

@@ -999,7 +999,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               Imagine. Create. Build.
             </h1>
 
-            <div
+            {!focused && <div
               className="flex items-center justify-center gap-4 sm:gap-8 text-slate-600 landing-fade-in landing-delay-2"
               aria-label="BrickBuilder generation statistics"
             >
@@ -1016,7 +1016,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </span>
                 <span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span>
               </div>
-            </div>
+            </div>}
             </div>
           </div>
 
@@ -1033,7 +1033,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
-              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} loading={modelBusy}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing}
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
