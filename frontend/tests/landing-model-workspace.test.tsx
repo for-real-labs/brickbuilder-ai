@@ -221,8 +221,12 @@ it('shows the model name at the top of the viewer while retaining it for model a
   const stage = container.querySelector('[aria-label="3D model viewer"]')!;
   expect(stage.textContent).not.toContain('Castle');
   expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle');
-  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Castle');
-  expect(container.querySelector('.landing-model-toolbar > .landing-model-heading')).not.toBeNull();
+  const heading = container.querySelector('.landing-model-heading')!;
+  const workspace = container.querySelector('.landing-model-workspace')!;
+  expect(heading.querySelector('h2')?.textContent).toBe('Castle');
+  expect(workspace.contains(heading)).toBe(false);
+  expect(heading.compareDocumentPosition(workspace) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(workspace.querySelector('.landing-model-toolbar')).not.toBeNull();
 });
 
 it('renames the viewer model and keeps the new name in model actions', async () => {
@@ -622,6 +626,21 @@ it('keeps the dialogue outside the viewer alongside the order pane', async () =>
   expect(order.querySelector('[aria-label="Your brick kit"]')).not.toBeNull();
 });
 
+it('places the desktop order card above the dialogue with compact top padding', () => {
+  const pageCss = readFileSync('src/pages/LandingPage.css', 'utf8');
+  const workspaceCss = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  const layoutRule = pageCss.match(/\.landing-model-host:has\(\.landing-model-layout\)\s*\{([^}]+)\}/)?.[1];
+  const dialogueRule = pageCss.match(/\.landing-model-conversation--model-card\s*\{([^}]+)\}/)?.[1];
+  const orderRule = workspaceCss.match(/\.landing-desktop-order\s*\{([^}]+)\}/g)?.at(-1);
+
+  expect(pageCss).toMatch(/grid-template-rows:\s*auto minmax\(0, 1fr\)/);
+  expect(layoutRule).toMatch(/row-gap:\s*16px\s*;/);
+  expect(dialogueRule).toMatch(/grid-row:\s*2\s*;/);
+  expect(dialogueRule).toMatch(/padding:\s*12px 18px 18px\s*;/);
+  expect(orderRule).toMatch(/grid-row:\s*1\s*;/);
+  expect(pageCss).toMatch(/\.landing-model-conversation--model-card \.pet-conversation-input\s*\{\s*height:\s*50px\s*;\s*\}/);
+});
+
 it('marks only model dialogue for the desktop sidebar card', async () => {
   const renderWorkspace = (model: LandingModel | null) => act(async () => root.render(
     <LandingModelWorkspace model={model} busy={false}><div>Conversation</div></LandingModelWorkspace>,
@@ -999,8 +1018,8 @@ it('places the instructions button at the viewer bottom left and switches views 
   expect(container.querySelector('.landing-create-new')?.classList.contains('landing-action-button')).toBe(true);
   expect(button.parentElement?.classList.contains('landing-model-bottom-toolbar')).toBe(true);
   expect(container.querySelector('.landing-model-toolbar .landing-create-new')).not.toBeNull();
-  expect(frame.contains(button)).toBe(false);
-  expect(frame.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(frame.contains(button)).toBe(true);
+  expect(frame.querySelector('.landing-model-stage')?.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(button.closest('.landing-model-conversation')).toBeNull();
   await act(async () => button.click());
   expect(container.querySelector('[aria-label="Instructions viewer"]')).not.toBeNull();
@@ -1127,24 +1146,32 @@ it('shows icon only expand control and Share at the bottom right of the model', 
   style.textContent = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
   document.head.append(style);
   try {
-    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false} onCreateNew={vi.fn()}>{null}</LandingModelWorkspace>));
+    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false} onCreateNew={vi.fn()} onRenameRequest={vi.fn()}>{null}</LandingModelWorkspace>));
     const controls = container.querySelector('.landing-model-toolbar')!;
     expect(controls.querySelectorAll('button')).toHaveLength(2);
     expect(controls.querySelector('button:first-child')?.textContent).toBe('Create new');
-    expect(controls.querySelector('button:last-child')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
-    expect(controls.querySelector('button:last-child')?.textContent).toBe('');
+    expect(controls.querySelector('.landing-view-expand')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
+    expect(controls.querySelector('.landing-view-expand')?.textContent).toBe('');
     const instructionsButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-instructions-toggle')!;
+    expect(container.querySelector('.landing-model-workspace')?.contains(instructionsButton)).toBe(true);
     expect(instructionsButton.textContent).toBe('Show instructions');
     const shareButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-model-share button')!;
     expect(shareButton.textContent).toContain('Share');
     expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).justifyContent).toBe('space-between');
     expect(getComputedStyle(shareButton).fontWeight).toBe(getComputedStyle(instructionsButton).fontWeight);
-    expect(getComputedStyle(shareButton).lineHeight).toBe('21px');
+    expect(getComputedStyle(shareButton).lineHeight).toBe('20px');
+    for (const button of [controls.querySelector('button:first-child')!, container.querySelector('.landing-model-heading-edit')!,
+      controls.querySelector('.landing-view-expand')!, instructionsButton, shareButton]) {
+      expect(getComputedStyle(button).height).toBe('44px');
+      expect(getComputedStyle(button).fontSize).toBe('14px');
+      expect(getComputedStyle(button).fontFamily).toBe(getComputedStyle(instructionsButton).fontFamily);
+    }
     expect(container.querySelector('.landing-model-export')).toBeNull();
     await act(async () => (container.querySelector('.landing-model-share button') as HTMLButtonElement).click());
     expect(container.querySelector('[role="dialog"][aria-label="Share model"]')?.className).toContain('bottom-full');
     await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
     expect(container.querySelector('.landing-model-share')).not.toBeNull();
+    expect(getComputedStyle(container.querySelector('.landing-view-back')!).height).toBe('44px');
   } finally {
     style.remove();
   }
