@@ -55,7 +55,7 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, children }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, showGenerationElapsedTime = true, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
@@ -63,6 +63,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   reasoningOnly?: boolean;
   currentOnly?: boolean;
   showOpeningMessage?: boolean;
+  showGenerationElapsedTime?: boolean;
   currentMessage?: React.ReactNode | ((greeting: string) => React.ReactNode);
   welcomeMessage?: string;
   landingWelcome?: boolean;
@@ -130,9 +131,9 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   const resolvedCurrentMessage = typeof currentMessage === 'function' ? currentMessage(buildsGreeting) : currentMessage;
   const currentDialogue = resolvedCurrentMessage ?? (activeGeneration && isAgentGeneration(activeGeneration.endpoint)
     ? <div key={activeGeneration.id}><BuddyBuildMessages generationId={activeGeneration.id} status={activeGeneration.status} />
-      <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></div>
+      {showGenerationElapsedTime && <GenerationElapsedTime startedAt={activeGeneration.createdAt} />}</div>
     : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p>
-      <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></PetChatMessage>
+      {showGenerationElapsedTime && <GenerationElapsedTime startedAt={activeGeneration.createdAt} />}</PetChatMessage>
     : latestTurn ? <PetChatMessage state={state === 'building' ? 'building' : state === 'listening' || !latestTurn.reply ? 'listening' : 'idle'}>
       {latestTurn.error ? <p role="status">{BUILD_FAILURE_MESSAGE}</p>
         : latestTurn.reply ? <p>{latestTurn.reply}</p> : <PetTypingIndicator />}
