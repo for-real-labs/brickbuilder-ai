@@ -24,7 +24,7 @@ import { useLandingHelp } from '../hooks/useLandingHelp';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings, Sparkles, X } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Sparkles, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -176,7 +176,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
   const toolsRef = useRef<LandingToolsHandle>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
-  const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsReturnFocus = useRef<HTMLButtonElement | null>(null);
   const settingsCloseRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -186,7 +185,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   };
   const dismissSettings = () => {
     toggleSettings(false);
-    (settingsReturnFocus.current || settingsButtonRef.current)?.focus();
+    settingsReturnFocus.current?.focus();
   };
   useEffect(() => { if (settingsOpen) settingsCloseRef.current?.focus(); }, [settingsOpen]);
   const handleSettingsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1087,12 +1086,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     <ArrowUp aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>
-                <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
-                  aria-expanded={settingsOpen} aria-controls={localDevelopment ? "landing-generation-settings landing-local-provider-settings" : "landing-generation-settings"}
-                  onClick={event => { settingsReturnFocus.current = event.currentTarget; toggleSettings(!settingsOpen); }}
-                  className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 sm:inline-flex ${settingsOpen ? 'border-red-200 bg-red-50 text-[#f44336]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
-                  <Settings aria-hidden="true" className="h-5 w-5" />
-                </button>
               </div>
 
               {inputValidationMessage && (

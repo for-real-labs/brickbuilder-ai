@@ -99,10 +99,11 @@ describe('LandingPage', () => {
       expect(container.querySelector('.pet-greeting [aria-label^="Change Build Buddy"]')).toBeNull();
       expect(container.querySelector('.pet-greeting')?.textContent).toContain('Build something random');
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
-      act(() => container.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!.click());
+      const tools = container.querySelector<HTMLButtonElement>('header nav button[aria-controls]')!;
+      act(() => tools.click());
+      act(() => container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] [aria-label="Generation settings"]')!.click());
       expect(panel.hidden).toBe(false);
       expect(panel.querySelector('[aria-label^="Change Build Buddy"]')).toBeNull();
-      const tools = container.querySelector<HTMLButtonElement>('header nav button[aria-controls]')!;
       act(() => tools.click());
       const switchPet = container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] [aria-label="Change Build Buddy, currently Pip"]')!;
       expect(switchPet.type).toBe('button');
@@ -551,7 +552,7 @@ describe('LandingPage', () => {
     document.body.appendChild(container);
     const root = createRoot(container);
     try {
-      await act(async () => root.render(<LandingPage />));
+      await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_upload_control_shown', { page: '/', upload_position: 'input_left_icon' });
       const choose = vi.spyOn(fileInput, 'click');
@@ -560,7 +561,8 @@ describe('LandingPage', () => {
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'input_left_icon' });
       expect(llm).not.toHaveBeenCalled();
       expect(nova).not.toHaveBeenCalled();
-      act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
+      act(() => container.querySelector<HTMLButtonElement>('[aria-label="Tools"]')!.click());
+      act(() => container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] [aria-label="Generation settings"]')!.click());
       expect(container.querySelector<HTMLDivElement>('#landing-generation-settings')!.hidden).toBe(false);
       await act(async () => {
         const mode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
@@ -659,7 +661,8 @@ describe('LandingPage', () => {
       expect(upload.getAttribute('type')).toBe('button');
       expect(model.closest('#landing-generation-settings')?.hasAttribute('hidden')).toBe(true);
       expect(input.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(container.querySelector('[aria-label="Generation settings"]')?.getAttribute('aria-expanded')).toBe('false');
+      expect(form.querySelector('[aria-label="Generation settings"]')).toBeNull();
+      expect(container.querySelector<HTMLDivElement>('#landing-generation-settings')?.hidden).toBe(true);
       expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
       expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
       expect(Array.from(model.options).map(option => option.value)).toEqual(['claude-opus-5-5', 'claude-haiku-5-5', 'gpt-6-astra']);
@@ -678,13 +681,17 @@ describe('LandingPage', () => {
     const container = document.createElement('div'); document.body.append(container);
     const root = createRoot(container);
     try {
-      await act(async () => root.render(<LandingPage />));
-      const gear = container.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!;
+      await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
+      const tools = container.querySelector<HTMLButtonElement>('[aria-label="Tools"]')!;
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
+      const openSettings = () => {
+        act(() => tools.click());
+        act(() => container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] [aria-label="Generation settings"]')!.click());
+      };
       expect(panel.hidden).toBe(true);
+      expect(container.querySelector('form [aria-label="Generation settings"]')).toBeNull();
       expect(container.querySelector('[aria-label="Upload image"]')?.closest('[hidden]')).toBeNull();
-      act(() => gear.click());
-      expect(gear.getAttribute('aria-expanded')).toBe('true');
+      openSettings();
       expect(panel.hidden).toBe(false);
       const connections = container.querySelector('[aria-label="Local provider connections"]')!;
       expect(connections.closest('form')).toBeNull();
@@ -694,13 +701,13 @@ describe('LandingPage', () => {
       act(() => { model.value = 'gpt-6-astra'; model.dispatchEvent(new Event('change', { bubbles: true })); });
       act(() => model.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
       expect(panel.hidden).toBe(true);
-      expect(document.activeElement).toBe(gear);
+      expect(document.activeElement).toBe(tools);
       expect(connections.closest('[hidden]')).not.toBeNull();
       expect(generate).not.toHaveBeenCalled();
-      act(() => gear.click());
+      openSettings();
       expect(model.value).toBe('gpt-6-astra');
       expect(panel.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
-      act(() => gear.click());
+      act(() => panel.querySelector<HTMLButtonElement>('[aria-label="Dismiss generation settings"]')!.click());
       const input = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
       act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red castle'); input.dispatchEvent(new Event('input', { bubbles: true })); });
       await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
@@ -718,9 +725,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
-      const gear = container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!;
-      expect(gear.classList.contains('hidden')).toBe(true);
-      expect(gear.classList.contains('sm:inline-flex')).toBe(true);
+      expect(container.querySelector('form [aria-label="Generation settings"]')).toBeNull();
       const tools = container.querySelector<HTMLButtonElement>('[aria-label="Tools"]')!;
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
       const openSettings = () => {
