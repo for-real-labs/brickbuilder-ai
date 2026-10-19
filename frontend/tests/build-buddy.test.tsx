@@ -508,7 +508,7 @@ it('aborts pending gift replies on an account change and keeps the previous owne
   expect(plan.mock.calls[1][0].history).toEqual([]);
 });
 
-it('uses one animated model message, keeps it stable, and varies it on the next visit', async () => {
+it('uses one animated model message and keeps the invitation stable across visits', async () => {
   localStorage.setItem(BUDDY_SEEN_KEY, 'true');
   vi.spyOn(Math, 'random').mockReturnValue(0);
   const renderModel = () => act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]}
@@ -526,7 +526,7 @@ it('uses one animated model message, keeps it stable, and varies it on the next 
   expect(container.textContent).toBe(first);
   act(() => root.unmount()); root = createRoot(container);
   await renderModel();
-  expect(container.textContent).not.toBe(first);
+  expect(container.textContent).toBe(first);
 });
 
 it('keeps image and gift replies free of suggestion buttons', async () => {
@@ -565,6 +565,7 @@ it('shows a subject fact above the edit invitation in a separate bubble', async 
   expect(bubbles[0].textContent).toContain('Fun fact: Troy stood in modern Turkey!');
   expect(bubbles[0].textContent).not.toContain('order button');
   expect(bubbles[1].textContent).toContain('order button');
+  expect(bubbles[1].textContent).toBe('Tell me how you’d like to edit it, or click the order button to have it delivered!');
   const strong = Array.from(container.querySelectorAll('strong'));
   expect(strong.map(el => el.textContent)).toEqual(['edit', 'order']);
   expect(strong.every(el => el.querySelector('.pet-response-word'))).toBe(true);

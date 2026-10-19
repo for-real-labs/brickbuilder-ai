@@ -303,6 +303,7 @@ async def generate_buddy_reply(request: BuddyReplyRequest) -> str | dict:
             'well-established fact about that real subject, chosen from its many possible facts. '
             'Choose a different subject detail from every previously shown fact. '
             f'Start exactly with "{opening}" and make the rest a natural sentence. '
+            'Keep the whole reply under 70 characters so it fits in three lines. '
             'For "Did you know", end with a question mark. '
             'Only share facts you are confident are true. If the subject is fictional, '
             'a well-established fact about that character or story is fine. '

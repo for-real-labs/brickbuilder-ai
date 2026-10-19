@@ -74,6 +74,7 @@
 .pet-chat-message:not(.pet-chat-message--user) .pet-chat-bubble, .pet-dialogue .pet-speech { flex: 1; max-width: 100%; }
 .pet-chat-message:has(.pet-typing-indicator) .pet-chat-bubble { flex: 0 0 auto; min-width: 58px; }
 .pet-chat-bubble p, .pet-dialogue .pet-speech p { margin: 0; white-space: pre-wrap; color: inherit; font-size: inherit; line-height: inherit; font-weight: 400; }
+.pet-model-greeting > .pet-chat-message:first-child .pet-chat-bubble p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; white-space: normal; }
 .pet-typing-indicator { display: inline-flex; align-items: center; gap: 5px; min-height: 22px; vertical-align: middle; }
 .pet-typing-indicator > span { width: 7px; height: 7px; border-radius: 50%; background: #94a3b8; animation: pet-typing-pulse 1.2s ease-in-out infinite; }
 .pet-typing-indicator > span:nth-child(2) { animation-delay: .16s; }

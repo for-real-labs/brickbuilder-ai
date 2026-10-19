@@ -222,6 +222,7 @@ it('shows the model name at the top of the viewer while retaining it for model a
   expect(stage.textContent).not.toContain('Castle');
   expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle');
   expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Castle');
+  expect(container.querySelector('.landing-model-toolbar > .landing-model-heading')).not.toBeNull();
 });
 
 it('renames the viewer model and keeps the new name in model actions', async () => {

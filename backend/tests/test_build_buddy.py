@@ -419,6 +419,7 @@ def test_model_greeting_requests_a_subject_fact_instead_of_praise(monkeypatch):
         mode='model', prompt='Shar Pei Dog'))) == reply
     instructions = post.await_args.args[3]['instructions']
     assert 'Start exactly with "Fun fact:"' in instructions
+    assert 'under 70 characters' in instructions
     assert 'Do not praise the model, say what you love' in instructions
     assert 'subject is fictional' in instructions
     assert 'Only share facts you are confident are true' in instructions

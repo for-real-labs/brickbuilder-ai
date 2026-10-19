@@ -151,6 +151,10 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
         {onCreateNew && <button type="button" className="landing-create-new landing-action-button" disabled={createNewDisabled} onClick={onCreateNew}>
           <Sparkles size={16} aria-hidden="true" /><span>Create new</span>
         </button>}
+        {!showingInstructions && <GenerationTitle key={generation.generation_id} variant="viewer"
+          name={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
+          canEdit={canRename && !busy} accessToken={accessToken} onEditRequest={onRenameRequest}
+          onSaved={name => onNameSaved?.(generation.generation_id, name)} />}
         <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded}
           aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'}
           title={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'} aria-haspopup="dialog"
@@ -163,10 +167,6 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           <Maximize2 size={18} aria-hidden="true" />
         </button>
       </div>}
-      {!pendingEdit && !showingInstructions && <GenerationTitle key={generation.generation_id} variant="viewer"
-        name={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
-        canEdit={canRename && !busy} accessToken={accessToken} onEditRequest={onRenameRequest}
-        onSaved={name => onNameSaved?.(generation.generation_id, name)} />}
       {!pendingEdit && <div className="landing-model-bottom-toolbar">
         <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
           aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {

@@ -11,7 +11,7 @@ import { isAgentGeneration } from '../utils/agentGeneration';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
-import { pickModelGreeting, rememberModelGreeting } from '../utils/buddyModelGreetings';
+import { MODEL_EDIT_INVITATION } from '../utils/buddyModelGreetings';
 import { recentModelFacts, rememberModelFact } from '../utils/buddyModelFacts';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
@@ -35,10 +35,8 @@ function emphasizeModelActions(text: string) {
 function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel }) {
   const { pet } = usePet();
   const { session } = useAuth();
-  const [invitation] = useState(pickModelGreeting);
   const [fact, setFact] = useState<string | null>(null);
   const name = model.name?.trim().slice(0, 200) || 'your model';
-  useEffect(() => { rememberModelGreeting(invitation); }, [invitation]);
   useEffect(() => {
     const controller = new AbortController();
     const fallback = `Here’s ${name}!`;
@@ -50,7 +48,7 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
       .finally(() => clearTimeout(timeout));
     return () => { controller.abort(); clearTimeout(timeout); };
   }, [model.id, name, pet.id, session?.access_token]);
-  const action = model.orderable ? invitation : 'Tell me if you want to edit this model!';
+  const action = model.orderable ? MODEL_EDIT_INVITATION : 'Tell me if you want to edit this model!';
   return <div className="pet-dialogue-turn pet-model-greeting">
     <PetChatMessage state={fact ? state : 'listening'}><p>{fact || <PetTypingIndicator />}</p></PetChatMessage>
     {fact && <PetPromptGreeting state={state} showPetSwitch={false}>{emphasizeModelActions(action)}</PetPromptGreeting>}
