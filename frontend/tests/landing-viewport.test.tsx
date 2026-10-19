@@ -92,7 +92,7 @@ it('uses window height when the visual viewport API is unavailable and leaves di
   expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('500px');
 });
 
-it('tracks the midpoint of a viewer that appears after the landing page mounts', async () => {
+it('tracks the top third and overlap of a viewer that appears after the landing page mounts', async () => {
   let notify!: ResizeObserverCallback;
   const observe = vi.fn();
   vi.stubGlobal('ResizeObserver', class {
@@ -103,14 +103,20 @@ it('tracks the midpoint of a viewer that appears after the landing page mounts',
   });
   act(() => root.render(<Harness />));
   const shell = container.firstElementChild as HTMLElement;
-  expect(shell.style.getPropertyValue('--landing-workspace-midpoint')).toBe('');
+  expect(shell.style.getPropertyValue('--landing-workspace-overlay-limit')).toBe('');
   await act(async () => root.render(<Harness stage />));
   const stage = container.querySelector('.landing-model-workspace')!;
   expect(observe).toHaveBeenCalledWith(stage);
   vi.spyOn(shell, 'getBoundingClientRect').mockReturnValue({ top: 80 } as DOMRect);
-  vi.spyOn(stage, 'getBoundingClientRect').mockReturnValue({ top: 180, height: 460 } as DOMRect);
+  vi.spyOn(stage, 'getBoundingClientRect').mockReturnValue({ top: 180, bottom: 640, height: 460 } as DOMRect);
+  const conversation = container.querySelector('.landing-model-conversation')!;
+  vi.spyOn(conversation, 'getBoundingClientRect').mockReturnValue({ top: 550 } as DOMRect);
   act(() => notify([], {} as ResizeObserver));
-  expect(shell.style.getPropertyValue('--landing-workspace-midpoint')).toBe('330px');
+  expect(parseFloat(shell.style.getPropertyValue('--landing-workspace-overlay-limit'))).toBeCloseTo(253.33, 1);
+  expect((conversation as HTMLElement).dataset.overlapsWorkspace).toBe('true');
+  vi.spyOn(conversation, 'getBoundingClientRect').mockReturnValue({ top: 700 } as DOMRect);
+  act(() => notify([], {} as ResizeObserver));
+  expect((conversation as HTMLElement).dataset.overlapsWorkspace).toBe('false');
 });
 
 it('fits below the iOS app banner and reclaims its space when dismissed or panned above the keyboard', () => {

@@ -17,7 +17,7 @@ export function useLandingViewport(enabled: boolean) {
     };
     const header = element.querySelector('header');
     const intro = element.querySelector('.landing-page-intro');
-    const conversation = element.querySelector('.landing-model-conversation');
+    const conversation = element.querySelector<HTMLElement>('.landing-model-conversation');
     let workspace = element.querySelector('.landing-model-workspace, .landing-generation-workspace');
     const updatePanels = () => {
       const currentWorkspace = element.querySelector('.landing-model-workspace, .landing-generation-workspace');
@@ -31,9 +31,11 @@ export function useLandingViewport(enabled: boolean) {
       element.style.setProperty('--landing-intro-bottom', `${Math.max(0, (intro?.getBoundingClientRect().bottom ?? 0) - element.getBoundingClientRect().top)}px`);
       if (workspace) {
         const bounds = workspace.getBoundingClientRect();
-        element.style.setProperty('--landing-workspace-midpoint', `${Math.max(0, bounds.top - element.getBoundingClientRect().top + bounds.height / 2)}px`);
+        element.style.setProperty('--landing-workspace-overlay-limit', `${Math.max(0, bounds.top - element.getBoundingClientRect().top + bounds.height / 3)}px`);
+        if (conversation) conversation.dataset.overlapsWorkspace = String(conversation.getBoundingClientRect().top < bounds.bottom);
       } else {
-        element.style.removeProperty('--landing-workspace-midpoint');
+        element.style.removeProperty('--landing-workspace-overlay-limit');
+        if (conversation) delete conversation.dataset.overlapsWorkspace;
       }
     };
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => {

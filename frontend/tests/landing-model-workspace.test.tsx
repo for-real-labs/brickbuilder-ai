@@ -798,17 +798,15 @@ it('returns to the inline model when the selected build changes while expanded',
   expect(document.body.style.overflow).toBe('');
 });
 
-it('restores Share in the top-right viewer overlay, including expanded view', async () => {
+it('shows instructions and expand controls without a share button', async () => {
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
-  const overlay = container.querySelector('.landing-model-workspace > .landing-model-share')!;
-  expect(overlay).not.toBeNull();
-  await act(async () => overlay.querySelector('button')!.click());
-  expect(overlay.querySelector<HTMLInputElement>('input')?.value).toContain('/?id=castle&exact=1');
-  expect(posthog.capture).toHaveBeenCalledWith('generated_model_share_opened', { generation_id: 'castle' });
+  const controls = container.querySelector('.landing-model-toolbar')!;
+  expect(controls.querySelectorAll('button')).toHaveLength(2);
+  expect(controls.querySelector('button:first-child')?.textContent).toBe('Show instructions');
+  expect(controls.querySelector('button:last-child')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
+  expect(container.querySelector('[aria-label="Share"]')).toBeNull();
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
-  expect(container.querySelector('.landing-model-panel')?.contains(overlay)).toBe(true);
-  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
-  expect(container.querySelector('.landing-model-share')).toBeNull();
+  expect(container.querySelector('[aria-label="Share"]')).toBeNull();
 });
 
 it('keeps share unavailable for pending edits and uploaded models', async () => {

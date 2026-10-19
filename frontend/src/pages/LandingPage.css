@@ -91,24 +91,30 @@
 @media (prefers-reduced-motion: reduce) {
   .landing-page-intro, .landing-page .landing-model-conversation, .landing-page-help { transition: none; }
 }
-/* Keep the stage full size and let the conversation cover only its lower half. */
+/* Keep the viewer and generation card in the original stage area. */
 .landing-page .landing-model-workspace,
 .landing-page .landing-generation-workspace {
-  height: min(720px, max(260px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 84px)));
+  height: min(460px, max(260px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 120px)));
 }
 .landing-page .landing-model-panel { position: relative; }
 .landing-page .landing-model-panel[data-expanded="true"] { position: fixed; }
 .landing-page .landing-model-panel:not([data-expanded="true"]) .landing-model-toolbar {
   position: absolute;
   z-index: 4;
-  top: 56px;
+  top: 12px;
+  left: 12px;
   right: 12px;
+  justify-content: space-between;
   margin: 0;
+  pointer-events: none;
 }
+.landing-page .landing-model-panel:not([data-expanded="true"]) .landing-model-toolbar button { pointer-events: auto; }
+.landing-page .landing-model-workspace[data-view="model"] .landing-model-heading { top: 56px; }
 .landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation {
-  max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-workspace-midpoint, 50dvh) - var(--landing-conversation-bottom)));
+  max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-workspace-overlay-limit, 40dvh) - var(--landing-conversation-bottom)));
 }
-.landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation::before {
+.landing-page:has(.landing-model-workspace, .landing-generation-workspace) .pet-dialogue { max-height: min(540px, 60dvh); }
+.landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation[data-overlaps-workspace="true"]::before {
   position: absolute;
   z-index: -1;
   inset: 0;
@@ -117,8 +123,14 @@
   content: '';
   pointer-events: none;
 }
-.landing-page:has(.landing-model-workspace) .pet-dialogue { max-height: min(240px, 36dvh); }
+.landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation[data-overlaps-workspace="true"] .pet-dialogue {
+  mask-image: linear-gradient(to bottom, transparent, #000 120px);
+}
 .landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(320px, 40dvh); }
+@media (max-width: 639px) {
+  .landing-page .landing-model-workspace,
+  .landing-page .landing-generation-workspace { max-height: 380px; }
+}
 .landing-header--model { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 12px; }
 .landing-header--model > nav { justify-self: end; }
 @media (max-width: 639px) {
