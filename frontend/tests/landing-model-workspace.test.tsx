@@ -1,4 +1,5 @@
 import React, { act } from 'react';
+import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
@@ -1081,18 +1082,26 @@ it('returns to the inline model when the selected build changes while expanded',
 });
 
 it('shows icon only expand control and Share at the bottom right of the model', async () => {
-  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
-  const controls = container.querySelector('.landing-model-toolbar')!;
-  expect(controls.querySelectorAll('button')).toHaveLength(2);
-  expect(controls.querySelector('button:first-child')?.textContent).toBe('Show instructions');
-  expect(controls.querySelector('button:last-child')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
-  expect(controls.querySelector('button:last-child')?.textContent).toBe('');
-  expect(container.querySelector('.landing-model-bottom-toolbar .landing-model-share button')?.textContent).toContain('Share');
-  expect(container.querySelector('.landing-model-export')).toBeNull();
-  await act(async () => (container.querySelector('.landing-model-share button') as HTMLButtonElement).click());
-  expect(container.querySelector('[role="dialog"][aria-label="Share model"]')?.className).toContain('bottom-full');
-  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
-  expect(container.querySelector('.landing-model-share')).not.toBeNull();
+  const style = document.createElement('style');
+  style.textContent = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  document.head.append(style);
+  try {
+    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
+    const controls = container.querySelector('.landing-model-toolbar')!;
+    expect(controls.querySelectorAll('button')).toHaveLength(2);
+    expect(controls.querySelector('button:first-child')?.textContent).toBe('Show instructions');
+    expect(controls.querySelector('button:last-child')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
+    expect(controls.querySelector('button:last-child')?.textContent).toBe('');
+    expect(container.querySelector('.landing-model-bottom-toolbar .landing-model-share button')?.textContent).toContain('Share');
+    expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).justifyContent).toBe('flex-end');
+    expect(container.querySelector('.landing-model-export')).toBeNull();
+    await act(async () => (container.querySelector('.landing-model-share button') as HTMLButtonElement).click());
+    expect(container.querySelector('[role="dialog"][aria-label="Share model"]')?.className).toContain('bottom-full');
+    await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
+    expect(container.querySelector('.landing-model-share')).not.toBeNull();
+  } finally {
+    style.remove();
+  }
 });
 
 it('keeps share unavailable for pending edits and uploaded models', async () => {
