@@ -38,6 +38,10 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
     setBusy(false);
     setError(null);
   }, [storageKey]);
+  const rename = useCallback((id: string, name: string) => {
+    setModel(current => current?.generation.generation_id === id
+      ? { ...current, generation: { ...current.generation, name } } : current);
+  }, []);
   useEffect(() => {
     // A plain landing visit starts fresh. Only explicit model links restore a viewer.
     const id = requestedId || null;
@@ -101,5 +105,5 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
     return polling.stop;
   }, [targetId, authToken, loadVersion]);
 
-  return { targetId, model, busy, error, open, reset };
+  return { targetId, model, busy, error, open, reset, rename };
 }

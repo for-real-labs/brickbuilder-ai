@@ -38,6 +38,20 @@
 }
 
 .landing-model-toolbar .landing-action-button { min-height: 44px; }
+.landing-model-heading { position: absolute; z-index: 5; top: 68px; left: 16px; right: 16px; display: flex; justify-content: center; min-width: 0; pointer-events: none; }
+.landing-model-heading-row { display: flex; align-items: center; max-width: min(100%, 480px); min-width: 0; gap: 3px; border: 1px solid #e2e8f0; border-radius: 999px; background: #fffffff0; padding: 2px 4px 2px 14px; box-shadow: 0 2px 8px #0f172a12; pointer-events: auto; }
+.landing-model-heading-row h2 { min-width: 0; overflow: hidden; color: #1e293b; font-size: 14px; font-weight: 600; line-height: 30px; text-overflow: ellipsis; white-space: nowrap; }
+.landing-model-heading-edit { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 36px; width: 36px; height: 36px; border-radius: 50%; color: #475569; cursor: pointer; }
+.landing-model-heading-edit:hover { background: #fef2f2; color: #f44336; }
+.landing-model-heading-edit:focus-visible, .landing-model-rename-form :focus-visible { outline: 2px solid #f44336; outline-offset: 2px; }
+.landing-model-rename-form { width: min(100%, 480px); border: 1px solid #e2e8f0; border-radius: 18px; background: #fff; padding: 10px; box-shadow: 0 12px 24px #0f172a26; pointer-events: auto; }
+.landing-model-rename-controls { display: flex; flex-wrap: wrap; gap: 6px; }
+.landing-model-rename-input { flex: 1 1 100%; width: 100%; min-width: 0; height: 44px; border: 1px solid #cbd5e1; border-radius: 10px; padding: 0 12px; font-size: 16px; }
+.landing-model-rename-save, .landing-model-rename-cancel { min-height: 40px; border-radius: 10px; padding: 0 14px; font-size: 14px; font-weight: 600; cursor: pointer; }
+.landing-model-rename-save { background: #f44336; color: #fff; }
+.landing-model-rename-cancel { border: 1px solid #cbd5e1; color: #334155; }
+.landing-model-rename-save:disabled, .landing-model-rename-cancel:disabled { opacity: .5; cursor: not-allowed; }
+.landing-model-rename-form [role="alert"] { margin-top: 6px; font-size: 12px; }
 .landing-view-expand { width: 44px; min-width: 44px; padding: 0; }
 .landing-model-bottom-toolbar { position: absolute; z-index: 45; right: 12px; bottom: 12px; left: 12px; display: flex; align-items: end; justify-content: space-between; gap: 12px; pointer-events: none; }
 .landing-model-bottom-toolbar > * { pointer-events: auto; }
@@ -52,6 +66,7 @@
 .landing-model-panel[data-expanded="true"] > .landing-model-workspace { flex: 1; height: auto; max-height: none; min-height: 0; }
 .landing-model-panel[data-expanded="true"] > .landing-model-toolbar { position: absolute; z-index: 4; top: 24px; right: max(32px, env(safe-area-inset-right)); left: max(32px, env(safe-area-inset-left)); justify-content: space-between; margin: 0; pointer-events: none; }
 .landing-model-panel[data-expanded="true"] > .landing-model-toolbar button { pointer-events: auto; }
+.landing-model-panel[data-expanded="true"] > .landing-model-heading { top: 80px; }
 .landing-model-panel[data-expanded="true"] .landing-model-bottom-toolbar { bottom: 144px; }
 @media (max-width: 639px) {
   .landing-model-panel[data-expanded="true"] { padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }

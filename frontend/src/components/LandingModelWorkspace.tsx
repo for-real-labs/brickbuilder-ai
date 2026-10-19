@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
 import { ModelShareMenu } from './ModelShareMenu';
+import { GenerationTitle } from './GenerationTitle';
 import { LdrawGenerationAnimation } from './LdrawGenerationAnimation';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
@@ -17,7 +18,7 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onCreateNew, createNewDisabled = false, onOrderBarHeightChange, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onCreateNew, createNewDisabled = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
@@ -27,6 +28,10 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   onCreateNew?: () => void;
   createNewDisabled?: boolean;
   onOrderBarHeightChange?: (height: number) => void;
+  canRename?: boolean;
+  accessToken?: string;
+  onRenameRequest?: () => void;
+  onNameSaved?: (id: string, name: string) => void;
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
@@ -158,6 +163,10 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           <Maximize2 size={18} aria-hidden="true" />
         </button>
       </div>}
+      {!pendingEdit && !showingInstructions && <GenerationTitle key={generation.generation_id} variant="viewer"
+        name={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
+        canEdit={canRename && !busy} accessToken={accessToken} onEditRequest={onRenameRequest}
+        onSaved={name => onNameSaved?.(generation.generation_id, name)} />}
       {!pendingEdit && <div className="landing-model-bottom-toolbar">
         <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
           aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {

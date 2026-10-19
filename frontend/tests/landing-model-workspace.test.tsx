@@ -13,6 +13,7 @@ import { useLandingModel, type LandingModel } from '../src/hooks/useLandingModel
 import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
 import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { GetPriceApiService } from '../src/services/getPriceApi';
+import { UpdateGenerationNameApiService } from '../src/services/updateGenerationNameApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { GetUserGenerationsApiService, type GenerationWithOrder } from '../src/services/getUserGenerationsApi';
 import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
@@ -215,12 +216,45 @@ it('shows the headline and stats on plain landing visits and hides them on model
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
 });
 
-it('keeps the model name out of the viewer while retaining it for model actions', async () => {
+it('shows the model name at the top of the viewer while retaining it for model actions', async () => {
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}><div>Conversation</div></LandingModelWorkspace>));
   const stage = container.querySelector('[aria-label="3D model viewer"]')!;
   expect(stage.textContent).not.toContain('Castle');
   expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle');
-  expect(container.querySelector('.landing-model-heading')).toBeNull();
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Castle');
+});
+
+it('renames the viewer model and keeps the new name in model actions', async () => {
+  const save = vi.spyOn(UpdateGenerationNameApiService, 'updateGenerationName')
+    .mockResolvedValue({ generation_id: 'castle', name: 'Moon Castle' });
+  const onNameSaved = vi.fn();
+  const model = { generation: generation('castle'), content: 'model' };
+  const render = () => root.render(<LandingModelWorkspace model={model} busy={false} canRename accessToken="token" onNameSaved={onNameSaved}>{null}</LandingModelWorkspace>);
+  await act(async () => render());
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Castle');
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-heading-edit')!.click());
+  const input = container.querySelector<HTMLInputElement>('.landing-model-rename-input')!;
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, ' Moon Castle ');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => container.querySelector('form[aria-label="Rename model"]')!
+    .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(save).toHaveBeenCalledWith('castle', 'Moon Castle', 'token');
+  expect(onNameSaved).toHaveBeenCalledWith('castle', 'Moon Castle');
+  model.generation.name = 'Moon Castle';
+  await act(async () => render());
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Moon Castle');
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Moon Castle');
+});
+
+it('offers sign in to rename when the viewer has no session', async () => {
+  const onRenameRequest = vi.fn();
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }}
+    busy={false} onRenameRequest={onRenameRequest}>{null}</LandingModelWorkspace>));
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-heading-edit')!.click());
+  expect(onRenameRequest).toHaveBeenCalledOnce();
+  expect(posthog.capture).toHaveBeenCalledWith('generation_name_edit_login_requested', { generation_id: 'castle' });
 });
 
 it('loads the linked model instead of the saved workspace or newest dashboard generation', async () => {
@@ -230,7 +264,7 @@ it('loads the linked model instead of the saved workspace or newest dashboard ge
   const get = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), name: id }));
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('linked & model');
-  expect(container.querySelector('.landing-model-heading')).toBeNull();
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('linked & model');
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('castle mpd');
   expect(get.mock.calls.every(([id]) => id === 'linked & model')).toBe(true);
   expect(sessionStorage.getItem('brickbuilder.landing-model:guest')).toBe('linked & model');
@@ -561,7 +595,7 @@ it('shows the model beside a desktop order pane and keeps the mobile banner for 
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.landing-model-heading')).toBeNull();
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Castle');
   expect(container.querySelector('.model-order-dialog')).toBeNull();
   const layout = container.querySelector('.landing-model-layout--orderable')!;
   expect(layout.querySelector('.landing-model-panel')).not.toBeNull();

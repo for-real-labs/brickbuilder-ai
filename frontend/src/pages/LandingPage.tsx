@@ -1012,6 +1012,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 onCreateNew={createNewModel} createNewDisabled={editSubmitting || buddyChat.routing}
+                canRename={Boolean(session?.access_token)} accessToken={session?.access_token}
+                onRenameRequest={!session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
