@@ -146,6 +146,7 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     const toggle = container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
     await act(async () => { toggle.click(); await new Promise(resolve => setTimeout(resolve, 0)); });
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 1');
+    expect(container.querySelector('.landing-model-heading')).toBeNull();
     const colors = container.querySelector<HTMLButtonElement>('.instructions-colors-toggle')!;
     expect(colors.textContent).toBe('Show colors');
     expect(colors.getAttribute('aria-pressed')).toBe('false');

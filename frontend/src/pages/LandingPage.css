@@ -109,7 +109,6 @@
   pointer-events: none;
 }
 .landing-page .landing-model-panel:not([data-expanded="true"]) .landing-model-toolbar button { pointer-events: auto; }
-.landing-page .landing-model-workspace[data-view="model"] .landing-model-heading { top: 56px; }
 .landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation {
   max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-workspace-overlay-limit, 40dvh) - var(--landing-conversation-bottom)));
 }

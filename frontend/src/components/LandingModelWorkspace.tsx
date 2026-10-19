@@ -114,9 +114,6 @@ export function LandingModelWorkspace({ model, busy, composerFocused = false, re
         <span className="landing-expanded-label">{showingInstructions ? 'Instructions' : '3D viewer'}</span>
       </div>
       <section className="landing-model-workspace" data-view={showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
-        <div className="landing-model-heading">
-          <span className="landing-model-name truncate font-semibold text-slate-800" title={generation.name || generation.prompt || 'Your model'}>{generation.name || generation.prompt || 'Your model'}</span>
-        </div>
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={showingInstructions ? 'instructions' : 'model'} aria-label={showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
           <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}

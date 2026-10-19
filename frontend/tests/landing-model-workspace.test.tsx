@@ -14,7 +14,6 @@ import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { GetPriceApiService } from '../src/services/getPriceApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
-import { readFileSync } from 'node:fs';
 
 const auth = vi.hoisted(() => ({ isSupabaseConfigured: false }));
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
@@ -38,9 +37,9 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, onModelLoaded }: { modelContent: string; onModelLoaded?: () => void }) => {
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, onModelLoaded }: { modelContent: string; modelName?: string; onModelLoaded?: () => void }) => {
   viewer.loaded = onModelLoaded;
-  return <div data-testid="viewer">{modelContent}</div>;
+  return <div data-testid="viewer" data-model-name={modelName}>{modelContent}</div>;
 } }));
 vi.mock('../src/components/FallingBricks', () => ({ default: () => null }));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
@@ -164,19 +163,12 @@ it('hides stats for an explicitly linked viewer and shows them again on a plain 
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
 });
 
-it('floats only the model title over the viewer without intercepting viewer gestures', async () => {
-  const style = document.createElement('style');
-  style.textContent = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
-  document.head.append(style);
-  try {
-    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}><div>Conversation</div></LandingModelWorkspace>));
-    const heading = container.querySelector<HTMLElement>('.landing-model-heading')!;
-    expect(getComputedStyle(heading).position).toBe('absolute');
-    expect(getComputedStyle(heading).backgroundColor).toBe('rgba(0, 0, 0, 0)');
-    expect(getComputedStyle(heading).pointerEvents).toBe('none');
-    expect(heading.textContent).toBe('Castle');
-    expect(heading.querySelector('button')).toBeNull();
-  } finally { style.remove(); }
+it('keeps the model name out of the viewer while retaining it for model actions', async () => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}><div>Conversation</div></LandingModelWorkspace>));
+  const stage = container.querySelector('[aria-label="3D model viewer"]')!;
+  expect(stage.textContent).not.toContain('Castle');
+  expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle');
+  expect(container.querySelector('.landing-model-heading')).toBeNull();
 });
 
 it('loads the linked model instead of the saved workspace or newest dashboard generation', async () => {
@@ -185,7 +177,8 @@ it('loads the linked model instead of the saved workspace or newest dashboard ge
   activity.rows = [{ id: 'newest', status: 'completed', endpoint: 'novaToBricks', prompt: 'Newest' }];
   const get = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), name: id }));
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.landing-model-name')?.textContent).toBe('linked & model');
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('linked & model');
+  expect(container.querySelector('.landing-model-heading')).toBeNull();
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('castle mpd');
   expect(get.mock.calls.every(([id]) => id === 'linked & model')).toBe(true);
   expect(sessionStorage.getItem('brickbuilder.landing-model:guest')).toBe('linked & model');
@@ -195,10 +188,10 @@ it('loads a different model when the landing link changes and clears the link wh
   query.value = 'id=first&exact=1&campaign=share';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), name: id }));
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.landing-model-name')?.textContent).toBe('first');
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('first');
   query.value = 'id=second&exact=1&campaign=share';
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.landing-model-name')?.textContent).toBe('second');
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('second');
   act(() => container.querySelector<HTMLButtonElement>('.landing-create-new')!.click());
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
@@ -346,7 +339,7 @@ it('keeps the header free of order buttons and shows piece count in the order ba
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.landing-model-heading button')).toBeNull();
+  expect(container.querySelector('.landing-model-heading')).toBeNull();
   expect(container.querySelector('.model-order-dialog')).toBeNull();
   const banner = container.querySelector('.model-mobile-order')!;
   expect(banner.classList.contains('model-mobile-order--all-screens')).toBe(true);
@@ -447,7 +440,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s through its so
   await act(async () => vi.advanceTimersByTimeAsync(5000));
   expect(input().disabled).toBe(false);
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
-  expect(container.querySelector('.landing-model-name')?.textContent).toBe('Castle with bridge');
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle with bridge');
 });
 
 it('keeps the current model and edit text available after an edit request fails', async () => {
