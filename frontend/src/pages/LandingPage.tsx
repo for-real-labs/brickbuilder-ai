@@ -1029,16 +1029,18 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 if (pendingEdit && landingModel.model) openModel(landingModel.model.generation.generation_id, true);
                 else { generationAbortRef.current?.abort(); resetWorkspace(); setLoading(false); setActiveGenerationId(null); setCreateNewStage(null); }
               }}
-              onStartNew={createNewModel} /> : !randomSuggestion && createNewStage !== 'list' ? <form
+              onStartNew={createNewModel} /> : null}
+            {(pendingEdit || pendingGeneration || (!randomSuggestion && createNewStage !== 'list')) ? <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
               onSubmit={event => {
                 event.preventDefault();
+                if (pendingEdit || pendingGeneration) return;
                 if (settingsOpen) toggleSettings(false);
                 void handleUserMessage();
               }}
             >
-              {imageLanding && !landingModel.model && <>
+              {imageLanding && !landingModel.model && !pendingGeneration && <>
                 <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding.uploadTitle}</h2>
                 <p className="mb-4 text-left text-sm text-slate-600">{imageLanding.uploadDescription}</p>
                 <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || buddyChat.routing || preparingImage}
@@ -1072,26 +1074,26 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={imgFile || imageLanding ? "Add optional image instructions" : ""}
+                    placeholder={pendingEdit || pendingGeneration ? '' : imgFile || imageLanding ? "Add optional image instructions" : ""}
                     className={`pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white ${landingModel.model ? 'pl-4' : 'pl-14'} pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
-                    disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
+                    disabled={pendingEdit || pendingGeneration || loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
-                  {!imageLanding && !imgFile && !prompt && !focused && !loading && !buddyChat.routing &&
+                  {!imageLanding && !imgFile && !prompt && !focused && !loading && !buddyChat.routing && !pendingEdit && !pendingGeneration &&
                     <span className={`landing-empty-input-hint${landingModel.model ? ' landing-empty-input-hint--edit' : ''}`} aria-hidden="true">build anything<span className="landing-empty-input-caret" /></span>}
                   <button
                     type="submit" aria-label={sendLabel} title={sendLabel}
-                    disabled={loading || buddyChat.routing || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
+                    disabled={pendingEdit || pendingGeneration || loading || buddyChat.routing || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
                     className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#f44336] text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ArrowUp aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>
-                <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
+                {!pendingEdit && !pendingGeneration && <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
                   aria-expanded={settingsOpen} aria-controls={localDevelopment ? "landing-generation-settings landing-local-provider-settings" : "landing-generation-settings"}
                   onClick={event => { settingsReturnFocus.current = event.currentTarget; toggleSettings(!settingsOpen); }}
                   className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 sm:inline-flex ${settingsOpen ? 'border-red-200 bg-red-50 text-[#f44336]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
                   <Settings aria-hidden="true" className="h-5 w-5" />
-                </button>
+                </button>}
               </div>
 
               {inputValidationMessage && (
@@ -1099,7 +1101,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   {inputValidationMessage}
                 </p>
               )}
-              <div id="landing-generation-settings" hidden={!settingsOpen}
+              {!pendingEdit && !pendingGeneration && <div id="landing-generation-settings" hidden={!settingsOpen}
                 onKeyDown={handleSettingsKeyDown} className="mt-3 rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm">
                 <div className="-ml-2 -mt-2 mb-3 flex items-center gap-1">
                   <button ref={settingsCloseRef} type="button" aria-label="Dismiss generation settings" onClick={dismissSettings}
@@ -1150,12 +1152,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     </select>
                   </div>
                 )}
-              </div>
+              </div>}
               <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form> : null}
               {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
-              {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
+              {!ldrawLanding && localDevelopment && !loading && !pendingEdit && !pendingGeneration && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
                 <LocalProviderSettings />
               </div>}
 
