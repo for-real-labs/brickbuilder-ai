@@ -10,6 +10,7 @@ import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerat
 import { isAgentGeneration } from '../utils/agentGeneration';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
+import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { pickModelGreeting, rememberModelGreeting } from '../utils/buddyModelGreetings';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
@@ -122,8 +123,10 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     : `Hi${greetingName ? `, ${greetingName}` : ''}! I’m ${pet.name}.`;
   const resolvedCurrentMessage = typeof currentMessage === 'function' ? currentMessage(buildsGreeting) : currentMessage;
   const currentDialogue = resolvedCurrentMessage ?? (activeGeneration && isAgentGeneration(activeGeneration.endpoint)
-    ? <BuddyBuildMessages key={activeGeneration.id} generationId={activeGeneration.id} status={activeGeneration.status} />
-    : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p></PetChatMessage>
+    ? <div key={activeGeneration.id}><BuddyBuildMessages generationId={activeGeneration.id} status={activeGeneration.status} />
+      <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></div>
+    : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p>
+      <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></PetChatMessage>
     : latestTurn ? <PetChatMessage state={latestTurn.reply ? 'idle' : 'listening'}>
       {latestTurn.error ? <p role="status">{BUILD_FAILURE_MESSAGE}</p>
         : latestTurn.reply ? <p>{latestTurn.reply}</p> : <PetTypingIndicator />}

@@ -14,6 +14,7 @@ import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel, type LandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 import { PendingEditActions } from '../components/PendingEditActions';
+import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
 import { CreateNewBuildsPrompt } from '../components/CreateNewBuildsPrompt';
 import { RandomBuildPrompt } from '../components/RandomBuildPrompt';
 import { useRecentCompletedBuilds } from '../hooks/useRecentCompletedBuilds';
@@ -295,8 +296,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     : pendingGeneration ? selectedActiveGeneration?.id || activeGenerationId : null;
   const processingBuilds = [...generations.filter(row => isGenerationActive(row.status))];
   for (const row of notificationActive || []) {
-    if (!processingBuilds.some(generation => generation.id === row.id)) processingBuilds.push({
-      id: row.id, prompt: row.prompt, status: row.status, createdAt: row.updated_at,
+    if (!generations.some(generation => generation.id === row.id)) processingBuilds.push({
+      id: row.id, prompt: row.prompt, status: row.status, createdAt: row.created_at,
     });
   }
   processingBuilds.sort((left, right) => (right.createdAt || '').localeCompare(left.createdAt || ''));
@@ -1025,8 +1026,18 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   processing={processingBuilds} completed={completedBuilds} page={recentBuildPage} pageSize={5}
                   onBack={() => { posthog.capture('landing_builds_back_clicked', { surface: 'pet_dialogue' }); setCreateNewStage(null); }}
                   onMore={() => setRecentBuildPage(current => current + 1)}
+                  onCancelled={id => {
+                    const row = processingBuilds.find(generation => generation.id === id);
+                    if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
+                  }}
                   onView={id => { setCreateNewStage(null); openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /> : undefined}
                 welcomeActions={<div className="pet-chat-actions">
+                  {processingBuilds.length > 0 && <div className="w-full text-left text-xs text-slate-500" aria-label="Builds in progress">
+                    {processingBuilds.map((row, index) => <div key={row.id} className="min-w-0 break-words">
+                      <span>{processingBuilds.length > 1 ? `Build ${index + 1} in progress` : 'Build in progress'}</span>
+                      <GenerationElapsedTime startedAt={row.createdAt} />
+                    </div>)}
+                  </div>}
                   <button type="button" className="pet-chat-action" onClick={buildSomethingRandom}>Build something random</button>
                   <button type="button" className="pet-chat-action" onClick={showBuilds}>Show builds</button>
                   <button type="button" className="pet-chat-action" onClick={showCommunityModels}>Show me community models</button>
@@ -1036,7 +1047,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>
               </BuildBuddyDialogue>
-            {(pendingEdit || pendingGeneration) ? <PendingEditActions key={pendingGenerationId || 'starting'} generationId={pendingGenerationId} isEdit={pendingEdit}
+            {(pendingEdit || pendingGeneration) ? <PendingEditActions key={pendingGenerationId || 'starting'} generationId={pendingGenerationId}
+              startedAt={generations.find(generation => generation.id === pendingGenerationId)?.createdAt} isEdit={pendingEdit}
               onCancelled={() => {
                 const row = generations.find(generation => generation.id === pendingGenerationId);
                 if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });

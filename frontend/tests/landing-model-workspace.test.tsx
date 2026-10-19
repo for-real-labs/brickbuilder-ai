@@ -191,7 +191,7 @@ it('shows processing and recent completed builds inside pet dialogue only after 
   expect(rows[0].textContent).toContain('Rocket');
   expect(rows[1].textContent).toContain('Ready car');
   expect(container.querySelector('.pet-dialogue')?.contains(rows[0])).toBe(true);
-  expect(container.querySelector('.pet-chat-message .pet-chat-bubble button')?.textContent).toBe('Go back');
+  expect(Array.from(container.querySelectorAll('.pet-chat-message .pet-chat-bubble button')).some(button => button.textContent === 'Go back')).toBe(true);
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
     .find(button => button.textContent === 'Go back')!.click());
@@ -405,10 +405,12 @@ it('shows an empty build list only when requested and returns to the opening que
 });
 
 it('keeps the opening question independent of build counts', async () => {
-  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket' }];
+  vi.setSystemTime(new Date('2026-10-19T18:01:00Z'));
+  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket', createdAt: '2026-10-19T18:00:00Z' }];
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Rocket');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Building for 1m 0s');
   act(() => root.render(null));
   activity.rows = [];
   vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({

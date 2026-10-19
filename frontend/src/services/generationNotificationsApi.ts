@@ -11,6 +11,7 @@ export interface ModelNotification {
   status: string;
   seen: boolean;
   updated_at: string;
+  created_at?: string;
   image_url?: string;
   is_edit: boolean;
 }

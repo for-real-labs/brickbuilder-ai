@@ -65,6 +65,7 @@ def _summary(row: dict) -> dict:
     return {"id": row["id"], "prompt": row.get("name") or row.get("prompt") or "Your model",
             "status": row.get("status"), "seen": bool(row.get("notification_seen", True)),
             "updated_at": row.get("updated_at") or row.get("created_at"),
+            "created_at": row.get("created_at"),
             "image_url": row.get("preview_image_url") or row.get("processed_image_url"),
             "is_edit": row.get("version", 1) > 1}
 

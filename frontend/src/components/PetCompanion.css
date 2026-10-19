@@ -96,6 +96,15 @@
 .pet-completed-builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px; padding: 0; margin: 12px 0 0; list-style: none; }
 .pet-completed-builds li { min-width: 0; }
 .pet-completed-builds .pet-build-list-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; overflow-wrap: anywhere; }
+.pet-completed-builds .pet-processing-build-row { display: block; text-align: left; }
+.pet-processing-build-heading { display: flex; align-items: center; gap: 12px; min-width: 0; font-weight: 500; }
+.pet-processing-build-heading > span { min-width: 0; }
+.pet-processing-build-row .pet-chat-email { margin-top: 10px; }
+.pet-processing-build-actions { align-items: center; }
+.pet-processing-build-actions > div { flex: 0 0 auto; }
+.pet-processing-build-actions .pet-chat-action { margin-top: 0; }
+.pet-processing-build-email { margin-top: 10px; font-size: 12px; line-height: 1.5; color: #475569; overflow-wrap: anywhere; }
+.pet-processing-build-error { margin-top: 8px; font-size: 12px; color: #b42318; }
 .pet-build-list-row svg { flex-shrink: 0; color: #64748b; }
 .pet-build-list-row small { display: block; margin-top: 3px; color: #64748b; }
 .pet-completed-builds a { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; text-decoration: none; }
