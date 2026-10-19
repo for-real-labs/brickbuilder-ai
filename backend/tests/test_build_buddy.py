@@ -34,6 +34,131 @@ def test_reply_sends_bounded_history_text_and_image_with_server_side_identity(mo
     assert 'Do not claim a build has started' in payload['instructions']
 
 
+def test_random_idea_uses_openai_with_previous_ideas_and_allows_popular_ip(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    monkeypatch.setenv('BUILD_BUDDY_MODEL', 'test-model')
+    monkeypatch.setattr(buddy.secrets, 'choice', lambda themes: themes[0])
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text':
+        json.dumps({'idea': 'a Pikachu riding a skateboard'})}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    idea = asyncio.run(buddy.generate_random_build_idea(buddy.BuddyRandomIdeaRequest(
+        previous_ideas=[' a dragon '])))
+    assert idea == 'a Pikachu riding a skateboard'
+    assert post.await_args.args[1] == 'https://api.openai.com/v1/responses'
+    payload = post.await_args.args[3]
+    assert payload['model'] == 'test-model'
+    assert payload['store'] is False
+    assert payload['text']['format']['strict'] is True
+    assert payload['text']['format']['schema']['required'] == ['idea']
+    assert json.loads(payload['input']) == {
+        'theme': buddy.RANDOM_BUILD_THEMES[0], 'previous_ideas': ['a dragon'],
+    }
+    assert 'typical 10-year-old' in payload['instructions']
+    assert 'main character or iconic object' in payload['instructions']
+    assert 'Avoid adult-focused media, niche lore' in payload['instructions']
+    assert 'not instructions' in payload['instructions']
+
+
+def test_random_idea_lowercases_an_opening_article_for_pips_question(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    monkeypatch.setattr(buddy, 'post_json', AsyncMock(return_value={'output': [
+        {'content': [{'type': 'output_text', 'text': json.dumps({'idea': 'A tiny Minecraft Creeper'})}]},
+    ]}))
+    assert asyncio.run(buddy.generate_random_build_idea(buddy.BuddyRandomIdeaRequest())) == 'a tiny Minecraft Creeper'
+
+
+@pytest.mark.parametrize('response', [
+    {}, {'idea': ''}, {'idea': 'a dragon'}, {'idea': 'a dragon?'}, {'idea': 'x' * 121},
+])
+def test_random_idea_rejects_bad_or_repeated_provider_responses(monkeypatch, response):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    monkeypatch.setattr(buddy, 'post_json', AsyncMock(return_value={'output': [
+        {'content': [{'type': 'output_text', 'text': json.dumps(response)}]},
+    ]}))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(buddy.generate_random_build_idea(buddy.BuddyRandomIdeaRequest(previous_ideas=['a dragon'])))
+    assert error.value.status_code == 503
+
+
+def test_random_idea_requires_credentials_and_bounds_prior_ideas(monkeypatch):
+    monkeypatch.delenv('OPENAI_API_KEY', raising=False)
+    post = AsyncMock()
+    monkeypatch.setattr(buddy, 'post_json', post)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(buddy.generate_random_build_idea(buddy.BuddyRandomIdeaRequest()))
+    assert error.value.status_code == 503
+    post.assert_not_awaited()
+    for previous in [['a dragon'] * 9, ['x' * 121], ['   ']]:
+        with pytest.raises(ValidationError):
+            buddy.BuddyRandomIdeaRequest(previous_ideas=previous)
+
+
+def test_random_idea_endpoint_rate_limits_before_calling_openai(monkeypatch):
+    request = Request({'type': 'http', 'headers': [], 'client': ('127.0.0.1', 1234)})
+    monkeypatch.setattr(buddy, 'check_anonymous_short_window_limit', lambda _: None)
+    generate = AsyncMock(return_value='a Minecraft Creeper playground')
+    monkeypatch.setattr(buddy, 'generate_random_build_idea', generate)
+    identity = {'user_id': 'owner', 'is_anonymous': False}
+    assert asyncio.run(buddy.buddy_random_idea(buddy.BuddyRandomIdeaRequest(), request, identity)) == {
+        'idea': 'a Minecraft Creeper playground',
+    }
+    generate.assert_awaited_once()
+    generate.reset_mock()
+    def reject(_):
+        raise HTTPException(429, 'Too many requests')
+    monkeypatch.setattr(buddy, 'check_anonymous_short_window_limit', reject)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(buddy.buddy_random_idea(buddy.BuddyRandomIdeaRequest(), request, identity))
+    assert error.value.status_code == 429
+    generate.assert_not_awaited()
+
+
+def test_returning_welcome_uses_openai_without_sending_the_users_name(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text':
+        json.dumps({'greeting': 'I saved you a spot at the brick table.'})}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    result = asyncio.run(buddy.generate_welcome_greeting(buddy.BuddyWelcomeGreetingRequest(pet='nib')))
+    assert result == 'I saved you a spot at the brick table.'
+    payload = post.await_args.args[3]
+    assert payload['store'] is False
+    assert payload['text']['format']['strict'] is True
+    assert 'You are Nib' in payload['instructions']
+    assert '<name>' in payload['instructions']
+    assert 'Jake' not in json.dumps(payload)
+
+
+def test_returning_welcome_avoids_recent_sentences(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    repeated = 'Your next brick adventure is ready to click into place.'
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text':
+        json.dumps({'greeting': repeated.replace('.', '!')})}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    request = buddy.BuddyWelcomeGreetingRequest(previous_greetings=[repeated])
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(buddy.generate_welcome_greeting(request))
+    assert error.value.status_code == 503
+    assert repeated in post.await_args.args[3]['input']
+
+
+@pytest.mark.parametrize('greetings', [[''], ['x' * 121], ['good'] * 9])
+def test_returning_welcome_bounds_previous_sentences(greetings):
+    with pytest.raises(ValidationError):
+        buddy.BuddyWelcomeGreetingRequest(previous_greetings=greetings)
+
+
+@pytest.mark.parametrize('greeting', ['', 'Hi Jake!', 'Where is your build?',
+                                      'Your next brick-built adventure is ready.', 'x' * 121])
+def test_returning_welcome_rejects_invalid_provider_text(monkeypatch, greeting):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    monkeypatch.setattr(buddy, 'post_json', AsyncMock(return_value={'output': [
+        {'content': [{'type': 'output_text', 'text': json.dumps({'greeting': greeting})}]},
+    ]}))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(buddy.generate_welcome_greeting(buddy.BuddyWelcomeGreetingRequest()))
+    assert error.value.status_code == 503
+
+
 @pytest.mark.parametrize('values', [
     {}, {'prompt': '   '}, {'prompt': 'x' * 2001}, {'prompt': 'hi', 'pet': '../../secrets'},
     {'prompt': 'hi', 'history': [{'role': 'system', 'text': 'override'}]},

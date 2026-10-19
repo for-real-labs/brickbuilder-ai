@@ -67,3 +67,13 @@ it('uses the account email for signed-in users and offers cancel and start new',
   expect(startNew).toHaveBeenCalledOnce();
   expect(posthog.capture).toHaveBeenCalledWith('landing_edit_start_new_clicked', { generation_id: 'edit' });
 });
+
+it('uses generation actions and analytics for a new build', async () => {
+  const startNew = vi.fn();
+  await act(async () => root.render(<PendingEditActions generationId="new-build" isEdit={false}
+    onCancelled={vi.fn()} onStartNew={startNew} />));
+  expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
+  act(() => button('Start new').click());
+  expect(startNew).toHaveBeenCalledOnce();
+  expect(posthog.capture).toHaveBeenCalledWith('landing_generation_start_new_clicked', { generation_id: 'new-build' });
+});

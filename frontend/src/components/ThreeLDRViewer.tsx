@@ -755,6 +755,7 @@ type BuildAnimationPart = {
   startPosition: THREE.Vector3;
   delayMs: number;
   durationMs: number;
+  fadeMaterials?: { material: THREE.Material; opacity: number; transparent: boolean; depthWrite: boolean }[];
 };
 
 type BuildAnimationState = {
@@ -832,6 +833,12 @@ const completeBuildAnimation = (animation: BuildAnimationState | null) => {
   animation.parts.forEach((part) => {
     part.object.visible = true;
     part.object.position.copy(part.finalPosition);
+    part.fadeMaterials?.forEach(({ material, opacity, transparent, depthWrite }) => {
+      material.opacity = opacity;
+      material.transparent = transparent;
+      material.depthWrite = depthWrite;
+      material.needsUpdate = true;
+    });
   });
 };
 
@@ -854,6 +861,7 @@ const updateBuildAnimation = (animation: BuildAnimationState | null, nowMs: numb
     const progress = Math.min(partElapsed / part.durationMs, 1);
     const eased = easeOutCubic(progress);
     part.object.position.lerpVectors(part.startPosition, part.finalPosition, eased);
+    part.fadeMaterials?.forEach(({ material, opacity }) => { material.opacity = opacity * eased; });
 
     if (progress < 1) {
       allComplete = false;
@@ -918,6 +926,7 @@ const createBuildAnimation = (
   bbox: THREE.Box3,
   maxDimension: number,
   totalDurationMsOverride?: number,
+  style: 'drop' | 'fade' = 'drop',
 ): BuildAnimationState | null => {
   if (model.userData.instancedLDraw) return null;
   const partGroups = model.children.filter((child) => child.name !== 'baseplate');
@@ -925,7 +934,8 @@ const createBuildAnimation = (
 
   model.updateMatrixWorld(true);
   const dropHeight = Math.max(maxDimension * 0.55, 120);
-  const totalDurationMs = totalDurationMsOverride ?? THREE.MathUtils.clamp(partGroups.length * 12, 2200, 4600);
+  const totalDurationMs = totalDurationMsOverride ?? (style === 'fade'
+    ? partGroups.length * 320 + 650 : THREE.MathUtils.clamp(partGroups.length * 12, 2200, 4600));
   const partDurationMs = 650;
   const availableDelayMs = Math.max(totalDurationMs - partDurationMs, 0);
 
@@ -933,7 +943,7 @@ const createBuildAnimation = (
     .map<BuildAnimationCandidate>((object) => {
       const finalWorldPosition = object.getWorldPosition(new THREE.Vector3());
       const finalPosition = object.position.clone();
-      const startWorldPosition = finalWorldPosition.clone().add(new THREE.Vector3(0, dropHeight, 0));
+      const startWorldPosition = finalWorldPosition.clone().add(new THREE.Vector3(0, style === 'fade' ? 0 : dropHeight, 0));
       const startPosition = object.parent
         ? object.parent.worldToLocal(startWorldPosition)
         : startWorldPosition;
@@ -948,11 +958,31 @@ const createBuildAnimation = (
       };
     });
 
-  const parts = assignChunkedLayerDelays(candidates, availableDelayMs);
+  const parts: BuildAnimationPart[] = style === 'fade'
+    ? [...candidates].sort((first, second) => first.finalWorldY - second.finalWorldY)
+      .map((candidate, index) => ({ ...candidate, delayMs: index * 320 }))
+    : assignChunkedLayerDelays(candidates, availableDelayMs);
 
   parts.forEach((part) => {
     part.object.visible = false;
     part.object.position.copy(part.startPosition);
+    if (style === 'fade') {
+      const materials: NonNullable<BuildAnimationPart['fadeMaterials']> = [];
+      part.object.traverse(child => {
+        if (!(child instanceof THREE.Mesh || child instanceof THREE.LineSegments)) return;
+        const original = child.material;
+        const fade = (material: THREE.Material) => {
+          const copy = material.clone();
+          materials.push({ material: copy, opacity: material.opacity, transparent: material.transparent, depthWrite: material.depthWrite });
+          copy.transparent = true;
+          copy.depthWrite = false;
+          copy.opacity = 0;
+          return copy;
+        };
+        child.material = Array.isArray(original) ? original.map(fade) : fade(original);
+      });
+      part.fadeMaterials = materials;
+    }
   });
 
   return {
@@ -1414,6 +1444,7 @@ interface ThreeLDRViewerProps {
   presentation?: 'room' | 'model';
   onViewInteractionEnd?: () => void;
   animateModelBuild?: boolean; // Whether to drop parts into place on load
+  buildAnimationStyle?: 'drop' | 'fade';
 }
 
 // Parse step boundaries from MPD content - returns array of cumulative part counts per step
@@ -1459,6 +1490,7 @@ export function ThreeLDRViewer({
   totalSteps,
   showBaseplate = false,
   animateModelBuild = false,
+  buildAnimationStyle = 'drop',
   topLeftOverlay,
   showModelControls = true,
   presentation = 'room',
@@ -1847,7 +1879,7 @@ export function ThreeLDRViewer({
               }
 
               if (animateModelBuild && currentStepIndex === undefined) {
-                buildAnimationRef.current = createBuildAnimation(model, bbox, maxDimension);
+                buildAnimationRef.current = createBuildAnimation(model, bbox, maxDimension, undefined, buildAnimationStyle);
               } else {
                 buildAnimationRef.current = null;
               }
@@ -2050,7 +2082,7 @@ export function ThreeLDRViewer({
         }
       }
     };
-  }, [modelPath, modelContent, onExportCaptureReady, animateModelBuild, presentation]);
+  }, [modelPath, modelContent, onExportCaptureReady, animateModelBuild, buildAnimationStyle, presentation]);
 
   useEffect(() => {
     const { scene } = sceneRef.current;

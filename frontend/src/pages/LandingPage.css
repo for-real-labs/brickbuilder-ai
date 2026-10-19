@@ -10,17 +10,13 @@
 .landing-page-shell { height: 100%; padding-bottom: 0; }
 .landing-page-shell > header { flex-shrink: 0; }
 .landing-page-main { min-height: 0; overflow: hidden; }
-.landing-page-intro {
-  display: grid;
-  grid-template-rows: 1fr;
-  flex-shrink: 0;
-  width: 100%;
-  margin-top: 16px;
-  opacity: 1;
-  transition: opacity 350ms ease, grid-template-rows 350ms ease, margin-top 350ms ease, visibility 350ms;
-}
+.landing-page-intro { display: grid; grid-template-rows: 1fr; flex-shrink: 0; width: 100%; margin-top: 16px; opacity: 1; transition: opacity 350ms ease, grid-template-rows 350ms ease, margin-top 350ms ease, visibility 350ms; }
 .landing-page-intro-content { display: flex; min-height: 0; flex-direction: column; align-items: center; gap: 24px; overflow: hidden; }
 .landing-page-intro--hidden { grid-template-rows: 0fr; margin-top: 0; opacity: 0; visibility: hidden; pointer-events: none; }
+.landing-empty-input-hint { position: absolute; z-index: 1; top: 50%; left: 56px; display: inline-flex; align-items: center; gap: 2px; max-width: calc(100% - 126px); color: #94a3b8; font-size: 16px; pointer-events: none; transform: translateY(-50%); white-space: nowrap; }
+.landing-empty-input-hint--edit { left: 16px; }
+.landing-empty-input-caret { display: inline-block; flex: none; width: 2px; height: 23px; border-radius: 1px; background: #475569; animation: landing-caret-blink 1s step-end infinite; }
+@keyframes landing-caret-blink { 50% { opacity: 0; } }
 .landing-page-content {
   flex: 1 1 0%;
   min-height: 0;
@@ -35,7 +31,7 @@
   max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 56px));
 }
 .landing-page .landing-model-conversation .pet-dialogue { min-height: 0; }
-.landing-page .landing-model-conversation .pet-dialogue:has([aria-label="Your generations"]) { max-height: min(500px, 52dvh); }
+.landing-page:not(.landing-page--conversation-started) .landing-model-conversation .pet-dialogue { max-height: min(360px, 44dvh); }
 .landing-page .landing-model-conversation {
   bottom: var(--landing-conversation-bottom);
   translate: 0 0;
@@ -64,17 +60,15 @@
 .landing-page-help a:hover { color: #f44336; }
 .landing-page-help a:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; border-radius: 4px; }
 .landing-page--help-visible .landing-page-help { opacity: 1; visibility: visible; transform: translateY(0); }
-@media (min-width: 640px) {
-  .landing-page-intro { margin-top: 32px; }
-  .landing-page-intro--hidden { margin-top: 0; }
-}
 @media (max-width: 767px) {
-  /* Center the welcome dialogue, keeping it below the intro on short screens. */
+  /* Center the welcome dialogue in the available viewport. */
   .landing-page:not(.landing-page--conversation-started) {
     --landing-conversation-bottom: max(8px, env(safe-area-inset-bottom), min(calc((var(--landing-viewport-height, 100dvh) - var(--landing-conversation-height, 240px)) / 2), calc(var(--landing-viewport-height, 100dvh) - var(--landing-intro-bottom, 240px) - var(--landing-conversation-height, 240px) - 16px)));
   }
 }
 @media (min-width: 768px) {
+  .landing-page-intro { margin-top: 32px; }
+  .landing-page-intro--hidden { margin-top: 0; }
   .landing-page:not(.landing-page--conversation-started) {
     --landing-conversation-bottom: max(16px, calc((var(--landing-viewport-height, 100dvh) - var(--landing-intro-bottom, 240px) - var(--landing-conversation-height, 240px)) / 2));
   }
@@ -90,8 +84,9 @@
 }
 @media (prefers-reduced-motion: reduce) {
   .landing-page-intro, .landing-page .landing-model-conversation, .landing-page-help { transition: none; }
+  .landing-empty-input-caret { animation: none; }
 }
-/* Keep the viewer and generation card in the original stage area. */
+/* Keep the viewer and generation animation in the original stage area. */
 .landing-page .landing-model-workspace,
 .landing-page .landing-generation-workspace {
   height: min(460px, max(260px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 120px)));
@@ -125,7 +120,7 @@
 .landing-page:has(.landing-model-workspace, .landing-generation-workspace) .landing-model-conversation[data-overlaps-workspace="true"] .pet-dialogue {
   mask-image: linear-gradient(to bottom, transparent var(--landing-dialogue-fade-start), #000 var(--landing-dialogue-fade-end));
 }
-.landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(320px, 40dvh); }
+.landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(480px, 58dvh); }
 @media (max-width: 639px) {
   .landing-page .landing-model-workspace,
   .landing-page .landing-generation-workspace { max-height: 380px; }

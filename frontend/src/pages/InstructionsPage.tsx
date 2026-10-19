@@ -1,5 +1,4 @@
 import { getGeneratedModelPath } from '../utils/generationRoutes';
-import { NotificationMenu } from "../components/NotificationMenu";
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import * as THREE from 'three';
@@ -87,7 +86,6 @@ function Header() {
             </button>
           </>
         )}
-        {!showProfileMenu && <NotificationMenu />}
       </div>
       
     </header>

@@ -53,12 +53,18 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   </PetPromptGreeting>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, children }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
   model?: DialogueModel | null;
   reasoningOnly?: boolean;
+  currentOnly?: boolean;
+  showOpeningMessage?: boolean;
+  currentMessage?: React.ReactNode | ((greeting: string) => React.ReactNode);
+  welcomeMessage?: string;
+  landingWelcome?: boolean;
+  welcomeActions?: React.ReactNode;
   children?: React.ReactNode;
 }) {
   const { pet } = usePet();
@@ -104,15 +110,37 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   }, [turns.length, generations.length]);
   const restored = model ? [] : generations.filter(row => row.id === selectedGenerationId && isAgentGeneration(row.endpoint)
     && !turns.some(turn => turn.generationId === row.id));
+  const latestTurn = visibleTurns.at(-1);
+  const activeGeneration = generations.find(row => isGenerationActive(row.status)
+    && (row.id === latestTurn?.generationId || row.id === selectedGenerationId));
+  const greeting = returning ? formatBuddyGreeting(welcome, greetingName)
+    : `Hi${greetingName ? `, ${greetingName}!` : '!'} I’m ${pet.name}. Tell me what to build!`;
+  const landingGreeting = returning ? 'Hi! What would you like to do?'
+    : `Hi! I’m ${pet.name}, your brick building buddy. What would you like to do?`;
+  const buildsGreeting = returning ? `Welcome back${greetingName ? `, ${greetingName}` : ''}!`
+    : `Hi${greetingName ? `, ${greetingName}` : ''}! I’m ${pet.name}.`;
+  const resolvedCurrentMessage = typeof currentMessage === 'function' ? currentMessage(buildsGreeting) : currentMessage;
+  const currentDialogue = resolvedCurrentMessage ?? (activeGeneration && isAgentGeneration(activeGeneration.endpoint)
+    ? <BuddyBuildMessages key={activeGeneration.id} generationId={activeGeneration.id} status={activeGeneration.status} />
+    : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p></PetChatMessage>
+    : latestTurn ? <PetChatMessage state={latestTurn.reply ? 'idle' : 'listening'}>
+      <p role={latestTurn.error ? 'status' : undefined}>{latestTurn.error ? BUILD_FAILURE_MESSAGE
+        : latestTurn.reply || (latestTurn.kind === 'gift' ? 'Let’s find a gift they’ll love…' : 'Let me take a look…')}</p>
+    </PetChatMessage>
+    : model && !reasoningOnly ? <ModelGreeting key={model.id} state={state} model={model} />
+    : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
+    : <PetPromptGreeting state={state} showPetSwitch={false} actions={welcomeActions}>
+      {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
+    </PetPromptGreeting>);
   return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
     onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
     <div className="pet-dialogue-content">
+      {currentOnly ? currentDialogue : <>
       {children}
       {reasoningOnly ? null : model ? <ModelGreeting key={model.id} state={state} model={model} />
         : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
         : <PetPromptGreeting state={state} showPetSwitch={false}>
-        {returning ? formatBuddyGreeting(welcome, greetingName)
-          : `Hi${greetingName ? `, ${greetingName}!` : '!'} I’m ${pet.name}. Tell me what to build!`}
+        {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
       </PetPromptGreeting>}
       {!selectedGenerationId && !model && <BuddyCompletedBuilds onView={onViewGeneration} />}
       {restored.map(row => <div key={row.id} className="pet-dialogue-turn">
@@ -135,6 +163,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
             generationId={turn.generationId} status={generation?.status || 'started'} />}
         </div>;
       })}
+      </>}
     </div>
   </div>;
 }

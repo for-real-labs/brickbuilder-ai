@@ -30,7 +30,7 @@ vi.mock('../src/components/VoxelViewer', () => ({VoxelViewer: () => null}));
 vi.mock('../src/components/SEO', () => ({SEO: () => null}));
 vi.mock('../src/components/SiteFooter', () => ({SiteFooter: () => null}));
 vi.mock('../src/components/ProfileMenu', () => ({ProfileMenu: () => null}));
-vi.mock('../src/components/NotificationMenu', () => ({NotificationMenu: () => null}));
+vi.mock('../src/components/NotificationMenu', () => ({NotificationMenu: () => <button aria-label="Notifications" />}));
 vi.mock('../src/components/LoginModal', () => ({default: () => null}));
 vi.mock('posthog-js', () => ({default: {capture: vi.fn()}}));
 vi.mock('../src/lib/supabase', () => ({supabase: {
@@ -55,6 +55,12 @@ beforeEach(() => {
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
+
+it('does not show a notification bell in the guest model header', async () => {
+  mocks.user = null;
+  await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
+  expect(container.querySelector('header [aria-label="Notifications"]')).toBeNull();
+});
 
 it.each(['owner', 'other'])('renders the saved title on the model page and gates renaming for %s', async viewer => {
   mocks.owner = 'owner'; mocks.user = {id: viewer};

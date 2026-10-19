@@ -13,6 +13,7 @@ import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
 import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { GetPriceApiService } from '../src/services/getPriceApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
+import { GetUserGenerationsApiService, type GenerationWithOrder } from '../src/services/getUserGenerationsApi';
 import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
 
 const auth = vi.hoisted(() => ({ isSupabaseConfigured: false }));
@@ -33,11 +34,12 @@ vi.mock('../src/hooks/useGenerationActivity', async () => ({
 vi.mock('../src/services/localProvidersApi', () => ({ isLocalDevelopment: () => false }));
 vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ turns: [], startTurn: () => 1,
   routing: false, routeMessage: async () => ({ id: 1, intent: 'generate', confidence: 1 }),
-  requestReply: vi.fn(), updateTurn: buddy.updateTurn }) }));
+  requestReply: vi.fn(), updateTurn: buddy.updateTurn, resetConversation: vi.fn() }) }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, onModelLoaded }: { modelContent: string; modelName?: string; onModelLoaded?: () => void }) => {
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, modelPath, onModelLoaded }: { modelContent?: string; modelName?: string; modelPath?: string; onModelLoaded?: () => void }) => {
+  if (modelPath) return <div data-testid="generation-3d-animation" data-scene={modelPath} />;
   viewer.loaded = onModelLoaded;
   return <div data-testid="viewer" data-model-name={modelName}>{modelContent}</div>;
 } }));
@@ -57,6 +59,10 @@ const generation = (id: string, endpoint = 'novaToBricks'): GetGenerationRespons
   external_image_url: null, processed_image_url: null, detail_level: 40,
   xyzrgb_url: null, problematic_xyzrgb_url: null, error_message: null,
 });
+const historyBuild = (id: string, prompt: string, created_at = '2026-10-18'): GenerationWithOrder => ({
+  id, prompt, created_at, status: 'completed', user_id: 'guest', user_type: 'anonymous',
+  detail_level: 40, endpoint: 'novaToBricks',
+});
 beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'show', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
@@ -74,6 +80,9 @@ beforeEach(() => {
   vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({ generation_id: 'castle', total_price: 44.77, total_weight: .5263, total_parts: 370, currency: 'USD', parts_breakdown: [] } as never);
   vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
   vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
+  vi.spyOn(GetUserGenerationsApiService, 'getUserGenerations').mockResolvedValue({
+    generations: [], total_count: 0, total_user_generations: 0, all_orders: [], has_more: false,
+  });
   sessionStorage.clear();
   vi.useFakeTimers();
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
@@ -106,9 +115,10 @@ it('keeps the welcome dialogue centered until input and stays docked after clear
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
 });
 
-it('hides generation statistics while the prompt is focused and restores them on blur', async () => {
+it('restores the landing headline and stats, hiding stats while the prompt is focused', async () => {
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+  expect(container.textContent).toContain('Imagine. Create. Build.');
   act(() => input().focus());
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).toBeNull();
   act(() => input().blur());
@@ -123,7 +133,7 @@ it('starts docked for a generation URL before the model finishes loading', async
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
 });
 
-it('starts fresh on reload and return despite cached models, failed history, background builds and unread notifications', async () => {
+it('starts with a choice instead of showing background builds or model cards', async () => {
   sessionStorage.setItem('brickbuilder.landing-model:guest', 'saved-castle');
   activity.rows = [
     { id: 'failed', status: 'failed', endpoint: 'novaToBricks', prompt: 'Old concert stage' },
@@ -131,26 +141,61 @@ it('starts fresh on reload and return despite cached models, failed history, bac
     { id: 'cancelled', status: 'cancelled', endpoint: 'novaToBricks', prompt: 'Cancelled dragon' },
   ];
   inbox.notifications = [{ id: 'ready', prompt: 'Ready castle', status: 'completed', seen: false, updated_at: '2026-10-17', is_edit: false }];
+  vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
+    generations: [historyBuild('ready', 'Ready castle')], total_count: 1, total_user_generations: 1, all_orders: [], has_more: false,
+  });
   const get = vi.spyOn(GetGenerationApiService, 'getGeneration');
   const watch = vi.mocked(LlmToBricksApiService.watchOutput);
   for (let visit = 0; visit < 2; visit++) {
     await act(async () => root.render(<LandingPage />));
-    expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
-    expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+    expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+    expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Show builds');
+    expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Want to see them?');
+    expect(container.querySelector('.landing-page--conversation-started')).toBeNull();
+    expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
+    expect(input()).not.toBeNull();
+    expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Build progress workspace"]')).toBeNull();
     expect(container.querySelector('.pet-chat-message--user')).toBeNull();
     expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
     expect(container.textContent).not.toContain('Old concert stage');
     expect(container.textContent).not.toContain('Background car');
     expect(container.textContent).not.toContain('Cancelled dragon');
     expect(container.textContent).not.toContain('Oops!');
-    expect(container.textContent).toContain('Want to see');
+    expect(container.querySelector('.pet-dialogue')?.textContent).not.toBe('');
     act(() => root.render(null));
   }
   expect(get).not.toHaveBeenCalled();
   expect(watch).not.toHaveBeenCalled();
 });
 
-it('hides stats for an explicitly linked viewer and shows them again on a plain landing visit', async () => {
+it('shows processing and recent completed builds inside pet dialogue only after Show builds', async () => {
+  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket' }];
+  inbox.notifications = [{ id: 'ready', prompt: 'Ready car', status: 'completed', seen: false,
+    updated_at: '2026-10-18', is_edit: false }];
+  vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
+    generations: [historyBuild('ready', 'Ready car')], total_count: 1, total_user_generations: 1, all_orders: [], has_more: false,
+  });
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
+  expect(input()).not.toBeNull();
+  expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
+    .find(button => button.textContent === 'Show builds')!.click());
+  const rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
+  expect(rows).toHaveLength(2);
+  expect(rows[0].textContent).toContain('Rocket');
+  expect(rows[1].textContent).toContain('Ready car');
+  expect(container.querySelector('.pet-dialogue')?.contains(rows[0])).toBe(true);
+  expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
+    .find(button => button.textContent === 'Back')!.click());
+  expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(input().getAttribute('aria-label')).toBe('Describe your model');
+});
+
+it('shows the headline and stats on plain landing visits and hides them on model links', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -228,6 +273,10 @@ it('shows a completed build without suggestions and resets from the centered hea
   expect(createNew.querySelector('span')?.className).not.toContain('hidden');
   act(() => createNew.click());
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Build progress workspace"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Show builds');
   expect(input().getAttribute('aria-label')).toBe('Describe your model');
   expect(container.querySelector('[aria-label="Upload image"]')).not.toBeNull();
   expect(input().value).toBe('');
@@ -236,7 +285,146 @@ it('shows a completed build without suggestions and resets from the centered hea
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_create_new_clicked', { generation_id: 'castle' });
 });
 
-it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('places the %s generation card in the viewer slot beneath the dialogue', async endpoint => {
+it('offers recent completed builds after Create new, including viewed ones, with processing first', async () => {
+  query.value = 'id=castle&exact=1';
+  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket', createdAt: '2026-10-19' }];
+  inbox.notifications = [
+    { id: 'ready', prompt: 'Ready car', status: 'completed', seen: false, updated_at: '2026-10-18', is_edit: false },
+    { id: 'seen', prompt: 'Already viewed', status: 'completed', seen: true, updated_at: '2026-10-17', is_edit: false },
+  ];
+  vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
+    generations: [historyBuild('ready', 'Ready car'), historyBuild('seen', 'Already viewed', '2026-10-17')],
+    total_count: 2, total_user_generations: 2, all_orders: [], has_more: false,
+  });
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
+  await act(async () => root.render(<LandingPage />));
+  act(() => container.querySelector<HTMLButtonElement>('header .landing-create-new')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(input()).not.toBeNull();
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show builds')!.click());
+  const rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
+  expect(rows).toHaveLength(3);
+  expect(rows[0].textContent).toContain('Rocket');
+  expect(rows[1].textContent).toContain('Ready car');
+  expect(rows[1].textContent).toContain('View model');
+  expect(rows[2].textContent).toContain('Already viewed');
+  await act(async () => rows[1].querySelector('a')!.click());
+  expect(query.value).toContain('id=ready');
+});
+
+it('pages recent builds in the pet dialogue and offers more after the first five', async () => {
+  const builds = Array.from({ length: 7 }, (_, index) => historyBuild(`build-${index}`, `Build ${index}`, `2026-10-${String(19 - index).padStart(2, '0')}`));
+  vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
+    generations: builds, total_count: 7, total_user_generations: 7, all_orders: [], has_more: false,
+  });
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show builds')!.click());
+  let rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
+  expect(rows).toHaveLength(5);
+  expect(rows[0].textContent).toContain('Build 0');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Want to view more?');
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Yes, show more')!.click());
+  rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
+  expect(rows).toHaveLength(2);
+  expect(rows[0].textContent).toContain('Build 5');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Want to view more?');
+  expect(posthog.capture).toHaveBeenCalledWith('landing_recent_builds_more_clicked', { page: 1, completed_count: 7 });
+});
+
+it('suggests random builds before starting one and offers a new idea or a way back', async () => {
+  const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'random', message: 'Started' });
+  const suggest = vi.spyOn(BuildBuddyApi, 'randomIdea')
+    .mockResolvedValueOnce('a Pikachu riding a skateboard')
+    .mockResolvedValueOnce('the Millennium Falcon')
+    .mockResolvedValueOnce('a tiny Hogwarts greenhouse');
+  await act(async () => root.render(<LandingPage />));
+  const actions = [...container.querySelectorAll<HTMLButtonElement>('.pet-greeting .pet-chat-action')];
+  expect(actions.map(button => button.textContent)).toEqual(['Build something random', 'Show builds', 'Show me community models']);
+  act(() => actions[2].click());
+  expect(navigate).toHaveBeenCalledWith('/community');
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-greeting .pet-chat-action')).find(button => button.textContent === 'Build something random')!.click());
+  const firstIdea = container.querySelector('.pet-dialogue p')?.textContent;
+  expect(firstIdea).toBe('How about a Pikachu riding a skateboard?');
+  expect(suggest).toHaveBeenCalledWith([], undefined, expect.any(AbortSignal));
+  expect(generate).not.toHaveBeenCalled();
+  expect(container.querySelector('#landing-build-prompt')).toBeNull();
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Something else')!.click());
+  expect(container.querySelector('.pet-dialogue p')?.textContent).toBe('How about the Millennium Falcon?');
+  expect(suggest).toHaveBeenLastCalledWith(['a Pikachu riding a skateboard'], undefined, expect.any(AbortSignal));
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
+  expect(container.querySelector('.pet-greeting')).not.toBeNull();
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-greeting .pet-chat-action')).find(button => button.textContent === 'Build something random')!.click());
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Yes')!.click());
+  expect(generate).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'a tiny Hogwarts greenhouse' }), undefined);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_community_models_clicked', { surface: 'pet_dialogue' });
+});
+
+it('shows loading and retry states without using an old or failed random suggestion', async () => {
+  let resolve!: (idea: string) => void;
+  const suggest = vi.spyOn(BuildBuddyApi, 'randomIdea')
+    .mockImplementationOnce(() => new Promise(done => { resolve = done; }))
+    .mockRejectedValueOnce(new Error('private upstream response'))
+    .mockResolvedValueOnce('a dancing R2-D2');
+  await act(async () => root.render(<LandingPage />));
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Build something random')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('I’m thinking of something fun to build');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Yes');
+  const firstSignal = suggest.mock.calls[0][2];
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
+  expect(firstSignal.aborted).toBe(true);
+  await act(async () => resolve('a stale dragon'));
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('stale dragon');
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Build something random')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Want me to try again?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('private upstream');
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Try again')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('How about a dancing R2-D2?');
+  expect(suggest).toHaveBeenCalledTimes(3);
+});
+
+it('shows an empty build list only when requested and returns to the opening question', async () => {
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('0 builds');
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show builds')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('You don’t have any builds yet.');
+  expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
+  expect(container.querySelector('#landing-build-prompt')).toBeNull();
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Back')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(input()).not.toBeNull();
+  expect(posthog.capture).toHaveBeenCalledWith('landing_builds_opened', { surface: 'pet_dialogue', processing_count: 0, completed_count: 0 });
+});
+
+it('keeps the opening question independent of build counts', async () => {
+  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket' }];
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Rocket');
+  act(() => root.render(null));
+  activity.rows = [];
+  vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
+    generations: [historyBuild('ready', 'Ready castle')], total_count: 1, total_user_generations: 1, all_orders: [], has_more: false,
+  });
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Ready castle');
+});
+
+it('keeps the opening question and composer if the last processing build clears', async () => {
+  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket' }];
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(input()).not.toBeNull();
+  activity.rows = [];
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('0 builds');
+  expect(input()).not.toBeNull();
+});
+
+it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only a 3D assembly in the %s viewer slot while generating', async endpoint => {
   query.value = 'id=building&exact=1';
   activity.rows = [{ id: 'building', status: 'processing', endpoint, prompt: 'A cat', createdAt: new Date().toISOString() }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('building', endpoint), status: 'processing' });
@@ -244,18 +432,15 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('places the %s generation c
   await act(async () => root.render(<LandingPage />));
   const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
   const workspace = container.querySelector('[aria-label="Build progress workspace"]')!;
-  const card = workspace.querySelector('article')!;
-  expect(card).not.toBeNull();
-  expect(card.textContent).toContain('A cat');
-  expect(container.querySelector('.landing-model-loading')).toBeNull();
-  expect(card.querySelector('.brick-build-scene')).not.toBeNull();
-  expect(card.compareDocumentPosition(conversation.querySelector('.pet-greeting')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(container.querySelectorAll('[aria-label="Your generations"]')).toHaveLength(1);
-  expect(conversation.contains(card)).toBe(false);
+  expect(workspace.querySelector('[aria-label="3D brick model assembling"]')).not.toBeNull();
+  expect(workspace.querySelector('[data-testid="generation-3d-animation"]')?.getAttribute('data-scene')).toMatch(/\.mpd$/);
+  expect(workspace.querySelector('article')).toBeNull();
+  expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
   expect(workspace.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(conversation.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  const cancelButton = Array.from(card.querySelectorAll('button')).find(button => button.textContent === 'Cancel generation')!;
-  await act(async () => cancelButton.click());
+  expect(container.querySelector('#landing-build-prompt')).toBeNull();
+  const actions = container.querySelector('[aria-label="Generation in progress actions"]')!;
+  expect(conversation.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  await act(async () => Array.from(actions.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent === 'Cancel')!.click());
   expect(cancel).toHaveBeenCalledExactlyOnceWith('building');
   expect(activity.track).toHaveBeenCalledWith(expect.objectContaining({ id: 'building', status: 'cancelled' }));
 });
@@ -408,7 +593,7 @@ it('keeps the LDraw upload page intro visible when a previous chat workspace is 
   sessionStorage.setItem('brickbuilder.landing-model:guest', 'castle');
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage imageLandingPath="use-ai-to-edit-ldraw" />));
-  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+  expect(container.querySelector('.landing-page-intro')).toBeNull();
   expect(container.querySelector('[aria-label="Choose LDraw file"]')).not.toBeNull();
   expect(container.querySelector('.landing-page')).toBeNull();
 });
@@ -433,11 +618,11 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s with animation
     expect(llm).not.toHaveBeenCalled();
   }
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
-  expect(container.querySelector('[aria-label="Building your edited model"] .brick-build-scene')).not.toBeNull();
+  expect(container.querySelector('[aria-label="Building your edited model"] [data-testid="generation-3d-animation"]')).not.toBeNull();
   expect(container.querySelector('#landing-build-prompt')).toBeNull();
-  expect(container.querySelector('[aria-label="Edit in progress actions"]')?.textContent).toContain('Email me');
-  expect(container.querySelector('[aria-label="Edit in progress actions"]')?.textContent).toContain('Cancel');
-  expect(container.querySelector('[aria-label="Edit in progress actions"]')?.textContent).toContain('Start new');
+  expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
+  expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Cancel');
+  expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Start new');
   expect(container.querySelector('.landing-model-toolbar')).toBeNull();
   expect(container.querySelector('.model-mobile-order')).toBeNull();
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('email');
@@ -461,8 +646,8 @@ it.each(['Cancel', 'Start new'])('%s leaves an in-progress edit without keeping 
   await act(async () => root.render(<LandingPage />));
   type('Add a drawbridge');
   await submit();
-  expect(container.querySelector('[aria-label="Building your edited model"] .brick-build-scene')).not.toBeNull();
-  const actionButton = Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Edit in progress actions"] button'))
+  expect(container.querySelector('[aria-label="Building your edited model"] [data-testid="generation-3d-animation"]')).not.toBeNull();
+  const actionButton = Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button'))
     .find(button => button.textContent === action)!;
   await act(async () => actionButton.click());
   expect(container.querySelector('[aria-label="Building your edited model"]')).toBeNull();
@@ -474,6 +659,7 @@ it.each(['Cancel', 'Start new'])('%s leaves an in-progress edit without keeping 
   } else {
     expect(cancel).not.toHaveBeenCalled();
     expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
+    expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
     expect(input().getAttribute('aria-label')).toBe('Describe your model');
     expect(query.value).not.toContain('id=');
   }
@@ -535,14 +721,16 @@ it('ignores saved workspaces on plain visits and clears the displayed model when
   expect(sessionStorage.getItem('brickbuilder.landing-model:builder')).toBeNull();
 });
 
-it('uses an edit placeholder for model links without cycling build suggestions', async () => {
+it('shows build anything with a cursor on model links without cycling suggestions', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
-  expect(input().placeholder).toBe('Tell me what you’d like to change…');
+  expect(input().placeholder).toBe('');
+  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('build anything');
   type('Add a flag'); type('');
   await act(async () => vi.advanceTimersByTimeAsync(2000));
-  expect(input().placeholder).toBe('Tell me what you’d like to change…');
+  expect(input().placeholder).toBe('');
+  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('build anything');
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
 });
 
@@ -634,9 +822,9 @@ it('replaces the old model with only the build animation during an edit', async 
     <LandingModelWorkspace model={model} busy={pendingEdit} pendingEdit={pendingEdit}><p>Conversation</p></LandingModelWorkspace>));
   await render(null, false);
   await render(null, true);
-  expect(container.querySelector('.brick-build-scene')).toBeNull();
+  expect(container.querySelector('[data-testid="generation-3d-animation"]')).toBeNull();
   await render({ generation: generation('castle'), content: 'castle mpd' }, true);
-  expect(container.querySelectorAll('.brick-build-scene')).toHaveLength(1);
+  expect(container.querySelectorAll('[data-testid="generation-3d-animation"]')).toHaveLength(1);
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
   expect(container.querySelector('.landing-model-toolbar')).toBeNull();
   expect(container.querySelector('.model-mobile-order')).toBeNull();

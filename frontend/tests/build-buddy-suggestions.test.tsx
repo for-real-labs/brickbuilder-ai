@@ -62,7 +62,8 @@ it.each([
   expect(BuildBuddyApi.classify).toHaveBeenCalledWith(expect.objectContaining({ prompt: message, hasImage: false }), undefined, expect.any(AbortSignal));
   expect(BuildBuddyApi.reply).toHaveBeenCalledWith(expect.objectContaining({ prompt: message, intent }), undefined, expect.any(AbortSignal));
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
-  expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(1);
+  expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(0);
+  expect(container.querySelectorAll('.pet-chat-message:not(.pet-chat-message--user)')).toHaveLength(1);
   expect(input().value).toBe('');
 });
 
@@ -81,7 +82,8 @@ it.each(['castle', 'Create a red fox in LEGO'])('starts exactly one build for th
   await act(async () => root.render(<LandingPage />));
   type(message); await submit();
   expect(NovaToBricksApiService.generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: message }), undefined);
-  expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(1);
+  expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(0);
+  expect(container.querySelector('[aria-label="Generation in progress actions"]')).not.toBeNull();
 });
 
 it('blocks duplicate routing and keeps the prompt recoverable when Jev is unavailable', async () => {
@@ -99,31 +101,27 @@ it('blocks duplicate routing and keeps the prompt recoverable when Jev is unavai
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
 });
 
-it('docks the dialogue and fades the intro after user input, keeping it hidden until a fresh visit', async () => {
+it('docks the dialogue after user input while hiding the restored headline and stats', async () => {
   await act(async () => root.render(<LandingPage />));
-  const intro = container.querySelector('.landing-page-intro')!;
   const page = container.querySelector('.landing-page')!;
   const dialogue = container.querySelector('.landing-model-conversation')!;
   expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
-  expect(intro.getAttribute('aria-hidden')).toBe('false');
-  expect(intro.querySelector('h1')?.textContent).toContain('Imagine. Create. Build.');
-  expect(intro.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+  expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
   act(() => input().focus());
   await submit();
   expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   type(IMAGE_PROMPT_SUGGESTION);
   expect(page.classList.contains('landing-page--conversation-started')).toBe(true);
-  expect(intro.getAttribute('aria-hidden')).toBe('true');
   await submit();
   expect(page.classList.contains('landing-page--conversation-started')).toBe(true);
   expect(container.querySelector('.landing-model-conversation')).toBe(dialogue);
-  expect(intro.getAttribute('aria-hidden')).toBe('true');
-  expect(intro.classList.contains('landing-page-intro--hidden')).toBe(true);
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
   expect(container.querySelector('.landing-page > .landing-page-shell > header')).not.toBeNull();
   expect(container.querySelector('.landing-model-conversation form')).not.toBeNull();
-  expect(container.querySelector('[role="log"]')?.textContent).toContain(IMAGE_PROMPT_SUGGESTION);
+  expect(container.querySelector('[role="log"]')?.textContent).toContain('Tap Upload image');
   act(() => input().blur());
-  expect(intro.getAttribute('aria-hidden')).toBe('true');
+  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
 });
 
 it.each([undefined, 'photo-to-lego'] as const)('removes suggestion buttons and submits typed build ideas on %s', async imageLandingPath => {
@@ -133,60 +131,30 @@ it.each([undefined, 'photo-to-lego'] as const)('removes suggestion buttons and s
   type(expected);
   await submit();
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
-  expect(container.querySelector('.pet-chat-message--user')?.textContent).toContain(expected);
+  expect(container.querySelector('.pet-chat-message--user')).toBeNull();
+  expect(container.querySelector('[aria-label="Generation in progress actions"]')).not.toBeNull();
   expect(NovaToBricksApiService.generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: expected, imageBase64: undefined }), undefined);
   expect(BuildBuddyApi.reply).toHaveBeenCalledWith(expect.objectContaining({ prompt: expected }), undefined, expect.any(AbortSignal));
 });
 
-it('animates the empty landing input and stops while the user focuses or types', async () => {
-  vi.spyOn(Math, 'random').mockReturnValue(0);
-  vi.useFakeTimers();
-  try {
-    await act(async () => root.render(<LandingPage />));
-    for (let i = 0; i < 6; i++) {
-      await act(async () => { await vi.advanceTimersByTimeAsync(70); });
-    }
-    expect(input().placeholder.replace('|', '')).toBe('Create');
-    expect(input().value).toBe('');
-    act(() => input().focus());
-    expect(input().placeholder).toBe('Tell Pip what you’d like to build…');
-    type('My own idea');
-    act(() => input().blur());
-    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
-    expect(input().value).toBe('My own idea');
-    expect(input().placeholder).toBe('Tell Pip more about your idea…');
-    type('');
-    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
-    expect(input().placeholder).toBe('Tell Pip more about your idea…');
-  } finally { vi.useRealTimers(); }
-});
-
-it('keeps one conversational hint after chatting and brings cycling examples back on reload', async () => {
-  vi.spyOn(Math, 'random').mockReturnValue(0);
-  vi.useFakeTimers();
+it('shows build anything with a blinking caret until the landing input is focused or typed into', async () => {
   vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'question', confidence: 1 });
-  vi.mocked(BuildBuddyApi.reply).mockResolvedValue('I can help you pick bricks. What colors would you like for your castle?');
-  try {
-    await act(async () => root.render(<LandingPage />));
-    type('Can you help me choose bricks for a castle?'); await submit();
-    act(() => input().blur());
-    expect(input().placeholder).toBe('What colors would you like for your castle?');
-    await act(async () => { await vi.advanceTimersByTimeAsync(6000); });
-    expect(input().placeholder).toBe('What colors would you like for your castle?');
-    expect(posthog.capture).toHaveBeenCalledWith('build_buddy_contextual_suggestion_shown');
-    expect(vi.mocked(posthog.capture).mock.calls.filter(call => call[0] === 'build_buddy_contextual_suggestion_shown')).toHaveLength(1);
-    vi.mocked(BuildBuddyApi.reply).mockResolvedValue('Blue and gold will work well. Would you like a blue roof?');
-    type('Blue and gold'); await submit();
-    expect(input().placeholder).toBe('Would you like a blue roof?');
-    act(() => root.unmount()); root = createRoot(container);
-    await act(async () => root.render(<LandingPage />));
-    for (let i = 0; i < 6; i++) await act(async () => { await vi.advanceTimersByTimeAsync(70); });
-    expect(input().placeholder.replace('|', '')).toBe('Create');
-    expect(container.querySelector('.pet-chat-message--user')).toBeNull();
-  } finally { vi.useRealTimers(); }
+  await act(async () => root.render(<LandingPage />));
+  expect(input().placeholder).toBe('');
+  expect(input().getAttribute('aria-label')).toBe('Describe your model');
+  expect(container.querySelector('.landing-empty-input-hint')?.textContent).toBe('build anything');
+  expect(container.querySelector('.landing-empty-input-caret')).not.toBeNull();
+  act(() => input().focus());
+  expect(container.querySelector('.landing-empty-input-caret')).toBeNull();
+  type('My own idea');
+  expect(input().placeholder).toBe('');
+  await submit();
+  expect(input().placeholder).toBe('');
+  act(() => input().blur());
+  expect(container.querySelector('.landing-empty-input-caret')).not.toBeNull();
 });
 
-it('resets a Safari back-cache visit to a fresh greeting, visible stats and cycling suggestions', async () => {
+it('resets a Safari back-cache visit to a fresh greeting and a plain prompt', async () => {
   vi.spyOn(Math, 'random').mockReturnValue(0);
   vi.useFakeTimers();
   vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'chat', confidence: 1 });
@@ -194,17 +162,17 @@ it('resets a Safari back-cache visit to a fresh greeting, visible stats and cycl
   try {
     await act(async () => root.render(<LandingPage />));
     type('An old castle conversation'); await submit();
-    expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('true');
-    expect(container.textContent).toContain('An old castle conversation');
+    expect(container.querySelector('.landing-page--conversation-started')).not.toBeNull();
+    expect(container.querySelector('[role="log"]')?.textContent).toContain('That sounds fun!');
     const restored = new Event('pageshow');
     Object.defineProperty(restored, 'persisted', { value: true });
     await act(async () => window.dispatchEvent(restored));
-    expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+    expect(container.querySelector('.landing-page--conversation-started')).toBeNull();
     expect(container.querySelector('.pet-chat-message--user')).toBeNull();
     expect(container.textContent).not.toContain('An old castle conversation');
     expect(input().value).toBe('');
     for (let i = 0; i < 6; i++) await act(async () => { await vi.advanceTimersByTimeAsync(70); });
-    expect(input().placeholder.replace('|', '')).toBe('Create');
+    expect(input().placeholder).toBe('');
     expect(posthog.capture).toHaveBeenCalledWith('landing_visit_reset', { source: 'history_restore' });
   } finally { vi.useRealTimers(); }
 });
@@ -222,7 +190,7 @@ it('cancels replies from the previous cached visit and ignores a late response',
   expect(signal.aborted).toBe(true);
   await act(async () => respond('An old reply that must stay cleared'));
   expect(container.textContent).not.toContain('An old reply that must stay cleared');
-  expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+  expect(container.querySelector('.landing-page--conversation-started')).toBeNull();
 });
 
 it('derives a single useful next step from gifts, uploads, model edits and the latest topic', () => {
