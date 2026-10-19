@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Loader2, Wand2 } from 'lucide-react';
-import { PetChatMessage, PetPromptGreeting } from './PetCompanion';
+import { PetChatMessage, PetPromptGreeting, PetTypingIndicator } from './PetCompanion';
 import { usePet } from '../contexts/PetContext';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 
@@ -35,7 +35,7 @@ export function VoxelPromptEditor({ examplePrompt, modelName, prompt, onPromptCh
       {chat.turns.length > 0 && <div className="pet-dialogue" role="log" aria-label="Model edit conversation" aria-live="polite">
         <div className="pet-dialogue-content">{chat.turns.map(turn => <div key={turn.id} className="pet-dialogue-turn">
           <PetChatMessage user><p>{turn.text}</p></PetChatMessage>
-          <PetChatMessage><p>{turn.reply || 'Let me take a look…'}</p></PetChatMessage>
+          <PetChatMessage>{turn.reply ? <p>{turn.reply}</p> : <PetTypingIndicator />}</PetChatMessage>
         </div>)}</div>
       </div>}
       <label htmlFor="voxel-edit-prompt" className="block text-lg font-semibold text-slate-900">Refine your model</label>

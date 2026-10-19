@@ -65,6 +65,25 @@ it.each([
   expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(0);
   expect(container.querySelectorAll('.pet-chat-message:not(.pet-chat-message--user)')).toHaveLength(1);
   expect(input().value).toBe('');
+  expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).some(button => button.textContent === 'Go back')).toBe(true);
+});
+
+it('returns a casual chat to the welcome dialogue without starting a build', async () => {
+  vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'chat', confidence: 1 });
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.pet-dialogue button')?.textContent).not.toBe('Go back');
+  type('Hi'); await submit();
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('That sounds fun!');
+  expect(container.querySelector('.pet-chat-message .pet-chat-bubble button')?.textContent).toBe('Go back');
+  expect(container.querySelector('.pet-dialogue > .pet-dialogue-content > button')).toBeNull();
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
+    .find(button => button.textContent === 'Go back')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('That sounds fun!');
+  expect(container.querySelector('.landing-page--conversation-started')).toBeNull();
+  expect(input().value).toBe('');
+  expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('landing_chat_back_clicked', { surface: 'pet_dialogue' });
 });
 
 it('routes a natural upload command to the shared image-picker action', async () => {
@@ -84,6 +103,7 @@ it.each(['castle', 'Create a red fox in LEGO'])('starts exactly one build for th
   expect(NovaToBricksApiService.generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: message }), undefined);
   expect(container.querySelectorAll('.pet-chat-message--user')).toHaveLength(0);
   expect(container.querySelector('[aria-label="Generation in progress actions"]')).not.toBeNull();
+  expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).some(button => button.textContent === 'Go back')).toBe(false);
 });
 
 it('blocks duplicate routing and keeps the prompt recoverable when Jev is unavailable', async () => {
@@ -223,14 +243,14 @@ it('plans a gift with follow-up context, blocks duplicate sends, and accepts a t
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();
   expect(posthog.capture).toHaveBeenCalledWith('build_buddy_suggestion_submitted', { suggestion: 'gift' });
   expect(BuildBuddyApi.reply).not.toHaveBeenCalled();
-  expect(container.querySelector('.pet-chat-action')).toBeNull();
+  expect(container.querySelector('.pet-chat-action')?.textContent).toBe('Go back');
   vi.mocked(BuildBuddyApi.classify).mockResolvedValueOnce({ intent: 'generate', confidence: 1 });
   type('Build a LEGO garden with sunflowers and a purple bench for Mum’s birthday');
   await submit();
   expect(NovaToBricksApiService.generate).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Build a LEGO garden with sunflowers and a purple bench for Mum’s birthday' }), undefined);
 });
 
-it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) without adding reply buttons', async desktop => {
+it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) with a return action', async desktop => {
   vi.stubGlobal('matchMedia', vi.fn((query: string) => ({ matches: desktop && query.includes('pointer: fine'), addEventListener: vi.fn(), removeEventListener: vi.fn() })));
   await act(async () => root.render(<LandingPage />));
   type(IMAGE_PROMPT_SUGGESTION);
@@ -240,7 +260,7 @@ it.each([true, false])('gives device-appropriate upload guidance (desktop: %s) w
   expect(dialogue.textContent?.includes('Drop a picture here')).toBe(desktop);
   const picker = container.querySelector<HTMLInputElement>('input[type="file"]')!;
   const pick = vi.spyOn(picker, 'click');
-  expect(dialogue.querySelector('button')).toBeNull();
+  expect([...dialogue.querySelectorAll('button')].map(button => button.textContent)).toEqual(['Go back']);
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
   expect(pick).toHaveBeenCalledOnce();
   expect(posthog.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'input_left_icon' });

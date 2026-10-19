@@ -93,6 +93,12 @@ export function PetChatMessage({ children, user = false, state = 'idle' }: {
   </div>;
 }
 
+export function PetTypingIndicator() {
+  return <span className="pet-typing-indicator" role="status" aria-label="Build buddy is typing">
+    <span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" />
+  </span>;
+}
+
 function PetPicker() {
   const { pet, motion, pickerOpen, selectPet, setMotion, closePicker } = usePet();
   const dialog = useRef<HTMLDialogElement>(null);

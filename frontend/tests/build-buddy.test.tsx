@@ -43,6 +43,18 @@ it('shows only the current pet message and reserves opening copy for an explicit
   expect(container.textContent).not.toContain('opening your build');
 });
 
+it.each([true, false])('shows a typing bubble instead of waiting copy when currentOnly is %s', async currentOnly => {
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="listening"
+    turns={[{ id: 1, text: 'A castle' }]} generations={[]} /></PetProvider>));
+  const typing = container.querySelector('[role="status"][aria-label="Build buddy is typing"]');
+  expect(typing?.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(3);
+  expect(container.textContent).not.toContain('Let me take a look');
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
+    turns={[{ id: 1, text: 'A castle', reply: 'Let’s make a castle.' }]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('[aria-label="Build buddy is typing"]')).toBeNull();
+  expect(container.textContent).toContain('Let’s make a castle.');
+});
+
 it('introduces Pip in a message, remembers the visit, and removes the two old captions', async () => {
   await renderDialogue();
   expect(container.textContent).toBe('Hi! I’m Pip. Tell me what to build!');

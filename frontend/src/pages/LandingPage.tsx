@@ -24,7 +24,7 @@ import { useLandingHelp } from '../hooks/useLandingHelp';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Settings, Sparkles, X } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Sparkles, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -176,7 +176,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [inputValidationMessage, setInputValidationMessage] = useState<string | null>(null);
   const toolsRef = useRef<LandingToolsHandle>(null);
   const promptInputRef = useRef<HTMLInputElement>(null);
-  const settingsButtonRef = useRef<HTMLButtonElement>(null);
   const settingsReturnFocus = useRef<HTMLButtonElement | null>(null);
   const settingsCloseRef = useRef<HTMLButtonElement>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -186,7 +185,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   };
   const dismissSettings = () => {
     toggleSettings(false);
-    (settingsReturnFocus.current || settingsButtonRef.current)?.focus();
+    settingsReturnFocus.current?.focus();
   };
   useEffect(() => { if (settingsOpen) settingsCloseRef.current?.focus(); }, [settingsOpen]);
   const handleSettingsKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -812,6 +811,15 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     posthog.capture('landing_community_models_clicked', { surface: 'pet_dialogue' });
     navigate('/community');
   };
+  const returnToWelcome = () => {
+    posthog.capture('landing_chat_back_clicked', { surface: 'pet_dialogue' });
+    buddyChat.resetConversation();
+    setHasEnteredChat(false);
+    setGiftPlanning(false);
+    setPrompt('');
+    setInputValidationMessage(null);
+    clearSelectedImage();
+  };
 
   const startGiftPlanning = (message: string, id: number) => {
     setGiftPlanning(true);
@@ -895,6 +903,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
   const sendLabel = buddyChat.routing ? 'Sending…' : landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
+  const latestChatTurn = buddyChat.turns.at(-1);
+  const canReturnToWelcome = Boolean(latestChatTurn?.reply || latestChatTurn?.error)
+    && !buddyChat.turns.some(turn => turn.generationId)
+    && !landingModel.model && !pendingGeneration && !pendingEdit && !loading && !buddyChat.routing
+    && !createNewStage && !randomSuggestion;
   const conversationStarted = !ldrawLanding
     && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage));
 
@@ -1017,6 +1030,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <button type="button" className="pet-chat-action" onClick={showBuilds}>Show builds</button>
                   <button type="button" className="pet-chat-action" onClick={showCommunityModels}>Show me community models</button>
                 </div>}
+                onBackToWelcome={canReturnToWelcome ? returnToWelcome : undefined}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>
@@ -1087,12 +1101,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     <ArrowUp aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>
-                <button ref={settingsButtonRef} type="button" aria-label="Generation settings" title="Generation settings"
-                  aria-expanded={settingsOpen} aria-controls={localDevelopment ? "landing-generation-settings landing-local-provider-settings" : "landing-generation-settings"}
-                  onClick={event => { settingsReturnFocus.current = event.currentTarget; toggleSettings(!settingsOpen); }}
-                  className={`hidden h-11 w-11 shrink-0 items-center justify-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 sm:inline-flex ${settingsOpen ? 'border-red-200 bg-red-50 text-[#f44336]' : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'}`}>
-                  <Settings aria-hidden="true" className="h-5 w-5" />
-                </button>
               </div>
 
               {inputValidationMessage && (
