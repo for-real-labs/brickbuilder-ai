@@ -466,6 +466,27 @@ it('hides the order banner while editing and restores it after focus leaves the 
   expect(container.querySelector('[aria-label="Order your brick kit"]')).not.toBeNull();
 });
 
+it('submits a focused model edit on the first touch before the order banner returns', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), status: id === 'edited' ? 'processing' : 'completed' }));
+  const edit = vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'edited', message: 'Started' });
+  await act(async () => root.render(<LandingPage />));
+  act(() => input().focus());
+  type('Add a drawbridge');
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).toBeNull();
+  const send = container.querySelector<HTMLButtonElement>('button[aria-label="Apply edit"]')!;
+  const touch = new Event('pointerdown', { bubbles: true, cancelable: true });
+  Object.defineProperty(touch, 'pointerType', { value: 'touch' });
+  await act(async () => {
+    send.dispatchEvent(touch);
+    input().blur();
+    send.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
+  });
+  expect(touch.defaultPrevented).toBe(true);
+  expect(edit).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined);
+  expect(container.querySelector('[aria-label="Building your edited model"]')).not.toBeNull();
+});
+
 it('restores the order banner when a returning phone app has closed its keyboard', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));

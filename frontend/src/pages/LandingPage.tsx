@@ -234,6 +234,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const uploadRevision = useRef(0);
 
   const [focused, setFocused] = useState(false);
+  const submittedOnTouch = useRef(false);
   const keyboardWasVisible = useRef(false);
   useEffect(() => {
     if (!focused) { keyboardWasVisible.current = false; return; }
@@ -1095,6 +1096,16 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     <span className={`landing-empty-input-hint${landingModel.model ? ' landing-empty-input-hint--edit' : ''}`} aria-hidden="true">build anything<span className="landing-empty-input-caret" /></span>}
                   <button
                     type="submit" aria-label={sendLabel} title={sendLabel}
+                    onPointerDown={event => {
+                      if (event.pointerType !== 'touch' || !landingModel.model) { submittedOnTouch.current = false; return; }
+                      event.preventDefault();
+                      submittedOnTouch.current = true;
+                      event.currentTarget.form?.requestSubmit();
+                    }}
+                    onClick={event => {
+                      if (submittedOnTouch.current && event.detail > 0) event.preventDefault();
+                      submittedOnTouch.current = false;
+                    }}
                     disabled={loading || buddyChat.routing || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
                     className="absolute right-2 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-[#f44336] text-white transition-colors hover:bg-[#ff6b6b] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   >
