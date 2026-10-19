@@ -35,6 +35,7 @@
   max-height: min(640px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-order-banner-height, 0px) - 56px));
 }
 .landing-page .landing-model-conversation .pet-dialogue { min-height: 0; }
+.landing-page .landing-model-conversation .pet-dialogue:has([aria-label="Your generations"]) { max-height: min(500px, 52dvh); }
 .landing-page .landing-model-conversation {
   bottom: var(--landing-conversation-bottom);
   translate: 0 0;
