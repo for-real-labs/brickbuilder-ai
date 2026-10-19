@@ -6,9 +6,9 @@ import { useLandingViewport } from '../src/hooks/useLandingViewport';
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 
-function Harness({ enabled = true }) {
+function Harness({ enabled = true, stage = false }) {
   const ref = useLandingViewport(enabled);
-  return <div ref={ref}><header /><div className="landing-page-intro" /><section className="landing-model-conversation" /></div>;
+  return <div ref={ref}><header /><div className="landing-page-intro" />{stage && <div className="landing-model-workspace" />}<section className="landing-model-conversation" /></div>;
 }
 
 beforeEach(() => {
@@ -90,6 +90,27 @@ it('uses window height when the visual viewport API is unavailable and leaves di
   vi.stubGlobal('innerHeight', 500);
   act(() => window.dispatchEvent(new Event('resize')));
   expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('500px');
+});
+
+it('tracks the midpoint of a viewer that appears after the landing page mounts', async () => {
+  let notify!: ResizeObserverCallback;
+  const observe = vi.fn();
+  vi.stubGlobal('ResizeObserver', class {
+    constructor(callback: ResizeObserverCallback) { notify = callback; }
+    observe = observe;
+    unobserve = vi.fn();
+    disconnect = vi.fn();
+  });
+  act(() => root.render(<Harness />));
+  const shell = container.firstElementChild as HTMLElement;
+  expect(shell.style.getPropertyValue('--landing-workspace-midpoint')).toBe('');
+  await act(async () => root.render(<Harness stage />));
+  const stage = container.querySelector('.landing-model-workspace')!;
+  expect(observe).toHaveBeenCalledWith(stage);
+  vi.spyOn(shell, 'getBoundingClientRect').mockReturnValue({ top: 80 } as DOMRect);
+  vi.spyOn(stage, 'getBoundingClientRect').mockReturnValue({ top: 180, height: 460 } as DOMRect);
+  act(() => notify([], {} as ResizeObserver));
+  expect(shell.style.getPropertyValue('--landing-workspace-midpoint')).toBe('330px');
 });
 
 it('fits below the iOS app banner and reclaims its space when dismissed or panned above the keyboard', () => {

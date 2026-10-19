@@ -11,8 +11,13 @@
 .landing-model-conversation { position: fixed; z-index: 40; left: 50%; bottom: max(16px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; width: min(768px, calc(100% - 32px)); max-height: min(640px, calc(100dvh - 160px)); min-width: 0; padding: 16px; overflow-y: auto; overscroll-behavior: contain; transform: translateX(-50%); border: 1px solid transparent; border-radius: 28px; background: transparent; text-align: left; }
 .landing-model-conversation > * { flex-shrink: 0; }
 .landing-model-conversation .pet-dialogue { flex: 0 1 auto; min-height: 80px; max-height: min(280px, 28dvh); margin-bottom: 12px; }
+.landing-generation-workspace { position: relative; width: 100%; min-width: 0; height: 460px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 28px; background: #f8fafc; box-shadow: 0 16px 48px #0f172a0c; }
+.landing-generation-workspace [aria-label="Your generations"] { display: flex; min-height: 100%; flex-direction: column; padding: 16px; }
+.landing-generation-workspace [aria-label="Your generations"] > div:last-child { flex: 1; }
+.landing-generation-workspace article { min-height: 100%; }
 @media (max-width: 639px) {
   .landing-model-workspace { height: 380px; border-radius: 20px; }
+  .landing-generation-workspace { border-radius: 20px; }
   .landing-model-heading { padding: 12px; font-size: 13px; }
   .landing-model-conversation { bottom: max(8px, env(safe-area-inset-bottom)); width: calc(100% - 16px); padding: 12px; border-radius: 24px; }
 }

@@ -16,11 +16,13 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, requestedInstructionsId, onOrderBarHeightChange, children }: {
+export function LandingModelWorkspace({ model, busy, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, activity, children }: {
   model: LandingModel | null;
   busy: boolean;
+  composerFocused?: boolean;
   requestedInstructionsId?: string | null;
   onOrderBarHeightChange?: (height: number) => void;
+  activity?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
@@ -98,6 +100,9 @@ export function LandingModelWorkspace({ model, busy, requestedInstructionsId, on
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
   return <>
+    {!model && activity && <section className="landing-generation-workspace" aria-label="Build progress workspace">
+      {activity}
+    </section>}
     {model && generation && <dialog ref={panel} open className="landing-model-panel"
       data-expanded={expanded} data-view={showingInstructions ? 'instructions' : 'model'}
       role={expanded ? 'dialog' : 'region'} aria-modal={expanded || undefined}
@@ -156,7 +161,7 @@ export function LandingModelWorkspace({ model, busy, requestedInstructionsId, on
       {children}
     </section>
     {model && generation && orderable && <LandingModelOrdering key={generation.generation_id}
-        model={model} busy={busy} showMobileBar={dismissedOrderId !== generation.generation_id}
+        model={model} busy={busy} showMobileBar={dismissedOrderId !== generation.generation_id && !composerFocused}
         onHeightChange={onOrderBarHeightChange} onDismiss={() => {
           setDismissedOrderId(generation.generation_id);
           posthog.capture('landing_model_order_banner_dismissed', { generation_id: generation.generation_id });

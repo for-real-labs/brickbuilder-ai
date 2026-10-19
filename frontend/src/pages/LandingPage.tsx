@@ -266,6 +266,31 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const uploadRevision = useRef(0);
 
   const [focused, setFocused] = useState(false);
+  const keyboardWasVisible = useRef(false);
+  useEffect(() => {
+    if (!focused) { keyboardWasVisible.current = false; return; }
+    const viewport = window.visualViewport;
+    const isTouchDevice = window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 0;
+    if (!isTouchDevice) return;
+    const keyboardOpen = () => Boolean(viewport && window.innerHeight - viewport.height - viewport.offsetTop > 120);
+    const restoreBannerIfKeyboardClosed = () => {
+      if (keyboardOpen()) { keyboardWasVisible.current = true; return; }
+      if (keyboardWasVisible.current || document.visibilityState === 'visible') promptInputRef.current?.blur();
+    };
+    const onVisibilityChange = () => { if (document.visibilityState === 'visible') restoreBannerIfKeyboardClosed(); };
+    const onViewportResize = () => {
+      if (keyboardOpen()) keyboardWasVisible.current = true;
+      else if (keyboardWasVisible.current) restoreBannerIfKeyboardClosed();
+    };
+    viewport?.addEventListener('resize', onViewportResize);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    window.addEventListener('pageshow', restoreBannerIfKeyboardClosed);
+    return () => {
+      viewport?.removeEventListener('resize', onViewportResize);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+      window.removeEventListener('pageshow', restoreBannerIfKeyboardClosed);
+    };
+  }, [focused]);
 
   // NEW: in‑place loading state
   const [loading, setLoading] = useState(false);
@@ -1033,8 +1058,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
-              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} composerFocused={focused}
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
+                activity={!landingModel.model && displayedGenerations.length > 0 ? generationActivity : null}
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
@@ -1043,7 +1069,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>
-                {generationActivity}
+                {landingModel.model && generationActivity}
               </BuildBuddyDialogue>
             <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}

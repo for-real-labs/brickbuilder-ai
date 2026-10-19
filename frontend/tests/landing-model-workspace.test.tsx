@@ -243,26 +243,58 @@ it('shows a completed build without suggestions and resets from the centered hea
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_create_new_clicked', { generation_id: 'castle' });
 });
 
-it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('keeps the %s generation card and cancellation inside the scrolling dialogue', async endpoint => {
+it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('places the %s generation card in the viewer slot beneath the dialogue', async endpoint => {
   query.value = 'id=building&exact=1';
   activity.rows = [{ id: 'building', status: 'processing', endpoint, prompt: 'A cat', createdAt: new Date().toISOString() }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('building', endpoint), status: 'processing' });
   const cancel = vi.spyOn(GetGenerationApiService, 'cancelGeneration').mockResolvedValue(undefined);
   await act(async () => root.render(<LandingPage />));
   const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
-  const card = conversation.querySelector('article')!;
+  const workspace = container.querySelector('[aria-label="Build progress workspace"]')!;
+  const card = workspace.querySelector('article')!;
   expect(card).not.toBeNull();
   expect(card.textContent).toContain('A cat');
   expect(container.querySelector('.landing-model-loading')).toBeNull();
   expect(card.querySelector('.brick-build-scene')).not.toBeNull();
   expect(card.compareDocumentPosition(conversation.querySelector('.pet-greeting')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(container.querySelectorAll('[aria-label="Your generations"]')).toHaveLength(1);
-  expect(conversation.contains(container.querySelector('[aria-label="Your generations"]'))).toBe(true);
+  expect(conversation.contains(card)).toBe(false);
+  expect(workspace.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(conversation.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   const cancelButton = Array.from(card.querySelectorAll('button')).find(button => button.textContent === 'Cancel generation')!;
   await act(async () => cancelButton.click());
   expect(cancel).toHaveBeenCalledExactlyOnceWith('building');
   expect(activity.track).toHaveBeenCalledWith(expect.objectContaining({ id: 'building', status: 'cancelled' }));
+});
+
+it('hides the order banner while editing and restores it after focus leaves the composer', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).not.toBeNull();
+  act(() => input().focus());
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).toBeNull();
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  act(() => input().blur());
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).not.toBeNull();
+});
+
+it('restores the order banner when a returning phone app has closed its keyboard', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  vi.stubGlobal('innerHeight', 844);
+  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  const viewport = Object.assign(new EventTarget(), { height: 844, offsetTop: 0 });
+  vi.stubGlobal('visualViewport', viewport);
+  await act(async () => root.render(<LandingPage />));
+  act(() => input().focus());
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).toBeNull();
+  viewport.height = 450;
+  act(() => viewport.dispatchEvent(new Event('resize')));
+  viewport.height = 844;
+  act(() => document.dispatchEvent(new Event('visibilitychange')));
+  expect(container.querySelector('[aria-label="Order your brick kit"]')).not.toBeNull();
+  expect(document.activeElement).not.toBe(input());
 });
 
 it('replaces loading messages with one animated model greeting when a linked build is ready', async () => {
