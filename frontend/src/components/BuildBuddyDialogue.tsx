@@ -50,7 +50,7 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   }, [model.id, name, pet.id, session?.access_token]);
   const action = model.orderable ? invitation : 'Tell me if you want to edit this model!';
   return <PetPromptGreeting state={state} showPetSwitch={false}>
-    {emphasizeModelActions(`${compliment || `I’m looking at ${name}…`} ${action}`)}
+    {compliment ? emphasizeModelActions(`${compliment} ${action}`) : <PetTypingIndicator />}
   </PetPromptGreeting>;
 }
 
@@ -135,7 +135,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       </div>}
     </PetChatMessage>
     : model && !reasoningOnly ? <ModelGreeting key={model.id} state={state} model={model} />
-    : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
+    : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
     : <PetPromptGreeting state={state} showPetSwitch={false} actions={welcomeActions}>
       {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
     </PetPromptGreeting>);
@@ -145,7 +145,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       {currentOnly ? currentDialogue : <>
       {children}
       {reasoningOnly ? null : model ? <ModelGreeting key={model.id} state={state} model={model} />
-        : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}>I’m opening your build…</PetPromptGreeting>
+        : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
         : <PetPromptGreeting state={state} showPetSwitch={false}>
         {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
       </PetPromptGreeting>}
