@@ -7,7 +7,9 @@
 .instructions-embedded .instructions-step-heading h4 { font-size: 14px; }
 .instructions-embedded .instructions-step-heading > div { font-size: 12px; }
 .instructions-canvas { position: relative; width: 100%; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 0; border-left: 0; border-right: 0; background: #fff; }
-.instructions-canvas > div.absolute { top: 8px; right: 8px; }
+.instructions-canvas > .instructions-colors-toggle { position: absolute; z-index: 5; top: 8px; right: 8px; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 999px; box-shadow: 0 2px 8px #0f172a1a; font-size: 12px; font-weight: 600; white-space: nowrap; }
+/* The builder's viewer controls occupy the canvas's top right corner. */
+.landing-model-panel:not([data-expanded="true"]) .instructions-canvas > .instructions-colors-toggle { top: 64px; }
 .instructions-canvas button { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
 .instructions-embedded .instructions-navigation { margin: 0 16px; padding: 4px; border: 1px solid #e2e8f0; background: #fff; }
 .instructions-embedded .instructions-navigation button { min-height: 44px; padding: 8px 16px; font-size: 12px; }

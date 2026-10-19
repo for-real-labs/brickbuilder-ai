@@ -9,6 +9,7 @@ import { LdrToMpdApiService } from '../src/services/ldrToMpdApi';
 import { NovaToBricksApiService, NovaInstructionPlanError } from '../src/services/novaToBricksApi';
 import { LDrawParser } from '../src/utils/ldrawParser';
 import type { LandingModel } from '../src/hooks/useLandingModel';
+import { readFileSync } from 'node:fs';
 
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, isSupabaseConfigured: false }) }));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ markViewed: vi.fn() }) }));
@@ -133,6 +134,9 @@ it('opens instructions from the landing footer and preserves steps, colors and d
   vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: instructions } as never);
   const container = document.createElement('div'); document.body.append(container);
   const root = createRoot(container);
+  const styles = document.createElement('style');
+  styles.textContent = readFileSync('src/pages/InstructionsViewer.css', 'utf8');
+  document.head.append(styles);
   const button = (text: string) => Array.from(container.querySelectorAll('button')).find(el => el.textContent?.trim() === text)!;
   try {
     await act(async () => root.render(<MemoryRouter initialEntries={['/?id=nova&exact=1']}><LocationProbe />
@@ -142,9 +146,16 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     const toggle = container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
     await act(async () => { toggle.click(); await new Promise(resolve => setTimeout(resolve, 0)); });
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 1');
+    const colors = container.querySelector<HTMLButtonElement>('.instructions-colors-toggle')!;
+    expect(colors.textContent).toBe('Show colors');
+    expect(colors.getAttribute('aria-pressed')).toBe('false');
+    expect(getComputedStyle(colors).top).toBe('64px');
+    expect(getComputedStyle(colors).minHeight).toBe('44px');
     act(() => button('Next').click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
-    act(() => container.querySelector<HTMLButtonElement>('[title="Show all colors"]')!.click());
+    act(() => colors.click());
+    expect(colors.textContent).toBe('Hide colors');
+    expect(colors.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.getAttribute('data-highlight')).toBe('false');
     act(() => toggle.click());
     expect(container.querySelector('[data-testid="model-viewer"]')).not.toBeNull();
@@ -157,5 +168,5 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     expect((dialogue as HTMLInputElement).value).toBe('Keep my conversation');
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1');
     expect(container.querySelector('iframe')).toBeNull();
-  } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
+  } finally { act(() => root.unmount()); container.remove(); styles.remove(); vi.restoreAllMocks(); }
 });

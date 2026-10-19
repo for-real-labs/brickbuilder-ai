@@ -1246,25 +1246,23 @@ export function InstructionsViewer({ generationId, initialStep = 1, navigationSt
                     softenEdges={false}
                     showModelControls={false}
                     />
-                    <div className="absolute top-3 right-3 flex flex-col items-center gap-1">
-                      <button
-                        onClick={() => {
-                          setShowAllColors(!showAllColors);
-                          posthog.capture('instructions_colors_toggled', { generation_id: generationId, show_all_colors: !showAllColors, source: embedded ? 'landing' : 'instructions' });
-                        }}
-                        className={`p-2 rounded-lg transition-all duration-200 shadow-md ${
-                          showAllColors
-                            ? 'bg-[#f44336] text-white'
-                            : 'bg-white text-slate-600 hover:bg-slate-100'
-                        }`}
-                        title={showAllColors ? 'Show new parts highlighted' : 'Show all colors'}
-                      >
-                        <Palette size={20} />
-                      </button>
-                      <span className="text-[8px] sm:text-[12px] text-slate-500 font-medium select-none">
-                        {showAllColors ? 'Hide Colors' : 'Show Colors'}
-                      </span>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAllColors(!showAllColors);
+                        posthog.capture('instructions_colors_toggled', { generation_id: generationId, show_all_colors: !showAllColors, source: embedded ? 'landing' : 'instructions' });
+                      }}
+                      className={`instructions-colors-toggle transition-colors duration-200 ${
+                        showAllColors
+                          ? 'bg-[#f44336] text-white'
+                          : 'bg-white text-slate-700 hover:bg-slate-100'
+                      }`}
+                      aria-pressed={showAllColors}
+                      title={showAllColors ? 'Show new parts highlighted' : 'Show all colors'}
+                    >
+                      <Palette size={18} aria-hidden="true" />
+                      <span>{showAllColors ? 'Hide colors' : 'Show colors'}</span>
+                    </button>
                   </>
                 ) : (
                 <div className="text-center text-slate-500">Loading model...</div>
