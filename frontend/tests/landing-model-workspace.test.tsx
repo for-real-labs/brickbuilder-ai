@@ -869,13 +869,13 @@ it('puts Create new in the viewer while keeping guest navigation in the header',
 });
 
 
-it('passes the displayed model name into the greeting and replaces it with a preview-specific compliment', async () => {
+it('passes the displayed model name into the greeting and shows a subject fact', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
-  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Castle’s red flags look great above those tall walls!');
+  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Fun fact: castles often had thick walls for protection!');
   await act(async () => root.render(<LandingPage />));
   const conversation = container.querySelector('.pet-dialogue')!;
-  expect(conversation.textContent).toContain('Castle’s red flags');
+  expect(conversation.textContent).toContain('Fun fact: castles often had thick walls');
   expect(Array.from(conversation.querySelectorAll('strong')).map(el => el.textContent)).toEqual(['edit', 'order']);
   expect(conversation.querySelectorAll('.pet-greeting')).toHaveLength(1);
 });

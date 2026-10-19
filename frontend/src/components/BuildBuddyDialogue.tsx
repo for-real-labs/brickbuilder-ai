@@ -35,22 +35,22 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   const { pet } = usePet();
   const { session } = useAuth();
   const [invitation] = useState(pickModelGreeting);
-  const [compliment, setCompliment] = useState<string | null>(null);
+  const [fact, setFact] = useState<string | null>(null);
   const name = model.name?.trim().slice(0, 200) || 'your model';
   useEffect(() => { rememberModelGreeting(invitation); }, [invitation]);
   useEffect(() => {
     const controller = new AbortController();
     const fallback = `Here’s ${name}!`;
-    const timeout = setTimeout(() => { controller.abort(); setCompliment(fallback); }, 22000);
+    const timeout = setTimeout(() => { controller.abort(); setFact(fallback); }, 22000);
     void BuildBuddyApi.modelGreeting({ generationId: model.id, pet: pet.id }, session?.access_token, controller.signal)
-      .then(reply => { if (!controller.signal.aborted) setCompliment(reply); })
-      .catch(() => { if (!controller.signal.aborted) setCompliment(fallback); })
+      .then(reply => { if (!controller.signal.aborted) setFact(reply); })
+      .catch(() => { if (!controller.signal.aborted) setFact(fallback); })
       .finally(() => clearTimeout(timeout));
     return () => { controller.abort(); clearTimeout(timeout); };
   }, [model.id, name, pet.id, session?.access_token]);
   const action = model.orderable ? invitation : 'Tell me if you want to edit this model!';
-  return <PetPromptGreeting state={compliment ? state : 'listening'} showPetSwitch={false}>
-    {compliment ? emphasizeModelActions(`${compliment} ${action}`) : <PetTypingIndicator />}
+  return <PetPromptGreeting state={fact ? state : 'listening'} showPetSwitch={false}>
+    {fact ? emphasizeModelActions(`${fact} ${action}`) : <PetTypingIndicator />}
   </PetPromptGreeting>;
 }
 
