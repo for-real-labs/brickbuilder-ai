@@ -1019,7 +1019,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 selectedGenerationId={requestedModelId || landingModel.targetId}
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id, name: landingModel.model.generation.name,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
-                reasoningOnly={pendingEdit} currentOnly showOpeningMessage={Boolean(linkedModelId && requestedModelId === linkedModelId && !landingModel.model && !pendingGeneration)}
+                reasoningOnly={pendingEdit} currentOnly showGenerationElapsedTime={!pendingEdit && !pendingGeneration} showOpeningMessage={Boolean(linkedModelId && requestedModelId === linkedModelId && !landingModel.model && !pendingGeneration)}
                 landingWelcome
                 currentMessage={randomSuggestion && !landingModel.model ? <RandomBuildPrompt suggestion={randomSuggestion}
                   onYes={buildSuggestedIdea} onElse={tryAnotherRandomIdea} onBack={() => {
