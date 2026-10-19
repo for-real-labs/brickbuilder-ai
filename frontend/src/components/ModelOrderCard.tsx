@@ -30,8 +30,11 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
         <div><h2>Bring it to life</h2><p>Your model, delivered as a brick kit.</p></div>
       </div>
       <div className="model-order-price">
-        <div><span className="model-order-total">{price}</span>{pricing && <span className="model-order-original">{formatOrderPrice(pricing.fullTotalCents)}</span>}</div>
-        <span>USD · shipping included</span>
+        <span className="model-order-total">{price}</span>
+        <div className="model-order-price-details">
+          {pricing && <span className="model-order-original">{formatOrderPrice(pricing.fullTotalCents)}</span>}
+          <span>USD · shipping included</span>
+        </div>
       </div>
       {pricing && <p className="model-launch-discount">50% off · BrickBuilder Launch Discount</p>}
       {status && <p role="status" className="model-order-status">{status}</p>}

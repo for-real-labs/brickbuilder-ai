@@ -16,6 +16,9 @@ it('uses the checkout cent rounding and launch discount with shipping included',
   act(() => root.render(<ModelOrderCard quote={quote} loading={false} updating={false} error={null} onOrder={order} />));
   expect(container.querySelector('.model-order-total')?.textContent).toBe('$22.39');
   expect(container.querySelector('.model-order-original')?.textContent).toBe('$44.77');
+  const priceRow = container.querySelector('.model-order-price')!;
+  expect(priceRow.children[0]?.classList.contains('model-order-total')).toBe(true);
+  expect(priceRow.children[1]?.textContent).toBe('$44.77USD · shipping included');
   expect(container.textContent).toContain('BrickBuilder Launch Discount');
   expect(container.textContent).toContain('8–12 business days');
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')!.click());
