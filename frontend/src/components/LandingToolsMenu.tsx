@@ -186,6 +186,20 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
           </ul>}
         </li>)}
         <li role="separator" className="my-1 border-t border-slate-200" />
+        {generationSettings && <>
+          <li>
+            <button type="button" aria-label="Generation settings" aria-expanded={generationSettings.open} aria-controls={generationSettings.controls}
+              className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
+              onClick={() => {
+                posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Generation settings' });
+                setOpen(false);
+                if (trigger.current) generationSettings.onOpen(trigger.current);
+              }}>
+              <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />Generation settings
+            </button>
+          </li>
+          <li role="separator" className="my-1 border-t border-slate-200" />
+        </>}
         {tools.map(({ label, path, icon: Icon, event }) => <li key={path}>
           <Link to={path} className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
             onClick={() => {
@@ -198,17 +212,6 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
           </Link>
         </li>)}
         <li role="separator" className="my-1 border-t border-slate-200" />
-        {generationSettings && <li>
-          <button type="button" aria-label="Generation settings" aria-expanded={generationSettings.open} aria-controls={generationSettings.controls}
-            className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
-            onClick={() => {
-              posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Generation settings' });
-              setOpen(false);
-              if (trigger.current) generationSettings.onOpen(trigger.current);
-            }}>
-            <Settings aria-hidden="true" className="h-4 w-4 shrink-0" />Generation settings
-          </button>
-        </li>}
         <li>
           <PetSwitchButton source="landing_tools" returnFocusRef={trigger} onOpen={() => setOpen(false)}
             className="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]" />

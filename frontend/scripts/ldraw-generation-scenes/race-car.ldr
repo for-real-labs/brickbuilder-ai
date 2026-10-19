@@ -1,0 +1,20 @@
+0 FILE race-car.ldr
+0 race-car - Brickwith catalog parts
+1 4 0 0 0 1 0 0 0 1 0 0 0 1 3034.dat
+0 STEP
+1 4 0 -24 -20 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+1 4 0 -24 20 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+1 1 0 -48 0 1 0 0 0 1 0 0 0 1 3003.dat
+0 STEP
+1 15 0 -56 0 1 0 0 0 1 0 0 0 1 3020.dat
+0 STEP
+1 0 -30 0 -50 1 0 0 0 1 0 0 0 1 3005.dat
+0 STEP
+1 0 30 0 -50 1 0 0 0 1 0 0 0 1 3005.dat
+0 STEP
+1 0 -30 0 50 1 0 0 0 1 0 0 0 1 3005.dat
+0 STEP
+1 0 30 0 50 1 0 0 0 1 0 0 0 1 3005.dat
+0 STEP

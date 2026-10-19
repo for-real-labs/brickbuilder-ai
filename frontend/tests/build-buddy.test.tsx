@@ -27,6 +27,22 @@ const renderDialogue = async (username?: string, authLoading = false) => act(asy
   <BuildBuddyDialogue turns={[]} generations={[]} state="idle" username={username} authLoading={authLoading} />
 </PetProvider>));
 
+it('shows only the current pet message and reserves opening copy for an explicit link', async () => {
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
+    turns={[{ id: 1, text: 'A car', reply: 'Older message' }, { id: 2, text: 'A boat', reply: 'Current message' }]}
+    generations={[]} selectedGenerationId="building" /></PetProvider>));
+  expect(container.textContent).toBe('Build buddy: Current message');
+  expect(container.textContent).not.toContain('opening your build');
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
+    turns={[]} generations={[]} selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
+  expect(container.textContent).toContain('I’m opening your build');
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
+    turns={[]} generations={[{ id: 'linked', prompt: 'A car', status: 'processing', endpoint: 'textTo3d' }]}
+    selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
+  expect(container.textContent).toContain('I’m getting your build ready.');
+  expect(container.textContent).not.toContain('opening your build');
+});
+
 it('introduces Pip in a message, remembers the visit, and removes the two old captions', async () => {
   await renderDialogue();
   expect(container.textContent).toBe('Hi! I’m Pip. Tell me what to build!');
@@ -37,6 +53,25 @@ it('introduces Pip in a message, remembers the visit, and removes the two old ca
   // A rerender in the same visit must not turn the introduction into a welcome back.
   await renderDialogue('Jake');
   expect(container.textContent).toContain('Hi, Jake! I’m Pip');
+});
+
+it('introduces the pet on a new landing visit without requesting an AI greeting', async () => {
+  localStorage.removeItem(BUDDY_SEEN_KEY);
+  const welcome = vi.spyOn(BuildBuddyApi, 'welcomeGreeting');
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue landingWelcome currentOnly
+    turns={[]} generations={[]} state="idle" /></PetProvider>));
+  expect(container.textContent).toContain('Hi! I’m Pip, your brick building buddy. What would you like to do?');
+  expect(welcome).not.toHaveBeenCalled();
+});
+
+it('shows the short greeting to a returning landing visitor without requesting AI', async () => {
+  localStorage.setItem(BUDDY_SEEN_KEY, 'true');
+  const welcome = vi.spyOn(BuildBuddyApi, 'welcomeGreeting');
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue landingWelcome currentOnly
+    turns={[]} generations={[]} state="idle" username="Jake" /></PetProvider>));
+  expect(container.textContent).toContain('Hi! What would you like to do?');
+  expect(container.textContent).not.toContain('Jake');
+  expect(welcome).not.toHaveBeenCalled();
 });
 
 it.each([undefined, 'Jake'])('welcomes a returning visitor with username %s when available', async username => {
@@ -195,6 +230,24 @@ it('starts a fresh dialogue after reload instead of restoring the previous conve
   expect(container.textContent).toContain('Welcome back!');
 });
 
+it('clears the current conversation when starting a new build', async () => {
+  let chat!: ReturnType<typeof useBuildBuddyChat>;
+  function Conversation() {
+    chat = useBuildBuddyChat('pip');
+    return <BuildBuddyDialogue turns={chat.turns} generations={[]} state="idle" welcomeMessage="What would you like to do?" />;
+  }
+  await act(async () => root.render(<Conversation />));
+  act(() => {
+    const id = chat.startTurn('An old castle', null);
+    chat.updateTurn(id, { reply: 'Let’s build it.' });
+  });
+  expect(container.textContent).toContain('An old castle');
+  act(() => chat.resetConversation());
+  expect(chat.turns).toEqual([]);
+  expect(container.textContent).toContain('What would you like to do?');
+  expect(container.textContent).not.toContain('An old castle');
+});
+
 it.each([undefined, 'job'])('shows one pet failure message without infrastructure details for generation %s', async generationId => {
   const watch = vi.spyOn(LlmToBricksApiService, 'watchOutput');
   await act(async () => root.render(<BuildBuddyDialogue
@@ -270,6 +323,34 @@ it('uses authenticated backend transport for text/image chat and handles invalid
   await expect(BuildBuddyApi.reply({ pet: 'pip', prompt: 'Dragon', history: [] }, undefined, signal)).rejects.toThrow('Empty buddy reply');
   vi.mocked(apiFetch).mockResolvedValue({ ok: false } as Response);
   await expect(BuildBuddyApi.reply({ pet: 'pip', prompt: 'Dragon', history: [] }, undefined, signal)).rejects.toThrow('unavailable');
+});
+
+it('gets bounded OpenAI build ideas through the buddy API and validates the response', async () => {
+  const signal = new AbortController().signal;
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ idea: '  a Pikachu riding a skateboard  ' }) } as Response);
+  await expect(BuildBuddyApi.randomIdea(['a dragon'], 'token', signal)).resolves.toBe('a Pikachu riding a skateboard');
+  expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining('/build-buddy/random-idea'), expect.objectContaining({
+    method: 'POST', signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+    body: JSON.stringify({ previous_ideas: ['a dragon'] }),
+  }));
+  for (const idea of ['', 42, 'x'.repeat(121)]) {
+    vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ idea }) } as Response);
+    await expect(BuildBuddyApi.randomIdea([], undefined, signal)).rejects.toThrow('Invalid build idea');
+  }
+  vi.mocked(apiFetch).mockResolvedValue({ ok: false } as Response);
+  await expect(BuildBuddyApi.randomIdea([], undefined, signal)).rejects.toThrow('unavailable');
+});
+
+it('requests a bounded AI welcome without sending the visitor name', async () => {
+  const signal = new AbortController().signal;
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ greeting: '  Glad you’re here to make something fun.  ' }) } as Response);
+  await expect(BuildBuddyApi.welcomeGreeting('pip', 'token', signal)).resolves.toBe('Glad you’re here to make something fun.');
+  expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining('/build-buddy/welcome-greeting'), expect.objectContaining({
+    method: 'POST', signal, headers: { 'Content-Type': 'application/json', Authorization: 'Bearer token' },
+    body: JSON.stringify({ pet: 'pip', previous_greetings: [] }),
+  }));
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ greeting: 'x'.repeat(121) }) } as Response);
+  await expect(BuildBuddyApi.welcomeGreeting('pip', undefined, signal)).rejects.toThrow('Invalid welcome greeting');
 });
 
 it('sends intent detection through the authenticated backend and rejects uncertain or invalid actions', async () => {

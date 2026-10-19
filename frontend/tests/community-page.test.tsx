@@ -10,6 +10,7 @@ vi.mock('posthog-js', () => ({
 }));
 
 const navigate = vi.fn();
+const authState = vi.hoisted(() => ({ guest: false }));
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
@@ -21,8 +22,8 @@ vi.mock('react-router-dom', async () => {
 
 vi.mock('../src/contexts/AuthContext', () => ({
   useAuth: () => ({
-    session: { access_token: 'tok' },
-    user: { id: 'user-1' },
+    session: authState.guest ? null : { access_token: 'tok' },
+    user: authState.guest ? null : { id: 'user-1' },
     userProfile: { credits: 4 },
     isSupabaseConfigured: true,
   }),
@@ -30,14 +31,79 @@ vi.mock('../src/contexts/AuthContext', () => ({
 
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('../src/components/ProfileMenu', () => ({ ProfileMenu: () => null }));
+vi.mock('../src/components/NotificationMenu', () => ({ NotificationMenu: () => <button aria-label="Notifications" /> }));
 vi.mock('../src/components/SiteFooter', () => ({ SiteFooter: () => null }));
-vi.mock('../src/components/LoginModal', () => ({ default: () => null }));
+vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div role="dialog">Sign up or log in</div> : null }));
 
 import CommunityPage from '../src/pages/CommunityPage';
 import { GetCommunityGenerationsApiService } from '../src/services/getCommunityGenerationsApi';
 import { ToggleGenerationLikeApiService } from '../src/services/toggleGenerationLikeApi';
+import { GetGenerationStatsApiService } from '../src/services/getGenerationStatsApi';
 
 describe('CommunityPage', () => {
+  it('uses a Back link and the landing Sign up action in the guest header', async () => {
+    authState.guest = true;
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<CommunityPage />));
+      const header = container.querySelector('header')!;
+      expect(header.querySelector('[aria-label="Notifications"]')).toBeNull();
+      const back = header.querySelector<HTMLAnchorElement>('a[href="/"]')!;
+      expect(back.textContent).toBe('Back');
+      back.addEventListener('click', event => event.preventDefault());
+      act(() => back.click());
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('community_header_back_clicked');
+      expect(header.textContent).not.toContain('Login');
+      expect(header.textContent).not.toContain('Dashboard');
+      const signUp = Array.from(header.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent === 'Sign up')!;
+      act(() => signUp.click());
+      expect(container.querySelector('[role="dialog"]')?.textContent).toContain('Sign up or log in');
+      expect(navigate).not.toHaveBeenCalledWith('/login');
+      expect(navigate).not.toHaveBeenCalledWith('/signup');
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('community_header_signup_clicked');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+      authState.guest = false;
+    }
+  });
+  it('keeps the profile action for signed-in visitors without extra header buttons', async () => {
+    authState.guest = false;
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<CommunityPage />));
+      expect(container.querySelector('header a[href="/"]')?.textContent).toBe('Back');
+      expect(container.querySelector('header')?.textContent).not.toContain('Dashboard');
+      expect(container.querySelector('header')?.textContent).not.toContain('Sign up');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+  it('shows the generation statistics on the community page', async () => {
+    vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({ generations: [], total_count: 0, has_more: false });
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<CommunityPage />));
+      const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]');
+      expect(stats?.textContent).toContain('12');
+      expect(stats?.textContent).toContain('400');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
   it('likes a community model from the grid without navigating away', async () => {
     vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
       generations: [{

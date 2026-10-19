@@ -78,6 +78,8 @@
 .pet-chat-actions, .pet-chat-email { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .pet-chat-action { position: relative; z-index: 20; display: inline-flex; min-height: 44px; align-items: center; justify-content: center; margin-top: 8px; padding: 8px 14px; border: 1px solid #e2e8f0; border-radius: 999px; background: #fff; font-size: 13px; font-weight: 500; color: #475569; cursor: pointer; }
 .pet-chat-actions .pet-chat-action, .pet-chat-email .pet-chat-action { margin-top: 0; }
+.pet-more-builds { align-items: center; }
+.pet-more-builds > span { color: #475569; font-size: 13px; }
 .pet-chat-action:hover { border-color: #fecaca; background: #fff5f4; color: #b42318; }
 .pet-chat-action:disabled { opacity: .6; cursor: default; }
 .pet-chat-action:focus-visible, .pet-chat-email input:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; }
@@ -86,6 +88,9 @@
 .pet-dialogue .pet-greeting, .pet-speech { animation: pet-message-in .22s ease-out; }
 .pet-completed-builds { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr)); gap: 10px; padding: 0; margin: 12px 0 0; list-style: none; }
 .pet-completed-builds li { min-width: 0; }
+.pet-completed-builds .pet-build-list-row { display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 12px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; overflow-wrap: anywhere; }
+.pet-build-list-row svg { flex-shrink: 0; color: #64748b; }
+.pet-build-list-row small { display: block; margin-top: 3px; color: #64748b; }
 .pet-completed-builds a { display: flex; flex-direction: column; height: 100%; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; text-decoration: none; }
 .pet-completed-builds a:hover { border-color: #f44336; background: #fff5f4; }
 .pet-completed-builds a:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; }
@@ -93,6 +98,10 @@
 .pet-completed-build-preview img { width: 100%; height: 120px; object-fit: contain; }
 .pet-completed-build-title { padding: 10px 12px; font-weight: 500; overflow-wrap: anywhere; }
 .pet-completed-build-title > span { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; color: #b42318; }
+.pet-current-builds { grid-template-columns: minmax(0, 1fr); }
+.pet-current-builds a { flex-direction: row; align-items: center; }
+.pet-current-builds .pet-completed-build-preview { flex: 0 0 72px; height: 72px; }
+.pet-current-builds .pet-completed-build-preview img { height: 72px; }
 @keyframes pet-message-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 .pet-response-word { animation: pet-response-word-in 60ms ease-out both; }
 @keyframes pet-response-word-in { from { opacity: 0; } to { opacity: 1; } }

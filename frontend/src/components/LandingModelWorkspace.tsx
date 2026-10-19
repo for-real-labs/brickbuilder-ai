@@ -3,7 +3,7 @@ import { ArrowLeft, BookOpen, Box, Maximize2 } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
-import { LlmPreviewLoader } from './LlmPreviewLoader';
+import { LdrawGenerationAnimation } from './LdrawGenerationAnimation';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
 
@@ -16,14 +16,14 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, activity, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
+  building?: boolean;
   composerFocused?: boolean;
   requestedInstructionsId?: string | null;
   onOrderBarHeightChange?: (height: number) => void;
-  activity?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
@@ -101,8 +101,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, compos
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
   return <>
-    {!model && activity && <section className="landing-generation-workspace" aria-label="Build progress workspace">
-      {activity}
+    {!model && building && <section className="landing-generation-workspace" aria-label="Build progress workspace">
+      <LdrawGenerationAnimation />
     </section>}
     {model && generation && <dialog ref={panel} open className="landing-model-panel"
       data-expanded={expanded} data-view={showingInstructions ? 'instructions' : 'model'}
@@ -117,7 +117,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, compos
       </div>
       <section className="landing-model-workspace" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label={pendingEdit ? 'Building your edited model' : showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
-          {pendingEdit ? <LlmPreviewLoader compact /> :
+          {pendingEdit ? <LdrawGenerationAnimation /> :
           <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}

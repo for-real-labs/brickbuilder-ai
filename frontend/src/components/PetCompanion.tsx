@@ -68,7 +68,7 @@ export function PetSwitchButton({ source, className, onOpen, returnFocusRef }: {
 }
 
 /** Connects the prompt to its pet and the shared buddy picker. */
-export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true, children }: { mode?: 'build' | 'edit' | 'upload'; state?: PetState; showPetSwitch?: boolean; children?: React.ReactNode }) {
+export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true, children, actions }: { mode?: 'build' | 'edit' | 'upload'; state?: PetState; showPetSwitch?: boolean; children?: React.ReactNode; actions?: React.ReactNode }) {
   const { pet, activity } = usePet();
   const current = state || activity;
   return <div className={`pet-greeting pet-greeting--${mode}`}>
@@ -79,6 +79,7 @@ export function PetPromptGreeting({ mode = 'build', state, showPetSwitch = true,
         : current === 'celebrating' ? 'Look what we made! What should we build next?'
         : mode === 'edit' ? 'What do you want to change?'
         : mode === 'upload' ? 'Show me your build. What should we change?' : 'Hi! I’m ' + pet.name + '. Tell me what to build!')}</PetResponseText></p>
+      {actions}
     </div>
   </div>;
 }

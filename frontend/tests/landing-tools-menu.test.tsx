@@ -21,14 +21,23 @@ const mount = (selected: LandingModel | null = model, busy = false) => act(() =>
 it('puts Import first and Export second, separates groups, and keeps Community/GitHub together above Feedback/Support', () => {
   mount(); act(() => button('Tools').click());
   const rows = [...host.querySelectorAll('ul[aria-label="Tools"] > li')];
-  expect(rows.map(row => row.textContent)).toEqual(['Import', 'Export', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Generation settings', 'Build Buddy', '', 'Community', 'GitHub', '', 'Feedback', 'Support']);
-  expect(host.querySelectorAll('[role="separator"]')).toHaveLength(4);
+  expect(rows.map(row => row.textContent)).toEqual(['Import', 'Export', '', 'Generation settings', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Build Buddy', '', 'Community', 'GitHub', '', 'Feedback', 'Support']);
+  expect(host.querySelectorAll('[role="separator"]')).toHaveLength(5);
   expect(button('Export').querySelector('.lucide-download')).not.toBeNull();
   act(() => button('Import').click());
   expect([...host.querySelectorAll('[aria-label="Import options"] a')].map(node => node.getAttribute('href'))).toEqual(['/use-ai-to-edit-ldraw?format=ldraw', '/use-ai-to-edit-ldraw?format=io']);
   act(() => button('Export').click());
   expect(host.querySelector('[aria-label="Import options"]')).toBeNull();
   expect(button('Download parts list CSV').closest('li')?.className).toContain('border-t');
+});
+
+it('omits the settings section and its divider when settings are unavailable', () => {
+  act(() => root.render(<MemoryRouter><LandingToolsMenu page="/use-ai-to-edit-ldraw" /></MemoryRouter>));
+  act(() => button('Tools').click());
+  const rows = [...host.querySelectorAll('ul[aria-label="Tools"] > li')];
+  expect(rows.slice(0, 4).map(row => row.textContent)).toEqual(['Import', 'Export', '', 'Image to LEGO']);
+  expect(rows.some(row => row.textContent === 'Generation settings')).toBe(false);
+  expect(host.querySelectorAll('[role="separator"]')).toHaveLength(4);
 });
 
 it.each([['ldraw', 'Download LDraw'], ['io', 'Download IO'], ['csv', 'Download parts list CSV'], ['xml', 'Download parts list XML']] as const)('downloads %s from the displayed model with analytics', (format, label) => {

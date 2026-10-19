@@ -30,6 +30,19 @@ export function useBuildBuddyChat(pet: PetId, authToken?: string, owner = authTo
     if (patch.reply) history.current = history.current.map(turn => turn.id === id ? { ...turn, reply: patch.reply } : turn);
   }, []);
 
+  const resetConversation = useCallback(() => {
+    routingController.current?.abort();
+    requests.current.forEach(request => request.abort());
+    requests.current.clear();
+    routingController.current = null;
+    images.current.forEach(url => URL.revokeObjectURL(url));
+    images.current = [];
+    history.current = [];
+    giftStartId.current = 0;
+    setRouting(false);
+    setTurns([]);
+  }, []);
+
   useEffect(() => {
     setTurns([]);
     history.current = [];
@@ -122,5 +135,5 @@ export function useBuildBuddyChat(pet: PetId, authToken?: string, owner = authTo
     } finally { requests.current.delete(controller); }
   };
 
-  return { turns, startTurn, routeMessage, routing, requestReply, requestGiftReply, updateTurn };
+  return { turns, startTurn, routeMessage, routing, requestReply, requestGiftReply, updateTurn, resetConversation };
 }

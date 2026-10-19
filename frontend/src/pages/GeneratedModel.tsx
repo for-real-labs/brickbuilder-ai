@@ -6,7 +6,6 @@ import { LlmGenerationOutput } from '../components/LlmGenerationOutput';
 import { GenerationNotificationsApi } from "../services/generationNotificationsApi";
 import { useGenerationNotifications } from "../contexts/GenerationNotificationsContext";
 import { isGenerationActive } from "../hooks/useGenerationActivity";
-import { NotificationMenu } from "../components/NotificationMenu";
 import React, { useState } from "react";
 import { SEO } from "../components/SEO";
 import { SiteFooter } from "../components/SiteFooter";
@@ -201,7 +200,6 @@ function Header({ onGuardedNavigate }: HeaderProps) {
             </button>
           </>
         )}
-        {!showProfileMenu && <NotificationMenu />}
       </div>
       
     </header>

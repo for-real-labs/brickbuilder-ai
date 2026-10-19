@@ -1,15 +1,12 @@
 import { getGeneratedModelPath } from '../utils/generationRoutes';
-import { NotificationMenu } from "../components/NotificationMenu";
 import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
-  Coins,
   Users,
   Loader2,
   Search,
   Sparkles,
-  LayoutDashboard,
   Heart,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -23,6 +20,9 @@ import { ToggleGenerationLikeApiService } from "../services/toggleGenerationLike
 import { SiteFooter } from "../components/SiteFooter";
 import LoginModal from "../components/LoginModal";
 import posthog from "posthog-js";
+import { startPolling } from '../utils/polling';
+import { useAnimatedGenerationStats } from '../hooks/useAnimatedGenerationStats';
+import { GetGenerationStatsApiService, type GenerationStats } from '../services/getGenerationStatsApi';
 
 type SortMode = 'likes' | 'date_desc' | 'date_asc';
 
@@ -34,72 +34,24 @@ function sortGenerations(generations: CommunityGeneration[], mode: SortMode): Co
   });
 }
 
-function CommunityHeader() {
-  const navigate = useNavigate();
-  const { user, userProfile, isSupabaseConfigured } = useAuth();
+function CommunityHeader({ onSignUpClick }: { onSignUpClick: () => void }) {
+  const { user, isSupabaseConfigured } = useAuth();
 
   // Show profile menu if user is logged in OR if Supabase is not configured
   const showProfileMenu = user || !isSupabaseConfigured;
 
   return (
     <header className="flex items-center justify-between w-full relative landing-fade-in landing-delay-1" style={{ zIndex: 50 }}>
-      <a href="/" className="flex items-center gap-2 group">
-        <ChevronLeft className="h-5 w-5 text-slate-500 group-hover:text-[#f44336] group-hover:-translate-x-0.5 transition-all" />
-        <img
-          src="/logo.svg"
-          alt="BrickBuilder"
-          className="h-7 w-auto"
-          onError={(e) => ((e.currentTarget as HTMLImageElement).style.display = "none")}
-        />
-        <span className="text-xl font-extrabold tracking-tight">
-          <span className="text-[#ff4b4b]">BRICK</span>
-          <span className="text-slate-900">BUILDER</span>
-        </span>
+      <a href="/" onClick={() => posthog.capture('community_header_back_clicked')}
+        className="inline-flex h-9 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300">
+        <ChevronLeft aria-hidden="true" className="h-4 w-4" />Back
       </a>
 
-      <div className="flex items-center gap-3">
-        {showProfileMenu ? (
-          <>
-            {/* Only show credits when user is logged in with Supabase */}
-            {user && isSupabaseConfigured && (
-              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5">
-                <Coins className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-semibold text-amber-700">
-                  {userProfile?.credits ?? 0}
-                </span>
-              </div>
-            )}
-
-            <button
-              className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
-              onClick={() => navigate('/dashboard')}
-            >
-              <LayoutDashboard className="h-4 w-4" />
-              Dashboard
-            </button>
-
-            <div className="relative">
-              <ProfileMenu />
-            </div>
-          </>
-        ) : (
-          <>
-            <button
-              className="bg-transparent text-slate-600 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-black hover:-translate-y-px"
-              onClick={() => navigate("/login")}
-            >
-              Login
-            </button>
-            <button
-              className="bg-[#f44336] text-white rounded-full px-4 h-9 border-none text-sm font-medium cursor-pointer transition-all duration-200 hover:bg-[#ff6b6b] hover:-translate-y-px"
-              onClick={() => navigate("/signup")}
-            >
-              Sign Up
-            </button>
-          </>
-        )}
-        {!showProfileMenu && <NotificationMenu />}
-      </div>
+      {showProfileMenu ? <ProfileMenu /> : <button type="button"
+        className="h-8 rounded-full border-none bg-[#f44336] px-3 text-xs font-medium text-white cursor-pointer transition-all duration-200 hover:-translate-y-px hover:bg-[#ff6b6b] sm:h-9 sm:px-4 sm:text-sm"
+        onClick={() => { posthog.capture('community_header_signup_clicked'); onSignUpClick(); }}>
+        Sign up
+      </button>}
     </header>
   );
 }
@@ -214,6 +166,15 @@ export default function CommunityPage() {
   const [likingGenerationId, setLikingGenerationId] = useState<string | null>(null);
   const [sortMode, setSortMode] = useState<SortMode>('likes');
   const [searchQuery, setSearchQuery] = useState('');
+  const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
+  const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
+  useEffect(() => {
+    const polling = startPolling(async signal => {
+      const stats = await GetGenerationStatsApiService.getGenerationStats(signal);
+      if (!signal.aborted) setGenerationStats(stats);
+    }, { intervalMs: 30_000 });
+    return polling.stop;
+  }, []);
   const PAGE_LIMIT = 50;
 
   const fetchCommunity = async (currentOffset: number, mode: SortMode, append: boolean = false) => {
@@ -344,7 +305,7 @@ export default function CommunityPage() {
       />
       <div className="min-h-screen bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
-          <CommunityHeader />
+          <CommunityHeader onSignUpClick={() => setShowLoginModal(true)} />
 
           <section className="mt-10 text-center landing-fade-in landing-delay-2">
             <div className="inline-flex items-center justify-center h-14 w-14 rounded-full bg-[#f44336]/10 mb-4">
@@ -356,6 +317,18 @@ export default function CommunityPage() {
             <p className="mt-3 text-slate-600 max-w-xl mx-auto">
               Browse brick models shared by builders in the BrickBuilder community.
             </p>
+          </section>
+
+          <section className="mx-auto mt-6 flex w-fit max-w-full items-center justify-center gap-5 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-center shadow-sm sm:gap-10 sm:px-8" aria-label="BrickBuilder generation statistics">
+            <div className="min-w-0">
+              <span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span>
+              <span className="text-xs text-slate-600 sm:text-sm">models generated</span>
+            </div>
+            <div className="h-10 w-px shrink-0 bg-slate-200" aria-hidden="true" />
+            <div className="min-w-0">
+              <span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span>
+              <span className="text-xs text-slate-600 sm:text-sm">bricks generated</span>
+            </div>
           </section>
 
           <section className="mt-10 landing-fade-in landing-delay-3">

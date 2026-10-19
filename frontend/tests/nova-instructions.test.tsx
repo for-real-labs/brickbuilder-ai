@@ -11,7 +11,8 @@ import { LDrawParser } from '../src/utils/ldrawParser';
 import type { LandingModel } from '../src/hooks/useLandingModel';
 import { readFileSync } from 'node:fs';
 
-vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, isSupabaseConfigured: false }) }));
+const authState = vi.hoisted(() => ({ configured: false }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, isSupabaseConfigured: authState.configured }) }));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ markViewed: vi.fn() }) }));
 vi.mock('../src/components/LandingModelOrdering', () => ({ LandingModelOrdering: () => null }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: (props: { currentStepIndex?: number; highlightNewParts?: boolean; preserveOrientation?: boolean; initialCameraState?: {position: {x: number}}; onCameraChange?: (state: unknown) => void }) => <div data-testid={props.currentStepIndex === undefined ? 'model-viewer' : 'instructions-viewer'} data-highlight={String(props.highlightNewParts)} data-preserve-orientation={String(props.preserveOrientation)} data-camera-x={props.initialCameraState?.position.x}>Step {(props.currentStepIndex ?? 0) + 1}<button aria-label="Rotate test model" onClick={() => props.onCameraChange?.({position: {x: 12, y: 10, z: 10}, target: {x: 0, y: 0, z: 0}})} /></div> }));
@@ -19,11 +20,28 @@ vi.mock('../src/components/MpdImageRenderer', () => ({ MpdImageRenderer: () => n
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('../src/components/SiteFooter', () => ({ SiteFooter: () => null }));
 vi.mock('../src/components/ProfileMenu', () => ({ ProfileMenu: () => null }));
-vi.mock('../src/components/NotificationMenu', () => ({ NotificationMenu: () => null }));
+vi.mock('../src/components/NotificationMenu', () => ({ NotificationMenu: () => <button aria-label="Notifications" /> }));
 vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { getSession: async () => ({ data: { session: null } }) } } }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 
 const instructions = '0 FILE model.ldr\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n1 14 0 -24 0 1 0 0 0 1 0 0 0 1 custom.dat\n0 STEP\n0 FILE custom.dat\n0 !LDRAW_ORG Unofficial_Part\n1 16 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n';
+
+it('does not show a notification bell in the guest instructions header', async () => {
+  authState.configured = true;
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'nova', endpoint: 'novaToBricks', status: 'completed', name: 'Garden cottage', prompt: 'cottage', ldr_content: 'flat preview' } as never);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(instructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: instructions } as never);
+  const container = document.createElement('div'); document.body.appendChild(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter initialEntries={['/instructions?id=nova']}><InstructionsPage /></MemoryRouter>));
+    expect(container.querySelector('header [aria-label="Notifications"]')).toBeNull();
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+    authState.configured = false;
+  }
+});
 
 it('loads Nova construction steps into the existing viewer and supports Previous/Next without playback', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'nova', endpoint: 'novaToBricks', status: 'completed', name: 'Garden cottage', prompt: 'cottage', ldr_content: 'flat preview' } as never);

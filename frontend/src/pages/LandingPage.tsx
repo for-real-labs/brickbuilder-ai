@@ -1,23 +1,23 @@
-import { startPolling } from '../utils/polling';
 import { LandingToolsMenu, type LandingToolsHandle, type GenerationSettingsAction } from '../components/LandingToolsMenu';
 import { isBuddyToolIntent } from '../utils/buddyTools';
 import { LDrawUploadSection } from '../components/LDrawUploadSection';
 import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
-import { usePromptTypewriter } from '../hooks/usePromptTypewriter';
 import { GIFT_PROMPT_SUGGESTION } from '../utils/promptExamples';
-import { NotificationMenu } from "../components/NotificationMenu";
-import { CancelGenerationButton } from '../components/CancelGenerationButton';
 import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
+import { BuildBuddyApi } from '../services/buildBuddyApi';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { useLandingModel, type LandingModel } from '../hooks/useLandingModel';
-import { LandingModelWorkspace, modelEditSuggestion } from '../components/LandingModelWorkspace';
+import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 import { PendingEditActions } from '../components/PendingEditActions';
-import { buddyPromptSuggestion } from '../utils/buddyPromptSuggestion';
+import { CreateNewBuildsPrompt } from '../components/CreateNewBuildsPrompt';
+import { RandomBuildPrompt } from '../components/RandomBuildPrompt';
+import { useRecentCompletedBuilds } from '../hooks/useRecentCompletedBuilds';
+import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { useLandingViewport } from '../hooks/useLandingViewport';
 import { useLandingHelp } from '../hooks/useLandingHelp';
@@ -30,21 +30,17 @@ import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { TextToBricksApiService } from "../services/textToBricksApi";
-import { ImageToBricksApiService, StreamEvent, VoxelDataEvent, PipelineEvent } from "../services/imageToBricksApi";
-import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
+import { ImageToBricksApiService, StreamEvent, PipelineEvent } from "../services/imageToBricksApi";
+import { GetGenerationApiService } from "../services/getGenerationApi";
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
-import StreamingMeshViewer from "../components/StreamingMeshViewer";
 import { useAuth } from "../contexts/AuthContext";
 import { ProfileMenu } from "../components/ProfileMenu";
 import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity, isGenerationActive } from "../hooks/useGenerationActivity";
-import { useAnimatedGenerationStats } from "../hooks/useAnimatedGenerationStats";
-import { LlmPreviewLoader } from "../components/LlmPreviewLoader";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
 import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/NovaProviderLoginModal';
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
 import { isLocalDevelopment, LocalProvidersApiService } from "../services/localProvidersApi";
-import { GenerationStats, GetGenerationStatsApiService } from "../services/getGenerationStatsApi";
 import {
   DEFAULT_LLM_MODEL,
   GENERATION_MODEL_OPTIONS,
@@ -52,6 +48,9 @@ import {
   getLlmModelOption,
 } from "../services/llmToBricksApi";
 import posthog from "posthog-js";
+import { startPolling } from '../utils/polling';
+import { useAnimatedGenerationStats } from '../hooks/useAnimatedGenerationStats';
+import { GetGenerationStatsApiService, type GenerationStats } from '../services/getGenerationStatsApi';
 
 // Toggle whether users must be logged in before starting a generation.
 const REQUIRE_LOGIN_FOR_GENERATION = false;
@@ -83,6 +82,7 @@ const MODEL_QUALITY_PRESETS: { label: string; value: ModelQuality; modelOption: 
 const DEFAULT_PROMPT_OPTION = "a";
 
 type GenerationMethod = "3d" | "llm" | "nova";
+type RandomBuildSuggestion = { status: 'loading' | 'ready' | 'error'; idea: string | null; previousIdeas: string[] };
 export const DEFAULT_GENERATION_METHOD: GenerationMethod = "nova";
 export type ThreeDModel = "sam3d" | "trellis";
 export const DEFAULT_THREE_D_MODEL: ThreeDModel = "sam3d";
@@ -125,51 +125,6 @@ export function GenerationModelSelector({
   );
 }
 
-// ---- In‑place loading: progress + messages ----
-const LOADING_BEATS: Array<{ dur: number; text: string }> = [
-  { dur: 2000, text: "Spinning up turbo hamsters..." },
-  { dur: 2000, text: "Asking the AI nicely to imagine for you..." },
-  { dur: 2000, text: "Translating dreams ➜ bricks..." },
-  { dur: 2000, text: "Checking your vibe alignment coefficients..." },
-  { dur: 2000, text: "Picking only the tastiest studs..." },
-  { dur: 2000, text: "Hunting for the best brick deals (coupon ninja mode)" },
-  { dur: 2000, text: "Making sure gravity will cooperate..." },
-  { dur: 2000, text: "Polishing your pixels till they reflect the soul..." },
-  { dur: 2000, text: "Applying secret sauce (proprietary™)" },
-  { dur: 2000, text: "Snapping bricks with great satisfaction..." },
-];
-
-function useBeatText(active: boolean) {
-  const [i, setI] = useState(0);
-  const [fade, setFade] = useState(1);
-  useEffect(() => {
-    if (!active) {
-      setI(0);
-      setFade(1);
-      return;
-    }
-    let alive = true;
-    let currentIndex = 0;
-    const loop = async () => {
-      while (alive) {
-        const beat = LOADING_BEATS[currentIndex % LOADING_BEATS.length];
-        setI(currentIndex);
-        setFade(1);
-        await new Promise((r) => setTimeout(r, beat.dur));
-        if (!alive) break;
-        setFade(0.4);
-        await new Promise((r) => setTimeout(r, 220));
-        if (!alive) break;
-        currentIndex++;
-      }
-    };
-    loop();
-    return () => { alive = false; };
-  }, [active]);
-  const text = LOADING_BEATS[i % LOADING_BEATS.length]?.text ?? "";
-  return { text, fade };
-}
-
 export default function LandingPage({ imageLandingPath }: { imageLandingPath?: ImageLandingPath } = {}) {
   const [visit, setVisit] = useState(0);
   useEffect(() => {
@@ -195,11 +150,24 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
   );
+  const { active: notificationActive, notifications } = useGenerationNotifications();
+  const [createNewStage, setCreateNewStage] = useState<'list' | null>(null);
+  const [randomSuggestion, setRandomSuggestion] = useState<RandomBuildSuggestion | null>(null);
+  const randomRequestRef = useRef<AbortController | null>(null);
+  const [recentBuildPage, setRecentBuildPage] = useState(0);
+  const [recentBuildRefresh, setRecentBuildRefresh] = useState(0);
+  const completedBuilds = useRecentCompletedBuilds(session?.access_token, session?.user.id, `${recentBuildRefresh}:${notifications.map(row => `${row.id}:${row.status}`).join(',')}`);
   const [prompt, setPrompt] = useState("");
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [giftPlanning, setGiftPlanning] = useState(false);
   const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
-  useEffect(() => { setGiftPlanning(false); setHasEnteredChat(false); }, [session?.user.id]);
+  useEffect(() => {
+    randomRequestRef.current?.abort();
+    setRandomSuggestion(null);
+    setGiftPlanning(false);
+    setHasEnteredChat(false);
+  }, [session?.user.id]);
+  useEffect(() => () => randomRequestRef.current?.abort(), []);
   useEffect(() => {
     if (hasEnteredChat) posthog.capture('build_buddy_contextual_suggestion_shown');
   }, [hasEnteredChat]);
@@ -297,14 +265,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [loading, setLoading] = useState(false);
   const generationAbortRef = useRef<AbortController | null>(null);
   const [activeGenerationId, setActiveGenerationId] = useState<string | null>(null);
-  const [activeLoadingMethod, setActiveLoadingMethod] = useState<GenerationMethod | null>(null);
-  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
-  const [generationStatus, setGenerationStatus] = useState<string | null>(null);
-  const { text: beatText, fade: beatFade } = useBeatText(loading);
 
   // Generated model state
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedModelId = searchParams.get('id');
+  const [linkedModelId] = useState(requestedModelId);
   const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
   const openModel = useCallback((id: string, retainModel = false) => {
     landingModel.open(id, retainModel);
@@ -323,31 +288,34 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     && landingModel.targetId !== landingModel.model.generation.generation_id)));
   const pendingEditId = pendingEdit && landingModel.targetId !== landingModel.model?.generation.generation_id
     ? landingModel.targetId : null;
+  const selectedActiveGeneration = generations.find(row => row.id === landingModel.targetId && isGenerationActive(row.status));
+  const pendingGeneration = !createNewStage && !landingModel.model && (loading || Boolean(selectedActiveGeneration)
+    || Boolean(activeGenerationId && landingModel.busy));
+  const pendingGenerationId = pendingEdit ? pendingEditId
+    : pendingGeneration ? selectedActiveGeneration?.id || activeGenerationId : null;
+  const processingBuilds = [...generations.filter(row => isGenerationActive(row.status))];
+  for (const row of notificationActive || []) {
+    if (!processingBuilds.some(generation => generation.id === row.id)) processingBuilds.push({
+      id: row.id, prompt: row.prompt, status: row.status, createdAt: row.updated_at,
+    });
+  }
+  processingBuilds.sort((left, right) => (right.createdAt || '').localeCompare(left.createdAt || ''));
   const visitGenerationIds = new Set(buddyChat.turns.map(turn => turn.generationId));
   const displayedGenerations = generations.filter(row => ldrawLanding || row.id === landingModel.targetId || visitGenerationIds.has(row.id))
     .map(row => row.id === landingModel.model?.generation.generation_id
     ? { ...row, status: 'completed', previewWaitUntil: undefined } : row);
   const [generationError, setGenerationError] = useState<string | null>(null);
 
-  // Streaming 3D preview state
-  const [voxelData, setVoxelData] = useState<VoxelDataEvent | null>(null);
-  
   const navigate = useNavigate();
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
   const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
   useEffect(() => {
-    const polling = startPolling(async (signal) => {
-      try {
-        const stats = await GetGenerationStatsApiService.getGenerationStats(signal);
-        if (!signal.aborted) setGenerationStats(stats);
-      } catch (error) {
-        if (!signal.aborted) console.warn("Unable to load generation stats", error);
-        throw error;
-      }
+    const polling = startPolling(async signal => {
+      const stats = await GetGenerationStatsApiService.getGenerationStats(signal);
+      if (!signal.aborted) setGenerationStats(stats);
     }, { intervalMs: 30_000 });
     return polling.stop;
   }, []);
-
   // Login modal state
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [pendingGenerateAfterLogin, setPendingGenerateAfterLogin] = useState(false);
@@ -559,15 +527,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
     // Clear previous results and errors
     setGenerationError(null);
-    setPreviewImageUrl(null);
-    setGenerationStatus(null);
-    setVoxelData(null);
     
     // Clear old recently prompted generation ID before starting new one
     localStorage.removeItem('recently_prompted_generation_id');
     
     // Start loading
-    setActiveLoadingMethod(generationMethod);
+    setCreateNewStage(null);
     setLoading(true);
     const controller = new AbortController();
     generationAbortRef.current = controller;
@@ -601,57 +566,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       // Get auth token if user is logged in
       const authToken = session?.access_token;
       
-      // Shared stream-event handler used by both image and text streaming calls.
+      // The viewer owns progress visuals. The stream only supplies the active build ID.
       const handleStreamEvent = (event: StreamEvent) => {
-        if (controller.signal.aborted) return;
-        // Update UI based on streaming events
-        if ('type' in event && event.type === 'pipeline') {
-          const pe = event as PipelineEvent;
-          if (pe.generation_id) {
-            setActiveGenerationId(pe.generation_id);
-            clearSelectedImage();
-          }
-          if (pe.stage === 'image_generation') {
-            const queueInfo = pe.queue_position != null ? ` (position ${pe.queue_position})` : '';
-            setGenerationStatus(pe.message ? `${pe.message}${queueInfo}` : `Generating…${queueInfo}`);
-            // Show live diffusion frames as they stream in
-            if (pe.image_url) {
-              setPreviewImageUrl(pe.image_url);
-            }
-          } else if (pe.stage === 'background_removal') {
-            setGenerationStatus(pe.message || 'Processing input…');
-            if (pe.progress === 100 && pe.image_url) {
-              setPreviewImageUrl(pe.image_url);
-            }
-          } else if (pe.stage === 'input_processed') {
-            setGenerationStatus(pe.message || 'Server booting up... (3-45 seconds)');
-            if (pe.image_url) {
-              setPreviewImageUrl(pe.image_url);
-            }
-          } else if (pe.stage === 'brick_conversion') {
-            // Trellis (non-streamed) 3D step. Backend message looks like
-            // "Generating 3D model... (queued)". Normalize to a clean status
-            // keyword so the badge can show the right timing hint.
-            const match = pe.message?.match(/\(([^)]+)\)/);
-            const rawStatus = match?.[1]?.toLowerCase();
-            if (rawStatus === 'queued') {
-              setGenerationStatus('queued');
-            } else if (rawStatus === 'processing' || rawStatus === 'started' || rawStatus === 'in_progress') {
-              setGenerationStatus('processing');
-            } else {
-              setGenerationStatus('processing');
-            }
-          } else if (pe.message) {
-            setGenerationStatus(pe.message);
-          } else {
-            setGenerationStatus(pe.stage);
-          }
-        } else if ('stage' in event && ((event as Record<string, unknown>).stage === 'geometry' || (event as Record<string, unknown>).stage === 'appearance')) {
-          const vd = event as unknown as VoxelDataEvent;
-          setVoxelData(vd);
-          const label = vd.stage === 'appearance' ? 'Coloring bricks' : 'Generating shape';
-          const pct = vd.progress != null ? ` ${Math.round(vd.progress * 100)}%` : '';
-          setGenerationStatus(`${label}…${pct}`);
+        if (controller.signal.aborted || !('type' in event) || event.type !== 'pipeline') return;
+        const pipeline = event as PipelineEvent;
+        if (pipeline.generation_id) {
+          setActiveGenerationId(pipeline.generation_id);
+          clearSelectedImage();
         }
       };
 
@@ -661,7 +582,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       const stream3d = threeDModel === 'sam3d';
 
       if (generationMethod === 'nova') {
-        setGenerationStatus('Starting the full set agent…');
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
           model: llmModel,
@@ -673,8 +593,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         }, authToken);
         modelName = requestedPrompt.trim() || requestedImage?.name.replace(/\.[^/.]+$/, '') || 'full-set-model';
       } else if (generationMethod === 'llm') {
-        const llmLabel = getLlmModelOption(llmModel)?.label ?? 'The AI model';
-        setGenerationStatus(`${llmLabel} is designing your brick model…`);
         postResponse = await LlmToBricksApiService.generate(
           {
             prompt: requestedPrompt.trim() || undefined,
@@ -739,35 +657,19 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         openModel(generationId);
         trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks', createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
+        setCreateNewStage(null);
         setLoading(false);
-        setActiveLoadingMethod(null);
-        setGenerationStatus(null);
         return;
       }
 
-      // Poll for completion with status updates
       const completedGeneration = await GetGenerationApiService.pollUntilComplete(
-        generationId,
-        (statusResponse: GetGenerationResponse) => {
-          if (controller.signal.aborted) return;
-          // Update status display
-          setGenerationStatus(statusResponse.status);
-          
-          // Show preview image if available during processing
-          if (statusResponse.external_image_url) {
-            setPreviewImageUrl(statusResponse.external_image_url);
-          }
-        },
-        2500, 120, controller.signal
+        generationId, () => {}, 2500, 120, controller.signal
       );
-      
+
       console.log('Generation completed:', completedGeneration.generation_id);
       
       if (controller.signal.aborted) return;
       setLoading(false);
-      setActiveLoadingMethod(null);
-      setPreviewImageUrl(null);
-      setGenerationStatus(null);
       openModel(completedGeneration.generation_id);
       if (!session) recordAnonymousGeneration(completedGeneration.generation_id);
       
@@ -775,11 +677,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       if (controller.signal.aborted) return;
       if (error instanceof DOMException && error.name === 'AbortError') {
         setLoading(false);
-        setActiveLoadingMethod(null);
         setActiveGenerationId(null);
-        setGenerationStatus(null);
-        setPreviewImageUrl(null);
-        setVoxelData(null);
         localStorage.removeItem('recently_prompted_generation_id');
         return;
       }
@@ -787,9 +685,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       setGenerationError(BUILD_FAILURE_MESSAGE);
       buddyChat.updateTurn(turnId, { error: BUILD_FAILURE_MESSAGE, reply: undefined });
       setLoading(false);
-      setActiveLoadingMethod(null);
-      setPreviewImageUrl(null);
-      setGenerationStatus(null);
       // Clear the recently prompted ID on failure
       localStorage.removeItem('recently_prompted_generation_id');
     }
@@ -799,6 +694,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     const model = landingModel.model;
     if (!model || modelBusy || editSubmittingRef.current || !requestedPrompt.trim()) return;
     editSubmittingRef.current = true;
+    setCreateNewStage(null);
     setEditSubmitting(true);
     setGenerationError(null);
     const submittedPrompt = requestedPrompt.trim();
@@ -818,6 +714,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks', createdAt: new Date().toISOString() });
       openModel(id, true);
       setNotificationPromptId(id);
+      setCreateNewStage(null);
       setPrompt('');
     } catch (error) {
       console.error('Model edit failed:', error);
@@ -830,8 +727,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     }
   };
 
-  const createNewModel = () => {
-    posthog.capture('landing_model_create_new_clicked', { generation_id: landingModel.model?.generation.generation_id });
+  const resetWorkspace = () => {
     landingModel.reset();
     setSearchParams(current => {
       const next = new URLSearchParams(current);
@@ -845,7 +741,17 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setGenerationError(null);
     setInputValidationMessage(null);
     clearSelectedImage();
-    requestAnimationFrame(() => promptInputRef.current?.focus());
+  };
+  const createNewModel = () => {
+    posthog.capture('landing_model_create_new_clicked', { generation_id: landingModel.model?.generation.generation_id });
+    resetWorkspace();
+    buddyChat.resetConversation();
+    setHasEnteredChat(false);
+    setRecentBuildPage(0);
+    setRecentBuildRefresh(current => current + 1);
+    randomRequestRef.current?.abort();
+    setRandomSuggestion(null);
+    setCreateNewStage(null);
   };
 
   const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number) => {
@@ -861,6 +767,50 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       is_authenticated: Boolean(session),
     });
     void onGenerate(requestedPrompt, requestedImage, existingTurnId);
+  };
+  const requestRandomIdea = (previousIdeas: string[] = []) => {
+    randomRequestRef.current?.abort();
+    const controller = new AbortController();
+    randomRequestRef.current = controller;
+    setRandomSuggestion({ status: 'loading', idea: null, previousIdeas });
+    posthog.capture('landing_random_build_requested', { source: previousIdeas.length ? 'something_else' : 'initial' });
+    void BuildBuddyApi.randomIdea(previousIdeas, session?.access_token, controller.signal)
+      .then(idea => {
+        if (controller.signal.aborted) return;
+        setRandomSuggestion({ status: 'ready', idea, previousIdeas: [...previousIdeas, idea].slice(-8) });
+        posthog.capture('landing_random_build_suggested', { prompt: idea });
+      })
+      .catch(() => {
+        if (controller.signal.aborted) return;
+        setRandomSuggestion({ status: 'error', idea: null, previousIdeas });
+        posthog.capture('landing_random_build_failed');
+      });
+  };
+  const dismissRandomIdea = () => {
+    randomRequestRef.current?.abort();
+    setRandomSuggestion(null);
+  };
+  const buildSomethingRandom = () => requestRandomIdea();
+  const tryAnotherRandomIdea = () => requestRandomIdea(randomSuggestion?.previousIdeas || []);
+  const buildSuggestedIdea = () => {
+    if (randomSuggestion?.status !== 'ready' || !randomSuggestion.idea) return;
+    const idea = randomSuggestion.idea;
+    posthog.capture('landing_random_build_clicked', { prompt: idea });
+    setHasEnteredChat(true);
+    dismissRandomIdea();
+    setCreateNewStage(null);
+    submitGeneration(idea, null);
+  };
+  const showBuilds = () => {
+    posthog.capture('landing_builds_opened', { surface: 'pet_dialogue', processing_count: processingBuilds.length, completed_count: completedBuilds.length });
+    dismissRandomIdea();
+    setRecentBuildPage(0);
+    setRecentBuildRefresh(current => current + 1);
+    setCreateNewStage('list');
+  };
+  const showCommunityModels = () => {
+    posthog.capture('landing_community_models_clicked', { surface: 'pet_dialogue' });
+    navigate('/community');
   };
 
   const startGiftPlanning = (message: string, id: number) => {
@@ -945,11 +895,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
   const sendLabel = buddyChat.routing ? 'Sending…' : landingModel.model ? modelBusy ? 'Editing…' : 'Apply edit' : giftPlanning ? 'Send' : 'Create';
-  const showTypewriter = !requestedModelId && !landingModel.model && !hasEnteredChat && buddyChat.turns.length === 0 && !focused && !prompt && !imgFile && !imageLanding && !giftPlanning && !loading && !preparingImage;
-  const typedPlaceholder = usePromptTypewriter(showTypewriter);
-  const contextualPlaceholder = buddyPromptSuggestion(buddyChat.turns, pet.name,
-    landingModel.model ? modelEditSuggestion(landingModel.model) : undefined);
-  const conversationStarted = !ldrawLanding && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model));
+  const conversationStarted = !ldrawLanding
+    && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage));
 
   const generationActivity = (
     <GenerationActivityList generations={landingModel.model ? displayedGenerations.filter(row => row.status !== 'completed') : displayedGenerations} error={displayedGenerations.length || ldrawLanding ? activityError : null} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
@@ -1023,33 +970,17 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           }} />
 
         <main className={`flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
-          <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
-            <div className="landing-page-intro-content">
-            <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl text-slate-900 landing-fade-in landing-delay-2">
-              Imagine. Create. Build.
-            </h1>
-
-            {!focused && <div
-              className="flex items-center justify-center gap-4 sm:gap-8 text-slate-600 landing-fade-in landing-delay-2"
-              aria-label="BrickBuilder generation statistics"
-            >
-              <div className="min-w-0">
-                <span className="block text-xl font-bold sm:text-2xl tabular-nums text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : "—"}
-                </span>
-                <span className="whitespace-nowrap text-xs sm:text-sm">models generated</span>
-              </div>
-              <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
-              <div className="min-w-0">
-                <span className="block text-xl font-bold sm:text-2xl tabular-nums text-slate-900">
-                  {displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : "—"}
-                </span>
-                <span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span>
+          {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
+            : <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
+              <div className="landing-page-intro-content">
+                <h1 className="text-4xl font-extrabold leading-tight text-slate-900 landing-fade-in landing-delay-2 sm:text-5xl">Imagine. Create. Build.</h1>
+                {!focused && <div className="flex items-center justify-center gap-4 text-slate-600 landing-fade-in landing-delay-2 sm:gap-8" aria-label="BrickBuilder generation statistics">
+                  <div className="min-w-0"><span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="whitespace-nowrap text-xs sm:text-sm">models generated</span></div>
+                  <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
+                  <div className="min-w-0"><span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span></div>
+                </div>}
               </div>
             </div>}
-            </div>
-          </div>
-
           <div className={ldrawLanding ? 'w-full' : 'landing-page-content'}>
           <div className="mx-auto flex w-full max-w-3xl flex-col items-center gap-6">
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
@@ -1063,28 +994,42 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               }} />
             </div>}
             {!ldrawLanding && <div className="relative z-20 w-full">
-              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} composerFocused={focused}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
-                activity={!landingModel.model && displayedGenerations.length > 0 ? generationActivity : null}
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id, name: landingModel.model.generation.name,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
-                reasoningOnly={pendingEdit}
+                reasoningOnly={pendingEdit} currentOnly showOpeningMessage={Boolean(linkedModelId && requestedModelId === linkedModelId && !landingModel.model && !pendingGeneration)}
+                landingWelcome
+                currentMessage={randomSuggestion && !landingModel.model ? <RandomBuildPrompt suggestion={randomSuggestion}
+                  onYes={buildSuggestedIdea} onElse={tryAnotherRandomIdea} onBack={() => {
+                    posthog.capture('landing_random_build_back_clicked');
+                    dismissRandomIdea();
+                  }} /> : createNewStage && !landingModel.model ? <CreateNewBuildsPrompt
+                  processing={processingBuilds} completed={completedBuilds} page={recentBuildPage} pageSize={5}
+                  onBack={() => { posthog.capture('landing_builds_back_clicked', { surface: 'pet_dialogue' }); setCreateNewStage(null); }}
+                  onMore={() => setRecentBuildPage(current => current + 1)}
+                  onView={id => { setCreateNewStage(null); openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /> : undefined}
+                welcomeActions={<div className="pet-chat-actions">
+                  <button type="button" className="pet-chat-action" onClick={buildSomethingRandom}>Build something random</button>
+                  <button type="button" className="pet-chat-action" onClick={showBuilds}>Show builds</button>
+                  <button type="button" className="pet-chat-action" onClick={showCommunityModels}>Show me community models</button>
+                </div>}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>
-                {landingModel.model && !pendingEdit && generationActivity}
               </BuildBuddyDialogue>
-            {pendingEdit ? <PendingEditActions key={pendingEditId || 'starting'} generationId={pendingEditId}
+            {(pendingEdit || pendingGeneration) ? <PendingEditActions key={pendingGenerationId || 'starting'} generationId={pendingGenerationId} isEdit={pendingEdit}
               onCancelled={() => {
-                const row = generations.find(generation => generation.id === pendingEditId);
+                const row = generations.find(generation => generation.id === pendingGenerationId);
                 if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
                 setNotificationPromptId(null);
-                if (landingModel.model) openModel(landingModel.model.generation.generation_id, true);
+                if (pendingEdit && landingModel.model) openModel(landingModel.model.generation.generation_id, true);
+                else { generationAbortRef.current?.abort(); resetWorkspace(); setLoading(false); setActiveGenerationId(null); setCreateNewStage(null); }
               }}
-              onStartNew={createNewModel} /> : <form
+              onStartNew={createNewModel} /> : !randomSuggestion && createNewStage !== 'list' ? <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
               onSubmit={event => {
@@ -1127,10 +1072,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={imgFile ? "Add optional image instructions" : landingModel.model ? "Tell me what you’d like to change…" : hasEnteredChat || buddyChat.turns.length > 0 ? contextualPlaceholder : imageLanding ? "add optional instructions" : showTypewriter ? typedPlaceholder : `Tell ${pet.name} what you’d like to build…`}
+                    placeholder={imgFile || imageLanding ? "Add optional image instructions" : ""}
                     className={`pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white ${landingModel.model ? 'pl-4' : 'pl-14'} pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
                     disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
+                  {!imageLanding && !imgFile && !prompt && !focused && !loading && !buddyChat.routing &&
+                    <span className={`landing-empty-input-hint${landingModel.model ? ' landing-empty-input-hint--edit' : ''}`} aria-hidden="true">build anything<span className="landing-empty-input-caret" /></span>}
                   <button
                     type="submit" aria-label={sendLabel} title={sendLabel}
                     disabled={loading || buddyChat.routing || preparingImage || giftReplyPending || (Boolean(landingModel.model) && modelBusy)}
@@ -1206,7 +1153,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               </div>
               <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
-            </form>}
+            </form> : null}
               {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
               {!ldrawLanding && localDevelopment && !loading && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
                 <LocalProviderSettings />
@@ -1246,77 +1193,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           </div>
 
           {ldrawLanding && generationActivity}
-          {loading && activeGenerationId && <div className="flex justify-center mb-4">
-            <CancelGenerationButton generationId={activeGenerationId} onCancelled={() => {
-              generationAbortRef.current?.abort();
-              setLoading(false);
-              setActiveLoadingMethod(null);
-              setActiveGenerationId(null);
-              setGenerationStatus(null);
-              setPreviewImageUrl(null);
-              setVoxelData(null);
-              localStorage.removeItem('recently_prompted_generation_id');
-            }} />
-          </div>}
-          {/* Keep active generation feedback visible before the user scrolls. */}
-          <section className="mt-4 w-full relative landing-fade-in landing-delay-4" style={{ zIndex: 15 }}>
-            {loading && (
-              <div className="flex w-full flex-col items-center gap-4 mb-4">
-                {/* Preview container with overlaid status + beat text */}
-                <div className="relative w-full max-w-md overflow-hidden rounded-xl shadow-lg border border-slate-200" style={{ height: 340 }}>
-                  {/* Content layer */}
-                  {voxelData ? (
-                    <div style={{ height: 340 }}>
-                      <StreamingMeshViewer voxelData={voxelData} />
-                    </div>
-                  ) : activeLoadingMethod === 'llm' || activeLoadingMethod === 'nova' ? (
-                    <LlmPreviewLoader previewImageUrl={previewImageUrl} />
-                  ) : previewImageUrl ? (
-                    <img
-                      src={previewImageUrl}
-                      alt="Generation preview"
-                      className="w-full h-full object-contain"
-                    />
-                  ) : (
-                    <div className="w-full flex items-center justify-center bg-slate-50" style={{ height: 340 }}>
-                      <div className="text-slate-300 text-sm">Preparing preview…</div>
-                    </div>
-                  )}
-
-                  {/* Status badge — overlayed on top center */}
-                  <div className="absolute top-3 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1" style={{ zIndex: 10 }}>
-                    <div className="text-xs text-slate-600 font-mono bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
-                      Status: {generationStatus === 'queued'
-                        ? 'Queued'
-                        : (generationStatus === 'processing' || generationStatus === 'started')
-                          ? 'Generating 3D model'
-                          : (generationStatus || 'Starting')}
-                    </div>
-                    {generationStatus === 'queued' && (
-                      <div className="text-xs text-slate-500 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
-                        This will take about 1-2 minutes
-                      </div>
-                    )}
-                    {(generationStatus === 'processing' || generationStatus === 'started') && (
-                      <div className="text-xs text-slate-500 bg-white/80 backdrop-blur-sm px-3 py-1 rounded-full shadow-sm whitespace-nowrap">
-                        This will take about 30-60 seconds
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Rotating beat text — overlayed on bottom center */}
-                  <div className="absolute bottom-3 left-1/2 -translate-x-1/2 max-w-[90%]" style={{ zIndex: 10 }}>
-                    <div
-                      className="text-xs sm:text-sm text-center bg-white/80 backdrop-blur-sm px-3 py-1.5 rounded-full shadow-sm whitespace-nowrap"
-                      style={{ color: `rgba(30, 41, 59, ${beatFade})`, transition: 'color 250ms ease' }}
-                    >
-                      {beatText}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
           </div>
         </main>
 
@@ -1426,7 +1302,6 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
             </button>
           </>
         )}
-        {!showProfileMenu && <NotificationMenu />}
       </nav>
 
     </header>

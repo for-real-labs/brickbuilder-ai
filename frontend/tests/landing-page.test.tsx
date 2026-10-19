@@ -96,7 +96,8 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<MemoryRouter><PetProvider><LandingPage /><PetCompanion /></PetProvider></MemoryRouter>));
-      expect(container.querySelector('.pet-greeting button')).toBeNull();
+      expect(container.querySelector('.pet-greeting [aria-label^="Change Build Buddy"]')).toBeNull();
+      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Build something random');
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!.click());
       expect(panel.hidden).toBe(false);
@@ -108,12 +109,13 @@ describe('LandingPage', () => {
       expect(switchPet.textContent).toBe('Build Buddy');
       expect(switchPet.querySelector('.lucide-paw-print')).not.toBeNull();
       expect(container.querySelector('ul[aria-label="Tools"] [aria-label="Generation settings"]')?.textContent).toBe('Generation settings');
-      expect(switchPet.closest('li')?.previousElementSibling?.textContent).toBe('Generation settings');
+      expect(switchPet.closest('li')?.previousElementSibling?.getAttribute('role')).toBe('separator');
       act(() => { switchPet.focus(); switchPet.click(); });
       expect(tools.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('dialog')?.open).toBe(true);
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Choose Clik"]')!.click());
-      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Hi! I’m Clik.');
+      expect(container.querySelector('.pet-greeting')?.textContent).toContain('What would you like to do?');
+      expect(container.querySelector('.pet-greeting [data-pet="clik"]')).not.toBeNull();
       expect(panel.querySelector('[aria-label^="Change Build Buddy"]')).toBeNull();
       expect(container.querySelector('dialog')).toBeNull();
       act(() => tools.click());
@@ -234,7 +236,7 @@ describe('LandingPage', () => {
       });
       expect(start).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: expect.any(String) }), undefined);
       expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
-      expect(prompt.disabled).toBe(true);
+      expect(container.querySelector('[aria-label="Describe your model"]')).toBeNull();
       await act(async () => {
         prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       });
@@ -246,16 +248,19 @@ describe('LandingPage', () => {
       });
       if (outcome === 'accepted') {
         expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
-        expect(container.querySelector('[aria-label="Your generations"]')!.textContent).toContain('Anime girl');
+        expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeNull();
         expect(container.querySelector('[aria-label="Remove image"]')).toBeNull();
         expect(fileInput.value).toBe('');
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:uploaded-image');
+        act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
+        expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+        const nextPrompt = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
         await act(async () => {
-          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'Anime girl');
-          prompt.dispatchEvent(new Event('input', { bubbles: true }));
+          Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(nextPrompt, 'Anime girl');
+          nextPrompt.dispatchEvent(new Event('input', { bubbles: true }));
         });
-        await act(async () => prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
+        await act(async () => nextPrompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true })));
         expect(start).toHaveBeenLastCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: undefined }), undefined);
       } else {
         expect(document.querySelector('[role="dialog"]')).toBeNull();
@@ -345,23 +350,22 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<LandingPage imageLandingPath={path} />));
       act(() => window.dispatchEvent(new Event('scroll')));
-      expect(container.querySelector('h1')?.textContent).toContain('Imagine. Create. Build.');
-      expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+      expect(Boolean(container.textContent?.includes('Imagine. Create. Build.'))).toBe(path !== 'use-ai-to-edit-ldraw');
+      expect(Boolean(container.querySelector('[aria-label="BrickBuilder generation statistics"]'))).toBe(path !== 'use-ai-to-edit-ldraw');
       if (path !== 'use-ai-to-edit-ldraw') {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
         expect(container.querySelector('button[type="submit"][aria-label="Create"]')).not.toBeNull();
         const help = container.querySelector('.landing-page-help')!;
         expect(help.getAttribute('aria-hidden')).toBe('true');
-        const heading = container.querySelector('h1')!;
-        act(() => heading.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
+        const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
+        act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
         expect(help.getAttribute('aria-hidden')).toBe('false');
         expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
         expect(help.querySelector('a')?.tabIndex).toBe(0);
-        const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new Event('pointerdown', { bubbles: true })));
         expect(help.getAttribute('aria-hidden')).toBe('true');
         expect(help.querySelector('a')?.tabIndex).toBe(-1);
-        expect(container.querySelector('h1')).toBe(heading);
+        expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
       expect(container.querySelector('[aria-label="Community models"]')).toBeNull();
@@ -398,16 +402,20 @@ describe('LandingPage', () => {
       });
       const generate = () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
       await act(async () => generate().click());
-      expect(container.textContent).toContain('1 in progress');
-      expect(input.disabled).toBe(false);
-      expect(input.value).toBe('');
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+      expect(container.querySelector('#landing-build-prompt')).toBeNull();
+      expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
+      act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
+      expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+      const nextInput = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
+      expect(nextInput.value).toBe('');
       act(() => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Blue boat');
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(nextInput, 'Blue boat');
+        nextInput.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await act(async () => generate().click());
-      expect(container.querySelectorAll('[aria-label="Your generations"] article')).toHaveLength(2);
-      expect(container.textContent).toContain('2 in progress');
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+      expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
       expect(start).toHaveBeenCalledTimes(2);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', {
         generation_method: 'llm', model: DEFAULT_LLM_MODEL, has_prompt: true,
@@ -416,12 +424,10 @@ describe('LandingPage', () => {
       expect(stream).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
-      await act(async () => Array.from(container.querySelectorAll('[aria-label="Your generations"] article button')).find(button => button.textContent?.includes('Cancel generation'))!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+      await act(async () => Array.from(container.querySelectorAll('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Cancel')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
       expect(cancel).toHaveBeenCalledWith('two');
-      expect(container.textContent).toContain('Generation cancelled');
-      expect(container.textContent).toContain('1 in progress');
-      expect(input.value).toBe('');
-      expect(container.querySelector('[aria-label="Build buddy conversation"]')?.textContent).toContain('Red castle');
+      expect(container.querySelector('[aria-label="Build progress workspace"]')).toBeNull();
+      expect(container.querySelector('[aria-label="Build buddy conversation"]')?.textContent).not.toContain('Red castle');
     } finally {
       act(() => root.unmount());
       container.remove();
@@ -444,7 +450,7 @@ describe('LandingPage', () => {
       const upload = container.querySelector('[aria-label="Image upload"]')!;
       const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       expect(upload.compareDocumentPosition(prompt) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(prompt.placeholder).toBe('add optional instructions');
+      expect(prompt.placeholder).toBe('Add optional image instructions');
       expect(container.querySelector('#how-it-works')).toBeNull();
       const picker = container.querySelector('input[type=file]') as HTMLInputElement;
       expect(picker.accept).toContain('.heic');
@@ -506,20 +512,22 @@ describe('LandingPage', () => {
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
-      expect(container.textContent).toContain('1 in progress');
-      expect(input.disabled).toBe(false);
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+      expect(container.querySelector('#landing-build-prompt')).toBeNull();
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
-      act(() => {
-        mode.querySelector<HTMLButtonElement>('button[value="llm"]')!.click();
-      });
+      act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
+      expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+      const nextMode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
+      act(() => nextMode.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
-      expect(mode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+      expect(nextMode.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generation_method_selected', { generation_method: 'llm' });
       expect(container.querySelector('#all-parts-warning')).toBeNull();
       act(() => {
-        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Red rover');
-        input.dispatchEvent(new Event('input', { bubbles: true }));
+        const nextInput = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(nextInput, 'Red rover');
+        nextInput.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await act(async () => findButton('Create').click());
       expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Red rover', model: DEFAULT_LLM_MODEL }), undefined);
@@ -574,7 +582,7 @@ describe('LandingPage', () => {
       if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
       expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
-      expect(container.querySelector('[aria-label="Your generations"]')!.textContent).toContain('up to 30 minutes');
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
     } finally { act(() => root.unmount()); container.remove(); }
   });
 
@@ -604,18 +612,19 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
-  it('uses the updated hero headline', () => {
+  it('shows landing actions with the restored headline and statistics', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 
     expect(markup).toContain('Imagine. Create. Build.');
-    expect(markup).not.toContain('Create and Build');
-    expect(markup).not.toContain('Turn images or text into buildable 3D brick models in seconds');
+    expect(markup).toContain('Build something random');
+    expect(markup).toContain('Show builds');
+    expect(markup).toContain('Show me community models');
     const container = document.createElement('div');
     container.innerHTML = markup;
+    expect(container.querySelector('.pet-greeting')?.textContent).toContain('What would you like to do?');
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
-    const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
-    expect(stats.compareDocumentPosition(form) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(stats.previousElementSibling).toBe(container.querySelector('h1'));
+    expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+    expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
     expect(form.closest('[aria-label="Build dialogue"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('[aria-label="Build dialogue"]')).toBe(form.closest('[aria-label="Build dialogue"]'));
     expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('form')).toBeNull();
@@ -855,6 +864,7 @@ it('labels the top-right auth action Sign up', async () => {
     const buttons = Array.from(container.querySelectorAll('header button'));
     expect(buttons.some(button => button.textContent?.trim() === 'Sign up')).toBe(true);
     expect(buttons.some(button => button.textContent?.trim() === 'Login')).toBe(false);
+    expect(container.querySelector('header [aria-label^="Notifications"]')).toBeNull();
   } finally { act(() => root.unmount()); authSettings.isSupabaseConfigured = false; vi.unstubAllGlobals(); }
 });
 

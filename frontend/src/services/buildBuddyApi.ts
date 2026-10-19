@@ -39,6 +39,33 @@ async function sendReply(request: BuddyReplyRequest, authToken: string | undefin
 }
 
 export const BuildBuddyApi = {
+  async welcomeGreeting(pet: string, authToken: string | undefined, signal: AbortSignal, previousGreetings: string[] = []): Promise<string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await apiFetch(`${base}/build-buddy/welcome-greeting`, {
+      method: 'POST', headers, signal, body: JSON.stringify({ pet, previous_greetings: previousGreetings.slice(-8) }),
+    });
+    if (!response.ok) throw new Error('Welcome greeting unavailable.');
+    const data = await response.json();
+    if (typeof data.greeting !== 'string' || !data.greeting.trim() || data.greeting.length > 120) {
+      throw new Error('Invalid welcome greeting response.');
+    }
+    return data.greeting.trim();
+  },
+  async randomIdea(previousIdeas: string[], authToken: string | undefined, signal: AbortSignal): Promise<string> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await apiFetch(`${base}/build-buddy/random-idea`, {
+      method: 'POST', headers, signal,
+      body: JSON.stringify({ previous_ideas: previousIdeas.slice(-8) }),
+    });
+    if (!response.ok) throw new Error('Build ideas are unavailable right now.');
+    const data = await response.json();
+    if (typeof data.idea !== 'string' || !data.idea.trim() || data.idea.length > 120) {
+      throw new Error('Invalid build idea response.');
+    }
+    return data.idea.trim();
+  },
   async modelGreeting(request: { generationId: string; pet: string }, authToken: string | undefined, signal: AbortSignal): Promise<string> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = `Bearer ${authToken}`;
