@@ -27,11 +27,14 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
     <section className="model-order-card" aria-label="Your brick kit">
       <div className="model-order-heading">
         <span className="model-order-icon"><Package size={20} aria-hidden="true" /></span>
-        <div><h2>Bring it to life</h2><p>Your model, delivered as a brick kit.</p></div>
+        <div><h2>Bring it to life</h2><p>Your model, delivered to your door.</p></div>
       </div>
       <div className="model-order-price">
-        <div><span className="model-order-total">{price}</span>{pricing && <span className="model-order-original">{formatOrderPrice(pricing.fullTotalCents)}</span>}</div>
-        <span>USD · shipping included</span>
+        <span className="model-order-total">{price}</span>
+        <div className="model-order-price-details">
+          {pricing && <span className="model-order-original">{formatOrderPrice(pricing.fullTotalCents)}</span>}
+          <span>USD · shipping included</span>
+        </div>
       </div>
       {pricing && <p className="model-launch-discount">50% off · BrickBuilder Launch Discount</p>}
       {status && <p role="status" className="model-order-status">{status}</p>}

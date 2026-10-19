@@ -1,5 +1,7 @@
 .landing-page {
   --landing-conversation-bottom: calc(max(8px, env(safe-area-inset-bottom)) + var(--landing-order-banner-height, 0px));
+  --landing-sidebar-card-background: #fffaf9;
+  --landing-sidebar-card-border: #f6dfda;
   position: fixed;
   inset: 0;
   height: var(--landing-viewport-height, 100dvh);
@@ -89,7 +91,7 @@
   .landing-page .landing-model-host:has(.landing-model-layout) {
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(280px, 320px);
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: auto minmax(0, 1fr);
     column-gap: 20px;
     row-gap: 16px;
     height: min(620px, calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - 100px));
@@ -115,19 +117,20 @@
     align-self: start;
     display: flex;
     width: 100%;
-    max-height: calc(100% - 24px);
+    max-height: 100%;
     min-height: 0;
     margin-top: 24px;
-    padding: 18px;
+    padding: 12px 18px 18px;
     overflow-y: auto;
     transform: none;
     translate: 0;
     transition: none;
-    border: 1px solid #f6dfda;
+    border: 1px solid var(--landing-sidebar-card-border);
     border-radius: 22px;
-    background: #fffaf9;
+    background: var(--landing-sidebar-card-background);
     box-shadow: 0 12px 24px #0f172a1a;
   }
+  .landing-page .landing-model-conversation--model-card .pet-conversation-input { height: 50px; }
   .landing-page:has(.landing-model-layout) .landing-page-content { padding-bottom: 24px; }
   .landing-page:has(.landing-model-layout) .landing-model-workspace { height: 100%; }
 }

@@ -1,9 +1,10 @@
 import React, { lazy, Suspense, useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Box, Maximize2 } from 'lucide-react';
+import { ArrowLeft, BookOpen, Box, Maximize2, Sparkles } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
 import { ModelShareMenu } from './ModelShareMenu';
+import { GenerationTitle } from './GenerationTitle';
 import { LdrawGenerationAnimation } from './LdrawGenerationAnimation';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import './LandingModelWorkspace.css';
@@ -17,14 +18,20 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onCreateNew, createNewDisabled = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
   building?: boolean;
   composerFocused?: boolean;
   requestedInstructionsId?: string | null;
+  onCreateNew?: () => void;
+  createNewDisabled?: boolean;
   onOrderBarHeightChange?: (height: number) => void;
+  canRename?: boolean;
+  accessToken?: string;
+  onRenameRequest?: () => void;
+  onNameSaved?: (id: string, name: string) => void;
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
@@ -126,6 +133,10 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       role={expanded ? 'dialog' : 'region'}
       aria-label={expanded ? (showingInstructions ? 'Expanded instructions' : 'Expanded 3D viewer') : 'Model preview'}
       onCancel={event => { event.preventDefault(); collapse('escape'); }}>
+      {!pendingEdit && !showingInstructions && <GenerationTitle key={generation.generation_id} variant="viewer"
+        name={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
+        canEdit={canRename && !busy} accessToken={accessToken} onEditRequest={onRenameRequest}
+        onSaved={name => onNameSaved?.(generation.generation_id, name)} />}
       <section className="landing-model-workspace" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label={pendingEdit ? 'Building your edited model' : showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
           {pendingEdit ? <LdrawGenerationAnimation /> :
@@ -139,36 +150,39 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             </div>}
           </Suspense>}
         </div>
-      </section>
-      {!pendingEdit && <div className="landing-model-toolbar">
-        <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
-          aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
-            posthog.capture(showingInstructions ? 'landing_model_3d_view_clicked' : 'landing_model_instructions_clicked', {
-              generation_id: generation.generation_id, source: 'viewer_footer',
-            });
-            setInstructionsId(generation.generation_id);
-            setView(showingInstructions ? 'model' : 'instructions');
-          }}>
-          {showingInstructions ? <Box size={16} aria-hidden="true" /> : <BookOpen size={16} aria-hidden="true" />}
-          <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
-        </button>
-        <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded}
-          aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'}
-          title={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'} aria-haspopup="dialog"
-          onClick={() => {
-            posthog.capture('landing_model_view_expanded', {
-              generation_id: generation.generation_id, view: showingInstructions ? 'instructions' : 'model', source: 'viewer_footer',
-            });
-            setExpanded(true);
-          }}>
-          <Maximize2 size={18} aria-hidden="true" />
-        </button>
-      </div>}
-      {!pendingEdit && <div className="landing-model-bottom-toolbar">
-        {!busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share">
-          <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
+        {!pendingEdit && <div className="landing-model-toolbar">
+          {onCreateNew && <button type="button" className="landing-create-new landing-action-button" disabled={createNewDisabled} onClick={onCreateNew}>
+            <Sparkles size={16} aria-hidden="true" /><span>Create new</span>
+          </button>}
+          <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded}
+            aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'}
+            title={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'} aria-haspopup="dialog"
+            onClick={() => {
+              posthog.capture('landing_model_view_expanded', {
+                generation_id: generation.generation_id, view: showingInstructions ? 'instructions' : 'model', source: 'viewer_footer',
+              });
+              setExpanded(true);
+            }}>
+            <Maximize2 size={18} aria-hidden="true" />
+          </button>
         </div>}
-      </div>}
+        {!pendingEdit && <div className="landing-model-bottom-toolbar">
+          <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
+            aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
+              posthog.capture(showingInstructions ? 'landing_model_3d_view_clicked' : 'landing_model_instructions_clicked', {
+                generation_id: generation.generation_id, source: 'viewer_footer',
+              });
+              setInstructionsId(generation.generation_id);
+              setView(showingInstructions ? 'model' : 'instructions');
+            }}>
+            {showingInstructions ? <Box size={16} aria-hidden="true" /> : <BookOpen size={16} aria-hidden="true" />}
+            <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
+          </button>
+          {!busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share">
+            <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
+          </div>}
+        </div>}
+      </section>
       <div className="landing-expanded-footer" hidden={!expanded}>
         <button ref={backButton} type="button" className="landing-action-button landing-view-back" onClick={() => collapse('back_button')}>
           <ArrowLeft size={20} aria-hidden="true" /><span>Go Back</span>

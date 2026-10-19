@@ -18,6 +18,7 @@ vi.mock('../src/services/ldrToMpdApi', () => ({ LdrToMpdApiService: { convertLdr
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('../src/components/SiteFooter', () => ({ SiteFooter: () => null }));
 vi.mock('../src/services/getGenerationApi', () => ({ GetGenerationApiService: { getGeneration: async () => ({ name: 'Frog', status: 'completed', ldr_content: '0 Frog' }) } }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, session: null }) }));
 vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { getSession: async () => ({ data: { session: { access_token: 'auth-token' } } }) } } }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 const quote = { total_price: 50, total_weight: 0.1, total_parts: 240 };

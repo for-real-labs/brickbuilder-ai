@@ -11,7 +11,8 @@ import { isAgentGeneration } from '../utils/agentGeneration';
 import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
-import { pickModelGreeting, rememberModelGreeting } from '../utils/buddyModelGreetings';
+import { MODEL_EDIT_INVITATION } from '../utils/buddyModelGreetings';
+import { recentModelFacts, rememberModelFact } from '../utils/buddyModelFacts';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
 export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
@@ -34,24 +35,24 @@ function emphasizeModelActions(text: string) {
 function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel }) {
   const { pet } = usePet();
   const { session } = useAuth();
-  const [invitation] = useState(pickModelGreeting);
-  const [compliment, setCompliment] = useState<string | null>(null);
+  const [fact, setFact] = useState<string | null>(null);
   const name = model.name?.trim().slice(0, 200) || 'your model';
-  useEffect(() => { rememberModelGreeting(invitation); }, [invitation]);
   useEffect(() => {
     const controller = new AbortController();
     const fallback = `Here’s ${name}!`;
-    const timeout = setTimeout(() => { controller.abort(); setCompliment(fallback); }, 22000);
-    void BuildBuddyApi.modelGreeting({ generationId: model.id, pet: pet.id }, session?.access_token, controller.signal)
-      .then(reply => { if (!controller.signal.aborted) setCompliment(reply); })
-      .catch(() => { if (!controller.signal.aborted) setCompliment(fallback); })
+    const timeout = setTimeout(() => { controller.abort(); setFact(fallback); }, 22000);
+    void BuildBuddyApi.modelGreeting({ generationId: model.id, pet: pet.id, previousFacts: recentModelFacts(model.id) },
+      session?.access_token, controller.signal)
+      .then(reply => { if (!controller.signal.aborted) { rememberModelFact(model.id, reply); setFact(reply); } })
+      .catch(() => { if (!controller.signal.aborted) setFact(fallback); })
       .finally(() => clearTimeout(timeout));
     return () => { controller.abort(); clearTimeout(timeout); };
   }, [model.id, name, pet.id, session?.access_token]);
-  const action = model.orderable ? invitation : 'Tell me if you want to edit this model!';
-  return <PetPromptGreeting state={state} showPetSwitch={false}>
-    {compliment ? emphasizeModelActions(`${compliment} ${action}`) : <PetTypingIndicator />}
-  </PetPromptGreeting>;
+  const action = model.orderable ? MODEL_EDIT_INVITATION : 'Tell me if you want to edit this model!';
+  return <div className="pet-dialogue-turn pet-model-greeting">
+    <PetChatMessage state={fact ? state : 'listening'}><p>{fact || <PetTypingIndicator />}</p></PetChatMessage>
+    {fact && <PetPromptGreeting state={state} showPetSwitch={false}>{emphasizeModelActions(action)}</PetPromptGreeting>}
+  </div>;
 }
 
 export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, children }: {
@@ -87,6 +88,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   }, [returning, welcome]);
   const log = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
+  const pinModelGreeting = Boolean(model && visibleTurns.length === 0 && !reasoningOnly && !currentMessage);
   useEffect(() => {
     const element = log.current;
     if (!element) return;
@@ -104,12 +106,16 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   useEffect(() => {
     const element = log.current;
     if (!element) return;
-    const scroll = () => { if (follow.current) element.scrollTop = element.scrollHeight; };
+    if (model && visibleTurns.length === 1) follow.current = true;
+    const scroll = () => {
+      if (pinModelGreeting) { element.scrollTop = 0; return; }
+      if (follow.current) element.scrollTop = element.scrollHeight;
+    };
     scroll();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scroll);
     if (element.firstElementChild) observer?.observe(element.firstElementChild);
     return () => observer?.disconnect();
-  }, [turns.length, generations.length]);
+  }, [turns.length, generations.length, model?.id, pinModelGreeting, visibleTurns.length]);
   const restored = model ? [] : generations.filter(row => row.id === selectedGenerationId && isAgentGeneration(row.endpoint)
     && !turns.some(turn => turn.generationId === row.id));
   const latestTurn = visibleTurns.at(-1);
@@ -127,7 +133,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></div>
     : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p>
       <GenerationElapsedTime startedAt={activeGeneration.createdAt} /></PetChatMessage>
-    : latestTurn ? <PetChatMessage state={latestTurn.reply ? 'idle' : 'listening'}>
+    : latestTurn ? <PetChatMessage state={state === 'building' ? 'building' : state === 'listening' || !latestTurn.reply ? 'listening' : 'idle'}>
       {latestTurn.error ? <p role="status">{BUILD_FAILURE_MESSAGE}</p>
         : latestTurn.reply ? <p>{latestTurn.reply}</p> : <PetTypingIndicator />}
       {onBackToWelcome && <div className="pet-chat-actions">
@@ -135,7 +141,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       </div>}
     </PetChatMessage>
     : model && !reasoningOnly ? <ModelGreeting key={model.id} state={state} model={model} />
-    : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
+    : showOpeningMessage && selectedGenerationId ? <PetPromptGreeting state="listening" showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
     : <PetPromptGreeting state={state} showPetSwitch={false} actions={welcomeActions}>
       {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
     </PetPromptGreeting>);
@@ -145,7 +151,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       {currentOnly ? currentDialogue : <>
       {children}
       {reasoningOnly ? null : model ? <ModelGreeting key={model.id} state={state} model={model} />
-        : selectedGenerationId ? <PetPromptGreeting state={state} showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
+        : selectedGenerationId ? <PetPromptGreeting state="listening" showPetSwitch={false}><PetTypingIndicator /></PetPromptGreeting>
         : <PetPromptGreeting state={state} showPetSwitch={false}>
         {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
       </PetPromptGreeting>}

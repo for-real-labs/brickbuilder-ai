@@ -37,11 +37,13 @@ it('shows only the current pet message and reserves opening copy for an explicit
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
     turns={[]} generations={[]} selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
   expect(container.querySelector('[role="status"][aria-label="Build buddy is typing"]')).not.toBeNull();
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
   expect(container.textContent).not.toContain('I’m opening your build');
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
     turns={[]} generations={[{ id: 'linked', prompt: 'A car', status: 'processing', endpoint: 'textTo3d' }]}
     selectedGenerationId="linked" showOpeningMessage /></PetProvider>));
   expect(container.textContent).toContain('I’m getting your build ready.');
+  expect(container.querySelector('.pet-avatar--building')).not.toBeNull();
   expect(container.textContent).not.toContain('opening your build');
 });
 
@@ -50,11 +52,22 @@ it.each([true, false])('shows a typing bubble instead of waiting copy when curre
     turns={[{ id: 1, text: 'A castle' }]} generations={[]} /></PetProvider>));
   const typing = container.querySelector('[role="status"][aria-label="Build buddy is typing"]');
   expect(typing?.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(3);
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
   expect(container.textContent).not.toContain('Let me take a look');
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'A castle', reply: 'Let’s make a castle.' }]} generations={[]} /></PetProvider>));
   expect(container.querySelector('[aria-label="Build buddy is typing"]')).toBeNull();
   expect(container.textContent).toContain('Let’s make a castle.');
+});
+
+it('uses listening motion while typing after a reply and building motion once generation starts', async () => {
+  const turn = { id: 1, text: 'A castle', reply: 'A castle sounds fun.' };
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="listening"
+    turns={[turn]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
+    turns={[turn]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('.pet-avatar--building')).not.toBeNull();
 });
 
 it('introduces Pip in a message, remembers the visit, and removes the two old captions', async () => {
@@ -495,7 +508,7 @@ it('aborts pending gift replies on an account change and keeps the previous owne
   expect(plan.mock.calls[1][0].history).toEqual([]);
 });
 
-it('uses one animated model message, keeps it stable, and varies it on the next visit', async () => {
+it('uses one animated model message and keeps the invitation stable across visits', async () => {
   localStorage.setItem(BUDDY_SEEN_KEY, 'true');
   vi.spyOn(Math, 'random').mockReturnValue(0);
   const renderModel = () => act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]}
@@ -513,7 +526,7 @@ it('uses one animated model message, keeps it stable, and varies it on the next 
   expect(container.textContent).toBe(first);
   act(() => root.unmount()); root = createRoot(container);
   await renderModel();
-  expect(container.textContent).not.toBe(first);
+  expect(container.textContent).toBe(first);
 });
 
 it('keeps image and gift replies free of suggestion buttons', async () => {
@@ -540,31 +553,66 @@ it('clears earlier chat when a model opens, keeps new edits visible, and clears 
   expect(container.querySelectorAll('.pet-greeting')).toHaveLength(1);
 });
 
-it('animates a preview-specific compliment and keeps every edit and order word bold', async () => {
-  const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('City of Troy’s tall towers and red flags look grand!');
+it('shows a subject fact above the edit invitation in a separate bubble', async () => {
+  const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Fun fact: Troy stood in modern Turkey!');
   await act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]} state="idle"
     model={{ id: 'castle', name: 'City of Troy', orderable: true }} />));
-  expect(greet).toHaveBeenCalledWith({ generationId: 'castle', pet: 'pip' }, undefined, expect.any(AbortSignal));
-  expect(container.textContent).toContain('City of Troy’s tall towers and red flags look grand!');
+  expect(greet).toHaveBeenCalledWith({ generationId: 'castle', pet: 'pip', previousFacts: [] }, undefined, expect.any(AbortSignal));
+  expect(container.textContent).toContain('Fun fact: Troy stood in modern Turkey!');
   expect(container.querySelectorAll('.pet-greeting')).toHaveLength(1);
+  const bubbles = container.querySelectorAll('.pet-model-greeting .pet-chat-bubble, .pet-model-greeting .pet-speech');
+  expect(bubbles).toHaveLength(2);
+  expect(bubbles[0].textContent).toContain('Fun fact: Troy stood in modern Turkey!');
+  expect(bubbles[0].textContent).not.toContain('order button');
+  expect(bubbles[1].textContent).toContain('order button');
+  expect(bubbles[1].textContent).toBe('Tell me how you’d like to edit it, or click the order button to have it delivered!');
   const strong = Array.from(container.querySelectorAll('strong'));
   expect(strong.map(el => el.textContent)).toEqual(['edit', 'order']);
   expect(strong.every(el => el.querySelector('.pet-response-word'))).toBe(true);
-  expect(container.querySelector('.pet-response-word')?.textContent).toBe('City');
+  expect(container.querySelector('.pet-response-word')?.textContent).toBe('Fun');
 });
 
-it('ignores late compliments after switching models and cancels the old request', async () => {
+it('keeps the model fact visible when the greeting grows, then follows a new edit', async () => {
+  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Did you know dogs have a third eyelid that protects their eyes?');
+  const render = (turns: Array<{ id: number; text: string }>, generations: Array<{ id: string; prompt: string; status: string }>) =>
+    act(async () => root.render(<BuildBuddyDialogue turns={turns} generations={generations} state="idle"
+      model={{ id: 'dog', name: 'Dog', orderable: true }} />));
+  await render([], []);
+  const log = container.querySelector<HTMLElement>('.pet-dialogue')!;
+  Object.defineProperty(log, 'scrollHeight', { configurable: true, value: 300 });
+  Object.defineProperty(log, 'clientHeight', { configurable: true, value: 180 });
+  log.scrollTop = 26;
+  await render([], [{ id: 'other', prompt: 'Other', status: 'completed' }]);
+  expect(log.scrollTop).toBe(0);
+  await render([{ id: 1, text: 'Make the dog blue' }], []);
+  expect(log.scrollTop).toBe(300);
+});
+
+it('ignores late facts after switching models and cancels the old request', async () => {
   let finish!: (text: string) => void;
   const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
-    .mockResolvedValueOnce('Moon Rover’s big wheels look ready for a trip!');
+    .mockResolvedValueOnce('Fun fact: rovers can explore the Moon without astronauts aboard!');
   const render = (id: string, name: string) => act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]}
     state="idle" model={{ id, name, orderable: true }} />));
   await render('castle', 'City of Troy');
   await render('rover', 'Moon Rover');
   expect(greet.mock.calls[0][2].aborted).toBe(true);
-  await act(async () => finish('Old castle compliment'));
-  expect(container.textContent).toContain('Moon Rover’s big wheels');
+  await act(async () => finish('Fun fact: old castle fact'));
+  expect(container.textContent).toContain('Fun fact: rovers can explore');
   expect(container.textContent).not.toContain('Old castle');
+});
+
+it('sends previously shown facts when reopening the same model', async () => {
+  const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValueOnce('Did you know Troy stood in modern Turkey?')
+    .mockResolvedValueOnce('Fun fact: other models are different!')
+    .mockResolvedValueOnce('Fun fact: Troy had strong city walls!');
+  const render = (id: string) => act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]}
+    state="idle" model={{ id, name: 'City of Troy', orderable: true }} />));
+  await render('castle');
+  await render('other');
+  await render('castle');
+  expect(greet).toHaveBeenLastCalledWith({ generationId: 'castle', pet: 'pip',
+    previousFacts: ['Did you know Troy stood in modern Turkey?'] }, undefined, expect.any(AbortSignal));
 });
 
 it('falls back to the actual name without inventing image details if a greeting fails', async () => {
@@ -583,6 +631,7 @@ it('ends a stalled model greeting with a name-based fallback', async () => {
     await act(async () => root.render(<BuildBuddyDialogue turns={[]} generations={[]} state="idle"
       model={{ id: 'castle', name: 'City of Troy', orderable: true }} />));
     expect(container.querySelector('[role="status"][aria-label="Build buddy is typing"]')).not.toBeNull();
+    expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
     expect(container.textContent).not.toContain('I’m looking at City of Troy');
     await act(async () => vi.advanceTimersByTimeAsync(22000));
     expect(greet.mock.calls[0][2].aborted).toBe(true);
@@ -593,12 +642,12 @@ it('ends a stalled model greeting with a name-based fallback', async () => {
 
 it('requests model greetings by id without accepting client-supplied image URLs or names', async () => {
   const signal = new AbortController().signal;
-  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ reply: 'City of Troy’s tall towers look grand!' }) } as Response);
+  vi.mocked(apiFetch).mockResolvedValue({ ok: true, json: async () => ({ reply: 'Fun fact: Troy stood in modern Turkey!' }) } as Response);
   await expect(BuildBuddyApi.modelGreeting({ generationId: 'castle', pet: 'pip' }, 'token', signal))
-    .resolves.toBe('City of Troy’s tall towers look grand!');
+    .resolves.toBe('Fun fact: Troy stood in modern Turkey!');
   expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining('/build-buddy/model-greeting'), expect.objectContaining({
     method: 'POST', headers: expect.objectContaining({ Authorization: 'Bearer token' }), signal,
-    body: JSON.stringify({ generation_id: 'castle', pet: 'pip' }),
+    body: JSON.stringify({ generation_id: 'castle', pet: 'pip', previous_facts: [] }),
   }));
 });
 

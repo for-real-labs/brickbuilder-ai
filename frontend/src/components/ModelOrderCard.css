@@ -1,15 +1,15 @@
-.model-order-card { border: 1px solid #f6dfda; background: #fffaf9; border-radius: 22px; padding: 22px; }
+.model-order-card { border: 1px solid var(--landing-sidebar-card-border, #f6dfda); background: var(--landing-sidebar-card-background, #fffaf9); border-radius: 22px; padding: 22px; }
 .model-order-card button { font-family: inherit; }
 .model-order-card button:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; }
 .model-order-heading { display: flex; gap: 12px; align-items: center; }
 .model-order-heading h2 { font-size: 18px; font-weight: 500; letter-spacing: normal; }
 .model-order-heading p { margin-top: 3px; color: #6b7280; font-size: 12px; }
 .model-order-icon { display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; color: #f44336; background: #ffebe7; flex-shrink: 0; }
-.model-order-price { margin-top: 14px; }
-.model-order-price > div { display: flex; align-items: baseline; gap: 10px; }
-.model-order-total { font-size: 32px; font-weight: 600; letter-spacing: normal; line-height: 1.2; color: #20232a; }
-.model-order-original { color: #8c939f; text-decoration: line-through; font-size: 15px; }
-.model-order-price > span { display: block; margin-top: 2px; font-size: 12px; line-height: 18px; color: #737b88; }
+.model-order-price { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+.model-order-total { flex-shrink: 0; font-size: 32px; font-weight: 600; letter-spacing: normal; line-height: 1.2; color: #20232a; }
+.model-order-price-details { display: flex; min-width: 0; flex-direction: column; align-items: flex-start; justify-content: center; }
+.model-order-original { color: #8c939f; text-decoration: line-through; font-size: 15px; line-height: 18px; }
+.model-order-price-details > span:last-child { color: #737b88; font-size: 12px; line-height: 18px; white-space: nowrap; }
 .model-launch-discount { color: #c63b30; font-size: 11px; font-weight: 500; margin-top: 10px; }
 .model-order-status { margin-top: 10px; color: #6b7280; font-size: 12px; }
 .model-kit-details { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 14px; margin-top: 12px; font-size: 11px; color: #737b88; }

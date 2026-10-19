@@ -19,7 +19,7 @@ import posthog from 'posthog-js';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 
 const mocks = vi.hoisted(() => ({ owner: 'owner', user: {id: 'owner'} as {id: string} | null,
-  session: null as null | {user: {id: string}}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
+  session: null as null | {user: {id: string}; access_token: string}, refresh: vi.fn(), markViewed: vi.fn(), query: vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({useAuth: () => ({user: mocks.user, session: mocks.session, userProfile: null, isSupabaseConfigured: true})}));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({useGenerationNotifications: () => ({refresh: mocks.refresh, markViewed: mocks.markViewed})}));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ThreeLDRViewer: ({modelName, onModelLoaded, topLeftOverlay, showModelControls = true}: {modelName: string; onModelLoaded?: () => void; topLeftOverlay?: React.ReactNode; showModelControls?: boolean}) => {
@@ -122,6 +122,46 @@ it('shows the saved server title on /order even when navigation contains an old 
   await act(async () => root.render(<MemoryRouter initialEntries={[{pathname:'/order', state: {generation_id:'g', name:'Old Title'}}]}><OrderKit /></MemoryRouter>));
   expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('Sunny Dachshund');
   expect(LdrToMpdApiService.convertLdrToMpd).toHaveBeenCalledWith('ldr', 'Sunny Dachshund', 'token');
+});
+
+it('lets the owner rename the model from the order summary and uses the new name throughout checkout', async () => {
+  mocks.session = { user: { id: 'owner' }, access_token: 'token' };
+  const save = vi.spyOn(UpdateGenerationNameApiService, 'updateGenerationName').mockResolvedValue({ generation_id: 'g', name: 'My New Model' });
+  await act(async () => root.render(<MemoryRouter initialEntries={[{ pathname: '/order', state: { generation_id: 'g' } }]}><OrderKit /></MemoryRouter>));
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Rename model"]')!.click());
+  act(() => {
+    const input = container.querySelector<HTMLInputElement>('#model-name')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'My New Model');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => container.querySelector<HTMLFormElement>('[aria-label="Rename model"]')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(save).toHaveBeenCalledWith('g', 'My New Model', 'token');
+  expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('My New Model');
+  expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('My New Model');
+  expect(JSON.parse(localStorage.getItem('orderState') || '{}').name).toBe('My New Model');
+  expect(posthog.capture).toHaveBeenCalledWith('generation_name_saved', { generation_id: 'g', name_length: 12 });
+});
+
+it.each(['other', 'guest'])('lets %s customize the kit title without changing the saved model', async viewer => {
+  mocks.user = viewer === 'guest' ? null : { id: viewer };
+  mocks.session = viewer === 'guest' ? null : { user: { id: viewer }, access_token: 'token' };
+  const save = vi.spyOn(UpdateGenerationNameApiService, 'updateGenerationName');
+  await act(async () => root.render(<MemoryRouter initialEntries={[{ pathname: '/order', state: { generation_id: 'g' } }]}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('Sunny Dachshund');
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Rename model"]')!.click());
+  expect(container.textContent).toContain('This name will be used for your kit.');
+  act(() => {
+    const input = container.querySelector<HTMLInputElement>('#model-name')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'My Kit Name');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => container.querySelector<HTMLFormElement>('[aria-label="Rename model"]')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(save).not.toHaveBeenCalled();
+  expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('My Kit Name');
+  expect(JSON.parse(localStorage.getItem('orderState') || '{}').orderNameOverride).toBe('My Kit Name');
+  expect(posthog.capture).toHaveBeenCalledWith('order_model_name_saved', { generation_id: 'g', name_length: 11, persisted: false });
+  await act(async () => root.render(<MemoryRouter key="restored-order" initialEntries={['/order']}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector('.checkout-summary-heading')?.textContent).toBe('My Kit Name');
 });
 
 it.each(['basic_bricks', 'all_parts'])('shows the checkout summary without all-parts warnings for %s', async mode => {

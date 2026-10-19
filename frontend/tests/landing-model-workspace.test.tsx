@@ -1,4 +1,5 @@
 import React, { act } from 'react';
+import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
@@ -12,6 +13,7 @@ import { useLandingModel, type LandingModel } from '../src/hooks/useLandingModel
 import type { GenerationActivity } from '../src/hooks/useGenerationActivity';
 import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 import { GetPriceApiService } from '../src/services/getPriceApi';
+import { UpdateGenerationNameApiService } from '../src/services/updateGenerationNameApi';
 import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { GetUserGenerationsApiService, type GenerationWithOrder } from '../src/services/getUserGenerationsApi';
 import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/LandingModelWorkspace';
@@ -109,6 +111,7 @@ it('keeps the landing dialogue in the centered layout while typing and after cle
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
   act(() => input().focus());
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
+  expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
   type('A little castle');
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
   expect(shell.querySelector('.landing-model-workspace, .landing-generation-workspace')).toBeNull();
@@ -213,12 +216,50 @@ it('shows the headline and stats on plain landing visits and hides them on model
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
 });
 
-it('keeps the model name out of the viewer while retaining it for model actions', async () => {
+it('shows the model name at the top of the viewer while retaining it for model actions', async () => {
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}><div>Conversation</div></LandingModelWorkspace>));
   const stage = container.querySelector('[aria-label="3D model viewer"]')!;
   expect(stage.textContent).not.toContain('Castle');
   expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle');
-  expect(container.querySelector('.landing-model-heading')).toBeNull();
+  const heading = container.querySelector('.landing-model-heading')!;
+  const workspace = container.querySelector('.landing-model-workspace')!;
+  expect(heading.querySelector('h2')?.textContent).toBe('Castle');
+  expect(workspace.contains(heading)).toBe(false);
+  expect(heading.compareDocumentPosition(workspace) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(workspace.querySelector('.landing-model-toolbar')).not.toBeNull();
+});
+
+it('renames the viewer model and keeps the new name in model actions', async () => {
+  const save = vi.spyOn(UpdateGenerationNameApiService, 'updateGenerationName')
+    .mockResolvedValue({ generation_id: 'castle', name: 'Moon Castle' });
+  const onNameSaved = vi.fn();
+  const model = { generation: generation('castle'), content: 'model' };
+  const render = () => root.render(<LandingModelWorkspace model={model} busy={false} canRename accessToken="token" onNameSaved={onNameSaved}>{null}</LandingModelWorkspace>);
+  await act(async () => render());
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Castle');
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-heading-edit')!.click());
+  const input = container.querySelector<HTMLInputElement>('.landing-model-rename-input')!;
+  act(() => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, ' Moon Castle ');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => container.querySelector('form[aria-label="Rename model"]')!
+    .dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(save).toHaveBeenCalledWith('castle', 'Moon Castle', 'token');
+  expect(onNameSaved).toHaveBeenCalledWith('castle', 'Moon Castle');
+  model.generation.name = 'Moon Castle';
+  await act(async () => render());
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Moon Castle');
+  expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Moon Castle');
+});
+
+it('offers sign in to rename when the viewer has no session', async () => {
+  const onRenameRequest = vi.fn();
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }}
+    busy={false} onRenameRequest={onRenameRequest}>{null}</LandingModelWorkspace>));
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-heading-edit')!.click());
+  expect(onRenameRequest).toHaveBeenCalledOnce();
+  expect(posthog.capture).toHaveBeenCalledWith('generation_name_edit_login_requested', { generation_id: 'castle' });
 });
 
 it('loads the linked model instead of the saved workspace or newest dashboard generation', async () => {
@@ -228,7 +269,7 @@ it('loads the linked model instead of the saved workspace or newest dashboard ge
   const get = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({ ...generation(id), name: id }));
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('linked & model');
-  expect(container.querySelector('.landing-model-heading')).toBeNull();
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('linked & model');
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('castle mpd');
   expect(get.mock.calls.every(([id]) => id === 'linked & model')).toBe(true);
   expect(sessionStorage.getItem('brickbuilder.landing-model:guest')).toBe('linked & model');
@@ -262,7 +303,7 @@ it('keeps a linked pending model selected until its geometry is ready', async ()
   expect(container.querySelector('[aria-label="Loading your model"]')).toBeNull();
 });
 
-it('shows a completed build without suggestions and resets from the centered header button', async () => {
+it('shows a completed build without suggestions and resets from the viewer top left button', async () => {
   vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'castle', message: 'Started' });
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -272,7 +313,7 @@ it('shows a completed build without suggestions and resets from the centered hea
   expect(container.querySelector('[aria-label="Upload image"]')).toBeNull();
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
   expect(container.querySelector('.landing-model-order-trigger')).toBeNull();
-  const createNew = container.querySelector<HTMLButtonElement>('header .landing-create-new')!;
+  const createNew = container.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-create-new')!;
   expect(createNew.textContent).toBe('Create new');
   expect(createNew.querySelector('.lucide-sparkles')).not.toBeNull();
   expect(createNew.querySelector('span')?.className).not.toContain('hidden');
@@ -303,7 +344,7 @@ it('offers recent completed builds after Create new, including viewed ones, with
   });
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
   await act(async () => root.render(<LandingPage />));
-  act(() => container.querySelector<HTMLButtonElement>('header .landing-create-new')!.click());
+  act(() => container.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-create-new')!.click());
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
   expect(input()).not.toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show builds')!.click());
@@ -374,6 +415,7 @@ it('shows loading and retry states without using an old or failed random suggest
   await act(async () => root.render(<LandingPage />));
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Build something random')!.click());
   expect(container.querySelector('.pet-dialogue [role="status"][aria-label="Build buddy is typing"]')?.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(3);
+  expect(container.querySelector('.pet-dialogue .pet-avatar--listening')).not.toBeNull();
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('I’m thinking of something fun to build');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Yes');
   const firstSignal = suggest.mock.calls[0][2];
@@ -441,6 +483,7 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only a 3D assembly i
   await act(async () => root.render(<LandingPage />));
   const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
   const workspace = container.querySelector('[aria-label="Build progress workspace"]')!;
+  expect(conversation.querySelector('.pet-avatar--building')).not.toBeNull();
   expect(workspace.querySelector('[aria-label="3D brick model assembling"]')).not.toBeNull();
   expect(workspace.querySelector('[data-testid="generation-3d-animation"]')?.getAttribute('data-scene')).toMatch(/\.mpd$/);
   expect(workspace.querySelector('article')).toBeNull();
@@ -507,7 +550,7 @@ it('restores the order banner when a returning phone app has closed its keyboard
   expect(document.activeElement).not.toBe(input());
 });
 
-it('replaces loading messages with one animated model greeting when a linked build is ready', async () => {
+it('replaces loading messages with separate fact and edit bubbles when a linked build is ready', async () => {
   query.value = 'id=castle&exact=1';
   localStorage.setItem('brickbuilder.build-buddy-seen', 'true');
   inbox.notifications = [{ id: 'other', prompt: 'Other model', status: 'completed', seen: false, updated_at: '2026-10-17', is_edit: false }];
@@ -524,7 +567,8 @@ it('replaces loading messages with one animated model greeting when a linked bui
   expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBe(dialogue);
   expect(dialogue.querySelectorAll('.pet-greeting')).toHaveLength(1);
   expect(dialogue.querySelector('.pet-response-word')).not.toBeNull();
-  expect(dialogue.querySelector('.pet-chat-message')).toBeNull();
+  expect(dialogue.querySelectorAll('.pet-model-greeting .pet-chat-bubble')).toHaveLength(1);
+  expect(dialogue.querySelectorAll('.pet-model-greeting .pet-speech')).toHaveLength(1);
   expect(dialogue.textContent).toContain('order button');
   expect(dialogue.textContent).toContain('delivered');
   expect(dialogue.textContent).not.toContain('Welcome back');
@@ -556,7 +600,7 @@ it('shows the model beside a desktop order pane and keeps the mobile banner for 
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.landing-model-heading')).toBeNull();
+  expect(container.querySelector('.landing-model-heading h2')?.textContent).toBe('Castle');
   expect(container.querySelector('.model-order-dialog')).toBeNull();
   const layout = container.querySelector('.landing-model-layout--orderable')!;
   expect(layout.querySelector('.landing-model-panel')).not.toBeNull();
@@ -580,6 +624,23 @@ it('keeps the dialogue outside the viewer alongside the order pane', async () =>
   expect(viewer.contains(order)).toBe(false);
   expect(dialogue.textContent).toBe('Model conversation');
   expect(order.querySelector('[aria-label="Your brick kit"]')).not.toBeNull();
+});
+
+it('places the desktop dialogue above the order card with room from the top', () => {
+  const pageCss = readFileSync('src/pages/LandingPage.css', 'utf8');
+  const workspaceCss = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  const layoutRule = pageCss.match(/\.landing-model-host:has\(\.landing-model-layout\)\s*\{([^}]+)\}/)?.[1];
+  const dialogueRule = pageCss.match(/\.landing-model-conversation--model-card\s*\{([^}]+)\}/)?.[1];
+  const orderRule = workspaceCss.match(/\.landing-desktop-order\s*\{([^}]+)\}/g)?.at(-1);
+
+  expect(pageCss).toMatch(/grid-template-rows:\s*auto minmax\(0, 1fr\)/);
+  expect(layoutRule).toMatch(/row-gap:\s*16px\s*;/);
+  expect(dialogueRule).toMatch(/grid-row:\s*1\s*;/);
+  expect(dialogueRule).toMatch(/margin-top:\s*24px\s*;/);
+  expect(dialogueRule).toMatch(/padding:\s*12px 18px 18px\s*;/);
+  expect(orderRule).toMatch(/grid-row:\s*2\s*;/);
+  expect(orderRule).toMatch(/align-self:\s*end\s*;/);
+  expect(pageCss).toMatch(/\.landing-model-conversation--model-card \.pet-conversation-input\s*\{\s*height:\s*50px\s*;\s*\}/);
 });
 
 it('marks only model dialogue for the desktop sidebar card', async () => {
@@ -854,24 +915,24 @@ it.each(['failed', 'cancelled'] as const)('preserves the previous model and allo
 });
 
 
-it('keeps Create new centered in the header for guests alongside sign up, tools and notifications', async () => {
+it('puts Create new in the viewer while keeping guest navigation in the header', async () => {
   auth.isSupabaseConfigured = true;
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('header.landing-header--guest-model')).not.toBeNull();
-  expect(container.querySelector('header .landing-create-new')?.textContent).toBe('Create new');
+  expect(container.querySelector('header .landing-create-new')).toBeNull();
+  expect(container.querySelector('.landing-model-toolbar .landing-create-new')?.textContent).toBe('Create new');
   expect(container.querySelector('header nav')?.textContent).toContain('Sign up');
 });
 
 
-it('passes the displayed model name into the greeting and replaces it with a preview-specific compliment', async () => {
+it('passes the displayed model name into the greeting and shows a subject fact', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
-  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Castle’s red flags look great above those tall walls!');
+  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Fun fact: castles often had thick walls for protection!');
   await act(async () => root.render(<LandingPage />));
   const conversation = container.querySelector('.pet-dialogue')!;
-  expect(conversation.textContent).toContain('Castle’s red flags');
+  expect(conversation.textContent).toContain('Fun fact: castles often had thick walls');
   expect(Array.from(conversation.querySelectorAll('strong')).map(el => el.textContent)).toEqual(['edit', 'order']);
   expect(conversation.querySelectorAll('.pet-greeting')).toHaveLength(1);
 });
@@ -910,7 +971,7 @@ it('opens an emailed instructions link in a dialog after the model loads and let
   expect(dialog.getAttribute('aria-label')).toBe('Expanded instructions');
   expect(dialog.getAttribute('aria-modal')).toBeNull();
   expect(dialog.dataset.expanded).toBe('true');
-  expect(container.querySelector('.landing-page-shell > header .landing-create-new')).not.toBeNull();
+  expect(container.querySelector('.landing-model-toolbar .landing-create-new')).not.toBeNull();
   expect(container.querySelector('.landing-expanded-footer .landing-view-back')?.textContent).toBe('Go Back');
   expect(container.textContent).toContain('Building instructions');
   expect(document.body.style.overflow).toBe('hidden');
@@ -946,7 +1007,7 @@ it('does not open instructions without an explicit model ID', async () => {
   expect(container.querySelector('.landing-model-panel')).toBeNull();
 });
 
-it('places a book button below the model, matches Create new, and switches views without navigating', async () => {
+it('places the instructions button at the viewer bottom left and switches views without navigating', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -957,8 +1018,10 @@ it('places a book button below the model, matches Create new, and switches views
   expect(button.querySelector('.lucide-book-open')).not.toBeNull();
   expect(button.classList.contains('landing-action-button')).toBe(true);
   expect(container.querySelector('.landing-create-new')?.classList.contains('landing-action-button')).toBe(true);
-  expect(frame.contains(button)).toBe(false);
-  expect(frame.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(button.parentElement?.classList.contains('landing-model-bottom-toolbar')).toBe(true);
+  expect(container.querySelector('.landing-model-toolbar .landing-create-new')).not.toBeNull();
+  expect(frame.contains(button)).toBe(true);
+  expect(frame.querySelector('.landing-model-stage')?.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(button.closest('.landing-model-conversation')).toBeNull();
   await act(async () => button.click());
   expect(container.querySelector('[aria-label="Instructions viewer"]')).not.toBeNull();
@@ -1081,18 +1144,39 @@ it('returns to the inline model when the selected build changes while expanded',
 });
 
 it('shows icon only expand control and Share at the bottom right of the model', async () => {
-  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
-  const controls = container.querySelector('.landing-model-toolbar')!;
-  expect(controls.querySelectorAll('button')).toHaveLength(2);
-  expect(controls.querySelector('button:first-child')?.textContent).toBe('Show instructions');
-  expect(controls.querySelector('button:last-child')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
-  expect(controls.querySelector('button:last-child')?.textContent).toBe('');
-  expect(container.querySelector('.landing-model-bottom-toolbar .landing-model-share button')?.textContent).toContain('Share');
-  expect(container.querySelector('.landing-model-export')).toBeNull();
-  await act(async () => (container.querySelector('.landing-model-share button') as HTMLButtonElement).click());
-  expect(container.querySelector('[role="dialog"][aria-label="Share model"]')?.className).toContain('bottom-full');
-  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
-  expect(container.querySelector('.landing-model-share')).not.toBeNull();
+  const style = document.createElement('style');
+  style.textContent = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  document.head.append(style);
+  try {
+    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false} onCreateNew={vi.fn()} onRenameRequest={vi.fn()}>{null}</LandingModelWorkspace>));
+    const controls = container.querySelector('.landing-model-toolbar')!;
+    expect(controls.querySelectorAll('button')).toHaveLength(2);
+    expect(controls.querySelector('button:first-child')?.textContent).toBe('Create new');
+    expect(controls.querySelector('.landing-view-expand')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
+    expect(controls.querySelector('.landing-view-expand')?.textContent).toBe('');
+    const instructionsButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-instructions-toggle')!;
+    expect(container.querySelector('.landing-model-workspace')?.contains(instructionsButton)).toBe(true);
+    expect(instructionsButton.textContent).toBe('Show instructions');
+    const shareButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-model-share button')!;
+    expect(shareButton.textContent).toContain('Share');
+    expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).justifyContent).toBe('space-between');
+    expect(getComputedStyle(shareButton).fontWeight).toBe(getComputedStyle(instructionsButton).fontWeight);
+    expect(getComputedStyle(shareButton).lineHeight).toBe('20px');
+    for (const button of [controls.querySelector('button:first-child')!, container.querySelector('.landing-model-heading-edit')!,
+      controls.querySelector('.landing-view-expand')!, instructionsButton, shareButton]) {
+      expect(getComputedStyle(button).height).toBe('44px');
+      expect(getComputedStyle(button).fontSize).toBe('14px');
+      expect(getComputedStyle(button).fontFamily).toBe(getComputedStyle(instructionsButton).fontFamily);
+    }
+    expect(container.querySelector('.landing-model-export')).toBeNull();
+    await act(async () => (container.querySelector('.landing-model-share button') as HTMLButtonElement).click());
+    expect(container.querySelector('[role="dialog"][aria-label="Share model"]')?.className).toContain('bottom-full');
+    await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
+    expect(container.querySelector('.landing-model-share')).not.toBeNull();
+    expect(getComputedStyle(container.querySelector('.landing-view-back')!).height).toBe('44px');
+  } finally {
+    style.remove();
+  }
 });
 
 it('keeps share unavailable for pending edits and uploaded models', async () => {

@@ -6,10 +6,10 @@ import { LDrawConditionalLineMaterial } from 'three/examples/jsm/materials/LDraw
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LDRAW_GENERATION_SCENES, LdrawGenerationAnimation } from '../src/components/LdrawGenerationAnimation';
 
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelPath, buildAnimationStyle, presentation, animateModelBuild }: {
-  modelPath: string; buildAnimationStyle: string; presentation: string; animateModelBuild: boolean;
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelPath, buildAnimationStyle, presentation, animateModelBuild, autoRotate }: {
+  modelPath: string; buildAnimationStyle: string; presentation: string; animateModelBuild: boolean; autoRotate: boolean;
 }) => <div data-testid="viewer" data-path={modelPath} data-style={buildAnimationStyle}
-  data-presentation={presentation} data-animated={animateModelBuild} /> }));
+  data-presentation={presentation} data-animated={animateModelBuild} data-rotating={autoRotate} /> }));
 
 const catalog = readFileSync('../backend/src/data/brickwith_parts.csv', 'utf8');
 const available = new Set(catalog.split(/\r?\n/).slice(1).map(line => {
@@ -97,8 +97,10 @@ it('cycles packed 3D scenes without repeating the current scene', async () => {
   await act(async () => root.render(<LdrawGenerationAnimation />));
   const viewer = () => container.querySelector<HTMLElement>('[data-testid="viewer"]')!;
   expect(viewer().dataset.path).toBe('/assets/ldraw-generation-scenes/house.mpd');
-  expect(viewer().dataset.style).toBe('fade');
+  expect(viewer().dataset.style).toBe('drop');
   expect(viewer().dataset.presentation).toBe('room');
+  expect(viewer().dataset.animated).toBe('true');
+  expect(viewer().dataset.rotating).toBe('true');
   await act(async () => vi.advanceTimersByTimeAsync(8_000));
   expect(viewer().dataset.path).toBe('/assets/ldraw-generation-scenes/tree.mpd');
 });
@@ -108,6 +110,7 @@ it('keeps one fully visible scene when reduced motion is preferred', async () =>
   await act(async () => root.render(<LdrawGenerationAnimation />));
   const viewer = container.querySelector<HTMLElement>('[data-testid="viewer"]')!;
   expect(viewer.dataset.animated).toBe('false');
+  expect(viewer.dataset.rotating).toBe('false');
   await act(async () => vi.advanceTimersByTimeAsync(16_000));
   expect(container.querySelector<HTMLElement>('[data-testid="viewer"]')?.dataset.path).toBe('/assets/ldraw-generation-scenes/house.mpd');
 });

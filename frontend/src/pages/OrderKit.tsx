@@ -5,6 +5,7 @@ import posthog from "posthog-js";
 import { CreateCheckoutSessionApiService, type CreateCheckoutSessionResponse } from "../services/createCheckoutSessionApi";
 import { GetPriceApiService } from "../services/getPriceApi";
 import { ThreeLDRViewer } from "../components/ThreeLDRViewer";
+import { GenerationTitle } from "../components/GenerationTitle";
 import { GetGenerationApiService } from "../services/getGenerationApi";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
 import { SEO } from "../components/SEO";
@@ -12,6 +13,7 @@ import { CheckoutStep } from "../components/checkout/CheckoutStep";
 import { InstructionsPostcard } from "../components/checkout/InstructionsPostcard";
 import { CheckoutPayment } from "../components/checkout/CheckoutPayment";
 import { supabase } from "../lib/supabase";
+import { useAuth } from "../contexts/AuthContext";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
 import { getOrderPricing, formatOrderPrice, getShippingContact, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
 import shippingCountries from "../data/shippingCountries.json";
@@ -23,6 +25,7 @@ type LocationState = {
   screenshots?: { angle1: string; angle2?: string };
   generation_id?: string;
   cart_id?: string;
+  orderNameOverride?: string;
   priceData?: OrderQuote;
 };
 
@@ -39,15 +42,19 @@ const emptyDelivery: DeliveryDetails = { email: '', firstName: '', lastName: '',
 const stepNames = ['Contact & delivery', 'Payment'];
 
 export default function OrderKit() {
+  const { user, session: authSession } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const state = React.useMemo(() => restoreOrderState(location.state as LocationState | null), [location.state]);
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
   const [resolvedName, setResolvedName] = React.useState<string | null>(null);
+  const [orderNameOverride, setOrderNameOverride] = React.useState<string | null>(state.orderNameOverride || null);
+  const [owner, setOwner] = React.useState<{ generationId: string; userId: string | null } | null>(null);
   const [modelImage, setModelImage] = React.useState<string | null>(state.screenshots?.angle1 || null);
   const [shipInstructionsPostcard, setShipInstructionsPostcard] = React.useState(false);
-  const name = resolvedName || state.name || 'Your Model';
+  const name = orderNameOverride || resolvedName || state.name || 'Your Model';
+  const canRename = Boolean(generationId && user?.id && authSession?.access_token && owner?.generationId === generationId && owner.userId === user.id);
   const [mpdContent, setMpdContent] = React.useState<string | null>(null);
   const [modelLoading, setModelLoading] = React.useState(false);
   const [quote, setQuote] = React.useState<OrderQuote | null>(state.priceData || null);
@@ -66,10 +73,24 @@ export default function OrderKit() {
   const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || '';
   const partsCount = quote?.total_parts ?? (Array.isArray(state.parts_list) ? state.parts_list.reduce((sum, part) => sum + (Number.isFinite(part.quantity) ? part.quantity : 0), 0) : undefined);
 
+  React.useEffect(() => { setOrderNameOverride(state.orderNameOverride || null); }, [generationId, state.orderNameOverride]);
+
   React.useEffect(() => {
     // Only cache model/order data. Contact details and payment secrets stay in memory.
-    try { localStorage.setItem('orderState', JSON.stringify({ ...state, priceData: quote || undefined, generation_id: generationId })); } catch { /* Checkout still works without storage. */ }
-  }, [state, quote, generationId]);
+    try { localStorage.setItem('orderState', JSON.stringify({ ...state, name, orderNameOverride: orderNameOverride || undefined, priceData: quote || undefined, generation_id: generationId })); } catch { /* Checkout still works without storage. */ }
+  }, [state, quote, generationId, name, orderNameOverride]);
+
+  React.useEffect(() => {
+    if (!generationId || !user?.id) { setOwner(null); return; }
+    let cancelled = false;
+    setOwner(null);
+    void supabase.from('generations').select('user_id').eq('id', generationId).maybeSingle()
+      .then(({ data, error }) => {
+        if (!cancelled) setOwner(error ? null : { generationId, userId: data?.user_id ?? null });
+      })
+      .catch(() => { if (!cancelled) setOwner(null); });
+    return () => { cancelled = true; };
+  }, [generationId, user?.id]);
 
   React.useEffect(() => {
     if (getOrderPricing(state.priceData)) { setQuote(state.priceData!); return; }
@@ -235,7 +256,12 @@ export default function OrderKit() {
         <aside className="checkout-summary" aria-label="Order summary">
           <div className="checkout-summary-body">
             <p className="checkout-kit-eyebrow">YOUR CUSTOM KIT</p>
-            <h2 className="checkout-summary-heading">{name}</h2>
+            <GenerationTitle key={generationId} variant="order" generationId={generationId} name={name}
+              canEdit={canRename && step === 0 && !loading} saveLocally={!canRename && step === 0 && !loading}
+              accessToken={authSession?.access_token} onSaved={savedName => {
+                if (canRename) { setResolvedName(savedName); setOrderNameOverride(null); }
+                else setOrderNameOverride(savedName);
+              }} />
             <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} onPreviewCaptured={setModelImage} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
             <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {

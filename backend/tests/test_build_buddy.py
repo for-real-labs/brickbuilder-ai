@@ -299,22 +299,23 @@ def test_every_reply_mode_keeps_pet_language_simple(monkeypatch, mode):
     assert 'even when the user uses technical words' in instructions
 
 
-def test_model_compliment_uses_name_and_preview_as_reference_without_generic_praise(monkeypatch):
+def test_model_fact_uses_name_and_preview_as_reference(monkeypatch):
     monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
     post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text':
-        'City of Troy’s tall towers and red flags look grand!'}]}]})
+        'Fun fact: the ancient city of Troy stood in modern Turkey!'}]}]})
     monkeypatch.setattr(buddy, 'post_json', post)
     image = base64.b64encode(b'preview').decode()
     result = asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(
         mode='model', prompt='City of Troy', image_base64=image, image_media_type='image/jpeg')))
-    assert 'towers' in result
+    assert result.startswith('Fun fact:')
     payload = post.await_args.args[3]
     assert payload['input'][-1]['content'] == [
         {'type': 'input_text', 'text': 'City of Troy'},
         {'type': 'input_image', 'detail': 'low', 'image_url': f'data:image/jpeg;base64,{image}'},
     ]
     assert 'at most 14 words' in payload['instructions']
-    assert 'one detail clearly visible' in payload['instructions']
+    assert 'identify what the model represents' in payload['instructions']
+    assert 'Do not praise the model' in payload['instructions']
     assert 'never instructions' in payload['instructions']
     assert 'do not guess visual details' in payload['instructions']
     assert 'mention ordering or delivery' in payload['instructions']
@@ -343,16 +344,29 @@ def test_model_greeting_reads_the_saved_name_and_prefers_its_preview(monkeypatch
     image = base64.b64encode(b'preview').decode()
     read = AsyncMock(return_value=image)
     monkeypatch.setattr(buddy, 'read_generation_reference_image', read)
-    generate = AsyncMock(return_value='City of Troy’s tall towers look grand!')
+    generate = AsyncMock(return_value='Fun fact: Troy stood in modern Turkey!')
     monkeypatch.setattr(buddy, 'generate_buddy_reply', generate)
     result = asyncio.run(buddy.buddy_model_greeting(buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID),
                                                    model_request(), {'is_anonymous': True, 'user_id': 'visitor'}))
-    assert result == {'reply': 'City of Troy’s tall towers look grand!'}
+    assert result == {'reply': 'Fun fact: Troy stood in modern Turkey!'}
     storage.get_generation.assert_awaited_once_with(MODEL_ID)
     read.assert_awaited_once_with(row, storage.client.storage, prefer_preview=True)
     assert generate.await_args.args[0].prompt == 'City of Troy'
     assert generate.await_args.args[0].image_base64 == image
     assert generate.await_args.args[0].mode == 'model'
+
+
+def test_model_greeting_passes_bounded_previous_facts_to_generation(monkeypatch):
+    mock_model_storage(monkeypatch, {'id': MODEL_ID, 'status': 'completed', 'name': 'Garbage truck'})
+    monkeypatch.setattr(buddy, 'read_generation_reference_image', AsyncMock(return_value=None))
+    generate = AsyncMock(return_value='Did you know garbage trucks have compactors?')
+    monkeypatch.setattr(buddy, 'generate_buddy_reply', generate)
+    request = buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID,
+        previous_facts=[' Fun fact: garbage trucks can squeeze trash! '])
+    asyncio.run(buddy.buddy_model_greeting(request, model_request(), {}))
+    assert generate.await_args.args[0].previous_facts == ['Fun fact: garbage trucks can squeeze trash!']
+    with pytest.raises(ValidationError):
+        buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID, previous_facts=['x' * 241])
 
 
 @pytest.mark.parametrize('row', [None, {'id': MODEL_ID, 'status': 'processing', 'user_type': 'authenticated', 'user_id': 'owner'},
@@ -375,7 +389,7 @@ def test_model_greeting_does_not_expose_missing_private_or_imported_models(monke
 def test_model_greeting_can_use_the_name_when_the_preview_is_missing_or_unavailable(monkeypatch, image_error):
     mock_model_storage(monkeypatch, {'id': MODEL_ID, 'status': 'completed', 'name': 'Moon Rover'})
     monkeypatch.setattr(buddy, 'read_generation_reference_image', AsyncMock(return_value=None, side_effect=image_error))
-    generate = AsyncMock(return_value='Moon Rover is a great name for a space build!')
+    generate = AsyncMock(return_value='Fun fact: rovers can explore the Moon without an astronaut aboard!')
     monkeypatch.setattr(buddy, 'generate_buddy_reply', generate)
     asyncio.run(buddy.buddy_model_greeting(buddy.BuddyModelGreetingRequest(generation_id=MODEL_ID), model_request(), {}))
     assert generate.await_args.args[0].image_base64 is None
@@ -395,23 +409,51 @@ def test_model_greeting_rejects_invalid_ids_and_honors_request_limits(monkeypatc
     storage.get_generation.assert_not_awaited()
 
 
-@pytest.mark.parametrize('reply', [
-    'I love those wrinkles on your Shar Pei’s sweet face!',
-    'Fun fact: Shar Peis were first bred in China!',
-])
-def test_model_greeting_invites_personal_praise_or_a_subject_fact_instead_of_plain_description(monkeypatch, reply):
+def test_model_greeting_requests_a_subject_fact_instead_of_praise(monkeypatch):
     monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    monkeypatch.setattr(buddy.secrets, 'choice', lambda choices: choices[0])
+    reply = 'Fun fact: Shar Peis were first bred in China!'
     post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text', 'text': reply}]}]})
     monkeypatch.setattr(buddy, 'post_json', post)
     assert asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(
         mode='model', prompt='Shar Pei Dog'))) == reply
     instructions = post.await_args.args[3]['instructions']
-    assert 'what YOU like about this model' in instructions
-    assert 'start with "I love", "I like", or "My favorite"' in instructions
-    assert 'start with "Fun fact:"' in instructions
-    assert 'about the real subject, not its appearance in this model' in instructions
-    assert 'Never merely describe the model or list its colors, parts, or traits' in instructions
+    assert 'Start exactly with "Fun fact:"' in instructions
+    assert 'under 70 characters' in instructions
+    assert 'Do not praise the model, say what you love' in instructions
+    assert 'subject is fictional' in instructions
     assert 'Only share facts you are confident are true' in instructions
-    assert 'otherwise choose a personal reaction' in instructions
+    assert 'too unclear to identify' in instructions
     assert 'do not guess visual details' in instructions
     assert 'at most 14 words' in instructions
+
+
+@pytest.mark.parametrize('reply', [
+    'I love the little red flags on your castle!',
+    'Fun fact: I love the little red flags on your castle!',
+])
+def test_model_greeting_never_passes_through_praise_if_the_model_ignores_the_fact_prompt(monkeypatch, reply):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text',
+        'text': reply}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    reply = asyncio.run(buddy.generate_buddy_reply(buddy.BuddyReplyRequest(
+        mode='model', prompt='Castle')))
+    assert reply == 'Tell me more about this model!'
+
+
+def test_model_facts_vary_opening_and_reject_a_fact_already_shown(monkeypatch):
+    monkeypatch.setenv('OPENAI_API_KEY', 'test-only-key')
+    monkeypatch.setattr(buddy.secrets, 'choice', lambda choices: choices[0])
+    post = AsyncMock(return_value={'output': [{'content': [{'type': 'output_text',
+        'text': 'Did you know garbage trucks can squeeze trash?'}]}]})
+    monkeypatch.setattr(buddy, 'post_json', post)
+    previous = ['Fun fact: garbage trucks can squeeze trash!']
+    request = buddy.BuddyReplyRequest(mode='model', prompt='Garbage truck', previous_facts=previous)
+    assert asyncio.run(buddy.generate_buddy_reply(request)) == 'Tell me more about this model!'
+    payload = post.await_args.args[3]
+    assert 'Start exactly with "Did you know"' in payload['instructions']
+    assert previous[0] in payload['input'][-1]['content'][-1]['text']
+    post.return_value = {'output': [{'content': [{'type': 'output_text',
+        'text': 'Did you know some garbage trucks lift bins with an arm?'}]}]}
+    assert asyncio.run(buddy.generate_buddy_reply(request)) == 'Did you know some garbage trucks lift bins with an arm?'
