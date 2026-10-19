@@ -88,6 +88,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   }, [returning, welcome]);
   const log = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
+  const pinModelGreeting = Boolean(model && visibleTurns.length === 0 && !reasoningOnly && !currentMessage);
   useEffect(() => {
     const element = log.current;
     if (!element) return;
@@ -105,12 +106,16 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   useEffect(() => {
     const element = log.current;
     if (!element) return;
-    const scroll = () => { if (follow.current) element.scrollTop = element.scrollHeight; };
+    if (model && visibleTurns.length === 1) follow.current = true;
+    const scroll = () => {
+      if (pinModelGreeting) { element.scrollTop = 0; return; }
+      if (follow.current) element.scrollTop = element.scrollHeight;
+    };
     scroll();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scroll);
     if (element.firstElementChild) observer?.observe(element.firstElementChild);
     return () => observer?.disconnect();
-  }, [turns.length, generations.length]);
+  }, [turns.length, generations.length, model?.id, pinModelGreeting, visibleTurns.length]);
   const restored = model ? [] : generations.filter(row => row.id === selectedGenerationId && isAgentGeneration(row.endpoint)
     && !turns.some(turn => turn.generationId === row.id));
   const latestTurn = visibleTurns.at(-1);

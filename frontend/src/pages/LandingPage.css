@@ -120,7 +120,7 @@
     max-height: calc(100% - 24px);
     min-height: 0;
     margin-top: 24px;
-    padding: 24px 18px;
+    padding: 18px;
     overflow-y: auto;
     transform: none;
     translate: 0;

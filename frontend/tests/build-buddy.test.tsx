@@ -572,6 +572,22 @@ it('shows a subject fact above the edit invitation in a separate bubble', async 
   expect(container.querySelector('.pet-response-word')?.textContent).toBe('Fun');
 });
 
+it('keeps the model fact visible when the greeting grows, then follows a new edit', async () => {
+  vi.spyOn(BuildBuddyApi, 'modelGreeting').mockResolvedValue('Did you know dogs have a third eyelid that protects their eyes?');
+  const render = (turns: Array<{ id: number; text: string }>, generations: Array<{ id: string; prompt: string; status: string }>) =>
+    act(async () => root.render(<BuildBuddyDialogue turns={turns} generations={generations} state="idle"
+      model={{ id: 'dog', name: 'Dog', orderable: true }} />));
+  await render([], []);
+  const log = container.querySelector<HTMLElement>('.pet-dialogue')!;
+  Object.defineProperty(log, 'scrollHeight', { configurable: true, value: 300 });
+  Object.defineProperty(log, 'clientHeight', { configurable: true, value: 180 });
+  log.scrollTop = 26;
+  await render([], [{ id: 'other', prompt: 'Other', status: 'completed' }]);
+  expect(log.scrollTop).toBe(0);
+  await render([{ id: 1, text: 'Make the dog blue' }], []);
+  expect(log.scrollTop).toBe(300);
+});
+
 it('ignores late facts after switching models and cancels the old request', async () => {
   let finish!: (text: string) => void;
   const greet = vi.spyOn(BuildBuddyApi, 'modelGreeting').mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
