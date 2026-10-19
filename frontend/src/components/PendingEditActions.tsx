@@ -45,7 +45,10 @@ export function PendingEditActions({ generationId, onCancelled, onStartNew, isEd
   };
 
   const buttonClass = 'min-h-11 min-w-0 rounded-full border border-slate-300 bg-white px-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm';
-  return <div className="w-full" aria-label="Generation in progress actions">
+  return <div className="mb-3 w-full" aria-label="Generation in progress actions">
+    <p className="mb-3 text-sm leading-6 text-slate-700">
+      {subscribed ? 'We’ll email you when your build is ready.' : 'This can take up to 30 minutes. Do you want an email when it’s ready?'}
+    </p>
     {emailOpen && !subscribed && <form className="mb-3 flex gap-2" onSubmit={event => { event.preventDefault(); void subscribe(); }}>
       <label className="sr-only" htmlFor="landing-generation-email">Email address</label>
       <input id="landing-generation-email" type="email" autoComplete="email" required maxLength={254} autoFocus

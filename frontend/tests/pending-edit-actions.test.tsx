@@ -33,6 +33,7 @@ const button = (label: string) => Array.from(container.querySelectorAll('button'
 
 it('keeps edit actions visible while awaiting an ID, then saves a guest email outside the pet dialogue', async () => {
   await act(async () => root.render(<PendingEditActions generationId={null} onCancelled={vi.fn()} onStartNew={vi.fn()} />));
+  expect(container.textContent).toContain('This can take up to 30 minutes. Do you want an email when it’s ready?');
   expect(button('Email me').disabled).toBe(true);
   expect(button('Cancel').disabled).toBe(true);
   expect(button('Start new').disabled).toBe(true);
@@ -48,6 +49,7 @@ it('keeps edit actions visible while awaiting an ID, then saves a guest email ou
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('edit', 'builder@example.com');
   expect(button('Email set').disabled).toBe(true);
+  expect(container.textContent).toContain('We’ll email you when your build is ready.');
   expect(container.querySelector('input[type="email"]')).toBeNull();
   expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_subscribed', expect.objectContaining({ generation_id: 'edit', source: 'landing_edit_actions' }));
 });
