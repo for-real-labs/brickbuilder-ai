@@ -437,12 +437,11 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only a 3D assembly i
   expect(workspace.querySelector('article')).toBeNull();
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
   expect(workspace.compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(input().disabled).toBe(true);
+  expect(container.querySelector('#landing-build-prompt')).toBeNull();
   const actions = container.querySelector('[aria-label="Generation in progress actions"]')!;
   expect(conversation.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-  expect(actions.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(actions.textContent).toContain('This can take up to 30 minutes. Do you want an email when it’s ready?');
-  expect(container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')?.disabled).toBe(true);
+  expect(container.querySelector('button[type="submit"][aria-label="Create"]')).toBeNull();
   await act(async () => Array.from(actions.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent === 'Cancel')!.click());
   expect(cancel).toHaveBeenCalledExactlyOnceWith('building');
   expect(activity.track).toHaveBeenCalledWith(expect.objectContaining({ id: 'building', status: 'cancelled' }));
@@ -622,9 +621,8 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s with animation
   }
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
   expect(container.querySelector('[aria-label="Building your edited model"] [data-testid="generation-3d-animation"]')).not.toBeNull();
-  expect(input().disabled).toBe(true);
+  expect(container.querySelector('#landing-build-prompt')).toBeNull();
   const editActions = container.querySelector('[aria-label="Generation in progress actions"]')!;
-  expect(editActions.compareDocumentPosition(input()) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(editActions.textContent).toContain('Email me');
   expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Cancel');
   expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Start new');

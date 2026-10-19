@@ -236,7 +236,7 @@ describe('LandingPage', () => {
       });
       expect(start).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: expect.any(String) }), undefined);
       expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
-      expect((container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement).disabled).toBe(true);
+      expect(container.querySelector('[aria-label="Describe your model"]')).toBeNull();
       await act(async () => {
         prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       });
@@ -403,7 +403,7 @@ describe('LandingPage', () => {
       const generate = () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
       await act(async () => generate().click());
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
-      expect(container.querySelector<HTMLInputElement>('#landing-build-prompt')?.disabled).toBe(true);
+      expect(container.querySelector('#landing-build-prompt')).toBeNull();
       expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
       expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
@@ -513,7 +513,7 @@ describe('LandingPage', () => {
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
-      expect(container.querySelector<HTMLInputElement>('#landing-build-prompt')?.disabled).toBe(true);
+      expect(container.querySelector('#landing-build-prompt')).toBeNull();
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
