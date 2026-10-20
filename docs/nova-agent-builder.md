@@ -199,6 +199,11 @@ their build recipe; no separate deployment of either Nova repository or private
 registry credentials are needed. Add a `/data` volume and set
 `NOVA_CONFIG_ROOT=/data/provider-config`.
 
+The hosted image runs the upstream entrypoint under Tini so orphaned render and
+tool processes are reaped. Keep this init process enabled: unreaped children
+consume Railway's process limit and can cause the Claude runtime to abort.
+Local Docker startup supplies the same cleanup through `--init`.
+
 The staging API already deploys automatically from its `staging` branch. This
 Nova service can do the same for changes to `backend/setup_nova.cjs` and
 `backend/nova-service/**`. After updating pins, run `node scripts/nova.cjs

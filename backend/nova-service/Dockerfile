@@ -300,4 +300,6 @@ CMD ["uvicorn", "main:app", "--app-dir", "/app/web/backend", "--host", "0.0.0.0"
 COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/
 COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py
 RUN printf '%s' '{"toolkit":"ef2d93faed41e83486a624531d3db26d18efadb6","web":"b67ee2bf85e8b91f49e1bcbc308deef3e722cc7b"}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools
+RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]
 CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]
