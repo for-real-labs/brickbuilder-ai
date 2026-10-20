@@ -16,7 +16,7 @@ export function SEO({
   title = "BrickBuilder AI",
   description = "Turn images and text into LEGO compatible brick models. Get building instructions instantly!",
   keywords = "use ai to build legos, image to lego, how to convert image to legos, lego ai, brick ai, brickai, brickbuilder, brickbuilder.ai, lego building ai, ai building lego, turn images into lego, AI lego converter, brick model generator, turn images into actual legos, lego building software, lego generator, lego instruction generator, lego ai agent",
-  image = "https://brickbuilder.ai/twitter-preview.png",
+  image = "https://brickbuilder.ai/share-card.png",
   url = "https://brickbuilder.ai/",
   type = "website",
   noIndex = false,

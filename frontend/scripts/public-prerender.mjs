@@ -24,6 +24,7 @@ export async function prerenderPublicPages() {
       await mkdir(dirname(output), { recursive: true });
       await writeFile(output, renderPublicDocument(shell, path));
     }
+    await writeFile('dist/share-shell.html', await readFile('dist/index.html'));
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

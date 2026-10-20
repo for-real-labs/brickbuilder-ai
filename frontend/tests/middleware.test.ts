@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import middleware from '../middleware';
 
@@ -21,6 +21,7 @@ describe('preview password middleware', () => {
   });
 
   afterEach(() => {
+    vi.unstubAllGlobals();
     process.env = { ...originalEnvironment };
   });
 
@@ -98,5 +99,33 @@ describe('preview password middleware', () => {
     );
 
     expect(response).toBeUndefined();
+  });
+
+  it('serves crawler metadata for a completed model at the shared root URL', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.VITE_RAILWAY_API_URL = 'https://api.example.com';
+    const id = '123e4567-e89b-12d3-a456-426614174000';
+    const shell = '<html><head><title>Home</title><meta property="og:image" content="/old.png" /><meta name="twitter:image" content="/old.png" /><link rel="canonical" href="https://brickbuilder.ai/" /></head><body><div id="root"></div></body></html>';
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ name: 'Pip & Friends', preview_image_url: 'https://images.example.com/pip.png' }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(shell, { status: 200 }));
+    vi.stubGlobal('fetch', fetcher);
+    const response = await middleware(new Request(`https://brickbuilder.ai/?id=${id}&exact=1`));
+    const html = await response?.text();
+    expect(fetcher.mock.calls[0][0]).toBe(`https://api.example.com/generation/${id}/share-preview`);
+    expect(html).toContain('Pip &amp; Friends | BrickBuilder AI');
+    expect(html).toContain('property="og:image" content="https://images.example.com/pip.png"');
+    expect(html).toContain('name="twitter:image" content="https://images.example.com/pip.png"');
+    expect(html).toContain(`https://brickbuilder.ai/?id=${id}`);
+    expect(html).toContain('<div id="root"></div>');
+  });
+
+  it('uses the static page for invalid IDs and missing previews', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.VITE_RAILWAY_API_URL = 'https://api.example.com';
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ name: 'Unfinished', preview_image_url: null })));
+    vi.stubGlobal('fetch', fetcher);
+    await expect(middleware(new Request('https://brickbuilder.ai/?id=invalid'))).resolves.toBeUndefined();
+    await expect(middleware(new Request('https://brickbuilder.ai/?id=123e4567-e89b-12d3-a456-426614174000'))).resolves.toBeUndefined();
+    expect(fetcher).toHaveBeenCalledTimes(1);
   });
 });

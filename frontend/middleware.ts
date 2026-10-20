@@ -1,6 +1,62 @@
 const AUTH_PATH = '/__preview-auth';
 const AUTH_COOKIE = 'brickbuilder_preview_auth';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
+const MODEL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function escapeAttribute(value: string): string {
+  return value.replace(/[&"'<>]/g, character => ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[character]!);
+}
+
+function setMeta(document: string, attribute: 'name' | 'property', key: string, value: string): string {
+  const expression = new RegExp(`<meta\\b[^>]*${attribute}="${key}"[^>]*>`, 'i');
+  const tag = `<meta ${attribute}="${key}" content="${escapeAttribute(value)}" />`;
+  return expression.test(document) ? document.replace(expression, tag) : document.replace('</head>', `${tag}</head>`);
+}
+
+function modelDocument(shell: string, name: string, image: string, url: string): string {
+  const title = `${name} | BrickBuilder AI`;
+  const description = `View ${name}, a brick model made with BrickBuilder AI.`;
+  let document = shell.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeAttribute(title)}</title>`);
+  for (const [attribute, key, value] of [
+    ['name', 'title', title], ['name', 'description', description],
+    ['property', 'og:title', title], ['property', 'og:description', description],
+    ['property', 'og:image', image], ['property', 'og:url', url],
+    ['name', 'twitter:title', title], ['name', 'twitter:description', description],
+    ['name', 'twitter:image', image], ['name', 'twitter:url', url],
+  ] as const) document = setMeta(document, attribute, key, value);
+  return document.replace(/<link\b[^>]*rel="canonical"[^>]*>/i, `<link rel="canonical" href="${escapeAttribute(url)}" />`);
+}
+
+async function modelShareResponse(request: Request): Promise<Response | undefined> {
+  const url = new URL(request.url);
+  const id = url.searchParams.get('id');
+  if (request.method !== 'GET' || !['/', '/generated-model'].includes(url.pathname) || !id || !MODEL_ID.test(id)) return undefined;
+  const backend = process.env.VERCEL_ENV === 'preview'
+    ? process.env.VITE_RAILWAY_API_URL_STAGING || process.env.VITE_RAILWAY_API_URL
+    : process.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
+  if (!backend) return undefined;
+  try {
+    const result = await fetch(`${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}/share-preview`, {
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!result.ok) return undefined;
+    const model = await result.json() as { name?: unknown; preview_image_url?: unknown };
+    if (typeof model.preview_image_url !== 'string') return undefined;
+    const imageUrl = new URL(model.preview_image_url);
+    if (imageUrl.protocol !== 'https:') return undefined;
+    const shellUrl = new URL('/share-shell.html', request.url);
+    const shellResponse = await fetch(shellUrl, { headers: { cookie: request.headers.get('cookie') || '' }, signal: AbortSignal.timeout(4000) });
+    if (!shellResponse.ok) return undefined;
+    const shell = await shellResponse.text();
+    const name = typeof model.name === 'string' && model.name.trim() ? model.name.trim().slice(0, 90) : 'Generated model';
+    const canonical = `https://brickbuilder.ai/?id=${encodeURIComponent(id)}`;
+    return new Response(modelDocument(shell, name, imageUrl.href, canonical), {
+      headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
+    });
+  } catch {
+    return undefined;
+  }
+}
 
 function isProtectedDeployment(environment: NodeJS.ProcessEnv): boolean {
   return environment.VERCEL === '1' && environment.VERCEL_ENV !== 'production'
@@ -143,7 +199,7 @@ function loginPage(error?: string, returnTo = '/'): Response {
 
 export default async function middleware(request: Request): Promise<Response | undefined> {
   if (!isProtectedDeployment(process.env)) {
-    return undefined;
+    return modelShareResponse(request);
   }
 
   const password = process.env.PREVIEW_PASSWORD;
@@ -157,7 +213,7 @@ export default async function middleware(request: Request): Promise<Response | u
   const expectedToken = await digest(password);
   const suppliedToken = getCookie(request, AUTH_COOKIE);
   if (suppliedToken && timingSafeEqual(suppliedToken, expectedToken)) {
-    return undefined;
+    return modelShareResponse(request);
   }
 
   const url = new URL(request.url);

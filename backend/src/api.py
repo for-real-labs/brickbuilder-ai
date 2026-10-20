@@ -528,6 +528,25 @@ async def get_generation_by_id_endpoint(
     return await get_generation(request, auth_info)
 
 
+@app.get("/generation/{generation_id}/share-preview")
+async def get_generation_share_preview(generation_id: str, response: Response):
+    """Public card data for finished, shareable models only."""
+    try:
+        UUID(generation_id)
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Model not found") from None
+    if generation_storage is None:
+        raise HTTPException(status_code=404, detail="Model not found")
+    generation = await generation_storage.get_generation(generation_id)
+    if not generation or generation.get("status") != "completed" or generation.get("endpoint") == "uploadLdraw":
+        raise HTTPException(status_code=404, detail="Model not found")
+    response.headers["Cache-Control"] = "public, max-age=60"
+    return {
+        "name": generation.get("name"),
+        "preview_image_url": generation.get("preview_image_url"),
+    }
+
+
 @app.get("/generation-stats", response_model=GetGenerationStatsResponse)
 async def get_generation_stats_endpoint() -> GetGenerationStatsResponse:
     """Return aggregate counts for the public landing-page tracker."""
