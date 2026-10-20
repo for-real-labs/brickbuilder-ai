@@ -2,6 +2,9 @@ import asyncio
 import os
 import re
 import logging
+from urllib.parse import urlparse
+
+import httpx
 from uuid import UUID
 from contextlib import asynccontextmanager
 
@@ -67,6 +70,7 @@ from .utils.pack_ldraw_model import LDrawPacker
 from .utils.posthog_client import track_api_call
 from .utils.llm_output import output_events
 from .utils.generation_storage import generation_storage
+from .utils.share_card import render_share_card
 from .utils.auth import get_user_with_optional_auth, require_paid_auth
 
 # Load environment variables
@@ -528,9 +532,7 @@ async def get_generation_by_id_endpoint(
     return await get_generation(request, auth_info)
 
 
-@app.get("/generation/{generation_id}/share-preview")
-async def get_generation_share_preview(generation_id: str, response: Response):
-    """Public card data for finished, shareable models only."""
+async def _shareable_generation(generation_id: str):
     try:
         UUID(generation_id)
     except ValueError:
@@ -540,11 +542,46 @@ async def get_generation_share_preview(generation_id: str, response: Response):
     generation = await generation_storage.get_generation(generation_id)
     if not generation or generation.get("status") != "completed" or generation.get("endpoint") == "uploadLdraw":
         raise HTTPException(status_code=404, detail="Model not found")
+    return generation
+
+
+@app.get("/generation/{generation_id}/share-preview")
+async def get_generation_share_preview(generation_id: str, response: Response):
+    """Public card data for finished, shareable models only."""
+    generation = await _shareable_generation(generation_id)
     response.headers["Cache-Control"] = "public, max-age=60"
     return {
         "name": generation.get("name"),
         "preview_image_url": generation.get("preview_image_url"),
     }
+
+
+@app.get("/generation/{generation_id}/share-card.png")
+async def get_generation_share_card(generation_id: str):
+    """Return the branded PNG used by link previews."""
+    generation = await _shareable_generation(generation_id)
+    preview_url = generation.get("preview_image_url")
+    parsed = urlparse(preview_url or "")
+    if parsed.scheme != "https" or parsed.hostname != "smzdytfghwslpbqnwdov.supabase.co" or not parsed.path.endswith(".png"):
+        raise HTTPException(status_code=404, detail="Preview image not found")
+    try:
+        async with httpx.AsyncClient(timeout=8, follow_redirects=False) as client:
+            async with client.stream("GET", preview_url) as upstream:
+                upstream.raise_for_status()
+                if upstream.headers.get("content-type", "").split(";")[0] != "image/png":
+                    raise ValueError("Invalid preview image type")
+                chunks = []
+                size = 0
+                async for chunk in upstream.aiter_bytes():
+                    size += len(chunk)
+                    if size > 8_000_000:
+                        raise ValueError("Preview image too large")
+                    chunks.append(chunk)
+        image = render_share_card(generation.get("name") or "My model", b"".join(chunks))
+    except (httpx.HTTPError, ValueError) as error:
+        logger.warning("Failed to render share card for %s: %s", generation_id, type(error).__name__)
+        raise HTTPException(status_code=502, detail="Preview card unavailable") from None
+    return Response(image, media_type="image/png", headers={"Cache-Control": "no-store"})
 
 
 @app.get("/generation-stats", response_model=GetGenerationStatsResponse)

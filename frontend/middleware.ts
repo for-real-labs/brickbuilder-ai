@@ -5,6 +5,12 @@ const MODEL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$
 const SHARE_IMAGE_PATH = /^\/share-image\/([0-9a-f-]{36})\.png$/i;
 const PREVIEW_STORAGE_HOST = 'smzdytfghwslpbqnwdov.supabase.co';
 
+function backendBase(): string | undefined {
+  return process.env.VERCEL_ENV === 'preview'
+    ? process.env.VITE_RAILWAY_API_URL_STAGING || process.env.VITE_RAILWAY_API_URL
+    : process.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
+}
+
 function escapeAttribute(value: string): string {
   return value.replace(/[&"'<>]/g, character => ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[character]!);
 }
@@ -16,8 +22,8 @@ function setMeta(document: string, attribute: 'name' | 'property', key: string, 
 }
 
 function modelDocument(shell: string, name: string, image: string, url: string): string {
-  const title = `${name} | BrickBuilder AI`;
-  const description = `View ${name}, a brick model made with BrickBuilder AI.`;
+  const title = `Check out my model: ${name}`;
+  const description = `See my ${name} brick model, made with BrickBuilder AI.`;
   let document = shell.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeAttribute(title)}</title>`);
   for (const [attribute, key, value] of [
     ['name', 'title', title], ['name', 'description', description],
@@ -30,9 +36,7 @@ function modelDocument(shell: string, name: string, image: string, url: string):
 }
 
 async function loadShareModel(id: string): Promise<{ name?: unknown; preview_image_url?: unknown } | undefined> {
-  const backend = process.env.VERCEL_ENV === 'preview'
-    ? process.env.VITE_RAILWAY_API_URL_STAGING || process.env.VITE_RAILWAY_API_URL
-    : process.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
+  const backend = backendBase();
   if (!backend) return undefined;
   try {
     const generationUrl = `${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}`;
@@ -67,7 +71,16 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     const isHostedPreview = imageUrl.hostname === PREVIEW_STORAGE_HOST && imageUrl.pathname.endsWith('.png');
     if (imageMatch) {
       if (!isHostedPreview) return undefined;
-      const imageResponse = await fetch(imageUrl.href, { redirect: 'error', signal: AbortSignal.timeout(8000) });
+      const backend = backendBase();
+      let cardResponse: Response | undefined;
+      try {
+        if (backend) cardResponse = await fetch(`${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}/share-card.png`, {
+          signal: AbortSignal.timeout(10000),
+        });
+      } catch { /* A raw preview is still available if the card service is unavailable. */ }
+      const imageResponse = cardResponse?.ok && cardResponse.headers.get('content-type')?.split(';')[0] === 'image/png'
+        ? cardResponse
+        : await fetch(imageUrl.href, { redirect: 'error', signal: AbortSignal.timeout(8000) });
       if (!imageResponse.ok || imageResponse.headers.get('content-type')?.split(';')[0] !== 'image/png') return undefined;
       if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return undefined;
       const bytes = await imageResponse.arrayBuffer();
@@ -82,10 +95,10 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     const shell = await shellResponse.text();
     const name = typeof model.name === 'string' && model.name.trim() ? model.name.trim().slice(0, 90) : 'Generated model';
     const canonical = url.pathname === '/generated-model'
-      ? `https://brickbuilder.ai/generated-model?id=${encodeURIComponent(id)}&exact=1&card=2`
+      ? `https://brickbuilder.ai/generated-model?id=${encodeURIComponent(id)}&exact=1&card=3`
       : `https://brickbuilder.ai/?id=${encodeURIComponent(id)}`;
     const image = isHostedPreview
-      ? `https://brickbuilder.ai/share-image/${id}.png?v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
+      ? `https://brickbuilder.ai/share-image/${id}.png?card=3&v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
       : imageUrl.href;
     return new Response(modelDocument(shell, name, image, canonical), {
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },

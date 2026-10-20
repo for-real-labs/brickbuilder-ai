@@ -20,7 +20,7 @@ const button = (label: string) => [...container.querySelectorAll('button')].find
 it('shares the exact displayed revision through the refreshed card URL', async () => {
   open();
   const expected = new URL('/generated-model?id=revision%20%26%202&exact=1', window.location.origin);
-  expected.searchParams.set('card', '2');
+  expected.searchParams.set('card', '3');
   const url = expected.href;
   const facebook = container.querySelector<HTMLAnchorElement>('a[href*="facebook"]')!;
   const twitter = container.querySelector<HTMLAnchorElement>('a[href*="twitter"]')!;

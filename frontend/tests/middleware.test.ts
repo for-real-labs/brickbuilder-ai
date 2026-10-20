@@ -112,9 +112,9 @@ describe('preview password middleware', () => {
     const response = await middleware(new Request(`https://brickbuilder.ai/?id=${id}&exact=1`));
     const html = await response?.text();
     expect(fetcher.mock.calls[0][0]).toBe(`https://api.example.com/generation/${id}/share-preview`);
-    expect(html).toContain('Pip &amp; Friends | BrickBuilder AI');
-    expect(html).toContain(`property="og:image" content="https://brickbuilder.ai/share-image/${id}.png?v=pip.png"`);
-    expect(html).toContain(`name="twitter:image" content="https://brickbuilder.ai/share-image/${id}.png?v=pip.png"`);
+    expect(html).toContain('Check out my model: Pip &amp; Friends');
+    expect(html).toContain(`property="og:image" content="https://brickbuilder.ai/share-image/${id}.png?card=3&amp;v=pip.png"`);
+    expect(html).toContain(`name="twitter:image" content="https://brickbuilder.ai/share-image/${id}.png?card=3&amp;v=pip.png"`);
     expect(html).toContain(`https://brickbuilder.ai/?id=${id}`);
     expect(html).toContain('<div id="root"></div>');
   });
@@ -152,6 +152,7 @@ describe('preview password middleware', () => {
     expect(response?.headers.get('content-type')).toBe('image/png');
     expect(response?.headers.get('x-robots-tag')).toBeNull();
     expect(new Uint8Array(await response!.arrayBuffer())).toEqual(new Uint8Array([137, 80, 78, 71]));
+    expect(fetcher.mock.calls[1][0]).toBe(`https://api.example.com/generation/${id}/share-card.png`);
   });
 
   it('gives the refreshed share path its own preview URL', async () => {
@@ -160,8 +161,8 @@ describe('preview password middleware', () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ name: 'Cat', preview_image_url: 'https://smzdytfghwslpbqnwdov.supabase.co/storage/cat.png' })))
       .mockResolvedValueOnce(new Response('<html><head></head><body></body></html>'));
     vi.stubGlobal('fetch', fetcher);
-    const response = await middleware(new Request(`https://brickbuilder.ai/generated-model?id=${id}&exact=1&card=2`));
+    const response = await middleware(new Request(`https://brickbuilder.ai/generated-model?id=${id}&exact=1&card=3`));
     const html = await response?.text();
-    expect(html).toContain(`property="og:url" content="https://brickbuilder.ai/generated-model?id=${id}&amp;exact=1&amp;card=2"`);
+    expect(html).toContain(`property="og:url" content="https://brickbuilder.ai/generated-model?id=${id}&amp;exact=1&amp;card=3"`);
   });
 });
