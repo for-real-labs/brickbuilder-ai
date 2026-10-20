@@ -310,7 +310,7 @@ it('shows a completed build without suggestions and resets from the viewer top l
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
   type('A castle'); await submit();
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('castle mpd');
-  expect(container.querySelector('[aria-label="Upload image"]')).toBeNull();
+  expect(container.querySelector('[aria-label="Upload image"]')).not.toBeNull();
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
   expect(container.querySelector('.landing-model-order-trigger')).toBeNull();
   const createNew = container.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-create-new')!;
@@ -530,7 +530,7 @@ it('submits a focused model edit on the first touch before the order banner retu
     send.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
   });
   expect(touch.defaultPrevented).toBe(true);
-  expect(edit).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined);
+  expect(edit).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined, undefined);
   expect(container.querySelector('[aria-label="Building your edited model"]')).not.toBeNull();
 });
 
@@ -736,7 +736,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s with animation
     expect(llm).toHaveBeenCalledExactlyOnceWith({ sourceGenerationId: 'castle', prompt: 'Add a drawbridge' }, undefined);
     expect(nova).not.toHaveBeenCalled();
   } else {
-    expect(nova).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined);
+    expect(nova).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined, undefined);
     expect(llm).not.toHaveBeenCalled();
   }
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
@@ -850,11 +850,11 @@ it('shows edit model with a cursor on model links without cycling suggestions', 
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
   expect(input().placeholder).toBe('');
-  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('edit model');
+  expect(container.querySelector('.landing-empty-input-hint')?.textContent).toBe('edit model');
   type('Add a flag'); type('');
   await act(async () => vi.advanceTimersByTimeAsync(2000));
   expect(input().placeholder).toBe('');
-  expect(container.querySelector('.landing-empty-input-hint--edit')?.textContent).toBe('edit model');
+  expect(container.querySelector('.landing-empty-input-hint')?.textContent).toBe('edit model');
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
 });
 
@@ -1189,4 +1189,28 @@ it('keeps share unavailable for pending edits and uploaded models', async () => 
     await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle', endpoint), content: 'model' }} busy={busy}>{null}</LandingModelWorkspace>));
     expect(container.querySelector('.landing-model-share')).toBeNull();
   }
+});
+
+it.each(['novaToBricks', 'llmToBricks'])('sends an attached edit image to %s with the text and source model', async endpoint => {
+  query.value = 'id=castle';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id, endpoint));
+  const nova = vi.spyOn(NovaToBricksApiService, 'edit').mockResolvedValue({ generation_id: 'edited', message: 'Started' });
+  const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'edited', message: 'Started' });
+  vi.stubGlobal('FileReader', class {
+    result = 'data:image/png;base64,cGl4ZWxz';
+    onload?: () => void;
+    readAsDataURL() { Promise.resolve().then(() => this.onload?.()); }
+  });
+  vi.stubGlobal('URL', Object.assign(URL, { createObjectURL: vi.fn(() => 'blob:reference'), revokeObjectURL: vi.fn() }));
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[aria-label="Upload image"]')).not.toBeNull();
+  const picker = container.querySelector<HTMLInputElement>('input[type="file"]')!;
+  Object.defineProperty(picker, 'files', { value: [new File(['pixels'], 'reference.png', { type: 'image/png' })] });
+  await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
+  expect(container.querySelector('img[alt="Uploaded preview"]')).not.toBeNull();
+  type('Match these colors');
+  await submit();
+  const image = { imageBase64: 'cGl4ZWxz', imageMediaType: 'image/png' };
+  if (endpoint === 'novaToBricks') expect(nova).toHaveBeenCalledWith('castle', 'Match these colors', undefined, image);
+  else expect(llm).toHaveBeenCalledWith({ sourceGenerationId: 'castle', prompt: 'Match these colors', ...image }, undefined);
 });

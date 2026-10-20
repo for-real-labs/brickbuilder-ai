@@ -691,9 +691,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     }
   };
 
-  const submitModelEdit = async (existingTurnId?: number, requestedPrompt = prompt) => {
+  const submitModelEdit = async (existingTurnId?: number, requestedPrompt = prompt, requestedImage = imgFile) => {
     const model = landingModel.model;
-    if (!model || modelBusy || editSubmittingRef.current || !requestedPrompt.trim()) return;
+    if (!model || modelBusy || preparingImage || editSubmittingRef.current || !requestedPrompt.trim()) return;
     editSubmittingRef.current = true;
     setCreateNewStage(null);
     setEditSubmitting(true);
@@ -702,18 +702,20 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     const sourceId = model.generation.generation_id;
     const turnId = existingTurnId ?? buddyChat.startTurn(submittedPrompt, null);
     buddyChat.requestReply(turnId, submittedPrompt);
-    posthog.capture('landing_model_ai_edit_submitted', { generation_id: sourceId, prompt_length: submittedPrompt.length });
+    posthog.capture('landing_model_ai_edit_submitted', { generation_id: sourceId, prompt_length: submittedPrompt.length, has_image: Boolean(requestedImage) });
     try {
+      const image = requestedImage ? { imageBase64: await fileToBase64(requestedImage), imageMediaType: requestedImage.type } : undefined;
       const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
       const response = nova
-        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token)
-        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt }, session?.access_token);
+        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image)
+        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt, ...image }, session?.access_token);
       const id = response.generation_id;
       localStorage.setItem(STORAGE_KEYS.GENERATION_ID, id);
       if (!session) recordAnonymousGeneration(id);
       buddyChat.updateTurn(turnId, { generationId: id, method: nova ? 'nova' : 'llm' });
       trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks', createdAt: new Date().toISOString() });
       openModel(id, true);
+      setImgFile(null);
       setNotificationPromptId(id);
       setCreateNewStage(null);
       setPrompt('');
@@ -870,7 +872,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       buddyChat.updateTurn(result.id, { reply });
     } else if (result.intent === 'generate') {
       setGiftPlanning(false);
-      if (landingModel.model) void submitModelEdit(result.id, text);
+      if (landingModel.model) void submitModelEdit(result.id, text, image);
       else submitGeneration(text, image, result.id);
     } else if (result.intent === 'upload') {
       posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'upload' });
@@ -1077,11 +1079,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               </>}
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
-                  {!landingModel.model && <button type="button" aria-label="Upload image" title="Upload image"
-                    disabled={loading || buddyChat.routing || preparingImage} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
+                  <button type="button" aria-label="Upload image" title="Upload image"
+                    disabled={loading || buddyChat.routing || preparingImage || modelBusy} onClick={() => { setGiftPlanning(false); onPickImage('input_left_icon'); }}
                     className="absolute left-2 top-1/2 z-10 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-xl text-slate-500 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300 disabled:cursor-not-allowed disabled:opacity-50">
                     <ImageIcon aria-hidden="true" className="h-5 w-5" />
-                  </button>}
+                  </button>
                   <input
                     id="landing-build-prompt"
                     ref={promptInputRef}
@@ -1103,12 +1105,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       if (event.repeat || event.nativeEvent.isComposing || event.nativeEvent.keyCode === 229) return;
                       event.currentTarget.form?.requestSubmit();
                     }}
-                    placeholder={imgFile || imageLanding ? "Add optional image instructions" : ""}
-                    className={`pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white ${landingModel.model ? 'pl-4' : 'pl-14'} pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
+                    placeholder={landingModel.model && imgFile ? "Describe changes using this image" : imgFile || imageLanding ? "Add optional image instructions" : ""}
+                    className={`pet-conversation-input h-16 w-full rounded-2xl border border-gray-200 bg-white pl-14 pr-16 text-base shadow-sm transition-colors focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:cursor-not-allowed disabled:opacity-50`}
                     disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)}
                   />
                   {!imageLanding && !imgFile && !prompt && !focused && !loading && !buddyChat.routing &&
-                    <span className={`landing-empty-input-hint${landingModel.model ? ' landing-empty-input-hint--edit' : ''}`} aria-hidden="true">{landingModel.model ? 'edit model' : 'build anything'}<span className="landing-empty-input-caret" /></span>}
+                    <span className={`landing-empty-input-hint`} aria-hidden="true">{landingModel.model ? 'edit model' : 'build anything'}<span className="landing-empty-input-caret" /></span>}
                   <button
                     type="submit" aria-label={sendLabel} title={sendLabel}
                     onPointerDown={event => {
@@ -1194,18 +1196,18 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 <LocalProviderSettings />
               </div>}
 
-              {!imageLanding && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
-              {!imageLanding && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
+              {(!imageLanding || landingModel.model) && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
+              {(!imageLanding || landingModel.model) && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
               {/* Image thumbnail preview */}
-              {!imageLanding && imagePreviewUrl && (
+              {(!imageLanding || landingModel.model) && imagePreviewUrl && (
                 <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
                   <img
                     src={imagePreviewUrl}
                     alt="Uploaded preview"
                     className="w-20 h-20 object-cover rounded-md"
                   />
-                  <div className="flex-1 text-left">
-                    <p className="text-sm font-medium text-slate-700">{imgFile?.name}</p>
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="break-all text-sm font-medium text-slate-700">{imgFile?.name}</p>
                     <p className="text-xs text-slate-500 mt-1">
                       {imgFile && (imgFile.size / 1024).toFixed(1)} KB
                     </p>
