@@ -38,6 +38,7 @@ from .requests.llmToBricks import llm_to_bricks, llm_to_bricks_stream, LlmToBric
 from .requests.novaInstructions import get_nova_instructions
 from .requests.generationEmail import NotificationEmailRequest, save_notification_email, notification_status
 from .utils.generation_email import start_email_worker
+from .utils.generation_recovery import start_recovery_worker
 from .requests.uploadLdraw import upload_ldraw, UploadLdrawResponse
 from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
 from .requests.localProviders import router as local_providers_router
@@ -95,6 +96,7 @@ if os.getenv("MCP_ENABLED", "false").lower() == "true":
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     email_task = start_email_worker(generation_storage.client if generation_storage else None)
+    recovery_task = start_recovery_worker(generation_storage)
     try:
         if brick_mcp:
             async with brick_mcp.session_manager.run():
@@ -102,6 +104,9 @@ async def lifespan(app: FastAPI):
         else:
             yield
     finally:
+        if recovery_task:
+            recovery_task.cancel()
+            await asyncio.gather(recovery_task, return_exceptions=True)
         if email_task:
             email_task.cancel()
             await asyncio.gather(email_task, return_exceptions=True)

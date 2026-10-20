@@ -140,6 +140,29 @@ def test_failed_nova_turn_does_not_charge(monkeypatch, message):
     storage.update_status.assert_awaited_with('generation', 'failed', message)
 
 
+def test_nova_heartbeat_uses_timestamp_only_refresh_and_survives_storage_error(monkeypatch):
+    async def run():
+        refreshed = asyncio.Event()
+        async def heartbeat(_generation):
+            refreshed.set()
+            raise ConnectionError('temporary storage outage')
+        storage = SimpleNamespace(update_status=AsyncMock(), heartbeat=AsyncMock(side_effect=heartbeat))
+        class Service:
+            async def __aenter__(self): return self
+            async def __aexit__(self, *args): pass
+            async def run(self, *args, **kwargs):
+                await asyncio.wait_for(refreshed.wait(), timeout=7)
+                raise ValueError('Provider stopped')
+        monkeypatch.setattr(module, 'generation_storage', storage)
+        monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
+        monkeypatch.setattr(module, 'track_error', lambda **kwargs: None)
+        request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5')
+        await module.process_nova_to_bricks_task('generation', request, {'user_email': 'test'}, {})
+        storage.heartbeat.assert_awaited_once_with('generation')
+        assert [call.args[1] for call in storage.update_status.await_args_list] == ['processing', 'failed']
+    asyncio.run(run())
+
+
 @pytest.mark.parametrize('status,endpoint', [('processing', 'novaToBricks'), ('failed', 'novaToBricks'), ('completed', 'llmToBricks')])
 def test_foreign_edit_requires_completed_nova_geometry(monkeypatch, status, endpoint):
     download = AsyncMock()
