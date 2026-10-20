@@ -38,7 +38,8 @@ const open = () => act(() => container.querySelector<HTMLButtonElement>('[aria-h
 it('opens a model-themed postcard with its actual image and requested explanation', () => {
   render(); open();
   expect(container.querySelector('dialog')!.open).toBe(true);
-  expect(container.textContent).toContain('Select this option to ship a post card with a QR code link to the instructions.');
+  expect(container.querySelector('label')?.textContent).toBe('Send a custom instructions postcard (+$5.00)');
+  expect(container.textContent).toContain('Add a custom postcard with your model and a QR code link to the instructions for $5.00, including postage.');
   expect(container.querySelector('.checkout-postcard-space')).not.toBeNull();
   expect(container.querySelector('h3')?.textContent).toBe('Galaxy Explorer');
   expect(container.querySelector('img')?.getAttribute('src')).toBe(props.modelImage);
@@ -114,7 +115,7 @@ it('removes the extra popup headings and caption while keeping an accessible lab
   const dialog = container.querySelector('dialog')!;
   expect(dialog.getAttribute('aria-label')).toBe('Instructions post card preview');
   const description = document.getElementById(dialog.getAttribute('aria-describedby')!);
-  expect(description?.textContent).toBe('Select this option to ship a post card with a QR code link to the instructions.');
+  expect(description?.textContent).toBe('Add a custom postcard with your model and a QR code link to the instructions for $5.00, including postage.');
   expect(dialog.querySelector('h2, figcaption')).toBeNull();
   expect(dialog.textContent).not.toMatch(/keepsake|Your instructions, on a post card|Example post card for|your custom build/i);
   expect(dialog.querySelector('h3')?.textContent).toBe(props.modelName);

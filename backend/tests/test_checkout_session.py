@@ -126,11 +126,23 @@ def test_previous_checkout_clients_survive_the_deployment(setup, mode):
 
 
 @pytest.mark.parametrize('selected', [True, False])
-def test_checkout_records_postcard_choice_for_fulfillment(setup, selected):
-    _, create, _ = setup
-    run(uiMode='elements', shipInstructionsPostcard=selected)
-    assert create.call_args.kwargs['metadata']['shipInstructionsPostcard'] == str(selected).lower()
-    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 2500
+@pytest.mark.parametrize('mode', ['hosted', 'custom', 'embedded', 'elements'])
+def test_checkout_charges_postcard_once_without_discount_and_records_choice(setup, selected, mode):
+    _, create, track = setup
+    run(uiMode=mode, shipInstructionsPostcard=selected, priceCents=1)
+    params = create.call_args.kwargs
+    assert params['metadata']['shipInstructionsPostcard'] == str(selected).lower()
+    assert params['line_items'][0]['price_data']['unit_amount'] == 2500
+    assert len(params['line_items']) == (2 if selected else 1)
+    if selected:
+        postcard = params['line_items'][1]
+        assert postcard['price_data']['unit_amount'] == 500
+        assert postcard['price_data']['currency'] == 'usd'
+        assert postcard['price_data']['product_data']['name'] == 'Custom instructions postcard'
+        assert postcard['quantity'] == 1
+    total = sum(item['price_data']['unit_amount'] * item['quantity'] for item in params['line_items'])
+    assert total == (3000 if selected else 2500)
+    assert track.call_args.kwargs['request_data']['priceCents'] == total
 
 
 @pytest.mark.parametrize('value', ['true', 1, None, {'selected': True}])

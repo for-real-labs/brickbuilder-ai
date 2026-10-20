@@ -3,7 +3,9 @@ import type { GetPriceResponse } from '../services/getPriceApi';
 export type OrderQuote = Pick<GetPriceResponse, 'total_price' | 'total_weight'> &
   Partial<Pick<GetPriceResponse, 'total_parts' | 'unique_part_types'>>;
 
-export function getOrderPricing(quote?: OrderQuote | null) {
+export const INSTRUCTIONS_POSTCARD_PRICE_CENTS = 500;
+
+export function getOrderPricing(quote?: OrderQuote | null, shipInstructionsPostcard = false) {
   if (!quote || !Number.isFinite(quote.total_price) || quote.total_price <= 0 ||
       !Number.isFinite(quote.total_weight) || quote.total_weight < 0) return null;
   // Preserve the existing kit discount and shipping calculation.
@@ -11,10 +13,11 @@ export function getOrderPricing(quote?: OrderQuote | null) {
   const fullPartSubtotalCents = Math.max(Math.round(quote.total_price * 100) - fullShippingCents, 0);
   const partSubtotalCents = Math.round(fullPartSubtotalCents * 0.5);
   const shippingCents = Math.round(fullShippingCents * 0.5);
+  const postcardCents = shipInstructionsPostcard ? INSTRUCTIONS_POSTCARD_PRICE_CENTS : 0;
   return {
-    partSubtotalCents, shippingCents, totalCents: partSubtotalCents + shippingCents,
+    partSubtotalCents, shippingCents, postcardCents, totalCents: partSubtotalCents + shippingCents + postcardCents,
     fullPartSubtotalCents, fullShippingCents,
-    fullTotalCents: fullPartSubtotalCents + fullShippingCents,
+    fullTotalCents: fullPartSubtotalCents + fullShippingCents + postcardCents,
   };
 }
 

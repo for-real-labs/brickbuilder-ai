@@ -64,6 +64,15 @@ it('handles absent, invalid, and valid pricing without displaying a fake total',
   expect(getOrderPricing(quote)).toMatchObject({ partSubtotalCents: 2210, shippingCents: 290, totalCents: 2500 });
 });
 
+it('adds the full postcard fee after the kit discount and removes it when deselected', () => {
+  const withoutPostcard = getOrderPricing(quote)!;
+  const withPostcard = getOrderPricing(quote, true)!;
+  expect(withPostcard).toMatchObject({ partSubtotalCents: 2210, shippingCents: 290, postcardCents: 500, totalCents: 3000, fullTotalCents: 5500 });
+  expect(withPostcard.fullTotalCents - withPostcard.totalCents).toBe(withoutPostcard.fullTotalCents - withoutPostcard.totalCents);
+  expect(getOrderPricing(quote, false)).toEqual(withoutPostcard);
+  expect(getOrderPricing(null, true)).toBeNull();
+});
+
 it('uses a text-only brand link in the checkout header', async () => {
   await renderOrder();
   const brand = container.querySelector('a[aria-label="BrickBuilder home"]')!;
@@ -350,19 +359,32 @@ it('tracks address field interactions without contact values', async () => {
 });
 
 
-it('sends the postcard choice to payment and retains it when editing contact details', async () => {
+it('updates the summary and payment total when selecting and removing the postcard', async () => {
   const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret' });
   await renderOrder();
   const postcard = container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!;
   expect(postcard.checked).toBe(false);
+  expect(postcard.closest('label')?.textContent).toContain('+$5.00');
+  expect(container.querySelector('.checkout-price-list')?.textContent).not.toContain('Custom instructions postcard');
   act(() => { postcard.click(); Object.entries(details).forEach(([name, value]) => fill(name, value)); });
+  const row = Array.from(container.querySelectorAll('.checkout-price-list > div')).find(row => row.querySelector('dt')?.textContent === 'Custom instructions postcard');
+  expect(row?.querySelector('dd')?.textContent).toBe('$5.00');
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('USD$30.00');
+  expect(container.querySelector('.checkout-total s')?.textContent).toBe('$55.00');
+  expect(container.querySelector('.checkout-discount')?.textContent).toContain('−$25.00');
+  expect(container.querySelector('.checkout-savings')?.textContent).toBe('You save $25.00');
+  expect(container.querySelector('.checkout-summary-toggle strong')?.textContent).toBe('$30.00');
   await submitContact();
-  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shipInstructionsPostcard: true }), 'auth-token');
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shipInstructionsPostcard: true, priceCents: 3000 }), 'auth-token');
+  expect(container.querySelector('#checkout-step-2 .checkout-primary')?.textContent).toContain('$30.00');
   await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
   expect(container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.checked).toBe(true);
   act(() => container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.click());
+  expect(container.querySelector('.checkout-price-list')?.textContent).not.toContain('Custom instructions postcard');
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('USD$25.00');
   await submitContact();
-  expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ shipInstructionsPostcard: false }), 'auth-token');
+  expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ shipInstructionsPostcard: false, priceCents: 2500 }), 'auth-token');
+  expect(container.querySelector('#checkout-step-2 .checkout-primary')?.textContent).toContain('$25.00');
 });
 
 

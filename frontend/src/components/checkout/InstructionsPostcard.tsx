@@ -3,6 +3,7 @@ import { Info, Package, RotateCcw, X } from 'lucide-react';
 import QRCode from 'qrcode';
 import posthog from 'posthog-js';
 import { ThreeLDRViewer, type CameraState, type ExportCaptureApi } from '../ThreeLDRViewer';
+import { formatOrderPrice, INSTRUCTIONS_POSTCARD_PRICE_CENTS } from '../../utils/orderCheckout';
 
 export function getPostcardTheme(name: string) {
   if (/\b(space|galaxy|cosmic|star|rocket|planet|moon)\b/i.test(name)) return 'space';
@@ -77,7 +78,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
     <label><input type="checkbox" name="shipInstructionsPostcard" checked={selected} disabled={disabled} onChange={event => {
       onChange(event.target.checked);
       posthog.capture('order_instructions_postcard_changed', { generation_id: generationId, selected: event.target.checked });
-    }} /><span>ship instructions post card</span></label>
+    }} /><span>Send a custom instructions postcard (+{formatOrderPrice(INSTRUCTIONS_POSTCARD_PRICE_CENTS)})</span></label>
     <button ref={infoButton} type="button" disabled={disabled} className="checkout-postcard-info" aria-label="About the instructions post card" aria-haspopup="dialog" aria-expanded={open} onClick={() => {
       setOpen(true);
       posthog.capture('order_instructions_postcard_preview_opened', { generation_id: generationId });
@@ -91,7 +92,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
       }}>
       <div className="checkout-postcard-dialog-content">
         <button type="button" className="checkout-postcard-close" aria-label="Close postcard preview" onClick={close}><X size={20} aria-hidden="true" /></button>
-        <p id={descriptionId} className="checkout-postcard-description">Select this option to ship a post card with a QR code link to the instructions.</p>
+        <p id={descriptionId} className="checkout-postcard-description">Add a custom postcard with your model and a QR code link to the instructions for {formatOrderPrice(INSTRUCTIONS_POSTCARD_PRICE_CENTS)}, including postage.</p>
         <figure className="checkout-postcard-example" aria-label="7 by 5 inch instructions postcard with bleed (7.12 by 5.12 inches)">
           <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
