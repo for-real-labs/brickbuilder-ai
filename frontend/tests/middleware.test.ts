@@ -150,9 +150,20 @@ describe('preview password middleware', () => {
     vi.stubGlobal('fetch', fetcher);
     const response = await middleware(new Request(`https://brickbuilder.ai/share-image/${id}.png`));
     expect(response?.headers.get('content-type')).toBe('image/png');
+    expect(response?.headers.get('cache-control')).toContain('s-maxage=3600');
     expect(response?.headers.get('x-robots-tag')).toBeNull();
     expect(new Uint8Array(await response!.arrayBuffer())).toEqual(new Uint8Array([137, 80, 78, 71]));
     expect(fetcher.mock.calls[1][0]).toBe(`https://api.example.com/generation/${id}/share-card.png`);
+  });
+
+  it('briefly caches the raw preview while the branded renderer deploys', async () => {
+    process.env.VERCEL_ENV = 'production';
+    const id = '123e4567-e89b-12d3-a456-426614174000';
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ preview_image_url: 'https://smzdytfghwslpbqnwdov.supabase.co/storage/pip.png' })))
+      .mockResolvedValueOnce(new Response('Not Found', { status: 404 }))
+      .mockResolvedValueOnce(new Response(new Uint8Array([137, 80, 78, 71]), { headers: { 'Content-Type': 'image/png' } })));
+    const response = await middleware(new Request(`https://brickbuilder.ai/share-image/${id}.png?card=3`));
+    expect(response?.headers.get('cache-control')).toBe('public, s-maxage=30');
   });
 
   it('gives the refreshed share path its own preview URL', async () => {

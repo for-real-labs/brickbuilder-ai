@@ -78,15 +78,16 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
           signal: AbortSignal.timeout(10000),
         });
       } catch { /* A raw preview is still available if the card service is unavailable. */ }
-      const imageResponse = cardResponse?.ok && cardResponse.headers.get('content-type')?.split(';')[0] === 'image/png'
-        ? cardResponse
+      const branded = Boolean(cardResponse?.ok && cardResponse.headers.get('content-type')?.split(';')[0] === 'image/png');
+      const imageResponse = branded
+        ? cardResponse!
         : await fetch(imageUrl.href, { redirect: 'error', signal: AbortSignal.timeout(8000) });
       if (!imageResponse.ok || imageResponse.headers.get('content-type')?.split(';')[0] !== 'image/png') return undefined;
       if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return undefined;
       const bytes = await imageResponse.arrayBuffer();
       if (bytes.byteLength > 10_000_000) return undefined;
       return new Response(bytes, {
-        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30' },
       });
     }
     const shellUrl = new URL('/share-shell.html', request.url);
