@@ -32,7 +32,11 @@ function deploymentDockerfile(upstream) {
   return '# Generated from the pinned Nova forks by backend/setup_nova.cjs.\n' + sources + '\n' + recipe + '\n' +
     'COPY backend/nova-service/ /app/web/backend/brickbuilder_integration/\n' +
     'COPY backend/src/utils/generation_budget.py /app/web/backend/brickbuilder_integration/generation_budget.py\n' +
-    `RUN printf '%s' '${versions}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools\n` + SERVICE_CMD;
+    `RUN printf '%s' '${versions}' > /app/web/backend/brickbuilder_integration/versions.json && chmod -R a-w /opt/ldraw-nova/ldraw_tools\n` +
+    // Hosted containers do not receive Docker's --init. Reap orphaned render
+    // and tool children before they exhaust the runtime's process limit.
+    'RUN apt-get update && apt-get install -y --no-install-recommends tini && rm -rf /var/lib/apt/lists/*\n' +
+    'ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/entrypoint.sh"]\n' + SERVICE_CMD;
 }
 
 function execute(command, args, cwd, run = spawnSync, capture = false) {

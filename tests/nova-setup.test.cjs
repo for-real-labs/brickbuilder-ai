@@ -25,6 +25,29 @@ test('hosted build imports fork sources without requiring registry credentials o
   assert.ok(!recipe.includes('\nVOLUME '));
 });
 
+test('hosted runtime reaps orphaned tools while preserving the upstream startup', () => {
+  const upstream = 'FROM ubuntu:24.04\nENTRYPOINT ["/usr/local/bin/entrypoint.sh"]\nCMD ["uvicorn", "main:app"]';
+  const recipe = deploymentDockerfile(upstream);
+  assert.match(recipe, /apt-get install -y --no-install-recommends tini/);
+  const entrypoints = recipe.split('\n').filter(line => line.startsWith('ENTRYPOINT '));
+  assert.deepEqual(JSON.parse(entrypoints.at(-1).slice('ENTRYPOINT '.length)),
+    ['/usr/bin/tini', '--', '/usr/local/bin/entrypoint.sh']);
+  assert.match(recipe.trim().split('\n').at(-1), /exec uvicorn brickbuilder_integration\.gateway:app/);
+});
+
+test('checked-in hosted Dockerfile matches the generator including process cleanup', () => {
+  const hosted = readFileSync(path.resolve(__dirname, '../backend/nova-service/Dockerfile'), 'utf8');
+  const start = hosted.indexOf('# check=');
+  const end = hosted.indexOf('\nCOPY backend/nova-service/');
+  assert.ok(start > 0 && end > start);
+  const upstream = hosted.slice(start, end).replace(
+    /^COPY --from=(nova_web|nova) (.+)$/gm, (_line, stage, args) => {
+      const original = args.replaceAll('/source/', '');
+      return 'COPY ' + (stage === 'nova' ? '--from=nova ' : '') + original;
+    });
+  assert.equal(hosted, deploymentDockerfile(upstream));
+});
+
 test('managed checkout fetches immutable source with argument-based calls', () => {
   const calls = [];
   ensureSource(SOURCES[0], (command, args, options) => {
