@@ -15,6 +15,27 @@ it('counts repeated submodels with inherited colors, without counting brick geom
   expect(modelParts(model)).toEqual([{ id: '3001', color: 4, quantity: 2 }, { id: '3002', color: 71, quantity: 1 }]);
 });
 
+it('counts packed model placements before library FILE sections and accepts parts paths', async () => {
+  const packed = [
+    '0 LDraw.org Configuration File',
+    placement('parts/3020.dat', 40),
+    placement('parts/3020.dat', 40),
+    placement('parts/3062b.dat', 47),
+    '0 FILE parts/3020.dat', placement('p/stud.dat', 16),
+    '0 FILE p/stud.dat', '3 16 0 0 0 1 0 0 0 1 0',
+  ].join('\n');
+  expect(modelParts(packed)).toEqual([
+    { id: '3020', color: 40, quantity: 2 },
+    { id: '3062b', color: 47, quantity: 1 },
+  ]);
+  expect(await text(createModelExport(packed, 'BVG Tram', 'csv').blob))
+    .toBe('LdrawId,LDrawColorId,Qty\r\n3020.dat,40,2\r\n3062b.dat,47,1\r\n');
+  const xml = await text(createModelExport(packed, 'BVG Tram', 'xml').blob);
+  const doc = new DOMParser().parseFromString(xml, 'application/xml');
+  expect(doc.querySelector('parsererror')).toBeNull();
+  expect([...doc.querySelectorAll('COLOR')].map(node => node.textContent)).toEqual(['13', '12']);
+});
+
 it('exports complete LDraw and a Studio archive containing the same model', async () => {
   const ldraw = createModelExport(model, '../Castle / model', 'ldraw');
   expect(ldraw.filename).toBe('Castle_model.ldr');
@@ -37,6 +58,7 @@ it('exports CSV quantities and BrickLink XML with translated color IDs', async (
 it('rejects cyclic models, unsafe part IDs and unmapped XML colors without corrupt downloads', () => {
   expect(() => modelParts(`0 FILE loop.ldr\n${placement('loop.ldr')}`)).toThrow('circular');
   expect(() => modelParts(placement('<bad>.dat'))).toThrow('cannot be exported');
+  expect(() => modelParts(placement('parts/s/stud.dat'))).toThrow('cannot be exported');
   expect(() => createModelExport(placement('3001.dat', 99999), 'model', 'xml')).toThrow('no BrickLink match');
   expect(() => modelParts('0 Empty')).toThrow('No parts');
 });

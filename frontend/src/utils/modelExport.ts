@@ -1,5 +1,6 @@
 import { strToU8, zipSync } from 'fflate';
-// LDraw → BrickLink IDs from the repository's backend/gobrick_colors.csv.
+// LDraw → BrickLink IDs from backend/gobrick_colors.csv, with transparent
+// colors 40 and 47 checked against the LDraw and BrickLink color guides.
 import bricklinkColors from './bricklinkColors.json';
 
 export type ModelExportFormat = 'ldraw' | 'io' | 'csv' | 'xml';
@@ -16,7 +17,12 @@ export function modelParts(content: string): Part[] {
     if (file) {
       current = [];
       sections.set(file[1].toLowerCase().replaceAll('\\', '/'), current);
-      if (firstFile) { root = current; firstFile = false; }
+      // Packed MPDs can place the model before their first FILE section and
+      // append library part geometry afterward. Keep those placements as root.
+      if (firstFile) {
+        if (!root.some(placement => /^1\s/.test(placement))) root = current;
+        firstFile = false;
+      }
     } else current.push(line.trim());
   }
   const parts = new Map<string, Part>();
@@ -36,8 +42,9 @@ export function modelParts(content: string): Part[] {
         if (parents.has(file) || parents.size > 100) throw new Error('The model contains a circular or deeply nested submodel.');
         visit(submodel, color, new Set([...parents, file]));
       } else {
-        if (!/^[a-z0-9][a-z0-9_-]*\.dat$/i.test(file)) throw new Error('A part in this model cannot be exported to a parts list.');
-        const id = file.slice(0, -4);
+        const partFile = file.startsWith('parts/') ? file.slice('parts/'.length) : file;
+        if (!/^[a-z0-9][a-z0-9_-]*\.dat$/i.test(partFile)) throw new Error('A part in this model cannot be exported to a parts list.');
+        const id = partFile.slice(0, -4);
         const key = `${id}:${color}`;
         const part = parts.get(key);
         if (part) part.quantity++;
