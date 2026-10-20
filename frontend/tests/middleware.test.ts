@@ -128,4 +128,16 @@ describe('preview password middleware', () => {
     await expect(middleware(new Request('https://brickbuilder.ai/?id=123e4567-e89b-12d3-a456-426614174000'))).resolves.toBeUndefined();
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
+
+  it('uses the existing public model read while the card endpoint deploys', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.VITE_RAILWAY_API_URL = 'https://api.example.com';
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response('Not Found', { status: 404 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ status: 'completed', endpoint: 'llmToBricks', name: 'Castle', preview_image_url: 'https://images.example.com/castle.png' })))
+      .mockResolvedValueOnce(new Response('<html><head></head><body></body></html>'));
+    vi.stubGlobal('fetch', fetcher);
+    const response = await middleware(new Request('https://brickbuilder.ai/?id=123e4567-e89b-12d3-a456-426614174000'));
+    expect(await response?.text()).toContain('https://images.example.com/castle.png');
+    expect(fetcher).toHaveBeenCalledTimes(3);
+  });
 });

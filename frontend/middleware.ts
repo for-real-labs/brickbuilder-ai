@@ -36,11 +36,17 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     : process.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
   if (!backend) return undefined;
   try {
-    const result = await fetch(`${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}/share-preview`, {
+    const generationUrl = `${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}`;
+    let result = await fetch(`${generationUrl}/share-preview`, {
       signal: AbortSignal.timeout(4000),
     });
+    // Railway may still be rolling out the smaller card endpoint after Vercel deploys.
+    // The existing model read is public for completed builds and keeps the card live.
+    const legacy = result.status === 404;
+    if (legacy) result = await fetch(generationUrl, { signal: AbortSignal.timeout(4000) });
     if (!result.ok) return undefined;
-    const model = await result.json() as { name?: unknown; preview_image_url?: unknown };
+    const model = await result.json() as { name?: unknown; preview_image_url?: unknown; status?: unknown; endpoint?: unknown };
+    if (legacy && (model.status !== 'completed' || model.endpoint === 'uploadLdraw')) return undefined;
     if (typeof model.preview_image_url !== 'string') return undefined;
     const imageUrl = new URL(model.preview_image_url);
     if (imageUrl.protocol !== 'https:') return undefined;
