@@ -97,19 +97,19 @@ HTTP 429 with a message to wait or cancel a running job. Apply
 `20261005000001_generation_concurrency_limit.sql` before deploying the backend.
 Local embedded PostgreSQL installs the matching trigger automatically.
 
-Each generation, including each follow-up edit or resumed Nova turn, has a $10 USD
+Each generation, including each follow-up edit or resumed Nova turn, has a $20 USD
 AI budget across all provider/tool rounds. Direct API calls reserve conservative
 input costs and cap output tokens before each call, then account for reported
 input, cached input, cache writes, and output (including reasoning). Missing usage
 or unknown pricing fails closed. Nova's API bridge uses the same accounting and
-disables automatic provider retries; its Claude SDK receives `max_budget_usd=10`
+disables automatic provider retries; its Claude SDK receives `max_budget_usd=20`
 and rejects over-budget results. SDK budget checks can stop a turn after its final
 provider response, so any already-incurred provider charges cannot be reversed.
 Over-budget generations fail and do not deduct the user's generation credit.
 
 Rebuild Nova with `npm run setup:nova` after upgrading the cost guard, and deploy
 the rebuilt Nova image alongside the API. The API refuses to start All parts
-generations on an older runtime without the $10 guard. Prices in
+generations on an older runtime without the $20 guard. Prices in
 `backend/src/utils/generation_budget.py` are the standard API rates verified on
 October 5, 2026 and need updating when provider prices change.
 
@@ -331,7 +331,7 @@ on first request.
 
 Opus 5.5 builds using an API key automatically request Anthropic fast mode.
 This keeps the same model quality and speeds up model output at twice the
-standard token price. The $10 generation cap includes the fast-mode premium,
+standard token price. The $20 generation cap includes the fast-mode premium,
 and each API usage record includes the speed used. If Anthropic rejects a fast
 request for capacity (429 or 529) before streaming starts, Nova tries once at
 standard speed. Other models and native Claude login sessions keep their existing

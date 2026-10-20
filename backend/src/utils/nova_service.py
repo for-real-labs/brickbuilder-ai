@@ -133,8 +133,8 @@ class NovaService:
 
     async def ready(self) -> dict:
         info = await self.request('GET', 'integration/runtime')
-        if info.get('generation_cost_limit_usd') != 10:
-            raise ValueError('Nova must be rebuilt with the $10 generation cost limit before All parts can run.')
+        if info.get('generation_cost_limit_usd') != 20:
+            raise ValueError('Nova must be rebuilt with the $20 generation cost limit before All parts can run.')
         if info.get('parts_catalog_version') != 1:
             raise ValueError('Rebuild the Nova runtime with parts catalog restrictions before using All parts.')
         return info

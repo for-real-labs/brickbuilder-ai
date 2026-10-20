@@ -34,7 +34,7 @@ from leocad_render import bom_path_for, snapshot_path_for
 MAX_EXPORT_BYTES = 64 * 1024 * 1024
 VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 install_cost_limits(agent, llm_config, litellm, claude_agent)
-VERSIONS['generation_cost_limit_usd'] = 10
+VERSIONS['generation_cost_limit_usd'] = 20
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = CATALOG_VERSION
 VERSIONS['instruction_plan_version'] = 2

@@ -5,8 +5,8 @@ import json
 from contextvars import ContextVar
 from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 
-MAX_GENERATION_COST_USD = Decimal('10')
-BUDGET_ERROR = 'Generation stopped because it would exceed the $10 AI cost limit.'
+MAX_GENERATION_COST_USD = Decimal('20')
+BUDGET_ERROR = 'Generation stopped because it would exceed the $20 AI cost limit.'
 
 
 class GenerationUsage:

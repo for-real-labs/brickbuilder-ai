@@ -35,7 +35,7 @@ def test_nova_budget_survives_background_task_and_isolated_between_owners(monkey
             for _ in range(2):
                 async for chunk in await llm.acompletion(model='openai/gpt-5.5', messages=[], stream=True, num_retries=2): pass
             assert budget.spent == Decimal('.07')
-            budget.spent = Decimal('10')
+            budget.spent = Decimal('20')
             with pytest.raises(generation_budget.GenerationBudgetExceeded):
                 await llm.acompletion(model='openai/gpt-5.5', messages=[], stream=True)
         tasks.append(asyncio.create_task(work()))
@@ -61,7 +61,7 @@ def test_nova_budget_survives_background_task_and_isolated_between_owners(monkey
 def test_claude_sdk_gets_dollar_cap_and_over_budget_results_fail(monkeypatch):
     module = load_limits(monkeypatch)
     class Result:
-        total_cost_usd = 10.01
+        total_cost_usd = 20.01
         subtype = 'success'
     async def receive(client): yield Result()
     sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs,
@@ -69,7 +69,7 @@ def test_claude_sdk_gets_dollar_cap_and_over_budget_results_fail(monkeypatch):
     module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, SimpleNamespace(acompletion=lambda: None), sdk)
     token = module.current_budget.set(generation_budget.GenerationBudget('claude-opus-5-5'))
     try:
-        assert sdk.ClaudeAgentOptions(model='claude-opus-5-5', max_budget_usd=100)['max_budget_usd'] == 10
+        assert sdk.ClaudeAgentOptions(model='claude-opus-5-5', max_budget_usd=100)['max_budget_usd'] == 20
         async def run():
             with pytest.raises(generation_budget.GenerationBudgetExceeded):
                 async for event in sdk.ClaudeSDKClient.receive_response(None): pass
@@ -187,7 +187,7 @@ def test_opus_fast_api_calls_and_capacity_fallback(monkeypatch, streaming, rejec
         ClaudeSDKClient=SimpleNamespace(receive_response=lambda: None))
     module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, llm, sdk)
     budget = generation_budget.GenerationBudget('claude-opus-5-5')
-    budget.spent = Decimal('9')
+    budget.spent = Decimal('19')
     token = module.current_budget.set(budget)
     async def run():
         response = await llm.acompletion(model='anthropic/claude-opus-5-5', messages=[], stream=streaming)
@@ -196,10 +196,10 @@ def test_opus_fast_api_calls_and_capacity_fallback(monkeypatch, streaming, rejec
     try:
         if rejection in {400, 500}:
             with pytest.raises(Rejected): asyncio.run(run())
-            assert len(calls) == 1 and budget.spent == 9
+            assert len(calls) == 1 and budget.spent == 19
         else:
             asyncio.run(run())
-            assert budget.spent == Decimal('9.024' if rejection else '9.048')
+            assert budget.spent == Decimal('19.024' if rejection else '19.048')
             assert budget.usage_records[0]['speed'] == ('standard' if rejection else 'fast')
         assert calls[0]['speed'] == 'fast'
         if rejection in {429, 529}:

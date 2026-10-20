@@ -11,12 +11,13 @@ from unittest.mock import AsyncMock
 from src.utils.nova_service import NovaService, read_export
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 10, 'parts_catalog_version': 1, 'instruction_plan_version': 2, 'instruction_publication_version': 1}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'parts_catalog_version': 1, 'instruction_plan_version': 2, 'instruction_publication_version': 1}
 
 
 @pytest.mark.parametrize('versions,error', [({}, 'cost limit'),
+    ({**VERSIONS, 'generation_cost_limit_usd': 10}, 'cost limit'),
     ({'parts_catalog_version': 1, 'instruction_plan_version': 2}, 'cost limit'),
-    ({'generation_cost_limit_usd': 10}, 'parts catalog')])
+    ({'generation_cost_limit_usd': 20}, 'parts catalog')])
 def test_older_nova_runtime_is_rejected_before_provider_calls(versions, error):
     async def run():
         async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
@@ -32,7 +33,7 @@ def test_budget_stream_error_is_visible_and_stops_the_turn():
         data = 'event: turn_error\ndata: ' + json.dumps({'message': BUDGET_ERROR}) + '\n\n'
         async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
                 lambda req: httpx.Response(200, text=data)))) as service:
-            with pytest.raises(ValueError, match=r'\$10'):
+            with pytest.raises(ValueError, match=r'\$20'):
                 await service.wait_for_turn('chat', None)
     asyncio.run(run())
 

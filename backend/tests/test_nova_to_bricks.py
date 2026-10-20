@@ -122,7 +122,7 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     assert all(attempt == attempts[0] for attempt in attempts)
 
 
-@pytest.mark.parametrize('message', ['Nova did not publish a model', 'Generation stopped because it would exceed the $10 AI cost limit.'])
+@pytest.mark.parametrize('message', ['Nova did not publish a model', 'Generation stopped because it would exceed the $20 AI cost limit.'])
 def test_failed_nova_turn_does_not_charge(monkeypatch, message):
     storage = SimpleNamespace(update_status=AsyncMock())
     class Service:

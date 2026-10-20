@@ -9,13 +9,13 @@ from src.utils.llm_tool_conversation import ConversationSettings, create_convers
 
 
 @pytest.mark.parametrize('model', MODEL_PRICES)
-def test_all_supported_models_allow_exactly_ten_dollars_and_fail_above(model):
+def test_all_supported_models_allow_exactly_twenty_dollars_and_fail_above(model):
     budget = GenerationBudget(model)
     provider = 'anthropic' if model.startswith('claude') else 'openai'
     rate = budget.prices[1]
-    output = int(Decimal('10') * 1000000 / rate)
+    output = int(Decimal('20') * 1000000 / rate)
     budget.record_usage({'input_tokens': 0, 'output_tokens': output}, provider)
-    assert budget.spent <= 10
+    assert budget.spent <= 20
     with pytest.raises(GenerationBudgetExceeded):
         budget.record_usage({'input_tokens': 1, 'output_tokens': 1}, provider)
 
@@ -33,7 +33,7 @@ def test_input_reasoning_cache_and_long_context_costs():
 
 def test_budget_reserves_input_and_limits_output_before_sending():
     budget = GenerationBudget('claude-fable-5')
-    budget.spent = Decimal('9')
+    budget.spent = Decimal('19')
     assert budget.output_limit(10000, 65536) == 16000
     with pytest.raises(GenerationBudgetExceeded):
         budget.output_limit(50000, 65536)
@@ -72,7 +72,7 @@ def test_provider_usage_accumulates_across_streamed_and_normal_turns(monkeypatch
             await send()
             await send()
             assert conversation.budget.spent == Decimal('4.008')
-            conversation.budget.spent = Decimal('10')
+            conversation.budget.spent = Decimal('20')
             with pytest.raises(GenerationBudgetExceeded):
                 await send()
             assert len(sent) == 2
@@ -89,7 +89,7 @@ def test_astra_costs_and_response_bridge_share_the_generation_budget():
     budget.record_usage({'input_tokens': 2000, 'input_tokens_details': {'cached_tokens': 1000},
                          'output_tokens': 1000}, 'openai')
     assert budget.spent == Decimal('.061')
-    budget.spent = Decimal('9')
+    budget.spent = Decimal('19')
     assert budget.output_limit(10000, 65536) == 17500
 
 
@@ -126,7 +126,7 @@ def test_haiku_context_price_includes_cached_and_written_tokens(inputs, multipli
 
 def test_haiku_output_budget_reserves_the_long_context_rate():
     budget = GenerationBudget('claude-haiku-5-5')
-    budget.spent = Decimal('9.8')
+    budget.spent = Decimal('19.8')
     assert budget.output_limit(100000, 128000) == 128000
     assert budget.output_limit(100001, 128000) == 39999
 
@@ -138,7 +138,7 @@ def test_opus_fast_mode_prices_cache_and_reserves_double_cost():
         'cache_creation': {'ephemeral_1h_input_tokens': 1000}, 'speed': 'fast'}, 'anthropic')
     assert budget.spent == Decimal('.0744')
     assert budget.usage_records[0]['speed'] == 'fast'
-    budget.spent = Decimal('9')
+    budget.spent = Decimal('19')
     assert budget.output_limit(10000, 65536, speed='fast') == 21000
     assert budget.output_limit(10000, 65536) == 46000
     with pytest.raises(ValueError, match='model speed'):
@@ -151,3 +151,11 @@ def test_generation_ledger_preserves_fast_mode():
     budget.record_usage({'input_tokens': 100, 'output_tokens': 10, 'speed': 'fast'}, 'anthropic')
     ledger.extend(budget.usage_records)
     assert ledger.values()['ai_usage']['calls'][0]['speed'] == 'fast'
+
+
+@pytest.mark.parametrize('speed,outputs', [('standard', 750000), ('fast', 375000)])
+def test_opus_generation_can_spend_fifteen_dollars_with_twenty_dollar_cap(speed, outputs):
+    budget = GenerationBudget('claude-opus-5-5')
+    budget.record_usage({'input_tokens': 0, 'output_tokens': outputs, 'speed': speed}, 'anthropic')
+    assert budget.spent == Decimal('15')
+    assert budget.output_limit(1000, 1000, speed=speed) == 1000
