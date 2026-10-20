@@ -3,9 +3,8 @@ import React, { lazy, Suspense, useEffect, useState } from 'react';
 const ThreeLDRViewer = lazy(() => import('./ThreeLDRViewer').then(module => ({ default: module.ThreeLDRViewer })));
 export const LDRAW_GENERATION_SCENES = ['house', 'tree', 'rocket', 'race-car', 'flower'] as const;
 
-/** Packed LDraw scenes made only from part/color combinations in the Brickwith catalog. */
+/** Use a stable room footprint while the viewer loads random Brickwith catalog pieces. */
 export function LdrawGenerationAnimation() {
-  const [index] = useState(() => Math.floor(Math.random() * LDRAW_GENERATION_SCENES.length));
   const [reducedMotion, setReducedMotion] = useState(false);
   useEffect(() => {
     const media = window.matchMedia?.('(prefers-reduced-motion: reduce)');
@@ -14,7 +13,7 @@ export function LdrawGenerationAnimation() {
     media?.addEventListener?.('change', update);
     return () => media?.removeEventListener?.('change', update);
   }, []);
-  const scene = LDRAW_GENERATION_SCENES[index];
+  const scene = LDRAW_GENERATION_SCENES[0];
   return <div className="ldraw-generation-animation" role="img" aria-label="Bricks falling onto a table">
     <Suspense fallback={null}>
       <ThreeLDRViewer key={scene} modelPath={`/assets/ldraw-generation-scenes/${scene}.mpd`}

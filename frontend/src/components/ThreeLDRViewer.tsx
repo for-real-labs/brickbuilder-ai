@@ -1,3 +1,7 @@
+import posthog from 'posthog-js';
+import { loadGenerationCatalog } from '../utils/generationCatalog';
+import { addGenerationWalls, type TableEnclosure } from '../utils/generationEnclosure';
+import { attachGenerationDrag } from '../utils/generationDrag';
 import { getBrickCollisionGroups } from '../utils/brickPhysics';
 import { createGenerationDropLoop, GENERATION_DROP_POOL_SIZE } from '../utils/generationDrops';
 import { observeElementSize } from '../utils/observeElementSize';
@@ -808,6 +812,8 @@ type ExplodePhysicsState = {
   simulatedMs: number;
   maxDurationMs: number;
   dropNext?: (nowMs: number) => void;
+  enclosure?: TableEnclosure;
+  beforeReset?: () => void;
 };
 
 let rapierInitPromise: Promise<void> | null = null;
@@ -1045,7 +1051,7 @@ const createExplodePhysics = async (
   const modelBounds = new THREE.Box3().setFromObject(model);
   const modelCenter = modelBounds.getCenter(new THREE.Vector3());
   const modelSize = modelBounds.getSize(new THREE.Vector3());
-  const maxDimension = Math.max(modelSize.x, modelSize.y, modelSize.z);
+  const maxDimension = generationDrops ? 180 : Math.max(modelSize.x, modelSize.y, modelSize.z);
   const tableTopSurface = typeof table.userData.tableTopSurface === 'number' ? table.userData.tableTopSurface : 0;
   const tableThickness = typeof table.userData.tableThickness === 'number' ? table.userData.tableThickness : 12;
   const tableWidth = typeof table.userData.tableWidth === 'number' ? table.userData.tableWidth : 300;
@@ -1069,7 +1075,7 @@ const createExplodePhysics = async (
   const world = new RAPIER.World({ x: 0, y: -560, z: 0 });
   world.timestep = 1 / 60;
   world.numSolverIterations = 5;
-  world.maxCcdSubsteps = 1;
+  world.maxCcdSubsteps = generationDrops ? 4 : 1;
   world.lengthUnit = Math.max(maxDimension / 8, 20);
 
   const { staticGroups, partGroups } = getBrickCollisionGroups(generationDrops);
@@ -1097,6 +1103,12 @@ const createExplodePhysics = async (
       .setSolverGroups(staticGroups),
     floorBody,
   );
+
+  const enclosure = generationDrops ? {
+    x: tableCenterX, z: tableCenterZ, surface: tableTopSurface,
+    width: tableWidth, depth: tableDepth, height: maxDimension * 4,
+  } : undefined;
+  if (enclosure) addGenerationWalls(world, enclosure);
 
   const physicsParts = parts.flatMap<PhysicsPart>((object, index) => {
     object.updateMatrixWorld(true);
@@ -1186,14 +1198,15 @@ const createExplodePhysics = async (
       part.object.visible = true;
       part.body.setEnabled(true);
       part.body.setTranslation({
-        x: tableCenterX + (Math.random() - 0.5) * tableWidth * 0.35,
+        x: tableCenterX,
         y: tableTopSurface + maxDimension * 2,
-        z: tableCenterZ + (Math.random() - 0.5) * tableDepth * 0.35,
+        z: tableCenterZ,
       }, true);
       part.body.setLinvel({ x: 0, y: -20, z: 0 }, true);
       part.body.setAngvel({ x: Math.random() * 4 - 2, y: Math.random() * 4 - 2, z: Math.random() * 4 - 2 }, true);
       syncObjectToBody(part);
     }, physicsParts.length, () => {
+      state.beforeReset?.();
       physicsParts.forEach(part => {
         part.object.visible = false;
         part.body.setEnabled(false);
@@ -1201,7 +1214,7 @@ const createExplodePhysics = async (
     });
   }
 
-  return {
+  const state: ExplodePhysicsState = {
     active: true,
     world,
     parts: physicsParts,
@@ -1210,7 +1223,9 @@ const createExplodePhysics = async (
     simulatedMs: 0,
     maxDurationMs: 9000,
     dropNext,
+    enclosure,
   };
+  return state;
 };
 
 const completeExplodePhysics = (physics: ExplodePhysicsState | null) => {
@@ -1635,6 +1650,8 @@ export function ThreeLDRViewer({
     explodePhysicsRef.current = null;
 
     let disposed = false;
+    const catalogAbort = new AbortController();
+    let drag: ReturnType<typeof attachGenerationDrag> | undefined;
     let removeResizeListener: (() => void) | undefined;
     const initThreeJS = async () => {
       try {
@@ -1929,14 +1946,29 @@ export function ThreeLDRViewer({
                 const table = scene.getObjectByName('display-table');
                 model.children.forEach(part => { part.visible = false; });
                 if (table) {
-                  void createExplodePhysics(model, table, true, () => disposed).then(physics => {
+                  void loadGenerationCatalog(catalogAbort.signal).then(async catalog => {
+                    if (disposed) { disposeLDrawScene(catalog); return null; }
+                    const oldParts = new THREE.Group();
+                    [...model.children].forEach(part => oldParts.add(part));
+                    disposeLDrawScene(oldParts);
+                    [...catalog.children].forEach(part => model.add(part));
+                    return createExplodePhysics(model, table, true, () => disposed);
+                  }).then(physics => {
                     if (disposed) {
                       stopExplodePhysicsAtCurrentPose(physics);
                       return;
                     }
                     explodePhysicsRef.current = physics;
-                  }).catch(() => {
-                    if (!disposed) setError('Failed to initialize falling bricks');
+                    if (physics?.enclosure) {
+                      drag = attachGenerationDrag(renderer.domElement, camera, controls, physics.parts, physics.enclosure,
+                        speed => posthog.capture('generation_brick_thrown', { speed: Math.round(speed) }));
+                      physics.beforeReset = drag.cancel;
+                    }
+                  }).catch(error => {
+                    if (!disposed) {
+                      console.error('Failed to initialize falling bricks', error);
+                      setError('Failed to initialize falling bricks');
+                    }
                   });
                 }
               }
@@ -2123,6 +2155,8 @@ export function ThreeLDRViewer({
     // Cleanup
     return () => {
       disposed = true;
+      catalogAbort.abort();
+      drag?.dispose();
       removeResizeListener?.();
       sceneRef.current.controls?.dispose();
       if (onExportCaptureReady) {
