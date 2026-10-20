@@ -1017,7 +1017,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 onOrderBarHeightChange={setOrderBarHeight}>
               <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
-                model={landingModel.model ? { id: landingModel.model.generation.generation_id, name: landingModel.model.generation.name,
+                model={landingModel.model ? { id: landingModel.model.generation.generation_id,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
                 reasoningOnly={pendingEdit} currentOnly showGenerationElapsedTime={!pendingEdit && !pendingGeneration} showOpeningMessage={Boolean(linkedModelId && requestedModelId === linkedModelId && !landingModel.model && !pendingGeneration)}
                 landingWelcome
