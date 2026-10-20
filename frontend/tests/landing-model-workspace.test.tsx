@@ -203,6 +203,33 @@ it('shows processing and recent completed builds inside pet dialogue only after 
   expect(input().getAttribute('aria-label')).toBe('Describe your model');
 });
 
+it('offers a scroll-up cue only while builds are hidden above the dialogue', async () => {
+  await act(async () => root.render(<LandingPage />));
+  const dialogue = container.querySelector<HTMLElement>('.pet-dialogue')!;
+  const scrollTo = vi.fn();
+  dialogue.scrollTo = scrollTo;
+  const scroll = (top: number) => act(() => {
+    dialogue.scrollTop = top;
+    dialogue.dispatchEvent(new Event('scroll', { bubbles: true }));
+  });
+  scroll(120);
+  expect(container.querySelector('.pet-builds-scroll-hint')).toBeNull();
+  act(() => Array.from(dialogue.querySelectorAll<HTMLButtonElement>('button'))
+    .find(button => button.textContent === 'Show builds')!.click());
+  scroll(120);
+  const cue = container.querySelector<HTMLButtonElement>('.pet-builds-scroll-hint button')!;
+  expect(cue.textContent).toBe('Scroll up to see more builds');
+  act(() => cue.click());
+  expect(scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+  expect(posthog.capture).toHaveBeenCalledWith('landing_builds_scroll_up_clicked', { surface: 'pet_dialogue' });
+  scroll(0);
+  expect(container.querySelector('.pet-builds-scroll-hint')).toBeNull();
+  scroll(120);
+  act(() => Array.from(dialogue.querySelectorAll<HTMLButtonElement>('button'))
+    .find(button => button.textContent === 'Go back')!.click());
+  expect(container.querySelector('.pet-builds-scroll-hint')).toBeNull();
+});
+
 it('shows the headline and stats on plain landing visits and hides them on model links', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));

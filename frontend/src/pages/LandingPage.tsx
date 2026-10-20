@@ -1022,7 +1022,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
                 reasoningOnly={pendingEdit} currentOnly showGenerationElapsedTime={!pendingEdit && !pendingGeneration} showOpeningMessage={Boolean(linkedModelId && requestedModelId === linkedModelId && !landingModel.model && !pendingGeneration)}
-                landingWelcome
+                landingWelcome showBuildsScrollHint={Boolean(createNewStage && !landingModel.model && !randomSuggestion)}
                 currentMessage={randomSuggestion && !landingModel.model ? <RandomBuildPrompt suggestion={randomSuggestion}
                   onYes={buildSuggestedIdea} onElse={tryAnotherRandomIdea} onBack={() => {
                     posthog.capture('landing_random_build_back_clicked');

@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { ArrowUp } from 'lucide-react';
+import posthog from 'posthog-js';
 import { usePet } from '../contexts/PetContext';
 import { type PetState } from '../pets';
 import { PetChatMessage, PetPromptGreeting, PetTypingIndicator } from './PetCompanion';
@@ -36,7 +38,7 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, showGenerationElapsedTime = true, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, children }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, showGenerationElapsedTime = true, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, showBuildsScrollHint = false, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
@@ -50,6 +52,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   landingWelcome?: boolean;
   welcomeActions?: React.ReactNode;
   onBackToWelcome?: () => void;
+  showBuildsScrollHint?: boolean;
   children?: React.ReactNode;
 }) {
   const { pet } = usePet();
@@ -70,6 +73,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   }, [returning, welcome]);
   const log = useRef<HTMLDivElement>(null);
   const follow = useRef(true);
+  const [hasContentAbove, setHasContentAbove] = useState(false);
   const pinModelGreeting = Boolean(model && visibleTurns.length === 0 && !reasoningOnly && !currentMessage);
   useEffect(() => {
     const element = log.current;
@@ -92,12 +96,14 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     const scroll = () => {
       if (pinModelGreeting) { element.scrollTop = 0; return; }
       if (follow.current) element.scrollTop = element.scrollHeight;
+      setHasContentAbove(element.scrollTop > 8);
     };
     scroll();
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scroll);
+    observer?.observe(element);
     if (element.firstElementChild) observer?.observe(element.firstElementChild);
     return () => observer?.disconnect();
-  }, [turns.length, generations.length, model?.id, pinModelGreeting, visibleTurns.length]);
+  }, [turns.length, generations.length, model?.id, pinModelGreeting, visibleTurns.length, showBuildsScrollHint]);
   const restored = model ? [] : generations.filter(row => row.id === selectedGenerationId && isAgentGeneration(row.endpoint)
     && !turns.some(turn => turn.generationId === row.id));
   const latestTurn = visibleTurns.at(-1);
@@ -128,8 +134,15 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
       {landingWelcome ? landingGreeting : welcomeMessage ?? greeting}
     </PetPromptGreeting>);
   return <div ref={log} className="pet-dialogue" role="log" aria-label="Build buddy conversation" aria-live="polite" aria-relevant="additions text"
-    onScroll={event => { const el = event.currentTarget; follow.current = el.scrollHeight - el.scrollTop - el.clientHeight < 64; }}>
+    onScroll={event => { const el = event.currentTarget; follow.current = !showBuildsScrollHint && el.scrollHeight - el.scrollTop - el.clientHeight < 64; setHasContentAbove(el.scrollTop > 8); }}>
     <div className="pet-dialogue-content">
+      {showBuildsScrollHint && hasContentAbove && <div className="pet-builds-scroll-hint">
+        <button type="button" onClick={() => {
+          posthog.capture('landing_builds_scroll_up_clicked', { surface: 'pet_dialogue' });
+          follow.current = false;
+          log.current?.scrollTo({ top: 0, behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth' });
+        }}><ArrowUp size={14} aria-hidden="true" />Scroll up to see more builds</button>
+      </div>}
       {currentOnly ? currentDialogue : <>
       {children}
       {reasoningOnly ? null : model ? <ModelGreeting key={model.id} state={state} model={model} />
