@@ -6,10 +6,10 @@ import { LDrawConditionalLineMaterial } from 'three/examples/jsm/materials/LDraw
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { LDRAW_GENERATION_SCENES, LdrawGenerationAnimation } from '../src/components/LdrawGenerationAnimation';
 
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelPath, buildAnimationStyle, presentation, animateModelBuild, autoRotate }: {
-  modelPath: string; buildAnimationStyle: string; presentation: string; animateModelBuild: boolean; autoRotate: boolean;
-}) => <div data-testid="viewer" data-path={modelPath} data-style={buildAnimationStyle}
-  data-presentation={presentation} data-animated={animateModelBuild} data-rotating={autoRotate} /> }));
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelPath, generationDrops, interactionEnabled, presentation, autoRotate }: {
+  modelPath: string; generationDrops: boolean; interactionEnabled: boolean; presentation: string; autoRotate: boolean;
+}) => <div data-testid="viewer" data-path={modelPath} data-interactive={interactionEnabled}
+  data-presentation={presentation} data-animated={generationDrops} data-rotating={autoRotate} /> }));
 
 const catalog = readFileSync('../backend/src/data/brickwith_parts.csv', 'utf8');
 const available = new Set(catalog.split(/\r?\n/).slice(1).map(line => {
@@ -92,17 +92,17 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-it('cycles packed 3D scenes without repeating the current scene', async () => {
+it('keeps the falling-piece viewer mounted and locks user interaction while auto-rotating', async () => {
   vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
   await act(async () => root.render(<LdrawGenerationAnimation />));
   const viewer = () => container.querySelector<HTMLElement>('[data-testid="viewer"]')!;
   expect(viewer().dataset.path).toBe('/assets/ldraw-generation-scenes/house.mpd');
-  expect(viewer().dataset.style).toBe('drop');
+  expect(viewer().dataset.interactive).toBe('false');
   expect(viewer().dataset.presentation).toBe('room');
   expect(viewer().dataset.animated).toBe('true');
   expect(viewer().dataset.rotating).toBe('true');
   await act(async () => vi.advanceTimersByTimeAsync(8_000));
-  expect(viewer().dataset.path).toBe('/assets/ldraw-generation-scenes/tree.mpd');
+  expect(viewer().dataset.path).toBe('/assets/ldraw-generation-scenes/house.mpd');
 });
 
 it('keeps one fully visible scene when reduced motion is preferred', async () => {

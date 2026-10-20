@@ -475,7 +475,7 @@ it('keeps the opening question and composer if the last processing build clears'
   expect(input()).not.toBeNull();
 });
 
-it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only a 3D assembly in the %s viewer slot while generating', async endpoint => {
+it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only falling 3D bricks in the %s viewer slot while generating', async endpoint => {
   query.value = 'id=building&exact=1';
   activity.rows = [{ id: 'building', status: 'processing', endpoint, prompt: 'A cat', createdAt: new Date().toISOString() }];
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('building', endpoint), status: 'processing' });
@@ -484,7 +484,7 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only a 3D assembly i
   const conversation = container.querySelector('[aria-label="Build buddy conversation"]')!;
   const workspace = container.querySelector('[aria-label="Build progress workspace"]')!;
   expect(conversation.querySelector('.pet-avatar--building')).not.toBeNull();
-  expect(workspace.querySelector('[aria-label="3D brick model assembling"]')).not.toBeNull();
+  expect(workspace.querySelector('[aria-label="Bricks falling onto a table"]')).not.toBeNull();
   expect(workspace.querySelector('[data-testid="generation-3d-animation"]')?.getAttribute('data-scene')).toMatch(/\.mpd$/);
   expect(workspace.querySelector('article')).toBeNull();
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();

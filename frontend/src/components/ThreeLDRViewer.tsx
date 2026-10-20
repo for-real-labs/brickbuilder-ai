@@ -1,3 +1,5 @@
+import { getBrickCollisionGroups } from '../utils/brickPhysics';
+import { createGenerationDropLoop, GENERATION_DROP_POOL_SIZE } from '../utils/generationDrops';
 import { observeElementSize } from '../utils/observeElementSize';
 import React, { useEffect, useRef, useState } from 'react';
 import * as RAPIER from '@dimforge/rapier3d-compat';
@@ -805,12 +807,8 @@ type ExplodePhysicsState = {
   lastStepMs: number;
   simulatedMs: number;
   maxDurationMs: number;
+  dropNext?: (nowMs: number) => void;
 };
-
-const PHYSICS_STATIC_GROUP = 0x0001;
-const PHYSICS_PART_GROUP = 0x0002;
-
-const interactionGroups = (memberships: number, filter: number) => (memberships << 16) | filter;
 
 let rapierInitPromise: Promise<void> | null = null;
 
@@ -1026,10 +1024,21 @@ const syncObjectToBody = (part: PhysicsPart) => {
 const createExplodePhysics = async (
   model: THREE.Group,
   table: THREE.Object3D,
+  generationDrops = false,
+  isDisposed: () => boolean = () => false,
 ): Promise<ExplodePhysicsState | null> => {
   await ensureRapierReady();
+  if (isDisposed()) return null;
 
-  const allParts = getExplodableParts(model);
+  let allParts = getExplodableParts(model);
+  if (generationDrops && allParts.length > 0) {
+    const templates = allParts;
+    allParts = [...templates, ...Array.from({ length: Math.max(0, GENERATION_DROP_POOL_SIZE - templates.length) }, () =>
+      templates[Math.floor(Math.random() * templates.length)].clone(true))];
+    allParts = shuffleParts(allParts);
+    templates.forEach(part => model.remove(part));
+    allParts.forEach(part => model.add(part));
+  }
   if (allParts.length === 0) return null;
 
   model.updateMatrixWorld(true);
@@ -1063,8 +1072,7 @@ const createExplodePhysics = async (
   world.maxCcdSubsteps = 1;
   world.lengthUnit = Math.max(maxDimension / 8, 20);
 
-  const staticGroups = interactionGroups(PHYSICS_STATIC_GROUP, PHYSICS_PART_GROUP);
-  const partGroups = interactionGroups(PHYSICS_PART_GROUP, PHYSICS_STATIC_GROUP);
+  const { staticGroups, partGroups } = getBrickCollisionGroups(generationDrops);
 
   const tableBody = world.createRigidBody(
     RAPIER.RigidBodyDesc.fixed().setTranslation(tableCenterX, tableTopSurface - tableThickness / 2, tableCenterZ),
@@ -1161,7 +1169,37 @@ const createExplodePhysics = async (
     }];
   });
 
-  if (physicsParts.length === 0) return null;
+  if (physicsParts.length === 0) {
+    world.free();
+    return null;
+  }
+
+  let dropNext: ((nowMs: number) => void) | undefined;
+  if (generationDrops) {
+    physicsParts.forEach(part => {
+      part.object.visible = false;
+      part.body.setEnabled(false);
+      part.body.enableCcd(true);
+    });
+    dropNext = createGenerationDropLoop(index => {
+      const part = physicsParts[index];
+      part.object.visible = true;
+      part.body.setEnabled(true);
+      part.body.setTranslation({
+        x: tableCenterX + (Math.random() - 0.5) * tableWidth * 0.35,
+        y: tableTopSurface + maxDimension * 2,
+        z: tableCenterZ + (Math.random() - 0.5) * tableDepth * 0.35,
+      }, true);
+      part.body.setLinvel({ x: 0, y: -20, z: 0 }, true);
+      part.body.setAngvel({ x: Math.random() * 4 - 2, y: Math.random() * 4 - 2, z: Math.random() * 4 - 2 }, true);
+      syncObjectToBody(part);
+    }, physicsParts.length, () => {
+      physicsParts.forEach(part => {
+        part.object.visible = false;
+        part.body.setEnabled(false);
+      });
+    });
+  }
 
   return {
     active: true,
@@ -1171,6 +1209,7 @@ const createExplodePhysics = async (
     lastStepMs: performance.now(),
     simulatedMs: 0,
     maxDurationMs: 9000,
+    dropNext,
   };
 };
 
@@ -1203,6 +1242,7 @@ const countRapierContacts = (physics: ExplodePhysicsState) => {
 const updateExplodePhysics = (physics: ExplodePhysicsState | null, nowMs: number) => {
   if (!physics || !physics.active) return false;
 
+  physics.dropNext?.(nowMs);
   const deltaSeconds = Math.min((nowMs - physics.lastStepMs) / 1000, 0.05);
   physics.lastStepMs = nowMs;
   physics.world.timestep = deltaSeconds;
@@ -1210,6 +1250,8 @@ const updateExplodePhysics = (physics: ExplodePhysicsState | null, nowMs: number
   physics.collisionCount = countRapierContacts(physics);
   physics.simulatedMs += deltaSeconds * 1000;
   physics.parts.forEach(syncObjectToBody);
+
+  if (physics.dropNext) return false;
 
   const elapsedMs = physics.simulatedMs;
   const allSleeping = physics.parts.every((part) => part.body.isSleeping());
@@ -1419,6 +1461,8 @@ interface ThreeLDRViewerProps {
   generationId?: string;
   className?: string;
   autoRotate?: boolean;
+  generationDrops?: boolean;
+  interactionEnabled?: boolean;
   showExplodeControl?: boolean;
   initialCameraState?: CameraState;
   onCameraChange?: (cameraState: CameraState) => void;
@@ -1475,6 +1519,8 @@ export function ThreeLDRViewer({
   generationId,
   className = '',
   autoRotate = true,
+  generationDrops = false,
+  interactionEnabled = true,
   showExplodeControl = true,
   initialCameraState,
   onCameraChange,
@@ -1649,13 +1695,14 @@ export function ThreeLDRViewer({
 
         // Controls setup
         const controls = new OrbitControls(camera, renderer.domElement);
+        controls.enabled = interactionEnabled;
         controls.enableDamping = true;
         controls.dampingFactor = 0.1;
         controls.autoRotate = autoRotate;
         controls.autoRotateSpeed = 1.5;
 
         // Disable auto-rotate when user interacts (only if auto-rotate is enabled)
-        if (autoRotate) {
+        if (autoRotate && interactionEnabled) {
           const disableAutoRotate = () => {
             if (controls.autoRotate) {
               controls.autoRotate = false;
@@ -1676,7 +1723,7 @@ export function ThreeLDRViewer({
           }));
         }
         if (onViewInteractionEnd) controls.addEventListener('end', onViewInteractionEnd);
-        if (presentation === 'model') {
+        if (presentation === 'model' && interactionEnabled) {
           renderer.domElement.tabIndex = 0;
           renderer.domElement.setAttribute('aria-label', 'Postcard model: drag to rotate, scroll to zoom; arrow keys rotate, plus and minus zoom');
           renderer.domElement.addEventListener('keydown', event => {
@@ -1788,7 +1835,7 @@ export function ThreeLDRViewer({
               configureModelViewRange(camera, controls, maxDimension);
               
               // Calculate minimum distance needed to fit the model (50% more zoomed out)
-              const minDistance = maxDimension * 1.8;
+              const minDistance = maxDimension * 1.8 / (generationDrops ? Math.min(camera.aspect, 1) : 1);
 
               buildRulerGrid(scene, bbox, maxDimension);
               const rulerGrid = scene.getObjectByName('ruler-grid');
@@ -1878,7 +1925,23 @@ export function ThreeLDRViewer({
               scene.add(baseplateGroup);
               }
 
-              if (animateModelBuild && currentStepIndex === undefined) {
+              if (generationDrops) {
+                const table = scene.getObjectByName('display-table');
+                model.children.forEach(part => { part.visible = false; });
+                if (table) {
+                  void createExplodePhysics(model, table, true, () => disposed).then(physics => {
+                    if (disposed) {
+                      stopExplodePhysicsAtCurrentPose(physics);
+                      return;
+                    }
+                    explodePhysicsRef.current = physics;
+                  }).catch(() => {
+                    if (!disposed) setError('Failed to initialize falling bricks');
+                  });
+                }
+              }
+
+              if (animateModelBuild && !generationDrops && currentStepIndex === undefined) {
                 buildAnimationRef.current = createBuildAnimation(model, bbox, maxDimension, undefined, buildAnimationStyle);
               } else {
                 buildAnimationRef.current = null;
@@ -2082,7 +2145,7 @@ export function ThreeLDRViewer({
         }
       }
     };
-  }, [modelPath, modelContent, onExportCaptureReady, animateModelBuild, buildAnimationStyle, presentation]);
+  }, [modelPath, modelContent, onExportCaptureReady, animateModelBuild, buildAnimationStyle, presentation, generationDrops, interactionEnabled, autoRotate]);
 
   useEffect(() => {
     const { scene } = sceneRef.current;
