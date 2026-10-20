@@ -15,9 +15,9 @@ it('offers the full renderable catalog with a packed asset for each part', () =>
   for (const name of ['Wheel', 'Slope', 'Technic', 'Hinge']) expect(catalog.some(part => part.name.includes(name))).toBe(true);
 });
 it('samples distinct parts and their available colors without changing the catalog', () => {
-  const parts = sampleCatalogParts(catalog, 30, () => 0.5);
-  expect(parts).toHaveLength(30);
-  expect(new Set(parts.map(part => part.id)).size).toBe(30);
+  const parts = sampleCatalogParts(catalog, 100, () => 0.5);
+  expect(parts).toHaveLength(100);
+  expect(new Set(parts.map(part => part.id)).size).toBe(100);
   for (const part of parts) expect(catalog.find(entry => entry.id === part.id)?.colors).toContain(part.color);
   expect(sampleCatalogParts([], 30)).toEqual([]);
 });

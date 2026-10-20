@@ -1,5 +1,5 @@
 export const GENERATION_DROP_INTERVAL_MS = 3_000;
-export const GENERATION_DROP_POOL_SIZE = 30;
+export const GENERATION_DROP_POOL_SIZE = 100;
 
 /** Uses frame time so a background tab resumes with one drop, never a burst. */
 export function createGenerationDropLoop(drop: (index: number) => void, count: number, reset: () => void = () => {}) {
