@@ -92,33 +92,21 @@ it('uses window height when the visual viewport API is unavailable and leaves di
   expect(shell.style.getPropertyValue('--landing-viewport-height')).toBe('500px');
 });
 
-it('limits dialogue overlap to the bottom third of a viewer that appears after mount', async () => {
-  let notify!: ResizeObserverCallback;
+it('keeps dialogue sizing independent of the viewer that appears after mount', async () => {
   const observe = vi.fn();
   vi.stubGlobal('ResizeObserver', class {
-    constructor(callback: ResizeObserverCallback) { notify = callback; }
+    constructor() {}
     observe = observe;
-    unobserve = vi.fn();
     disconnect = vi.fn();
   });
   act(() => root.render(<Harness />));
-  const shell = container.firstElementChild as HTMLElement;
-  expect(shell.style.getPropertyValue('--landing-workspace-overlay-limit')).toBe('');
   await act(async () => root.render(<Harness stage />));
   const stage = container.querySelector('.landing-model-workspace')!;
-  expect(observe).toHaveBeenCalledWith(stage);
-  vi.spyOn(shell, 'getBoundingClientRect').mockReturnValue({ top: 80 } as DOMRect);
-  vi.spyOn(stage, 'getBoundingClientRect').mockReturnValue({ top: 180, bottom: 640, height: 460 } as DOMRect);
-  const conversation = container.querySelector('.landing-model-conversation')!;
-  vi.spyOn(conversation, 'getBoundingClientRect').mockReturnValue({ top: 550 } as DOMRect);
-  act(() => notify([], {} as ResizeObserver));
-  expect(parseFloat(shell.style.getPropertyValue('--landing-workspace-overlay-limit'))).toBeCloseTo(406.67, 1);
-  expect((conversation as HTMLElement).dataset.overlapsWorkspace).toBe('true');
-  expect(parseFloat((conversation as HTMLElement).style.getPropertyValue('--landing-dialogue-fade-start'))).toBeCloseTo(-63.33, 1);
-  expect(parseFloat((conversation as HTMLElement).style.getPropertyValue('--landing-dialogue-fade-end'))).toBeCloseTo(90, 1);
-  vi.spyOn(conversation, 'getBoundingClientRect').mockReturnValue({ top: 700 } as DOMRect);
-  act(() => notify([], {} as ResizeObserver));
-  expect((conversation as HTMLElement).dataset.overlapsWorkspace).toBe('false');
+  const conversation = container.querySelector<HTMLElement>('.landing-model-conversation')!;
+  expect(observe).not.toHaveBeenCalledWith(stage);
+  expect(conversation.dataset.overlapsWorkspace).toBeUndefined();
+  expect(conversation.style.getPropertyValue('--landing-dialogue-fade-start')).toBe('');
+  expect(conversation.style.getPropertyValue('--landing-dialogue-fade-end')).toBe('');
 });
 
 it('fits below the iOS app banner and reclaims its space when dismissed or panned above the keyboard', () => {
