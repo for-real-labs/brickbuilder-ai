@@ -47,6 +47,15 @@ describe('public page indexing', () => {
     expect(JSON.stringify(schema)).not.toContain('aggregateRating');
   });
 
+  it('keeps homepage share previews free of experimental and demo disclaimers', () => {
+    const document = new JSDOM(renderPublicDocument(shell, '/')).window.document;
+    const description = 'Create brick models and building instructions from a photo or a prompt.';
+    for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+      expect(document.querySelector(selector)?.getAttribute('content')).toBe(description);
+    }
+    expect(document.head.textContent).not.toMatch(/experimental|results may vary|beta 1\.0/i);
+  });
+
   it.each(landingPaths)('omits the iOS download from the landing header before JavaScript at %s', path => {
     const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
     expect(document.querySelector('nav[aria-label="Main navigation"] a[href="https://apps.apple.com/app/brickbuilder-ai/id6815050463"]')).toBeNull();

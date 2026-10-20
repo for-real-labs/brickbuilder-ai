@@ -33,6 +33,7 @@ describe('SEO metadata ownership', () => {
       const scripts = document.head.querySelectorAll('script[type="application/ld+json"]');
       expect(scripts).toHaveLength(1);
       expect(JSON.parse(scripts[0].textContent!).url).toBe(url);
+      expect(JSON.parse(scripts[0].textContent!)).not.toHaveProperty('softwareVersion');
     }
   });
 
@@ -50,4 +51,10 @@ describe('SEO metadata ownership', () => {
     expect(parsed.querySelectorAll('script')).toHaveLength(1);
     expect(JSON.parse(parsed.querySelector('script')!.textContent!).headline).toBe(headline);
   });
+});
+
+it('omits demo and early-access positioning from preview and access-screen copy', () => {
+  expect(readFileSync('index.html', 'utf8')).not.toMatch(/experimental|results may vary|beta 1\.0/i);
+  expect(readFileSync('src/components/ProtectedRoute.tsx', 'utf8')).not.toMatch(/BrickBuilder Demo|early access/i);
+  expect(readFileSync('public/og-preview.html', 'utf8')).not.toMatch(/\.beta|experimental|results may vary/i);
 });

@@ -52,7 +52,6 @@ export function SEO({
         "Real-time AI processing"
       ],
     "screenshot": image,
-    "softwareVersion": "Beta 1.0",
     "datePublished": "2025-10-06",
     "inLanguage": "en-US"
   };
