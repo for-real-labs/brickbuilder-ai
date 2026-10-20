@@ -2,6 +2,8 @@ const AUTH_PATH = '/__preview-auth';
 const AUTH_COOKIE = 'brickbuilder_preview_auth';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const MODEL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SHARE_IMAGE_PATH = /^\/share-image\/([0-9a-f-]{36})\.png$/i;
+const PREVIEW_STORAGE_HOST = 'smzdytfghwslpbqnwdov.supabase.co';
 
 function escapeAttribute(value: string): string {
   return value.replace(/[&"'<>]/g, character => ({ '&': '&amp;', '"': '&quot;', "'": '&#39;', '<': '&lt;', '>': '&gt;' })[character]!);
@@ -27,10 +29,7 @@ function modelDocument(shell: string, name: string, image: string, url: string):
   return document.replace(/<link\b[^>]*rel="canonical"[^>]*>/i, `<link rel="canonical" href="${escapeAttribute(url)}" />`);
 }
 
-async function modelShareResponse(request: Request): Promise<Response | undefined> {
-  const url = new URL(request.url);
-  const id = url.searchParams.get('id');
-  if (request.method !== 'GET' || !['/', '/generated-model'].includes(url.pathname) || !id || !MODEL_ID.test(id)) return undefined;
+async function loadShareModel(id: string): Promise<{ name?: unknown; preview_image_url?: unknown } | undefined> {
   const backend = process.env.VERCEL_ENV === 'preview'
     ? process.env.VITE_RAILWAY_API_URL_STAGING || process.env.VITE_RAILWAY_API_URL
     : process.env.VITE_RAILWAY_API_URL || 'https://brickai-backend-production.up.railway.app';
@@ -47,16 +46,48 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     if (!result.ok) return undefined;
     const model = await result.json() as { name?: unknown; preview_image_url?: unknown; status?: unknown; endpoint?: unknown };
     if (legacy && (model.status !== 'completed' || model.endpoint === 'uploadLdraw')) return undefined;
-    if (typeof model.preview_image_url !== 'string') return undefined;
+    return model;
+  } catch {
+    return undefined;
+  }
+}
+
+async function modelShareResponse(request: Request): Promise<Response | undefined> {
+  const url = new URL(request.url);
+  if (request.method !== 'GET') return undefined;
+  const imageMatch = SHARE_IMAGE_PATH.exec(url.pathname);
+  const id = imageMatch?.[1] || url.searchParams.get('id');
+  if (!id || !MODEL_ID.test(id)) return undefined;
+  if (!imageMatch && !['/', '/generated-model'].includes(url.pathname)) return undefined;
+  const model = await loadShareModel(id);
+  if (!model || typeof model.preview_image_url !== 'string') return undefined;
+  try {
     const imageUrl = new URL(model.preview_image_url);
     if (imageUrl.protocol !== 'https:') return undefined;
+    const isHostedPreview = imageUrl.hostname === PREVIEW_STORAGE_HOST && imageUrl.pathname.endsWith('.png');
+    if (imageMatch) {
+      if (!isHostedPreview) return undefined;
+      const imageResponse = await fetch(imageUrl.href, { redirect: 'error', signal: AbortSignal.timeout(8000) });
+      if (!imageResponse.ok || imageResponse.headers.get('content-type')?.split(';')[0] !== 'image/png') return undefined;
+      if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return undefined;
+      const bytes = await imageResponse.arrayBuffer();
+      if (bytes.byteLength > 10_000_000) return undefined;
+      return new Response(bytes, {
+        headers: { 'Content-Type': 'image/png', 'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400' },
+      });
+    }
     const shellUrl = new URL('/share-shell.html', request.url);
     const shellResponse = await fetch(shellUrl, { headers: { cookie: request.headers.get('cookie') || '' }, signal: AbortSignal.timeout(4000) });
     if (!shellResponse.ok) return undefined;
     const shell = await shellResponse.text();
     const name = typeof model.name === 'string' && model.name.trim() ? model.name.trim().slice(0, 90) : 'Generated model';
-    const canonical = `https://brickbuilder.ai/?id=${encodeURIComponent(id)}`;
-    return new Response(modelDocument(shell, name, imageUrl.href, canonical), {
+    const canonical = url.pathname === '/generated-model'
+      ? `https://brickbuilder.ai/generated-model?id=${encodeURIComponent(id)}&exact=1&card=2`
+      : `https://brickbuilder.ai/?id=${encodeURIComponent(id)}`;
+    const image = isHostedPreview
+      ? `https://brickbuilder.ai/share-image/${id}.png?v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
+      : imageUrl.href;
+    return new Response(modelDocument(shell, name, image, canonical), {
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
   } catch {

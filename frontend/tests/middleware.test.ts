@@ -106,15 +106,15 @@ describe('preview password middleware', () => {
     process.env.VITE_RAILWAY_API_URL = 'https://api.example.com';
     const id = '123e4567-e89b-12d3-a456-426614174000';
     const shell = '<html><head><title>Home</title><meta property="og:image" content="/old.png" /><meta name="twitter:image" content="/old.png" /><link rel="canonical" href="https://brickbuilder.ai/" /></head><body><div id="root"></div></body></html>';
-    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ name: 'Pip & Friends', preview_image_url: 'https://images.example.com/pip.png' }), { status: 200 }))
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ name: 'Pip & Friends', preview_image_url: 'https://smzdytfghwslpbqnwdov.supabase.co/storage/v1/object/public/models/pip.png' }), { status: 200 }))
       .mockResolvedValueOnce(new Response(shell, { status: 200 }));
     vi.stubGlobal('fetch', fetcher);
     const response = await middleware(new Request(`https://brickbuilder.ai/?id=${id}&exact=1`));
     const html = await response?.text();
     expect(fetcher.mock.calls[0][0]).toBe(`https://api.example.com/generation/${id}/share-preview`);
     expect(html).toContain('Pip &amp; Friends | BrickBuilder AI');
-    expect(html).toContain('property="og:image" content="https://images.example.com/pip.png"');
-    expect(html).toContain('name="twitter:image" content="https://images.example.com/pip.png"');
+    expect(html).toContain(`property="og:image" content="https://brickbuilder.ai/share-image/${id}.png?v=pip.png"`);
+    expect(html).toContain(`name="twitter:image" content="https://brickbuilder.ai/share-image/${id}.png?v=pip.png"`);
     expect(html).toContain(`https://brickbuilder.ai/?id=${id}`);
     expect(html).toContain('<div id="root"></div>');
   });
@@ -139,5 +139,29 @@ describe('preview password middleware', () => {
     const response = await middleware(new Request('https://brickbuilder.ai/?id=123e4567-e89b-12d3-a456-426614174000'));
     expect(await response?.text()).toContain('https://images.example.com/castle.png');
     expect(fetcher).toHaveBeenCalledTimes(3);
+  });
+
+  it('serves a public, first-party PNG without upstream crawler restrictions', async () => {
+    process.env.VERCEL_ENV = 'production';
+    process.env.VITE_RAILWAY_API_URL = 'https://api.example.com';
+    const id = '123e4567-e89b-12d3-a456-426614174000';
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ preview_image_url: 'https://smzdytfghwslpbqnwdov.supabase.co/storage/v1/object/public/models/pip.png' })))
+      .mockResolvedValueOnce(new Response(new Uint8Array([137, 80, 78, 71]), { headers: { 'Content-Type': 'image/png', 'X-Robots-Tag': 'none' } }));
+    vi.stubGlobal('fetch', fetcher);
+    const response = await middleware(new Request(`https://brickbuilder.ai/share-image/${id}.png`));
+    expect(response?.headers.get('content-type')).toBe('image/png');
+    expect(response?.headers.get('x-robots-tag')).toBeNull();
+    expect(new Uint8Array(await response!.arrayBuffer())).toEqual(new Uint8Array([137, 80, 78, 71]));
+  });
+
+  it('gives the refreshed share path its own preview URL', async () => {
+    process.env.VERCEL_ENV = 'production';
+    const id = '123e4567-e89b-12d3-a456-426614174000';
+    const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ name: 'Cat', preview_image_url: 'https://smzdytfghwslpbqnwdov.supabase.co/storage/cat.png' })))
+      .mockResolvedValueOnce(new Response('<html><head></head><body></body></html>'));
+    vi.stubGlobal('fetch', fetcher);
+    const response = await middleware(new Request(`https://brickbuilder.ai/generated-model?id=${id}&exact=1&card=2`));
+    const html = await response?.text();
+    expect(html).toContain(`property="og:url" content="https://brickbuilder.ai/generated-model?id=${id}&amp;exact=1&amp;card=2"`);
   });
 });

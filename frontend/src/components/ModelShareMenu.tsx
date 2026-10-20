@@ -13,7 +13,10 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const url = new URL(getGeneratedModelPath(generationId, true), window.location.origin).href;
+  const shareUrl = new URL(getGeneratedModelPath(generationId, true), window.location.origin);
+  shareUrl.pathname = '/generated-model';
+  shareUrl.searchParams.set('card', '2');
+  const url = shareUrl.href;
   const text = `Check out ${modelName} on BrickBuilder!`;
   const rowClass = 'flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500';
   const track = (destination: string) => posthog.capture('generated_model_share_clicked', { generation_id: generationId, destination });

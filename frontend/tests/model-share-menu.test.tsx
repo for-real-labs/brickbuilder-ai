@@ -17,9 +17,11 @@ afterEach(() => { act(() => root.unmount()); container.remove(); });
 const open = () => act(() => container.querySelector('button')!.click());
 const button = (label: string) => [...container.querySelectorAll('button')].find(item => item.textContent?.includes(label))!;
 
-it('shares the exact displayed revision with encoded URLs and no unrelated query parameters', async () => {
+it('shares the exact displayed revision through the refreshed card URL', async () => {
   open();
-  const url = new URL('/?id=revision%20%26%202&exact=1', window.location.origin).href;
+  const expected = new URL('/generated-model?id=revision%20%26%202&exact=1', window.location.origin);
+  expected.searchParams.set('card', '2');
+  const url = expected.href;
   const facebook = container.querySelector<HTMLAnchorElement>('a[href*="facebook"]')!;
   const twitter = container.querySelector<HTMLAnchorElement>('a[href*="twitter"]')!;
   expect(new URL(facebook.href).searchParams.get('u')).toBe(url);
