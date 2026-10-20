@@ -148,7 +148,10 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
     async def heartbeat():
         while True:
             await asyncio.sleep(5)
-            await generation_storage.update_status(generation_id, "processing")
+            try:
+                await generation_storage.heartbeat(generation_id)
+            except Exception:
+                logger.warning("Unable to refresh Nova heartbeat for %s", generation_id, exc_info=True)
 
     heartbeat_task = None
     try:

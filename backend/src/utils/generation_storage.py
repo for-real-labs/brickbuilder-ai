@@ -10,7 +10,7 @@ import requests
 import tempfile
 import base64
 from typing import Optional, Dict, Any, Union, List
-from datetime import datetime
+from datetime import datetime, timezone
 from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
@@ -663,6 +663,15 @@ class GenerationStorage:
             logger.error("Failed to retrieve generation stats: %s", exc)
             raise
     
+    async def heartbeat(self, generation_id: str) -> None:
+        """Refresh a live Nova job without changing its state or reviving a finished job."""
+        await execute_query(
+            self.client.table("generations")
+            .update({"updated_at": datetime.now(timezone.utc).isoformat()})
+            .eq("id", generation_id)
+            .eq("status", "processing")
+        )
+
     async def update_status(
         self,
         generation_id: str,
