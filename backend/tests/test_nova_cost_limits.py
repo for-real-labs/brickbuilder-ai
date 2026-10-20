@@ -166,3 +166,80 @@ def test_native_claude_usage_includes_cached_tokens(monkeypatch, budget_failure)
     assert budget.usage_records[0]['input_tokens'] == 4000
     assert budget.usage_records[0]['output_tokens'] == 200
     assert budget.spent == Decimal('.0134')
+
+
+@pytest.mark.parametrize('streaming', [False, True])
+@pytest.mark.parametrize('rejection', [None, 429, 529, 400, 500])
+def test_opus_fast_api_calls_and_capacity_fallback(monkeypatch, streaming, rejection):
+    module = load_limits(monkeypatch)
+    calls = []
+    class Rejected(Exception):
+        status_code = rejection
+    async def chunks():
+        yield SimpleNamespace(usage={'prompt_tokens': 1000, 'completion_tokens': 1000})
+    async def completion(**kwargs):
+        calls.append(dict(kwargs))
+        if rejection and len(calls) == 1:
+            raise Rejected()
+        return chunks() if streaming else SimpleNamespace(usage={'prompt_tokens': 1000, 'completion_tokens': 1000})
+    llm = SimpleNamespace(acompletion=completion)
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs,
+        ClaudeSDKClient=SimpleNamespace(receive_response=lambda: None))
+    module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, llm, sdk)
+    budget = generation_budget.GenerationBudget('claude-opus-5-5')
+    budget.spent = Decimal('9')
+    token = module.current_budget.set(budget)
+    async def run():
+        response = await llm.acompletion(model='anthropic/claude-opus-5-5', messages=[], stream=streaming)
+        if streaming:
+            async for _ in response: pass
+    try:
+        if rejection in {400, 500}:
+            with pytest.raises(Rejected): asyncio.run(run())
+            assert len(calls) == 1 and budget.spent == 9
+        else:
+            asyncio.run(run())
+            assert budget.spent == Decimal('9.024' if rejection else '9.048')
+            assert budget.usage_records[0]['speed'] == ('standard' if rejection else 'fast')
+        assert calls[0]['speed'] == 'fast'
+        if rejection in {429, 529}:
+            assert len(calls) == 2 and 'speed' not in calls[1]
+            assert calls[1]['max_tokens'] > calls[0]['max_tokens']
+    finally:
+        module.current_budget.reset(token)
+
+
+@pytest.mark.parametrize('model', ['anthropic/claude-sonnet-5', 'anthropic/claude-opus-5', 'openai/gpt-5.5'])
+def test_fast_mode_does_not_change_other_models(monkeypatch, model):
+    module = load_limits(monkeypatch)
+    calls = []
+    async def completion(**kwargs):
+        calls.append(kwargs)
+        return SimpleNamespace(usage={'prompt_tokens': 100, 'completion_tokens': 10})
+    llm = SimpleNamespace(acompletion=completion)
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs,
+        ClaudeSDKClient=SimpleNamespace(receive_response=lambda: None))
+    module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, llm, sdk)
+    asyncio.run(llm.acompletion(model=model, messages=[]))
+    assert 'speed' not in calls[0]
+
+
+def test_fast_stream_failure_never_replays_partial_generation(monkeypatch):
+    module = load_limits(monkeypatch)
+    calls = []
+    class Rejected(Exception):
+        status_code = 429
+    async def chunks():
+        yield SimpleNamespace(usage=None)
+        raise Rejected()
+    async def completion(**kwargs):
+        calls.append(kwargs)
+        return chunks()
+    llm = SimpleNamespace(acompletion=completion)
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs,
+        ClaudeSDKClient=SimpleNamespace(receive_response=lambda: None))
+    module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, llm, sdk)
+    async def run():
+        async for _ in await llm.acompletion(model='anthropic/claude-opus-5-5', messages=[], stream=True): pass
+    with pytest.raises(Rejected): asyncio.run(run())
+    assert len(calls) == 1

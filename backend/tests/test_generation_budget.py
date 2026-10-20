@@ -4,7 +4,7 @@ from decimal import Decimal
 import httpx
 import pytest
 
-from src.utils.generation_budget import GenerationBudget, GenerationBudgetExceeded, MODEL_PRICES, input_token_bound
+from src.utils.generation_budget import GenerationBudget, GenerationBudgetExceeded, GenerationUsage, MODEL_PRICES, input_token_bound
 from src.utils.llm_tool_conversation import ConversationSettings, create_conversation, UserInput
 
 
@@ -129,3 +129,25 @@ def test_haiku_output_budget_reserves_the_long_context_rate():
     budget.spent = Decimal('9.8')
     assert budget.output_limit(100000, 128000) == 128000
     assert budget.output_limit(100001, 128000) == 39999
+
+
+def test_opus_fast_mode_prices_cache_and_reserves_double_cost():
+    budget = GenerationBudget('claude-opus-5-5')
+    budget.record_usage({'input_tokens': 1000, 'output_tokens': 1000,
+        'cache_read_input_tokens': 1000, 'cache_creation_input_tokens': 2000,
+        'cache_creation': {'ephemeral_1h_input_tokens': 1000}, 'speed': 'fast'}, 'anthropic')
+    assert budget.spent == Decimal('.0744')
+    assert budget.usage_records[0]['speed'] == 'fast'
+    budget.spent = Decimal('9')
+    assert budget.output_limit(10000, 65536, speed='fast') == 21000
+    assert budget.output_limit(10000, 65536) == 46000
+    with pytest.raises(ValueError, match='model speed'):
+        GenerationBudget('claude-sonnet-5').output_limit(100, 100, speed='fast')
+
+
+def test_generation_ledger_preserves_fast_mode():
+    ledger = GenerationUsage('test')
+    budget = GenerationBudget('claude-opus-5-5')
+    budget.record_usage({'input_tokens': 100, 'output_tokens': 10, 'speed': 'fast'}, 'anthropic')
+    ledger.extend(budget.usage_records)
+    assert ledger.values()['ai_usage']['calls'][0]['speed'] == 'fast'

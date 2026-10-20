@@ -35,6 +35,8 @@ class GenerationUsage:
                 'cache_write_tokens': _tokens(call, 'cache_write_tokens'),
                 'estimated_cost_usd': str(cost),
             })
+            if call.get('speed') in {'fast', 'standard'}:
+                records[-1]['speed'] = call['speed']
         self.calls.extend(records)
 
     def values(self):
@@ -105,9 +107,17 @@ class GenerationBudget:
         self.usage_records = []
         self.on_usage = None
 
-    def output_limit(self, input_tokens: int, requested: int) -> int:
+    def prices_for_speed(self, speed: str = 'standard'):
+        if speed == 'standard':
+            return self.prices
+        if speed == 'fast' and self.model == 'claude-opus-5-5':
+            # https://platform.claude.com/docs/en/build-with-claude/fast-mode
+            return tuple(price * 2 for price in self.prices)
+        raise ValueError('AI cost limits are unavailable for this model speed.')
+
+    def output_limit(self, input_tokens: int, requested: int, *, speed: str = 'standard') -> int:
         # Reserve cache writes at their highest rate and long-context pricing.
-        input_price, output_price, _, _, write_price = self.prices
+        input_price, output_price, _, _, write_price = self.prices_for_speed(speed)
         if self.model.startswith('gpt-') and input_tokens > 272000:
             input_price *= 2
             write_price *= 2
@@ -126,7 +136,7 @@ class GenerationBudget:
     def record_usage(self, usage: dict | None, provider: str) -> None:
         if not isinstance(usage, dict) or not any(k in usage for k in ('input_tokens', 'prompt_tokens')) or not any(k in usage for k in ('output_tokens', 'completion_tokens')):
             raise ValueError('Provider did not report AI cost usage; generation stopped.')
-        input_price, output_price, read_price, write5, write1 = self.prices
+        input_price, output_price, read_price, write5, write1 = self.prices_for_speed(usage.get('speed', 'standard'))
         if provider == 'anthropic':
             inputs, outputs = _tokens(usage, 'input_tokens'), _tokens(usage, 'output_tokens')
             cached, written = _tokens(usage, 'cache_read_input_tokens'), _tokens(usage, 'cache_creation_input_tokens')
@@ -157,6 +167,8 @@ class GenerationBudget:
                   'output_tokens': outputs, 'cache_read_tokens': cached,
                   'cache_write_tokens': written,
                   'estimated_cost_usd': str(cost)}
+        if provider == 'anthropic' and 'speed' in usage:
+            record['speed'] = usage['speed']
         self.usage_records.append(record)
         ledger = current_generation_usage.get()
         if ledger is not None:

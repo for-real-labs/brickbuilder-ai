@@ -323,3 +323,11 @@ Deploy the rebuilt Nova runtime with the API. Instruction export requires
 `instruction_publication_version: 1`; older instruction caches are not reused. The
 `nova-instructions-reviewed-v3.ldr` cache is regenerated from the saved source
 on first request.
+
+Opus 5.5 builds using an API key automatically request Anthropic fast mode.
+This keeps the same model quality and speeds up model output at twice the
+standard token price. The $10 generation cap includes the fast-mode premium,
+and each API usage record includes the speed used. If Anthropic rejects a fast
+request for capacity (429 or 529) before streaming starts, Nova tries once at
+standard speed. Other models and native Claude login sessions keep their existing
+settings. See [Anthropic fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode).

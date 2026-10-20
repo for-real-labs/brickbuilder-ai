@@ -11,7 +11,7 @@ current_budget = ContextVar('brickbuilder_generation_budget', default=None)
 current_usage_id = ContextVar('brickbuilder_usage_id', default=None)
 
 
-def account_usage(budget, reported):
+def account_usage(budget, reported, speed='standard'):
     usage = (reported.model_dump() if hasattr(reported, 'model_dump') else dict(reported)) if reported is not None else None
     if budget.model.startswith('claude-') and usage is not None:
         details = usage.get('prompt_tokens_details') or {}
@@ -21,7 +21,8 @@ def account_usage(budget, reported):
                  'output_tokens': usage.get('completion_tokens', 0),
                  'cache_read_input_tokens': cached, 'cache_creation_input_tokens': written,
                  # Conservatively charge writes as 1h if TTL is not exposed.
-                 'cache_creation': {'ephemeral_1h_input_tokens': written}}
+                 'cache_creation': {'ephemeral_1h_input_tokens': written},
+                 'speed': usage.get('speed') or speed}
     budget.record_usage(usage, 'anthropic' if budget.model.startswith('claude-') else 'openai')
 
 
@@ -66,14 +67,28 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
         requested = kwargs.pop('max_completion_tokens', None) or kwargs.pop('max_tokens', None) or 65536
         bound = input_token_bound({'messages': kwargs.get('messages'), 'tools': kwargs.get('tools')})
         key = 'max_tokens' if budget.model.startswith('claude-') else 'max_completion_tokens'
-        kwargs[key] = budget.output_limit(bound, requested)
+        # API calls use LiteLLM; native Claude SDK sessions keep their own settings.
+        speed = 'fast' if kwargs.get('model') == 'anthropic/claude-opus-5-5' else 'standard'
+        if speed == 'fast':
+            kwargs['speed'] = speed
+        kwargs[key] = budget.output_limit(bound, requested, speed=speed)
         # Automatic retries can charge twice without observable usage.
         kwargs['num_retries'] = 0
         if kwargs.get('stream'):
             kwargs['stream_options'] = {'include_usage': True}
-        stream = await original_completion(*args, **kwargs)
+        try:
+            stream = await original_completion(*args, **kwargs)
+        except Exception as error:
+            # Only retry explicit capacity rejections before a stream starts.
+            # Never replay a partially consumed or ambiguously failed request.
+            if speed != 'fast' or getattr(error, 'status_code', None) not in {429, 529}:
+                raise
+            speed = 'standard'
+            kwargs.pop('speed')
+            kwargs[key] = budget.output_limit(bound, requested)
+            stream = await original_completion(*args, **kwargs)
         if not kwargs.get('stream'):
-            account_usage(budget, getattr(stream, 'usage', None))
+            account_usage(budget, getattr(stream, 'usage', None), speed)
             return stream
 
         async def limited_stream():
@@ -84,7 +99,7 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
                     if reported is not None:
                         usage = reported
                     yield chunk
-                account_usage(budget, usage)
+                account_usage(budget, usage, speed)
             finally:
                 close = getattr(stream, 'aclose', None)
                 if close:

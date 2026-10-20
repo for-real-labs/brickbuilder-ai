@@ -8,6 +8,8 @@ on:
       - backend/nova-service/**
       - backend/src/utils/generation_budget.py
       - backend/tests/nova_standard_runtime_smoke.py
+      - backend/tests/test_nova_fast_transport.py
+      - backend/tests/test_nova_cost_limits.py
       - .github/workflows/nova-runtime.yml
   push:
     branches: [main, staging]
@@ -16,6 +18,8 @@ on:
       - backend/nova-service/**
       - backend/src/utils/generation_budget.py
       - backend/tests/nova_standard_runtime_smoke.py
+      - backend/tests/test_nova_fast_transport.py
+      - backend/tests/test_nova_cost_limits.py
       - .github/workflows/nova-runtime.yml
 
 permissions:
@@ -23,6 +27,16 @@ permissions:
   packages: write
 
 jobs:
+  provider:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      # Keep the transport test on the same LiteLLM version as the Nova image.
+      - run: pip install litellm==1.102.1 pytest
+      - run: PYTHONPATH=backend python -m pytest backend/tests/test_nova_fast_transport.py backend/tests/test_nova_cost_limits.py -q
   runtime:
     runs-on: ubuntu-latest
     steps:
