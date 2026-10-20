@@ -40,7 +40,7 @@ import { ResizeModelApiService } from "../services/resizeModelApi";
 import { LlmToBricksApiService } from "../services/llmToBricksApi";
 import { isAgentGeneration } from "../utils/agentGeneration";
 import { NovaToBricksApiService } from "../services/novaToBricksApi";
-import { VoxelPromptEditor } from "../components/VoxelPromptEditor";
+import { VoxelPromptEditor, type EditReferenceImage } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
 import { LdrToMpdApiService } from "../services/ldrToMpdApi";
@@ -1639,7 +1639,7 @@ export default function GeneratedModel() {
     }
   }, [mpdContent, accessToken, currentGenerationId, modelName]);
 
-  const handlePromptEditModel = React.useCallback(async () => {
+  const handlePromptEditModel = React.useCallback(async (image?: EditReferenceImage) => {
     if (isModelEditing || isResizing || isSavePolling) return;
     if (!editPrompt.trim()) {
       console.error('No prompt provided for editing');
@@ -1653,7 +1653,7 @@ export default function GeneratedModel() {
     }
 
     posthog.capture('generated_model_ai_edit_submitted', {
-      generation_id: currentGenerationId, prompt_length: editPrompt.trim().length,
+      generation_id: currentGenerationId, prompt_length: editPrompt.trim().length, has_image: Boolean(image),
     });
 
     setIsPromptEditing(true);
@@ -1663,10 +1663,11 @@ export default function GeneratedModel() {
     try {
       // Start the async edit operation
       const response = hasNovaGeometry
-        ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined)
+        ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined, image)
         : await LlmToBricksApiService.generate({
           sourceGenerationId: currentGenerationId,
           prompt: editPrompt.trim(),
+          ...image,
         }, accessToken || undefined);
 
       const newGenerationId = response.generation_id;
@@ -1675,6 +1676,7 @@ export default function GeneratedModel() {
       refreshNotifications();
       navigate(getGeneratedModelPath(newGenerationId), { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? 'novaToBricks' : 'llmToBricks' } });
       setEditPrompt('');
+      return true;
     } catch (error) {
       console.error('GeneratedModel - Prompt edit failed:', error);
       posthog.capture("generated_model_ai_edit_failed", { generation_id: currentGenerationId });
@@ -2317,7 +2319,7 @@ export default function GeneratedModel() {
             examplePrompt={pendingGeneration?.example_edit_prompt}
             modelName={modelName}
             onPromptChange={setEditPrompt}
-            onSubmit={() => { void handlePromptEditModel(); }}
+            onSubmit={handlePromptEditModel}
             loading={isModelEditing}
             disabled={isResizing || isSavePolling || isModelEditing}
             error={editPromptError}

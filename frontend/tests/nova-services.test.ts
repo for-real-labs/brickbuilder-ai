@@ -35,9 +35,9 @@ describe('Nova agent API', () => {
 
   it('sends follow-up edits to Nova with the source generation identity', async () => {
     vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'revision', message: 'Started' }));
-    await NovaToBricksApiService.edit('original', 'Make the roof red', 'owner-token');
+    await NovaToBricksApiService.edit('original', 'Make the roof red', 'owner-token', { imageBase64: 'pixels', imageMediaType: 'image/jpeg' });
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({
-      source_generation_id: 'original', prompt: 'Make the roof red',
+      source_generation_id: 'original', prompt: 'Make the roof red', image_base64: 'pixels', image_media_type: 'image/jpeg',
     });
     expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/novaToBricks');
   });
