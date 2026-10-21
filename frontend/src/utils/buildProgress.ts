@@ -1,5 +1,12 @@
 export const BUILD_FAILURE_MESSAGE = 'Oops! I couldn’t make your build. Please try again.';
 
+// Quota errors are actionable public messages; keep infrastructure errors generic.
+export function buildFailureMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : error;
+  return typeof message === 'string' && message.startsWith('You have reached the daily limit of 30 generations. Please wait until ')
+    ? message : BUILD_FAILURE_MESSAGE;
+}
+
 /** Condense the latest streamed activity; never display the full reasoning log. */
 export function summarizeBuildProgress(notes: string, fallback = 'Planning your build'): string {
   const phrases = notes.slice(-4000).replace(/```[\s\S]*?(?:```|$)/g, '')

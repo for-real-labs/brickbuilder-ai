@@ -197,7 +197,7 @@ describe('LandingPage', () => {
     } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); container.remove(); }
   });
 
-  it.each(['accepted', 'failed'])('submits an image with Enter and clears it only when %s', async outcome => {
+  it.each(['accepted', 'failed', 'daily limit'])('submits an image with Enter and clears it only when %s', async outcome => {
     vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
 
@@ -207,6 +207,7 @@ describe('LandingPage', () => {
       static createObjectURL = vi.fn(() => 'blob:uploaded-image');
       static revokeObjectURL = vi.fn();
     });
+    const limitMessage = 'You have reached the daily limit of 30 generations. Please wait until October 21, 2026 at 7:00 PM CDT to generate again.';
     let accept!: (response: { generation_id: string; message: string }) => void;
     let reject!: (error: Error) => void;
     const pending = new Promise<{ generation_id: string; message: string }>((resolve, fail) => {
@@ -245,7 +246,7 @@ describe('LandingPage', () => {
       expect(document.querySelector('[role="dialog"]')).toBeNull();
       await act(async () => {
         if (outcome === 'accepted') accept({ generation_id: 'submitted', message: 'Started' });
-        else reject(new Error('Submission failed'));
+        else reject(new Error(outcome === 'daily limit' ? limitMessage : 'Submission failed'));
       });
       if (outcome === 'accepted') {
         expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
@@ -268,8 +269,8 @@ describe('LandingPage', () => {
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
         const dialogue = container.querySelector('[aria-label="Build buddy conversation"]')!;
         expect(dialogue.querySelector('[role="status"]')?.textContent)
-          .toBe('Oops! I couldn’t make your build. Please try again.');
-        expect(container.textContent?.split('Oops! I couldn’t make your build. Please try again.')).toHaveLength(2);
+          .toBe(outcome === 'daily limit' ? limitMessage : 'Oops! I couldn’t make your build. Please try again.');
+        expect(container.textContent?.split(outcome === 'daily limit' ? limitMessage : 'Oops! I couldn’t make your build. Please try again.')).toHaveLength(2);
         expect(container.textContent).not.toContain('Submission failed');
         expect(container.textContent).not.toContain('Generation Failed');
         expect(container.textContent).not.toContain('Try Again');

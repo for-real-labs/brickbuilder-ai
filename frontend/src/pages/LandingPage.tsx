@@ -10,7 +10,7 @@ import { usePet, usePetActivity } from '../contexts/PetContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { BuildBuddyApi } from '../services/buildBuddyApi';
 import { useBuildBuddyChat } from '../hooks/useBuildBuddyChat';
-import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
+import { buildFailureMessage } from '../utils/buildProgress';
 import { useLandingModel, type LandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 import { PendingEditActions } from '../components/PendingEditActions';
@@ -683,8 +683,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         return;
       }
       console.error('Generation failed:', error);
-      setGenerationError(BUILD_FAILURE_MESSAGE);
-      buddyChat.updateTurn(turnId, { error: BUILD_FAILURE_MESSAGE, reply: undefined });
+      const message = buildFailureMessage(error);
+      setGenerationError(message);
+      buddyChat.updateTurn(turnId, { error: message, reply: undefined });
       setLoading(false);
       // Clear the recently prompted ID on failure
       localStorage.removeItem('recently_prompted_generation_id');
@@ -721,8 +722,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       setPrompt('');
     } catch (error) {
       console.error('Model edit failed:', error);
-      setGenerationError(BUILD_FAILURE_MESSAGE);
-      buddyChat.updateTurn(turnId, { error: BUILD_FAILURE_MESSAGE, reply: undefined });
+      const message = buildFailureMessage(error);
+      setGenerationError(message);
+      buddyChat.updateTurn(turnId, { error: message, reply: undefined });
       posthog.capture('landing_model_ai_edit_failed', { generation_id: sourceId });
     } finally {
       editSubmittingRef.current = false;
