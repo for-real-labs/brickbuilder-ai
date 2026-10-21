@@ -81,6 +81,18 @@ describe('mobile app download prompt', () => {
     expect(container.querySelector('aside')).not.toBeNull();
   });
 
+  it.each([
+    ['Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 Chrome/130.0 Mobile Safari/537.36', { platform: 'Linux armv8l' }],
+    ['Mozilla/5.0 (Linux; Android 14; Tablet) AppleWebKit/537.36 Chrome/130.0 Safari/537.36', { platform: 'Linux armv8l' }],
+    [`${IPHONE} Android`, { platform: 'iPhone' }],
+    ['Mozilla/5.0 (Linux; Android 14) Chrome/130.0 Safari/537.36', { platform: 'MacIntel' }],
+  ])('never prompts Android visitors even with conflicting iOS signals: %s', (userAgent, options) => {
+    browser(userAgent, options);
+    render();
+    expect(container.querySelector('aside')).toBeNull();
+    expect(posthog.capture).not.toHaveBeenCalled();
+  });
+
   it.each(['native', 'standalone', 'display-mode'])('does not prompt inside an existing %s app', mode => {
     if (mode === 'native') window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '1.0.1' };
     if (mode === 'standalone') browser(CHROME, { standalone: true });

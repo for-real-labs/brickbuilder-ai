@@ -11,6 +11,7 @@ const QUIET_ROUTES = new Set(['/login', '/signup', '/oauth/consent', '/order', '
 
 function shouldShowAppBanner(): boolean {
   const { userAgent, platform, maxTouchPoints } = navigator;
+  if (/Android/i.test(userAgent)) return false;
   const isIos = /iPhone|iPad|iPod/i.test(userAgent) || (platform === 'MacIntel' && maxTouchPoints > 1);
   const isStandalone = (navigator as Navigator & { standalone?: boolean }).standalone
     || window.matchMedia?.('(display-mode: standalone)').matches;
