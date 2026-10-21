@@ -194,7 +194,7 @@ describe('preview password middleware', () => {
     expect(fetcher.mock.calls[1][0]).toBe(`https://api.example.com/generation/${id}/share-card.png`);
   });
 
-  it('answers image HEAD probes with PNG headers and no HTML body', async () => {
+  it('answers image HEAD probes with PNG headers instead of the app shell', async () => {
     process.env.VERCEL_ENV = 'production';
     const id = '123e4567-e89b-12d3-a456-426614174000';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ preview_image_url: 'https://smzdytfghwslpbqnwdov.supabase.co/storage/pip.png' })))
@@ -202,7 +202,7 @@ describe('preview password middleware', () => {
     const response = await middleware(new Request(`https://brickbuilder.ai/share-image/${id}.png`, { method: 'HEAD' }));
     expect(response?.status).toBe(200);
     expect(response?.headers.get('content-type')).toBe('image/png');
-    expect(await response?.text()).toBe('');
+    expect(new Uint8Array(await response!.arrayBuffer())).toEqual(new Uint8Array([137, 80, 78, 71]));
   });
 
   it('briefly caches the raw preview while the branded renderer deploys', async () => {

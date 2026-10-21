@@ -102,7 +102,7 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
       if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return unavailableShareResponse();
       const bytes = await imageResponse.arrayBuffer();
       if (bytes.byteLength > 10_000_000) return unavailableShareResponse();
-      return new Response(request.method === 'HEAD' ? null : bytes, {
+      return new Response(bytes, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30' },
       });
     }
