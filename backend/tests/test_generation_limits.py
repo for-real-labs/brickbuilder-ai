@@ -29,12 +29,12 @@ def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(se
             _create_schema(conn)
         else:
             conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text)')
-            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261005000001_generation_concurrency_limit.sql').read_text())
+            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261021010000_generation_concurrency_limit_5.sql').read_text())
 
     def insert(index, owner='owner', status='processing'):
         with psycopg.connect(uri, autocommit=True) as conn:
             row = {'id': str(uuid4()), 'user_id': owner, 'user_type': 'authenticated',
-                   'endpoint': 'llmToBricks' if index % 2 else 'novaToBricks', 'status': status}
+                   'endpoint': ['llmToBricks', 'novaToBricks', 'textToBricks', 'imageToBricks', 'glbToBricks', 'objToBricks'][index % 6], 'status': status}
             try:
                 if local:
                     LocalSupabaseClient(conn, tmp_path, 'http://localhost').table('generations').insert(row).execute()
@@ -46,7 +46,7 @@ def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(se
                 return False
     with ThreadPoolExecutor(max_workers=12) as workers:
         outcomes = list(workers.map(insert, range(12)))
-    assert sum(outcomes) == 10
+    assert sum(outcomes) == 5
     assert insert(1, 'other-owner')
     assert insert(1, status='completed')
     with psycopg.connect(uri, autocommit=True) as conn:
@@ -67,7 +67,7 @@ def test_storage_returns_actionable_429_for_limit():
     storage.client = SimpleNamespace(table=lambda name: Table())
     with pytest.raises(HTTPException) as exc:
         asyncio.run(storage.create_generation('owner', 'authenticated', 'cube', 40, endpoint='llmToBricks'))
-    assert exc.value.status_code == 429 and '10 generations' in exc.value.detail
+    assert exc.value.status_code == 429 and '5 generations' in exc.value.detail
 
 
 @pytest.mark.parametrize('local', [False, True])
@@ -183,3 +183,22 @@ def test_upload_route_preserves_daily_limit_and_cleans_upload(monkeypatch, tmp_p
     assert exc.value is limit
     start.assert_not_called()
     assert not list(tmp_path.iterdir())
+
+
+def test_lowering_concurrency_limit_preserves_running_jobs(server):
+    uri = server.get_uri()
+    migrations = Path(__file__).parents[2] / 'supabase/migrations'
+    with psycopg.connect(uri, autocommit=True) as conn:
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE')
+        conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text)')
+        conn.execute((migrations / '20261005000001_generation_concurrency_limit.sql').read_text())
+        for _ in range(10):
+            conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'novaToBricks', 'processing')", (uuid4(),))
+        conn.execute((migrations / '20261021010000_generation_concurrency_limit_5.sql').read_text())
+        assert conn.execute("SELECT count(*) FROM generations WHERE status='processing'").fetchone()[0] == 10
+        with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_CONCURRENCY_LIMIT'):
+            conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'textToBricks', 'started')", (uuid4(),))
+        conn.execute("UPDATE generations SET status='completed' WHERE id IN (SELECT id FROM generations LIMIT 6)")
+        conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'textToBricks', 'started')", (uuid4(),))
+        with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_CONCURRENCY_LIMIT'):
+            conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'imageToBricks', 'queued')", (uuid4(),))
