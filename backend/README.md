@@ -441,3 +441,42 @@ fallback key when neither secret is configured.
 Shared Wi-Fi users share the free allowance but can sign in independently.
 Switching both network and browser can still obtain another anonymous trial;
 these controls do not establish a person's identity.
+
+### Request limit analytics
+
+`request_limit_hit` is emitted once per rejected generation admission: `daily`
+(30), `guest_lifetime` (3), or `concurrent` (5). It counts blocked attempts, not
+the successful request that uses the last allowance. Repeated blocked requests
+count again; use unique distinct IDs for affected identities. Guest IDs represent
+browser identities, not proven people. Guest events do not distinguish browser
+from network exhaustion because the database intentionally returns one error.
+
+Set `POSTHOG_API_KEY` and `POSTHOG_HOST` to the frontend's analytics project.
+Environment comes from `RAILWAY_ENVIRONMENT_NAME`, then `ENVIRONMENT`, otherwise
+`development`. Filter charts to `environment = production`, `service = brickai-api`.
+Properties: `limit_type`, `limit_value`, `http_status`, `user_type`, `endpoint`,
+`metric_version = 1`. No prompt, email, IP, network hash or exception is sent.
+Legacy trackers stay disabled. Delivery is asynchronous/best effort and flushes
+on shutdown; failures cannot alter admission responses. No historical backfill.
+
+Chart: **Request limits hit per day**, event `request_limit_hit`, total count,
+daily interval, last 30 days, production/service filters, breakdown `limit_type`.
+A companion unique-users chart shows affected identities.
+
+### Verified email signups
+
+The production-only reconciliation worker runs at startup and every 15 minutes
+using Supabase's paginated admin user list. It emits `verified_email_signup` for
+non-anonymous users with primary provider `email` and `email_confirmed_at` set.
+Event time is confirmation time, not account creation or last login. Google-primary
+accounts and pending records are excluded. No emails, tokens or auth metadata are
+exported. This measures verified accounts, not OTP submissions or login events.
+
+Historical confirmations are reconciled too. Deterministic event UUIDs survive
+restarts; the daily unique-user graph also prevents retry duplicates inflating
+counts. A process-local delivered set avoids repeated sends during normal operation;
+failed synchronous delivery retries on the next poll. The worker runs only with
+`RAILWAY_ENVIRONMENT_NAME=production` and `POSTHOG_API_KEY` configured.
+Chart: **Verified email signups per day**, event `verified_email_signup`, unique
+users, daily interval, production/service filters. Deleted accounts cannot be
+reconstructed; later provider/email changes can affect retained auth records.

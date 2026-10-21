@@ -15,6 +15,7 @@ from email.utils import format_datetime
 from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
+from .request_limit_analytics import track_request_limit
 from .auth import supabase_client
 from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
@@ -186,6 +187,7 @@ class GenerationStorage:
             return generation_id
             
         except Exception as e:
+            track_request_limit(e, user_id=user_id, user_type=user_type, endpoint=endpoint)
             if 'BB_GENERATION_GUEST_IP_REQUIRED' in str(e):
                 raise HTTPException(status_code=503, detail='Guest access is temporarily unavailable. Please sign in to keep building.') from None
             if 'BB_GENERATION_GUEST_LIMIT' in str(e):
