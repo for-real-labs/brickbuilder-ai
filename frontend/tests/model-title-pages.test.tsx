@@ -245,7 +245,7 @@ it('continues Nova AI edits while keeping the completed model, instructions, and
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await act(async () => input.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-  expect(novaEdit).toHaveBeenCalledWith('g', 'Make the roof red', 'token');
+  expect(novaEdit).toHaveBeenCalledWith('g', 'Make the roof red', 'token', undefined);
   expect(llm).not.toHaveBeenCalled();
   const viewer = container.querySelector('[data-testid="viewer"]')!;
   expect(viewer.textContent).toContain('Garden cottage');
@@ -547,7 +547,7 @@ it('opens the last completed model when returning to a failed edit', async () =>
     input.dispatchEvent(new Event('input', {bubbles: true}));
   });
   await act(async () => container.querySelector('#voxel-edit-prompt')!.closest('form')!.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true})));
-  expect(edit).toHaveBeenCalledWith('old', 'Try a taller roof', 'token');
+  expect(edit).toHaveBeenCalledWith('old', 'Try a taller roof', 'token', undefined);
 });
 
 
@@ -665,7 +665,7 @@ it('opens uploaded LDraw geometry for Nova editing while blocking both order con
   expect(input.disabled).toBe(false);
   act(() => { Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')!.set!.call(input, 'Adapt this to Brickwith parts'); input.dispatchEvent(new Event('input', { bubbles: true })); });
   await act(async () => input.closest('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-  expect(edit).toHaveBeenCalledWith('g', 'Adapt this to Brickwith parts', 'token');
+  expect(edit).toHaveBeenCalledWith('g', 'Adapt this to Brickwith parts', 'token', undefined);
   expect(basic).not.toHaveBeenCalled();
 });
 
