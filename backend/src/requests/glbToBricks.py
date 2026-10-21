@@ -296,6 +296,8 @@ async def glb_to_bricks(
     except Exception as e:
         if os.path.exists(glb_path):
             os.unlink(glb_path)
+        if isinstance(e, HTTPException):
+            raise
         logger.error(f"Failed to start GLB generation: {e}")
         track_error(
             error_type=type(e).__name__,
