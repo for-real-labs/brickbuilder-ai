@@ -38,7 +38,7 @@ function ModelGreeting({ state, model }: { state: PetState; model: DialogueModel
   </div>;
 }
 
-export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, showGenerationElapsedTime = true, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, showBuildsScrollHint = false, children }: {
+export function BuildBuddyDialogue({ turns, generations, state, username, authLoading = false, onViewGeneration, selectedGenerationId, model, reasoningOnly = false, currentOnly = false, showOpeningMessage = false, showGenerationElapsedTime = true, errorMessage, currentMessage, welcomeMessage, landingWelcome = false, welcomeActions, onBackToWelcome, showBuildsScrollHint = false, children }: {
   turns: BuddyTurn[]; generations: GenerationActivity[]; state: PetState; username?: string | null; authLoading?: boolean;
   onViewGeneration?: (id: string) => void;
   selectedGenerationId?: string | null;
@@ -47,6 +47,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   currentOnly?: boolean;
   showOpeningMessage?: boolean;
   showGenerationElapsedTime?: boolean;
+  errorMessage?: string | null;
   currentMessage?: React.ReactNode | ((greeting: string) => React.ReactNode);
   welcomeMessage?: string;
   landingWelcome?: boolean;
@@ -116,7 +117,15 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   const buildsGreeting = returning ? `Welcome back${greetingName ? `, ${greetingName}` : ''}!`
     : `Hi${greetingName ? `, ${greetingName}` : ''}! I’m ${pet.name}.`;
   const resolvedCurrentMessage = typeof currentMessage === 'function' ? currentMessage(buildsGreeting) : currentMessage;
-  const currentDialogue = resolvedCurrentMessage ?? (activeGeneration && isAgentGeneration(activeGeneration.endpoint)
+  // Admission failures must speak over a selected build or a suggestion prompt.
+  const currentError = errorMessage || latestTurn?.error;
+  const errorDialogue = currentError ? <PetChatMessage state="idle">
+    <p role="status">{buildFailureMessage(currentError)}</p>
+    {onBackToWelcome && <div className="pet-chat-actions">
+      <button type="button" className="pet-chat-action" onClick={onBackToWelcome}>Go back</button>
+    </div>}
+  </PetChatMessage> : null;
+  const currentDialogue = errorDialogue ?? resolvedCurrentMessage ?? (activeGeneration && isAgentGeneration(activeGeneration.endpoint)
     ? <div key={activeGeneration.id}><BuddyBuildMessages generationId={activeGeneration.id} status={activeGeneration.status} />
       {showGenerationElapsedTime && <GenerationElapsedTime startedAt={activeGeneration.createdAt} />}</div>
     : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p>

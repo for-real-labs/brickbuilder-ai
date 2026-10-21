@@ -623,3 +623,17 @@ it.each([true, false])('displays the daily quota reset time in the chat (current
     turns={[{ id: 1, text: 'A castle', error: message }]} generations={[]} /></PetProvider>));
   expect(container.querySelector('[role="status"]')?.textContent).toBe(message);
 });
+
+it.each(['active build', 'suggestion', 'opened model'])('lets the pet speak the quota error over a %s', async context => {
+  const message = 'You have reached the daily limit of 30 generations. Please wait until October 21, 2026 at 7:00 PM CDT to generate again.';
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
+    errorMessage={message} turns={[]} selectedGenerationId="previous"
+    model={context === 'opened model' ? { id: 'previous', orderable: true } : null}
+    currentMessage={context === 'suggestion' ? <p>Build this suggestion?</p> : undefined}
+    generations={context === 'active build' ? [{ id: 'previous', prompt: 'Castle', status: 'processing', endpoint: 'novaToBricks' }] : []}
+  /></PetProvider>));
+  expect(container.querySelector('.pet-chat-message [role="status"]')?.textContent).toBe(message);
+  expect(container.textContent).not.toContain('Build this suggestion?');
+  expect(container.querySelector('.pet-avatar--listening')).toBeNull();
+  expect(container.querySelector('.pet-avatar--building')).toBeNull();
+});
