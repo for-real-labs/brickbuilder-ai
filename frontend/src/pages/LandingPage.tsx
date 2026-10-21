@@ -1019,7 +1019,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 canRename={Boolean(session?.access_token)} accessToken={session?.access_token}
                 onRenameRequest={!session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
                 onOrderBarHeightChange={setOrderBarHeight}>
-              <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations}
+              <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations} errorMessage={generationError}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
