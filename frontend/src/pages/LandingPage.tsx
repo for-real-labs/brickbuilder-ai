@@ -1289,11 +1289,9 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       target="_blank"
       rel="noopener noreferrer"
       aria-label="View BrickBuilder on GitHub"
-      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-200 sm:h-9 sm:w-auto sm:min-w-[5.25rem] sm:gap-2 sm:px-3 sm:text-sm"
+      className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/90 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 sm:w-auto sm:px-3"
     >
-      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-950 text-white sm:h-6 sm:w-6">
-        <Github className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-      </span>
+      <Github aria-hidden="true" className="h-4 w-4 shrink-0" />
       <span className="hidden sm:inline">{formattedGithubStars}</span>
     </a>
   );
