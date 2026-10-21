@@ -462,3 +462,21 @@ on shutdown; failures cannot alter admission responses. No historical backfill.
 Chart: **Request limits hit per day**, event `request_limit_hit`, total count,
 daily interval, last 30 days, production/service filters, breakdown `limit_type`.
 A companion unique-users chart shows affected identities.
+
+### Verified email signups
+
+The production-only reconciliation worker runs at startup and every 15 minutes
+using Supabase's paginated admin user list. It emits `verified_email_signup` for
+non-anonymous users with primary provider `email` and `email_confirmed_at` set.
+Event time is confirmation time, not account creation or last login. Google-primary
+accounts and pending records are excluded. No emails, tokens or auth metadata are
+exported. This measures verified accounts, not OTP submissions or login events.
+
+Historical confirmations are reconciled too. Deterministic event UUIDs survive
+restarts; the daily unique-user graph also prevents retry duplicates inflating
+counts. A process-local delivered set avoids repeated sends during normal operation;
+failed synchronous delivery retries on the next poll. The worker runs only with
+`RAILWAY_ENVIRONMENT_NAME=production` and `POSTHOG_API_KEY` configured.
+Chart: **Verified email signups per day**, event `verified_email_signup`, unique
+users, daily interval, production/service filters. Deleted accounts cannot be
+reconstructed; later provider/email changes can affect retained auth records.

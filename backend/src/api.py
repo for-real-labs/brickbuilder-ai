@@ -70,6 +70,7 @@ from .requests.cancelGeneration import cancel_generation
 from .utils.pack_ldraw_model import LDrawPacker
 from .utils.posthog_client import track_api_call
 from .utils.request_limit_analytics import shutdown_request_limit_analytics
+from .utils.verified_signup_analytics import start_verified_signup_worker
 from .utils.llm_output import output_events
 from .utils.generation_storage import generation_storage
 from .utils.share_card import render_share_card
@@ -98,6 +99,7 @@ if os.getenv("MCP_ENABLED", "false").lower() == "true":
 async def lifespan(app: FastAPI):
     email_task = start_email_worker(generation_storage.client if generation_storage else None)
     recovery_task = start_recovery_worker(generation_storage)
+    signup_task = start_verified_signup_worker(generation_storage.client if generation_storage else None)
     try:
         if brick_mcp:
             async with brick_mcp.session_manager.run():
@@ -105,6 +107,9 @@ async def lifespan(app: FastAPI):
         else:
             yield
     finally:
+        if signup_task:
+            signup_task.cancel()
+            await asyncio.gather(signup_task, return_exceptions=True)
         if recovery_task:
             recovery_task.cancel()
             await asyncio.gather(recovery_task, return_exceptions=True)
