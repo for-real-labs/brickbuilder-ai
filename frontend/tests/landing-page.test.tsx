@@ -359,14 +359,19 @@ describe('LandingPage', () => {
         expect(container.querySelector('button[type="submit"][aria-label="Create"]')).not.toBeNull();
         const help = container.querySelector('.landing-page-help')!;
         expect(help.getAttribute('aria-hidden')).toBe('true');
+        const socialLinks = Array.from(help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a'));
+        expect(socialLinks.map(link => link.getAttribute('aria-label'))).toEqual(['GitHub', 'Instagram', 'YouTube', 'TikTok']);
+        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
         expect(help.getAttribute('aria-hidden')).toBe('false');
         expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
         expect(help.querySelector('a')?.tabIndex).toBe(0);
+        expect(socialLinks.every(link => link.tabIndex === 0 && link.target === '_blank' && link.rel === 'noopener noreferrer')).toBe(true);
         act(() => dialogue.dispatchEvent(new Event('pointerdown', { bubbles: true })));
         expect(help.getAttribute('aria-hidden')).toBe('true');
         expect(help.querySelector('a')?.tabIndex).toBe(-1);
+        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
         expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
@@ -827,7 +832,8 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     expect(github.textContent).toBe('GitHub');
     expect(github.getAttribute('target')).toBe('_blank');
     const starLink = container.querySelector<HTMLAnchorElement>('[aria-label="View BrickBuilder on GitHub"]')!;
-    expect(starLink.classList.contains('hidden')).toBe(true);
+    expect(starLink.classList.contains('hidden')).toBe(false);
+    expect(starLink.querySelector('span')?.classList.contains('hidden')).toBe(true);
     expect(starLink.href).toBe('https://github.com/for-real-labs/brickbuilder-ai');
     expect(starLink.textContent).toBe('10');
     expect(fetch).toHaveBeenCalledWith('https://api.github.com/repos/for-real-labs/brickbuilder-ai', {

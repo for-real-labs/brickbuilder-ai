@@ -1,3 +1,4 @@
+import { LandingSocialLinks } from "../components/LandingSocialLinks";
 import { LandingToolsMenu, type LandingToolsHandle, type GenerationSettingsAction } from '../components/LandingToolsMenu';
 import { isBuddyToolIntent } from '../utils/buddyTools';
 import { LDrawUploadSection } from '../components/LDrawUploadSection';
@@ -1236,9 +1237,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         </main>
 
         {!ldrawLanding && <div className="landing-page-help" aria-hidden={!helpVisible}>
-          Need help?{' '}
+          <div>Need help?{' '}
           <a href="mailto:support@brickbuilder.ai" tabIndex={helpVisible ? 0 : -1}
-            onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a>
+            onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a></div>
+          <LandingSocialLinks visible={helpVisible} />
         </div>}
       </div>
     </div>

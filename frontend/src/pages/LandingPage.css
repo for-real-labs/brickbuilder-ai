@@ -39,7 +39,7 @@
   translate: 0 0;
   transition: bottom 500ms cubic-bezier(0.22, 1, 0.36, 1), transform 500ms cubic-bezier(0.22, 1, 0.36, 1), translate 350ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.landing-page--help-visible .landing-model-conversation { translate: 0 -48px; }
+.landing-page--help-visible .landing-model-conversation { translate: 0 -96px; }
 .landing-page-help {
   position: fixed;
   z-index: 40;
@@ -50,7 +50,8 @@
   align-items: center;
   justify-content: center;
   gap: 4px;
-  min-height: 44px;
+  flex-direction: column;
+  min-height: 92px;
   color: #64748b;
   font-size: 13px;
   opacity: 0;
