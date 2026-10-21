@@ -10,7 +10,8 @@ import requests
 import tempfile
 import base64
 from typing import Optional, Dict, Any, Union, List
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
+from email.utils import format_datetime
 from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
@@ -182,7 +183,13 @@ class GenerationStorage:
             
         except Exception as e:
             if 'BB_GENERATION_DAILY_LIMIT' in str(e):
-                raise HTTPException(status_code=429, detail='You have reached the daily limit of 200 generations. Try again after midnight UTC.') from None
+                reset_at = (datetime.now(timezone.utc) + timedelta(days=1)).replace(
+                    hour=0, minute=0, second=0, microsecond=0)
+                raise HTTPException(
+                    status_code=429,
+                    detail=f'You have reached the daily limit of 30 generations. Please wait until {reset_at:%B %d, %Y at %H:%M} UTC to generate again.',
+                    headers={'Retry-After': format_datetime(reset_at, usegmt=True)},
+                ) from None
             if 'BB_GENERATION_CONCURRENCY_LIMIT' in str(e):
                 raise HTTPException(status_code=429, detail='You can have up to 10 generations running at once. Wait for one to finish or cancel it before starting another.') from None
             logger.error(f"Failed to create generation record")
