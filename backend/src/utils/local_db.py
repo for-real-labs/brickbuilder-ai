@@ -573,7 +573,7 @@ def _create_local_daily_generation_limit(conn) -> None:
             VALUES (owner_id, owner_type, today, 1)
             ON CONFLICT (user_id, user_type, usage_day) DO UPDATE
             SET attempts = generation_daily_usage.attempts + 1
-            WHERE generation_daily_usage.attempts < 200
+            WHERE generation_daily_usage.attempts < 30
             RETURNING attempts INTO admitted;
             IF admitted IS NULL THEN
                 RAISE EXCEPTION 'BB_GENERATION_DAILY_LIMIT' USING ERRCODE = 'P0001';

@@ -83,10 +83,12 @@ def test_daily_limit_is_atomic_persistent_and_resets(server, tmp_path, local):
                     conn.execute(f'CREATE ROLE {role}')
             conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text, created_at timestamptz DEFAULT now())')
             # Existing attempts count immediately after migration.
-            conn.execute("INSERT INTO generations SELECT gen_random_uuid(), 'owner', 'authenticated', 'llmToBricks', 'failed', now() FROM generate_series(1, 198)")
+            conn.execute("INSERT INTO generations SELECT gen_random_uuid(), 'owner', 'authenticated', 'llmToBricks', 'failed', now() FROM generate_series(1, 28)")
             conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261020000000_generation_daily_limit.sql').read_text())
+            conn.execute("INSERT INTO generation_daily_usage VALUES ('over-limit', 'authenticated', (now() AT TIME ZONE 'UTC')::date, 90)")
+            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261021000000_generation_daily_limit_30.sql').read_text())
         if local:
-            conn.execute("INSERT INTO generation_daily_usage VALUES ('owner', 'authenticated', (now() AT TIME ZONE 'UTC')::date, 198)")
+            conn.execute("INSERT INTO generation_daily_usage VALUES ('owner', 'authenticated', (now() AT TIME ZONE 'UTC')::date, 28)")
 
     def insert(index, owner='owner', user_type='authenticated'):
         with psycopg.connect(uri, autocommit=True) as conn:
@@ -108,6 +110,8 @@ def test_daily_limit_is_atomic_persistent_and_resets(server, tmp_path, local):
         with psycopg.connect(uri, autocommit=True) as conn:
             assert sum(outcomes) == 2, conn.execute('SELECT *, now() FROM generation_daily_usage').fetchall()
     assert not insert(0)
+    if not local:
+        assert not insert(0, 'over-limit')  # Lowering the quota preserves already-consumed attempts.
     assert insert(0, 'another-owner')
     assert insert(0, user_type='anonymous')
     with psycopg.connect(uri, autocommit=True) as conn:
@@ -127,8 +131,13 @@ def test_storage_returns_actionable_429_for_daily_limit():
     with pytest.raises(HTTPException) as exc:
         asyncio.run(storage.create_generation('owner', 'authenticated', 'cube', 40))
     assert exc.value.status_code == 429
-    assert '200 generations' in exc.value.detail
-    assert 'midnight UTC' in exc.value.detail
+    assert '30 generations' in exc.value.detail
+    from datetime import datetime, timedelta, timezone
+    from email.utils import parsedate_to_datetime
+    reset_at = parsedate_to_datetime(exc.value.headers['Retry-After'])
+    assert reset_at == (datetime.now(timezone.utc) + timedelta(days=1)).replace(hour=0, minute=0, second=0, microsecond=0)
+    assert 'Please wait until' in exc.value.detail
+    assert 'UTC' in exc.value.detail
 
 
 @pytest.mark.parametrize('module_name,function_name,request_name', [
@@ -142,7 +151,7 @@ def test_generation_routes_preserve_daily_limit_response(monkeypatch, module_nam
     from unittest.mock import AsyncMock, Mock
 
     module = importlib.import_module(f'src.requests.{module_name}')
-    limit = HTTPException(status_code=429, detail='Daily limit of 200 generations; resets at midnight UTC.')
+    limit = HTTPException(status_code=429, detail='Daily limit of 30 generations; resets at midnight UTC.')
     monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **_: {
         'user_email': 'owner@example.com', 'is_anonymous': False, 'is_developer': False})
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(create_generation=AsyncMock(side_effect=limit)))
@@ -165,7 +174,7 @@ def test_upload_route_preserves_daily_limit_and_cleans_upload(monkeypatch, tmp_p
     monkeypatch.setattr(module.tempfile, 'mkstemp', lambda **kwargs: mkstemp(dir=tmp_path, **kwargs))
     monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **_: {
         'user_email': 'owner@example.com', 'is_anonymous': False, 'is_developer': False})
-    limit = HTTPException(status_code=429, detail='Daily limit of 200 generations')
+    limit = HTTPException(status_code=429, detail='Daily limit of 30 generations')
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(create_generation=AsyncMock(side_effect=limit)))
     start = Mock()
     monkeypatch.setattr(module, 'start_generation_task', start)

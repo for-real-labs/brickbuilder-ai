@@ -8,7 +8,7 @@ import { LlmGenerationOutput } from './LlmGenerationOutput';
 import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
 import { isAgentGeneration } from '../utils/agentGeneration';
-import { BUILD_FAILURE_MESSAGE } from '../utils/buildProgress';
+import { buildFailureMessage } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { MODEL_EDIT_INVITATION } from '../utils/buddyModelGreetings';
@@ -122,7 +122,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p>
       {showGenerationElapsedTime && <GenerationElapsedTime startedAt={activeGeneration.createdAt} />}</PetChatMessage>
     : latestTurn ? <PetChatMessage state={state === 'building' ? 'building' : state === 'listening' || !latestTurn.reply ? 'listening' : 'idle'}>
-      {latestTurn.error ? <p role="status">{BUILD_FAILURE_MESSAGE}</p>
+      {latestTurn.error ? <p role="status">{buildFailureMessage(latestTurn.error)}</p>
         : latestTurn.reply ? <p>{latestTurn.reply}</p> : <PetTypingIndicator />}
       {onBackToWelcome && <div className="pet-chat-actions">
         <button type="button" className="pet-chat-action" onClick={onBackToWelcome}>Go back</button>
@@ -163,7 +163,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
             {turn.text && <p>{turn.text}</p>}
             {!turn.text && <p>{turn.imageName || 'Image reference'}</p>}
           </PetChatMessage>
-          {turn.error ? <PetChatMessage><p role="status">{BUILD_FAILURE_MESSAGE}</p></PetChatMessage>
+          {turn.error ? <PetChatMessage><p role="status">{buildFailureMessage(turn.error)}</p></PetChatMessage>
             : <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
               {turn.reply ? <p>{turn.reply}</p> : <PetTypingIndicator />}
             </PetChatMessage>}
