@@ -13,6 +13,7 @@ import resend
 
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
+from ..utils.order_email import order_email_content
 
 logger = logging.getLogger(__name__)
 
@@ -280,65 +281,19 @@ async def handle_checkout_session_completed(session):
                     if resend_api_key:
                         resend.api_key = resend_api_key
                         
-                        # Construct order confirmation email HTML
                         model_url = 'https://brickbuilder.ai/?' + urlencode({'id': generation_id, 'exact': '1'})
-                        instructions_url = model_url + '&instructions=1'
-                        email_html = f"""
-                            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                              <div style="text-align: center; margin-bottom: 32px;">
-                                <div style="display: inline-flex; align-items: center; gap: 0px;">
-                                  <span style="font-size: 32px; font-weight: 800; color: #ef4444; letter-spacing: -0.5px;">BRICK</span>
-                                  <span style="font-size: 32px; font-weight: 800; color: #1e293b; letter-spacing: -0.5px;">BUILDER</span>
-                                </div>
-                              </div>
-                              
-                              <h2 style="color: #1e293b; margin-bottom: 16px;">Order Confirmed!</h2>
-                              
-                              <p style="color: #475569; line-height: 1.6; margin-bottom: 12px;">
-                                We've received your order. Please wait 8-12 business days for your bricks to arrive.
-                              </p>
-                              
-                              <p style="color: #1e293b; font-weight: 600; margin-bottom: 24px;">
-                                Your order ID is: {order_id}
-                              </p>
-                              
-                              <div style="background-color: #f8fafc; padding: 24px; border-radius: 8px; margin-bottom: 24px;">
-                                <h3 style="color: #1e293b; margin-bottom: 12px;">Building Instructions</h3>
-                                <p style="color: #475569; line-height: 1.6; margin-bottom: 16px;">
-                                  You can view your instructions at:
-                                </p>
-                                <a href="{escape(instructions_url, quote=True)}"
-                                   style="display: inline-block; background-color: #ef4444; color: white; padding: 12px 24px; 
-                                          text-decoration: none; border-radius: 6px; font-weight: 600;">
-                                  View Instructions
-                                </a>
-                                <p style="color: #64748b; font-size: 14px; margin-top: 16px;">
-                                  Or by viewing your orders in the BrickBuilder dashboard.
-                                </p>
-                              </div>
-                              
-                              <p style="color: #475569; line-height: 1.6; margin-bottom: 8px;">
-                                Happy building!
-                              </p>
-                              
-                              <p style="color: #475569; line-height: 1.6;">
-                                - The BrickBuilder Team
-                              </p>
-                              
-                              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 32px 0;">
-                              
-                              <p style="color: #64748b; font-size: 14px; text-align: center;">
-                                Have any questions? Email us at
-                                <a href="mailto:support@brickbuilder.ai" style="color: #ef4444; text-decoration: none;">support@brickbuilder.ai</a>
-                              </p>
-                            </div>
-                        """
+                        try:
+                            generation = await generation_storage.get_generation(generation_id) or {}
+                        except Exception:
+                            logger.warning("Order preview unavailable; sending confirmation without it")
+                            generation = {}
+                        content = order_email_content(order_id, generation_id, generation, metadata.get('petId'))
                         
                         email_params = {
                             "from": "BrickBuilder <no-reply@info.brickbuilder.ai>",
                             "to": [customer_email],
                             "subject": "Your BrickBuilder Order Confirmation",
-                            "html": email_html,
+                            **content,
                         }
                         
                         email_response = resend.Emails.send(email_params)

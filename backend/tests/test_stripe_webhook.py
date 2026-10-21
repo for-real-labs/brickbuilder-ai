@@ -166,12 +166,12 @@ def test_repeated_paid_checkout_sends_each_confirmation_only_once(monkeypatch):
 @pytest.mark.parametrize('generation_id', ['castle', 'g/123 &instructions=0"<>'])
 def test_order_emails_link_to_landing_model_and_instructions_dialog(monkeypatch, generation_id):
     session = stripe.StripeObject.construct_from({
-        'id': 'cs_links', 'metadata': {'generationId': generation_id}, 'amount_total': 2500,
+        'id': 'cs_links', 'metadata': {'generationId': generation_id, 'petId': 'nib'}, 'amount_total': 2500,
         'payment_intent': 'pi_links', 'customer_details': {'email': 'buyer@example.com'},
         'collected_information': {'shipping_details': {'name': 'Builder', 'address': {'line1': '123 Main'}}},
     }, None)
     monkeypatch.setattr(webhook.stripe.checkout.Session, 'retrieve', Mock(return_value=session))
-    monkeypatch.setattr(webhook, 'generation_storage', SimpleNamespace(update_payment_status=AsyncMock(return_value=95)))
+    monkeypatch.setattr(webhook, 'generation_storage', SimpleNamespace(update_payment_status=AsyncMock(return_value=95), get_generation=AsyncMock(return_value={'name': 'Castle', 'preview_image_url': 'https://example.com/castle.png'})))
     monkeypatch.setenv('RESEND_API_KEY', 'test-only')
     send = Mock()
     monkeypatch.setattr(webhook.resend.Emails, 'send', send)
@@ -180,12 +180,16 @@ def test_order_emails_link_to_landing_model_and_instructions_dialog(monkeypatch,
     for call, recipient, instructions in zip(send.call_args_list, ['buyer@example.com', 'jakejohnson3700@gmail.com'], [True, False]):
         message = call.args[0]
         assert message['to'] == [recipient]
+        if instructions:
+            assert '/pets/email/nib.png' in message['html']
+            assert 'https://example.com/castle.png' in message['html']
         links = [urlparse(link) for link in EmailLinks(message['html']).links]
         model_links = [link for link in links if link.netloc == 'brickbuilder.ai']
-        assert len(model_links) == 1
+        assert len(model_links) == (2 if instructions else 1)
         assert model_links[0].scheme == 'https'
         assert model_links[0].path == '/'
         expected = {'id': [generation_id], 'exact': ['1']}
+        assert parse_qs(model_links[0].query) == expected
         if instructions:
             expected['instructions'] = ['1']
-        assert parse_qs(model_links[0].query) == expected
+            assert parse_qs(model_links[1].query) == expected

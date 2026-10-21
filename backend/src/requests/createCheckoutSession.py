@@ -60,6 +60,7 @@ class CreateCheckoutSessionRequest(BaseModel):
     uiMode: Literal["hosted", "custom", "embedded", "elements"] = "hosted"
     customerEmail: Optional[EmailStr] = None
     shipInstructionsPostcard: StrictBool = False
+    petId: Optional[Literal["pip", "nib", "clik"]] = None
     shippingAddress: Optional[ShippingContact] = None
 
 
@@ -109,6 +110,8 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
                        request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})
         metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url,
                     "shipInstructionsPostcard": str(request.shipInstructionsPostcard).lower()}
+        if request.petId:
+            metadata["petId"] = request.petId
         if request.brickowlCartId:
             metadata["brickowlCartId"] = request.brickowlCartId
         params = {

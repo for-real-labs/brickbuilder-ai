@@ -13,6 +13,7 @@ import { CheckoutStep } from "../components/checkout/CheckoutStep";
 import { InstructionsPostcard } from "../components/checkout/InstructionsPostcard";
 import { CheckoutPayment } from "../components/checkout/CheckoutPayment";
 import { supabase } from "../lib/supabase";
+import { usePet } from "../contexts/PetContext";
 import { useAuth } from "../contexts/AuthContext";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
 import { getOrderPricing, formatOrderPrice, getShippingContact, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
@@ -43,6 +44,7 @@ const stepNames = ['Contact & delivery', 'Payment'];
 
 export default function OrderKit() {
   const { user, session: authSession } = useAuth();
+  const { pet } = usePet();
   const location = useLocation();
   const navigate = useNavigate();
   const state = React.useMemo(() => restoreOrderState(location.state as LocationState | null), [location.state]);
@@ -208,7 +210,7 @@ export default function OrderKit() {
       const data = await CreateCheckoutSessionApiService.createCheckoutSession({
         name, priceCents: pricing.totalCents, quantity: 1,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
-        uiMode: 'elements', shipInstructionsPostcard,
+        uiMode: 'elements', shipInstructionsPostcard, petId: pet.id,
         shippingAddress: getShippingContact(delivery, country),
       }, token);
       if (!data.client_secret) throw new Error('Embedded payment unavailable');

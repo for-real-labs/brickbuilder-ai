@@ -18,6 +18,7 @@ vi.mock('../src/services/ldrToMpdApi', () => ({ LdrToMpdApiService: { convertLdr
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('../src/components/SiteFooter', () => ({ SiteFooter: () => null }));
 vi.mock('../src/services/getGenerationApi', () => ({ GetGenerationApiService: { getGeneration: async () => ({ name: 'Frog', status: 'completed', ldr_content: '0 Frog' }) } }));
+vi.mock('../src/contexts/PetContext', () => ({ usePet: () => ({ pet: { id: 'clik' } }) }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, session: null }) }));
 vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { getSession: async () => ({ data: { session: { access_token: 'auth-token' } } }) } } }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
@@ -357,7 +358,7 @@ it('sends the postcard choice to payment and retains it when editing contact det
   expect(postcard.checked).toBe(false);
   act(() => { postcard.click(); Object.entries(details).forEach(([name, value]) => fill(name, value)); });
   await submitContact();
-  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shipInstructionsPostcard: true }), 'auth-token');
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shipInstructionsPostcard: true, petId: 'clik' }), 'auth-token');
   await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
   expect(container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.checked).toBe(true);
   act(() => container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.click());

@@ -1,3 +1,4 @@
+import type { PetId } from '../pets';
 import { apiFetch } from './apiFetch';
 import type { OrderQuote, getShippingContact } from '../utils/orderCheckout';
 /// <reference types="vite/client" />
@@ -11,6 +12,7 @@ export interface CreateCheckoutSessionRequest {
   uiMode?: 'hosted' | 'custom' | 'embedded' | 'elements';
   customerEmail?: string;
   shipInstructionsPostcard?: boolean;
+  petId?: PetId;
   shippingAddress?: ReturnType<typeof getShippingContact>;
 }
 

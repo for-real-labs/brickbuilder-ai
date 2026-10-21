@@ -193,3 +193,15 @@ def test_imported_ldraw_cannot_be_ordered_even_if_a_parts_list_is_attached(setup
         run()
     assert error.value.status_code == 409
     create.assert_not_called()
+
+
+@pytest.mark.parametrize('pet', ['pip', 'nib', 'clik'])
+def test_checkout_preserves_selected_pet(setup, pet):
+    _, create, _ = setup
+    run(petId=pet)
+    assert create.call_args.kwargs['metadata']['petId'] == pet
+
+
+def test_checkout_rejects_unknown_pet():
+    with pytest.raises(ValidationError):
+        checkout.CreateCheckoutSessionRequest(petId='../other')
