@@ -68,12 +68,16 @@ export function SEO({
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
+      {image === 'https://brickbuilder.ai/share-card.png' && <meta property="og:image:width" content="1200" />}
+      {image === 'https://brickbuilder.ai/share-card.png' && <meta property="og:image:height" content="630" />}
+      {image === 'https://brickbuilder.ai/share-card.png' && <meta property="og:image:alt" content="BrickBuilder AI logo and Pip, the red brick pet" />}
       <meta property="og:site_name" content="BrickBuilder AI" />
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content={url} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
+      {image === 'https://brickbuilder.ai/share-card.png' && <meta name="twitter:image:alt" content="BrickBuilder AI logo and Pip, the red brick pet" />}
       <link rel="canonical" href={url} />
       {/* Escape HTML delimiters so public article text cannot close the script. */}
       <script type="application/ld+json">

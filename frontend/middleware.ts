@@ -4,6 +4,15 @@ const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const MODEL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SHARE_IMAGE_PATH = /^\/share-image\/([0-9a-f-]{36})\.png$/i;
 const PREVIEW_STORAGE_HOST = 'smzdytfghwslpbqnwdov.supabase.co';
+const SOCIAL_CRAWLER = /LinkedInBot|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|TelegramBot|WhatsApp|Pinterestbot|redditbot|Applebot|Googlebot|Google-InspectionTool|GoogleOther|SkypeUriPreview|Embedly|Iframely/i;
+const SHARE_LOOKUP_TIMEOUT_MS = 12000;
+
+function unavailableShareResponse(): Response {
+  return new Response('Model preview temporarily unavailable. Please retry.', {
+    status: 503,
+    headers: { 'Cache-Control': 'no-store', 'Retry-After': '30' },
+  });
+}
 
 function backendBase(): string | undefined {
   return process.env.VERCEL_ENV === 'preview'
@@ -23,15 +32,18 @@ function setMeta(document: string, attribute: 'name' | 'property', key: string, 
 
 function modelDocument(shell: string, name: string, image: string, url: string): string {
   const title = `Check out my model: ${name}`;
-  const description = `See my ${name} brick model, made with BrickBuilder AI.`;
+  const description = `Check out my ${name} brick model on BrickBuilder AI. Explore the 3D model, see the preview, and get inspired to build your own creation.`;
   let document = shell.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeAttribute(title)}</title>`);
   for (const [attribute, key, value] of [
     ['name', 'title', title], ['name', 'description', description],
     ['property', 'og:title', title], ['property', 'og:description', description],
     ['property', 'og:image', image], ['property', 'og:url', url],
+    ['property', 'og:image:alt', `${name} brick model preview on BrickBuilder AI`],
     ['name', 'twitter:title', title], ['name', 'twitter:description', description],
     ['name', 'twitter:image', image], ['name', 'twitter:url', url],
+    ['name', 'twitter:image:alt', `${name} brick model preview on BrickBuilder AI`],
   ] as const) document = setMeta(document, attribute, key, value);
+  document = document.replace(/<meta\b[^>]*property="og:image:(?:width|height)"[^>]*>\s*/gi, '');
   return document.replace(/<link\b[^>]*rel="canonical"[^>]*>/i, `<link rel="canonical" href="${escapeAttribute(url)}" />`);
 }
 
@@ -41,12 +53,12 @@ async function loadShareModel(id: string): Promise<{ name?: unknown; preview_ima
   try {
     const generationUrl = `${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}`;
     let result = await fetch(`${generationUrl}/share-preview`, {
-      signal: AbortSignal.timeout(4000),
+      signal: AbortSignal.timeout(SHARE_LOOKUP_TIMEOUT_MS),
     });
     // Railway may still be rolling out the smaller card endpoint after Vercel deploys.
     // The existing model read is public for completed builds and keeps the card live.
     const legacy = result.status === 404;
-    if (legacy) result = await fetch(generationUrl, { signal: AbortSignal.timeout(4000) });
+    if (legacy) result = await fetch(generationUrl, { signal: AbortSignal.timeout(SHARE_LOOKUP_TIMEOUT_MS) });
     if (!result.ok) return undefined;
     const model = await result.json() as { name?: unknown; preview_image_url?: unknown; status?: unknown; endpoint?: unknown };
     if (legacy && (model.status !== 'completed' || model.endpoint === 'uploadLdraw')) return undefined;
@@ -64,35 +76,41 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
   if (!id || !MODEL_ID.test(id)) return undefined;
   if (!imageMatch && !['/', '/generated-model'].includes(url.pathname)) return undefined;
   const model = await loadShareModel(id);
-  if (!model || typeof model.preview_image_url !== 'string') return undefined;
+  if (!model || typeof model.preview_image_url !== 'string') {
+    return imageMatch || SOCIAL_CRAWLER.test(request.headers.get('user-agent') || '')
+      ? unavailableShareResponse()
+      : undefined;
+  }
   try {
     const imageUrl = new URL(model.preview_image_url);
-    if (imageUrl.protocol !== 'https:') return undefined;
+    if (imageUrl.protocol !== 'https:') return unavailableShareResponse();
     const isHostedPreview = imageUrl.hostname === PREVIEW_STORAGE_HOST && imageUrl.pathname.endsWith('.png');
     if (imageMatch) {
-      if (!isHostedPreview) return undefined;
+      if (!isHostedPreview) return unavailableShareResponse();
       const backend = backendBase();
       let cardResponse: Response | undefined;
       try {
         if (backend) cardResponse = await fetch(`${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}/share-card.png`, {
-          signal: AbortSignal.timeout(10000),
+          signal: AbortSignal.timeout(SHARE_LOOKUP_TIMEOUT_MS),
         });
       } catch { /* A raw preview is still available if the card service is unavailable. */ }
       const branded = Boolean(cardResponse?.ok && cardResponse.headers.get('content-type')?.split(';')[0] === 'image/png');
       const imageResponse = branded
         ? cardResponse!
-        : await fetch(imageUrl.href, { redirect: 'error', signal: AbortSignal.timeout(8000) });
-      if (!imageResponse.ok || imageResponse.headers.get('content-type')?.split(';')[0] !== 'image/png') return undefined;
-      if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return undefined;
+        : await fetch(imageUrl.href, { redirect: 'error', signal: AbortSignal.timeout(SHARE_LOOKUP_TIMEOUT_MS) });
+      if (!imageResponse.ok || imageResponse.headers.get('content-type')?.split(';')[0] !== 'image/png') return unavailableShareResponse();
+      if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return unavailableShareResponse();
       const bytes = await imageResponse.arrayBuffer();
-      if (bytes.byteLength > 10_000_000) return undefined;
+      if (bytes.byteLength > 10_000_000) return unavailableShareResponse();
       return new Response(bytes, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30' },
       });
     }
     const shellUrl = new URL('/share-shell.html', request.url);
     const shellResponse = await fetch(shellUrl, { headers: { cookie: request.headers.get('cookie') || '' }, signal: AbortSignal.timeout(4000) });
-    if (!shellResponse.ok) return undefined;
+    if (!shellResponse.ok) return SOCIAL_CRAWLER.test(request.headers.get('user-agent') || '')
+      ? unavailableShareResponse()
+      : undefined;
     const shell = await shellResponse.text();
     const name = typeof model.name === 'string' && model.name.trim() ? model.name.trim().slice(0, 90) : 'Generated model';
     const canonical = url.pathname === '/generated-model'
@@ -101,11 +119,18 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     const image = isHostedPreview
       ? `https://brickbuilder.ai/share-image/${id}.png?card=3&v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
       : imageUrl.href;
-    return new Response(modelDocument(shell, name, image, canonical), {
+    let document = modelDocument(shell, name, image, canonical);
+    if (isHostedPreview) {
+      document = setMeta(document, 'property', 'og:image:width', '1200');
+      document = setMeta(document, 'property', 'og:image:height', '630');
+    }
+    return new Response(document, {
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
   } catch {
-    return undefined;
+    return imageMatch || SOCIAL_CRAWLER.test(request.headers.get('user-agent') || '')
+      ? unavailableShareResponse()
+      : undefined;
   }
 }
 

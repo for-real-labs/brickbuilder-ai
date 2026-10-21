@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import middleware from '../middleware';
@@ -29,6 +30,18 @@ describe('preview password middleware', () => {
     delete process.env.VERCEL;
 
     await expect(middleware(new Request('https://example.com/'))).resolves.toBeUndefined();
+  });
+
+  it('publishes a complete branded homepage card for link preview crawlers', () => {
+    const html = readFileSync('index.html', 'utf8');
+    expect(html).toContain('property="og:image" content="https://brickbuilder.ai/share-card.png"');
+    expect(html).toContain('property="og:image:width" content="1200"');
+    expect(html).toContain('property="og:image:height" content="630"');
+    expect(html).toContain('property="og:image:alt" content="BrickBuilder AI logo and Pip, the red brick pet"');
+    expect(html).toContain('name="twitter:card" content="summary_large_image"');
+    expect(html).toContain('name="twitter:image:alt" content="BrickBuilder AI logo and Pip, the red brick pet"');
+    const description = html.match(/property="og:description" content="([^"]+)"/)?.[1];
+    expect(description?.length).toBeGreaterThanOrEqual(100);
   });
 
   it('does not run for the main branch', async () => {
@@ -115,8 +128,31 @@ describe('preview password middleware', () => {
     expect(html).toContain('Check out my model: Pip &amp; Friends');
     expect(html).toContain(`property="og:image" content="https://brickbuilder.ai/share-image/${id}.png?card=3&amp;v=pip.png"`);
     expect(html).toContain(`name="twitter:image" content="https://brickbuilder.ai/share-image/${id}.png?card=3&amp;v=pip.png"`);
+    expect(html).toContain('property="og:image:width" content="1200"');
+    expect(html).toContain('property="og:image:height" content="630"');
+    expect(html).toContain('property="og:image:alt" content="Pip &amp; Friends brick model preview on BrickBuilder AI"');
+    expect(html).toContain('name="twitter:image:alt" content="Pip &amp; Friends brick model preview on BrickBuilder AI"');
     expect(html).toContain(`https://brickbuilder.ai/?id=${id}`);
     expect(html).toContain('<div id="root"></div>');
+  });
+
+  it.each(['LinkedInBot', 'facebookexternalhit/1.1', 'Twitterbot', 'Slackbot'])('asks %s to retry when the model service is unavailable', async userAgent => {
+    process.env.VERCEL_ENV = 'production';
+    const id = '123e4567-e89b-12d3-a456-426614174000';
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('backend sleeping')));
+    const response = await middleware(new Request(`https://brickbuilder.ai/?id=${id}`, { headers: { 'User-Agent': userAgent } }));
+    expect(response?.status).toBe(503);
+    expect(response?.headers.get('cache-control')).toBe('no-store');
+    expect(response?.headers.get('retry-after')).toBe('30');
+  });
+
+  it('never serves the app HTML as a model share image', async () => {
+    process.env.VERCEL_ENV = 'production';
+    const id = '123e4567-e89b-12d3-a456-426614174000';
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('backend sleeping')));
+    const response = await middleware(new Request(`https://brickbuilder.ai/share-image/${id}.png`));
+    expect(response?.status).toBe(503);
+    expect(response?.headers.get('cache-control')).toBe('no-store');
   });
 
   it('uses the static page for invalid IDs and missing previews', async () => {
@@ -134,10 +170,12 @@ describe('preview password middleware', () => {
     process.env.VITE_RAILWAY_API_URL = 'https://api.example.com';
     const fetcher = vi.fn().mockResolvedValueOnce(new Response('Not Found', { status: 404 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ status: 'completed', endpoint: 'llmToBricks', name: 'Castle', preview_image_url: 'https://images.example.com/castle.png' })))
-      .mockResolvedValueOnce(new Response('<html><head></head><body></body></html>'));
+      .mockResolvedValueOnce(new Response('<html><head><meta property="og:image:width" content="1200" /><meta property="og:image:height" content="630" /></head><body></body></html>'));
     vi.stubGlobal('fetch', fetcher);
     const response = await middleware(new Request('https://brickbuilder.ai/?id=123e4567-e89b-12d3-a456-426614174000'));
-    expect(await response?.text()).toContain('https://images.example.com/castle.png');
+    const html = await response?.text();
+    expect(html).toContain('https://images.example.com/castle.png');
+    expect(html).not.toContain('og:image:width');
     expect(fetcher).toHaveBeenCalledTimes(3);
   });
 

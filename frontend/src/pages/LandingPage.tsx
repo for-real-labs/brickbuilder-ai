@@ -958,7 +958,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       )}
       <SEO
         title={imageLanding?.title ?? "BrickBuilder - Turn Images into 3D LEGO-Compatible Brick Models"}
-        description={imageLanding?.description ?? "Create brick models and building instructions from a photo or a prompt."}
+        description={imageLanding?.description ?? "Turn your photos and ideas into 3D brick models with BrickBuilder AI. Explore your creation, preview every detail, and get building instructions to bring it to life."}
         keywords={imageLanding?.keywords}
         url={`https://brickbuilder.ai/${imageLandingPath ?? ""}`}
       />

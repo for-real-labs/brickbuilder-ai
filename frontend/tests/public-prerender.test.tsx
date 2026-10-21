@@ -49,10 +49,14 @@ describe('public page indexing', () => {
 
   it('keeps homepage share previews free of experimental and demo disclaimers', () => {
     const document = new JSDOM(renderPublicDocument(shell, '/')).window.document;
-    const description = 'Create brick models and building instructions from a photo or a prompt.';
+    const description = 'Turn your photos and ideas into 3D brick models with BrickBuilder AI. Explore your creation, preview every detail, and get building instructions to bring it to life.';
     for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
       expect(document.querySelector(selector)?.getAttribute('content')).toBe(description);
     }
+    expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe('https://brickbuilder.ai/share-card.png');
+    expect(document.querySelector('meta[property="og:image:width"]')?.getAttribute('content')).toBe('1200');
+    expect(document.querySelector('meta[property="og:image:height"]')?.getAttribute('content')).toBe('630');
+    expect(document.querySelector('meta[property="og:image:alt"]')?.getAttribute('content')).toContain('Pip');
     expect(document.head.textContent).not.toMatch(/experimental|results may vary|beta 1\.0/i);
   });
 
