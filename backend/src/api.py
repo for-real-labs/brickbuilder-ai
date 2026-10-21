@@ -69,6 +69,7 @@ from .requests.cancelGeneration import cancel_generation
 # Import utilities
 from .utils.pack_ldraw_model import LDrawPacker
 from .utils.posthog_client import track_api_call
+from .utils.request_limit_analytics import shutdown_request_limit_analytics
 from .utils.llm_output import output_events
 from .utils.generation_storage import generation_storage
 from .utils.share_card import render_share_card
@@ -111,6 +112,7 @@ async def lifespan(app: FastAPI):
             email_task.cancel()
             await asyncio.gather(email_task, return_exceptions=True)
         await local_provider_connections.shutdown()
+        shutdown_request_limit_analytics()
 
 
 app = FastAPI(
