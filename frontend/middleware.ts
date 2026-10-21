@@ -70,8 +70,8 @@ async function loadShareModel(id: string): Promise<{ name?: unknown; preview_ima
 
 async function modelShareResponse(request: Request): Promise<Response | undefined> {
   const url = new URL(request.url);
-  if (request.method !== 'GET') return undefined;
   const imageMatch = SHARE_IMAGE_PATH.exec(url.pathname);
+  if (request.method !== 'GET' && !(request.method === 'HEAD' && imageMatch)) return undefined;
   const id = imageMatch?.[1] || url.searchParams.get('id');
   if (!id || !MODEL_ID.test(id)) return undefined;
   if (!imageMatch && !['/', '/generated-model'].includes(url.pathname)) return undefined;
@@ -102,7 +102,7 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
       if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return unavailableShareResponse();
       const bytes = await imageResponse.arrayBuffer();
       if (bytes.byteLength > 10_000_000) return unavailableShareResponse();
-      return new Response(bytes, {
+      return new Response(request.method === 'HEAD' ? null : bytes, {
         headers: { 'Content-Type': 'image/png', 'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30' },
       });
     }
