@@ -8,13 +8,25 @@ import { LlmGenerationOutput } from './LlmGenerationOutput';
 import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
 import { isAgentGeneration } from '../utils/agentGeneration';
-import { buildFailureMessage } from '../utils/buildProgress';
+import { buildFailureMessage, GUEST_GENERATION_LIMIT_MESSAGE } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { MODEL_EDIT_INVITATION } from '../utils/buddyModelGreetings';
 import { formatBuddyGreeting, pickBuddyGreeting, rememberBuddyGreeting } from '../utils/buddyGreetings';
 
 export const BUDDY_SEEN_KEY = 'brickbuilder.build-buddy-seen';
+
+function GenerationFailure({ error }: { error: unknown }) {
+  const message = buildFailureMessage(error);
+  return <>
+    <p role="status">{message}</p>
+    {message === GUEST_GENERATION_LIMIT_MESSAGE && <div className="pet-chat-actions">
+      <a className="pet-chat-action" href="/login" onClick={() => {
+        posthog.capture('guest_generation_limit_sign_in_clicked', { surface: 'pet_dialogue' });
+      }}>Sign in to keep building</a>
+    </div>}
+  </>;
+}
 
 export function BuddyBuildMessages({ generationId, status }: { generationId: string; status: string }) {
   const active = isGenerationActive(status);
@@ -120,7 +132,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
   // Admission failures must speak over a selected build or a suggestion prompt.
   const currentError = errorMessage || latestTurn?.error;
   const errorDialogue = currentError ? <PetChatMessage state="idle">
-    <p role="status">{buildFailureMessage(currentError)}</p>
+    <GenerationFailure error={currentError} />
     {onBackToWelcome && <div className="pet-chat-actions">
       <button type="button" className="pet-chat-action" onClick={onBackToWelcome}>Go back</button>
     </div>}
@@ -131,7 +143,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
     : activeGeneration ? <PetChatMessage state="building"><p>I’m getting your build ready.</p>
       {showGenerationElapsedTime && <GenerationElapsedTime startedAt={activeGeneration.createdAt} />}</PetChatMessage>
     : latestTurn ? <PetChatMessage state={state === 'building' ? 'building' : state === 'listening' || !latestTurn.reply ? 'listening' : 'idle'}>
-      {latestTurn.error ? <p role="status">{buildFailureMessage(latestTurn.error)}</p>
+      {latestTurn.error ? <GenerationFailure error={latestTurn.error} />
         : latestTurn.reply ? <p>{latestTurn.reply}</p> : <PetTypingIndicator />}
       {onBackToWelcome && <div className="pet-chat-actions">
         <button type="button" className="pet-chat-action" onClick={onBackToWelcome}>Go back</button>
@@ -172,7 +184,7 @@ export function BuildBuddyDialogue({ turns, generations, state, username, authLo
             {turn.text && <p>{turn.text}</p>}
             {!turn.text && <p>{turn.imageName || 'Image reference'}</p>}
           </PetChatMessage>
-          {turn.error ? <PetChatMessage><p role="status">{buildFailureMessage(turn.error)}</p></PetChatMessage>
+          {turn.error ? <PetChatMessage><GenerationFailure error={turn.error} /></PetChatMessage>
             : <PetChatMessage state={turn.reply ? 'idle' : 'listening'}>
               {turn.reply ? <p>{turn.reply}</p> : <PetTypingIndicator />}
             </PetChatMessage>}

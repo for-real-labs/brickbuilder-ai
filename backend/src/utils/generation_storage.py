@@ -182,6 +182,8 @@ class GenerationStorage:
             return generation_id
             
         except Exception as e:
+            if 'BB_GENERATION_GUEST_LIMIT' in str(e):
+                raise HTTPException(status_code=403, detail='You have used your 3 free guest generations. Sign in to keep building.') from None
             if 'BB_GENERATION_DAILY_LIMIT' in str(e):
                 reset_at = (datetime.now(timezone.utc) + timedelta(days=1)).replace(
                     hour=0, minute=0, second=0, microsecond=0)

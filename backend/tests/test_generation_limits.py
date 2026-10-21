@@ -141,17 +141,21 @@ def test_storage_returns_actionable_429_for_daily_limit():
 
 
 @pytest.mark.parametrize('module_name,function_name,request_name', [
+    ('llmToBricks', 'llm_to_bricks', 'LlmToBricksRequest'),
+    ('llmToBricks', 'llm_to_bricks_stream', 'LlmToBricksRequest'),
     ('textToBricks', 'text_to_bricks', 'TextToBricksRequest'),
     ('textToBricks', 'text_to_bricks_stream', 'TextToBricksRequest'),
     ('imageToBricks', 'image_to_bricks', 'ImageToBricksRequest'),
     ('imageToBricks', 'image_to_bricks_stream', 'ImageToBricksRequest'),
 ])
-def test_generation_routes_preserve_daily_limit_response(monkeypatch, module_name, function_name, request_name):
+@pytest.mark.parametrize('status,detail', [(429, 'Daily limit of 30 generations; resets at midnight UTC.'),
+                                         (403, 'You have used your 3 free guest generations. Sign in to keep building.')])
+def test_generation_routes_preserve_limit_response(monkeypatch, module_name, function_name, request_name, status, detail):
     import importlib
     from unittest.mock import AsyncMock, Mock
 
     module = importlib.import_module(f'src.requests.{module_name}')
-    limit = HTTPException(status_code=429, detail='Daily limit of 30 generations; resets at midnight UTC.')
+    limit = HTTPException(status_code=status, detail=detail)
     monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **_: {
         'user_email': 'owner@example.com', 'is_anonymous': False, 'is_developer': False})
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(create_generation=AsyncMock(side_effect=limit)))
@@ -202,3 +206,98 @@ def test_lowering_concurrency_limit_preserves_running_jobs(server):
         conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'textToBricks', 'started')", (uuid4(),))
         with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_CONCURRENCY_LIMIT'):
             conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'imageToBricks', 'queued')", (uuid4(),))
+
+
+@pytest.fixture(params=[False, True])
+def guest_trial_db(server, tmp_path, request):
+    local = request.param
+    uri = server.get_uri()
+    with psycopg.connect(uri, autocommit=True) as conn:
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_guest_usage')
+        if local:
+            _create_schema(conn)
+        else:
+            for role in ('anon', 'authenticated', 'service_role'):
+                if not conn.execute('SELECT 1 FROM pg_roles WHERE rolname=%s', (role,)).fetchone():
+                    conn.execute(f'CREATE ROLE {role}')
+            conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text, created_at timestamptz DEFAULT now())')
+            migrations = Path(__file__).parents[2] / 'supabase/migrations'
+            for name in ('20261020000000_generation_daily_limit.sql', '20261021000000_generation_daily_limit_30.sql',
+                         '20261021010000_generation_concurrency_limit_5.sql', '20261021020000_guest_generation_lifetime_limit.sql'):
+                conn.execute((migrations / name).read_text())
+
+    def insert(index, owner='guest_trial', user_type='anonymous', status='cancelled'):
+        with psycopg.connect(uri, autocommit=True) as conn:
+            row = {'id': str(uuid4()), 'user_id': owner, 'user_type': user_type,
+                   'endpoint': ['llmToBricks', 'novaToBricks', 'textToBricks', 'imageToBricks'][index % 4], 'status': status}
+            if local:
+                LocalSupabaseClient(conn, tmp_path, 'http://localhost').table('generations').insert(row).execute()
+            else:
+                conn.execute('INSERT INTO generations (id,user_id,user_type,endpoint,status) VALUES (%s,%s,%s,%s,%s)', tuple(row.values()))
+
+    return uri, local, insert
+
+
+def test_guest_trial_is_atomic_lifetime_and_survives_claims_and_deletion(guest_trial_db):
+    uri, local, insert = guest_trial_db
+
+    def attempt(index):
+        try:
+            insert(index, status='failed' if index % 2 else 'cancelled')
+            return True
+        except psycopg.errors.RaiseException as exc:
+            assert 'BB_GENERATION_GUEST_LIMIT' in str(exc)
+            return False
+
+    with ThreadPoolExecutor(max_workers=12) as workers:
+        assert sum(workers.map(attempt, range(12))) == 3
+    with psycopg.connect(uri, autocommit=True) as conn:
+        assert conn.execute("SELECT attempts FROM generation_guest_usage WHERE user_id='guest_trial'").fetchone()[0] == 3
+        # Signing in and claiming existing models cannot replenish the guest trial.
+        if local:
+            conn.execute("UPDATE generations SET doc = doc || '{\"user_id\":\"account\",\"user_type\":\"authenticated\"}'::jsonb")
+        else:
+            conn.execute("UPDATE generations SET user_id='account', user_type='authenticated'")
+        conn.execute('DELETE FROM generations')
+        conn.execute('UPDATE generation_daily_usage SET usage_day = usage_day - 1')
+    assert not attempt(0)
+    for index in range(4):
+        insert(index, user_type='authenticated')  # Signed-in users retain their daily quota.
+    insert(0, owner='another_guest')
+
+
+def test_guest_trial_backfills_history_and_preserves_spent_counters(guest_trial_db):
+    uri, local, insert = guest_trial_db
+    with psycopg.connect(uri, autocommit=True) as conn:
+        conn.execute('DROP TRIGGER generations_0_guest_limit ON generations')
+        conn.execute('DROP TRIGGER generations_daily_limit ON generations')
+    for index in range(4):
+        insert(index, owner='old_guest')
+    for index in range(2):
+        insert(index, owner='partial_guest')
+    with psycopg.connect(uri, autocommit=True) as conn:
+        conn.execute("INSERT INTO generation_daily_usage VALUES ('partial_guest', 'anonymous', CURRENT_DATE, 2), ('deleted_guest', 'anonymous', CURRENT_DATE - 2, 2), ('deleted_guest', 'anonymous', CURRENT_DATE - 1, 1)")
+        if local:
+            from src.utils.local_db import _create_local_guest_generation_limit
+            _create_local_guest_generation_limit(conn)
+        else:
+            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261021020000_guest_generation_lifetime_limit.sql').read_text())
+        counters = dict(conn.execute('SELECT user_id, attempts FROM generation_guest_usage').fetchall())
+        assert counters == {'old_guest': 4, 'partial_guest': 2, 'deleted_guest': 3}
+    insert(0, owner='partial_guest')  # Backfill must not count the same attempts twice.
+    for owner in ('old_guest', 'partial_guest', 'deleted_guest'):
+        with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_GUEST_LIMIT'):
+            insert(0, owner=owner)
+
+
+def test_storage_returns_sign_in_guidance_for_guest_limit():
+    class Table:
+        def insert(self, row): return self
+        def execute(self): raise ValueError('BB_GENERATION_GUEST_LIMIT')
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = SimpleNamespace(table=lambda name: Table())
+    with pytest.raises(HTTPException) as exc:
+        asyncio.run(storage.create_generation('guest', 'anonymous', 'cube', 40))
+    assert exc.value.status_code == 403
+    assert exc.value.detail == 'You have used your 3 free guest generations. Sign in to keep building.'
+    assert not exc.value.headers  # Waiting until tomorrow does not renew the trial.
