@@ -250,7 +250,7 @@ describe('LandingPage', () => {
       });
       if (outcome === 'accepted') {
         expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
-        expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+        expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeNull();
         expect(container.querySelector('[aria-label="Remove image"]')).toBeNull();
         expect(fileInput.value).toBe('');
@@ -409,7 +409,7 @@ describe('LandingPage', () => {
       });
       const generate = () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
       await act(async () => generate().click());
-      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('#landing-build-prompt')).toBeNull();
       expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
@@ -421,7 +421,7 @@ describe('LandingPage', () => {
         nextInput.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await act(async () => generate().click());
-      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
       expect(start).toHaveBeenCalledTimes(2);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', {
@@ -519,7 +519,7 @@ describe('LandingPage', () => {
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
-      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('#landing-build-prompt')).toBeNull();
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
@@ -590,7 +590,7 @@ describe('LandingPage', () => {
       if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
       expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
-      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="3D brick model assembling"]')).not.toBeNull();
+      expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
     } finally { act(() => root.unmount()); container.remove(); }
   });
 

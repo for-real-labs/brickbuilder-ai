@@ -829,7 +829,8 @@ it('keeps the current model and edit text available after an edit request fails'
   expect(buddy.updateTurn).toHaveBeenCalledWith(1, {
     error: 'Oops! I couldn’t make your build. Please try again.', reply: undefined,
   });
-  expect(container.textContent).not.toContain('Please try again');
+  expect(container.querySelector('.pet-dialogue [role="status"]')?.textContent)
+    .toBe('Oops! I couldn’t make your build. Please try again.');
   expect(container.textContent).not.toContain('Generation Failed');
 });
 

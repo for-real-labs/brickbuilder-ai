@@ -127,7 +127,9 @@ def test_endpoint_uses_server_identity_and_applies_rate_limits(monkeypatch):
     monkeypatch.setattr(support, 'send_support_email', deliver)
     keys = []
     monkeypatch.setattr(support, 'check_anonymous_short_window_limit', lambda key: keys.append(key))
-    with TestClient(app) as client:
+    monkeypatch.setenv('GUEST_IP_SOURCE', 'peer')
+    monkeypatch.setenv('GUEST_IP_HASH_SECRET', 'test-secret')
+    with TestClient(app, client=('192.0.2.1', 1234)) as client:
         payload = request().model_dump(mode='json')
         assert client.post('/support-email', json=payload).json() == {'sent': True}
         assert deliver.call_args.args[1] == identity

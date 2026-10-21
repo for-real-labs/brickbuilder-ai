@@ -269,6 +269,7 @@ async def glb_to_bricks(
 
     try:
         generation_id = await generation_storage.create_generation(
+            guest_ip_hash=auth_info.get('rate_limit_id'),
             user_id=user_id,
             user_type=user_type,
             prompt=f"{input_format.upper()} upload: {file.filename}",

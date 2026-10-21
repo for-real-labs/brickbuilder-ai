@@ -1,3 +1,4 @@
+import posthog from 'posthog-js';
 import React, { act } from 'react';
 import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
@@ -636,4 +637,33 @@ it.each(['active build', 'suggestion', 'opened model'])('lets the pet speak the 
   expect(container.textContent).not.toContain('Build this suggestion?');
   expect(container.querySelector('.pet-avatar--listening')).toBeNull();
   expect(container.querySelector('.pet-avatar--building')).toBeNull();
+});
+
+const concurrencyLimitMessage = 'You can have up to 5 generations running at once. Wait for one to finish or cancel it before starting another.';
+
+it.each([true, false])('shows the five-generation limit in pet speech (currentOnly=%s)', async currentOnly => {
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
+    turns={[{ id: 1, text: 'Another castle', error: concurrencyLimitMessage }]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('[role="status"]')?.textContent).toBe(concurrencyLimitMessage);
+});
+
+it('lets the pet explain the concurrency limit while five builds are active', async () => {
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
+    errorMessage={concurrencyLimitMessage} turns={[]}
+    generations={Array.from({ length: 5 }, (_, index) => ({ id: String(index), prompt: 'Castle', status: 'processing', endpoint: 'novaToBricks' }))}
+  /></PetProvider>));
+  expect(container.querySelector('.pet-chat-message [role="status"]')?.textContent).toBe(concurrencyLimitMessage);
+});
+
+it.each([true, false])('shows a sign-in link after the guest trial (currentOnly=%s)', async currentOnly => {
+  const message = 'You have used your 3 free guest generations. Sign in to keep building.';
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
+    turns={[{ id: 1, text: 'Another castle', error: message }]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('[role="status"]')?.textContent).toBe(message);
+  const link = container.querySelector<HTMLAnchorElement>('a[href="/login"]');
+  expect(link?.textContent).toBe('Sign in to keep building');
+  const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+  link?.addEventListener('click', e => e.preventDefault());
+  await act(async () => link?.dispatchEvent(event));
+  expect(posthog.capture).toHaveBeenCalledWith('guest_generation_limit_sign_in_clicked', { surface: 'pet_dialogue' });
 });

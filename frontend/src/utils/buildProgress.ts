@@ -1,9 +1,13 @@
 export const BUILD_FAILURE_MESSAGE = 'Oops! I couldn’t make your build. Please try again.';
 
+export const GUEST_GENERATION_LIMIT_MESSAGE = 'You have used your 3 free guest generations. Sign in to keep building.';
+
 // Quota errors are actionable public messages; keep infrastructure errors generic.
 export function buildFailureMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : error;
-  return typeof message === 'string' && message.startsWith('You have reached the daily limit of 30 generations. Please wait until ')
+  return typeof message === 'string' && (message.startsWith('You have reached the daily limit of 30 generations. Please wait until ')
+    || message === GUEST_GENERATION_LIMIT_MESSAGE
+    || message === 'You can have up to 5 generations running at once. Wait for one to finish or cancel it before starting another.')
     ? message : BUILD_FAILURE_MESSAGE;
 }
 

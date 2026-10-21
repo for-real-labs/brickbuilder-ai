@@ -25,10 +25,10 @@ def local_db(local_server, tmp_path):
         yield conn, LocalSupabaseClient(conn, tmp_path, 'http://localhost:8002')
 
 
-def save(client, *, id=None, model_id=None, legacy_parent=None, owner='guest', date='2026-10-01', image=None):
+def save(client, *, id=None, model_id=None, legacy_parent=None, owner='account', date='2026-10-01', image=None):
     return client.table('generations').insert({
         'id': id or str(uuid4()), 'generation_id': model_id, 'source_generation_id': legacy_parent, 'user_id': owner,
-        'user_type': 'anonymous', 'status': 'completed', 'created_at': date,
+        'user_type': 'authenticated', 'status': 'completed', 'created_at': date,
         'processed_image_url': image,
     }).execute().data[0]
 
@@ -42,11 +42,11 @@ def test_embedded_generations_share_versions_and_latest_dashboard_queries(local_
         assert latest['generation_id'] == root['id'] and latest['version'] == version
     storage = GenerationStorage.__new__(GenerationStorage)
     storage.client = client
-    history = asyncio.run(storage.get_generation_versions(root['id'], 'guest', 'anonymous'))
+    history = asyncio.run(storage.get_generation_versions(root['id'], 'account', 'authenticated'))
     assert [row['version'] for row in history] == list(range(12, 0, -1))
     assert all('source_generation_id' not in row for row in history)
-    assert asyncio.run(storage.count_user_generations('guest', 'anonymous')) == 2
-    dashboard = asyncio.run(storage.get_user_generations('guest', 'anonymous'))
+    assert asyncio.run(storage.count_user_generations('account', 'authenticated')) == 2
+    dashboard = asyncio.run(storage.get_user_generations('account', 'authenticated'))
     assert {row['id'] for row in dashboard} == {latest['id'], independent['id']}
     assert [row['version'] for row in client.table('generations').select('*')
             .eq('generation_id', root['id']).gt('version', 9).order('version', desc=True).execute().data] == [12, 11, 10]
@@ -99,7 +99,7 @@ def test_previous_completed_revision_skips_cancelled_failed_active_and_other_mod
 def test_local_completion_duration_is_saved_and_not_changed_by_later_metadata_or_resize(local_db):
     from datetime import datetime, timezone, timedelta
     _conn, client = local_db
-    row = client.table('generations').insert({'user_id': 'owner', 'user_type': 'anonymous', 'status': 'processing',
+    row = client.table('generations').insert({'user_id': 'owner', 'user_type': 'authenticated', 'status': 'processing',
         'created_at': (datetime.now(timezone.utc) - timedelta(seconds=90)).isoformat()}).execute().data[0]
     assert row.get('generation_duration_seconds') is None
     completed = client.table('generations').update({'status': 'completed'}).eq('id', row['id']).execute().data[0]

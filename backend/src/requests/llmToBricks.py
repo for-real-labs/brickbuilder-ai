@@ -874,6 +874,7 @@ async def llm_to_bricks(
 
     try:
         generation_id = await generation_storage.create_generation(
+            guest_ip_hash=auth_info.get('rate_limit_id'),
             user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=request.prompt or "Image reference",
@@ -934,6 +935,7 @@ async def llm_to_bricks_stream(
         user_type = "authenticated"
 
     generation_id = await generation_storage.create_generation(
+        guest_ip_hash=auth_info.get('rate_limit_id'),
         user_id=auth_info.get("user_id", user_id),
         user_type=user_type,
         prompt=request.prompt or "Image reference",

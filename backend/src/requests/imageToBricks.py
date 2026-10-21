@@ -474,6 +474,7 @@ async def image_to_bricks(
     try:
         # Create generation record immediately (status: queued)
         generation_id = await generation_storage.create_generation(
+            guest_ip_hash=auth_info.get('rate_limit_id'),
             user_id=user_id,
             user_type=user_type,
             prompt=request.prompt or "no text prompt",
@@ -586,6 +587,7 @@ async def image_to_bricks_stream(
 
     try:
         generation_id = await generation_storage.create_generation(
+            guest_ip_hash=auth_info.get('rate_limit_id'),
             user_id=user_id,
             user_type=user_type,
             prompt=request.prompt or "no text prompt",

@@ -259,6 +259,7 @@ async def update_model(request: UpdateModelRequest, auth_info: dict) -> UpdateMo
 
         # Create a new generation record with status="ldr_processing"
         new_generation_id = await generation_storage.create_generation(
+            guest_ip_hash=auth_info.get('rate_limit_id'),
             user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=f"Updated model from {request.generation_id}",

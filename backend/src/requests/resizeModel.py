@@ -305,6 +305,7 @@ async def resize_model(
 
         # Create new generation record early so we can store files to it
         new_generation_id = await generation_storage.create_generation(
+            guest_ip_hash=auth_info.get('rate_limit_id'),
             user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=f"Resized model from {request.generation_id}",
