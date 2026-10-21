@@ -181,6 +181,8 @@ class GenerationStorage:
             return generation_id
             
         except Exception as e:
+            if 'BB_GENERATION_DAILY_LIMIT' in str(e):
+                raise HTTPException(status_code=429, detail='You have reached the daily limit of 200 generations. Try again after midnight UTC.') from None
             if 'BB_GENERATION_CONCURRENCY_LIMIT' in str(e):
                 raise HTTPException(status_code=429, detail='You can have up to 10 generations running at once. Wait for one to finish or cancel it before starting another.') from None
             logger.error(f"Failed to create generation record")

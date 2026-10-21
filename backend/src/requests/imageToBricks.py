@@ -508,6 +508,8 @@ async def image_to_bricks(
             message="Generation started. Poll /generation/{generation_id} for status."
         )
         
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to start generation: {str(e)}")
         
@@ -615,6 +617,8 @@ async def image_to_bricks_stream(
             },
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to start streaming generation: {str(e)}")
         track_error(

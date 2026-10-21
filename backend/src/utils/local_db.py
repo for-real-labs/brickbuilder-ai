@@ -375,6 +375,7 @@ def _create_schema(conn) -> None:
             )
     _create_local_generation_versions(conn)
     _create_local_generation_limit(conn)
+    _create_local_daily_generation_limit(conn)
     _create_local_generation_duration(conn)
 
 
@@ -540,3 +541,53 @@ def init_local_supabase() -> LocalSupabaseClient:
         public_base,
     )
     return LocalSupabaseClient(conn, storage_root, public_base)
+
+
+def _create_local_daily_generation_limit(conn) -> None:
+    """Mirror production admission for the local JSON-backed generations table."""
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS public.generation_daily_usage (
+            user_id text NOT NULL,
+            user_type text NOT NULL,
+            usage_day date NOT NULL,
+            attempts integer NOT NULL CHECK (attempts >= 0),
+            PRIMARY KEY (user_id, user_type, usage_day)
+        );
+        -- Count today's existing attempts before enabling the limit. Serializing writes
+        -- makes the backfill and trigger installation one atomic operation.
+        LOCK TABLE public.generations IN SHARE ROW EXCLUSIVE MODE;
+        INSERT INTO public.generation_daily_usage (user_id, user_type, usage_day, attempts)
+        SELECT doc->>'user_id', doc->>'user_type', ((doc->>'created_at')::timestamptz AT TIME ZONE 'UTC')::date, count(*)
+        FROM public.generations
+        WHERE (doc->>'created_at')::timestamptz >= ((statement_timestamp() AT TIME ZONE 'UTC')::date::timestamp AT TIME ZONE 'UTC')
+          AND doc->>'user_id' IS NOT NULL AND doc->>'user_type' IS NOT NULL
+        GROUP BY doc->>'user_id', doc->>'user_type', ((doc->>'created_at')::timestamptz AT TIME ZONE 'UTC')::date
+        ON CONFLICT (user_id, user_type, usage_day) DO NOTHING;
+        CREATE OR REPLACE FUNCTION public.reserve_daily_generation(owner_id text, owner_type text)
+        RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+        DECLARE
+            today date := (statement_timestamp() AT TIME ZONE 'UTC')::date;
+            admitted integer;
+        BEGIN
+            INSERT INTO public.generation_daily_usage (user_id, user_type, usage_day, attempts)
+            VALUES (owner_id, owner_type, today, 1)
+            ON CONFLICT (user_id, user_type, usage_day) DO UPDATE
+            SET attempts = generation_daily_usage.attempts + 1
+            WHERE generation_daily_usage.attempts < 200
+            RETURNING attempts INTO admitted;
+            IF admitted IS NULL THEN
+                RAISE EXCEPTION 'BB_GENERATION_DAILY_LIMIT' USING ERRCODE = 'P0001';
+            END IF;
+        END;
+        $$;
+        CREATE OR REPLACE FUNCTION public.enforce_generation_daily_limit()
+        RETURNS trigger LANGUAGE plpgsql SET search_path = public AS $$
+        BEGIN
+            PERFORM public.reserve_daily_generation(NEW.doc->>'user_id', NEW.doc->>'user_type');
+            RETURN NEW;
+        END;
+        $$;
+        DROP TRIGGER IF EXISTS generations_daily_limit ON public.generations;
+        CREATE TRIGGER generations_daily_limit BEFORE INSERT ON public.generations
+        FOR EACH ROW EXECUTE FUNCTION public.enforce_generation_daily_limit();
+    """)
