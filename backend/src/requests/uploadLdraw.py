@@ -36,6 +36,7 @@ async def upload_ldraw(file: UploadFile, auth_info: dict, entry_page: str | None
     owner = auth_info.get('user_id') or info['user_email']
     name = PurePosixPath(filename.replace('\\', '/')).stem[:120] or 'Imported LDraw model'
     generation_id = await generation_storage.create_generation(
+        guest_ip_hash=auth_info.get('rate_limit_id'),
         user_id=owner, user_type='anonymous' if info['is_anonymous'] else 'authenticated',
         prompt=f'Imported LDraw model: {name}', detail_level=40, endpoint='uploadLdraw', model_3d='ldraw-import',
         input_format=PurePosixPath(filename).suffix.lower().lstrip('.'), entry_page=entry_page,

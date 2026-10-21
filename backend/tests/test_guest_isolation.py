@@ -34,18 +34,20 @@ def test_guests_on_same_ip_are_distinct_and_secrets_are_not_owner_ids():
         identity('Mozilla/5.0')
 
 
-def test_rate_limits_still_share_ip_and_usage_uses_rate_identity(monkeypatch):
-    check = AsyncMock(return_value={'limit_exceeded': False})
-    increment = AsyncMock()
-    monkeypatch.setattr(auth, 'check_anonymous_rate_limit', check)
-    monkeypatch.setattr(auth, 'increment_anonymous_calls', increment)
+def test_rate_limits_share_ip_but_never_change_ownership_or_charge_reads(monkeypatch):
+    monkeypatch.setenv('GUEST_IP_HASH_SECRET', 'test-secret')
+    monkeypatch.setenv('GUEST_IP_SOURCE', 'peer')
     monkeypatch.setattr(auth, 'check_anonymous_short_window_limit', Mock(return_value={}))
+    database = Mock()
+    monkeypatch.setattr(auth, 'supabase_client', database)
     first = asyncio.run(auth.verify_authentication_optional(request('a' * 64), identity('a' * 64)))
     second = asyncio.run(auth.verify_authentication_optional(request('b' * 64), identity('b' * 64)))
     assert first['rate_limit_id'] == second['rate_limit_id']
     assert first['user_id'] != first['rate_limit_id']
-    asyncio.run(auth.increment_anonymous_usage_after_fal_success(first))
-    increment.assert_awaited_once_with(first['rate_limit_id'])
+    assert first['user_id'] != second['user_id']
+    # Providers must not double-charge the IP counter after admission.
+    asyncio.run(auth.deduct_credits({'is_anonymous': True, 'is_developer': False}, first))
+    database.table.assert_not_called()
     with pytest.raises(HTTPException):
         asyncio.run(auth.verify_authentication_optional(request(), identity(None)))
 

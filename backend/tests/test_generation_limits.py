@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from types import SimpleNamespace
@@ -37,6 +38,7 @@ def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(se
                    'endpoint': ['llmToBricks', 'novaToBricks', 'textToBricks', 'imageToBricks', 'glbToBricks', 'objToBricks'][index % 6], 'status': status}
             try:
                 if local:
+                    row['guest_ip_hash'] = 'ip_v1_' + hashlib.sha256(owner.encode()).hexdigest()
                     LocalSupabaseClient(conn, tmp_path, 'http://localhost').table('generations').insert(row).execute()
                 else:
                     conn.execute('INSERT INTO generations VALUES (%s,%s,%s,%s,%s)', tuple(row.values()))
@@ -97,6 +99,7 @@ def test_daily_limit_is_atomic_persistent_and_resets(server, tmp_path, local):
                    'status': 'failed' if index % 2 else 'cancelled'}
             try:
                 if local:
+                    row['guest_ip_hash'] = 'ip_v1_' + hashlib.sha256(owner.encode()).hexdigest()
                     LocalSupabaseClient(conn, tmp_path, 'http://localhost').table('generations').insert(row).execute()
                 else:
                     conn.execute('INSERT INTO generations (id,user_id,user_type,endpoint,status) VALUES (%s,%s,%s,%s,%s)', tuple(row.values()))
@@ -162,8 +165,9 @@ def test_generation_routes_preserve_limit_response(monkeypatch, module_name, fun
     start = Mock()
     monkeypatch.setattr(module, 'start_generation_task', start)
     with pytest.raises(HTTPException) as exc:
-        asyncio.run(getattr(module, function_name)(getattr(module, request_name)(prompt='cube'), {'user_id': 'owner'}))
+        asyncio.run(getattr(module, function_name)(getattr(module, request_name)(prompt='cube'), {'user_id': 'owner', 'rate_limit_id': 'ip_v1_' + 'a' * 64}))
     assert exc.value is limit
+    assert module.generation_storage.create_generation.await_args.kwargs['guest_ip_hash'] == 'ip_v1_' + 'a' * 64
     start.assert_not_called()
 
 
@@ -213,7 +217,7 @@ def guest_trial_db(server, tmp_path, request):
     local = request.param
     uri = server.get_uri()
     with psycopg.connect(uri, autocommit=True) as conn:
-        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_guest_usage')
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_guest_usage; DROP TABLE IF EXISTS anonymous_users')
         if local:
             _create_schema(conn)
         else:
@@ -221,19 +225,24 @@ def guest_trial_db(server, tmp_path, request):
                 if not conn.execute('SELECT 1 FROM pg_roles WHERE rolname=%s', (role,)).fetchone():
                     conn.execute(f'CREATE ROLE {role}')
             conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text, created_at timestamptz DEFAULT now())')
+            # Match the deployed legacy table's 32-character hash column.
+            conn.execute('CREATE TABLE anonymous_users (id serial primary key, ip_hash varchar(32) UNIQUE NOT NULL, call_count integer NOT NULL DEFAULT 0, first_call timestamptz NOT NULL, created_at timestamptz DEFAULT now(), updated_at timestamptz DEFAULT now())')
+            conn.execute("INSERT INTO anonymous_users (ip_hash, call_count, first_call) VALUES (%s, 42, now())", ('f' * 32,))
             migrations = Path(__file__).parents[2] / 'supabase/migrations'
             for name in ('20261020000000_generation_daily_limit.sql', '20261021000000_generation_daily_limit_30.sql',
-                         '20261021010000_generation_concurrency_limit_5.sql', '20261021020000_guest_generation_lifetime_limit.sql'):
+                         '20261021010000_generation_concurrency_limit_5.sql', '20261021020000_guest_generation_lifetime_limit.sql',
+                         '20261021030000_guest_ip_generation_limit.sql'):
                 conn.execute((migrations / name).read_text())
 
-    def insert(index, owner='guest_trial', user_type='anonymous', status='cancelled'):
+    def insert(index, owner='guest_trial', user_type='anonymous', status='cancelled', network='default'):
         with psycopg.connect(uri, autocommit=True) as conn:
             row = {'id': str(uuid4()), 'user_id': owner, 'user_type': user_type,
-                   'endpoint': ['llmToBricks', 'novaToBricks', 'textToBricks', 'imageToBricks'][index % 4], 'status': status}
+                   'endpoint': ['llmToBricks', 'novaToBricks', 'textToBricks', 'imageToBricks'][index % 4], 'status': status,
+                   'guest_ip_hash': 'ip_v1_' + hashlib.sha256(owner.encode()).hexdigest() if network == 'default' else network}
             if local:
                 LocalSupabaseClient(conn, tmp_path, 'http://localhost').table('generations').insert(row).execute()
             else:
-                conn.execute('INSERT INTO generations (id,user_id,user_type,endpoint,status) VALUES (%s,%s,%s,%s,%s)', tuple(row.values()))
+                conn.execute('INSERT INTO generations (id,user_id,user_type,endpoint,status,guest_ip_hash) VALUES (%s,%s,%s,%s,%s,%s)', tuple(row.values()))
 
     return uri, local, insert
 
@@ -301,3 +310,79 @@ def test_storage_returns_sign_in_guidance_for_guest_limit():
     assert exc.value.status_code == 403
     assert exc.value.detail == 'You have used your 3 free guest generations. Sign in to keep building.'
     assert not exc.value.headers  # Waiting until tomorrow does not renew the trial.
+
+
+def test_shared_ip_cannot_reset_trial_with_new_browser_sessions(guest_trial_db):
+    uri, local, insert = guest_trial_db
+    network = 'ip_v1_' + 'a' * 64
+
+    def attempt(index):
+        try:
+            insert(index, owner=f'new-browser-{index}', network=network)
+            return True
+        except psycopg.errors.RaiseException as exc:
+            assert 'BB_GENERATION_GUEST_LIMIT' in str(exc)
+            return False
+
+    with ThreadPoolExecutor(max_workers=12) as workers:
+        assert sum(workers.map(attempt, range(12))) == 3
+    with psycopg.connect(uri, autocommit=True) as conn:
+        query = "SELECT (doc->>'call_count')::integer FROM anonymous_users WHERE doc->>'ip_hash'=%s" if local else 'SELECT call_count FROM anonymous_users WHERE ip_hash=%s'
+        assert conn.execute(query, (network,)).fetchone()[0] == 3
+        assert conn.execute('SELECT sum(attempts) FROM generation_guest_usage').fetchone()[0] == 3
+        query = "SELECT count(*) FROM generations WHERE doc ? 'guest_ip_hash'" if local else 'SELECT count(*) FROM generations WHERE guest_ip_hash IS NOT NULL'
+        assert conn.execute(query).fetchone()[0] == 0  # Network hashes never appear in model output/history.
+        conn.execute('DELETE FROM generations')
+        conn.execute('UPDATE generation_daily_usage SET usage_day = usage_day - 1')
+    assert not attempt(100)
+    insert(0, owner='signed-in', user_type='authenticated', network=network)
+    insert(0, owner='different-network', network='ip_v1_' + 'b' * 64)
+
+
+def test_browser_limit_cannot_reset_by_changing_network(guest_trial_db):
+    uri, local, insert = guest_trial_db
+    for digit in 'abc':
+        insert(0, network='ip_v1_' + digit * 64)
+    with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_GUEST_LIMIT'):
+        insert(0, network='ip_v1_' + 'd' * 64)
+    with psycopg.connect(uri, autocommit=True) as conn:
+        query = "SELECT count(*) FROM anonymous_users WHERE doc->>'identity_type'='ip_v1'" if local else "SELECT count(*) FROM anonymous_users WHERE identity_type='ip_v1'"
+        assert conn.execute(query).fetchone()[0] == 3
+
+
+@pytest.mark.parametrize('network', [None, 'guest_' + 'a' * 64, 'a' * 32, '192.0.2.1'])
+def test_guest_network_identity_cannot_be_omitted_or_use_legacy_keys(guest_trial_db, network):
+    uri, local, insert = guest_trial_db
+    with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_GUEST_IP_REQUIRED'):
+        insert(0, network=network)
+    with psycopg.connect(uri, autocommit=True) as conn:
+        assert conn.execute('SELECT count(*) FROM generation_guest_usage').fetchone()[0] == 0
+
+
+def test_legacy_anonymous_rows_are_not_confused_with_network_or_browser_identity(guest_trial_db):
+    uri, local, insert = guest_trial_db
+    with psycopg.connect(uri, autocommit=True) as conn:
+        if local:
+            conn.execute("INSERT INTO anonymous_users (doc) VALUES ('{\"ip_hash\":\"legacy-browser-key\",\"call_count\":500}'::jsonb)")
+        else:
+            conn.execute("INSERT INTO anonymous_users (ip_hash, call_count, first_call) VALUES ('legacy-browser-key',500,now())")
+    insert(0, owner='legacy-browser-key')
+    with psycopg.connect(uri, autocommit=True) as conn:
+        query = "SELECT (doc->>'call_count')::integer FROM anonymous_users WHERE doc->>'ip_hash'='legacy-browser-key'" if local else "SELECT call_count FROM anonymous_users WHERE ip_hash='legacy-browser-key' AND identity_type='legacy'"
+        assert conn.execute(query).fetchone()[0] == 500
+
+
+def test_ip_migration_preserves_legacy_records_and_restricts_counter_access(guest_trial_db):
+    uri, local, insert = guest_trial_db
+    if local:
+        return  # Local embedded tables are not exposed through PostgREST.
+    with psycopg.connect(uri, autocommit=True) as conn:
+        assert conn.execute("SELECT call_count, identity_type FROM anonymous_users WHERE ip_hash=%s", ('f' * 32,)).fetchone() == (42, 'legacy')
+        for role in ('anon', 'authenticated'):
+            conn.execute(f'SET ROLE {role}')
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                conn.execute('SELECT * FROM anonymous_users')
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                conn.execute('SELECT reserve_guest_ip_generation(%s)', ('ip_v1_' + 'a' * 64,))
+            conn.execute('RESET ROLE')
+    insert(0)  # New 70-character HMAC keys coexist with the original records.

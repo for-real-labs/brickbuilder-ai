@@ -8,7 +8,6 @@ from typing import Optional, Dict, Any
 from fastapi import HTTPException, Header, Depends, Request
 from supabase import create_client, Client
 import logging
-from datetime import datetime
 import hashlib
 import time
 import re
@@ -106,7 +105,8 @@ def extract_user_from_token(token: str) -> Dict[str, Any]:
             options={"require": ["exp", "iss", "aud", "sub"]},
         )
         if (not isinstance(decoded_token['sub'], str) or not decoded_token['sub'].strip()
-                or decoded_token.get('role') != 'authenticated'):
+                or decoded_token.get('role') != 'authenticated'
+                or decoded_token.get('is_anonymous') is True):
             raise AuthError('Invalid account identity', 401)
         
         return {
@@ -245,7 +245,6 @@ async def require_paid_auth(
     return {**auth_info, "is_anonymous": False}
 
 # Anonymous user tracking system
-ANONYMOUS_CALL_LIMIT = _get_int_env("ANONYMOUS_CALL_LIMIT", 1000)  # Lifetime limit for anonymous users
 ANONYMOUS_WINDOW_CALL_LIMIT = _get_int_env("ANONYMOUS_WINDOW_CALL_LIMIT", 20)
 ANONYMOUS_WINDOW_SECONDS = _get_int_env("ANONYMOUS_WINDOW_SECONDS", 60)
 anonymous_window_calls: Dict[str, list[float]] = {}
@@ -272,121 +271,9 @@ def check_anonymous_short_window_limit(anonymous_id: str) -> Dict[str, Any]:
     }
 
 def get_anonymous_user_id(request: Request) -> str:
-    """
-    Generate a unique identifier for anonymous users based on IP address and User-Agent
-    This provides more stable identification when ISPs use dynamic IPs
-    Privacy-compliant: IP addresses are immediately hashed and never logged or stored in plain text
-    """
-    # Use the ASGI client host only. Do not trust spoofable forwarding headers here.
-    client_ip = request.client.host if request.client else "unknown"
-    user_agent = request.headers.get("user-agent", "Unknown")
-    
-    # Normalize localhost variants for consistent local development testing
-    if client_ip in ["::1", "::ffff:127.0.0.1", "localhost"]:
-        client_ip = "127.0.0.1"
-    
-    # For more stable anonymous user identification, combine IP with User-Agent
-    # This helps when ISPs rotate IP addresses frequently
-    # Extract key browser info (browser name + version, OS) but ignore minor version changes
-    ua_simplified = user_agent.split()[0] if user_agent != "Unknown" else "Unknown"
-    fingerprint = f"{client_ip}:{ua_simplified}"
-    
-    # Generate hash - IP addresses are never logged or stored in plain text
-    ip_hash = hashlib.md5(fingerprint.encode()).hexdigest()
-    
-    # Only log that anonymous user tracking occurred (no personal data)
-    logger.info(f"Anonymous user request processed - hash generated")
-    
-    return ip_hash
+    from .guest_ip import guest_ip_hash
+    return guest_ip_hash(request, local=LOCAL_DB_ENABLED)
 
-async def check_anonymous_rate_limit(anonymous_id: str) -> Dict[str, Any]:
-    """
-    Check if anonymous user has exceeded lifetime rate limit using Supabase
-    """
-    if not supabase_client:
-        logger.error("No Supabase configuration. Rejecting anonymous request without tracking.")
-        raise HTTPException(
-            status_code=503,
-            detail="Anonymous access is temporarily unavailable. Please sign in and try again."
-        )
-    
-    try:
-        # Check if anonymous user exists in database
-        result = supabase_client.table("anonymous_users").select("*").eq("ip_hash", anonymous_id).execute()
-        
-        if not result.data:
-            # New anonymous user - create record
-            now = datetime.now().isoformat()
-            insert_result = supabase_client.table("anonymous_users").insert({
-                "ip_hash": anonymous_id,
-                "call_count": 0,
-                "first_call": now,
-                "created_at": now,
-                "updated_at": now
-            }).execute()
-            
-            if insert_result.data:
-                user_data = insert_result.data[0]
-            else:
-                logger.error("Failed to create anonymous user record")
-                raise HTTPException(
-                    status_code=503,
-                    detail="Anonymous access is temporarily unavailable. Please sign in and try again."
-                )
-        else:
-            user_data = result.data[0]
-        
-        calls_made = user_data.get("call_count", 0)
-        first_call = user_data.get("first_call", "unknown")
-        
-        return {
-            "calls_made": calls_made,
-            "limit": ANONYMOUS_CALL_LIMIT,
-            "remaining": max(0, ANONYMOUS_CALL_LIMIT - calls_made),
-            "limit_exceeded": calls_made >= ANONYMOUS_CALL_LIMIT,
-            "first_call": first_call
-        }
-        
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error checking anonymous rate limit: {e}")
-        raise HTTPException(
-            status_code=503,
-            detail="Anonymous access is temporarily unavailable. Please sign in and try again."
-        )
-
-async def increment_anonymous_calls(anonymous_id: str):
-    """
-    Increment the call count for an anonymous user in Supabase using Python SDK
-    """
-    if not supabase_client:
-        logger.warning("No Supabase configuration. Cannot increment anonymous call count.")
-        return
-    
-    try:
-        # Simple approach: Get current count and increment
-        current_result = supabase_client.table("anonymous_users").select("call_count").eq("ip_hash", anonymous_id).execute()
-        
-        if current_result.data:
-            current_count = current_result.data[0]["call_count"]
-            new_count = current_count + 1
-            
-            # Update with incremented count
-            update_result = supabase_client.table("anonymous_users").update({
-                "call_count": new_count,
-                "updated_at": datetime.now().isoformat()
-            }).eq("ip_hash", anonymous_id).execute()
-            
-            if update_result.data:
-                logger.info(f"Incremented anonymous user call count to {new_count} for {anonymous_id[:8]}...")
-            else:
-                logger.error(f"Failed to update call count for {anonymous_id[:8]}...")
-        else:
-            logger.error(f"Anonymous user {anonymous_id[:8]}... not found for increment")
-            
-    except Exception as e:
-        logger.error(f"Error incrementing anonymous call count: {e}")
 
 def get_guest_user_id(request: Request) -> Optional[str]:
     """A browser-generated 256-bit bearer secret proves guest ownership.
@@ -469,11 +356,9 @@ async def verify_authentication_optional(
     # IP fingerprints are abuse controls only, never proof of ownership.
     rate_limit_id = get_anonymous_user_id(request)
     short_window_status = check_anonymous_short_window_limit(rate_limit_id)
-    rate_limit_status = await check_anonymous_rate_limit(rate_limit_id)
-    rate_limit_status["short_window"] = short_window_status
-    if rate_limit_status["limit_exceeded"]:
-        raise HTTPException(status_code=429, detail="Anonymous user limit exceeded. Please sign in.")
-    return {**auth_info, "rate_limit_id": rate_limit_id, "rate_limit": rate_limit_status}
+    # Read/poll requests never consume trials. Generation insertion reserves
+    # browser and IP allowances together in one database transaction.
+    return {**auth_info, "rate_limit_id": rate_limit_id, "rate_limit": {"short_window": short_window_status}}
 
 
 async def get_user_with_optional_auth(
@@ -481,26 +366,9 @@ async def get_user_with_optional_auth(
 ) -> Dict[str, Any]:
     """
     Dependency to get user information (authenticated or anonymous)
-    Note: Anonymous call count is NOT incremented here - it's incremented after successful fal.ai API call
+    Guest trials are reserved atomically when a generation is inserted.
     """
     return auth_info
-
-async def increment_anonymous_usage_after_fal_success(auth_info: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Increment anonymous user call count after successful fal.ai API call
-    This mirrors the credit deduction timing for authenticated users
-    """
-    if auth_info.get("is_anonymous", False):
-        anonymous_id = auth_info["rate_limit_id"]
-        logger.info(f"Incrementing anonymous call count after successful fal.ai API call")
-        await increment_anonymous_calls(anonymous_id)
-        
-        # Update rate limit info after incrementing
-        rate_limit_status = await check_anonymous_rate_limit(anonymous_id)
-        auth_info["rate_limit"] = rate_limit_status
-        
-    return auth_info
-
 
 def handle_auth_and_tracking(
     auth_info: dict,
@@ -604,7 +472,7 @@ async def deduct_credits(
     operation_description: str = "operation"
 ) -> dict:
     """
-    Deduct credits or increment anonymous usage after successful fal.ai API calls.
+    Deduct account credits after successful fal.ai calls; guest trials were reserved at admission.
     
     This ensures users are charged when fal.ai charges us, regardless of subsequent processing.
     
@@ -626,9 +494,5 @@ async def deduct_credits(
             logger.info(f"Deducting {credits_to_deduct} credit{'s' if credits_to_deduct != 1 else ''} from {user_email_for_credits} after successful {operation_description}")
             credit_result = await verify_and_deduct_credits(user_email_for_credits, credits_to_deduct)
             logger.info(f"Credits deducted. Remaining: {credit_result.get('remaining_credits', 'unknown')}")
-    elif is_anonymous:
-        # Increment anonymous user call count after successful fal.ai API calls
-        auth_info = await increment_anonymous_usage_after_fal_success(auth_info)
-        logger.info(f"Anonymous call count incremented. Lifetime calls: {auth_info['rate_limit']['calls_made']}/{auth_info['rate_limit']['limit']}")
     
     return auth_info

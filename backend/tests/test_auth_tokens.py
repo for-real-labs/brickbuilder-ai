@@ -52,7 +52,7 @@ def test_project_public_keys_verify_modern_supabase_tokens(signing, monkeypatch,
 @pytest.mark.parametrize('overrides', [
     {'exp': 1}, {'iss': 'https://another-project.example.com/auth/v1'},
     {'aud': 'another-app'}, {'sub': ''}, {'role': 'service_role'},
-    {'nbf': int(time.time()) + 3600},
+    {'nbf': int(time.time()) + 3600}, {'is_anonymous': True},
 ])
 def test_invalid_account_claims_are_rejected(signing, overrides):
     token = jwt.encode(claims(**overrides), SECRET, algorithm='HS256')

@@ -238,6 +238,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from None
     generation_id = await generation_storage.create_generation(
+        guest_ip_hash=auth_info.get('rate_limit_id'),
         user_id=auth_info.get("user_id", user_info["user_email"]),
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,

@@ -386,6 +386,7 @@ async def prompt_edit_model(
         
         # Create new generation record immediately (status: queued)
         new_generation_id = await generation_storage.create_generation(
+            guest_ip_hash=auth_info.get('rate_limit_id'),
             user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=f"Edited from {request.generation_id}: {request.edit_prompt}",

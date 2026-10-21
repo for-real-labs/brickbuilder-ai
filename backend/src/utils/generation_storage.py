@@ -108,6 +108,7 @@ class GenerationStorage:
         input_type: Optional[str] = None,
         input_format: Optional[str] = None,
         entry_page: Optional[str] = None,
+        guest_ip_hash: Optional[str] = None,
     ) -> str:
         """
         Create a new generation record and return the generation ID
@@ -147,6 +148,9 @@ class GenerationStorage:
                 "created_at": datetime.utcnow().isoformat(),
                 "status": "started"
             }
+            if user_type == 'anonymous':
+                # Admission-only field: the database consumes and clears it.
+                generation_data['guest_ip_hash'] = guest_ip_hash
             # The input revision is needed to inherit model identity and title,
             # but is not stored as a parent link on the new revision.
             if edit_generation_id:
@@ -182,6 +186,8 @@ class GenerationStorage:
             return generation_id
             
         except Exception as e:
+            if 'BB_GENERATION_GUEST_IP_REQUIRED' in str(e):
+                raise HTTPException(status_code=503, detail='Guest access is temporarily unavailable. Please sign in to keep building.') from None
             if 'BB_GENERATION_GUEST_LIMIT' in str(e):
                 raise HTTPException(status_code=403, detail='You have used your 3 free guest generations. Sign in to keep building.') from None
             if 'BB_GENERATION_DAILY_LIMIT' in str(e):

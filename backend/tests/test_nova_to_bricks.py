@@ -217,9 +217,10 @@ def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
         return future
     monkeypatch.setattr(module, 'start_generation_task', start)
     request = module.NovaToBricksRequest(prompt='add a door', source_generation_id='original')
-    result = asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))
+    result = asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True, 'rate_limit_id': 'ip_v1_' + 'a' * 64}))
     assert result.generation_id == 'new-generation'
     saved = storage.create_generation.call_args.kwargs
+    assert saved['guest_ip_hash'] == 'ip_v1_' + 'a' * 64
     assert saved['user_id'] == 'caller' and saved['user_type'] == 'authenticated'
     assert saved['edit_generation_id'] is None
     assert saved['input_type'] == 'image'

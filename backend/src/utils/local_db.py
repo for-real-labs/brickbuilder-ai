@@ -377,6 +377,7 @@ def _create_schema(conn) -> None:
     _create_local_generation_limit(conn)
     _create_local_daily_generation_limit(conn)
     _create_local_guest_generation_limit(conn)
+    _create_local_guest_ip_limit(conn)
     _create_local_generation_duration(conn)
 
 
@@ -642,4 +643,43 @@ def _create_local_guest_generation_limit(conn) -> None:
         DROP TRIGGER IF EXISTS generations_0_guest_limit ON public.generations;
         CREATE TRIGGER generations_0_guest_limit BEFORE INSERT ON public.generations
         FOR EACH ROW EXECUTE FUNCTION public.enforce_generation_guest_limit();
+    """)
+
+
+def _create_local_guest_ip_limit(conn) -> None:
+    """Keep legacy JSON tracking rows separate from the versioned IP counters."""
+    conn.execute("""
+        CREATE UNIQUE INDEX IF NOT EXISTS anonymous_users_ip_trial_key
+        ON anonymous_users ((doc->>'ip_hash')) WHERE doc->>'identity_type' = 'ip_v1';
+        CREATE OR REPLACE FUNCTION public.reserve_guest_ip_generation(network_hash text)
+        RETURNS void LANGUAGE plpgsql AS $$
+        DECLARE admitted integer;
+        BEGIN
+            IF network_hash IS NULL OR network_hash !~ '^ip_v1_[0-9a-f]{64}$' THEN
+                RAISE EXCEPTION 'BB_GENERATION_GUEST_IP_REQUIRED';
+            END IF;
+            INSERT INTO anonymous_users (doc)
+            VALUES (jsonb_build_object('ip_hash', network_hash, 'identity_type', 'ip_v1',
+                'call_count', 1, 'first_call', now(), 'created_at', now(), 'updated_at', now()))
+            ON CONFLICT ((doc->>'ip_hash')) WHERE doc->>'identity_type' = 'ip_v1'
+            DO UPDATE SET doc = anonymous_users.doc || jsonb_build_object(
+                'call_count', (anonymous_users.doc->>'call_count')::integer + 1, 'updated_at', now())
+            WHERE (anonymous_users.doc->>'call_count')::integer < 3
+            RETURNING (doc->>'call_count')::integer INTO admitted;
+            IF admitted IS NULL THEN
+                RAISE EXCEPTION 'BB_GENERATION_GUEST_LIMIT';
+            END IF;
+        END;
+        $$;
+        CREATE OR REPLACE FUNCTION public.enforce_generation_guest_limit()
+        RETURNS trigger LANGUAGE plpgsql AS $$
+        BEGIN
+            IF NEW.doc->>'user_type' = 'anonymous' THEN
+                PERFORM public.reserve_guest_generation(NEW.doc->>'user_id', NEW.doc->>'user_type');
+                PERFORM public.reserve_guest_ip_generation(NEW.doc->>'guest_ip_hash');
+            END IF;
+            NEW.doc := NEW.doc - 'guest_ip_hash';
+            RETURN NEW;
+        END;
+        $$;
     """)
