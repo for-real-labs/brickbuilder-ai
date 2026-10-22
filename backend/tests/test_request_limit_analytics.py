@@ -17,7 +17,7 @@ def isolated_client(monkeypatch):
 
 
 @pytest.mark.parametrize('code,kind,value,status', [
-    ('BB_GENERATION_DAILY_LIMIT', 'daily', 30, 429),
+    ('BB_GENERATION_DAILY_LIMIT', 'daily', 10, 429),
     ('BB_GENERATION_DAILY_LIMIT:5', 'daily', 5, 429),
     ('BB_GENERATION_GUEST_LIMIT', 'guest_lifetime', 3, 403),
     ('BB_GENERATION_CONCURRENCY_LIMIT', 'concurrent', 1, 429),
