@@ -27,3 +27,14 @@ it.each([
   expect(await localizeGenerationLimit(response)).toBe(response);
   expect(response.bodyUsed).toBe(false);
 });
+
+it('preserves a restricted account quota in localized and pet messages', async () => {
+  const { buildFailureMessage } = await import('../src/utils/buildProgress');
+  const response = new Response(JSON.stringify({
+    detail: 'You have reached the daily limit of 5 generations. Please wait until October 22, 2026 at 00:00 UTC to generate again.',
+  }), { status: 429, headers: { 'Retry-After': 'Thu, 22 Oct 2026 00:00:00 GMT' } });
+  const localized = await localizeGenerationLimit(response);
+  const { detail } = await localized.json();
+  expect(detail).toContain('daily limit of 5 generations.');
+  expect(buildFailureMessage(new Error(detail))).toBe(detail);
+});

@@ -388,3 +388,39 @@ def test_ip_migration_preserves_legacy_records_and_restricts_counter_access(gues
                 conn.execute('SELECT reserve_guest_ip_generation(%s)', ('ip_v1_' + 'a' * 64,))
             conn.execute('RESET ROLE')
     insert(0)  # New 70-character HMAC keys coexist with the original records.
+
+@pytest.mark.parametrize('local', [False, True])
+def test_account_daily_override_is_atomic_and_preserves_usage(server, tmp_path, local):
+    uri = server.get_uri()
+    with psycopg.connect(uri, autocommit=True) as conn:
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_daily_limit_overrides')
+        if local:
+            _create_schema(conn)
+        else:
+            for role in ('anon', 'authenticated', 'service_role'):
+                if not conn.execute('SELECT 1 FROM pg_roles WHERE rolname=%s', (role,)).fetchone():
+                    conn.execute(f'CREATE ROLE {role}')
+            conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, created_at timestamptz DEFAULT now())')
+            root = Path(__file__).parents[2] / 'supabase/migrations'
+            conn.execute((root / '20261020000000_generation_daily_limit.sql').read_text())
+            conn.execute((root / '20261022020000_account_generation_limits.sql').read_text())
+            assert not conn.execute("SELECT has_table_privilege('authenticated','generation_daily_limit_overrides','INSERT')").fetchone()[0]
+        conn.execute("INSERT INTO generation_daily_limit_overrides(user_id,user_type,daily_limit) VALUES ('restricted','authenticated',5),('already-used','authenticated',5)")
+        conn.execute("INSERT INTO generation_daily_usage VALUES ('already-used','authenticated',(now() AT TIME ZONE 'UTC')::date,23)")
+
+    def reserve(owner):
+        with psycopg.connect(uri, autocommit=True) as conn:
+            try:
+                conn.execute("SELECT reserve_daily_generation(%s,'authenticated')", (owner,))
+                return True
+            except psycopg.errors.RaiseException as exc:
+                assert 'BB_GENERATION_DAILY_LIMIT:' in str(exc)
+                return False
+    with ThreadPoolExecutor(max_workers=12) as workers:
+        assert sum(workers.map(reserve, ['restricted'] * 12)) == 5
+    assert not reserve('already-used')
+    assert sum(reserve('ordinary') for _ in range(31)) == 30
+    with psycopg.connect(uri, autocommit=True) as conn:
+        assert conn.execute("SELECT attempts FROM generation_daily_usage WHERE user_id='already-used'").fetchone()[0] == 23
+        conn.execute("UPDATE generation_daily_usage SET usage_day=usage_day-1")
+    assert sum(reserve('restricted') for _ in range(6)) == 5
