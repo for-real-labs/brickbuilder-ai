@@ -43,7 +43,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>
           : <button className="billing-plan-button" onClick={() => void subscribe('free', source)}>Start building free</button>
           : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled}
-            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
+            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits}</strong> credits / month</div>
         <ul className="billing-features">
           <li><Check aria-hidden="true" />{plan.credits} AI builds or AI edits</li>
@@ -78,7 +78,7 @@ export function CreditNudge() {
 }
 
 export function BillingOverlays() {
-  const { upgradeSource, closeUpgrade, account, error, loginOpen, closeLogin } = useBilling();
+  const { upgradeSource, closeUpgrade, account, enabled, error, loginOpen, closeLogin } = useBilling();
   const { pet } = usePet();
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
@@ -95,7 +95,8 @@ export function BillingOverlays() {
       <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
         <p>{account ? `${account.credits_remaining} credits available. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'One credit = one AI build or AI edit. Cancel anytime.'}</p></div></div>
-      {error && <p role="alert" className="billing-error">{error}</p>}
+      {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
+      {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
       <p className="billing-fine-print">Plans renew monthly until canceled. Monthly credits reset and do not roll over. Bonus credits never expire. Failed or canceled builds return their credit.</p>
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>

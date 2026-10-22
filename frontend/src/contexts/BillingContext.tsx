@@ -36,9 +36,15 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   }, [user?.id]);
   useEffect(() => {
     let active = true;
-    billingApi.plans().then(result => { if (active) { setPlans(result.plans); setEnabled(result.enabled); } })
-      .catch(() => { if (active) setError('Could not load plans. Please refresh to try again.'); });
-    return () => { active = false; };
+    const update = () => {
+      if (document.hidden) return;
+      void billingApi.plans().then(result => { if (active) { setPlans(result.plans); setEnabled(result.enabled); } })
+        .catch(() => { if (active) setEnabled(false); });
+    };
+    update();
+    window.addEventListener('focus', update);
+    const interval = window.setInterval(update, 60000);
+    return () => { active = false; window.removeEventListener('focus', update); window.clearInterval(interval); };
   }, []);
   useEffect(() => {
     setAccount(null); setError(''); setLoading(Boolean(user));

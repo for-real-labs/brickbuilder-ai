@@ -127,6 +127,28 @@ it('disables paid checkout until billing is enabled', async () => {
   account.enabled = false;
   vi.mocked(billingApi.plans).mockResolvedValueOnce({ enabled: false, plans: (await import('../src/services/billingApi')).INITIAL_PLANS });
   await render(<PlanGrid source="pricing_page" />);
-  await click('Choose Builder');
+  expect(container.textContent).toContain('Coming soon');
+  expect([...container.querySelectorAll('button')].filter(b => b.textContent === 'Coming soon').every(b => b.disabled)).toBe(true);
   expect(billingApi.checkout).not.toHaveBeenCalled();
+});
+
+it('keeps unavailable billing presentable and refreshes availability when the visitor returns', async () => {
+  auth.user = null;
+  vi.mocked(billingApi.plans).mockRejectedValueOnce(new Error('Backend rollout pending'));
+  await render(<PricingPage />);
+  expect(container.querySelector('[role="status"]')?.textContent).toContain('Monthly plans are coming soon');
+  expect(container.querySelector('[role="alert"]')).toBeNull();
+  await act(async () => window.dispatchEvent(new Event('focus')));
+  expect(container.querySelector('[role="status"]')).toBeNull();
+  expect([...container.querySelectorAll('button')].find(b => b.textContent === 'Choose Builder')?.disabled).toBe(false);
+});
+
+it('keeps the account page useful while its new API is awaiting deployment', async () => {
+  vi.mocked(billingApi.plans).mockRejectedValueOnce(new Error('Not deployed'));
+  vi.mocked(billingApi.account).mockRejectedValueOnce(new Error('Not deployed'));
+  vi.mocked(billingApi.sync).mockRejectedValueOnce(new Error('Not deployed'));
+  await render(<BillingPage />);
+  expect(container.textContent).toContain('Your current building access continues');
+  expect(container.querySelector('[role="alert"]')).toBeNull();
+  expect(container.querySelector('a[href="/"]')).not.toBeNull();
 });

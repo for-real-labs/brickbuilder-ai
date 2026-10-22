@@ -24,14 +24,15 @@ const faqs = [
 ];
 
 export default function PricingPage() {
-  const { error } = useBilling();
+  const { error, enabled, account } = useBilling();
   useEffect(() => { posthog.capture('billing_pricing_viewed', { source: 'pricing_page' }); }, []);
   return <div className="billing-page"><Helmet><title>Plans & credits | BrickBuilder</title><meta name="description" content="Build with AI from $5 per month. Choose 30, 100, or 300 monthly credits. Cancel anytime. Every plan includes your Build Buddy." /></Helmet>
     <BillingHeader />
     <main className="billing-main"><div className="billing-hero"><div className="billing-hero-pets"><PetAvatar id="pip" /><PetAvatar id="nib" /><PetAvatar id="clik" /></div>
       <p className="billing-eyebrow">YOUR IDEAS. YOUR BUDDY. YOUR NEXT BUILD.</p><h1>Keep your ideas building.</h1>
       <p>A little project or a whole brick universe. Find your room to create.</p><span className="billing-monthly-pill">Monthly plans · Cancel anytime</span></div>
-      {error && <p className="billing-error" role="alert">{error}</p>}
+      {error && (enabled || account) && <p className="billing-error" role="alert">{error}</p>}
+      {!enabled && <p className="billing-launch-notice" role="status">Monthly plans are coming soon. You can keep building with your current access.</p>}
       <PlanGrid source="pricing_page" />
       <p className="billing-fine-print">One credit = one AI build or AI edit. Paid plans renew monthly until canceled. Monthly credits reset without rollover. Physical brick kits are sold separately.</p>
       <section className="billing-faq" aria-labelledby="billing-faq-title"><p className="billing-eyebrow">THE SMALL PRINT, MADE SIMPLE</p><h2 id="billing-faq-title">A few good questions.</h2>

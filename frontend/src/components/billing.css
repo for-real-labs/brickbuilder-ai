@@ -55,6 +55,7 @@
 .billing-footer a { color:inherit; }
 .billing-text-link { display:inline-flex; gap:5px; align-items:center; border:0; background:transparent; color:#c74336; font-size:12px; text-decoration:underline!important; text-underline-offset:3px; }
 .billing-error { padding:13px 17px; background:#fff0ed; border:1px solid #ffc3b8; border-radius:12px; color:#a52f23; line-height:1.65; font-size:13px; margin:16px 0; }
+.billing-launch-notice { max-width:770px; margin:20px auto 30px; padding:14px 18px; border:1px solid #eadfd2; border-radius:12px; background:#fff8eb; color:#796248; font-size:13px; line-height:1.7; text-align:center; }
 .billing-error button { border:0; background:none; color:inherit; font-weight:700; text-decoration:underline; }
 .billing-confirmation { background:#e9f5ed; border:1px solid #b4dfc3; border-radius:12px; padding:16px; color:#236246; font-size:14px; }
 .credit-balance { display:inline-flex; align-items:center; gap:5px; white-space:nowrap; border:1px solid #eadfd2; border-radius:99px; min-height:36px; padding:6px 10px; background:#fffbf3; color:#655644; font-size:12px!important; font-weight:650!important; }
