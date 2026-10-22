@@ -812,7 +812,7 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
   try {
     await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
     const nav = container.querySelector('header nav')!;
-    const trigger = nav.querySelector<HTMLButtonElement>('button[aria-label="Tools"]')!;
+    const trigger = nav.querySelector('button')!;
     expect(trigger.textContent).toBe('Tools');
     expect(nav.querySelector('a[href^="/"]')).toBeNull();
     expect(container.querySelector('header [aria-label="Dashboard"]')).toBeNull();

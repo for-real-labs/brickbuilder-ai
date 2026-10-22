@@ -147,8 +147,7 @@ class GenerationStorage:
                 "input_format": input_format,
                 "entry_page": normalize_entry_page(entry_page),
                 "created_at": datetime.utcnow().isoformat(),
-                "status": "started",
-                "billing_livemode": os.getenv("API_MODE", "local") == "production"
+                "status": "started"
             }
             if user_type == 'anonymous':
                 # Admission-only field: the database consumes and clears it.
@@ -189,8 +188,6 @@ class GenerationStorage:
             
         except Exception as e:
             track_request_limit(e, user_id=user_id, user_type=user_type, endpoint=endpoint)
-            if 'BB_CREDITS_EXHAUSTED' in str(e):
-                raise HTTPException(status_code=402, detail='You have used your available credits. Choose a monthly plan to keep building, or wait for your credits to reset.') from None
             if 'BB_GENERATION_GUEST_IP_REQUIRED' in str(e):
                 raise HTTPException(status_code=503, detail='Guest access is temporarily unavailable. Please sign in to keep building.') from None
             if 'BB_GENERATION_GUEST_LIMIT' in str(e):

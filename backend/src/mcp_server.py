@@ -25,7 +25,6 @@ from .requests.llmToBricks import DEFAULT_MODEL, SUPPORTED_MODELS, LlmToBricksRe
 from .utils.authorization import require_generation_access
 from .utils.generation_storage import generation_storage
 from .utils.posthog_client import track_api_call
-from .utils import billing
 
 logger = logging.getLogger(__name__)
 Model = Enum("Model", {key.replace("-", "_"): key for key in SUPPORTED_MODELS}, type=str)
@@ -231,14 +230,14 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
     async def generate_lego_model(prompt: Prompt, detail_level: Detail = 40, model: Model = Model(DEFAULT_MODEL)) -> CallToolResult:
         """Create a LEGO/brick model from a description using BrickBuilder's AI design, preview feedback,
         geometry checks, and voxel-to-brick pipeline. Returns a job ID immediately. Costs one account
-        credit on successful AI generation. Failed or canceled jobs return the credit. Completed jobs include a model and parts list.
+        free usage allowance on successful AI generation. Completed jobs include a model and parts list.
         """
         return await start(LlmToBricksRequest(prompt=prompt, detail_level=detail_level, model=model.value))
 
     @server.tool(title="Edit a LEGO model", annotations=write, meta=security)
     async def edit_lego_model(generation_id: UUID, prompt: Prompt, model: Model = Model(DEFAULT_MODEL)) -> CallToolResult:
         """Apply requested changes to your existing saved voxel model while preserving untouched cells.
-        Creates a new generation and keeps the original. Uses one account credit and returns a job ID.
+        Creates a new generation and keeps the original. Uses one free usage allowance and returns a job ID.
         """
         return await start(LlmToBricksRequest(generation_id=str(generation_id), prompt=prompt, model=model.value))
 
@@ -276,9 +275,10 @@ def create_mcp_server(settings: McpSettings) -> FastMCP:
         """Identify the connected BrickBuilder account and its available generation credits."""
         try:
             identity = _identity()
-            result = billing.public_wallet(await billing.wallet(identity["user_id"]))
+            result = await asyncio.to_thread(lambda: generation_storage.client.table("user_profiles")
+                                             .select("credits").eq("email", identity["user_email"]).single().execute())
             return _result({"id": identity["user_id"], "email": identity["user_email"],
-                            "credits": result["credits_remaining"], "dashboard_url": settings.website_url + "/dashboard"})
+                            "credits": result.data.get("credits", 0), "dashboard_url": settings.website_url + "/dashboard"})
         except Exception as exc:
             return _error(exc)
 
