@@ -9,7 +9,7 @@ logger = logging.getLogger(__name__)
 LIMITS = {
     'BB_GENERATION_GUEST_LIMIT': ('guest_lifetime', 3, 403),
     'BB_GENERATION_DAILY_LIMIT': ('daily', 30, 429),
-    'BB_GENERATION_CONCURRENCY_LIMIT': ('concurrent', 5, 429),
+    'BB_GENERATION_CONCURRENCY_LIMIT': ('concurrent', 1, 429),
 }
 
 
