@@ -440,3 +440,32 @@ def test_final_import_rejects_disconnected_geometry_even_if_publication_was_bypa
             service.instructions.assert_awaited_once_with('original hierarchical MPD')
             service.cancel.assert_awaited_once_with('chat')
     asyncio.run(run())
+
+
+def test_live_usage_polling_is_idempotent_and_retains_checkpoint_on_outage(monkeypatch):
+    from unittest.mock import AsyncMock
+    from src.utils.generation_budget import GenerationUsage
+    from src.utils import nova_service
+    monkeypatch.setattr(nova_service, 'USAGE_POLL_SECONDS', .001)
+    async def run():
+        async with httpx.AsyncClient(base_url='http://nova') as client:
+            service = NovaService(client)
+            ledger = GenerationUsage('job')
+            observed = asyncio.Event()
+            calls = [{'model': 'gpt-5.5', 'input_tokens': 10, 'output_tokens': 5, 'estimated_cost_usd': '.001'}]
+            count = 0
+            async def read(*args):
+                nonlocal count
+                count += 1
+                if count == 3:
+                    observed.set()
+                    raise ValueError('temporary outage')
+                return calls
+            service.read_usage = AsyncMock(side_effect=read)
+            poller = asyncio.create_task(service.poll_usage('chat', ledger))
+            await asyncio.wait_for(observed.wait(), 1)
+            poller.cancel()
+            await asyncio.gather(poller, return_exceptions=True)
+            assert len(ledger.calls) == 1
+            assert ledger.values()['tokens_used'] == 15
+    asyncio.run(run())

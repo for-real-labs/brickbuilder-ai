@@ -226,3 +226,41 @@ def test_claude_thinking_is_forwarded_before_the_response_finishes(monkeypatch):
                 finish.set()
                 await task
     asyncio.run(run())
+
+
+@pytest.mark.parametrize('outcome', ['failed', 'cancelled', 'completed'])
+def test_direct_anthropic_stream_records_cumulative_usage_even_if_interrupted(monkeypatch, outcome):
+    from dataclasses import replace
+    from decimal import Decimal
+    from src.utils.generation_budget import GenerationUsage, current_generation_usage
+    monkeypatch.setenv('ANTHROPIC_API_KEY', 'test')
+    async def run():
+        ledger = GenerationUsage('job')
+        token = current_generation_usage.set(ledger)
+        events = [
+            {'type': 'message_start', 'message': {'usage': {'input_tokens': 100, 'output_tokens': 0}}},
+            {'type': 'message_delta', 'usage': {'output_tokens': 10}},
+        ]
+        class Stream(httpx.AsyncByteStream):
+            async def __aiter__(self):
+                for event in events:
+                    yield ('data: ' + json.dumps(event) + '\n\n').encode()
+                assert ledger.values()['tokens_used'] == 110
+                if outcome == 'cancelled': raise asyncio.CancelledError
+                if outcome == 'failed': raise httpx.ReadError('disconnect')
+                yield b'data: {"type":"message_stop"}\n\n'
+        async def on_text(text): pass
+        try:
+            async with httpx.AsyncClient(transport=httpx.MockTransport(lambda request: httpx.Response(200, stream=Stream()))) as client:
+                conversation = AnthropicToolConversation(client, replace(SETTINGS, model='claude-opus-5-5', enforce_cost_limit=True), USER)
+                if outcome == 'completed':
+                    await conversation.send_stream(on_text)
+                else:
+                    with pytest.raises(asyncio.CancelledError if outcome == 'cancelled' else HTTPException):
+                        await conversation.send_stream(on_text)
+            assert ledger.values()['tokens_used'] == 110
+            assert Decimal(ledger.values()['estimated_cost_usd']) == Decimal('.0006')
+            assert len(ledger.calls) == 1
+        finally:
+            current_generation_usage.reset(token)
+    asyncio.run(run())
