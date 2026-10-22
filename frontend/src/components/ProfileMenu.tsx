@@ -1,3 +1,4 @@
+import { CreditBalance } from './BillingComponents';
 import { NotificationPanel } from "./NotificationMenu";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -76,7 +77,7 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
   const showUserIdentity = isSupabaseConfigured && user;
 
   return (
-    <div ref={container} className="relative shrink-0">
+    <div className="flex items-center gap-2"><CreditBalance /><div ref={container} className="relative shrink-0">
       <button
         ref={trigger}
         type="button"
@@ -158,6 +159,10 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
                 Settings
               </button>
 
+              <button onClick={() => { posthog.capture('billing_navigation_clicked', { source: 'profile_menu' }); go('/billing'); }}
+                className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none">
+                <Sparkles className="h-4 w-4" />Credits & billing
+              </button>
               <ChangeRequestMenuItem onSelect={() => setDropdownOpen(false)} />
 
               {/* Logout - only show when Supabase is configured */}
@@ -182,6 +187,6 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
           </div>
         </>
       )}
-    </div>
+    </div></div>
   );
 }
