@@ -639,18 +639,18 @@ it.each(['active build', 'suggestion', 'opened model'])('lets the pet speak the 
   expect(container.querySelector('.pet-avatar--building')).toBeNull();
 });
 
-const concurrencyLimitMessage = 'You can have up to 5 generations running at once. Wait for one to finish or cancel it before starting another.';
+const concurrencyLimitMessage = 'You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.';
 
-it.each([true, false])('shows the five-generation limit in pet speech (currentOnly=%s)', async currentOnly => {
+it.each([true, false])('shows the one-generation limit in pet speech (currentOnly=%s)', async currentOnly => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'Another castle', error: concurrencyLimitMessage }]} generations={[]} /></PetProvider>));
   expect(container.querySelector('[role="status"]')?.textContent).toBe(concurrencyLimitMessage);
 });
 
-it('lets the pet explain the concurrency limit while five builds are active', async () => {
+it('lets the pet explain the concurrency limit while one build is active', async () => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="building"
     errorMessage={concurrencyLimitMessage} turns={[]}
-    generations={Array.from({ length: 5 }, (_, index) => ({ id: String(index), prompt: 'Castle', status: 'processing', endpoint: 'novaToBricks' }))}
+    generations={Array.from({ length: 1 }, (_, index) => ({ id: String(index), prompt: 'Castle', status: 'processing', endpoint: 'novaToBricks' }))}
   /></PetProvider>));
   expect(container.querySelector('.pet-chat-message [role="status"]')?.textContent).toBe(concurrencyLimitMessage);
 });

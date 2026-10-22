@@ -113,7 +113,7 @@ def test_storage_outage_does_not_fail_jobs(storage, monkeypatch):
 
 def test_recovery_ignores_other_pipelines_and_terminal_jobs(storage):
     jobs = [save(storage, endpoint='textToBricks'), save(storage, status='cancelled'),
-            save(storage, status='resizing'), save(storage, status='completed')]
+            save(storage, status='resizing', user_id='other-owner'), save(storage, status='completed')]
     before = [read(storage, job) for job in jobs]
     assert asyncio.run(recover_stale_generations(storage)) == 0
     assert [read(storage, job) for job in jobs] == before

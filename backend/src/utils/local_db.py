@@ -413,7 +413,7 @@ def _create_local_generation_limit(conn) -> None:
                 IF (SELECT count(*) FROM generations
                     WHERE doc->>'user_id' = new.doc->>'user_id'
                       AND doc->>'user_type' = new.doc->>'user_type'
-                      AND doc->>'status' IN ('queued', 'started', 'processing', 'ldr_processing', 'resizing')) >= 5 THEN
+                      AND doc->>'status' IN ('queued', 'started', 'processing', 'ldr_processing', 'resizing')) >= 1 THEN
                     RAISE EXCEPTION 'BB_GENERATION_CONCURRENCY_LIMIT';
                 END IF;
             END IF;
