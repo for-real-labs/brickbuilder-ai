@@ -31,19 +31,21 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
         usage = GenerationUsage(generation_id)
         usage_token = current_generation_usage.set(usage)
         worker = asyncio.create_task(work)
-        saved_call_count = 0
+        saved_values = None
 
         async def save_usage_if_changed():
-            nonlocal saved_call_count
-            call_count = len(usage.calls)
-            if call_count == saved_call_count:
+            nonlocal saved_values
+            if not usage.calls:
+                return
+            values = usage.values()
+            if values == saved_values:
                 return
             try:
-                await generation_storage.save_generation_usage(generation_id, usage.values())
+                await generation_storage.save_generation_usage(generation_id, values)
             except Exception:
                 logger.warning('Unable to save AI usage for %s', generation_id)
             else:
-                saved_call_count = call_count
+                saved_values = values
 
         async def watch_cancellation():
             while not worker.done():

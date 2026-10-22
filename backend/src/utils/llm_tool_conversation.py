@@ -11,6 +11,7 @@ import base64
 import json
 import logging
 import os
+import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
@@ -90,7 +91,7 @@ async def post_json(client: httpx.AsyncClient, url: str, headers: Dict[str, str]
         raise HTTPException(status_code=502, detail=f"{provider} request failed") from exc
 
 
-async def post_stream_json(client, url, headers, payload, provider, on_text):
+async def post_stream_json(client, url, headers, payload, provider, on_text, on_usage=None):
     """Reassemble tools while forwarding text and Claude's exposed thinking deltas."""
     content = []
     tool_json = {}
@@ -107,6 +108,18 @@ async def post_stream_json(client, url, headers, payload, provider, on_text):
                     continue
                 event = json.loads(raw)
                 kind = event.get("type")
+                # Capture usage before callbacks/errors can interrupt the stream.
+                if provider == 'OpenAI':
+                    reported = event.get('response', {}).get('usage')
+                    if reported and on_usage:
+                        on_usage(reported)
+                elif kind in {'message_start', 'message_delta'}:
+                    reported = (event.get('message', {}).get('usage', {})
+                                if kind == 'message_start' else event.get('usage', {}))
+                    result.setdefault('usage', {}).update(reported)
+                    if (reported and on_usage and 'input_tokens' in result['usage']
+                            and 'output_tokens' in result['usage']):
+                        on_usage(result['usage'])
                 if kind in {"error", "response.failed"}:
                     raise HTTPException(status_code=502, detail=f"{provider} stream failed")
                 if provider == "OpenAI":
@@ -191,10 +204,10 @@ class ToolConversation(ABC):
             payload[output_key] = self.budget.output_limit(bound, payload[output_key])
         return payload
 
-    def account_response(self, response, provider):
+    def account_response(self, response, provider, call_id=None):
         if self.budget:
             usage = response.get('usage')
-            self.budget.record_usage(usage, provider)
+            self.budget.record_usage(usage, provider, call_id=call_id)
             if provider == 'openai':
                 self.context_tokens = usage['input_tokens'] + usage['output_tokens']
 
@@ -255,9 +268,11 @@ class AnthropicToolConversation(ToolConversation):
         }
 
     async def send(self) -> Turn:
-        response = (await post_stream_json(self.client, ANTHROPIC_URL, self._headers, self.budget_payload(self.payload(), "max_tokens"), "Anthropic", self.on_text)
+        call_id = str(uuid.uuid4())
+        response = (await post_stream_json(self.client, ANTHROPIC_URL, self._headers, self.budget_payload(self.payload(), "max_tokens"), "Anthropic", self.on_text,
+                        lambda usage: self.account_response({"usage": usage}, "anthropic", call_id))
                     if self.on_text else await post_json(self.client, ANTHROPIC_URL, self._headers, self.budget_payload(self.payload(), "max_tokens"), "Anthropic"))
-        self.account_response(response, "anthropic")
+        self.account_response(response, "anthropic", call_id)
         content = response.get("content", [])
         self.messages.append({"role": "assistant", "content": content})
         calls = [ToolCall(id=b.get("id", ""), name=b.get("name", ""),
@@ -318,9 +333,11 @@ class OpenAIToolConversation(ToolConversation):
         return payload
 
     async def send(self) -> Turn:
-        response = (await post_stream_json(self.client, OPENAI_URL, self._headers, self.budget_payload(self.payload(), "max_output_tokens"), "OpenAI", self.on_text)
+        call_id = str(uuid.uuid4())
+        response = (await post_stream_json(self.client, OPENAI_URL, self._headers, self.budget_payload(self.payload(), "max_output_tokens"), "OpenAI", self.on_text,
+                        lambda usage: self.account_response({"usage": usage}, "openai", call_id))
                     if self.on_text else await post_json(self.client, OPENAI_URL, self._headers, self.budget_payload(self.payload(), "max_output_tokens"), "OpenAI"))
-        self.account_response(response, "openai")
+        self.account_response(response, "openai", call_id)
         self.pending = []
         self.previous_response_id = response.get("id")
         calls: List[ToolCall] = []

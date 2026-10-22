@@ -243,3 +243,36 @@ def test_fast_stream_failure_never_replays_partial_generation(monkeypatch):
         async for _ in await llm.acompletion(model='anthropic/claude-opus-5-5', messages=[], stream=True): pass
     with pytest.raises(Rejected): asyncio.run(run())
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize('outcome', ['error', 'cancel', 'close', 'complete'])
+def test_stream_usage_persisted_before_consumer_and_survives_interruption(monkeypatch, outcome):
+    module = load_limits(monkeypatch)
+    async def chunks():
+        yield SimpleNamespace(usage={'prompt_tokens': 100, 'completion_tokens': 10})
+        if outcome == 'error': raise RuntimeError('disconnect')
+        if outcome == 'cancel': raise asyncio.CancelledError
+        yield SimpleNamespace(usage={'prompt_tokens': 100, 'completion_tokens': 20})
+    async def completion(**kwargs): return chunks()
+    llm = SimpleNamespace(acompletion=completion)
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs, ClaudeSDKClient=SimpleNamespace(receive_response=lambda: None))
+    module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, llm, sdk)
+    budget = generation_budget.GenerationBudget('gpt-5.5')
+    saved = []
+    budget.on_usage = lambda records: saved.append([dict(c) for c in records])
+    token = module.current_budget.set(budget)
+    async def run():
+        stream = await llm.acompletion(model='openai/gpt-5.5', messages=[], stream=True)
+        await anext(stream)
+        assert saved[-1][0]['output_tokens'] == 10
+        if outcome == 'close':
+            await stream.aclose()
+        elif outcome in {'error', 'cancel'}:
+            with pytest.raises(RuntimeError if outcome == 'error' else asyncio.CancelledError):
+                await anext(stream)
+        else:
+            async for _ in stream: pass
+    try: asyncio.run(run())
+    finally: module.current_budget.reset(token)
+    assert len(budget.usage_records) == 1
+    assert budget.usage_records[0]['output_tokens'] == (20 if outcome == 'complete' else 10)

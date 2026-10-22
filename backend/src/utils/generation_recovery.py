@@ -6,6 +6,8 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from .database import execute_query
+from .generation_budget import GenerationUsage
+from .nova_service import NovaService
 
 logger = logging.getLogger(__name__)
 STALE_AFTER = timedelta(minutes=15)
@@ -13,11 +15,35 @@ INTERRUPTED = "This build was interrupted before completion. Start a new build o
 ACTIVE = ("started", "queued", "processing")
 
 
+async def recovered_usage(storage, row):
+    """Read durable turn totals without restarting the model or changing status."""
+    try:
+        bucket = storage.client.storage.from_("generation-output")
+        data = await asyncio.to_thread(bucket.download, f"{row['id']}/nova-session.json")
+        session = json.loads(data)
+        async with NovaService(tenant_id=session['tenant']) as service:
+            calls = await service.read_usage(session['chat_id'], row['id'])
+        if not calls:
+            return {}
+        ledger = GenerationUsage(row['id'])
+        existing = (row.get('ai_usage') or {}).get('calls', [])
+        # New checkpoints label sources, so recovery preserves title/direct calls
+        # while replacing Nova totals. Do not double-charge unlabeled legacy data.
+        if existing and any(not call.get('usage_source') for call in existing):
+            return {}
+        ledger.extend([call for call in existing if call.get('usage_source') != 'nova'])
+        ledger.replace_source('nova', calls)
+        return ledger.values()
+    except Exception:
+        logger.warning('Unable to recover durable Nova usage for %s', row['id'])
+        return {}
+
+
 async def recover_stale_generations(storage) -> int:
     cutoff = (datetime.now(timezone.utc) - STALE_AFTER).isoformat()
     result = await execute_query(
         storage.client.table("generations").select(
-            "id,status,updated_at,ldr_url,parts_list_csv_url,generation_duration_seconds"
+            "id,status,updated_at,ldr_url,parts_list_csv_url,generation_duration_seconds,ai_usage"
         ).eq("endpoint", "novaToBricks").in_("status", ACTIVE)
         .lt("updated_at", cutoff).order("updated_at").limit(100)
     )
@@ -44,6 +70,7 @@ async def recover_stale_generations(storage) -> int:
                 "error_message": None if complete else (snapshot.get("error") or INTERRUPTED),
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
+            values.update(await recovered_usage(storage, row))
             # Compare the exact heartbeat we inspected: another worker, a
             # cancellation, or a finishing build always wins over recovery.
             changed = await execute_query(

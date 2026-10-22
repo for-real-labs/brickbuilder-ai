@@ -56,3 +56,31 @@ def test_real_litellm_sends_fast_speed_and_preserves_usage(monkeypatch, streamin
     assert sent[0]['model'] == 'claude-opus-5-5'
     assert budget.spent == Decimal('.048')
     assert budget.usage_records[0]['speed'] == 'fast'
+
+
+def test_real_litellm_keeps_provider_usage_when_stream_disconnects(monkeypatch):
+    litellm = pytest.importorskip('litellm')
+    module = load_limits(monkeypatch)
+    async def send(client, request, **kwargs):
+        events = [
+            {'type': 'message_start', 'message': {'id': 'msg_partial', 'type': 'message', 'role': 'assistant',
+                'model': 'claude-opus-5-5', 'content': [], 'stop_reason': None,
+                'usage': {'input_tokens': 1000, 'output_tokens': 0, 'speed': 'fast'}}},
+            {'type': 'error', 'error': {'type': 'overloaded_error', 'message': 'interrupted'}},
+        ]
+        body = ''.join('event: ' + e['type'] + '\ndata: ' + json.dumps(e) + '\n\n' for e in events)
+        return httpx.Response(200, text=body, headers={'content-type': 'text/event-stream'}, request=request)
+    monkeypatch.setattr(httpx.AsyncClient, 'send', send)
+    llm = SimpleNamespace(acompletion=litellm.acompletion)
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs, ClaudeSDKClient=SimpleNamespace(receive_response=lambda: None))
+    module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, llm, sdk)
+    budget = GenerationBudget('claude-opus-5-5')
+    token = module.current_budget.set(budget)
+    async def run():
+        with pytest.raises(Exception):
+            async for _ in await llm.acompletion(model='anthropic/claude-opus-5-5', api_key='test-not-real',
+                    messages=[{'role': 'user', 'content': 'Hi'}], stream=True): pass
+    try: asyncio.run(run())
+    finally: module.current_budget.reset(token)
+    assert budget.usage_records[0]['input_tokens'] == 1000
+    assert budget.spent == Decimal('.008')

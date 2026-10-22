@@ -13,6 +13,7 @@ import os
 import re
 import zipfile
 import logging
+from contextlib import suppress
 from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
@@ -21,6 +22,8 @@ import httpx
 from .generation_budget import current_generation_usage
 
 logger = logging.getLogger(__name__)
+
+USAGE_POLL_SECONDS = 5
 
 MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
@@ -264,6 +267,7 @@ class NovaService:
         text = request.prompt or 'Create a model from the reference image.'
         images = ([f'data:{request.image_media_type};base64,{request.image_base64}'] if request.image_base64 else [])
         started = False
+        usage_poller = None
         usage = current_generation_usage.get()
         track_usage = usage is not None and versions.get('generation_usage_version') == 1
         try:
@@ -271,6 +275,8 @@ class NovaService:
                 'text': text, 'images': images, 'llm_model_id': model_id, 'options': session['options']},
                 **({'headers': {'X-BrickBuilder-Generation-Id': usage.generation_id}} if track_usage else {}))
             started = True
+            if track_usage:
+                usage_poller = asyncio.create_task(self.poll_usage(chat_id, usage))
             await self.wait_for_turn(chat_id, on_output, on_progress)
             after = await self.chat(chat_id)
             from .generation_budget import BUDGET_ERROR
@@ -306,18 +312,37 @@ class NovaService:
                     pass
             raise
         finally:
+            if usage_poller is not None:
+                usage_poller.cancel()
+                with suppress(asyncio.CancelledError):
+                    await usage_poller
             if started and track_usage:
                 try:
-                    report = await asyncio.wait_for(asyncio.shield(self.request('GET',
-                        f'integration/chats/{chat_id}/usage/{usage.generation_id}')), 15)
-                    if not isinstance(report, dict) or report.get('generation_id') != usage.generation_id:
-                        raise ValueError('Nova returned usage for another generation')
-                    calls = report.get('calls')
-                    if not isinstance(calls, list) or len(calls) > 10000:
-                        raise ValueError('Invalid Nova usage')
-                    usage.extend(calls)
+                    await asyncio.shield(self.checkpoint_usage(chat_id, usage))
                 except (ValueError, asyncio.TimeoutError):
                     logger.warning('Unable to retrieve Nova generation usage')
+
+    async def read_usage(self, chat_id: str, generation_id: str):
+        report = await asyncio.wait_for(self.request('GET',
+            f'integration/chats/{self.session_id(chat_id)}/usage/{generation_id}'), 15)
+        if not isinstance(report, dict) or report.get('generation_id') != generation_id:
+            raise ValueError('Nova returned usage for another generation')
+        calls = report.get('calls')
+        if not isinstance(calls, list) or len(calls) > 10000:
+            raise ValueError('Invalid Nova usage')
+        return calls
+
+    async def checkpoint_usage(self, chat_id, usage):
+        calls = await self.read_usage(chat_id, usage.generation_id)
+        usage.replace_source('nova', calls)
+
+    async def poll_usage(self, chat_id, usage):
+        while True:
+            try:
+                await self.checkpoint_usage(chat_id, usage)
+            except (ValueError, asyncio.TimeoutError):
+                logger.warning('Unable to checkpoint Nova generation usage')
+            await asyncio.sleep(USAGE_POLL_SECONDS)
 
     async def wait_for_turn(self, chat_id: str, on_output, on_progress=None):
         last_phase = None
