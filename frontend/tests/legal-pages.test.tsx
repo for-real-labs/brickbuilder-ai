@@ -19,14 +19,12 @@ describe('directory legal pages', () => {
     expect(privacy).not.toContain('<div id="root"></div>');
   });
 
-  it('publishes the free allowance, recurring billing, cancellation, and age policy consistently', () => {
+  it('publishes the owner-provided free service and age policy consistently', () => {
     const terms = renderLegalDocument(shell, 'terms');
     expect(terms).toContain('Operator: Jake Johnson');
     expect(terms).toContain('at least 13 years old');
-    expect(terms).toContain('Free plan includes 5 credits');
-    expect(terms).toContain('renew automatically each month until canceled');
-    expect(terms).toContain('My billing → Cancel subscription');
-    expect(terms).toContain('Monthly credits reset without rollover');
+    expect(terms).toContain('free of charge');
+    expect(terms).toContain('free usage allowances, not purchased currency');
     expect(terms).toContain('revoke the connection');
     expect(terms).toContain('href="mailto:support@brickbuilder.ai"');
     expect(terms).toContain('href="https://brickbuilder.ai/terms"');

@@ -1,5 +1,3 @@
-import { CreditNudge } from '../components/BillingComponents';
-import { useBilling } from '../contexts/BillingContext';
 import { LandingSocialLinks } from "../components/LandingSocialLinks";
 import { LandingToolsMenu, type LandingToolsHandle, type GenerationSettingsAction } from '../components/LandingToolsMenu';
 import { isBuddyToolIntent } from '../utils/buddyTools';
@@ -990,7 +988,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
             onOpen: trigger => { settingsReturnFocus.current = trigger; toggleSettings(true); },
           }} />
-        <CreditNudge />
 
         <main className={`flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
@@ -1251,7 +1248,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 }
 
 function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy, toolsRef }: { toolsRef?: React.RefObject<LandingToolsHandle | null>; model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
-  const { openUpgrade } = useBilling();
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
 
@@ -1326,7 +1322,6 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       </button>}
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <button type="button" className="h-9 rounded-full px-3 text-xs font-semibold text-slate-600 hover:bg-red-50 cursor-pointer bg-transparent border-none" onClick={() => openUpgrade('header')}>Plans</button>
         {githubStarLink}
         <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
         {showProfileMenu ? (

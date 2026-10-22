@@ -1,4 +1,3 @@
-import { useBilling } from '../contexts/BillingContext';
 import { GenerationDuration } from '../components/GenerationDuration';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
@@ -624,7 +623,6 @@ const SettingsPanel: React.FC = () => {
 
 /* ----------------------------- Page ----------------------------- */
 const UserDashboard: React.FC = () => {
-  const { account: billingAccount, enabled: billingEnabled } = useBilling();
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const isValidTab = (t: string | null): t is TabKey =>
@@ -764,7 +762,7 @@ const UserDashboard: React.FC = () => {
   const stats = {
     total: totalUserGenerations,
     orders: orders.length,
-    credits: billingAccount?.credits_remaining ?? (billingEnabled ? 0 : userProfile?.credits ?? 0),
+    credits: userProfile?.credits || 0,
   };
 
   const displayName = user?.email?.split('@')[0] || 'Builder';
