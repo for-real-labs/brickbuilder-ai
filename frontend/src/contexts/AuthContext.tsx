@@ -28,7 +28,6 @@ interface AuthContextType {
   verifyOtp: (email: string, token: string) => Promise<{ error: AuthError | null }>
   signInWithGoogle: (redirectPath?: string) => Promise<{ error: AuthError | null }>
   refreshUserProfile: () => Promise<void>
-  deductCredits: (amount: number) => Promise<{ error: any | null; success: boolean }>
   updateUsername: (username: string) => Promise<{ error: any | null; success: boolean }>
 }
 
@@ -90,40 +89,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await fetchUserProfile(user.email)
     }
   }
-  const deductCredits = async (amount: number) => {
-    if (!user?.email || !userProfile) {
-      return { error: 'No user or profile found', success: false }
-    }
-
-    if (userProfile.credits < amount) {
-      return { error: 'Insufficient credits', success: false }
-    }
-
-    try {
-      const { error } = await supabase
-        .from('user_profiles')
-        .update({ 
-          credits: userProfile.credits - amount,
-          updated_at: new Date().toISOString()
-        })
-        .eq('email', user.email)
-
-      if (error) {
-        return { error: error.message || 'Database error', success: false }
-      }
-
-      // Update local state
-      setUserProfile(prev => prev ? {
-        ...prev,
-        credits: prev.credits - amount
-      } : null)
-
-      return { error: null, success: true }
-    } catch (error) {
-      return { error: error instanceof Error ? error.message : 'Unknown error', success: false }
-    }
-  }
-
   const updateUsername = async (username: string) => {
     if (!user?.email || !userProfile) {
       return { error: 'No user or profile found', success: false }
@@ -297,7 +262,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     verifyOtp,
     signInWithGoogle,
     refreshUserProfile,
-    deductCredits,
     updateUsername,
   }
 

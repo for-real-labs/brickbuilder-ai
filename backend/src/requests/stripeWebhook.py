@@ -13,6 +13,7 @@ import resend
 
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
+from ..utils.billing import handle_billing_event
 from ..utils.order_email import order_email_content
 
 logger = logging.getLogger(__name__)
@@ -76,6 +77,9 @@ async def stripe_webhook(request: Request, auth_info: dict):
         )
 
         # Handle the event
+
+        if await handle_billing_event(event):
+            return StripeWebhookResponse(success=True)
 
         if event.type == 'checkout.session.completed':
             session = event.data.object  # contains a stripe.checkout.Session

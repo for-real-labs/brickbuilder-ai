@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import time
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 from uuid import uuid4
@@ -233,24 +234,14 @@ def test_credit_errors_and_unexpected_errors_are_safe(client, monkeypatch):
         assert "SECRET" not in str(result)
 
 
-def test_account_is_scoped_to_signed_in_email(client):
-    http, _, storage = client
-    class Query:
-        def table(self, value):
-            assert value == "user_profiles"
-            return self
-        def select(self, value):
-            assert value == "credits"
-            return self
-        def eq(self, column, value):
-            assert (column, value) == ("email", "builder@example.com")
-            return self
-        def single(self):
-            return self
-        def execute(self):
-            return SimpleNamespace(data={"credits": 7})
-    storage.client = Query()
+def test_account_is_scoped_to_verified_owner_and_uses_billing_wallet(client, monkeypatch):
+    http, _, _ = client
+    wallet = AsyncMock(return_value={'plan_key':'builder','period_start':datetime.now(timezone.utc).isoformat(),
+        'period_end':(datetime.now(timezone.utc)+timedelta(days=1)).isoformat(), 'monthly_credits':30,
+        'monthly_remaining':5,'bonus_remaining':2,'subscription_status':'active','cancel_at_period_end':False})
+    monkeypatch.setattr(module.billing, 'wallet', wallet)
     assert call(http, "get_brick_builder_account")["structuredContent"]["credits"] == 7
+    wallet.assert_awaited_once_with(USER_ID)
 
 
 def test_host_and_origin_protection(client):
