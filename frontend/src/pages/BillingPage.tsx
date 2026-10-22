@@ -10,7 +10,7 @@ import { BillingHeader } from './PricingPage';
 
 export default function BillingPage() {
   const { user } = useAuth();
-  const { account, plans, busy, loading, error, sync, refresh, manage, signIn, openUpgrade } = useBilling();
+  const { account, plans, enabled, busy, loading, error, sync, refresh, manage, signIn, openUpgrade } = useBilling();
   const [params, setParams] = useSearchParams();
   const sessionId = params.get('session_id') ?? undefined;
   const [confirmed, setConfirmed] = useState(false);
@@ -36,11 +36,12 @@ export default function BillingPage() {
   const labels: Record<string, string> = { welcome: 'Existing credits preserved', monthly: 'Monthly credits', upgrade: 'Plan upgrade', generation: 'AI build or edit', refund: 'Build credit returned' };
   return <div className="billing-page"><BillingHeader /><main className="billing-account-main">
     <div className="billing-account-title"><div><p className="billing-eyebrow">YOUR BUILDING ROOM</p><h1>Credits & billing</h1><p>More ideas ahead. Here’s where you stand.</p></div><PetAvatar state={confirmed ? 'celebrating' : 'idle'} /></div>
-    {error && <div className="billing-error" role="alert">{error} <button onClick={() => { posthog.capture('billing_retry_clicked'); void refresh(); }}>Try again</button></div>}
+    {error && (enabled || account) && <div className="billing-error" role="alert">{error} <button onClick={() => { posthog.capture('billing_retry_clicked'); void refresh(); }}>Try again</button></div>}
     {confirmed && <p className="billing-confirmation" role="status">You’re all set. Your subscription is active and your credits are ready.</p>}
     {confirming && <p role="status">Confirming your payment and credits…</p>}
     {!confirming && sessionId && !confirmed && !error && <p role="status">Still waiting for payment confirmation. Your credits will appear after Stripe confirms payment. <button className="billing-text-link" onClick={() => { posthog.capture('billing_confirmation_retry_clicked'); void sync(sessionId).then(result => { if (result?.subscription_status === 'active') { setConfirmed(true); setParams({}, { replace: true }); } }); }}>Check again</button></p>}
     {!user ? <section className="billing-account-card"><h2>Your credits live with your account.</h2><p>Sign in to see your balance, receipts, and subscription.</p><button className="billing-primary" onClick={signIn}>Sign in</button></section>
+      : !enabled && !account ? <p className="billing-launch-notice" role="status">Monthly plans and credit history are coming soon. Your current building access continues.</p>
       : loading || !account ? <p role="status">{error ? 'Your account details will appear when billing reconnects.' : 'Loading your credits…'}</p> : <>
         <div className="billing-account-grid"><section className="billing-account-card"><div className="billing-card-label"><Coins size={18} /><span>AVAILABLE CREDITS</span></div>
           <p className="billing-big-balance">{account.credits_remaining}<span>ready for your next idea</span></p>
