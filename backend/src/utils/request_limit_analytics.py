@@ -9,15 +9,15 @@ from posthog import Posthog
 logger = logging.getLogger(__name__)
 LIMITS = {
     'BB_GENERATION_GUEST_LIMIT': ('guest_lifetime', 3, 403),
-    'BB_GENERATION_DAILY_LIMIT': ('daily', 30, 429),
+    'BB_GENERATION_DAILY_LIMIT': ('daily', 10, 429),
     'BB_GENERATION_CONCURRENCY_LIMIT': ('concurrent', 1, 429),
 }
 
 
 def daily_limit_value(error: Exception) -> int:
     match = re.search(r'BB_GENERATION_DAILY_LIMIT:(\d+)\b', str(error))
-    value = int(match.group(1)) if match else 30
-    return value if 1 <= value <= 30 else 30
+    value = int(match.group(1)) if match else 10
+    return value if 1 <= value <= 30 else 10
 
 
 @lru_cache(maxsize=1)

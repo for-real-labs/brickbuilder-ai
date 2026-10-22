@@ -24,7 +24,7 @@ def server(tmp_path_factory):
 @pytest.fixture
 def storage(server, tmp_path):
     with psycopg.connect(server.get_uri(), autocommit=True) as conn:
-        conn.execute('DROP TABLE IF EXISTS generations CASCADE')
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_daily_limit_overrides')
         _create_schema(conn)
         value = GenerationStorage.__new__(GenerationStorage)
         value.client = LocalSupabaseClient(conn, tmp_path, 'http://localhost:8002')
