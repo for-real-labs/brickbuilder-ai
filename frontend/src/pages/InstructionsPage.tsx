@@ -46,16 +46,6 @@ function Header() {
         {showProfileMenu ? (
           // Logged in or no Supabase: show dashboard and account dropdown
           <>
-            {/* Credits badge - only show when user is logged in with Supabase */}
-            {user && isSupabaseConfigured && (
-              <div className="flex items-center gap-1.5 bg-amber-50 border border-amber-200 rounded-full px-3 py-1.5">
-                <Coins className="h-4 w-4 text-amber-600" />
-                <span className="text-sm font-semibold text-amber-700">
-                  {userProfile?.credits ?? 0}
-                </span>
-              </div>
-            )}
-
             {/* Dashboard button */}
             <button
               className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"

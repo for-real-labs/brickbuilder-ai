@@ -426,36 +426,9 @@ def handle_auth_and_tracking(
         **full_track_properties
     )
     
-    # Check authentication and credits
-    if is_anonymous:
-        logger.info(f"Anonymous user request - lifetime limit of {auth_info['rate_limit']['limit']} calls")
-        logger.info(f"Anonymous user lifetime calls: {auth_info['rate_limit']['calls_made']}/{auth_info['rate_limit']['limit']}")
-    elif not auth_info.get("is_developer", False):
-        # Check if user has credits before processing (but don't deduct yet)
-        user_email_for_credits = auth_info.get("user_email")
-        if user_email_for_credits and user_email_for_credits != "developer@brickai.com":
-            # Just verify they have credits, don't deduct yet
-            if supabase_client:
-                result = supabase_client.table("user_profiles").select("credits").eq("email", user_email_for_credits).execute()
-                if not result.data or result.data[0].get("credits", 0) < required_credits:
-                    credit_message = f"Insufficient credits. At least {required_credits} credit"
-                    if required_credits > 1:
-                        credit_message += "s"
-                    if required_credits == 2:
-                        credit_message += " required for text-to-bricks conversion."
-                    else:
-                        credit_message += " required."
-                        
-                    raise HTTPException(
-                        status_code=402,  # Payment Required
-                        detail=credit_message
-                    )
-                logger.info(f"User has sufficient credits: {result.data[0].get('credits', 0)}")
-        else:
-            logger.info(f"Skipping credit check: user_email={user_email_for_credits}")
-    else:
-        logger.info("Skipping credit check for developer API key")
-    
+    # Credit admission is atomic with generation creation in PostgreSQL.
+    # A browser's legacy profile balance is not an authorization boundary.
+
     # Return user information for use in the endpoint
     return {
         "user_email": user_email,
@@ -471,28 +444,5 @@ async def deduct_credits(
     credits_to_deduct: int = 1,
     operation_description: str = "operation"
 ) -> dict:
-    """
-    Deduct account credits after successful fal.ai calls; guest trials were reserved at admission.
-    
-    This ensures users are charged when fal.ai charges us, regardless of subsequent processing.
-    
-    Args:
-        user_info: User information returned from handle_auth_and_tracking
-        auth_info: Original authentication information (may be modified for anonymous users)
-        credits_to_deduct: Number of credits to deduct for authenticated users
-        operation_description: Description of the operation for logging
-        
-    Returns:
-        Updated auth_info (important for anonymous users as it contains updated rate limits)
-    """
-    is_anonymous = user_info["is_anonymous"]
-    is_developer = user_info["is_developer"]
-    
-    if not is_anonymous and not is_developer:
-        user_email_for_credits = user_info["user_email"]
-        if user_email_for_credits and user_email_for_credits != "developer@brickai.com":
-            logger.info(f"Deducting {credits_to_deduct} credit{'s' if credits_to_deduct != 1 else ''} from {user_email_for_credits} after successful {operation_description}")
-            credit_result = await verify_and_deduct_credits(user_email_for_credits, credits_to_deduct)
-            logger.info(f"Credits deducted. Remaining: {credit_result.get('remaining_credits', 'unknown')}")
-    
+    """Compatibility hook: all credit and guest admission happens at creation."""
     return auth_info
