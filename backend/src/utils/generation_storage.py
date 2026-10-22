@@ -15,7 +15,7 @@ from email.utils import format_datetime
 from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
-from .request_limit_analytics import track_request_limit
+from .request_limit_analytics import track_request_limit, daily_limit_value
 from .auth import supabase_client
 from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
@@ -197,7 +197,7 @@ class GenerationStorage:
                     hour=0, minute=0, second=0, microsecond=0)
                 raise HTTPException(
                     status_code=429,
-                    detail=f'You have reached the daily limit of 30 generations. Please wait until {reset_at:%B %d, %Y at %H:%M} UTC to generate again.',
+                    detail=f'You have reached the daily limit of {daily_limit_value(e)} generations. Please wait until {reset_at:%B %d, %Y at %H:%M} UTC to generate again.',
                     headers={'Retry-After': format_datetime(reset_at, usegmt=True)},
                 ) from None
             if 'BB_GENERATION_CONCURRENCY_LIMIT' in str(e):

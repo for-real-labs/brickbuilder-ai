@@ -1,6 +1,7 @@
 """Minimal server-side telemetry for rejected generation admissions only."""
 import logging
 import os
+import re
 from functools import lru_cache
 
 from posthog import Posthog
@@ -11,6 +12,12 @@ LIMITS = {
     'BB_GENERATION_DAILY_LIMIT': ('daily', 30, 429),
     'BB_GENERATION_CONCURRENCY_LIMIT': ('concurrent', 1, 429),
 }
+
+
+def daily_limit_value(error: Exception) -> int:
+    match = re.search(r'BB_GENERATION_DAILY_LIMIT:(\d+)\b', str(error))
+    value = int(match.group(1)) if match else 30
+    return value if 1 <= value <= 30 else 30
 
 
 @lru_cache(maxsize=1)
@@ -36,6 +43,8 @@ def track_request_limit(error: Exception, *, user_id: str, user_type: str, endpo
         if client is None:
             return
         kind, value, status = limit
+        if kind == 'daily':
+            value = daily_limit_value(error)
         client.capture(distinct_id=user_id, event='request_limit_hit', properties={
             'service': 'brickai-api',
             'environment': os.getenv('RAILWAY_ENVIRONMENT_NAME') or os.getenv('ENVIRONMENT', 'development'),

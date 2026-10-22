@@ -7,7 +7,9 @@ export async function localizeGenerationLimit(response: Response): Promise<Respo
   const resetAt = new Date(retryAt);
   if (!Number.isFinite(resetAt.getTime())) return response;
   const data = await response.clone().json().catch(() => null);
-  if (typeof data?.detail !== 'string' || !data.detail.startsWith('You have reached the daily limit of 30 generations.')) return response;
+  const prefix = typeof data?.detail === 'string'
+    ? data.detail.match(/^You have reached the daily limit of ([1-9]|[12][0-9]|30) generations\./)?.[0] : undefined;
+  if (!prefix) return response;
   const localTime = new Intl.DateTimeFormat(undefined, {
     month: 'long', day: 'numeric', year: 'numeric',
     hour: 'numeric', minute: '2-digit', timeZoneName: 'short',
@@ -15,6 +17,6 @@ export async function localizeGenerationLimit(response: Response): Promise<Respo
   const headers = new Headers(response.headers);
   headers.delete('Content-Length');
   return new Response(JSON.stringify({ ...data,
-    detail: `You have reached the daily limit of 30 generations. Please wait until ${localTime} to generate again.`,
+    detail: `${prefix} Please wait until ${localTime} to generate again.`,
   }), { status: response.status, statusText: response.statusText, headers });
 }
