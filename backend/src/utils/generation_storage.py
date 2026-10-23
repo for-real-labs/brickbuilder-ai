@@ -16,6 +16,7 @@ from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
 from .request_limit_analytics import track_request_limit, daily_limit_value
+from .generation_retry_guard import retry_guard_error
 from .auth import supabase_client
 from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
@@ -195,6 +196,9 @@ class GenerationStorage:
             
         except Exception as e:
             track_request_limit(e, user_id=user_id, user_type=user_type, endpoint=endpoint)
+            retry_error = retry_guard_error(e)
+            if retry_error is not None:
+                raise retry_error from None
             if 'BB_AI_CAPACITY' in str(e):
                 raise HTTPException(status_code=503, detail='New AI builds are temporarily at capacity. Your credits have not been charged. Please try again later; saved models and cancellation remain available.') from None
             if 'BB_BILLING_VERSION' in str(e):

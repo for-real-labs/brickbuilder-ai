@@ -4,7 +4,8 @@
 
 Monthly billing is enabled in production. Both `20261022000000` and
 `20261023000000_billing_pricing_v2.sql` are already recorded; do not reapply them.
-The guest allowance update requires `20261023020000_guest_credit_allowance.sql`;
+The guest allowance update requires `20261023020000_guest_credit_allowance.sql`,
+followed by `20261023030000_generation_retry_guard.sql` for retry protection;
 the paid-feature locks themselves need no new schema. Re-run the catalog provisioner
 when deploying it so Stripe's billing portal offers only Builder and Creator.
 Existing Master Builder subscriptions keep their allowance, renewal and cancellation
@@ -57,6 +58,26 @@ is bypassed while billing is enabled so the 75-credit allowance is usable; short
 request throttles, one active generation and the global spending guard remain.
 Monthly credits also replace the default daily cap for signed-in accounts.
 Explicit signed-in account restrictions and verified owner exemptions remain.
+
+After three failed/canceled AI attempts within a rolling 24 hours, new
+BrickBuilder-funded builds pause until fewer than three remain in that window.
+This applies to Free, paid and internal accounts, plus each guest browser and
+network. Failed/canceled jobs still refund credits; upgrades, wallet resets and
+model deletion do not clear the pause. Claimed guest models carry their history
+to the signed-in account. Personal API-key work, imports and manual tools do not
+consume retry slots and stay available. Cancellation remains available throughout.
+
+The private retry ledger reserves slots for in-flight builds as well, limiting
+parallel requests to the remaining slots. Successful completion releases a slot;
+deleting an unfinished build records a failed attempt. Repeated status updates
+cannot add strikes or extend an existing one. Old unfinished reservations expire
+from this guard after 24 hours; the separate active-job limit still applies.
+Pre-admission validation/quota/capacity rejections leave no retry charge. Once an
+AI job is admitted, an unsuccessful outcome counts conservatively because provider
+spend may be incomplete or unknown. Historical failures use the original admission
+time when the terminal time cannot be established. Separate accounts and changing
+both guest browser and network remain distinct identities; the global spend guard
+is still required. The embedded local development store does not run this migration.
 
 The 31,700 prelaunch bonus credits are preserved. Users can redeem up to 5 per
 UTC calendar month, after monthly credits, for Basic builds only. They never
@@ -177,7 +198,8 @@ pause materially affects paid service, provide a manual billing adjustment.
 1. Verify the production merge is authorized. On an existing installation, do
    not reapply recorded migrations or reset wallets. Keep the current billing
    setting. Deploy the backend that recognizes guest-credit errors, then apply
-   only the unrecorded guest-credit migration transactionally and record it.
+   only the unrecorded guest-credit and retry-guard migrations in order,
+   transactionally, and record them.
 2. Run `backend/scripts/provision_billing.py --env-file <existing environment>`
    for sandbox resources, then `--live` during the authorized production rollout.
    It reuses the existing Builder/Creator v3 prices and updates the portal to offer
@@ -185,7 +207,7 @@ pause materially affects paid service, provide a manual billing adjustment.
    against `billing_settings`. Keep retired prices available for existing invoice
    reconciliation; expire any open Master Checkout sessions after removing that
    option from the app. The database admission policy remains version 2.
-3. Deploy the frontend after the backend and guest-credit migration are ready;
+3. Deploy the frontend after the backend and both new migrations are ready;
    verify both backend and frontend commit SHAs before advertising the allowance.
    Confirm `/billing/plans` returns `ready=true` and only Free, Builder and Creator;
    `/billing/account` must include `paid_features`. Preserve existing Stripe keys,
@@ -195,8 +217,9 @@ pause materially affects paid service, provide a manual billing adjustment.
    with zero credits or cancellation scheduled. Check desktop and mobile layouts.
 5. Validate sandbox Checkout, existing subscription reconciliation and cancellation.
    Verify live catalog prices and portal choices without a live purchase. Check
-   five guest All parts builds / 75 Basic builds, mixed use, refunds, the three
-   signed-in balances and capacity telemetry; never reset wallets or
+   five guest All parts builds / 75 Basic builds, mixed use, refunds, retry pauses,
+   the localized retry time, the three signed-in balances and capacity telemetry;
+   never reset wallets or
    reapply the previously recorded allowance migration during this rollout.
 
 The wallet, ledger and budget reservations are service-only. Browser writes to
@@ -214,5 +237,7 @@ Subscriptions still renew until canceled in Stripe. Keep the portal and webhook
 service available for existing customers.
 
 PostHog tracks pricing views, plan selection, checkout starts/failures, balance
-and mode nudges, FAQ usage, confirmation and cancellation clicks. Stripe invoices
+and mode nudges, FAQ usage, confirmation and cancellation clicks. Server-side
+`request_limit_hit` events distinguish `generation_retry_cooldown` and
+`generation_retry_pending` without sending network hashes or prompts. Stripe invoices
 are the source of truth for paid revenue; client confirmation events are not.

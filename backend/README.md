@@ -402,7 +402,8 @@ and moving into another month do not renew the trial. Supabase anonymous-auth
 JWTs are not accepted as signed-in accounts. One active job and the global AI
 spending guard still apply; billing-enabled guest access has no extra daily cap.
 
-Apply `20261023020000_guest_credit_allowance.sql` after the existing billing and
+Apply `20261023020000_guest_credit_allowance.sql` and then
+`20261023030000_generation_retry_guard.sql` after the existing billing and
 personal-provider-key migrations. Deploy the API first so it recognizes the new
 quota error, then apply/record the migration and verify the frontend messaging.
 The standalone embedded development store keeps its older attempt-based limits;
@@ -422,6 +423,26 @@ remaining mode record retain one credit each, including historical network count
 whose hashes were not stored on models. Old non-network identities remain legacy
 records and are never reinterpreted as current network hashes. No allowance is
 reset by this migration.
+
+### Failed/canceled build guard
+
+Three unsuccessful AI attempts within a rolling 24 hours pause new
+BrickBuilder-funded AI work. The pause applies to all account plans, internal
+accounts and guest browser/network identities. Credits still refund, but provider
+spend remains reserved. Personal API-key work and non-AI tools are exempt.
+`generation_retry_attempts` is a private ledger independent of model deletion,
+ownership and billing resets; a claimed guest model also carries its history to
+the account. Deleting active work counts as unsuccessful. Completed work releases
+its slot, and pending work reserves remaining slots to prevent parallel bypasses.
+
+The database enforces both admission and status/deletion updates under consistent
+identity locks. Rejected admission rolls back all reservations. The API returns
+429 with `Retry-After` for a cooldown and localized pet guidance in the frontend;
+temporary pending-slot rejections ask the user to wait for running work. Neither
+offers an upgrade as a way around the pause. Failures after admission count even
+when provider cost is unknown; rejected requests before admission do not count.
+Historical failed jobs use their admission time. This guard does not establish a
+person's identity across separate accounts, so the global budget remains necessary.
 
 `start.sh` selects `GUEST_IP_SOURCE=railway` when `RAILWAY_ENVIRONMENT_ID` is set.
 It disables Uvicorn's proxy-header rewriting and validates Railway's single
@@ -449,7 +470,8 @@ these controls do not establish a person's identity.
 
 `request_limit_hit` is emitted once per rejected generation admission, including
 `guest_lifetime_credits` (75 credits), `daily` (10 by default), `concurrent` (1),
-account credit exhaustion and global AI capacity. Older attempt-based guest
+`generation_retry_cooldown` / `generation_retry_pending` (3 attempts), account
+credit exhaustion and global AI capacity. Older attempt-based guest
 errors retain their `guest_lifetime` event type. It counts blocked attempts, not
 the successful request that uses the last allowance. Repeated blocked requests
 count again; use unique distinct IDs for affected identities. Guest IDs represent

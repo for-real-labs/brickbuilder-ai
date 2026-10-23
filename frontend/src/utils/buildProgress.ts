@@ -15,6 +15,8 @@ export function buildFailureMessage(error: unknown): string {
   if (message === 'Generation cancelled. Your AI account was not charged.') return message;
   if (typeof message === 'string' && /^Add your (OpenAI|Claude|openai|anthropic) API key in AI billing settings, or (choose BrickBuilder credits|select BrickBuilder credits)\.$/.test(message)) return message;
   return typeof message === 'string' && (/^You have reached the daily limit of ([1-9]|[12][0-9]|30) generations\. Please wait until /.test(message)
+    || /^AI builds are paused after 3 failed or canceled attempts within 24 hours\. Please wait until /.test(message)
+    || message === 'AI builds are temporarily paused while other builds finish. Please wait for a running build to finish before trying again. Your credits have not been charged for this request.'
     || isGuestLimitMessage(message)
     || message === 'You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.')
     ? message : BUILD_FAILURE_MESSAGE;
