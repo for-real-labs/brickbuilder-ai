@@ -168,3 +168,42 @@ def test_migration_preserves_unknown_history_and_enforces_valid_values(tmp_path)
             connection.execute("update public.generations set input_tokens=10,output_tokens=2,tokens_used=12,estimated_cost_usd=.00012,example_edit_prompt='Make the fins blue'")
     finally:
         server.cleanup()
+
+
+def test_cumulative_usage_replaces_call_and_preserves_other_sources():
+    ledger = GenerationUsage('job')
+    context = current_generation_usage.set(ledger)
+    try:
+        budget = GenerationBudget('gpt-5.5')
+        budget.record_usage({'input_tokens': 100, 'output_tokens': 10}, 'openai', call_id='stream')
+        budget.record_usage({'input_tokens': 100, 'output_tokens': 20}, 'openai', call_id='stream')
+        budget.record_usage({'input_tokens': 50, 'output_tokens': 5}, 'openai', call_id='next')
+        assert budget.spent == Decimal('.0015')
+        assert ledger.values()['tokens_used'] == 175
+        assert len(ledger.calls) == 2
+        ledger.replace_source('nova', [{'model': 'gpt-5.5', 'input_tokens': 100, 'output_tokens': 50, 'estimated_cost_usd': '.002'}])
+        ledger.replace_source('nova', [{'model': 'gpt-5.5', 'input_tokens': 100, 'output_tokens': 75, 'estimated_cost_usd': '.003'}])
+        assert ledger.values()['tokens_used'] == 350
+        assert ledger.values()['estimated_cost_usd'] == '0.0045'
+    finally:
+        current_generation_usage.reset(context)
+
+
+def test_checkpoint_detects_changed_totals_without_new_call(monkeypatch):
+    async def run():
+        checkpoint = asyncio.Event()
+        release = asyncio.Event()
+        async def saved(*args): checkpoint.set()
+        store = SimpleNamespace(get_generation=AsyncMock(return_value={}), save_generation_usage=AsyncMock(side_effect=saved))
+        monkeypatch.setattr(generation_storage, 'generation_storage', store)
+        async def work():
+            budget = GenerationBudget('gpt-5.5')
+            budget.record_usage({'input_tokens': 100, 'output_tokens': 10}, 'openai', call_id='one')
+            await release.wait()
+            budget.record_usage({'input_tokens': 100, 'output_tokens': 20}, 'openai', call_id='one')
+        task = generation_tasks.start_generation_task('job', work())
+        await asyncio.wait_for(checkpoint.wait(), 2)
+        release.set()
+        await task
+        assert [call.args[1]['tokens_used'] for call in store.save_generation_usage.await_args_list] == [110, 120]
+    asyncio.run(run())

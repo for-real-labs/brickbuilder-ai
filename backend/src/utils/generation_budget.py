@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import uuid
 from contextvars import ContextVar
 from decimal import Decimal, InvalidOperation, ROUND_FLOOR
 
@@ -13,7 +14,18 @@ class GenerationUsage:
     """Provider-reported LLM calls for one job; no prompts or credentials."""
     def __init__(self, generation_id):
         self.generation_id = generation_id
-        self.calls = []
+        self._calls = []
+        self._sources = {}
+
+    @property
+    def calls(self):
+        return self._calls + [call for records in self._sources.values() for call in records]
+
+    def replace_source(self, source, calls):
+        # Runtime reports are cumulative snapshots, not additional charges.
+        validated = GenerationUsage(self.generation_id)
+        validated.extend(calls)
+        self._sources[source] = validated.calls
 
     def extend(self, calls):
         records = []
@@ -37,14 +49,15 @@ class GenerationUsage:
             })
             if call.get('speed') in {'fast', 'standard'}:
                 records[-1]['speed'] = call['speed']
-        self.calls.extend(records)
+        self._calls.extend(records)
 
     def values(self):
         inputs = sum(call['input_tokens'] for call in self.calls)
         outputs = sum(call['output_tokens'] for call in self.calls)
         return {'input_tokens': inputs, 'output_tokens': outputs, 'tokens_used': inputs + outputs,
                 'estimated_cost_usd': str(sum((Decimal(call['estimated_cost_usd']) for call in self.calls), Decimal(0))),
-                'ai_usage': {'scope': 'reported_llm_usage', 'calls': [dict(call) for call in self.calls]}}
+                'ai_usage': {'scope': 'reported_llm_usage', 'calls': [dict(call) for call in self._calls] +
+                    [{**call, 'usage_source': source} for source, records in self._sources.items() for call in records]}}
 
 
 current_generation_usage = ContextVar('generation_usage', default=None)
@@ -106,6 +119,8 @@ class GenerationBudget:
         self.spent = Decimal('0')
         self.usage_records = []
         self.on_usage = None
+        self._call_indices = {}
+        self._ledger_source = str(uuid.uuid4())
 
     def prices_for_speed(self, speed: str = 'standard'):
         if speed == 'standard':
@@ -133,7 +148,7 @@ class GenerationBudget:
             raise GenerationBudgetExceeded()
         return min(requested, limit)
 
-    def record_usage(self, usage: dict | None, provider: str) -> None:
+    def record_usage(self, usage: dict | None, provider: str, *, call_id: str | None = None) -> None:
         if not isinstance(usage, dict) or not any(k in usage for k in ('input_tokens', 'prompt_tokens')) or not any(k in usage for k in ('output_tokens', 'completion_tokens')):
             raise ValueError('Provider did not report AI cost usage; generation stopped.')
         input_price, output_price, read_price, write5, write1 = self.prices_for_speed(usage.get('speed', 'standard'))
@@ -169,11 +184,19 @@ class GenerationBudget:
                   'estimated_cost_usd': str(cost)}
         if provider == 'anthropic' and 'speed' in usage:
             record['speed'] = usage['speed']
-        self.usage_records.append(record)
+        index = self._call_indices.get(call_id) if call_id is not None else None
+        previous_cost = Decimal(0)
+        if index is None:
+            if call_id is not None:
+                self._call_indices[call_id] = len(self.usage_records)
+            self.usage_records.append(record)
+        else:
+            previous_cost = Decimal(self.usage_records[index]['estimated_cost_usd'])
+            self.usage_records[index] = record
         ledger = current_generation_usage.get()
         if ledger is not None:
-            ledger.extend([record])
-        self.spent += cost
+            ledger.replace_source(self._ledger_source, self.usage_records)
+        self.spent += cost - previous_cost
         if self.on_usage:
             self.on_usage(self.usage_records)
         if self.spent > MAX_GENERATION_COST_USD:

@@ -24,7 +24,7 @@ def server(tmp_path_factory):
 @pytest.fixture
 def storage(server, tmp_path):
     with psycopg.connect(server.get_uri(), autocommit=True) as conn:
-        conn.execute('DROP TABLE IF EXISTS generations CASCADE')
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_daily_limit_overrides')
         _create_schema(conn)
         value = GenerationStorage.__new__(GenerationStorage)
         value.client = LocalSupabaseClient(conn, tmp_path, 'http://localhost:8002')
@@ -113,7 +113,26 @@ def test_storage_outage_does_not_fail_jobs(storage, monkeypatch):
 
 def test_recovery_ignores_other_pipelines_and_terminal_jobs(storage):
     jobs = [save(storage, endpoint='textToBricks'), save(storage, status='cancelled'),
-            save(storage, status='resizing'), save(storage, status='completed')]
+            save(storage, status='resizing', user_id='other-owner'), save(storage, status='completed')]
     before = [read(storage, job) for job in jobs]
     assert asyncio.run(recover_stale_generations(storage)) == 0
     assert [read(storage, job) for job in jobs] == before
+
+
+def test_crash_recovery_restores_runtime_usage_without_losing_other_calls(storage, monkeypatch):
+    from unittest.mock import AsyncMock
+    from src.utils import generation_recovery
+    direct = {'model': 'gpt-5.5', 'input_tokens': 10, 'output_tokens': 5, 'estimated_cost_usd': '.001', 'usage_source': 'title'}
+    nova = {'model': 'gpt-5.5', 'input_tokens': 100, 'output_tokens': 20, 'estimated_cost_usd': '.002', 'usage_source': 'nova'}
+    job = save(storage, ai_usage={'calls': [direct, nova]})
+    storage.client.storage.from_('generation-output').upload(path=f'{job}/nova-session.json', file=json.dumps({'tenant': 'a'*64, 'chat_id': 'chat'}).encode())
+    service = AsyncMock()
+    service.__aenter__.return_value = service
+    service.read_usage.return_value = [{**nova, 'output_tokens': 30}]
+    monkeypatch.setattr(generation_recovery, 'NovaService', lambda **kwargs: service)
+    assert asyncio.run(recover_stale_generations(storage)) == 1
+    row = read(storage, job)
+    assert row['status'] == 'failed'
+    assert row['tokens_used'] == 145
+    assert len(row['ai_usage']['calls']) == 2
+    service.read_usage.assert_awaited_once_with('chat', job)

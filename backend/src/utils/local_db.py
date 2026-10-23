@@ -413,7 +413,7 @@ def _create_local_generation_limit(conn) -> None:
                 IF (SELECT count(*) FROM generations
                     WHERE doc->>'user_id' = new.doc->>'user_id'
                       AND doc->>'user_type' = new.doc->>'user_type'
-                      AND doc->>'status' IN ('queued', 'started', 'processing', 'ldr_processing', 'resizing')) >= 5 THEN
+                      AND doc->>'status' IN ('queued', 'started', 'processing', 'ldr_processing', 'resizing')) >= 1 THEN
                     RAISE EXCEPTION 'BB_GENERATION_CONCURRENCY_LIMIT';
                 END IF;
             END IF;
@@ -564,20 +564,35 @@ def _create_local_daily_generation_limit(conn) -> None:
           AND doc->>'user_id' IS NOT NULL AND doc->>'user_type' IS NOT NULL
         GROUP BY doc->>'user_id', doc->>'user_type', ((doc->>'created_at')::timestamptz AT TIME ZONE 'UTC')::date
         ON CONFLICT (user_id, user_type, usage_day) DO NOTHING;
+        -- Operator-managed overrides; no account identifiers are stored in source control.
+        CREATE TABLE IF NOT EXISTS public.generation_daily_limit_overrides (
+            user_id text NOT NULL,
+            user_type text NOT NULL CHECK (user_type = 'authenticated'),
+            daily_limit integer NOT NULL CHECK (daily_limit BETWEEN 1 AND 30),
+            unlimited boolean NOT NULL DEFAULT false,
+            created_at timestamptz NOT NULL DEFAULT now(),
+            PRIMARY KEY (user_id, user_type)
+        );
+        ALTER TABLE public.generation_daily_limit_overrides ADD COLUMN IF NOT EXISTS unlimited boolean NOT NULL DEFAULT false;
         CREATE OR REPLACE FUNCTION public.reserve_daily_generation(owner_id text, owner_type text)
         RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
         DECLARE
             today date := (statement_timestamp() AT TIME ZONE 'UTC')::date;
             admitted integer;
+            effective_limit integer;
+            exempt boolean;
         BEGIN
+            SELECT daily_limit, unlimited INTO effective_limit, exempt FROM public.generation_daily_limit_overrides
+            WHERE user_id = owner_id AND user_type = owner_type;
+            effective_limit := coalesce(effective_limit, 10);
             INSERT INTO public.generation_daily_usage (user_id, user_type, usage_day, attempts)
             VALUES (owner_id, owner_type, today, 1)
             ON CONFLICT (user_id, user_type, usage_day) DO UPDATE
             SET attempts = generation_daily_usage.attempts + 1
-            WHERE generation_daily_usage.attempts < 30
+            WHERE coalesce(exempt, false) OR generation_daily_usage.attempts < effective_limit
             RETURNING attempts INTO admitted;
             IF admitted IS NULL THEN
-                RAISE EXCEPTION 'BB_GENERATION_DAILY_LIMIT' USING ERRCODE = 'P0001';
+                RAISE EXCEPTION 'BB_GENERATION_DAILY_LIMIT:%', effective_limit USING ERRCODE = 'P0001';
             END IF;
         END;
         $$;

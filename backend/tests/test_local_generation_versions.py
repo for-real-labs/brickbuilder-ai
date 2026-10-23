@@ -20,8 +20,10 @@ def local_server(tmp_path_factory):
 @pytest.fixture
 def local_db(local_server, tmp_path):
     with psycopg.connect(local_server.get_uri(), autocommit=True) as conn:
-        conn.execute('DROP TABLE IF EXISTS generations CASCADE')
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_daily_limit_overrides')
         _create_schema(conn)
+        # Version-history fixtures intentionally contain more than one day's free quota.
+        conn.execute("INSERT INTO generation_daily_limit_overrides(user_id,user_type,daily_limit,unlimited) VALUES ('account','authenticated',10,true)")
         yield conn, LocalSupabaseClient(conn, tmp_path, 'http://localhost:8002')
 
 

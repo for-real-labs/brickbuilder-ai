@@ -22,17 +22,18 @@ def server(tmp_path_factory):
 
 
 @pytest.mark.parametrize('local', [False, True])
-def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(server, tmp_path, local):
+@pytest.mark.parametrize('active_status', ['queued', 'started', 'processing', 'ldr_processing', 'resizing'])
+def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(server, tmp_path, local, active_status):
     uri = server.get_uri()
     with psycopg.connect(uri, autocommit=True) as conn:
-        conn.execute('DROP TABLE IF EXISTS generations CASCADE')
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_daily_limit_overrides')
         if local:
             _create_schema(conn)
         else:
             conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text)')
-            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261021010000_generation_concurrency_limit_5.sql').read_text())
+            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261022010000_generation_concurrency_limit_1.sql').read_text())
 
-    def insert(index, owner='owner', status='processing'):
+    def insert(index, owner='owner', status=active_status):
         with psycopg.connect(uri, autocommit=True) as conn:
             row = {'id': str(uuid4()), 'user_id': owner, 'user_type': 'authenticated',
                    'endpoint': ['llmToBricks', 'novaToBricks', 'textToBricks', 'imageToBricks', 'glbToBricks', 'objToBricks'][index % 6], 'status': status}
@@ -48,15 +49,15 @@ def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(se
                 return False
     with ThreadPoolExecutor(max_workers=12) as workers:
         outcomes = list(workers.map(insert, range(12)))
-    assert sum(outcomes) == 5
+    assert sum(outcomes) == 1
     assert insert(1, 'other-owner')
     assert insert(1, status='completed')
     with psycopg.connect(uri, autocommit=True) as conn:
         if local:
-            row = conn.execute("SELECT id FROM generations WHERE doc->>'user_id'='owner' AND doc->>'status'='processing' LIMIT 1").fetchone()
+            row = conn.execute("SELECT id FROM generations WHERE doc->>'user_id'='owner' AND doc->>'status'=%s LIMIT 1", (active_status,)).fetchone()
             conn.execute("UPDATE generations SET doc = doc || '{\"status\":\"cancelled\"}'::jsonb WHERE id = %s", row)
         else:
-            conn.execute("UPDATE generations SET status='cancelled' WHERE id = (SELECT id FROM generations WHERE user_id='owner' AND status='processing' LIMIT 1)")
+            conn.execute("UPDATE generations SET status='cancelled' WHERE id = (SELECT id FROM generations WHERE user_id='owner' AND status=%s LIMIT 1)", (active_status,))
     assert insert(1)
     assert not insert(2)
 
@@ -69,14 +70,14 @@ def test_storage_returns_actionable_429_for_limit():
     storage.client = SimpleNamespace(table=lambda name: Table())
     with pytest.raises(HTTPException) as exc:
         asyncio.run(storage.create_generation('owner', 'authenticated', 'cube', 40, endpoint='llmToBricks'))
-    assert exc.value.status_code == 429 and '5 generations' in exc.value.detail
+    assert exc.value.status_code == 429 and 'one generation' in exc.value.detail
 
 
 @pytest.mark.parametrize('local', [False, True])
 def test_daily_limit_is_atomic_persistent_and_resets(server, tmp_path, local):
     uri = server.get_uri()
     with psycopg.connect(uri, autocommit=True) as conn:
-        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage')
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_daily_limit_overrides')
         if local:
             _create_schema(conn)
         else:
@@ -85,12 +86,16 @@ def test_daily_limit_is_atomic_persistent_and_resets(server, tmp_path, local):
                     conn.execute(f'CREATE ROLE {role}')
             conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text, created_at timestamptz DEFAULT now())')
             # Existing attempts count immediately after migration.
-            conn.execute("INSERT INTO generations SELECT gen_random_uuid(), 'owner', 'authenticated', 'llmToBricks', 'failed', now() FROM generate_series(1, 28)")
+            conn.execute("INSERT INTO generations SELECT gen_random_uuid(), 'owner', 'authenticated', 'llmToBricks', 'failed', now() FROM generate_series(1, 8)")
             conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261020000000_generation_daily_limit.sql').read_text())
             conn.execute("INSERT INTO generation_daily_usage VALUES ('over-limit', 'authenticated', (now() AT TIME ZONE 'UTC')::date, 90)")
             conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261021000000_generation_daily_limit_30.sql').read_text())
+            for name in ('20261022020000_account_generation_limits.sql', '20261022040000_ten_daily_generation_limit.sql'):
+                conn.execute('CREATE SCHEMA IF NOT EXISTS auth; CREATE TABLE IF NOT EXISTS auth.users (id text PRIMARY KEY, email text, email_confirmed_at timestamptz, is_anonymous boolean DEFAULT false)')
+                conn.execute('DROP TABLE IF EXISTS generation_daily_email_exemptions')
+                conn.execute((Path(__file__).parents[2] / 'supabase/migrations' / name).read_text())
         if local:
-            conn.execute("INSERT INTO generation_daily_usage VALUES ('owner', 'authenticated', (now() AT TIME ZONE 'UTC')::date, 28)")
+            conn.execute("INSERT INTO generation_daily_usage VALUES ('owner', 'authenticated', (now() AT TIME ZONE 'UTC')::date, 8)")
 
     def insert(index, owner='owner', user_type='authenticated'):
         with psycopg.connect(uri, autocommit=True) as conn:
@@ -134,7 +139,7 @@ def test_storage_returns_actionable_429_for_daily_limit():
     with pytest.raises(HTTPException) as exc:
         asyncio.run(storage.create_generation('owner', 'authenticated', 'cube', 40))
     assert exc.value.status_code == 429
-    assert '30 generations' in exc.value.detail
+    assert '10 generations' in exc.value.detail
     from datetime import datetime, timedelta, timezone
     from email.utils import parsedate_to_datetime
     reset_at = parsedate_to_datetime(exc.value.headers['Retry-After'])
@@ -203,10 +208,11 @@ def test_lowering_concurrency_limit_preserves_running_jobs(server):
         for _ in range(10):
             conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'novaToBricks', 'processing')", (uuid4(),))
         conn.execute((migrations / '20261021010000_generation_concurrency_limit_5.sql').read_text())
+        conn.execute((migrations / '20261022010000_generation_concurrency_limit_1.sql').read_text())
         assert conn.execute("SELECT count(*) FROM generations WHERE status='processing'").fetchone()[0] == 10
         with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_CONCURRENCY_LIMIT'):
             conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'textToBricks', 'started')", (uuid4(),))
-        conn.execute("UPDATE generations SET status='completed' WHERE id IN (SELECT id FROM generations LIMIT 6)")
+        conn.execute("UPDATE generations SET status='completed' WHERE id IN (SELECT id FROM generations LIMIT 10)")
         conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'textToBricks', 'started')", (uuid4(),))
         with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_CONCURRENCY_LIMIT'):
             conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'imageToBricks', 'queued')", (uuid4(),))
@@ -386,3 +392,52 @@ def test_ip_migration_preserves_legacy_records_and_restricts_counter_access(gues
                 conn.execute('SELECT reserve_guest_ip_generation(%s)', ('ip_v1_' + 'a' * 64,))
             conn.execute('RESET ROLE')
     insert(0)  # New 70-character HMAC keys coexist with the original records.
+
+@pytest.mark.parametrize('local', [False, True])
+def test_account_daily_override_is_atomic_and_preserves_usage(server, tmp_path, local):
+    uri = server.get_uri()
+    with psycopg.connect(uri, autocommit=True) as conn:
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE; DROP TABLE IF EXISTS generation_daily_usage; DROP TABLE IF EXISTS generation_daily_limit_overrides')
+        if local:
+            _create_schema(conn)
+        else:
+            for role in ('anon', 'authenticated', 'service_role'):
+                if not conn.execute('SELECT 1 FROM pg_roles WHERE rolname=%s', (role,)).fetchone():
+                    conn.execute(f'CREATE ROLE {role}')
+            conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, created_at timestamptz DEFAULT now())')
+            root = Path(__file__).parents[2] / 'supabase/migrations'
+            conn.execute((root / '20261020000000_generation_daily_limit.sql').read_text())
+            conn.execute((root / '20261022020000_account_generation_limits.sql').read_text())
+            conn.execute('CREATE SCHEMA IF NOT EXISTS auth; CREATE TABLE IF NOT EXISTS auth.users (id text PRIMARY KEY, email text, email_confirmed_at timestamptz, is_anonymous boolean DEFAULT false); DROP TABLE IF EXISTS generation_daily_email_exemptions')
+            conn.execute((root / '20261022040000_ten_daily_generation_limit.sql').read_text())
+            assert not conn.execute("SELECT has_table_privilege('authenticated','generation_daily_limit_overrides','INSERT')").fetchone()[0]
+        conn.execute("INSERT INTO generation_daily_limit_overrides(user_id,user_type,daily_limit) VALUES ('restricted','authenticated',5),('already-used','authenticated',5)")
+        conn.execute("INSERT INTO generation_daily_usage VALUES ('already-used','authenticated',(now() AT TIME ZONE 'UTC')::date,23)")
+
+    def reserve(owner):
+        with psycopg.connect(uri, autocommit=True) as conn:
+            try:
+                conn.execute("SELECT reserve_daily_generation(%s,'authenticated')", (owner,))
+                return True
+            except psycopg.errors.RaiseException as exc:
+                assert 'BB_GENERATION_DAILY_LIMIT:' in str(exc)
+                return False
+    with ThreadPoolExecutor(max_workers=12) as workers:
+        assert sum(workers.map(reserve, ['restricted'] * 12)) == 5
+    assert not reserve('already-used')
+    assert sum(reserve('ordinary') for _ in range(11)) == 10
+    with psycopg.connect(uri, autocommit=True) as conn:
+        conn.execute("INSERT INTO generation_daily_limit_overrides(user_id,user_type,daily_limit,unlimited) VALUES ('exempt','authenticated',10,true)")
+    assert all(reserve('exempt') for _ in range(50))
+    if not local:
+        with psycopg.connect(uri, autocommit=True) as conn:
+            conn.execute("INSERT INTO generation_daily_email_exemptions VALUES ('owner@example.com')")
+            conn.execute("INSERT INTO auth.users VALUES ('verified-owner','owner@example.com',now(),false),('pending-owner','owner@example.com',null,false)")
+        assert all(reserve('verified-owner') for _ in range(50))
+        assert sum(reserve('pending-owner') for _ in range(11)) == 10
+        assert sum(reserve('owner@example.com') for _ in range(11)) == 10
+
+    with psycopg.connect(uri, autocommit=True) as conn:
+        assert conn.execute("SELECT attempts FROM generation_daily_usage WHERE user_id='already-used'").fetchone()[0] == 23
+        conn.execute("UPDATE generation_daily_usage SET usage_day=usage_day-1")
+    assert sum(reserve('restricted') for _ in range(6)) == 5

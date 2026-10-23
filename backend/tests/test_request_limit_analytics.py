@@ -17,9 +17,10 @@ def isolated_client(monkeypatch):
 
 
 @pytest.mark.parametrize('code,kind,value,status', [
-    ('BB_GENERATION_DAILY_LIMIT', 'daily', 30, 429),
+    ('BB_GENERATION_DAILY_LIMIT', 'daily', 10, 429),
+    ('BB_GENERATION_DAILY_LIMIT:5', 'daily', 5, 429),
     ('BB_GENERATION_GUEST_LIMIT', 'guest_lifetime', 3, 403),
-    ('BB_GENERATION_CONCURRENCY_LIMIT', 'concurrent', 5, 429),
+    ('BB_GENERATION_CONCURRENCY_LIMIT', 'concurrent', 1, 429),
 ])
 def test_rejected_admission_emits_once_without_private_payload(monkeypatch, code, kind, value, status):
     client = Mock()
@@ -35,6 +36,8 @@ def test_rejected_admission_emits_once_without_private_payload(monkeypatch, code
         asyncio.run(storage.create_generation('guest_opaque', 'anonymous', 'private prompt', 40,
                                               endpoint='novaToBricks', guest_ip_hash='private-network-hash'))
     assert exc.value.status_code == status
+    if kind == 'daily':
+        assert f'limit of {value} generations' in exc.value.detail
     client.capture.assert_called_once_with(distinct_id='guest_opaque', event='request_limit_hit', properties={
         'service': 'brickai-api', 'environment': 'production', 'limit_type': kind,
         'limit_value': value, 'http_status': status, 'user_type': 'anonymous',

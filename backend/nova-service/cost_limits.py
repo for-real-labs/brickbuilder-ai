@@ -4,6 +4,7 @@ from decimal import Decimal
 from functools import wraps
 import json
 import os
+import uuid
 
 from .generation_budget import GenerationBudget, GenerationBudgetExceeded, MAX_GENERATION_COST_USD, input_token_bound
 
@@ -11,7 +12,7 @@ current_budget = ContextVar('brickbuilder_generation_budget', default=None)
 current_usage_id = ContextVar('brickbuilder_usage_id', default=None)
 
 
-def account_usage(budget, reported, speed='standard'):
+def account_usage(budget, reported, speed='standard', *, call_id=None):
     usage = (reported.model_dump() if hasattr(reported, 'model_dump') else dict(reported)) if reported is not None else None
     if budget.model.startswith('claude-') and usage is not None:
         details = usage.get('prompt_tokens_details') or {}
@@ -23,7 +24,7 @@ def account_usage(budget, reported, speed='standard'):
                  # Conservatively charge writes as 1h if TTL is not exposed.
                  'cache_creation': {'ephemeral_1h_input_tokens': written},
                  'speed': usage.get('speed') or speed}
-    budget.record_usage(usage, 'anthropic' if budget.model.startswith('claude-') else 'openai')
+    budget.record_usage(usage, 'anthropic' if budget.model.startswith('claude-') else 'openai', call_id=call_id)
 
 
 def install_cost_limits(agent, llm_config, litellm, claude_agent):
@@ -49,7 +50,10 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
                 # A hidden, private file survives worker restarts and is excluded
                 # from model exports. Each generation gets its own turn totals.
                 temporary = path.with_suffix('.tmp')
-                temporary.write_text(json.dumps({'generation_id': usage_id, 'calls': records}))
+                with temporary.open('w') as handle:
+                    json.dump({'generation_id': usage_id, 'calls': records}, handle)
+                    handle.flush()
+                    os.fsync(handle.fileno())
                 os.replace(temporary, path)
             budget.on_usage = save_usage
             save_usage([])
@@ -91,6 +95,26 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
             account_usage(budget, getattr(stream, 'usage', None), speed)
             return stream
 
+        call_id = str(uuid.uuid4())
+        # LiteLLM hides Anthropic's message_start usage from public chunks.
+        # Observe the pinned adapter on this request only, before it discards
+        # those early counters. No process-global provider monkeypatch.
+        iterator = getattr(stream, 'completion_stream', None)
+        handle_usage = getattr(iterator, '_handle_usage', None) if budget.model.startswith('claude-') else None
+        raw_usage = {}
+        raw_recorded = False
+        if callable(handle_usage):
+            def capture_usage(anthropic_usage_chunk):
+                nonlocal raw_recorded
+                result = handle_usage(anthropic_usage_chunk)
+                raw_usage.update(anthropic_usage_chunk)
+                raw_usage.setdefault('speed', speed)
+                if 'input_tokens' in raw_usage and 'output_tokens' in raw_usage:
+                    budget.record_usage(raw_usage, 'anthropic', call_id=call_id)
+                    raw_recorded = True
+                return result
+            iterator._handle_usage = capture_usage
+
         async def limited_stream():
             usage = None
             try:
@@ -98,9 +122,16 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
                     reported = getattr(chunk, 'usage', None)
                     if reported is not None:
                         usage = reported
+                        # Persist before handing control back to the consumer.
+                        # Cumulative updates replace this call rather than add it.
+                        if not raw_recorded:
+                            account_usage(budget, usage, speed, call_id=call_id)
                     yield chunk
-                account_usage(budget, usage, speed)
+                if usage is None and not raw_recorded:
+                    account_usage(budget, usage, speed, call_id=call_id)
             finally:
+                if callable(handle_usage):
+                    iterator._handle_usage = handle_usage
                 close = getattr(stream, 'aclose', None)
                 if close:
                     await close()
