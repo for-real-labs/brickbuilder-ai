@@ -24,6 +24,7 @@ export interface LDrawStep {
   stepNumber: number;
   parts: LDrawPart[];
   cumulativeParts: LDrawPart[]; // All parts up to this step
+  buildTogether?: boolean;
 }
 
 export interface LDrawModel {
@@ -74,6 +75,7 @@ export class LDrawParser {
     const parts: LDrawPart[] = [];
     const steps: LDrawStep[] = [];
     let currentStepParts: LDrawPart[] = [];
+    let buildTogether = false;
     let stepNumber = 1;
     let rootSeen = false;
     
@@ -91,11 +93,15 @@ export class LDrawParser {
           steps.push({
             stepNumber,
             parts: [...currentStepParts],
-            cumulativeParts
+            cumulativeParts,
+            ...(buildTogether && currentStepParts.length > 1 ? { buildTogether: true } : {}),
           });
           currentStepParts = [];
           stepNumber++;
         }
+        buildTogether = false;
+      } else if (line === '0 !BRICKBUILDER BUILD_TOGETHER') {
+        buildTogether = true;
       } else if (line.startsWith('1 ')) {
         // Parse part line: 1 <color> <x> <y> <z> <a> <b> <c> <d> <e> <f> <g> <h> <i> <file>
         const tokens = line.split(/\s+/);
@@ -144,7 +150,8 @@ export class LDrawParser {
       steps.push({
         stepNumber,
         parts: [...currentStepParts],
-        cumulativeParts
+        cumulativeParts,
+        ...(buildTogether && currentStepParts.length > 1 ? { buildTogether: true } : {}),
       });
       parts.push(...currentStepParts);
     }

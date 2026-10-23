@@ -148,7 +148,7 @@ stays visible during the edit; progress, cancellation and “This can take up to
 
 The private `generation-output` bucket retains:
 
-- `nova-instructions-reviewed-v3.ldr`: connected physical placements with at most five pieces per step.
+- `nova-instructions-reviewed-v4.ldr`: connected physical placements with at most five pieces per step, including marked underside assemblies.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
 - `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
@@ -293,8 +293,15 @@ Instruction export grows one assembly using Nova's complete connector graph,
 starting from a low foundation, preferring lower available attachments and
 then authored order. Every placement must connect to the existing assembly. Steps
 add
-at most five pieces, and placement height changes start separate steps so upper
-supports and pieces beneath them are shown separately. Geometry, transforms,
+at most five pieces. An upright upper support and the consecutive underside
+pieces it unlocks share a step when they form an assembly of at most five parts.
+The support must attach to the existing model through vertical studs below it;
+each lower piece must attach only to pieces above it within the new assembly,
+with no connection to the earlier model. Larger assemblies, sideways connections,
+and other placements retain their authored and height boundaries. Grouping keeps
+the independently verified placement order. `0 !BRICKBUILDER BUILD_TOGETHER` marks
+these steps for an assemble-first note in the viewer and PDF; the parts panel
+shows the connected pieces together. Geometry, transforms,
 colors, embedded parts, and the canonical source MPD remain unchanged.
 
 Stud contacts between upright parts also constrain insertion order when the
@@ -324,9 +331,9 @@ connector query evidence only; part geometry and transforms are preserved.
 Long or uncapped pin holes retain their original interpretation.
 
 Deploy the rebuilt Nova runtime with the API. Instruction export requires
-`instruction_plan_version: 2`, and generation requires
+`instruction_plan_version: 3`, and generation requires
 `instruction_publication_version: 1`; older instruction caches are not reused. The
-`nova-instructions-reviewed-v3.ldr` cache is regenerated from the saved source
+`nova-instructions-reviewed-v4.ldr` cache is regenerated from the saved source
 on first request.
 
 Opus 5.5 builds using an API key automatically request Anthropic fast mode.

@@ -785,6 +785,10 @@ export function InstructionsViewer({ generationId, initialStep = 1, navigationSt
         // Step header
         pdf.setFontSize(18);
         pdf.text(`Step ${step.stepNumber}`, 20, 30);
+        if (step.buildTogether) {
+          pdf.setFontSize(11);
+          pdf.text('Connect these pieces first, then attach them to the model.', 20, 40);
+        }
         
         try {
           // Use the same API approach as the main viewer to get MPD content
@@ -1212,7 +1216,7 @@ export function InstructionsViewer({ generationId, initialStep = 1, navigationSt
                 Step {model.steps[currentStepIndex].stepNumber}
                 </h4>
                 <div className="text-sm text-slate-600">
-                Add {model.steps[currentStepIndex].parts.length} part
+                Add {model.steps[currentStepIndex].parts.length} {model.steps[currentStepIndex].parts.length === 1 ? 'part' : 'parts'}
                 </div>
               </div>
 
@@ -1328,8 +1332,13 @@ export function InstructionsViewer({ generationId, initialStep = 1, navigationSt
 
               {/* Parts added in this step - Shows only new parts */}
               {currentLastStepMpd && active && (
-                <div className="instructions-parts bg-slate-50 p-4 rounded-xl">
-                  <h5 className="font-medium mb-3 text-slate-900">Parts added in this step:</h5>
+                <div className="instructions-parts bg-slate-50 p-4 rounded-xl" data-build-together={model.steps[currentStepIndex].buildTogether || undefined}>
+                  <h5 className="font-medium mb-3 text-slate-900">
+                    {model.steps[currentStepIndex].buildTogether ? 'Assemble first' : 'Parts added in this step:'}
+                  </h5>
+                  {model.steps[currentStepIndex].buildTogether && (
+                    <p className="instructions-assembly-note">Connect these pieces first, then attach them to the model.</p>
+                  )}
                   <div className="flex gap-4">
                     <div className="shrink-0 w-[88px] h-[56px] sm:w-44 sm:h-28 rounded-xl border border-slate-200 overflow-hidden" style={{ backgroundColor: '#deebed' }}>
                       <MpdImageRenderer

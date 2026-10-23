@@ -29,7 +29,7 @@ MAX_ARCHIVE_BYTES = 64 * 1024 * 1024
 ID_RE = re.compile(r'^[A-Za-z0-9][A-Za-z0-9_-]{0,63}$')
 
 
-INSTRUCTIONS_FILE = 'nova-instructions-reviewed-v3.ldr'
+INSTRUCTIONS_FILE = 'nova-instructions-reviewed-v4.ldr'
 
 
 class NovaInstructionPlanError(ValueError):
@@ -219,8 +219,8 @@ class NovaService:
 
     async def instructions(self, mpd: str) -> str:
         versions = await self.ready()
-        if versions.get('instruction_plan_version') != 2:
-            raise ValueError('Rebuild the Nova runtime with five-piece connected instructions with placement clearance.')
+        if versions.get('instruction_plan_version') != 3:
+            raise ValueError('Rebuild the Nova runtime with five-piece connected instructions with underside assemblies.')
         try:
             response = await self.client.post('integration/instructions', content=mpd.encode('utf-8'),
                 headers={'Content-Type': 'text/plain'}, timeout=1830)
