@@ -2,6 +2,7 @@
 import asyncio
 import json
 import os
+from .provider_keys import provider_env
 import re
 
 import httpx
@@ -51,9 +52,9 @@ async def _request_summary(text: str, previous_summary: str, design_context: str
     content = json.dumps({"new_output": text[-MAX_PROGRESS_INPUT_CHARS:], "previous_activity": previous_summary,
                           "design_context": design_context[-MAX_PROGRESS_CONTEXT_CHARS:]})
     async with httpx.AsyncClient(timeout=SUMMARY_TIMEOUT_SECONDS) as client:
-        if os.getenv("OPENAI_API_KEY"):
+        if provider_env("OPENAI_API_KEY"):
             result = await post_json(client, OPENAI_URL, {
-                "Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}",
+                "Authorization": f"Bearer {provider_env('OPENAI_API_KEY')}",
             }, {
                 "model": os.getenv("GENERATION_PROGRESS_MODEL", "gpt-5.6-terra"),
                 "instructions": SUMMARY_INSTRUCTION, "max_output_tokens": 128,
@@ -62,9 +63,9 @@ async def _request_summary(text: str, previous_summary: str, design_context: str
             }, "OpenAI")
             return " ".join(part.get("text", "") for item in result.get("output", [])
                             for part in item.get("content", []) if part.get("type") == "output_text")
-        if os.getenv("ANTHROPIC_API_KEY"):
+        if provider_env("ANTHROPIC_API_KEY"):
             result = await post_json(client, ANTHROPIC_URL, {
-                "x-api-key": os.environ["ANTHROPIC_API_KEY"],
+                "x-api-key": provider_env("ANTHROPIC_API_KEY"),
                 "anthropic-version": ANTHROPIC_API_VERSION,
             }, {
                 "model": os.getenv("GENERATION_PROGRESS_MODEL", "claude-fable-5"),

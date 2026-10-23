@@ -1,3 +1,4 @@
+import { AiBillingPrompt } from './components/AiBillingPrompt';
 import ImageToModelPage from './pages/ImageToModelPage';
 import { IMAGE_MODEL_PAGES } from './imageModelPages';
 import ModelToVoxelPage from './pages/ModelToVoxelPage';
@@ -53,6 +54,7 @@ export default function App() {
       <PetProvider>
       <BillingProvider>
       <AiConsentDialog />
+      <AiBillingPrompt />
       <GenerationNotificationsProvider>
       <ChangeRequestProvider>
         {/* <ProtectedRoute> */}

@@ -17,6 +17,7 @@ from pydantic import PrivateAttr
 
 from .imageToBricks import ImageToBricksResponse
 from .llmToBricks import LlmToBricksRequest, SUPPORTED_MODELS
+from ..utils.provider_keys import resolve as resolve_provider_key, personal_billing_task
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
@@ -31,7 +32,9 @@ from ..utils.generation_attribution import infer_input_type
 def _nova_service(request, auth_info):
     previous = request._nova_session
     key = 'local-native' if request.auth_mode == 'native' else f"{auth_info.get('is_anonymous', True)}:{auth_info.get('user_id') or auth_info.get('guest_user_id')}"
-    return NovaService(tenant_key=key, tenant_id=previous.get('tenant') if previous else None)
+    if request._provider_api_key:
+        key += ':personal:' + hashlib.sha256(request._provider_api_key.encode()).hexdigest()
+    return NovaService(tenant_key=key, tenant_id=previous.get('tenant') if previous else None, **({'api_key': request._provider_api_key} if request._provider_api_key else {}))
 
 
 logger = logging.getLogger(__name__)
@@ -82,7 +85,12 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             previous = request._nova_session
             account_changed = (previous['model'].startswith('claude-')
                                and previous['auth_mode'] == 'api_key'
-                               and previous.get('provider_key_id') != _anthropic_key_id())
+                               and previous.get('provider_key_id') != _anthropic_key_id(request._provider_api_key))
+            account_changed = account_changed or previous.get('personal_billing', False) != bool(request._provider_api_key)
+            if request._provider_api_key and previous.get('provider_key_id') != _anthropic_key_id(request._provider_api_key):
+                account_changed = True
+            if account_changed and source.get('status') != 'completed':
+                raise HTTPException(409, 'Continue this unfinished build with its original billing source and key, or start a new build.')
             if source.get('status') == 'completed' and (request.model != previous['model'] or account_changed):
                 request._nova_session = None
             else:
@@ -106,8 +114,9 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         raise HTTPException(409, 'The saved model cannot be imported into Nova') from None
 
 
-def _anthropic_key_id() -> str | None:
-    key = os.getenv("ANTHROPIC_API_KEY")
+def _anthropic_key_id(api_key=None) -> str | None:
+    from ..utils.provider_keys import provider_env
+    key = api_key or provider_env("ANTHROPIC_API_KEY")
     return hashlib.sha256(key.encode()).hexdigest() if key else None
 
 
@@ -144,6 +153,7 @@ async def _owned_session(generation_id: str, auth_info: dict) -> dict:
         raise HTTPException(status_code=409, detail="This generation predates the Nova runtime integration or its session is unavailable") from None
 
 
+@personal_billing_task
 async def process_nova_to_bricks_task(generation_id, request, user_info, auth_info, on_thinking=None, on_progress=None):
     async def heartbeat():
         while True:
@@ -220,8 +230,10 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
 async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends(get_user_with_optional_auth), http_request=None) -> ImageToBricksResponse:
     if generation_storage is None:
         raise HTTPException(status_code=503, detail="Generation storage is unavailable")
+    await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     if request.generation_id:
         await _prepare_edit(request, auth_info)
+        await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     if request.auth_mode == 'native':
         from ..utils.local_provider_connections import require_local_development
         if http_request is None:
@@ -234,11 +246,13 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
     try:
         async with _nova_service(request, auth_info) as nova:
             await nova.generation_ready()
-            await nova.configure_model(request.model, SUPPORTED_MODELS[request.model].provider, request.auth_mode)
+            if not request._provider_api_key:
+                await nova.configure_model(request.model, SUPPORTED_MODELS[request.model].provider, request.auth_mode)
     except ValueError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from None
     generation_id = await generation_storage.create_generation(
         guest_ip_hash=auth_info.get('rate_limit_id'),
+        personal_billing=bool(request._provider_api_key),
         user_id=auth_info.get("user_id", user_info["user_email"]),
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,

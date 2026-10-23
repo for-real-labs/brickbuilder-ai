@@ -1,3 +1,4 @@
+import { AiBillingSettings } from '../components/AiBillingSettings';
 import { CreditNudge, GenerationCreditQuote } from '../components/BillingComponents';
 import { useBilling } from '../contexts/BillingContext';
 import { LandingSocialLinks } from "../components/LandingSocialLinks";
@@ -721,8 +722,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       const image = requestedImage ? { imageBase64: await fileToBase64(requestedImage), imageMediaType: requestedImage.type } : undefined;
       const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
       const response = nova
-        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image)
-        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt, ...image }, session?.access_token);
+        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image, { model: llmModel, authMode: localDevelopment ? novaOptions.authMode : 'api_key' })
+        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt, model: llmModel, ...image }, session?.access_token);
       const id = response.generation_id;
       localStorage.setItem(STORAGE_KEYS.GENERATION_ID, id);
       if (!session) recordAnonymousGeneration(id);
@@ -1147,7 +1148,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>
               </div>
 
-              {!ldrawLanding && <GenerationCreditQuote allParts={generationMethod !== 'llm'} />}
+              {!ldrawLanding && <GenerationCreditQuote allParts={generationMethod !== 'llm'} personalSupported={generationMethod !== '3d'} />}
               {inputValidationMessage && (
                 <p id="generation-input-help" role="status" className="mt-3 text-center text-sm leading-6 text-slate-600">
                   {inputValidationMessage}
@@ -1162,6 +1163,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   </button>
                   <h3 className="text-sm font-semibold text-slate-900">Generation settings</h3>
                 </div>
+                {settingsOpen && <AiBillingSettings key={session?.user.id || 'guest'} />}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">

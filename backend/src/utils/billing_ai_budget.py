@@ -30,6 +30,9 @@ def upper_bound(payload):
 
 
 async def reserve(payload):
+    from .provider_keys import personal_billing_active
+    if personal_billing_active():
+        return None
     # Local development does not consume the production allowance.
     if os.getenv('API_MODE', 'local') != 'production':
         return None

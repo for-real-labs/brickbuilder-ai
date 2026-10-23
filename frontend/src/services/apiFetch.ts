@@ -12,6 +12,15 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   }
   const headers = new Headers(init.headers);
   headers.set('X-Guest-Session', getGuestSession());
+  if (headers.has('Authorization') && init.method?.toUpperCase() === 'POST' && /\/(novaToBricks|llmToBricks)(?:Stream)?(?:[/?]|$)/.test(url) && typeof init.body === 'string') {
+    const { prepareAiBilling } = await import('./providerKeysApi');
+    init = { ...init, body: await prepareAiBilling(init.body, init.signal ?? undefined) };
+    if (JSON.parse(init.body as string).billing_source === 'personal') {
+      const { supabase } = await import('../lib/supabase');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session || headers.get('Authorization') !== `Bearer ${session.access_token}`) throw new Error('Your sign-in changed. Please submit your generation again.');
+    }
+  }
   const response = await fetch(url, { ...withGenerationEntryPage(url, init), headers: Object.fromEntries(headers.entries()) });
   if (init.method?.toUpperCase() === 'POST' && /\/(novaToBricks|llmToBricks|textToBricks|imageToBricks|promptEditModel|glbToBricks|objToBricks)(?:Stream)?(?:[/?]|$)/.test(url)) {
     if (response.status === 402) window.dispatchEvent(new Event('brickbuilder:credits-required'));

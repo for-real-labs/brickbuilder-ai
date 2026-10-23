@@ -57,8 +57,8 @@ export class NovaToBricksApiService {
     return response.blob();
   }
 
-  static async edit(generationId: string, prompt: string, authToken?: string, image?: Pick<NovaToBricksRequest, 'imageBase64' | 'imageMediaType'>): Promise<LlmToBricksResponse> {
-    return this.generate({ ...DEFAULT_NOVA_OPTIONS, sourceGenerationId: generationId, prompt, ...image }, authToken);
+  static async edit(generationId: string, prompt: string, authToken?: string, image?: Pick<NovaToBricksRequest, 'imageBase64' | 'imageMediaType'>, options: NovaBuilderOptions = DEFAULT_NOVA_OPTIONS): Promise<LlmToBricksResponse> {
+    return this.generate({ ...options, sourceGenerationId: generationId, prompt, ...image }, authToken);
   }
 
   static async generate(request: NovaToBricksRequest, authToken?: string): Promise<LlmToBricksResponse> {

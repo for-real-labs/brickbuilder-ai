@@ -110,6 +110,7 @@ class GenerationStorage:
         input_format: Optional[str] = None,
         entry_page: Optional[str] = None,
         guest_ip_hash: Optional[str] = None,
+        personal_billing: bool = False,
     ) -> str:
         """
         Create a new generation record and return the generation ID
@@ -151,6 +152,10 @@ class GenerationStorage:
                 "billing_policy_version": 2,
                 "billing_livemode": os.getenv("API_MODE", "local") == "production"
             }
+            if personal_billing:
+                if user_type != 'authenticated' or endpoint not in {'novaToBricks', 'llmToBricks'}:
+                    raise ValueError('Invalid personal billing generation')
+                generation_data['personal_billing'] = True
             if user_type == 'anonymous':
                 # Admission-only field: the database consumes and clears it.
                 generation_data['guest_ip_hash'] = guest_ip_hash

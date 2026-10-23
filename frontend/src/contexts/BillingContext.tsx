@@ -61,7 +61,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     posthog.capture('billing_upgrade_opened', { source, page: window.location.pathname });
   }, []);
   useEffect(() => {
-    const exhausted = () => { void refresh(); openUpgrade('credits_exhausted'); };
+    const exhausted = () => { void refresh(); };
     window.addEventListener('brickbuilder:credits-required', exhausted);
     return () => window.removeEventListener('brickbuilder:credits-required', exhausted);
   }, [refresh, openUpgrade]);
