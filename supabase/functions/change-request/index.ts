@@ -8,7 +8,8 @@ import {
 import { purgeChangeRequestScreenshots } from '../_shared/change-request-storage.js';
 
 const url = Deno.env.get('SUPABASE_URL')!;
-const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const serviceKey = JSON.parse(Deno.env.get('SUPABASE_SECRET_KEYS') || '{}').default
+  || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const db = createClient(url, serviceKey);
 const repo = Deno.env.get('CHANGE_REQUEST_GITHUB_REPO') || 'jjohnson5253/brickbuilderai';
 const repoPath = `/repos/${repo}`;
