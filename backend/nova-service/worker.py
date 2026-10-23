@@ -37,7 +37,7 @@ install_cost_limits(agent, llm_config, litellm, claude_agent)
 VERSIONS['generation_cost_limit_usd'] = 20
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = CATALOG_VERSION
-VERSIONS['instruction_plan_version'] = 2
+VERSIONS['instruction_plan_version'] = 3
 install_instruction_policy(tools, settings)
 VERSIONS['instruction_publication_version'] = PUBLICATION_VERSION
 

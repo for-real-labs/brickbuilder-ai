@@ -27,6 +27,51 @@ vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 
 const instructions = '0 FILE model.ldr\n1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n1 14 0 -24 0 1 0 0 0 1 0 0 0 1 custom.dat\n0 STEP\n0 FILE custom.dat\n0 !LDRAW_ORG Unofficial_Part\n1 16 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n';
 
+const chimneyInstructions = `0 BrickBuilder construction export from LDraw Nova
+1 15 0 -96 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+0 !BRICKBUILDER BUILD_TOGETHER
+1 15 0 -120 0 0 0 1 0 1 0 -1 0 0 5152.dat
+1 15 -30 -96 -30 -1 0 0 0 1 0 0 0 -1 2420.dat
+0 STEP
+1 15 0 -144 0 1 0 0 0 1 0 0 0 1 3001.dat
+0 STEP
+`;
+
+it('keeps the chimney pair together and limits assembly metadata to its own step', () => {
+  const model = LDrawParser.parseLDRContent(chimneyInstructions);
+  expect(model.steps.map(step => step.parts.length)).toEqual([1, 2, 1]);
+  expect(model.steps.map(step => !!step.buildTogether)).toEqual([false, true, false]);
+  expect(model.steps[1].parts.map(part => part.filename)).toEqual(['5152.dat', '2420.dat']);
+  expect(model.steps[1].cumulativeParts).toHaveLength(3);
+  const withoutTrailingStep = chimneyInstructions.split('0 STEP').slice(0, 2).join('0 STEP');
+  expect(LDrawParser.parseLDRContent(withoutTrailingStep).steps[1].buildTogether).toBe(true);
+  expect(LDrawParser.parseLDRContent('0 !BRICKBUILDER BUILD_TOGETHER\n' + instructions).steps[0].buildTogether).toBeUndefined();
+});
+
+it('shows assemble-first guidance and both chimney pieces only on their grouped step', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed', ldr_content: 'flat preview' } as never);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
+  const { InstructionsViewer } = await import('../src/pages/InstructionsPage');
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  const next = () => Array.from(container.querySelectorAll('button')).find(button => button.textContent?.trim() === 'Next')!;
+  try {
+    await act(async () => root.render(<MemoryRouter><InstructionsViewer generationId="chimney" embedded /></MemoryRouter>));
+    expect(container.querySelector('.instructions-assembly-note')).toBeNull();
+    await act(async () => next().click());
+    expect(container.querySelector('.instructions-step-heading')?.textContent).toContain('Add 2 parts');
+    expect(container.querySelector('.instructions-assembly-note')?.textContent).toBe('Connect these pieces first, then attach them to the model.');
+    const parts = container.querySelector('.instructions-parts[data-build-together="true"]')!;
+    expect(parts.textContent).toContain('5152.dat');
+    expect(parts.textContent).toContain('2420.dat');
+    await act(async () => next().click());
+    expect(container.querySelector('.instructions-assembly-note')).toBeNull();
+    expect(container.querySelector('.instructions-step-heading')?.textContent).toContain('Add 1 part');
+  } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
+});
+
 it('does not show a notification bell in the guest instructions header', async () => {
   authState.configured = true;
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'nova', endpoint: 'novaToBricks', status: 'completed', name: 'Garden cottage', prompt: 'cottage', ldr_content: 'flat preview' } as never);
@@ -154,7 +199,8 @@ it('opens instructions from the landing footer and preserves steps, colors and d
   const container = document.createElement('div'); document.body.append(container);
   const root = createRoot(container);
   const styles = document.createElement('style');
-  styles.textContent = readFileSync('src/pages/InstructionsViewer.css', 'utf8');
+  styles.textContent = readFileSync('src/components/LandingModelWorkspace.css', 'utf8')
+    + readFileSync('src/pages/InstructionsViewer.css', 'utf8');
   document.head.append(styles);
   const button = (text: string) => Array.from(container.querySelectorAll('button')).find(el => el.textContent?.trim() === text)!;
   try {
@@ -171,6 +217,8 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     expect(colors.getAttribute('aria-pressed')).toBe('false');
     expect(getComputedStyle(colors).top).toBe('64px');
     expect(getComputedStyle(colors).minHeight).toBe('44px');
+    // Keep the model toggle over the canvas, clear of the assembly close-up.
+    expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).top).toBe('112px');
     act(() => button('Next').click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
     act(() => colors.click());
