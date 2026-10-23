@@ -8,7 +8,7 @@ import { LlmGenerationOutput } from './LlmGenerationOutput';
 import { type BuddyTurn } from '../hooks/useBuildBuddyChat';
 import { type GenerationActivity, isGenerationActive } from '../hooks/useGenerationActivity';
 import { isAgentGeneration } from '../utils/agentGeneration';
-import { buildFailureMessage, GUEST_GENERATION_LIMIT_MESSAGE } from '../utils/buildProgress';
+import { buildFailureMessage, isGuestLimitMessage } from '../utils/buildProgress';
 import { BuddyCompletedBuilds } from './BuddyCompletedBuilds';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
 import { MODEL_EDIT_INVITATION } from '../utils/buddyModelGreetings';
@@ -20,7 +20,7 @@ function GenerationFailure({ error }: { error: unknown }) {
   const message = buildFailureMessage(error);
   return <>
     <p role="status">{message}</p>
-    {message === GUEST_GENERATION_LIMIT_MESSAGE && <div className="pet-chat-actions">
+    {isGuestLimitMessage(message) && <div className="pet-chat-actions">
       <a className="pet-chat-action" href="/login" onClick={() => {
         posthog.capture('guest_generation_limit_sign_in_clicked', { surface: 'pet_dialogue' });
       }}>Sign in to keep building</a>

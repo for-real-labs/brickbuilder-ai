@@ -128,7 +128,7 @@ export function GenerationCreditQuote({ allParts, personalSupported = true }: { 
   return <p className="billing-generation-quote" role="status">
     {allParts ? '15 credits · All parts / AI mesh conversion' : '1 credit · Basic build or edit'}
     {allParts && account && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
-    {allParts && !user && <> · <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: 'all_parts' }); signIn(); }}>Sign in for 300 free monthly credits</button></>}
-    {!allParts && !user && ' · One guest trial, then sign in for 300 monthly credits including your trial.'}
+    {!user && <> · 75 lifetime guest credits: 5 All parts builds or 75 Basic builds, or a mix. No login needed.{' '}
+      <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' }); signIn(); }}>Sign in for 300 free monthly credits</button></>}
   </p>;
 }

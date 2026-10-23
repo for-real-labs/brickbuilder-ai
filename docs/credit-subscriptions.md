@@ -4,7 +4,8 @@
 
 Monthly billing is enabled in production. Both `20261022000000` and
 `20261023000000_billing_pricing_v2.sql` are already recorded; do not reapply them.
-The paid-feature update needs no database migration. Re-run the catalog provisioner
+The guest allowance update requires `20261023020000_guest_credit_allowance.sql`;
+the paid-feature locks themselves need no new schema. Re-run the catalog provisioner
 when deploying it so Stripe's billing portal offers only Builder and Creator.
 Existing Master Builder subscriptions keep their allowance, renewal and cancellation
 support; Master Builder is no longer offered for a new checkout or plan change.
@@ -34,16 +35,28 @@ The Nova instructions endpoint checks the requesting account's paid period and u
 private, non-cacheable responses. Display geometry still reaches the browser for
 3D previews: these are app feature restrictions, not DRM for already-public model data.
 
-Guests get one Basic trial attempt, enforced by persistent browser and IP
-counters. A claimed successful or running trial deducts one credit from the
-account's Free allowance if it belongs to the current month. Failed trials can
-sign in for Free access. Existing guest counters are preserved. LDraw/GLB/OBJ
-imports, manual edits, resizing, instructions and downloads do not use credits.
-When billing is enabled, monthly credits replace the default 10-attempt daily
-limit for signed-in accounts so the advertised allowances are usable. There is
-still one active generation per user. Explicit account restrictions and verified
-owner exemptions remain intact. Turning billing off restores the default daily
-limit. Guests retain the separate one-attempt Basic trial.
+Hosted guests get 75 lifetime credits without signing in: 5 All parts builds or
+75 Basic builds, or a mix. Basic AI edits use 1 and All parts/AI mesh work uses 15.
+Browser and network balances are reserved atomically and never reset monthly,
+on sign-in, or when a model is deleted. Failed/canceled jobs return guest credits
+exactly once; provider spend is never refunded by that credit return. A rejected
+expensive build leaves remaining credits available for Basic. Imports, manual
+edits, resizing and parts lists consume no guest credits.
+
+The migration preserves known model weights and historical attempts. Historical
+attempts whose mode is no longer available (deleted/claimed models and IP counters)
+retain one credit each; network hashes were not stored on models. New charges
+privately record both identities for exact refunds. Shared Wi-Fi users share the
+network allowance. Changing both browser and network can still obtain another
+trial; anonymous usage cannot establish a person's identity.
+
+Guest builds claimed after sign-in count toward that month's Free allowance at
+their 1/15-credit weight, capped by the remaining Free balance. Failed trials and
+old-month builds do not deduct new monthly credits. The default daily guest cap
+is bypassed while billing is enabled so the 75-credit allowance is usable; short
+request throttles, one active generation and the global spending guard remain.
+Monthly credits also replace the default daily cap for signed-in accounts.
+Explicit signed-in account restrictions and verified owner exemptions remain.
 
 The 31,700 prelaunch bonus credits are preserved. Users can redeem up to 5 per
 UTC calendar month, after monthly credits, for Basic builds only. They never
@@ -109,8 +122,9 @@ legacy accounts redeeming five extra credits adds about $396/month.
 
 The prior 20–40% active-user, 60–80% total-build and 90–98% All parts drop-off
 estimates assumed a five-Basic-only Free plan and no longer apply. Allowances do
-not identify willingness to pay or usage after a paywall. Most observed signed-in
-users can keep their existing habits free; heavy users, guest sign-in friction,
+not identify willingness to pay or usage after a paywall. The newer 75-credit guest trial and paid export/instruction locks are not included
+in this historical model. Most observed signed-in users can keep their existing
+generation habits free; heavy users, guest sign-in friction,
 and capacity pauses will drive any drop-off. At the 1.5× scenario, $1,500 of
 generation capacity covers about 44% of the modeled $3,382 generation demand
 (before the $500 reserve), implying roughly 56% of weighted usage must be
@@ -162,7 +176,8 @@ pause materially affects paid service, provide a manual billing adjustment.
 
 1. Verify the production merge is authorized. On an existing installation, do
    not reapply recorded migrations or reset wallets. Keep the current billing
-   setting; this update does not require a new migration.
+   setting. Deploy the backend that recognizes guest-credit errors, then apply
+   only the unrecorded guest-credit migration transactionally and record it.
 2. Run `backend/scripts/provision_billing.py --env-file <existing environment>`
    for sandbox resources, then `--live` during the authorized production rollout.
    It reuses the existing Builder/Creator v3 prices and updates the portal to offer
@@ -170,7 +185,8 @@ pause materially affects paid service, provide a manual billing adjustment.
    against `billing_settings`. Keep retired prices available for existing invoice
    reconciliation; expire any open Master Checkout sessions after removing that
    option from the app. The database admission policy remains version 2.
-3. Deploy the backend before the frontend and verify both exact commit SHAs.
+3. Deploy the frontend after the backend and guest-credit migration are ready;
+   verify both backend and frontend commit SHAs before advertising the allowance.
    Confirm `/billing/plans` returns `ready=true` and only Free, Builder and Creator;
    `/billing/account` must include `paid_features`. Preserve existing Stripe keys,
    webhook events, signing secrets and billing enablement.
@@ -179,7 +195,8 @@ pause materially affects paid service, provide a manual billing adjustment.
    with zero credits or cancellation scheduled. Check desktop and mobile layouts.
 5. Validate sandbox Checkout, existing subscription reconciliation and cancellation.
    Verify live catalog prices and portal choices without a live purchase. Check
-   the three advertised balances and capacity telemetry; never reset wallets or
+   five guest All parts builds / 75 Basic builds, mixed use, refunds, the three
+   signed-in balances and capacity telemetry; never reset wallets or
    reapply the previously recorded allowance migration during this rollout.
 
 The wallet, ledger and budget reservations are service-only. Browser writes to
@@ -190,8 +207,9 @@ for Stripe retries; authenticated `/billing/sync` also reconciles on return.
 
 For an incident, stopping new generation admission while retaining enforcement
 is safer than disabling billing: set the generation budget to a small positive
-value below existing usage. `enabled=false` restores unmetered legacy access and
-3 guest attempts; it is a rollout rollback switch, not a spending kill switch.
+value below existing usage. `enabled=false` restores unmetered signed-in access
+and the default daily cap; the hosted 75-credit lifetime guest limit remains.
+This is a billing rollback switch, not a spending kill switch.
 Subscriptions still renew until canceled in Stripe. Keep the portal and webhook
 service available for existing customers.
 

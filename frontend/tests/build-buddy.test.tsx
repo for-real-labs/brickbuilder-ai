@@ -655,8 +655,10 @@ it('lets the pet explain the concurrency limit while one build is active', async
   expect(container.querySelector('.pet-chat-message [role="status"]')?.textContent).toBe(concurrencyLimitMessage);
 });
 
-it.each([true, false])('shows a sign-in link after the guest trial (currentOnly=%s)', async currentOnly => {
-  const message = 'You have used your 3 free guest generations. Sign in to keep building.';
+it.each([true, false].flatMap(currentOnly => [
+  'You have used your 3 free guest generations. Sign in to keep building.',
+  'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 5 All parts builds or 75 Basic builds, or a mix. Sign in for 300 free monthly credits.',
+].map(message => ({ currentOnly, message }))))('shows sign-in guidance after the guest trial ($currentOnly, $message)', async ({ currentOnly, message }) => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'Another castle', error: message }]} generations={[]} /></PetProvider>));
   expect(container.querySelector('[role="status"]')?.textContent).toBe(message);

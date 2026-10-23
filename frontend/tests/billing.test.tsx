@@ -165,13 +165,15 @@ it('shows the approved monthly allowances and whole All parts equivalents on eve
   expect(container.textContent).toContain('up to 5 bonus credits per calendar month');
 });
 
-it('offers guests free All parts access through an instrumented sign-in action', async () => {
+it.each([false,true])('explains guest access without requiring login and offers optional signup (All parts: %s)', async allParts => {
   auth.user = null;
-  await render(<GenerationCreditQuote allParts />);
-  expect(container.textContent).toContain('15 credits');
+  await render(<GenerationCreditQuote allParts={allParts} />);
+  expect(container.textContent).toContain(allParts ? '15 credits' : '1 credit');
+  expect(container.textContent).toContain('75 lifetime guest credits: 5 All parts builds or 75 Basic builds, or a mix. No login needed.');
+  expect(container.textContent).not.toContain('One guest trial');
   await click('Sign in for 300 free monthly credits');
   expect(container.textContent).toContain('Sign in to build');
-  expect(posthog.capture).toHaveBeenCalledWith('billing_mode_sign_in_clicked', { mode: 'all_parts' });
+  expect(posthog.capture).toHaveBeenCalledWith('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' });
   expect(billingApi.checkout).not.toHaveBeenCalled();
 });
 

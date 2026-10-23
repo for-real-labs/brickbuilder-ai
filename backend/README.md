@@ -393,32 +393,35 @@ unavailable, the email still includes the model link.
 
 ## Guest generation allowances
 
-Guests have three lifetime generation attempts per browser identity **and** per
-network. Either exhausted allowance requires sign-in. Failed/cancelled attempts
-count; rejected submissions, polling and provider callbacks do not. Authenticated
-accounts retain the 30/day allowance, and all owners have at most five active
-jobs. Supabase anonymous-auth JWTs are not accepted as signed-in accounts.
+Hosted guests receive **75 lifetime credits** per browser identity and network:
+**5 All parts builds or 75 Basic builds, or a mix**. Basic builds/AI edits cost 1;
+All parts and AI mesh generations/edits cost 15. Either exhausted balance requires
+sign-in. Failed/canceled builds refund credits once without erasing provider spend.
+Imports and manual edits consume no guest credits. Deleting or claiming models
+and moving into another month do not renew the trial. Supabase anonymous-auth
+JWTs are not accepted as signed-in accounts. One active job and the global AI
+spending guard still apply; billing-enabled guest access has no extra daily cap.
 
-Apply the concurrency, guest lifetime and IP migrations in order:
-`20261021010000_generation_concurrency_limit_5.sql`,
-`20261021020000_guest_generation_lifetime_limit.sql`, and
-`20261021030000_guest_ip_generation_limit.sql`. Then deploy the API and frontend.
-After the IP migration, old API workers cannot start guest jobs without the new
-admission hash; signed-in calls remain available during rollout.
+Apply `20261023020000_guest_credit_allowance.sql` after the existing billing and
+personal-provider-key migrations. Deploy the API first so it recognizes the new
+quota error, then apply/record the migration and verify the frontend messaging.
+The standalone embedded development store keeps its older attempt-based limits;
+this hosted billing migration is tested separately against real PostgreSQL.
 
-The guest-session bearer secret still proves ownership of private models. Its
-hash is the generation's `user_id`; persistent browser counters are in
-`generation_guest_usage`. Network counters live in `anonymous_users` with
-`identity_type=ip_v1` and a versioned HMAC in `ip_hash`. They are never used for
-model access or claiming. The database reserves both counters and inserts the
-job in one transaction. `generations.guest_ip_hash` is transport-only input and
-is cleared before storage. IP counters are private to the service role.
+The guest-session bearer secret proves ownership of private models. Its hash is
+the generation's `user_id`. The new `guest_credit_usage` and
+`guest_credit_charges` tables are service-only and preserve allowance usage after
+ownership changes or deletion. Each reservation atomically charges both the
+browser and network identities before admitting the generation. The transport
+field `generations.guest_ip_hash` is cleared before storage; the private charge
+ledger retains its HMAC for refunds, never for authorization or model access.
 
-Existing `anonymous_users` records remain `legacy` for audit. Earlier IP plus
-User-Agent hashes, proxy-derived hashes and any session keys cannot be converted
-back to actual IPs, so they do not seed the new IP allowance. Existing browser
-usage is backfilled from generation history and persistent daily counters.
-The old fal-success-only read/modify/write counter is no longer used.
+The old `generation_guest_usage` and `anonymous_users` counters remain for audit.
+Known historical model modes are weighted at 1/15 credits. Attempts without a
+remaining mode record retain one credit each, including historical network counts
+whose hashes were not stored on models. Old non-network identities remain legacy
+records and are never reinterpreted as current network hashes. No allowance is
+reset by this migration.
 
 `start.sh` selects `GUEST_IP_SOURCE=railway` when `RAILWAY_ENVIRONMENT_ID` is set.
 It disables Uvicorn's proxy-header rewriting and validates Railway's single
@@ -444,8 +447,10 @@ these controls do not establish a person's identity.
 
 ### Request limit analytics
 
-`request_limit_hit` is emitted once per rejected generation admission: `daily`
-(30), `guest_lifetime` (3), or `concurrent` (5). It counts blocked attempts, not
+`request_limit_hit` is emitted once per rejected generation admission, including
+`guest_lifetime_credits` (75 credits), `daily` (10 by default), `concurrent` (1),
+account credit exhaustion and global AI capacity. Older attempt-based guest
+errors retain their `guest_lifetime` event type. It counts blocked attempts, not
 the successful request that uses the last allowance. Repeated blocked requests
 count again; use unique distinct IDs for affected identities. Guest IDs represent
 browser identities, not proven people. Guest events do not distinguish browser
