@@ -31,7 +31,7 @@ def subscription(identity):
         'metadata':{'integration':billing.BILLING_TAG,'brickbuilder_user_id':identity['user_id']},
         'cancel_at_period_end':False,
         'items':{'data':[{'id':'si_test','quantity':1,'current_period_start':now-60,'current_period_end':now+3600,
-            'price':{'id':'price_test','lookup_key':billing.lookup_key('builder'),'unit_amount':500,'currency':'usd','recurring':{'interval':'month','interval_count':1}}}]},
+            'price':{'id':'price_test','lookup_key':billing.lookup_key('builder'),'unit_amount':900,'currency':'usd','recurring':{'interval':'month','interval_count':1}}}]},
         'latest_invoice':{'id':'in_test','status':'paid','livemode':False,
             'parent':{'subscription_details':{'subscription':'sub_test'}},
             'lines':{'data':[{'pricing':{'price_details':{'price':'price_test'}}}]}}})
@@ -95,6 +95,7 @@ def test_foreign_checkout_cannot_be_synced(monkeypatch,identity):
 
 def test_duplicate_checkout_requests_are_rejected_before_stripe(monkeypatch,identity):
     monkeypatch.setattr(billing,'require_enabled',AsyncMock())
+    monkeypatch.setattr(billing,'capacity',AsyncMock(return_value={'checkout_available':True}))
     monkeypatch.setattr(billing,'rpc',AsyncMock(return_value=False))
     create=Mock();monkeypatch.setattr(billing.stripe.checkout.Session,'create',create)
     with pytest.raises(HTTPException) as error: asyncio.run(billing.checkout(identity,'builder'))
@@ -134,3 +135,32 @@ def test_exhausted_wallet_returns_actionable_payment_required():
 def test_provider_success_does_not_charge_a_second_time():
     identity={'is_anonymous':False,'is_developer':False,'user_email':'builder@example.test'}
     assert asyncio.run(deduct_credits(identity,identity)) is identity
+
+
+def test_capacity_blocks_new_checkout_before_any_stripe_mutation(monkeypatch,identity):
+    monkeypatch.setattr(billing,'require_enabled',AsyncMock())
+    monkeypatch.setattr(billing,'capacity',AsyncMock(return_value={'checkout_available':False}))
+    create=Mock();monkeypatch.setattr(billing.stripe.checkout.Session,'create',create)
+    with pytest.raises(HTTPException) as error: asyncio.run(billing.checkout(identity,'builder'))
+    assert error.value.status_code==503
+    create.assert_not_called()
+
+
+def test_preserved_bonus_total_is_not_the_spendable_balance():
+    row={'period_start':'2026-01-01T00:00:00Z','period_end':'2099-01-01T00:00:00Z',
+         'plan_key':'free','monthly_credits':5,'monthly_remaining':2,'bonus_remaining':100,
+         'bonus_used':4,'subscription_status':'none','cancel_at_period_end':False}
+    result=billing.public_wallet(row)
+    assert result['bonus_remaining']==100 and result['bonus_available']==1
+    assert result['credits_remaining']==3
+
+
+@pytest.mark.parametrize('code,status', [('BB_PAID_MODE_REQUIRED',402),('BB_AI_CAPACITY',503),('BB_BILLING_VERSION',503)])
+def test_admission_errors_are_safe_and_actionable(code,status):
+    class Table:
+        def insert(self,data):return self
+        def execute(self):raise ValueError(code)
+    storage=GenerationStorage.__new__(GenerationStorage)
+    storage.client=SimpleNamespace(table=lambda _:Table())
+    with pytest.raises(HTTPException) as error: asyncio.run(storage.create_generation(str(uuid4()),'authenticated','cube',40))
+    assert error.value.status_code==status

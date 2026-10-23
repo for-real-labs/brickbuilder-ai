@@ -5,7 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
 import { BillingProvider } from '../src/contexts/BillingContext';
-import { BillingOverlays, CreditBalance, CreditNudge, PlanGrid } from '../src/components/BillingComponents';
+import { BillingOverlays, CreditBalance, CreditNudge, PlanGrid, GenerationCreditQuote } from '../src/components/BillingComponents';
 import BillingPage from '../src/pages/BillingPage';
 import PricingPage from '../src/pages/PricingPage';
 import { billingApi, openStripe, type BillingAccount } from '../src/services/billingApi';
@@ -151,4 +151,38 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
   expect(container.textContent).toContain('Your current building access continues');
   expect(container.querySelector('[role="alert"]')).toBeNull();
   expect(container.querySelector('a[href="/"]')).not.toBeNull();
+});
+
+
+it('shows the approved prices and weighted build allowances without promising free All parts', async () => {
+  await render(<PricingPage />);
+  const cards = [...container.querySelectorAll('.billing-plan')];
+  expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$9', '$19', '$39']);
+  expect(cards[0].textContent).toContain('5 Basic builds');
+  expect(cards[0].textContent).not.toContain('All parts builds');
+  expect(cards[2].textContent).toContain('75 Basic builds or 5 All parts builds');
+  expect(container.textContent).toContain('up to 5 bonus credits per calendar month');
+});
+
+it('shows the selected mode cost and an instrumented paid-mode nudge', async () => {
+  await render(<GenerationCreditQuote allParts />);
+  expect(container.textContent).toContain('15 credits');
+  await click('Choose a monthly plan');
+  expect(posthog.capture).toHaveBeenCalledWith('billing_upgrade_opened', expect.objectContaining({ source: 'generation_mode' }));
+});
+
+it('pauses new sales at capacity while keeping cancellation accessible', async () => {
+  account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active', checkout_available: false };
+  vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, checkout_available: false, plans: (await import('../src/services/billingApi')).INITIAL_PLANS });
+  await render(<><PlanGrid source="pricing_page" /><BillingPage /></>);
+  expect([...container.querySelectorAll('button')].filter(b => b.textContent === 'At capacity').every(b => b.disabled)).toBe(true);
+  await click('Cancel subscription');
+  expect(billingApi.portal).toHaveBeenCalledWith('cancel');
+});
+
+it('separates preserved bonus balance from the bonus credits usable this month', async () => {
+  account = { ...account, bonus_remaining: 100, bonus_available: 3, credits_remaining: 5 };
+  await render(<BillingPage />);
+  expect(container.textContent).toContain('Legacy bonus balance');
+  expect(container.textContent).toContain('3 bonus credits available for Basic builds');
 });

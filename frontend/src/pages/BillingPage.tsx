@@ -47,13 +47,14 @@ export default function BillingPage() {
           <p className="billing-big-balance">{account.credits_remaining}<span>ready for your next idea</span></p>
           <div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" />
-          <div className="billing-balance-row"><span>Bonus credits · never expire</span><strong>{account.bonus_remaining}</strong></div>
+          <div className="billing-balance-row"><span>Legacy bonus balance · never expires</span><strong>{account.bonus_remaining}</strong></div>
+          <p className="billing-muted">{account.bonus_available ?? 0} bonus credits available for Basic builds this month, used after monthly credits. Maximum 5 per month.</p>
           <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>
           <button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button>
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
           <h2 className="billing-account-plan">{plan?.name ?? 'Free'}<span>${(plan?.monthly_cents ?? 0) / 100} / month</span></h2>
           {account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
-            : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : <p>5 free credits each month. No payment method needed.</p>}
+            : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : <p>5 free Basic credits each month. No payment method needed.</p>}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}
           {account.has_subscription && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>Manage billing & receipts <ArrowUpRight size={16} /></button>
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}

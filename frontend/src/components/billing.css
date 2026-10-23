@@ -127,3 +127,6 @@
  .billing-account-title p:last-child { font-size:12px; } .billing-account-grid { grid-template-columns:1fr; } .billing-account-card { padding:22px; }
  .billing-account-title .billing-eyebrow { font-size:9px; } .billing-history td, .billing-history th { padding:12px 3px; }
 }
+
+.billing-generation-quote { margin: .65rem auto 0; max-width: 38rem; color: #64748b; font-size: .8rem; line-height: 1.5; text-align: center; }
+.billing-generation-quote .billing-text-link { display: inline; font-size: inherit; }

@@ -22,6 +22,9 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
+const billingSettings = vi.hoisted(() => ({ enabled: false, account: null, loading: false, openUpgrade: vi.fn() }));
+vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billingSettings }));
+
 const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false }));
 
 vi.mock('../src/contexts/AuthContext', () => ({
@@ -76,6 +79,7 @@ import { PetCompanion } from '../src/components/PetCompanion';
 import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 
 beforeEach(() => {
+  billingSettings.enabled = false;
   vi.spyOn(BuildBuddyApi, 'classify').mockResolvedValue({ intent: 'generate', confidence: 1 });
 });
 
@@ -908,5 +912,23 @@ it.each(['claude-haiku-5-5', 'gpt-6-astra'])('selects %s for either generation m
     expect(capture).toHaveBeenCalledWith('landing_render_model_selected', {
       generation_method: 'nova', model, provider: model.startsWith('claude-') ? 'anthropic' : 'openai',
     });
+  } finally { act(() => root.unmount()); }
+});
+
+
+it('starts the free trial in Basic and preserves a later explicit All parts selection', async () => {
+  billingSettings.enabled = true;
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.textContent).toContain('1 credit · Basic build or edit');
+    act(() => container.querySelector<HTMLButtonElement>('button[value="nova"]')!.click());
+    expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.textContent).toContain('15 credits');
+    expect(container.textContent).toContain('Choose a monthly plan');
   } finally { act(() => root.unmount()); }
 });

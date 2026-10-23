@@ -13,12 +13,12 @@ from .database import execute_query
 
 PLANS = (
     {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 5},
-    {"key": "builder", "name": "Builder", "monthly_cents": 500, "credits": 30},
-    {"key": "creator", "name": "Creator", "monthly_cents": 1200, "credits": 100},
-    {"key": "master", "name": "Master Builder", "monthly_cents": 2400, "credits": 300},
+    {"key": "builder", "name": "Builder", "monthly_cents": 900, "credits": 30},
+    {"key": "creator", "name": "Creator", "monthly_cents": 1900, "credits": 75},
+    {"key": "master", "name": "Master Builder", "monthly_cents": 3900, "credits": 180},
 )
 PAID_PLANS = {p["key"]: p for p in PLANS if p["monthly_cents"]}
-BILLING_TAG = "brickbuilder_credits_v1"
+BILLING_TAG = "brickbuilder_credits_v2"
 
 
 def live_mode():
@@ -59,8 +59,13 @@ async def settings():
 
 
 async def require_enabled():
-    if not (await settings())["enabled"]:
+    config = await settings()
+    if not config["enabled"] or config.get("policy_version") != 2:
         raise HTTPException(503, "Subscriptions are getting ready. Please check back shortly.")
+
+
+async def capacity():
+    return await rpc("billing_capacity", p_live=live_mode())
 
 
 async def wallet(user_id):
@@ -70,10 +75,12 @@ async def wallet(user_id):
 def public_wallet(row):
     end = datetime.fromisoformat(row["period_end"].replace("Z", "+00:00"))
     remaining = row["monthly_remaining"] if end > datetime.now(timezone.utc) else 0
+    bonus_available = min(row["bonus_remaining"], max(0, 5-row.get("bonus_used", 0)))
     return {
+        "bonus_available": bonus_available,
         "plan_key": row["plan_key"], "monthly_credits": row["monthly_credits"],
         "monthly_remaining": remaining, "bonus_remaining": row["bonus_remaining"],
-        "credits_remaining": remaining + row["bonus_remaining"],
+        "credits_remaining": remaining + bonus_available,
         "period_start": row["period_start"], "period_end": row["period_end"],
         "subscription_status": row["subscription_status"],
         "cancel_at_period_end": row["cancel_at_period_end"],
@@ -87,11 +94,12 @@ async def account(identity):
     history = await execute_query(client().table("billing_credit_history")
         .select("id,kind,amount,bucket,created_at").eq("user_id", user_id)
         .eq("livemode", live_mode()).order("id", desc=True).limit(30))
-    return {**public_wallet(row), "history": history.data, "enabled": (await settings())["enabled"]}
+    config = await settings()
+    return {**public_wallet(row), "history": history.data, "enabled": bool(config["enabled"] and config.get("policy_version") == 2), **(await capacity())}
 
 
 def lookup_key(plan_key):
-    return f"brickbuilder_{plan_key}_monthly_v1"
+    return f"brickbuilder_{plan_key}_monthly_v2"
 
 
 async def price_for(plan_key):
@@ -128,6 +136,9 @@ async def portal(identity, *, cancel=False, plan_key=None):
     if cancel:
         args["flow_data"] = {"type": "subscription_cancel", "subscription_cancel": {"subscription": row["stripe_subscription_id"]}}
     elif plan_key:
+        await require_enabled()
+        if not (await capacity())["checkout_available"]:
+            raise HTTPException(503, "Plan changes are temporarily at capacity. You can still manage or cancel your subscription.")
         sub = await asyncio.to_thread(stripe.Subscription.retrieve, row["stripe_subscription_id"], api_key=stripe_key())
         price = await price_for(plan_key)
         items = sub["items"]["data"]
@@ -142,6 +153,8 @@ async def portal(identity, *, cancel=False, plan_key=None):
 async def checkout(identity, plan_key):
     user_id = account_id(identity)
     await require_enabled()
+    if not (await capacity())["checkout_available"]:
+        raise HTTPException(503, "New subscriptions are temporarily at capacity. Please try again later. Existing subscriptions can still be managed or canceled in Billing.")
     if plan_key not in PAID_PLANS:
         raise HTTPException(400, "Choose a monthly plan.")
     acquired = await rpc("billing_checkout_lock", p_user_id=user_id, p_live=live_mode(), p_acquire=True)

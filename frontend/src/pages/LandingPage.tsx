@@ -1,4 +1,4 @@
-import { CreditNudge } from '../components/BillingComponents';
+import { CreditNudge, GenerationCreditQuote } from '../components/BillingComponents';
 import { useBilling } from '../contexts/BillingContext';
 import { LandingSocialLinks } from "../components/LandingSocialLinks";
 import { LandingToolsMenu, type LandingToolsHandle, type GenerationSettingsAction } from '../components/LandingToolsMenu';
@@ -150,6 +150,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const landingViewportRef = useLandingViewport(!ldrawLanding);
   const helpVisible = useLandingHelp(landingViewportRef, !ldrawLanding);
   const { session, userProfile, loading: authLoading } = useAuth();
+  const { enabled: billingEnabled, account: billingAccount, loading: billingLoading } = useBilling();
+  const billingModeInitialized = useRef(false);
   const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
@@ -275,6 +277,14 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const requestedModelId = searchParams.get('id');
   const [linkedModelId] = useState(requestedModelId);
   const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
+  useEffect(() => {
+    if (!billingEnabled || authLoading || billingLoading || billingModeInitialized.current
+        || (session?.user.id && !billingAccount)) return;
+    billingModeInitialized.current = true;
+    if ((!billingAccount || billingAccount.plan_key === 'free') && !startWithAllParts && !requestedModelId && !landingModel.model) {
+      setGenerationMethod('llm');
+    }
+  }, [billingEnabled, billingLoading, billingAccount, authLoading, session?.user.id, startWithAllParts, requestedModelId, landingModel.model]);
   const openModel = useCallback((id: string, retainModel = false) => {
     landingModel.open(id, retainModel);
     setSearchParams(current => {
@@ -1137,6 +1147,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>
               </div>
 
+              {!ldrawLanding && <GenerationCreditQuote allParts={generationMethod !== 'llm'} />}
               {inputValidationMessage && (
                 <p id="generation-input-help" role="status" className="mt-3 text-center text-sm leading-6 text-slate-600">
                   {inputValidationMessage}

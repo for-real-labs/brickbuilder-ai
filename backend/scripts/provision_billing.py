@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 def provision(key, live, plans, tag):
     catalog = []
     for plan in plans:
-        lookup = f"brickbuilder_{plan['key']}_monthly_v1"
+        lookup = f"brickbuilder_{plan['key']}_monthly_v2"
         found = stripe.Price.list(lookup_keys=[lookup], limit=2, api_key=key).data
         if found:
             price = found[0]
@@ -27,12 +27,12 @@ def provision(key, live, plans, tag):
                 raise ValueError('Existing catalog does not match the approved monthly plans')
         else:
             product = stripe.Product.create(name=f"BrickBuilder {plan['name']}",
-                description=f"{plan['credits']} credits each month. One credit per AI build or AI edit. Cancel anytime.",
+                description=f"{plan['credits']} credits each month. Basic builds: 1 credit. All parts and AI mesh conversions: 15 credits. Cancel anytime.",
                 metadata={'integration': tag, 'plan_key': plan['key']},
-                idempotency_key=f"bb-product-v1:{plan['key']}", api_key=key)
+                idempotency_key=f"bb-product-v2:{plan['key']}", api_key=key)
             price = stripe.Price.create(product=product.id, unit_amount=plan['monthly_cents'], currency='usd',
                 recurring={'interval':'month'}, lookup_key=lookup, metadata={'integration':tag},
-                idempotency_key=f"bb-price-v1:{plan['key']}", api_key=key)
+                idempotency_key=f"bb-price-v2:{plan['key']}", api_key=key)
         catalog.append({'product':price.product, 'prices':[price.id]})
         print(plan['key'], price.id, plan['monthly_cents'], 'cents/month', plan['credits'], 'credits')
     configs = stripe.billing_portal.Configuration.list(limit=100, api_key=key).data
@@ -51,7 +51,7 @@ def provision(key, live, plans, tag):
     if config:
         config = stripe.billing_portal.Configuration.modify(config.id, **args, api_key=key)
     else:
-        config = stripe.billing_portal.Configuration.create(**args, idempotency_key='bb-portal-v1', api_key=key)
+        config = stripe.billing_portal.Configuration.create(**args, idempotency_key='bb-portal-v2', api_key=key)
     print('portal',config.id,'cancellation',config.features.subscription_cancel.mode)
     return config.id
 

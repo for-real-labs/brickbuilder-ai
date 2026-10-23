@@ -4,7 +4,7 @@ import { useAuth } from './AuthContext';
 import { billingApi, INITIAL_PLANS, openStripe, type BillingAccount, type PlanKey } from '../services/billingApi';
 
 const BillingContext = createContext({
-  account: null as BillingAccount | null, plans: INITIAL_PLANS, enabled: false, loading: false,
+  account: null as BillingAccount | null, plans: INITIAL_PLANS, enabled: false, checkoutAvailable: false, loading: false,
   busy: false, error: '', upgradeSource: '', loginOpen: false,
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
@@ -20,6 +20,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const [account, setAccount] = useState<BillingAccount | null>(null);
   const [plans, setPlans] = useState(INITIAL_PLANS);
   const [enabled, setEnabled] = useState(false);
+  const [checkoutAvailable, setCheckoutAvailable] = useState(false);
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -30,7 +31,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     if (!owner) return;
     try {
       const result = await billingApi.account();
-      if (identity.current === owner) { setAccount(result); setEnabled(result.enabled); setError(''); }
+      if (identity.current === owner) { setAccount(result); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); }
     } catch { if (identity.current === owner) setError('Could not load your credits. Please refresh to try again.'); }
     finally { if (identity.current === owner) setLoading(false); }
   }, [user?.id]);
@@ -38,8 +39,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     let active = true;
     const update = () => {
       if (document.hidden) return;
-      void billingApi.plans().then(result => { if (active) { setPlans(result.plans); setEnabled(result.enabled); } })
-        .catch(() => { if (active) setEnabled(false); });
+      void billingApi.plans().then(result => { if (active) { setPlans(result.plans); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); } })
+        .catch(() => { if (active) { setEnabled(false); setCheckoutAvailable(false); } });
     };
     update();
     window.addEventListener('focus', update);
@@ -72,7 +73,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     if (!owner) return null;
     try {
       const result = await billingApi.sync(sessionId);
-      if (identity.current === owner) { setAccount(result); setEnabled(result.enabled); setError(''); return result; }
+      if (identity.current === owner) { setAccount(result); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); return result; }
     } catch (e) { if (identity.current === owner) setError(e instanceof Error ? e.message : 'Could not refresh billing.'); }
     return null;
   };
@@ -97,7 +98,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     catch (e) { setError(e instanceof Error ? e.message : 'Could not open billing. Please try again.'); }
     finally { setBusy(false); }
   };
-  return <BillingContext.Provider value={{ account, plans, enabled, loading, busy, error, upgradeSource, loginOpen,
+  return <BillingContext.Provider value={{ account, plans, enabled, checkoutAvailable, loading, busy, error, upgradeSource, loginOpen,
     refresh, sync, openUpgrade, closeUpgrade, subscribe, manage,
     closeLogin: () => setLoginOpen(false), signIn: () => { posthog.capture('billing_sign_in_clicked'); setLoginOpen(true); },
   }}>{children}</BillingContext.Provider>;

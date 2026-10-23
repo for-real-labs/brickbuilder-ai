@@ -29,7 +29,7 @@ export function CreditBalance() {
 
 export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnly?: boolean }) {
   const { user } = useAuth();
-  const { plans, account, busy, enabled, subscribe, closeUpgrade } = useBilling();
+  const { plans, account, busy, enabled, checkoutAvailable, subscribe, closeUpgrade } = useBilling();
   return <div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
     {plans.filter(plan => !paidOnly || plan.key !== 'free').map(plan => {
       const current = Boolean(user && account?.plan_key === plan.key);
@@ -42,12 +42,12 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <p className="billing-renewal">{plan.monthly_cents ? 'USD · billed monthly' : 'No credit card needed'}</p>
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>
           : <button className="billing-plan-button" onClick={() => void subscribe('free', source)}>Start building free</button>
-          : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled}
-            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
+          : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable}
+            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : !checkoutAvailable ? 'At capacity' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits}</strong> credits / month</div>
         <ul className="billing-features">
-          <li><Check aria-hidden="true" />{plan.credits} AI builds or AI edits</li>
-          <li><Check aria-hidden="true" />Full Set Agent & Basic Bricks</li>
+          <li><Check aria-hidden="true" />{plan.credits} Basic builds{plan.key !== 'free' && ` or ${plan.credits / 15} All parts builds`}</li>
+          <li><Check aria-hidden="true" />{plan.key === 'free' ? 'Basic bricks generation' : 'Mix modes from one credit balance'}</li>
           <li><Check aria-hidden="true" />Instructions & model downloads</li>
           <li><Check aria-hidden="true" />Every Build Buddy included</li>
         </ul>
@@ -72,7 +72,7 @@ export function CreditNudge() {
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
     <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Check your credit usage and next reset in billing.' : <>Choose a plan to keep creating{account && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
-      : <><strong>More ideas? More bricks.</strong> Monthly plans from $5. One credit per AI build or edit.</>}</p>
+      : <><strong>More ideas? More bricks.</strong> Monthly plans from $9. Basic builds use 1 credit; All parts uses 15.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing'); } else openUpgrade(source); }}>{low ? highest ? 'View usage' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
   </div>;
 }
@@ -94,13 +94,25 @@ export function BillingOverlays() {
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
       <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        <p>{account ? `${account.credits_remaining} credits available. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'One credit = one AI build or AI edit. Cancel anytime.'}</p></div></div>
+        <p>{account ? `${account.credits_remaining} credits available. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits with a paid plan. Cancel anytime.'}</p></div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
-      <p className="billing-fine-print">Plans renew monthly until canceled. Monthly credits reset and do not roll over. Bonus credits never expire. Failed or canceled builds return their credit.</p>
+      <p className="billing-fine-print">Plans renew monthly until canceled. Monthly credits reset and do not roll over. Legacy bonuses never expire; use up to 5 per month on Basic builds. Failed or canceled builds return their credits.</p>
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={closeLogin} redirectTo="/pricing" />
   </>;
+}
+
+
+export function GenerationCreditQuote({ allParts }: { allParts: boolean }) {
+  const { enabled, account, openUpgrade } = useBilling();
+  if (!enabled) return null;
+  const needsPlan = allParts && (!account || account.plan_key === 'free');
+  return <p className="billing-generation-quote" role="status">
+    {allParts ? '15 credits · All parts / AI mesh conversion' : '1 credit · Basic build or edit'}
+    {needsPlan && <> · <button type="button" className="billing-text-link" onClick={() => openUpgrade('generation_mode')}>Choose a monthly plan</button></>}
+    {!allParts && !account && ' · One guest trial, then sign in for 5 monthly credits including your trial.'}
+  </p>;
 }

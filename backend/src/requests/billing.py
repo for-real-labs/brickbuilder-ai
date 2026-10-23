@@ -39,11 +39,15 @@ async def run(operation):
 @router.get("/plans")
 async def plans():
     enabled = False
+    capacity = {"available": False, "checkout_available": False}
     try:
-        enabled = bool((await billing.settings())["enabled"])
+        config = await billing.settings()
+        enabled = bool(config["enabled"] and config.get("policy_version") == 2)
+        if enabled:
+            capacity = await billing.capacity()
     except Exception:
         pass
-    return {"plans": billing.PLANS, "enabled": enabled}
+    return {"plans": billing.PLANS, "enabled": enabled, **capacity}
 
 
 @router.get("/account")
