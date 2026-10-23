@@ -5,7 +5,7 @@ from email.utils import format_datetime
 
 from fastapi import HTTPException
 
-RETRY_LIMIT_PREFIX = 'AI builds are paused after 3 failed or canceled attempts within 24 hours.'
+RETRY_LIMIT_PREFIX = 'AI builds are paused after 5 failed or canceled attempts within 24 hours.'
 RETRY_PENDING_MESSAGE = 'AI builds are temporarily paused while other builds finish. Please wait for a running build to finish before trying again. Your credits have not been charged for this request.'
 
 

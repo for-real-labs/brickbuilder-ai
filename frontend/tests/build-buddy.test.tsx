@@ -642,7 +642,7 @@ it.each(['active build', 'suggestion', 'opened model'])('lets the pet speak the 
 const concurrencyLimitMessage = 'You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.';
 
 it.each([
-  'AI builds are paused after 3 failed or canceled attempts within 24 hours. Please wait until October 24, 2026 at 10:00 AM CDT to generate again. Your credits have not been charged for this request. Upgrading does not remove this pause.',
+  'AI builds are paused after 5 failed or canceled attempts within 24 hours. Please wait until October 24, 2026 at 10:00 AM CDT to generate again. Your credits have not been charged for this request. Upgrading does not remove this pause.',
   'AI builds are temporarily paused while other builds finish. Please wait for a running build to finish before trying again. Your credits have not been charged for this request.',
 ])('explains the provider-cost pause through the pet without an upgrade or sign-in shortcut', async message => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="idle"

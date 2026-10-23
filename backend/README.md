@@ -426,7 +426,7 @@ reset by this migration.
 
 ### Failed/canceled build guard
 
-Three unsuccessful AI attempts within a rolling 24 hours pause new
+Five unsuccessful AI attempts within a rolling 24 hours pause new
 BrickBuilder-funded AI work. The pause applies to all account plans, internal
 accounts and guest browser/network identities. Credits still refund, but provider
 spend remains reserved. Personal API-key work and non-AI tools are exempt.
@@ -470,7 +470,7 @@ these controls do not establish a person's identity.
 
 `request_limit_hit` is emitted once per rejected generation admission, including
 `guest_lifetime_credits` (75 credits), `daily` (10 by default), `concurrent` (1),
-`generation_retry_cooldown` / `generation_retry_pending` (3 attempts), account
+`generation_retry_cooldown` / `generation_retry_pending` (5 attempts), account
 credit exhaustion and global AI capacity. Older attempt-based guest
 errors retain their `guest_lifetime` event type. It counts blocked attempts, not
 the successful request that uses the last allowance. Repeated blocked requests

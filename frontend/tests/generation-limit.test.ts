@@ -45,7 +45,7 @@ it('localizes the retry pause without dropping refund or upgrade guidance', asyn
   vi.spyOn(Intl, 'DateTimeFormat').mockImplementation((locale, options) =>
     new formatter('en-US', { ...options, timeZone: 'America/Chicago' }));
   const response = new Response(JSON.stringify({
-    detail: 'AI builds are paused after 3 failed or canceled attempts within 24 hours. Please wait until October 24, 2026 at 15:00 UTC to generate again. Your credits have not been charged for this request. Upgrading does not remove this pause.',
+    detail: 'AI builds are paused after 5 failed or canceled attempts within 24 hours. Please wait until October 24, 2026 at 15:00 UTC to generate again. Your credits have not been charged for this request. Upgrading does not remove this pause.',
   }), { status: 429, headers: { 'Retry-After': 'Sat, 24 Oct 2026 15:00:00 GMT', 'Content-Length': '500' } });
   const localized = await localizeGenerationLimit(response);
   const { detail } = await localized.json();

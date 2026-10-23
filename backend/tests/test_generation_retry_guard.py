@@ -26,33 +26,33 @@ def finish(db, gid, status='failed'):
 
 @pytest.mark.parametrize('plan', ['guest', 'free', 'builder', 'creator', 'master'])
 @pytest.mark.parametrize('endpoint', ['llmToBricks', 'novaToBricks'])
-def test_three_failures_or_cancellations_pause_every_plan_without_revoking_refunds(db, plan, endpoint):
+def test_five_failures_or_cancellations_pause_every_plan_without_revoking_refunds(db, plan, endpoint):
     migrate(db)
     uid = owner(db)
     if plan not in ('guest', 'free'):
         paid(db, uid, plan=plan, amount={'builder': 500, 'creator': 750, 'master': 1000}[plan])
     allowance = wallet(db, uid)['monthly_remaining']
     build = lambda: guest(db, endpoint) if plan == 'guest' else generate(db, uid, endpoint)
-    for status in ['failed', 'cancelled', 'failed']:
+    for status in ['failed', 'cancelled', 'failed', 'cancelled', 'failed']:
         finish(db, build(), status)
     with pytest.raises(psycopg.errors.RaiseException, match=r'BB_GENERATION_RETRY_LIMIT:\d+'):
         build()
     assert wallet(db, uid)['monthly_remaining'] == allowance
     assert used(db) == used(db, 'network:' + NETWORK) == 0
-    assert db.execute('SELECT count(*) n FROM generations').fetchone()['n'] == 3
-    assert db.execute('SELECT sum(amount) n FROM billing_ai_reservations').fetchone()['n'] == 63
+    assert db.execute('SELECT count(*) n FROM generations').fetchone()['n'] == 5
+    assert db.execute('SELECT sum(amount) n FROM billing_ai_reservations').fetchone()['n'] == 105
 
 
 def test_guest_claims_deletion_and_status_replays_do_not_reset_or_extend_the_pause(db):
     migrate(db)
     uid = owner(db)
-    for _ in range(3):
+    for _ in range(5):
         gid = guest(db)
         finish(db, gid)
         for state in ['processing', 'failed', 'cancelled']:
             finish(db, gid, state)
         db.execute("UPDATE generations SET user_id=%s,user_type='authenticated' WHERE id=%s", (uid, gid))
-    assert db.execute('SELECT count(*) n FROM generation_retry_attempts').fetchone()['n'] == 9
+    assert db.execute('SELECT count(*) n FROM generation_retry_attempts').fetchone()['n'] == 15
     timestamps = db.execute('SELECT failed_at FROM generation_retry_attempts ORDER BY failed_at').fetchall()
     db.execute('DELETE FROM generations')
     assert db.execute('SELECT failed_at FROM generation_retry_attempts ORDER BY failed_at').fetchall() == timestamps
@@ -69,7 +69,7 @@ def test_cooldown_uses_the_exact_rolling_window_and_blocked_requests_do_not_exte
     uid = owner(db)
     ids = [generate(db, uid)]
     finish(db, ids[0])
-    for _ in range(2):
+    for _ in range(4):
         ids.append(generate(db, uid))
         finish(db, ids[-1])
     db.execute("UPDATE generation_retry_attempts SET failed_at=now()-interval '23 hours' WHERE generation_id=%s", (ids[0],))
@@ -98,8 +98,8 @@ def test_parallel_browser_identities_cannot_spend_more_than_remaining_retry_slot
                 return None
     with ThreadPoolExecutor(max_workers=12) as pool:
         ids = [gid for gid in pool.map(attempt, range(12)) if gid]
-    assert len(ids) == 3
-    assert db.execute('SELECT sum(amount) n FROM billing_ai_reservations').fetchone()['n'] == 63
+    assert len(ids) == 5
+    assert db.execute('SELECT sum(amount) n FROM billing_ai_reservations').fetchone()['n'] == 105
     for gid in ids:
         finish(db, gid)
     assert used(db, 'network:' + NETWORK) == 0
@@ -112,18 +112,18 @@ def test_successful_builds_release_slots_and_deleting_running_builds_keeps_a_str
     uid = owner(db)
     for _ in range(8):
         finish(db, generate(db, uid), 'completed')
-    for _ in range(3):
+    for _ in range(5):
         gid = generate(db, uid)
         db.execute('DELETE FROM generations WHERE id=%s', (gid,))
     with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_RETRY_LIMIT'):
         generate(db, uid)
-    assert db.execute('SELECT count(*) n FROM generation_retry_attempts WHERE failed_at IS NOT NULL').fetchone()['n'] == 3
+    assert db.execute('SELECT count(*) n FROM generation_retry_attempts WHERE failed_at IS NOT NULL').fetchone()['n'] == 5
 
 
 def test_personal_keys_and_free_tools_work_during_a_pause_and_never_add_strikes(db):
     migrate(db)
     uid = owner(db)
-    for _ in range(3):
+    for _ in range(5):
         finish(db, generate(db, uid))
     for _ in range(4):
         gid = str(uuid4())
@@ -132,7 +132,7 @@ def test_personal_keys_and_free_tools_work_during_a_pause_and_never_add_strikes(
         finish(db, gid, 'cancelled')
     for endpoint in ['resizeModel', 'updateModel', 'uploadLdraw', 'glbToBricks', 'objToBricks']:
         finish(db, generate(db, uid, endpoint))
-    assert db.execute('SELECT count(*) n FROM generation_retry_attempts').fetchone()['n'] == 3
+    assert db.execute('SELECT count(*) n FROM generation_retry_attempts').fetchone()['n'] == 5
     assert wallet(db, uid)['monthly_remaining'] == 300
 
 
@@ -156,7 +156,7 @@ def test_quota_capacity_and_concurrency_rejections_leave_no_retry_reservation(db
 def test_upgrade_and_monthly_reset_cannot_bypass_pause_but_live_and_sandbox_are_isolated(db):
     migrate(db)
     uid = owner(db)
-    for _ in range(3):
+    for _ in range(5):
         finish(db, generate(db, uid))
     paid(db, uid)
     db.execute("UPDATE billing_accounts SET period_start=now()-interval '1 month' WHERE user_id=%s", (uid,))
@@ -171,7 +171,7 @@ def test_migration_backfills_known_history_and_ledger_is_private(db, missing_tim
     migrate_guest(db)
     uid = owner(db)
     ids = []
-    for _ in range(3):
+    for _ in range(5):
         gid = guest(db)
         finish(db, gid)
         db.execute("UPDATE generations SET user_id=%s,user_type='authenticated' WHERE id=%s", (uid, gid))
@@ -179,7 +179,7 @@ def test_migration_backfills_known_history_and_ledger_is_private(db, missing_tim
     if missing_timestamp:
         db.execute('UPDATE generations SET created_at=NULL')
     db.execute(RETRY_MIGRATION.read_text())
-    assert db.execute('SELECT count(*) n FROM generation_retry_attempts').fetchone()['n'] == 9
+    assert db.execute('SELECT count(*) n FROM generation_retry_attempts').fetchone()['n'] == 15
     with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_RETRY_LIMIT'):
         generate(db, uid)
     with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_RETRY_LIMIT'):
@@ -194,7 +194,7 @@ def test_public_error_exposes_exact_retry_time_without_private_state():
     error = retry_guard_error(ValueError(f'BB_GENERATION_RETRY_LIMIT:{int(expected.timestamp())} private database context'))
     assert error.status_code == 429
     assert parsedate_to_datetime(error.headers['Retry-After']) == expected
-    assert '3 failed or canceled attempts within 24 hours' in error.detail
+    assert '5 failed or canceled attempts within 24 hours' in error.detail
     assert 'Upgrading does not remove this pause.' in error.detail
     assert 'private' not in error.detail
     pending = retry_guard_error(ValueError('BB_GENERATION_RETRY_PENDING'))

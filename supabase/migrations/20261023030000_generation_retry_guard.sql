@@ -57,7 +57,7 @@ BEGIN
    CROSS JOIN LATERAL (
      SELECT a.failed_at+interval '24 hours' AS retry_at FROM public.generation_retry_attempts a
      WHERE a.identity=keys.identity AND a.livemode=g.billing_livemode AND a.failed_at>checked_at-interval '24 hours'
-     ORDER BY a.failed_at DESC OFFSET 2 LIMIT 1
+     ORDER BY a.failed_at DESC OFFSET 4 LIMIT 1
    ) blocked;
    IF retry_until IS NOT NULL THEN
      RAISE EXCEPTION 'BB_GENERATION_RETRY_LIMIT:%',ceil(extract(epoch FROM retry_until))::bigint;
@@ -68,7 +68,7 @@ BEGIN
      WHERE identity=ANY(identities) AND livemode=g.billing_livemode
        AND (failed_at>checked_at-interval '24 hours'
          OR (finished_at IS NULL AND admitted_at>checked_at-interval '24 hours'))
-     GROUP BY identity HAVING count(*)>=3) THEN
+     GROUP BY identity HAVING count(*)>=5) THEN
      RAISE EXCEPTION 'BB_GENERATION_RETRY_PENDING';
    END IF;
  END IF;

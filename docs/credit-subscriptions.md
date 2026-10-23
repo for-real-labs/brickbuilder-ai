@@ -59,8 +59,8 @@ request throttles, one active generation and the global spending guard remain.
 Monthly credits also replace the default daily cap for signed-in accounts.
 Explicit signed-in account restrictions and verified owner exemptions remain.
 
-After three failed/canceled AI attempts within a rolling 24 hours, new
-BrickBuilder-funded builds pause until fewer than three remain in that window.
+After five failed/canceled AI attempts within a rolling 24 hours, new
+BrickBuilder-funded builds pause until fewer than five remain in that window.
 This applies to Free, paid and internal accounts, plus each guest browser and
 network. Failed/canceled jobs still refund credits; upgrades, wallet resets and
 model deletion do not clear the pause. Claimed guest models carry their history
