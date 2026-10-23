@@ -2,11 +2,12 @@
 
 ## Launch state
 
-The approved pricing is prepared on `ragnarok`, updated with `main` through
-`01a5df8`. Production billing remains disabled until the production merge,
-migration, catalog, webhooks and both deployed commits are verified. The earlier
-billing migration `20261022000000` is already recorded in production; do not
-reapply it. The new migration is `20261023000000_billing_pricing_v2.sql`.
+Monthly billing is enabled in production. Both `20261022000000` and
+`20261023000000_billing_pricing_v2.sql` are already recorded; do not reapply them.
+The paid-feature update needs no database migration. Re-run the catalog provisioner
+when deploying it so Stripe's billing portal offers only Builder and Creator.
+Existing Master Builder subscriptions keep their allowance, renewal and cancellation
+support; Master Builder is no longer offered for a new checkout or plan change.
 
 ## Plans
 
@@ -15,12 +16,23 @@ reapply it. The new migration is `20261023000000_billing_pricing_v2.sql`.
 | Free | $0 | 300 | 300 Basic or 20 All parts builds |
 | Builder | $9 | 500 | 500 Basic or 33 All parts builds, with 5 credits left |
 | Creator | $19 | 750 | 750 Basic or 50 All parts builds |
-| Master Builder | $39 | 1,000 | 1,000 Basic or 66 All parts builds, with 10 credits left |
 
 Basic generation and Basic AI edits cost 1 credit. All parts generation/edits and
 AI text/image-to-mesh conversions cost 15 credits on every plan, including Free. Modes
 share a balance; the example counts are alternatives, not additive allowances.
 Monthly plans only; no annual plans or one-off packs. Physical kits are separate.
+
+Free includes model creation, 3D previews and CSV/XML parts lists. LDR/IO exports
+and building instructions require Builder or Creator (or an existing Master
+subscription). The options remain visible with a lock and open the shared
+BrickBuilder upgrade notice. The notice leads to the existing plan picker.
+Direct instruction links, postcard previews and Build Buddy export actions use the same access check.
+A paid account keeps these features through its paid period, even with zero credits
+or cancellation scheduled. Unknown account state does not unlock a feature.
+
+The Nova instructions endpoint checks the requesting account's paid period and uses
+private, non-cacheable responses. Display geometry still reaches the browser for
+3D previews: these are app feature restrictions, not DRM for already-public model data.
 
 Guests get one Basic trial attempt, enforced by persistent browser and IP
 counters. A claimed successful or running trial deducts one credit from the
@@ -73,7 +85,9 @@ exceeded 1,000. Historical usage therefore provides little reason for most of
 this cohort to upgrade. The larger free plan is a subsidized acquisition offer,
 not evidence that more users will subscribe.
 
-Keeping the prior illustrative assumptions (65% of Generate clickers active,
+The historical prelaunch model below included Master Builder; it is not a forecast
+of conversion after adding paid exports and instructions. Keeping those earlier
+illustrative assumptions (65% of Generate clickers active,
 2% subscribing, 60/30/10% paid-plan mix, 70% paid-credit utilization, $0.25 per
 weighted credit, two free weighted credits used per active free user, and a
 $500 reserve) gives the following *unconstrained demand*, before budget pauses:
@@ -85,7 +99,7 @@ $500 reserve) gives the following *unconstrained demand*, before budget pauses:
 | 2× | 36 | $541 | $5,010 |
 | 3× | 54 | $811 | $7,264 |
 
-The paid allowance average is now 625 credits. At 1.5× traffic, increasing
+That earlier model used a paid allowance average of 625 credits. At 1.5× traffic, increasing
 average free use from 2 to 20 weighted credits raises the modeled demand to
 $7,714/month. A fully used Free allowance costs about $60–$63 at the recorded
 mode averages, or $75 at the conservative planning rate. Twenty fully used Free
@@ -146,30 +160,27 @@ pause materially affects paid service, provide a manual billing adjustment.
 
 ## Rollout
 
-1. Verify the production merge is authorized. Apply only the unrecorded v2
-   migration transactionally and record it. Keep `billing_settings.enabled=false`.
+1. Verify the production merge is authorized. On an existing installation, do
+   not reapply recorded migrations or reset wallets. Keep the current billing
+   setting; this update does not require a new migration.
 2. Run `backend/scripts/provision_billing.py --env-file <existing environment>`
-   for sandbox resources, then `--live` for production. It creates immutable v3
-   monthly prices and a cancellation portal, without charging anyone. Save each
-   returned portal ID in the corresponding `billing_settings` column. Check that
-   no active v1 or v2 subscription exists; expire old open v1/v2 subscription
-   Checkout sessions and deactivate unused v1/v2 prices before launch. The v3
-   catalog distinguishes the revised allowances from the earlier prelaunch
-   catalogs; the database admission policy remains version 2.
-3. Deploy backend and frontend; verify both exact commit SHAs and the public
-   `/billing/plans` prices and policy availability. Old API versions cannot admit
-   metered generations after activation. Preserve existing Stripe keys and webhook
-   signing secrets.
-4. Extend the existing Stripe endpoint's events with
-   `customer.subscription.created`, `customer.subscription.updated`,
-   `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`,
-   and `checkout.session.async_payment_succeeded`, retaining existing events.
-5. Validate sandbox Checkout, invoice replay, upgrade, refund and cancellation.
-   Verify live catalog prices and portal settings without a live purchase.
-   Then set `billing_settings.enabled=true` and verify anonymous Basic-only
-   admission, signed-in Free All parts access, all four balances, pricing, cancellation and
-   capacity telemetry. The migration increases existing active Free wallets by
-   295 credits while preserving prior spending and legacy bonuses.
+   for sandbox resources, then `--live` during the authorized production rollout.
+   It reuses the existing Builder/Creator v3 prices and updates the portal to offer
+   those two plans with cancellation still enabled. Verify the returned portal IDs
+   against `billing_settings`. Keep retired prices available for existing invoice
+   reconciliation; expire any open Master Checkout sessions after removing that
+   option from the app. The database admission policy remains version 2.
+3. Deploy the backend before the frontend and verify both exact commit SHAs.
+   Confirm `/billing/plans` returns `ready=true` and only Free, Builder and Creator;
+   `/billing/account` must include `paid_features`. Preserve existing Stripe keys,
+   webhook events, signing secrets and billing enablement.
+4. Verify Free export/instruction controls show locks and the upgrade notice,
+   direct instruction links cannot load steps, and paid access remains available
+   with zero credits or cancellation scheduled. Check desktop and mobile layouts.
+5. Validate sandbox Checkout, existing subscription reconciliation and cancellation.
+   Verify live catalog prices and portal choices without a live purchase. Check
+   the three advertised balances and capacity telemetry; never reset wallets or
+   reapply the previously recorded allowance migration during this rollout.
 
 The wallet, ledger and budget reservations are service-only. Browser writes to
 balances and generation status remain revoked. Subscription events fetch the

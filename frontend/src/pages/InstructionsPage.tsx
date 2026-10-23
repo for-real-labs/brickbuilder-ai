@@ -11,6 +11,8 @@ import { LdrToMpdApiService } from '../services/ldrToMpdApi';
 import { NovaToBricksApiService, NovaInstructionPlanError } from '../services/novaToBricksApi';
 import { GetGenerationApiService } from '../services/getGenerationApi';
 import { useAuth } from '../contexts/AuthContext';
+import { useBilling } from '../contexts/BillingContext';
+import { InstructionsAccessGate } from '../components/PaidFeatureDialog';
 import { Loader2, Upload, Coins, X, Palette, ArrowLeft, LayoutDashboard } from 'lucide-react';
 import jsPDF from 'jspdf';
 import posthog from 'posthog-js';
@@ -263,14 +265,24 @@ export function InstructionsPage() {
     onStepChange={onStepChange} />;
 }
 
-export function InstructionsViewer({ generationId, initialStep = 1, navigationState, onStepChange, embedded = false, active = true }: {
+interface InstructionsViewerProps {
   generationId: string | null;
   initialStep?: number;
   navigationState?: unknown;
   onStepChange?: (step: number) => void;
   embedded?: boolean;
   active?: boolean;
-}) {
+}
+
+export function InstructionsViewer(props: InstructionsViewerProps) {
+  const { featureAccess } = useBilling();
+  return <>
+    {!props.embedded && featureAccess !== 'allowed' && <Header />}
+    <InstructionsAccessGate embedded={props.embedded}><UnlockedInstructionsViewer {...props} /></InstructionsAccessGate>
+  </>;
+}
+
+function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationState, onStepChange, embedded = false, active = true }: InstructionsViewerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   // Core state

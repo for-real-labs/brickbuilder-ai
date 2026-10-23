@@ -7,6 +7,8 @@ import { ModelShareMenu } from './ModelShareMenu';
 import { GenerationTitle } from './GenerationTitle';
 import { LdrawGenerationAnimation } from './LdrawGenerationAnimation';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
+import { useBilling } from '../contexts/BillingContext';
+import { PaidFeatureLock } from './PaidFeatureDialog';
 import './LandingModelWorkspace.css';
 
 const InstructionsViewer = lazy(() => import('../pages/InstructionsPage').then(module => ({ default: module.InstructionsViewer })));
@@ -36,6 +38,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
 }) {
   const generation = model?.generation;
   const { markViewed } = useGenerationNotifications();
+  const { featureAccess, requireFeature } = useBilling();
+  const promptedInstructions = useRef<string | null>(null);
   const [readyId, setReadyId] = useState<string | null>(null);
   const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
   const stage = useRef<HTMLDivElement>(null);
@@ -47,16 +51,23 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
   const collapseRef = useRef<(source: 'back_button' | 'escape') => void>(() => {});
-  const showingInstructions = !pendingEdit && instructionsId === generation?.generation_id && view === 'instructions';
+  const showingInstructions = featureAccess === 'allowed' && !pendingEdit && instructionsId === generation?.generation_id && view === 'instructions';
   useEffect(() => {
-    const openInstructions = Boolean(generation && requestedInstructionsId === generation.generation_id);
+    const openInstructions = Boolean(featureAccess === 'allowed' && generation && requestedInstructionsId === generation.generation_id);
     setInstructionsId(openInstructions ? generation!.generation_id : null);
     setView(openInstructions ? 'instructions' : 'model');
     setExpanded(openInstructions);
     if (openInstructions) posthog.capture('landing_model_view_expanded', {
       generation_id: generation!.generation_id, view: 'instructions', source: 'url',
     });
-  }, [generation?.generation_id, requestedInstructionsId]);
+  }, [generation?.generation_id, requestedInstructionsId, featureAccess]);
+  useEffect(() => {
+    if (generation && requestedInstructionsId === generation.generation_id && featureAccess !== 'allowed'
+      && featureAccess !== 'loading' && promptedInstructions.current !== generation.generation_id) {
+      promptedInstructions.current = generation.generation_id;
+      requireFeature('instructions', 'instructions_link');
+    }
+  }, [generation?.generation_id, requestedInstructionsId, featureAccess, requireFeature]);
   useEffect(() => {
     const dialog = panel.current;
     if (!expanded || !dialog) return;
@@ -145,7 +156,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               onModelLoaded={() => setReadyId(generation.generation_id)}
               modelName={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
               animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} />}
-            {instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
+            {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id} embedded active={showingInstructions} />
             </div>}
           </Suspense>}
@@ -169,6 +180,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
         {!pendingEdit && <div className="landing-model-bottom-toolbar">
           <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
             aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
+              if (!showingInstructions && !requireFeature('instructions', 'viewer_footer')) return;
               posthog.capture(showingInstructions ? 'landing_model_3d_view_clicked' : 'landing_model_instructions_clicked', {
                 generation_id: generation.generation_id, source: 'viewer_footer',
               });
@@ -177,6 +189,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             }}>
             {showingInstructions ? <Box size={16} aria-hidden="true" /> : <BookOpen size={16} aria-hidden="true" />}
             <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
+            {featureAccess !== 'allowed' && <PaidFeatureLock />}
           </button>
           {!busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share">
             <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />

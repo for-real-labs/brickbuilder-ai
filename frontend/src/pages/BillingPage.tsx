@@ -7,6 +7,7 @@ import { useBilling } from '../contexts/BillingContext';
 import { billingDate } from '../components/BillingComponents';
 import { PetAvatar } from '../components/PetCompanion';
 import { BillingHeader } from './PricingPage';
+import { LEGACY_MASTER_PLAN } from '../services/billingApi';
 
 export default function BillingPage() {
   const { user } = useAuth();
@@ -32,7 +33,7 @@ export default function BillingPage() {
     });
     return () => { active = false; };
   }, [user?.id, sessionId]);
-  const plan = plans.find(p => p.key === account?.plan_key);
+  const plan = plans.find(p => p.key === account?.plan_key) ?? (account?.plan_key === 'master' ? LEGACY_MASTER_PLAN : undefined);
   const labels: Record<string, string> = { welcome: 'Existing credits preserved', monthly: 'Monthly credits', upgrade: 'Plan upgrade', generation: 'AI build or edit', refund: 'Build credit returned' };
   return <div className="billing-page"><BillingHeader /><main className="billing-account-main">
     <div className="billing-account-title"><div><p className="billing-eyebrow">YOUR BUILDING ROOM</p><h1>Credits & billing</h1><p>More ideas ahead. Here’s where you stand.</p></div><PetAvatar state={confirmed ? 'celebrating' : 'idle'} /></div>

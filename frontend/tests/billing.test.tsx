@@ -36,7 +36,7 @@ beforeEach(async () => {
     period_start: '2026-10-01T00:00:00Z', period_end: '2099-11-01T00:00:00Z', subscription_status: 'none',
     cancel_at_period_end: false, has_subscription: false, enabled: true, history: [] };
   const { INITIAL_PLANS } = await import('../src/services/billingApi');
-  vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, plans: INITIAL_PLANS });
+  vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, ready: true, plans: INITIAL_PLANS });
   vi.mocked(billingApi.account).mockImplementation(async () => account);
   vi.mocked(billingApi.sync).mockImplementation(async () => account);
   vi.mocked(billingApi.checkout).mockResolvedValue({ url: 'https://checkout.stripe.com/c/pay/test' });
@@ -52,7 +52,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   expect(container.querySelector('button')?.getAttribute('aria-label')).toContain('2 credits');
   await click('credits');
   expect(container.querySelector('dialog')?.open).toBe(true);
-  expect(container.querySelectorAll('.billing-plan')).toHaveLength(3);
+  expect(container.querySelectorAll('.billing-plan')).toHaveLength(2);
   expect(container.textContent).toContain('Monthly credits reset and do not roll over');
   await click('Choose Creator');
   expect(billingApi.checkout).toHaveBeenCalledWith('creator');
@@ -117,7 +117,7 @@ it('clearly confirms an end-of-period cancellation without offering another canc
 it('keeps a failed checkout in the app with a useful error', async () => {
   vi.mocked(billingApi.checkout).mockRejectedValueOnce(new Error('Please try again in a moment.'));
   await render(<PricingPage />);
-  await click('Choose Master Builder');
+  await click('Choose Creator');
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again in a moment.');
   expect(openStripe).not.toHaveBeenCalled();
   expect(container.textContent).toContain('monthly plans only');
@@ -125,7 +125,7 @@ it('keeps a failed checkout in the app with a useful error', async () => {
 
 it('disables paid checkout until billing is enabled', async () => {
   account.enabled = false;
-  vi.mocked(billingApi.plans).mockResolvedValueOnce({ enabled: false, plans: (await import('../src/services/billingApi')).INITIAL_PLANS });
+  vi.mocked(billingApi.plans).mockResolvedValueOnce({ enabled: false, ready: true, plans: (await import('../src/services/billingApi')).INITIAL_PLANS });
   await render(<PlanGrid source="pricing_page" />);
   expect(container.textContent).toContain('Coming soon');
   expect([...container.querySelectorAll('button')].filter(b => b.textContent === 'Coming soon').every(b => b.disabled)).toBe(true);
@@ -157,9 +157,9 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
 it('shows the approved monthly allowances and whole All parts equivalents on every plan', async () => {
   await render(<PricingPage />);
   const cards = [...container.querySelectorAll('.billing-plan')];
-  expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$9', '$19', '$39']);
+  expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$9', '$19']);
   ['300 Basic builds or 20 All parts builds', '500 Basic builds or 33 All parts builds',
-    '750 Basic builds or 50 All parts builds', '1,000 Basic builds or 66 All parts builds']
+    '750 Basic builds or 50 All parts builds']
     .forEach((allowance, index) => expect(cards[index].textContent).toContain(allowance));
   expect(container.textContent).toContain('leftover credits remain usable for Basic builds');
   expect(container.textContent).toContain('up to 5 bonus credits per calendar month');
@@ -185,7 +185,7 @@ it('lets Free accounts use All parts without a paid-plan nudge', async () => {
 
 it('pauses new sales at capacity while keeping cancellation accessible', async () => {
   account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active', checkout_available: false };
-  vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, checkout_available: false, plans: (await import('../src/services/billingApi')).INITIAL_PLANS });
+  vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, ready: true, checkout_available: false, plans: (await import('../src/services/billingApi')).INITIAL_PLANS });
   await render(<><PlanGrid source="pricing_page" /><BillingPage /></>);
   expect([...container.querySelectorAll('button')].filter(b => b.textContent === 'At capacity').every(b => b.disabled)).toBe(true);
   await click('Cancel subscription');

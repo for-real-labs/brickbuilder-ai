@@ -7,6 +7,8 @@ import posthog from 'posthog-js';
 import { InstructionsPostcard, getPostcardTheme } from '../src/components/checkout/InstructionsPostcard';
 
 const orderKitStyles = readFileSync('src/pages/OrderKit.css', 'utf8');
+const billing = vi.hoisted(() => ({ featureAccess: 'allowed', requireFeature: vi.fn(() => true) }));
+vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billing }));
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 const viewer = vi.hoisted(() => ({ props: [] as any[], captureCurrentViewPng: vi.fn(() => 'data:image/png;base64,adjusted-view') }));
@@ -26,6 +28,7 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 const props = { selected: false, disabled: false, onChange: vi.fn(), modelName: 'Galaxy Explorer', modelImage: 'https://example.com/model.png', generationId: 'g/123' };
 beforeEach(() => {
+  billing.featureAccess = 'allowed'; billing.requireFeature.mockReset().mockReturnValue(true);
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function () { this.open = true; } });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function () { this.open = false; this.dispatchEvent(new Event('close')); } });
   props.onChange.mockReset(); viewer.props = []; viewer.captureCurrentViewPng.mockClear();
@@ -65,6 +68,20 @@ it('renders a QR code that independently decodes to the selected model’s instr
   const url = 'https://brickbuilder.ai/instructions?id=g%2F123';
   expect(jsQR(pixels, width, width)?.data).toBe(url);
   expect(container.querySelector('a.checkout-postcard-qr')?.getAttribute('href')).toBe(url);
+});
+
+it('keeps the Free postcard instruction link visible with a lock and opens the shared upgrade notice', () => {
+  billing.featureAccess = 'locked'; billing.requireFeature.mockReturnValue(false);
+  render(); open();
+  expect(container.querySelector('.checkout-postcard-access .paid-feature-lock')).not.toBeNull();
+  expect(container.textContent).toContain('Online instructions require Builder or Creator.');
+  const link = container.querySelector<HTMLAnchorElement>('.checkout-postcard-qr')!;
+  expect(link.getAttribute('aria-label')).toContain('Paid plan required');
+  const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+  act(() => link.dispatchEvent(event));
+  expect(event.defaultPrevented).toBe(true);
+  expect(billing.requireFeature).toHaveBeenCalledWith('instructions', 'postcard_preview');
+  expect(container.querySelector('dialog')!.open).toBe(true);
 });
 
 it('tracks opting in without leaking the model name or image, and disables changes during payment', () => {

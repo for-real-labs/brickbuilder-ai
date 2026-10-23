@@ -3,6 +3,8 @@ import { Info, Package, RotateCcw, X } from 'lucide-react';
 import QRCode from 'qrcode';
 import posthog from 'posthog-js';
 import { ThreeLDRViewer, type CameraState, type ExportCaptureApi } from '../ThreeLDRViewer';
+import { useBilling } from '../../contexts/BillingContext';
+import { PaidFeatureLock } from '../PaidFeatureDialog';
 
 export function getPostcardTheme(name: string) {
   if (/\b(space|galaxy|cosmic|star|rocket|planet|moon)\b/i.test(name)) return 'space';
@@ -33,6 +35,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
   selected: boolean; onChange: (selected: boolean) => void; disabled: boolean;
   modelName: string; modelImage: string | null; modelContent?: string | null; generationId: string;
 }) {
+  const { featureAccess, requireFeature } = useBilling();
   const [open, setOpen] = React.useState(false);
   const [viewerVisible, setViewerVisible] = React.useState(false);
   const [failedImage, setFailedImage] = React.useState<string | null>(null);
@@ -92,6 +95,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
       <div className="checkout-postcard-dialog-content">
         <button type="button" className="checkout-postcard-close" aria-label="Close postcard preview" onClick={close}><X size={20} aria-hidden="true" /></button>
         <p id={descriptionId} className="checkout-postcard-description">Select this option to ship a post card with a QR code link to the instructions.</p>
+        {featureAccess !== 'allowed' && <p className="checkout-postcard-access"><PaidFeatureLock />Online instructions require Builder or Creator.</p>}
         <figure className="checkout-postcard-example" aria-label="7 by 5 inch instructions postcard with bleed (7.12 by 5.12 inches)">
           <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
@@ -104,7 +108,10 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
             </div>
             <div className="checkout-postcard-details">
               <h3 title={modelName}>{modelName}</h3>
-              <a className="checkout-postcard-qr" href={instructionsUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open instructions for ${modelName}`} onClick={() => posthog.capture('order_instructions_postcard_link_clicked', { generation_id: generationId })}><InstructionsQrCode url={instructionsUrl} /></a>
+              <a className="checkout-postcard-qr" href={instructionsUrl} target="_blank" rel="noopener noreferrer" aria-label={`Open instructions for ${modelName}${featureAccess !== 'allowed' ? ' · Paid plan required' : ''}`} onClick={event => {
+                if (!requireFeature('instructions', 'postcard_preview')) { event.preventDefault(); return; }
+                posthog.capture('order_instructions_postcard_link_clicked', { generation_id: generationId });
+              }}><InstructionsQrCode url={instructionsUrl} /></a>
               <span className="checkout-postcard-scan">Scan to start building</span>
               <span className="checkout-postcard-site">brickbuilder.ai</span>
             </div>

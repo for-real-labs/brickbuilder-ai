@@ -15,7 +15,8 @@ export function BillingHeader() {
 }
 
 const faqs = [
-  ['What uses a credit?', 'Basic builds and Basic AI edits use 1 credit. All parts builds, All parts edits, and AI image/text-to-mesh conversions use 15 credits on every plan, including Free. You can mix modes from your monthly balance. Whole-build examples round down; leftover credits remain usable for Basic builds. Importing LDraw/GLB/OBJ, manual edits, resizing, instructions, and downloads use no credits. Physical brick kits are purchased separately.'],
+  ['What uses a credit?', 'Basic builds and Basic AI edits use 1 credit. All parts builds, All parts edits, and AI image/text-to-mesh conversions use 15 credits on every plan, including Free. You can mix modes from your monthly balance. Whole-build examples round down; leftover credits remain usable for Basic builds. Importing LDraw/GLB/OBJ, manual edits, and resizing use no credits. LDR/IO exports and building instructions require Builder or Creator and use no extra credits. Physical brick kits are purchased separately.'],
+  ['Can I download models or view instructions on Free?', 'Free includes model creation and 3D previews. LDR/IO exports and building instructions are locked on Free. Choose Builder or Creator to unlock them. CSV and XML parts lists remain available on Free.'],
   ['Can I try it first?', 'Yes. Guests get one Basic trial attempt. Sign in for 300 free credits each calendar month: 300 Basic builds or 20 All parts builds, or a mix; a successful guest trial counts toward that month’s allowance. No payment card is needed.'],
   ['When do credits reset?', 'Paid credits reset on your monthly billing date. Free credits reset on the first day of each month at 00:00 UTC. Unused monthly credits do not roll over. Your balance shows the reset date in your timezone.'],
   ['What happens to my existing credits?', 'Your existing balance is preserved as legacy bonus credits and never expires. After your monthly credits, redeem up to 5 bonus credits per calendar month for Basic builds. Bonuses cannot be used for All parts or AI mesh conversions. Unused bonuses stay in your account.'],
@@ -27,7 +28,7 @@ const faqs = [
 export default function PricingPage() {
   const { error, enabled, account, checkoutAvailable } = useBilling();
   useEffect(() => { posthog.capture('billing_pricing_viewed', { source: 'pricing_page' }); }, []);
-  return <div className="billing-page"><Helmet><title>Plans & credits | BrickBuilder</title><meta name="description" content="Build with AI from $9 per month. Start with 300 free monthly credits or choose 500, 750, or 1,000. Cancel anytime. Every plan includes your Build Buddy." /></Helmet>
+  return <div className="billing-page"><Helmet><title>Plans & credits | BrickBuilder</title><meta name="description" content="Start with 300 free monthly credits. Builder includes 500 credits for $9/month; Creator includes 750 for $19/month. Paid plans unlock LDR/IO exports and instructions. Cancel anytime." /></Helmet>
     <BillingHeader />
     <main className="billing-main"><div className="billing-hero"><div className="billing-hero-pets"><PetAvatar id="pip" /><PetAvatar id="nib" /><PetAvatar id="clik" /></div>
       <p className="billing-eyebrow">YOUR IDEAS. YOUR BUDDY. YOUR NEXT BUILD.</p><h1>Keep your ideas building.</h1>

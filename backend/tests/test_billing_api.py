@@ -164,3 +164,77 @@ def test_admission_errors_are_safe_and_actionable(code,status):
     storage.client=SimpleNamespace(table=lambda _:Table())
     with pytest.raises(HTTPException) as error: asyncio.run(storage.create_generation(str(uuid4()),'authenticated','cube',40))
     assert error.value.status_code==status
+
+
+@pytest.mark.parametrize('plan,status,remaining_days,allowed', [
+    ('free','none',30,False), ('builder','active',30,True), ('creator','active',30,True),
+    ('master','active',30,True), ('builder','active',-1,False),
+    ('creator','canceled',30,False), ('builder','past_due',1,True), ('builder','unpaid',1,False),
+])
+def test_paid_features_follow_paid_period_not_credit_balance(plan,status,remaining_days,allowed):
+    row={'plan_key':plan,'subscription_status':status,'monthly_remaining':0,
+         'cancel_at_period_end':True,
+         'period_end':(datetime.now(timezone.utc)+timedelta(days=remaining_days)).isoformat()}
+    assert billing.has_paid_features(row) is allowed
+
+
+def test_retired_master_cannot_be_selected_but_existing_invoices_still_reconcile(monkeypatch,identity,subscription):
+    assert [p['key'] for p in billing.PLANS]==['free','builder','creator']
+    with pytest.raises(ValidationError): CheckoutRequest(plan_key='master')
+    with pytest.raises(HTTPException) as error: asyncio.run(billing.price_for('master'))
+    assert error.value.status_code==400
+    subscription['items'].data[0].price.lookup_key=billing.lookup_key('master')
+    subscription['items'].data[0].price.unit_amount=3900
+    monkeypatch.setattr(billing.stripe.Subscription,'retrieve',Mock(return_value=subscription))
+    monkeypatch.setattr(billing,'wallet',AsyncMock(return_value={'stripe_customer_id':'cus_test','stripe_subscription_id':'sub_test'}))
+    grant=AsyncMock();monkeypatch.setattr(billing,'rpc',grant)
+    asyncio.run(billing.sync_subscription('sub_test'))
+    assert grant.call_args.kwargs['p_plan']=='master'
+    assert grant.call_args.kwargs['p_allowance']==1000
+
+
+@pytest.mark.parametrize('caller,plan,allowed', [('guest','free',False),('member','free',False),('member','builder',True),('member','creator',True)])
+def test_instruction_endpoint_checks_plan_before_reading_any_steps(monkeypatch,identity,caller,plan,allowed):
+    from fastapi.testclient import TestClient
+    from fastapi.responses import Response
+    from src import api
+    from src.utils import auth
+    monkeypatch.setattr(billing,'local_unmetered',lambda:False)
+    monkeypatch.setattr(billing,'settings',AsyncMock(return_value={'enabled':True}))
+    wallet=AsyncMock(return_value={'plan_key':plan,'subscription_status':'active' if plan!='free' else 'none',
+        'period_end':(datetime.now(timezone.utc)+timedelta(days=1)).isoformat()})
+    monkeypatch.setattr(billing,'wallet',wallet)
+    steps=AsyncMock(return_value=Response('steps',headers={'Cache-Control':'private, no-store'}))
+    monkeypatch.setattr(api,'get_nova_instructions',steps)
+    who=identity if caller=='member' else {'authenticated':False,'is_anonymous':True}
+    api.app.dependency_overrides[auth.get_optional_identity]=lambda:who
+    try:
+        response=TestClient(api.app).get(f'/generation/{uuid4()}/nova-instructions.ldr')
+        assert response.status_code==(200 if allowed else 403)
+        if allowed: steps.assert_awaited_once()
+        else:
+            steps.assert_not_called()
+            assert response.json()['detail']['code']=='BB_PAID_FEATURE_REQUIRED'
+        if caller=='guest': wallet.assert_not_called()
+        else: wallet.assert_awaited_once_with(identity['user_id'])
+    finally: api.app.dependency_overrides.clear()
+
+
+def test_plan_configuration_errors_do_not_grant_unmetered_features(monkeypatch):
+    from src.requests.billing import plans
+    monkeypatch.setattr(billing,'local_unmetered',lambda:False)
+    monkeypatch.setattr(billing,'settings',AsyncMock(side_effect=RuntimeError('offline')))
+    result=asyncio.run(plans())
+    assert result['ready'] is False and result['enabled'] is False
+    with pytest.raises(RuntimeError): asyncio.run(billing.require_paid_features({'authenticated':False}))
+
+
+def test_local_and_deliberately_disabled_billing_preserve_unmetered_features(monkeypatch):
+    monkeypatch.setattr(billing,'local_unmetered',lambda:True)
+    config=AsyncMock(side_effect=AssertionError('local development has no database'))
+    monkeypatch.setattr(billing,'settings',config)
+    asyncio.run(billing.require_paid_features({}))
+    config.assert_not_called()
+    monkeypatch.setattr(billing,'local_unmetered',lambda:False)
+    monkeypatch.setattr(billing,'settings',AsyncMock(return_value={'enabled':False}))
+    asyncio.run(billing.require_paid_features({}))
