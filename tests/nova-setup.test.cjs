@@ -35,6 +35,19 @@ test('hosted runtime reaps orphaned tools while preserving the upstream startup'
   assert.match(recipe.trim().split('\n').at(-1), /exec uvicorn brickbuilder_integration\.gateway:app/);
 });
 
+test('hosted runtime downloads the pinned archive with its verified checksum', () => {
+  const upstream = 'FROM node:24-slim AS openai-login\nARG CODEX_VERSION=0.157.1\nWORKDIR /opt/codex\n' +
+    'RUN npm pack "@openai/codex@${CODEX_VERSION}-linux-x64" \\\n    && tar -xzf "openai-codex-${CODEX_VERSION}-linux-x64.tgz"';
+  const recipe = deploymentDockerfile(upstream);
+  assert.ok(!recipe.includes('npm pack'));
+  assert.ok(recipe.includes('ADD --checksum=sha256:7f12677740f439fe4884c7031d9d703e571cecf5ea9fa3a05abd1bbccc2162a8 ' +
+    'https://registry.npmjs.org/@openai/codex/-/codex-${CODEX_VERSION}-linux-x64.tgz /opt/codex/runtime.tgz'));
+  assert.ok(recipe.includes('ARG CODEX_VERSION=0.157.1\nWORKDIR /opt/codex'));
+  assert.ok(recipe.includes('RUN tar -xzf runtime.tgz && rm runtime.tgz'));
+  assert.throws(() => deploymentDockerfile(upstream.replace('CODEX_VERSION=0.157.1', 'CODEX_VERSION=0.158.0')),
+    /Verify the new Codex archive checksum/);
+});
+
 test('checked-in hosted Dockerfile matches the generator including process cleanup', () => {
   const hosted = readFileSync(path.resolve(__dirname, '../backend/nova-service/Dockerfile'), 'utf8');
   const start = hosted.indexOf('# check=');
