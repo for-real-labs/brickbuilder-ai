@@ -147,7 +147,9 @@ class GenerationStorage:
                 "input_format": input_format,
                 "entry_page": normalize_entry_page(entry_page),
                 "created_at": datetime.utcnow().isoformat(),
-                "status": "started"
+                "status": "started",
+                "billing_policy_version": 2,
+                "billing_livemode": os.getenv("API_MODE", "local") == "production"
             }
             if user_type == 'anonymous':
                 # Admission-only field: the database consumes and clears it.
@@ -188,10 +190,18 @@ class GenerationStorage:
             
         except Exception as e:
             track_request_limit(e, user_id=user_id, user_type=user_type, endpoint=endpoint)
+            if 'BB_AI_CAPACITY' in str(e):
+                raise HTTPException(status_code=503, detail='New AI builds are temporarily at capacity. Your credits have not been charged. Please try again later; saved models and cancellation remain available.') from None
+            if 'BB_BILLING_VERSION' in str(e):
+                raise HTTPException(status_code=503, detail='Building is being updated. Please try again shortly.') from None
+            if 'BB_SIGN_IN_REQUIRED' in str(e):
+                raise HTTPException(status_code=403, detail='Sign in for 300 free monthly credits. All parts builds and AI mesh conversions use 15 credits; Basic builds use 1 credit.') from None
+            if 'BB_CREDITS_EXHAUSTED' in str(e):
+                raise HTTPException(status_code=402, detail='You have used your available credits. Choose a monthly plan to keep building, or wait for your credits to reset.') from None
             if 'BB_GENERATION_GUEST_IP_REQUIRED' in str(e):
                 raise HTTPException(status_code=503, detail='Guest access is temporarily unavailable. Please sign in to keep building.') from None
             if 'BB_GENERATION_GUEST_LIMIT' in str(e):
-                raise HTTPException(status_code=403, detail='You have used your 3 free guest generations. Sign in to keep building.') from None
+                raise HTTPException(status_code=403, detail=('You have used your free Basic guest trial. Sign in for your remaining monthly credits, usable for Basic or All parts builds.' if 'BB_GENERATION_GUEST_LIMIT:1' in str(e) else 'You have used your 3 free guest generations. Sign in to keep building.')) from None
             if 'BB_GENERATION_DAILY_LIMIT' in str(e):
                 reset_at = (datetime.now(timezone.utc) + timedelta(days=1)).replace(
                     hour=0, minute=0, second=0, microsecond=0)

@@ -20,6 +20,10 @@ def isolated_client(monkeypatch):
     ('BB_GENERATION_DAILY_LIMIT', 'daily', 10, 429),
     ('BB_GENERATION_DAILY_LIMIT:5', 'daily', 5, 429),
     ('BB_GENERATION_GUEST_LIMIT', 'guest_lifetime', 3, 403),
+    ('BB_GENERATION_GUEST_LIMIT:1', 'guest_lifetime', 1, 403),
+    ('BB_CREDITS_EXHAUSTED', 'credits', 0, 402),
+    ('BB_SIGN_IN_REQUIRED', 'sign_in', None, 403),
+    ('BB_AI_CAPACITY', 'ai_capacity', None, 503),
     ('BB_GENERATION_CONCURRENCY_LIMIT', 'concurrent', 1, 429),
 ])
 def test_rejected_admission_emits_once_without_private_payload(monkeypatch, code, kind, value, status):

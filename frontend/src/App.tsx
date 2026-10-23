@@ -30,6 +30,10 @@ import TermsOfServicePage from "./pages/TermsOfServicePage";
 import PetPreviewPage from './pages/PetPreviewPage';
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
+import { BillingProvider } from './contexts/BillingContext';
+import { BillingOverlays } from './components/BillingComponents';
+import PricingPage from './pages/PricingPage';
+import BillingPage from './pages/BillingPage';
 import { PetProvider } from "./contexts/PetContext";
 import { PetCompanion } from "./components/PetCompanion";
 import { MobileAppBanner } from "./components/MobileAppBanner";
@@ -47,6 +51,7 @@ export default function App() {
     <BrowserRouter>
       <MobileAppBanner />
       <PetProvider>
+      <BillingProvider>
       <AiConsentDialog />
       <GenerationNotificationsProvider>
       <ChangeRequestProvider>
@@ -65,6 +70,8 @@ export default function App() {
           <Route path="/oauth/consent" element={<OAuthConsentPage />} />
 
           {/* App pages */}
+          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/billing" element={<BillingPage />} />
           <Route path="/dashboard" element={<UserDashboard />} /> {/* NEW */}
           <Route path="/generated-model" element={<GeneratedModelRedirect />} />
           <Route path="/glb-to-lego" element={<GlbToLegoPage />} />
@@ -100,6 +107,8 @@ export default function App() {
       </ChangeRequestProvider>
       </GenerationNotificationsProvider>
       <PetCompanion />
+      <BillingOverlays />
+      </BillingProvider>
       </PetProvider>
     </BrowserRouter>
   );

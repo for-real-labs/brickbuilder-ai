@@ -11,6 +11,9 @@ LIMITS = {
     'BB_GENERATION_GUEST_LIMIT': ('guest_lifetime', 3, 403),
     'BB_GENERATION_DAILY_LIMIT': ('daily', 10, 429),
     'BB_GENERATION_CONCURRENCY_LIMIT': ('concurrent', 1, 429),
+    'BB_CREDITS_EXHAUSTED': ('credits', 0, 402),
+    'BB_SIGN_IN_REQUIRED': ('sign_in', None, 403),
+    'BB_AI_CAPACITY': ('ai_capacity', None, 503),
 }
 
 
@@ -43,6 +46,8 @@ def track_request_limit(error: Exception, *, user_id: str, user_type: str, endpo
         if client is None:
             return
         kind, value, status = limit
+        if kind == 'guest_lifetime' and 'BB_GENERATION_GUEST_LIMIT:1' in str(error):
+            value = 1
         if kind == 'daily':
             value = daily_limit_value(error)
         client.capture(distinct_id=user_id, event='request_limit_hit', properties={

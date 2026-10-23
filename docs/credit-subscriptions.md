@@ -1,0 +1,189 @@
+# Monthly credits and subscriptions
+
+## Launch state
+
+The approved pricing is prepared on `ragnarok`, updated with `main` through
+`01a5df8`. Production billing remains disabled until the production merge,
+migration, catalog, webhooks and both deployed commits are verified. The earlier
+billing migration `20261022000000` is already recorded in production; do not
+reapply it. The new migration is `20261023000000_billing_pricing_v2.sql`.
+
+## Plans
+
+| Plan | USD / month | Monthly credits | Example use of the shared balance |
+| --- | ---: | ---: | --- |
+| Free | $0 | 300 | 300 Basic or 20 All parts builds |
+| Builder | $9 | 500 | 500 Basic or 33 All parts builds, with 5 credits left |
+| Creator | $19 | 750 | 750 Basic or 50 All parts builds |
+| Master Builder | $39 | 1,000 | 1,000 Basic or 66 All parts builds, with 10 credits left |
+
+Basic generation and Basic AI edits cost 1 credit. All parts generation/edits and
+AI text/image-to-mesh conversions cost 15 credits on every plan, including Free. Modes
+share a balance; the example counts are alternatives, not additive allowances.
+Monthly plans only; no annual plans or one-off packs. Physical kits are separate.
+
+Guests get one Basic trial attempt, enforced by persistent browser and IP
+counters. A claimed successful or running trial deducts one credit from the
+account's Free allowance if it belongs to the current month. Failed trials can
+sign in for Free access. Existing guest counters are preserved. LDraw/GLB/OBJ
+imports, manual edits, resizing, instructions and downloads do not use credits.
+When billing is enabled, monthly credits replace the default 10-attempt daily
+limit for signed-in accounts so the advertised allowances are usable. There is
+still one active generation per user. Explicit account restrictions and verified
+owner exemptions remain intact. Turning billing off restores the default daily
+limit. Guests retain the separate one-attempt Basic trial.
+
+The 31,700 prelaunch bonus credits are preserved. Users can redeem up to 5 per
+UTC calendar month, after monthly credits, for Basic builds only. They never
+expire. The account page separates the full legacy balance from credits usable
+this month. Monthly credits fund either mode; legacy bonuses remain Basic-only.
+
+Free credits reset each UTC calendar month. Paid credits reset on a verified paid
+Stripe invoice at the billing anniversary, without rollover. Upgrades grant only
+the positive allowance difference; downgrade/re-upgrade cycling cannot mint more
+credits. Downgrades take effect at renewal. Failed/canceled builds refund their
+full 1- or 15-credit charge once, into its original period. Bonus refunds restore
+the monthly redemption allowance only when returning to the same bonus month.
+
+Billing → Cancel subscription opens Stripe confirmation. Cancellation takes
+effect at period end; the remaining paid allowance stays available until then.
+Saved models and legacy bonuses remain available afterward. Cancellation,
+receipts and payment-method updates remain accessible during capacity pauses.
+
+## Evidence and assumptions
+
+The September 22–October 21, 2026 Chicago window contained 9,263 PostHog visitors
+and 901 people clicking Generate. The latest complete weekly Generate audience
+grew from 250 to 398. Generation event instrumentation began October 11; earlier
+zeroes are not zero product usage. The database had 89 successful signed-in AI
+builders and 1,407 AI builds, excluding known internal identities and imports.
+Median signed-in use was 3 builds. These are usage observations, not measured
+willingness to pay. Postmark was not available for this analysis.
+
+Recorded AI spend for October 15–21 was approximately $3,797 including internal
+accounts. Basic cost approximately $0.21 per successful build; All parts cost
+approximately $2.95 including recorded failed-job spend. Reporting is incomplete,
+especially for historical failures and some providers. Do not interpret missing
+usage as zero cost or these figures as reconciled provider invoices.
+
+With the revised 300-credit Free allowance, 79 of the 89 signed-in builders
+(89%) fit entirely within Free at their observed mix of Basic and All parts.
+Ten exceeded 300 weighted credits; seven exceeded 500, six exceeded 750 and five
+exceeded 1,000. Historical usage therefore provides little reason for most of
+this cohort to upgrade. The larger free plan is a subsidized acquisition offer,
+not evidence that more users will subscribe.
+
+Keeping the prior illustrative assumptions (65% of Generate clickers active,
+2% subscribing, 60/30/10% paid-plan mix, 70% paid-credit utilization, $0.25 per
+weighted credit, two free weighted credits used per active free user, and a
+$500 reserve) gives the following *unconstrained demand*, before budget pauses:
+
+| Generate audience | Expected subscribers | Gross MRR | Monthly AI demand |
+| --- | ---: | ---: | ---: |
+| 1× (901 people) | 18 | $270 | $2,755 |
+| 1.5× | 27 | $405 | $3,882 |
+| 2× | 36 | $541 | $5,010 |
+| 3× | 54 | $811 | $7,264 |
+
+The paid allowance average is now 625 credits. At 1.5× traffic, increasing
+average free use from 2 to 20 weighted credits raises the modeled demand to
+$7,714/month. A fully used Free allowance costs about $60–$63 at the recorded
+mode averages, or $75 at the conservative planning rate. Twenty fully used Free
+allowances alone would consume the $1,500 generation budget at that planning
+rate, before any paid use. Legacy bonus redemption is additional: all 317
+legacy accounts redeeming five extra credits adds about $396/month.
+
+The prior 20–40% active-user, 60–80% total-build and 90–98% All parts drop-off
+estimates assumed a five-Basic-only Free plan and no longer apply. Allowances do
+not identify willingness to pay or usage after a paywall. Most observed signed-in
+users can keep their existing habits free; heavy users, guest sign-in friction,
+and capacity pauses will drive any drop-off. At the 1.5× scenario, $1,500 of
+generation capacity covers about 44% of the modeled $3,382 generation demand
+(before the $500 reserve), implying roughly 56% of weighted usage must be
+unserved if that demand materializes at the planning cost. This is a capacity
+scenario, not a prediction of voluntary churn or of the number of builds.
+
+These assumptions are not a measured conversion forecast. Full utilization and
+growth cannot be served within the current budget; the guard will pause service
+before everyone uses their advertised allowance. Do not present this pricing as
+self-funding or promise uninterrupted availability. Measure conversion, renewal,
+cancellations, generation mix, actual spend and capacity rejections after launch.
+
+Meshy's balance badge, pricing modal, creation banner, low-credit nudge, usage
+history and hosted billing informed the flow. BrickBuilder keeps its own design
+and Build Buddies. Meshy also offers subscriber-only one-off credit packs in
+addition to monthly/annual plans; BrickBuilder intentionally starts monthly only.
+Sources: [pricing](https://www.meshy.ai/pricing) and
+[credit help](https://help.meshy.ai/en/articles/9991981-how-do-meshy-credits-work).
+
+## Spending safeguards and limitations
+
+The $2,000 monthly operating target is split into $1,500 for generation and $500
+for short assistant/title calls outside reserved jobs. Admission reserves $21 per
+job atomically across API workers: the existing $20 provider limit plus a title
+buffer. Only a successful Basic/All parts job with finalized reported usage
+releases the unused amount. Failures, cancellations, incomplete reports and
+legacy mesh jobs retain the conservative hold. Credit refunds never erase spend.
+Short calls reserve a conservative token-price bound before contacting the
+provider, settle on reported usage and retain the hold on unknown outcomes.
+
+New checkouts/plan changes pause with less than $200 generation capacity left.
+New generation requests stop when less than their $21 reservation remains;
+rejected requests consume neither credits nor guest/daily allowances. Free and
+internal usage also consume the global generation budget. Existing models and
+subscription cancellation remain accessible. Never offer an upgrade as the
+solution to a global capacity error.
+
+Reservations reset by UTC calendar month. Tracking begins when the feature is
+first enabled; it does not retroactively reimburse or cap prelaunch spending.
+This is a conservative admission guard, not a guaranteed ceiling on provider
+invoices: provider timing, month-crossing jobs, unreported external charges and
+legacy AI paths can differ. Reconcile actual provider bills, including the
+Anthropic daily reports. Review retained holds before adjusting them; never
+release uncertain failed-job spend just because user credits were refunded.
+A capacity pause does not cancel renewals or extend paid credit expiry. If a
+pause materially affects paid service, provide a manual billing adjustment.
+
+## Rollout
+
+1. Verify the production merge is authorized. Apply only the unrecorded v2
+   migration transactionally and record it. Keep `billing_settings.enabled=false`.
+2. Run `backend/scripts/provision_billing.py --env-file <existing environment>`
+   for sandbox resources, then `--live` for production. It creates immutable v3
+   monthly prices and a cancellation portal, without charging anyone. Save each
+   returned portal ID in the corresponding `billing_settings` column. Check that
+   no active v1 or v2 subscription exists; expire old open v1/v2 subscription
+   Checkout sessions and deactivate unused v1/v2 prices before launch. The v3
+   catalog distinguishes the revised allowances from the earlier prelaunch
+   catalogs; the database admission policy remains version 2.
+3. Deploy backend and frontend; verify both exact commit SHAs and the public
+   `/billing/plans` prices and policy availability. Old API versions cannot admit
+   metered generations after activation. Preserve existing Stripe keys and webhook
+   signing secrets.
+4. Extend the existing Stripe endpoint's events with
+   `customer.subscription.created`, `customer.subscription.updated`,
+   `customer.subscription.deleted`, `invoice.paid`, `invoice.payment_failed`,
+   and `checkout.session.async_payment_succeeded`, retaining existing events.
+5. Validate sandbox Checkout, invoice replay, upgrade, refund and cancellation.
+   Verify live catalog prices and portal settings without a live purchase.
+   Then set `billing_settings.enabled=true` and verify anonymous Basic-only
+   admission, signed-in Free All parts access, all four balances, pricing, cancellation and
+   capacity telemetry. The migration increases existing active Free wallets by
+   295 credits while preserving prior spending and legacy bonuses.
+
+The wallet, ledger and budget reservations are service-only. Browser writes to
+balances and generation status remain revoked. Subscription events fetch the
+current Stripe state, validate owner/mode/price and apply paid invoices once.
+Physical-kit webhook handling stays separate. A failed webhook returns an error
+for Stripe retries; authenticated `/billing/sync` also reconciles on return.
+
+For an incident, stopping new generation admission while retaining enforcement
+is safer than disabling billing: set the generation budget to a small positive
+value below existing usage. `enabled=false` restores unmetered legacy access and
+3 guest attempts; it is a rollout rollback switch, not a spending kill switch.
+Subscriptions still renew until canceled in Stripe. Keep the portal and webhook
+service available for existing customers.
+
+PostHog tracks pricing views, plan selection, checkout starts/failures, balance
+and mode nudges, FAQ usage, confirmation and cancellation clicks. Stripe invoices
+are the source of truth for paid revenue; client confirmation events are not.

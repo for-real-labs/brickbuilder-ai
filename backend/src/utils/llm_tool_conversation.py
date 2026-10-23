@@ -76,10 +76,14 @@ class ConversationSettings:
 
 async def post_json(client: httpx.AsyncClient, url: str, headers: Dict[str, str],
                     payload: Dict[str, Any], provider: str) -> Dict[str, Any]:
+    from .billing_ai_budget import reserve, settle
+    reservation = await reserve(payload)
     try:
         response = await client.post(url, headers=headers, json=payload)
         response.raise_for_status()
-        return response.json()
+        result = response.json()
+        await settle(reservation, payload, result, provider)
+        return result
     except httpx.TimeoutException as exc:
         raise HTTPException(status_code=504, detail=f"{provider} request timed out") from exc
     except httpx.HTTPStatusError as exc:

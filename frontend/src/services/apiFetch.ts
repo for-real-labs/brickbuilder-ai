@@ -13,6 +13,10 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   const headers = new Headers(init.headers);
   headers.set('X-Guest-Session', getGuestSession());
   const response = await fetch(url, { ...withGenerationEntryPage(url, init), headers: Object.fromEntries(headers.entries()) });
+  if (init.method?.toUpperCase() === 'POST' && /\/(novaToBricks|llmToBricks|textToBricks|imageToBricks|promptEditModel|glbToBricks|objToBricks)(?:Stream)?(?:[/?]|$)/.test(url)) {
+    if (response.status === 402) window.dispatchEvent(new Event('brickbuilder:credits-required'));
+    if (response.ok) window.dispatchEvent(new Event('brickbuilder:credits-changed'));
+  }
   return localizeGenerationLimit(response);
 }
 

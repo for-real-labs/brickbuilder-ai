@@ -33,11 +33,12 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
         worker = asyncio.create_task(work)
         saved_values = None
 
-        async def save_usage_if_changed():
+        async def save_usage_if_changed(final=False):
             nonlocal saved_values
             if not usage.calls:
                 return
             values = usage.values()
+            values['ai_usage']['finalized'] = final
             if values == saved_values:
                 return
             try:
@@ -69,7 +70,7 @@ def start_generation_task(generation_id: str, work: Coroutine[Any, Any, Any]) ->
             with suppress(asyncio.CancelledError):
                 await watcher
             try:
-                await asyncio.shield(save_usage_if_changed())
+                await asyncio.shield(save_usage_if_changed(final=True))
             except Exception:
                 logger.warning('Unable to save AI usage for %s', generation_id)
             finally:
