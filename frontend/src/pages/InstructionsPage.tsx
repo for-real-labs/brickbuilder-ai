@@ -275,10 +275,11 @@ interface InstructionsViewerProps {
 }
 
 export function InstructionsViewer(props: InstructionsViewerProps) {
-  const { featureAccess } = useBilling();
+  const { getFeatureAccess } = useBilling();
+  const featureAccess = getFeatureAccess('instructions', props.generationId);
   return <>
     {!props.embedded && featureAccess !== 'allowed' && <Header />}
-    <InstructionsAccessGate embedded={props.embedded}><UnlockedInstructionsViewer {...props} /></InstructionsAccessGate>
+    <InstructionsAccessGate embedded={props.embedded} generationId={props.generationId}><UnlockedInstructionsViewer {...props} /></InstructionsAccessGate>
   </>;
 }
 
@@ -1232,7 +1233,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                 </div>
               </div>
 
-              <div className={embedded ? "instructions-canvas" : "mb-4 relative h-[380px] sm:h-[460px]"}>
+              <div className={embedded ? "instructions-canvas" : "instructions-canvas mb-4 relative h-[380px] sm:h-[460px]"}>
                 {mpdContent && active ? (
                   <>
                     <ThreeLDRViewer

@@ -13,7 +13,7 @@ os.environ["DISPLAY"] = ":99"
 os.environ["OPEN3D_HEADLESS"] = "1" 
 os.environ["PYOPENGL_PLATFORM"] = "egl"
 
-from fastapi import FastAPI, Depends, Request, Response, HTTPException, UploadFile, File, Form
+from fastapi import FastAPI, Depends, Request, Response, HTTPException, UploadFile, File, Form, Header
 from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -173,10 +173,19 @@ async def nova_source_endpoint(generation_id: UUID, auth_info: dict = Depends(ge
 
 
 @app.get("/generation/{generation_id}/nova-instructions.ldr")
-async def nova_instructions_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
-    from .utils.billing import require_paid_features
-    await require_paid_features(auth_info)
+async def nova_instructions_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity),
+                                     x_instruction_key: str | None = Header(default=None, max_length=128)):
+    from .utils.billing import require_instruction_access
+    await require_instruction_access(auth_info, str(generation_id), x_instruction_key)
     return await get_nova_instructions(str(generation_id))
+
+
+@app.get('/generation/{generation_id}/instruction-access')
+async def instruction_link_access(generation_id: UUID, response: Response,
+                                  x_instruction_key: str | None = Header(default=None, max_length=128)):
+    from .utils.instruction_links import has_instruction_key
+    response.headers['Cache-Control'] = 'private, no-store'
+    return {'allowed': await has_instruction_key(str(generation_id), x_instruction_key)}
 
 
 @app.get("/.well-known/openai-apps-challenge", include_in_schema=False)

@@ -1,4 +1,4 @@
-vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ featureAccess: 'allowed', requireFeature: () => true, enabled: false, openUpgrade: vi.fn(), retryAccess: vi.fn() }) }));
+vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ featureAccess: 'allowed', getFeatureAccess: () => 'allowed', requireFeature: () => true, enabled: false, openUpgrade: vi.fn(), retryAccess: vi.fn() }) }));
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, useLocation } from 'react-router-dom';
@@ -93,6 +93,9 @@ it('loads Nova construction steps into the existing viewer and supports Previous
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'nova', endpoint: 'novaToBricks', status: 'completed', name: 'Garden cottage', prompt: 'cottage', ldr_content: 'flat preview' } as never);
   const get = vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(instructions);
   const pack = vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: instructions } as never);
+  const styles = document.createElement('style');
+  styles.textContent = readFileSync('src/pages/InstructionsViewer.css', 'utf8');
+  document.head.append(styles);
   const container = document.createElement('div'); document.body.appendChild(container);
   const root = createRoot(container);
   try {
@@ -101,6 +104,10 @@ it('loads Nova construction steps into the existing viewer and supports Previous
     expect(pack).toHaveBeenCalledWith(instructions, 'cottage', undefined);
     expect(container.querySelector('iframe')).toBeNull();
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 1');
+    const colors = container.querySelector<HTMLButtonElement>('.instructions-canvas > .instructions-colors-toggle')!;
+    expect(getComputedStyle(colors).position).toBe('absolute');
+    expect(getComputedStyle(colors).top).toBe('8px');
+    expect(getComputedStyle(colors).minHeight).toBe('44px');
     const next = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Next'))!;
     act(() => next.click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
@@ -108,7 +115,7 @@ it('loads Nova construction steps into the existing viewer and supports Previous
     const previous = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Previous'))!;
     act(() => previous.click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 1');
-  } finally { act(() => root.unmount()); container.remove(); }
+  } finally { act(() => root.unmount()); container.remove(); styles.remove(); }
 });
 
 it('does not count embedded part geometry as extra building placements or steps', () => {

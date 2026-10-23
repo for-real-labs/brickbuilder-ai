@@ -38,7 +38,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
 }) {
   const generation = model?.generation;
   const { markViewed } = useGenerationNotifications();
-  const { featureAccess, requireFeature } = useBilling();
+  const { getFeatureAccess, requireFeature } = useBilling();
+  const featureAccess = getFeatureAccess('instructions', generation?.generation_id);
   const promptedInstructions = useRef<string | null>(null);
   const [readyId, setReadyId] = useState<string | null>(null);
   const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
@@ -65,7 +66,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     if (generation && requestedInstructionsId === generation.generation_id && featureAccess !== 'allowed'
       && featureAccess !== 'loading' && promptedInstructions.current !== generation.generation_id) {
       promptedInstructions.current = generation.generation_id;
-      requireFeature('instructions', 'instructions_link');
+      requireFeature('instructions', 'instructions_link', generation.generation_id);
     }
   }, [generation?.generation_id, requestedInstructionsId, featureAccess, requireFeature]);
   useEffect(() => {
@@ -180,7 +181,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
         {!pendingEdit && <div className="landing-model-bottom-toolbar">
           <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
             aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
-              if (!showingInstructions && !requireFeature('instructions', 'viewer_footer')) return;
+              if (!showingInstructions && !requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;
               posthog.capture(showingInstructions ? 'landing_model_3d_view_clicked' : 'landing_model_instructions_clicked', {
                 generation_id: generation.generation_id, source: 'viewer_footer',
               });

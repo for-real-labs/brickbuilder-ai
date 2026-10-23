@@ -200,6 +200,7 @@ def test_instruction_endpoint_checks_plan_before_reading_any_steps(monkeypatch,i
     from src import api
     from src.utils import auth
     monkeypatch.setattr(billing,'local_unmetered',lambda:False)
+    monkeypatch.setattr(billing,'ordered_instruction_models',AsyncMock(return_value=[]))
     monkeypatch.setattr(billing,'settings',AsyncMock(return_value={'enabled':True}))
     wallet=AsyncMock(return_value={'plan_key':plan,'subscription_status':'active' if plan!='free' else 'none',
         'period_end':(datetime.now(timezone.utc)+timedelta(days=1)).isoformat()})
@@ -234,7 +235,110 @@ def test_local_and_deliberately_disabled_billing_preserve_unmetered_features(mon
     config=AsyncMock(side_effect=AssertionError('local development has no database'))
     monkeypatch.setattr(billing,'settings',config)
     asyncio.run(billing.require_paid_features({}))
+    asyncio.run(billing.require_instruction_access({}, str(uuid4())))
     config.assert_not_called()
     monkeypatch.setattr(billing,'local_unmetered',lambda:False)
     monkeypatch.setattr(billing,'settings',AsyncMock(return_value={'enabled':False}))
     asyncio.run(billing.require_paid_features({}))
+
+
+@pytest.fixture
+def order_database(monkeypatch):
+    """Filter order fixtures using the same ownership fields as PostgREST."""
+    rows = []
+
+    class Query:
+        def __init__(self):
+            self.filters = {}
+            self.max_rows = None
+
+        def select(self, columns):
+            assert 'generations!inner(user_id,user_type)' in columns
+            return self
+
+        def eq(self, field, value):
+            self.filters[field] = value
+            return self
+
+        def limit(self, count):
+            self.max_rows = count
+            return self
+
+        def execute(self):
+            matching = [row for row in rows if all(row.get(key) == value for key, value in self.filters.items())]
+            return SimpleNamespace(data=matching[:self.max_rows])
+
+    monkeypatch.setattr(billing, 'client', lambda: SimpleNamespace(table=lambda name: Query()))
+    return rows
+
+
+@pytest.mark.parametrize('case,allowed', [
+    ('ordered', True), ('fulfilled', True), ('cancelled', False),
+    ('other_owner', False), ('other_version', False), ('anonymous_owner', False),
+    ('guest', False), ('developer', False), ('no_order', False),
+])
+def test_free_instruction_access_requires_own_order_for_exact_model(monkeypatch, identity, order_database, case, allowed):
+    from fastapi.testclient import TestClient
+    from fastapi.responses import Response
+    from src import api
+    from src.utils import auth
+
+    model_id = str(uuid4())
+    row = {'generation_id': model_id, 'generations.user_id': identity['user_id'],
+           'generations.user_type': 'authenticated', 'cancelled': False, 'fulfilled': case == 'fulfilled'}
+    if case == 'cancelled': row['cancelled'] = True
+    if case == 'other_owner': row['generations.user_id'] = str(uuid4())
+    if case == 'other_version': row['generation_id'] = str(uuid4())
+    if case == 'anonymous_owner': row['generations.user_type'] = 'anonymous'
+    if case != 'no_order': order_database.append(row)
+    who = identity
+    if case == 'guest': who = {**identity, 'authenticated': False, 'is_anonymous': True}
+    if case == 'developer': who = {**identity, 'is_developer': True}
+    monkeypatch.setattr(billing, 'local_unmetered', lambda: False)
+    monkeypatch.setattr(billing, 'settings', AsyncMock(return_value={'enabled': True}))
+    wallet = AsyncMock(return_value={'plan_key': 'free', 'subscription_status': 'none'})
+    monkeypatch.setattr(billing, 'wallet', wallet)
+    steps = AsyncMock(return_value=Response('steps', headers={'Cache-Control': 'private, no-store'}))
+    monkeypatch.setattr(api, 'get_nova_instructions', steps)
+    api.app.dependency_overrides[auth.get_optional_identity] = lambda: who
+    try:
+        response = TestClient(api.app).get(f'/generation/{model_id}/nova-instructions.ldr')
+        assert response.status_code == (200 if allowed else 403)
+        if allowed:
+            steps.assert_awaited_once_with(model_id)
+            assert response.headers['cache-control'] == 'private, no-store'
+            wallet.assert_not_called()
+            # A kit unlocks instructions only, never general paid features.
+            with pytest.raises(HTTPException) as error:
+                asyncio.run(billing.require_paid_features(identity))
+            assert error.value.status_code == 403
+        else:
+            steps.assert_not_called()
+    finally:
+        api.app.dependency_overrides.clear()
+
+
+def test_ordered_model_list_deduplicates_active_orders_and_ignores_other_accounts(identity, order_database):
+    model_id = str(uuid4())
+    order = {'generation_id': model_id, 'generations.user_id': identity['user_id'],
+             'generations.user_type': 'authenticated', 'cancelled': False}
+    order_database.extend([order, order.copy(), {**order, 'generation_id': str(uuid4()), 'cancelled': True},
+                          {**order, 'generation_id': str(uuid4()), 'generations.user_id': str(uuid4())}])
+    assert asyncio.run(billing.ordered_instruction_models(identity['user_id'])) == [model_id]
+
+
+def test_account_exposes_order_access_independently_of_subscription(monkeypatch, identity):
+    row = {'period_start': '2026-01-01T00:00:00Z', 'period_end': '2026-02-01T00:00:00Z',
+           'plan_key': 'free', 'monthly_credits': 300, 'monthly_remaining': 0, 'bonus_remaining': 0,
+           'subscription_status': 'none', 'cancel_at_period_end': False}
+    monkeypatch.setattr(billing, 'wallet', AsyncMock(return_value=row))
+    monkeypatch.setattr(billing, 'client', Mock())
+    monkeypatch.setattr(billing, 'execute_query', AsyncMock(return_value=SimpleNamespace(data=[])))
+    monkeypatch.setattr(billing, 'settings', AsyncMock(return_value={'enabled': True, 'policy_version': 2}))
+    monkeypatch.setattr(billing, 'capacity', AsyncMock(return_value={}))
+    orders = AsyncMock(return_value=[str(uuid4())])
+    monkeypatch.setattr(billing, 'ordered_instruction_models', orders)
+    result = asyncio.run(billing.account(identity))
+    assert result['ordered_instruction_models'] == orders.return_value
+    assert result['paid_features'] is False
+    orders.assert_awaited_once_with(identity['user_id'])

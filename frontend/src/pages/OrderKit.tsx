@@ -47,7 +47,10 @@ export default function OrderKit() {
   const { pet } = usePet();
   const location = useLocation();
   const navigate = useNavigate();
-  const state = React.useMemo(() => restoreOrderState(location.state as LocationState | null), [location.state]);
+  const state = React.useMemo(() => {
+    const linkedId = new URLSearchParams(location.search).get('id');
+    return linkedId ? { generation_id: linkedId } : restoreOrderState(location.state as LocationState | null);
+  }, [location.state, location.search]);
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
   const [resolvedName, setResolvedName] = React.useState<string | null>(null);

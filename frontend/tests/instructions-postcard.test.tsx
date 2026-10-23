@@ -7,7 +7,7 @@ import posthog from 'posthog-js';
 import { InstructionsPostcard, getPostcardTheme } from '../src/components/checkout/InstructionsPostcard';
 
 const orderKitStyles = readFileSync('src/pages/OrderKit.css', 'utf8');
-const billing = vi.hoisted(() => ({ featureAccess: 'allowed', requireFeature: vi.fn(() => true) }));
+const billing = vi.hoisted(() => ({ featureAccess: 'allowed', getFeatureAccess: () => billing.featureAccess, requireFeature: vi.fn(() => true) }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billing }));
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
@@ -28,6 +28,7 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 const props = { selected: false, disabled: false, onChange: vi.fn(), modelName: 'Galaxy Explorer', modelImage: 'https://example.com/model.png', generationId: 'g/123' };
 beforeEach(() => {
+  sessionStorage.clear();
   billing.featureAccess = 'allowed'; billing.requireFeature.mockReset().mockReturnValue(true);
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function () { this.open = true; } });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function () { this.open = false; this.dispatchEvent(new Event('close')); } });
@@ -50,8 +51,11 @@ it('opens a model-themed postcard with its actual image and requested explanatio
   expect(posthog.capture).toHaveBeenCalledWith('order_instructions_postcard_preview_opened', { generation_id: props.generationId });
 });
 
-it('renders a QR code that independently decodes to the selected model’s instructions', () => {
-  render(); open();
+it.each([false, true])('renders a decodable QR for the selected model, including purchased access: %s', purchased => {
+  const id = purchased ? '00000000-0000-4000-8000-000000000001' : props.generationId;
+  const key = 'a'.repeat(43);
+  if (purchased) sessionStorage.setItem(`brickbuilder:instruction-key:${id}`, key);
+  render({ generationId: id }); open();
   const svg = container.querySelector('svg[role="img"]')!;
   const size = Number(svg.getAttribute('viewBox')!.split(' ')[2]);
   const scale = 8, width = size * scale;
@@ -65,22 +69,26 @@ it('renders a QR code that independently decodes to the selected model’s instr
       }
     }
   }
-  const url = 'https://brickbuilder.ai/instructions?id=g%2F123';
+  const url = `https://brickbuilder.ai/instructions?id=${encodeURIComponent(id)}${purchased ? `#access=${key}` : ''}`;
   expect(jsQR(pixels, width, width)?.data).toBe(url);
   expect(container.querySelector('a.checkout-postcard-qr')?.getAttribute('href')).toBe(url);
+  expect(container.querySelector('a.checkout-postcard-qr')?.classList.contains('ph-no-capture')).toBe(true);
+  expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain(key);
+  sessionStorage.clear();
 });
 
 it('keeps the Free postcard instruction link visible with a lock and opens the shared upgrade notice', () => {
   billing.featureAccess = 'locked'; billing.requireFeature.mockReturnValue(false);
   render(); open();
-  expect(container.querySelector('.checkout-postcard-access .paid-feature-lock')).not.toBeNull();
-  expect(container.textContent).toContain('Online instructions require Builder or Creator.');
+  expect(container.querySelector('.checkout-postcard-access')).not.toBeNull();
+  expect(container.textContent).toContain('Instructions are included with your kit.');
+  expect(container.textContent).toContain('open the link in your confirmation email or scan your postcard');
   const link = container.querySelector<HTMLAnchorElement>('.checkout-postcard-qr')!;
-  expect(link.getAttribute('aria-label')).toContain('Paid plan required');
+  expect(link.getAttribute('aria-label')).toContain('Access required');
   const event = new MouseEvent('click', { bubbles: true, cancelable: true });
   act(() => link.dispatchEvent(event));
   expect(event.defaultPrevented).toBe(true);
-  expect(billing.requireFeature).toHaveBeenCalledWith('instructions', 'postcard_preview');
+  expect(billing.requireFeature).toHaveBeenCalledWith('instructions', 'postcard_preview', props.generationId);
   expect(container.querySelector('dialog')!.open).toBe(true);
 });
 
