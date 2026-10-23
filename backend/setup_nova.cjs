@@ -13,6 +13,18 @@ const IMAGE = `brickbuilder-nova:${SOURCES[0].commit.slice(0, 12)}-${SOURCES[1].
 const SERVICE_CMD = 'CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]\n';
 
 function deploymentDockerfile(upstream) {
+  // Fetch the exact published archive without npm's package-resolution step,
+  // which can stall hosted builds. Keep the upstream runtime version unchanged.
+  const npmPack = 'RUN npm pack "@openai/codex@${CODEX_VERSION}-linux-x64" \\\n    && tar -xzf "openai-codex-${CODEX_VERSION}-linux-x64.tgz"';
+  if (upstream.includes(npmPack)) {
+    if (!upstream.split('\n').includes('ARG CODEX_VERSION=0.157.1')) {
+      throw new Error('Verify the new Codex archive checksum before deploying Nova');
+    }
+    upstream = upstream.replace(npmPack,
+      'ADD --checksum=sha256:7f12677740f439fe4884c7031d9d703e571cecf5ea9fa3a05abd1bbccc2162a8 ' +
+      'https://registry.npmjs.org/@openai/codex/-/codex-${CODEX_VERSION}-linux-x64.tgz /opt/codex/runtime.tgz\n' +
+      'RUN tar -xzf runtime.tgz && rm runtime.tgz');
+  }
   // Railway builds with one repository context. Import the pinned forks in
   // source stages, then retain the fork's build recipe and runtime unchanged.
   const sources = SOURCES.map(source => `FROM alpine:3.22 AS ${source.name === 'toolkit' ? 'nova' : 'nova_web'}\n` +

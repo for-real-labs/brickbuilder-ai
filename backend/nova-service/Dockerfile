@@ -34,8 +34,8 @@ RUN npm run build
 FROM --platform=$BUILDPLATFORM node:24-slim AS openai-login
 ARG CODEX_VERSION=0.157.1
 WORKDIR /opt/codex
-RUN npm pack "@openai/codex@${CODEX_VERSION}-linux-x64" \
-    && tar -xzf "openai-codex-${CODEX_VERSION}-linux-x64.tgz"
+ADD --checksum=sha256:7f12677740f439fe4884c7031d9d703e571cecf5ea9fa3a05abd1bbccc2162a8 https://registry.npmjs.org/@openai/codex/-/codex-${CODEX_VERSION}-linux-x64.tgz /opt/codex/runtime.tgz
+RUN tar -xzf runtime.tgz && rm runtime.tgz
 
 # --- Stage 1b: the mixed-reality viewer (web/xr: Vite + Meta's IWSDK) ---------
 # Same idea, its own stage so SPA edits don't re-install its dependencies.
