@@ -95,7 +95,9 @@ def read_export(data: bytes, session: dict) -> NovaResult:
 
 
 class NovaService:
-    def __init__(self, client: httpx.AsyncClient | None = None, *, tenant_key: str = 'local-native', tenant_id: str | None = None):
+    def __init__(self, client: httpx.AsyncClient | None = None, *, tenant_key: str = 'local-native', tenant_id: str | None = None, api_key: str | None = None):
+        self.api_key = api_key
+        self._personal_model = None
         self.tenant = tenant_id or hashlib.sha256(tenant_key.encode()).hexdigest()
         if not re.fullmatch(r'[a-f0-9]{64}', self.tenant):
             raise ValueError('Invalid Nova tenant identity')
@@ -110,7 +112,14 @@ class NovaService:
         return self
 
     async def __aexit__(self, *args):
-        await self.client.aclose()
+        try:
+            if self._personal_model:
+                model_id, body = self._personal_model
+                await self.request('PUT', 'api/llm-models/' + model_id, json=body)
+        except Exception:
+            logger.warning('Unable to clear transient personal Nova model credentials')
+        finally:
+            await self.client.aclose()
 
     async def request(self, method: str, path: str, **kwargs):
         try:
@@ -159,7 +168,7 @@ class NovaService:
         model_name = f'{prefix}/{model}'
         params = {'model': model_name}
         if auth_mode == 'api_key':
-            key = os.getenv('OPENAI_API_KEY' if provider == 'openai' else 'ANTHROPIC_API_KEY')
+            key = self.api_key or os.getenv('OPENAI_API_KEY' if provider == 'openai' else 'ANTHROPIC_API_KEY')
             if not key:
                 raise ValueError('Attach the selected provider API key in BrickBuilder before using Nova mode.')
             params['api_key'] = key
@@ -168,12 +177,14 @@ class NovaService:
             if status.get('status') != 'connected':
                 raise ValueError('Sign in to the selected provider in Local provider connections first.')
         entries = await self.request('GET', 'api/llm-models')
-        label = f'BrickBuilder {model_name} ({auth_mode})'
+        label = f'BrickBuilder {model_name} ({auth_mode})' + (hashlib.sha256(self.api_key.encode()).hexdigest()[:16] if self.api_key else '')
         entry = next((row for row in entries['models'] if row.get('model_name') == label), None)
         body = {'model_name': label, 'litellm_params': params,
                 'auth_mode': 'browser' if auth_mode == 'native' else 'api_key'}
         result = await self.request('PUT' if entry else 'POST',
                                     'api/llm-models' + ('/' + self.session_id(entry['id']) if entry else ''), json=body)
+        if self.api_key:
+            self._personal_model = (self.session_id(result['id']), {**body, 'litellm_params': {'model': model_name, 'api_key': ''}})
         # Keep semantic-search configuration in Nova's protected config, out of agent envs.
         if os.getenv('TYPESAFE_API_KEY'):
             env = await self.request('GET', 'api/environment')
@@ -256,7 +267,7 @@ class NovaService:
                                         json={'csv': palette_csv})
         if configured.get('parts_catalog_version') != 1:
             raise ValueError('Nova did not confirm the parts catalog restrictions')
-        session = {'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
+        session = {'provider_key_id': hashlib.sha256(self.api_key.encode()).hexdigest() if self.api_key else None, 'personal_billing': bool(self.api_key), 'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
                    'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
         if not previous and source:
             session['model_id'] = self.session_id(created['model_id'])

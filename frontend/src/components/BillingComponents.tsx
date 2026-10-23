@@ -1,4 +1,5 @@
-import React, { useEffect, useRef } from 'react';
+import { providerKeysApi } from '../services/providerKeysApi';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ArrowUpRight, Check, Coins, X } from 'lucide-react';
 import posthog from 'posthog-js';
@@ -107,9 +108,19 @@ export function BillingOverlays() {
 }
 
 
-export function GenerationCreditQuote({ allParts }: { allParts: boolean }) {
+export function GenerationCreditQuote({ allParts, personalSupported = true }: { allParts: boolean; personalSupported?: boolean }) {
   const { user } = useAuth();
   const { enabled, account, signIn } = useBilling();
+  const [personal, setPersonal] = useState(false);
+  useEffect(() => {
+    let active = true;
+    setPersonal(false);
+    const refresh = () => { if (user) void providerKeysApi.status().then(value => { if (active) setPersonal(value.billing_source === 'personal'); }).catch(() => {}); };
+    refresh();
+    window.addEventListener('brickbuilder:ai-billing-changed', refresh);
+    return () => { active = false; window.removeEventListener('brickbuilder:ai-billing-changed', refresh); };
+  }, [user?.id]);
+  if (personal && personalSupported) return <p className="billing-generation-quote" role="status">Your AI account · No BrickBuilder credits used</p>;
   if (!enabled) return null;
   return <p className="billing-generation-quote" role="status">
     {allParts ? '15 credits · All parts / AI mesh conversion' : '1 credit · Basic build or edit'}

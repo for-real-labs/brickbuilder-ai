@@ -480,3 +480,33 @@ failed synchronous delivery retries on the next poll. The worker runs only with
 Chart: **Verified email signups per day**, event `verified_email_signup`, unique
 users, daily interval, production/service filters. Deleted accounts cannot be
 reconstructed; later provider/email changes can affect retained auth records.
+
+
+### Personal OpenAI / Anthropic API billing
+
+Apply `supabase/migrations/20261023010000_user_provider_keys.sql` before deploying
+this API and frontend. Configure `PROVIDER_KEYS_ENCRYPTION_KEY` as a separate,
+backend-only Fernet key (generate using `Fernet.generate_key()` from Python's
+`cryptography.fernet`). Store it in the deployment secret manager, never a frontend
+variable, repository, or database. Keep a protected backup: replacing it without
+re-encrypting existing rows makes saved keys unreadable.
+
+JWT-authenticated users can add/remove keys via `/provider-keys/{provider}` and
+choose billing/confirmation preferences via `/provider-keys/preferences`. Reads
+return provider availability and preferences only. Key ciphertext is bound to the
+account and provider; both tables deny direct browser access. Keys are decrypted
+only on the backend and passed to the private Nova runtime or provider client.
+Nova's tenant configuration is private operational storage and must also be
+protected with encrypted volumes/backups and service-only access.
+
+Basic and All parts requests explicitly select `billing_source: personal` after
+the browser's confirmation (or saved don't-ask preference). The server requires a
+saved key for the selected model; it never falls back to a BrickBuilder key.
+Personal jobs bypass wallet charges, platform AI reservations, and daily quotas,
+but retain concurrency and per-generation safety limits. Legacy API clients that
+omit the source continue using BrickBuilder billing. Jev retains the shared key;
+image-to-3D providers and standalone buddy conversations retain existing billing.
+
+Changing keys or billing sources on a completed Nova build imports its geometry
+into a fresh private session. Unfinished builds require their original source/key
+or a new build. No subscription OAuth credentials are accepted by this feature.

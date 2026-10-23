@@ -1,3 +1,4 @@
+vi.mock('../src/services/providerKeysApi', () => ({ prepareAiBilling: async (body: string) => body }));
 import { LlmToBricksApiService } from '../src/services/llmToBricksApi';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GetGenerationApiService, type GetGenerationResponse } from '../src/services/getGenerationApi';

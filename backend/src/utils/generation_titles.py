@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+from .provider_keys import provider_env
 import re
 from urllib.parse import unquote, urlparse
 
@@ -79,8 +80,8 @@ async def read_generation_reference_image(row: dict, storage_client, *, prefer_p
 
 
 async def _request_title(row: dict, storage_client) -> str:
-    provider = "openai" if os.getenv("OPENAI_API_KEY") else "anthropic"
-    if not os.getenv("ANTHROPIC_API_KEY") and not os.getenv("OPENAI_API_KEY"):
+    provider = "openai" if provider_env("OPENAI_API_KEY") else "anthropic"
+    if not provider_env("ANTHROPIC_API_KEY") and not provider_env("OPENAI_API_KEY"):
         return ""
     image = await read_generation_reference_image(row, storage_client)
     context = json.dumps({"name": (row.get('name') or '')[:80], "prompt": (row.get("prompt") or "")[:2000],
@@ -92,7 +93,7 @@ async def _request_title(row: dict, storage_client) -> str:
             if image:
                 content.append({"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": image}})
             result = await post_json(client, ANTHROPIC_URL, {
-                "x-api-key": os.environ["ANTHROPIC_API_KEY"], "anthropic-version": ANTHROPIC_API_VERSION,
+                "x-api-key": provider_env("ANTHROPIC_API_KEY"), "anthropic-version": ANTHROPIC_API_VERSION,
             }, {"model": model,
                 "max_tokens": 256, "system": TITLE_INSTRUCTION,
                 "messages": [{"role": "user", "content": content}]}, "Anthropic")
@@ -101,7 +102,7 @@ async def _request_title(row: dict, storage_client) -> str:
         content = [{"type": "input_text", "text": context}]
         if image:
             content.append({"type": "input_image", "detail": "low", "image_url": f"data:image/jpeg;base64,{image}"})
-        result = await post_json(client, OPENAI_URL, {"Authorization": f"Bearer {os.environ['OPENAI_API_KEY']}"}, {
+        result = await post_json(client, OPENAI_URL, {"Authorization": f"Bearer {provider_env('OPENAI_API_KEY')}"}, {
             "model": model,
             "instructions": TITLE_INSTRUCTION, "max_output_tokens": 512,
             "reasoning": {"effort": "low"}, "input": [{"role": "user", "content": content}],

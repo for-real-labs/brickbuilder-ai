@@ -126,6 +126,16 @@ class OutputRecorder:
 
 
 async def run_with_output(generation_id: str, generate, *args, native_progress: bool = False) -> None:
+    from .provider_keys import personal_billing_task
+    if args and getattr(args[0], '_provider_api_key', None):
+        @personal_billing_task
+        async def scoped(generation_id, request, *rest):
+            return await _run_with_output(generation_id, generate, request, *rest, native_progress=native_progress)
+        return await scoped(generation_id, *args)
+    return await _run_with_output(generation_id, generate, *args, native_progress=native_progress)
+
+
+async def _run_with_output(generation_id: str, generate, *args, native_progress: bool = False) -> None:
     recorder = OutputRecorder(generation_id, getattr(args[0], "prompt", "") or "" if args else "")
     writer = asyncio.create_task(recorder.run())
     summarizer = None if native_progress else asyncio.create_task(recorder.run_summaries())

@@ -1,3 +1,4 @@
+vi.mock('../src/services/providerKeysApi', () => ({ prepareAiBilling: async (body: string) => body }));
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService } from '../src/services/novaToBricksApi';
 import { LocalProvidersApiService, safeProviderLoginUrl } from '../src/services/localProvidersApi';
@@ -134,4 +135,11 @@ it.each(['Repair disconnected parts before opening instructions.',
   'Repair disconnected or blocked parts before opening instructions.'])('reports instruction repair guidance for %s', async detail => {
   vi.mocked(fetch).mockResolvedValue(response({ detail }, 409));
   await expect(NovaToBricksApiService.instructions('model')).rejects.toThrow('Edit the model to repair');
+});
+
+
+it('uses the selected provider model for personal-key compatible edits', async () => {
+  vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'revision' }));
+  await NovaToBricksApiService.edit('original', 'Red roof', 'owner-token', undefined, { model: 'gpt-5.5', authMode: 'api_key' });
+  expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({ model: 'gpt-5.5', auth_mode: 'api_key' });
 });

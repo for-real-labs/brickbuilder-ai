@@ -186,7 +186,8 @@ async def post_stream_json(client, url, headers, payload, provider, on_text, on_
 
 
 def _require_env(name: str) -> str:
-    value = os.getenv(name)
+    from .provider_keys import provider_env
+    value = provider_env(name)
     if not value:
         raise HTTPException(status_code=503, detail=f"{name} is not configured")
     return value
@@ -250,7 +251,8 @@ class AnthropicToolConversation(ToolConversation):
             "anthropic-version": ANTHROPIC_API_VERSION,
             "content-type": "application/json",
         }
-        workspace_id = os.getenv("ANTHROPIC_WORKSPACE_ID")
+        from .provider_keys import provider_env
+        workspace_id = provider_env("ANTHROPIC_WORKSPACE_ID")
         if workspace_id:
             headers["anthropic-workspace-id"] = workspace_id
         return headers

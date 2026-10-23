@@ -72,13 +72,13 @@ it('asks guests to sign in before creating a subscription', async () => {
   expect(billingApi.account).not.toHaveBeenCalled();
 });
 
-it('shows a low-credit pet nudge and opens plans when the API rejects an exhausted wallet', async () => {
+it('refreshes an exhausted wallet without competing with the personal-key pet prompt', async () => {
   await render(<CreditNudge />);
   expect(container.textContent).toContain('Pip: 2 credits left.');
   expect(container.querySelector('[data-pet="pip"]')).not.toBeNull();
   await act(async () => window.dispatchEvent(new Event('brickbuilder:credits-required')));
-  expect(container.querySelector('dialog')?.textContent).toContain('Let’s make room for your next idea.');
-  expect(posthog.capture).toHaveBeenCalledWith('billing_upgrade_opened', expect.objectContaining({ source: 'credits_exhausted' }));
+  expect(container.querySelector('dialog')).toBeNull();
+  expect(posthog.capture).not.toHaveBeenCalledWith('billing_upgrade_opened', expect.objectContaining({ source: 'credits_exhausted' }));
 });
 
 it('does not show or report a nudge for a paid account with plenty of credits', async () => {

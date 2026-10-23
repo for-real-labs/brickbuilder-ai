@@ -45,6 +45,7 @@ from .requests.localProviders import router as local_providers_router
 from .requests.buildBuddy import router as build_buddy_router
 from .requests.supportEmail import router as support_email_router
 from .requests.billing import router as billing_router
+from .requests.providerKeys import router as provider_keys_router
 from .utils.local_provider_connections import local_provider_connections, require_local_development
 from .requests.createCheckoutSession import create_checkout_session, CreateCheckoutSessionRequest, CreateCheckoutSessionResponse
 from .requests.stripeWebhook import stripe_webhook, StripeWebhookRequest, StripeWebhookResponse
@@ -136,6 +137,7 @@ app.include_router(local_providers_router)
 app.include_router(build_buddy_router)
 app.include_router(support_email_router)
 app.include_router(billing_router)
+app.include_router(provider_keys_router)
 
 
 @app.get('/generation/{generation_id}/notification-email')

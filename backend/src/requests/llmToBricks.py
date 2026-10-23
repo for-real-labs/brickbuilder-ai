@@ -8,12 +8,13 @@ import re
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Optional
+from typing import Literal, Any, Awaitable, Callable, Dict, List, Optional
 
 import httpx
 from fastapi import Depends, HTTPException
 from pydantic import AliasChoices, BaseModel, Field, PrivateAttr, field_validator, model_validator
 
+from ..utils.provider_keys import resolve as resolve_provider_key, personal_billing_task
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.brick_design import (
     BuildResult,
@@ -99,6 +100,8 @@ PART_NAME_RE = re.compile(r"^[A-Za-z0-9_-]+\.dat$", re.IGNORECASE)
 
 
 class LlmToBricksRequest(BaseModel):
+    billing_source: Literal["personal", "brickbuilder"] | None = None
+    _provider_api_key: Optional[str] = PrivateAttr(default=None)
     entry_page: Optional[str] = Field(default=None, max_length=128)
     generation_id: Optional[str] = Field(
         default=None, validation_alias=AliasChoices("generation_id", "source_generation_id"),
@@ -729,6 +732,7 @@ async def _generate_ldr(
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
+@personal_billing_task
 async def process_llm_to_bricks_task(
     generation_id: str,
     request: LlmToBricksRequest,
@@ -850,6 +854,7 @@ async def llm_to_bricks(
     auth_info: dict = Depends(get_user_with_optional_auth),
 ) -> ImageToBricksResponse:
     await _load_edit_source(request, auth_info)
+    await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     user_info = handle_auth_and_tracking(
         auth_info=auth_info,
         endpoint="/llmToBricks",
@@ -875,6 +880,7 @@ async def llm_to_bricks(
     try:
         generation_id = await generation_storage.create_generation(
             guest_ip_hash=auth_info.get('rate_limit_id'),
+            personal_billing=bool(request._provider_api_key),
             user_id=auth_info.get("user_id", user_id),
             user_type=user_type,
             prompt=request.prompt or "Image reference",
@@ -912,6 +918,7 @@ async def llm_to_bricks_stream(
     auth_info: dict = Depends(get_user_with_optional_auth),
 ):
     await _load_edit_source(request, auth_info)
+    await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     user_info = handle_auth_and_tracking(
         auth_info=auth_info,
         endpoint="/llmToBricks",
@@ -936,6 +943,7 @@ async def llm_to_bricks_stream(
 
     generation_id = await generation_storage.create_generation(
         guest_ip_hash=auth_info.get('rate_limit_id'),
+        personal_billing=bool(request._provider_api_key),
         user_id=auth_info.get("user_id", user_id),
         user_type=user_type,
         prompt=request.prompt or "Image reference",
