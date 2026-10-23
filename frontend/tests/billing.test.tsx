@@ -186,3 +186,12 @@ it('separates preserved bonus balance from the bonus credits usable this month',
   expect(container.textContent).toContain('Legacy bonus balance');
   expect(container.textContent).toContain('3 bonus credits available for Basic builds');
 });
+
+
+it('does not imply that legacy bonuses can fund an All parts build', async () => {
+  account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active',
+    monthly_credits: 30, monthly_remaining: 10, bonus_remaining: 100, bonus_available: 5, credits_remaining: 15 };
+  await render(<><GenerationCreditQuote allParts /><CreditNudge /></>);
+  expect(container.textContent).toContain('10 monthly credits available. Legacy bonuses are for Basic only.');
+  expect(container.querySelector('.credit-nudge--low')).not.toBeNull();
+});

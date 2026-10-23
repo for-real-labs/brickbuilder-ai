@@ -62,7 +62,8 @@ export function CreditNudge() {
   const { user } = useAuth();
   const { account, enabled, openUpgrade } = useBilling();
   const { pet } = usePet();
-  const low = Boolean(account && account.credits_remaining <= Math.max(2, Math.floor(account.monthly_credits * .2)));
+  const low = Boolean(account && (account.credits_remaining <= Math.max(2, Math.floor(account.monthly_credits * .2))
+    || (account.has_subscription && account.monthly_remaining < 15)));
   const source = low ? 'low_credits' : 'creation_banner';
   const highest = account?.plan_key === 'master';
   useEffect(() => {
@@ -94,7 +95,7 @@ export function BillingOverlays() {
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
       <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        <p>{account ? `${account.credits_remaining} credits available. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits with a paid plan. Cancel anytime.'}</p></div></div>
+        <p>{account ? `${account.monthly_remaining} monthly credits available for any eligible mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits with a paid plan. Cancel anytime.'}</p></div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
@@ -112,6 +113,7 @@ export function GenerationCreditQuote({ allParts }: { allParts: boolean }) {
   const needsPlan = allParts && (!account || account.plan_key === 'free');
   return <p className="billing-generation-quote" role="status">
     {allParts ? '15 credits · All parts / AI mesh conversion' : '1 credit · Basic build or edit'}
+    {allParts && account && !needsPlan && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
     {needsPlan && <> · <button type="button" className="billing-text-link" onClick={() => openUpgrade('generation_mode')}>Choose a monthly plan</button></>}
     {!allParts && !account && ' · One guest trial, then sign in for 5 monthly credits including your trial.'}
   </p>;
