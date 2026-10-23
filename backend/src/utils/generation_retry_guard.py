@@ -21,8 +21,9 @@ def retry_guard_error(error: Exception) -> HTTPException | None:
     if match:
         try:
             candidate = datetime.fromtimestamp(int(match[1]), timezone.utc)
-            if now - timedelta(seconds=5) <= candidate <= reset_at + timedelta(seconds=1):
-                reset_at = candidate
+            if now - timedelta(hours=24) <= candidate <= reset_at + timedelta(seconds=1):
+                # A cooldown may expire while the response is in transit.
+                reset_at = max(now, candidate)
         except (ValueError, OverflowError, OSError):
             pass
     return HTTPException(429,

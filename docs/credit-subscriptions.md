@@ -75,7 +75,8 @@ from this guard after 24 hours; the separate active-job limit still applies.
 Pre-admission validation/quota/capacity rejections leave no retry charge. Once an
 AI job is admitted, an unsuccessful outcome counts conservatively because provider
 spend may be incomplete or unknown. Historical failures use the original admission
-time when the terminal time cannot be established. Separate accounts and changing
+time when the terminal time cannot be established (or migration time if both are
+missing). Separate accounts and changing
 both guest browser and network remain distinct identities; the global spend guard
 is still required. The embedded local development store does not run this migration.
 

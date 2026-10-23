@@ -22,9 +22,9 @@ GRANT ALL ON public.generation_retry_attempts TO service_role;
 -- time. Guest charge records recover original browser/network identities after
 -- a claim. Old jobs without a network record can only seed their known owner.
 INSERT INTO public.generation_retry_attempts
- SELECT g.id,keys.identity,g.billing_livemode,g.created_at,
-   CASE WHEN g.status IN ('completed','failed','cancelled') THEN g.created_at END,
-   CASE WHEN g.status IN ('failed','cancelled') THEN g.created_at END
+ SELECT g.id,keys.identity,g.billing_livemode,coalesce(g.created_at,now()),
+   CASE WHEN g.status IN ('completed','failed','cancelled') THEN coalesce(g.created_at,now()) END,
+   CASE WHEN g.status IN ('failed','cancelled') THEN coalesce(g.created_at,now()) END
  FROM public.generations g LEFT JOIN public.guest_credit_charges c ON c.generation_id=g.id
  CROSS JOIN LATERAL (
    SELECT CASE WHEN g.user_type='anonymous' THEN 'session:' ELSE 'account:' END||g.user_id AS identity
@@ -50,6 +50,7 @@ BEGIN
  FOREACH key IN ARRAY identities LOOP
    PERFORM pg_advisory_xact_lock(hashtextextended('generation-retry:'||key,0));
  END LOOP;
+ checked_at:=clock_timestamp();
 
  IF TG_OP='INSERT' THEN
    SELECT max(retry_at) INTO retry_until FROM unnest(identities) AS keys(identity)

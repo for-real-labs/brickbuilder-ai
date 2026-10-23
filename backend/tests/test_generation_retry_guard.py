@@ -166,7 +166,8 @@ def test_upgrade_and_monthly_reset_cannot_bypass_pause_but_live_and_sandbox_are_
     generate(db, uid, live=False)
 
 
-def test_migration_backfills_known_history_and_ledger_is_private(db):
+@pytest.mark.parametrize('missing_timestamp', [False, True])
+def test_migration_backfills_known_history_and_ledger_is_private(db, missing_timestamp):
     migrate_guest(db)
     uid = owner(db)
     ids = []
@@ -175,6 +176,8 @@ def test_migration_backfills_known_history_and_ledger_is_private(db):
         finish(db, gid)
         db.execute("UPDATE generations SET user_id=%s,user_type='authenticated' WHERE id=%s", (uid, gid))
         ids.append(gid)
+    if missing_timestamp:
+        db.execute('UPDATE generations SET created_at=NULL')
     db.execute(RETRY_MIGRATION.read_text())
     assert db.execute('SELECT count(*) n FROM generation_retry_attempts').fetchone()['n'] == 9
     with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_RETRY_LIMIT'):
@@ -197,6 +200,13 @@ def test_public_error_exposes_exact_retry_time_without_private_state():
     pending = retry_guard_error(ValueError('BB_GENERATION_RETRY_PENDING'))
     assert pending.status_code == 429 and not pending.headers
     assert retry_guard_error(ValueError('unrelated')) is None
+
+
+def test_a_cooldown_that_expires_in_transit_does_not_show_an_extra_day_of_waiting():
+    before = datetime.now(timezone.utc).replace(microsecond=0)
+    expired = int((before - timedelta(minutes=1)).timestamp())
+    error = retry_guard_error(ValueError(f'BB_GENERATION_RETRY_LIMIT:{expired}'))
+    assert before <= parsedate_to_datetime(error.headers['Retry-After']) <= before + timedelta(seconds=2)
 
 
 @pytest.mark.parametrize('suffix', ['', ':bad', ':999999999999', ':1'])
