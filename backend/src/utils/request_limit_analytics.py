@@ -8,6 +8,9 @@ from posthog import Posthog
 
 logger = logging.getLogger(__name__)
 LIMITS = {
+    'BB_GENERATION_RETRY_LIMIT': ('generation_retry_cooldown', 5, 429),
+    'BB_GENERATION_RETRY_PENDING': ('generation_retry_pending', 5, 429),
+    'BB_GUEST_CREDITS_EXHAUSTED': ('guest_lifetime_credits', 75, 403),
     'BB_GENERATION_GUEST_LIMIT': ('guest_lifetime', 3, 403),
     'BB_GENERATION_DAILY_LIMIT': ('daily', 10, 429),
     'BB_GENERATION_CONCURRENCY_LIMIT': ('concurrent', 1, 429),

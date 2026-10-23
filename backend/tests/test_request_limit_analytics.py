@@ -17,10 +17,13 @@ def isolated_client(monkeypatch):
 
 
 @pytest.mark.parametrize('code,kind,value,status', [
+    ('BB_GENERATION_RETRY_LIMIT', 'generation_retry_cooldown', 5, 429),
+    ('BB_GENERATION_RETRY_PENDING', 'generation_retry_pending', 5, 429),
     ('BB_GENERATION_DAILY_LIMIT', 'daily', 10, 429),
     ('BB_GENERATION_DAILY_LIMIT:5', 'daily', 5, 429),
     ('BB_GENERATION_GUEST_LIMIT', 'guest_lifetime', 3, 403),
     ('BB_GENERATION_GUEST_LIMIT:1', 'guest_lifetime', 1, 403),
+    ('BB_GUEST_CREDITS_EXHAUSTED', 'guest_lifetime_credits', 75, 403),
     ('BB_CREDITS_EXHAUSTED', 'credits', 0, 402),
     ('BB_SIGN_IN_REQUIRED', 'sign_in', None, 403),
     ('BB_AI_CAPACITY', 'ai_capacity', None, 503),

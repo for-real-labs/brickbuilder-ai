@@ -1,11 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
 import { useAuth } from './AuthContext';
-import { billingApi, INITIAL_PLANS, openStripe, type BillingAccount, type PlanKey } from '../services/billingApi';
+import { billingApi, INITIAL_PLANS, openStripe, type BillingAccount, type PlanKey, type PaidFeature, type FeatureAccess } from '../services/billingApi';
 
 const BillingContext = createContext({
   account: null as BillingAccount | null, plans: INITIAL_PLANS, enabled: false, checkoutAvailable: false, loading: false,
   busy: false, error: '', upgradeSource: '', loginOpen: false,
+  featureAccess: 'loading' as FeatureAccess,
+  lockedFeature: null as { feature: PaidFeature; source: string } | null,
+  requireFeature: (_feature: PaidFeature, _source: string): boolean => false,
+  closeLockedFeature: () => {}, retryAccess: async () => {},
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
   subscribe: async (_key: PlanKey, _source: string) => {},
@@ -18,37 +22,43 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const identity = useRef(user?.id);
   identity.current = user?.id;
   const [account, setAccount] = useState<BillingAccount | null>(null);
+  const [accountOwner, setAccountOwner] = useState<string>();
+  const [plansStatus, setPlansStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [plans, setPlans] = useState(INITIAL_PLANS);
   const [enabled, setEnabled] = useState(false);
   const [checkoutAvailable, setCheckoutAvailable] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(Boolean(user));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [upgradeSource, setUpgradeSource] = useState('');
   const [loginOpen, setLoginOpen] = useState(false);
+  const [lockedFeature, setLockedFeature] = useState<{ feature: PaidFeature; source: string } | null>(null);
   const refresh = useCallback(async () => {
     const owner = user?.id;
     if (!owner) return;
     try {
       const result = await billingApi.account();
-      if (identity.current === owner) { setAccount(result); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); }
-    } catch { if (identity.current === owner) setError('Could not load your credits. Please refresh to try again.'); }
+      if (identity.current === owner) { setAccount(result); setAccountOwner(owner); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); }
+    } catch { if (identity.current === owner) { setAccount(null); setAccountOwner(undefined); setError('Could not load your credits. Please refresh to try again.'); } }
     finally { if (identity.current === owner) setLoading(false); }
   }, [user?.id]);
+  const refreshPlans = useCallback(async () => {
+    try {
+      const result = await billingApi.plans();
+      setPlans(result.plans.filter(plan => plan.key !== 'master'));
+      setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled);
+      setPlansStatus(result.ready ? 'ready' : 'error');
+    } catch { setEnabled(false); setCheckoutAvailable(false); setPlansStatus('error'); }
+  }, []);
   useEffect(() => {
-    let active = true;
-    const update = () => {
-      if (document.hidden) return;
-      void billingApi.plans().then(result => { if (active) { setPlans(result.plans); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); } })
-        .catch(() => { if (active) { setEnabled(false); setCheckoutAvailable(false); } });
-    };
+    const update = () => { if (!document.hidden) void refreshPlans(); };
     update();
     window.addEventListener('focus', update);
     const interval = window.setInterval(update, 60000);
-    return () => { active = false; window.removeEventListener('focus', update); window.clearInterval(interval); };
-  }, []);
+    return () => { window.removeEventListener('focus', update); window.clearInterval(interval); };
+  }, [refreshPlans]);
   useEffect(() => {
-    setAccount(null); setError(''); setLoading(Boolean(user));
+    setAccount(null); setAccountOwner(undefined); setError(''); setLoading(Boolean(user));
     void refresh();
     const update = () => { if (!document.hidden) void refresh(); };
     window.addEventListener('focus', update);
@@ -56,8 +66,22 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     const interval = window.setInterval(update, 30000);
     return () => { window.clearInterval(interval); window.removeEventListener('focus', update); window.removeEventListener('brickbuilder:credits-changed', update); };
   }, [refresh]);
+  const featureAccess: FeatureAccess = plansStatus === 'loading' ? 'loading' : plansStatus === 'error' ? 'unavailable'
+    : !enabled ? 'allowed' : !user ? 'locked' : accountOwner !== user.id || !account ? loading ? 'loading' : 'unavailable'
+    : account.paid_features && new Date(account.period_end).getTime() > Date.now() ? 'allowed' : 'locked';
+  const requireFeature = useCallback((feature: PaidFeature, source: string) => {
+    if (featureAccess === 'allowed') return true;
+    setLockedFeature({ feature, source });
+    posthog.capture('billing_feature_blocked', { feature, source, access: featureAccess });
+    return false;
+  }, [featureAccess]);
+  const closeLockedFeature = () => {
+    if (lockedFeature) posthog.capture('billing_feature_dismissed', lockedFeature);
+    setLockedFeature(null);
+  };
+  useEffect(() => { if (featureAccess === 'allowed') setLockedFeature(null); }, [featureAccess]);
   const openUpgrade = useCallback((source: string) => {
-    setError(''); setUpgradeSource(source);
+    setError(''); setLockedFeature(null); setUpgradeSource(source);
     posthog.capture('billing_upgrade_opened', { source, page: window.location.pathname });
   }, []);
   useEffect(() => {
@@ -73,7 +97,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     if (!owner) return null;
     try {
       const result = await billingApi.sync(sessionId);
-      if (identity.current === owner) { setAccount(result); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); return result; }
+      if (identity.current === owner) { setAccount(result); setAccountOwner(owner); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); return result; }
     } catch (e) { if (identity.current === owner) setError(e instanceof Error ? e.message : 'Could not refresh billing.'); }
     return null;
   };
@@ -99,6 +123,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     finally { setBusy(false); }
   };
   return <BillingContext.Provider value={{ account, plans, enabled, checkoutAvailable, loading, busy, error, upgradeSource, loginOpen,
+    featureAccess, lockedFeature, requireFeature, closeLockedFeature,
+    retryAccess: async () => { await Promise.all([refreshPlans(), refresh()]); },
     refresh, sync, openUpgrade, closeUpgrade, subscribe, manage,
     closeLogin: () => setLoginOpen(false), signIn: () => { posthog.capture('billing_sign_in_clicked'); setLoginOpen(true); },
   }}>{children}</BillingContext.Provider>;

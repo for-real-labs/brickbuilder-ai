@@ -16,6 +16,7 @@ from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
 from .request_limit_analytics import track_request_limit, daily_limit_value
+from .generation_retry_guard import retry_guard_error
 from .auth import supabase_client
 from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
@@ -195,6 +196,9 @@ class GenerationStorage:
             
         except Exception as e:
             track_request_limit(e, user_id=user_id, user_type=user_type, endpoint=endpoint)
+            retry_error = retry_guard_error(e)
+            if retry_error is not None:
+                raise retry_error from None
             if 'BB_AI_CAPACITY' in str(e):
                 raise HTTPException(status_code=503, detail='New AI builds are temporarily at capacity. Your credits have not been charged. Please try again later; saved models and cancellation remain available.') from None
             if 'BB_BILLING_VERSION' in str(e):
@@ -203,6 +207,8 @@ class GenerationStorage:
                 raise HTTPException(status_code=403, detail='Sign in for 300 free monthly credits. All parts builds and AI mesh conversions use 15 credits; Basic builds use 1 credit.') from None
             if 'BB_CREDITS_EXHAUSTED' in str(e):
                 raise HTTPException(status_code=402, detail='You have used your available credits. Choose a monthly plan to keep building, or wait for your credits to reset.') from None
+            if 'BB_GUEST_CREDITS_EXHAUSTED' in str(e):
+                raise HTTPException(status_code=403, detail='Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 5 All parts builds or 75 Basic builds, or a mix. Sign in for 300 free monthly credits.') from None
             if 'BB_GENERATION_GUEST_IP_REQUIRED' in str(e):
                 raise HTTPException(status_code=503, detail='Guest access is temporarily unavailable. Please sign in to keep building.') from None
             if 'BB_GENERATION_GUEST_LIMIT' in str(e):

@@ -1,5 +1,6 @@
 import { AiBillingSettings } from '../components/AiBillingSettings';
 import { useBilling } from '../contexts/BillingContext';
+import { PaidFeatureLock } from '../components/PaidFeatureDialog';
 import { GenerationDuration } from '../components/GenerationDuration';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
@@ -382,6 +383,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
 
 // Order card component
 export const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> = ({g, onView}) => {
+  const { featureAccess, requireFeature } = useBilling();
   const order = g.order;
   if (!order) return null;
   
@@ -440,9 +442,11 @@ export const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> =
             </button>
             <Link 
               to={`/instructions?id=${g.id}`}
+              onClick={event => { if (!requireFeature('instructions', 'dashboard_order')) event.preventDefault(); }}
               className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50"
             >
               <ExternalLink className="w-4 h-4"/> View Instructions
+              {featureAccess !== 'allowed' && <PaidFeatureLock />}
             </Link>
             {order.brickowl_cart_url && (
               <a 

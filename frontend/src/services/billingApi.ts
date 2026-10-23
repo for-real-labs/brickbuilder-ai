@@ -2,19 +2,21 @@ import { authenticatedApiFetch } from './apiFetch';
 import { readApiError } from './apiError';
 
 export type PlanKey = 'free' | 'builder' | 'creator' | 'master';
+export type PaidFeature = 'ldraw' | 'io' | 'instructions';
+export type FeatureAccess = 'loading' | 'unavailable' | 'locked' | 'allowed';
 export interface CreditPlan { key: PlanKey; name: string; monthly_cents: number; credits: number }
 export interface BillingAccount {
   plan_key: PlanKey; credits_remaining: number; monthly_credits: number; monthly_remaining: number;
   bonus_remaining: number; bonus_available?: number; available?: boolean; checkout_available?: boolean; period_start: string; period_end: string; subscription_status: string;
-  cancel_at_period_end: boolean; has_subscription: boolean; enabled: boolean;
+  cancel_at_period_end: boolean; has_subscription: boolean; enabled: boolean; paid_features?: boolean;
   history: { id: number; kind: string; amount: number; bucket: string; created_at: string }[];
 }
 export const INITIAL_PLANS: CreditPlan[] = [
   { key: 'free', name: 'Free', monthly_cents: 0, credits: 300 },
   { key: 'builder', name: 'Builder', monthly_cents: 900, credits: 500 },
   { key: 'creator', name: 'Creator', monthly_cents: 1900, credits: 750 },
-  { key: 'master', name: 'Master Builder', monthly_cents: 3900, credits: 1000 },
 ];
+export const LEGACY_MASTER_PLAN: CreditPlan = { key: 'master', name: 'Master Builder', monthly_cents: 3900, credits: 1000 };
 const mode = import.meta.env.VITE_API_MODE || 'local';
 const base = mode === 'local' ? import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002'
   : mode === 'railway_staging' ? import.meta.env.VITE_RAILWAY_API_URL_STAGING || 'https://brickai-backend-staging.up.railway.app'
@@ -28,7 +30,7 @@ async function request<T>(path: string, body?: object): Promise<T> {
   return response.json();
 }
 export const billingApi = {
-  plans: () => request<{ plans: CreditPlan[]; enabled: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
+  plans: () => request<{ plans: CreditPlan[]; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
   account: () => request<BillingAccount>('account'),
   checkout: (plan_key: PlanKey) => request<{ url: string }>('checkout', { plan_key }),
   portal: (action: 'manage' | 'cancel') => request<{ url: string }>('portal', { action }),

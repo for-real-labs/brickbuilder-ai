@@ -8,6 +8,7 @@ import { useBilling } from '../contexts/BillingContext';
 import { usePet } from '../contexts/PetContext';
 import { PetAvatar } from './PetCompanion';
 import LoginModal from './LoginModal';
+import { PaidFeatureDialog, PaidFeatureLock } from './PaidFeatureDialog';
 import type { PlanKey } from '../services/billingApi';
 import './billing.css';
 
@@ -34,7 +35,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
   return <div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
     {plans.filter(plan => !paidOnly || plan.key !== 'free').map(plan => {
       const current = Boolean(user && account?.plan_key === plan.key);
-      const petId = plan.key === 'creator' ? 'nib' : plan.key === 'master' ? 'clik' : 'pip';
+      const petId = plan.key === 'creator' ? 'nib' : 'pip';
       return <article key={plan.key} className={`billing-plan${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
         {plan.key === 'creator' && <span className="billing-recommendation">Room to explore</span>}
         <div className="billing-plan-top"><h2>{plan.name}</h2><PetAvatar id={petId} still /></div>
@@ -49,7 +50,8 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <ul className="billing-features">
           <li><Check aria-hidden="true" />{plan.credits.toLocaleString()} Basic builds or {Math.floor(plan.credits / 15)} All parts builds</li>
           <li><Check aria-hidden="true" />Mix modes from one credit balance</li>
-          <li><Check aria-hidden="true" />Instructions & model downloads</li>
+          <li>{plan.key === 'free' ? <><PaidFeatureLock />LDR/IO exports & instructions on paid plans</>
+            : <><Check aria-hidden="true" />LDR/IO exports & building instructions</>}</li>
           <li><Check aria-hidden="true" />Every Build Buddy included</li>
         </ul>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
@@ -66,7 +68,7 @@ export function CreditNudge() {
   const low = Boolean(account && (account.credits_remaining <= Math.max(2, Math.floor(account.monthly_credits * .2))
     || account.monthly_remaining < 15));
   const source = low ? 'low_credits' : 'creation_banner';
-  const highest = account?.plan_key === 'master';
+  const highest = account?.plan_key === 'creator' || account?.plan_key === 'master';
   useEffect(() => {
     if (enabled && (!account?.has_subscription || low)) posthog.capture('billing_nudge_shown', { source, plan_key: account?.plan_key ?? 'guest' });
   }, [enabled, source, account?.plan_key, account?.has_subscription, low]);
@@ -96,7 +98,7 @@ export function BillingOverlays() {
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
       <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        <p>{account ? `${account.monthly_remaining} monthly credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. Cancel anytime.'}</p></div></div>
+        <p>{account ? `${account.monthly_remaining} monthly credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{(account?.plan_key === 'creator' || account?.plan_key === 'master') && account.credits_remaining === 0 ? `Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. Paid plans unlock LDR/IO exports and instructions. Cancel anytime.'}</p></div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
@@ -104,6 +106,7 @@ export function BillingOverlays() {
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={closeLogin} redirectTo="/pricing" />
+    <PaidFeatureDialog />
   </>;
 }
 
@@ -125,7 +128,7 @@ export function GenerationCreditQuote({ allParts, personalSupported = true }: { 
   return <p className="billing-generation-quote" role="status">
     {allParts ? '15 credits · All parts / AI mesh conversion' : '1 credit · Basic build or edit'}
     {allParts && account && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
-    {allParts && !user && <> · <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: 'all_parts' }); signIn(); }}>Sign in for 300 free monthly credits</button></>}
-    {!allParts && !user && ' · One guest trial, then sign in for 300 monthly credits including your trial.'}
+    {!user && <> · 75 lifetime guest credits: 5 All parts builds or 75 Basic builds, or a mix. No login needed.{' '}
+      <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' }); signIn(); }}>Sign in for 300 free monthly credits</button></>}
   </p>;
 }

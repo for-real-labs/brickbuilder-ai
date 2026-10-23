@@ -16,8 +16,7 @@ async def get_nova_instructions(generation_id: str) -> Response:
     if generation_storage is None:
         raise HTTPException(503, 'Generation storage is unavailable')
     row = await generation_storage.get_generation(generation_id)
-    # Finished model geometry is public, as on /generation/{id}; private source,
-    # reasoning, conversations and active jobs retain their owner checks.
+    # The API route checks the viewer's paid access before reading these steps.
     if not row or row.get('status') != 'completed' or row.get('endpoint') != 'novaToBricks':
         raise HTTPException(404, 'Nova instructions are unavailable')
     if row.get('nova_build_mode') == 'preview':
@@ -29,7 +28,7 @@ async def get_nova_instructions(generation_id: str) -> Response:
         task.add_done_callback(lambda completed: _instruction_exports.pop(generation_id, None))
     # A visitor leaving must not cancel the shared export for other visitors.
     data = await asyncio.shield(task)
-    return Response(data, media_type='text/plain', headers={'Cache-Control': 'public, max-age=3600',
+    return Response(data, media_type='text/plain', headers={'Cache-Control': 'private, no-store',
                     'Content-Disposition': 'attachment; filename="nova-instructions.ldr"'})
 
 

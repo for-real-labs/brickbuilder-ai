@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 class CheckoutRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    plan_key: Literal["builder", "creator", "master"]
+    plan_key: Literal["builder", "creator"]
 
 
 class PortalRequest(BaseModel):
@@ -39,15 +39,17 @@ async def run(operation):
 @router.get("/plans")
 async def plans():
     enabled = False
+    ready = billing.local_unmetered()
     capacity = {"available": False, "checkout_available": False}
     try:
         config = await billing.settings()
+        ready = config.get("policy_version") == 2
         enabled = bool(config["enabled"] and config.get("policy_version") == 2)
         if enabled:
             capacity = await billing.capacity()
     except Exception:
         pass
-    return {"plans": billing.PLANS, "enabled": enabled, **capacity}
+    return {"plans": billing.PLANS, "enabled": enabled, "ready": ready, **capacity}
 
 
 @router.get("/account")

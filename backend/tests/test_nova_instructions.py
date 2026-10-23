@@ -33,6 +33,7 @@ def test_finished_model_reads_cached_steps_without_reading_private_source(monkey
     monkeypatch.setattr(module, 'generation_storage', storage({'status': 'completed', 'endpoint': 'novaToBricks'}, Bucket()))
     response = asyncio.run(module.get_nova_instructions('generation'))
     assert response.body.count(b'0 STEP') == 2
+    assert response.headers['cache-control'] == 'private, no-store'
     assert reads == ['generation/nova-instructions-reviewed-v4.ldr']
 
 

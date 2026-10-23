@@ -641,6 +641,17 @@ it.each(['active build', 'suggestion', 'opened model'])('lets the pet speak the 
 
 const concurrencyLimitMessage = 'You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.';
 
+it.each([
+  'AI builds are paused after 5 failed or canceled attempts within 24 hours. Please wait until October 24, 2026 at 10:00 AM CDT to generate again. Your credits have not been charged for this request. Upgrading does not remove this pause.',
+  'AI builds are temporarily paused while other builds finish. Please wait for a running build to finish before trying again. Your credits have not been charged for this request.',
+])('explains the provider-cost pause through the pet without an upgrade or sign-in shortcut', async message => {
+  await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly state="idle"
+    errorMessage={message} turns={[]} generations={[]} /></PetProvider>));
+  expect(container.querySelector('[role="status"]')?.textContent).toBe(message);
+  expect(container.querySelector('a[href="/login"]')).toBeNull();
+  expect(container.querySelector('.pet-chat-actions')).toBeNull();
+});
+
 it.each([true, false])('shows the one-generation limit in pet speech (currentOnly=%s)', async currentOnly => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'Another castle', error: concurrencyLimitMessage }]} generations={[]} /></PetProvider>));
@@ -655,8 +666,10 @@ it('lets the pet explain the concurrency limit while one build is active', async
   expect(container.querySelector('.pet-chat-message [role="status"]')?.textContent).toBe(concurrencyLimitMessage);
 });
 
-it.each([true, false])('shows a sign-in link after the guest trial (currentOnly=%s)', async currentOnly => {
-  const message = 'You have used your 3 free guest generations. Sign in to keep building.';
+it.each([true, false].flatMap(currentOnly => [
+  'You have used your 3 free guest generations. Sign in to keep building.',
+  'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 5 All parts builds or 75 Basic builds, or a mix. Sign in for 300 free monthly credits.',
+].map(message => ({ currentOnly, message }))))('shows sign-in guidance after the guest trial ($currentOnly, $message)', async ({ currentOnly, message }) => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'Another castle', error: message }]} generations={[]} /></PetProvider>));
   expect(container.querySelector('[role="status"]')?.textContent).toBe(message);

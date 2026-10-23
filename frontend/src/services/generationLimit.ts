@@ -8,7 +8,7 @@ export async function localizeGenerationLimit(response: Response): Promise<Respo
   if (!Number.isFinite(resetAt.getTime())) return response;
   const data = await response.clone().json().catch(() => null);
   const prefix = typeof data?.detail === 'string'
-    ? data.detail.match(/^You have reached the daily limit of ([1-9]|[12][0-9]|30) generations\./)?.[0] : undefined;
+    ? data.detail.match(/^(?:You have reached the daily limit of ([1-9]|[12][0-9]|30) generations\.|AI builds are paused after 5 failed or canceled attempts within 24 hours\.)/)?.[0] : undefined;
   if (!prefix) return response;
   const localTime = new Intl.DateTimeFormat(undefined, {
     month: 'long', day: 'numeric', year: 'numeric',
@@ -17,6 +17,6 @@ export async function localizeGenerationLimit(response: Response): Promise<Respo
   const headers = new Headers(response.headers);
   headers.delete('Content-Length');
   return new Response(JSON.stringify({ ...data,
-    detail: `${prefix} Please wait until ${localTime} to generate again.`,
+    detail: data.detail.replace(/Please wait until .*? to generate again\./, `Please wait until ${localTime} to generate again.`),
   }), { status: response.status, statusText: response.statusText, headers });
 }

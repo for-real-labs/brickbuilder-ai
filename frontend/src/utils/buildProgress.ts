@@ -1,6 +1,12 @@
 export const BUILD_FAILURE_MESSAGE = 'Oops! I couldn’t make your build. Please try again.';
 
 export const GUEST_GENERATION_LIMIT_MESSAGE = 'You have used your 3 free guest generations. Sign in to keep building.';
+export const GUEST_CREDITS_LIMIT_MESSAGE = 'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 5 All parts builds or 75 Basic builds, or a mix. Sign in for 300 free monthly credits.';
+
+export function isGuestLimitMessage(message: string) {
+  return message === GUEST_GENERATION_LIMIT_MESSAGE || message === GUEST_CREDITS_LIMIT_MESSAGE
+    || message === 'You have used your free Basic guest trial. Sign in for your remaining monthly credits, usable for Basic or All parts builds.';
+}
 
 // Quota errors are actionable public messages; keep infrastructure errors generic.
 export function buildFailureMessage(error: unknown): string {
@@ -9,7 +15,9 @@ export function buildFailureMessage(error: unknown): string {
   if (message === 'Generation cancelled. Your AI account was not charged.') return message;
   if (typeof message === 'string' && /^Add your (OpenAI|Claude|openai|anthropic) API key in AI billing settings, or (choose BrickBuilder credits|select BrickBuilder credits)\.$/.test(message)) return message;
   return typeof message === 'string' && (/^You have reached the daily limit of ([1-9]|[12][0-9]|30) generations\. Please wait until /.test(message)
-    || message === GUEST_GENERATION_LIMIT_MESSAGE
+    || /^AI builds are paused after 5 failed or canceled attempts within 24 hours\. Please wait until /.test(message)
+    || message === 'AI builds are temporarily paused while other builds finish. Please wait for a running build to finish before trying again. Your credits have not been charged for this request.'
+    || isGuestLimitMessage(message)
     || message === 'You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.')
     ? message : BUILD_FAILURE_MESSAGE;
 }

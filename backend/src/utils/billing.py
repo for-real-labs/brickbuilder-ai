@@ -15,9 +15,11 @@ PLANS = (
     {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 300},
     {"key": "builder", "name": "Builder", "monthly_cents": 900, "credits": 500},
     {"key": "creator", "name": "Creator", "monthly_cents": 1900, "credits": 750},
-    {"key": "master", "name": "Master Builder", "monthly_cents": 3900, "credits": 1000},
 )
 PAID_PLANS = {p["key"]: p for p in PLANS if p["monthly_cents"]}
+# Retired plans still need invoice reconciliation and cancellation support.
+SUBSCRIPTION_PLANS = {**PAID_PLANS,
+    "master": {"key": "master", "name": "Master Builder", "monthly_cents": 3900, "credits": 1000}}
 BILLING_TAG = "brickbuilder_credits_v3"
 
 
@@ -72,6 +74,29 @@ async def wallet(user_id):
     return await rpc("billing_account", p_user_id=user_id, p_live=live_mode())
 
 
+def has_paid_features(row):
+    return (row["plan_key"] in SUBSCRIPTION_PLANS
+            and row["subscription_status"] in ("active", "past_due")
+            and datetime.fromisoformat(row["period_end"].replace("Z", "+00:00")) > datetime.now(timezone.utc))
+
+
+def local_unmetered():
+    return not auth.SUPABASE_ENABLED and os.getenv("API_MODE", "local") == "local"
+
+
+async def require_paid_features(identity):
+    if local_unmetered():
+        return
+    config = await settings()
+    if not config["enabled"]:
+        return
+    if (identity.get("authenticated") and not identity.get("is_anonymous")
+            and not identity.get("is_developer") and has_paid_features(await wallet(account_id(identity)))):
+        return
+    raise HTTPException(403, detail={"code": "BB_PAID_FEATURE_REQUIRED",
+        "message": "Instructions and LDR/IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
+
+
 def public_wallet(row):
     end = datetime.fromisoformat(row["period_end"].replace("Z", "+00:00"))
     remaining = row["monthly_remaining"] if end > datetime.now(timezone.utc) else 0
@@ -95,7 +120,8 @@ async def account(identity):
         .select("id,kind,amount,bucket,created_at").eq("user_id", user_id)
         .eq("livemode", live_mode()).order("id", desc=True).limit(30))
     config = await settings()
-    return {**public_wallet(row), "history": history.data, "enabled": bool(config["enabled"] and config.get("policy_version") == 2), **(await capacity())}
+    return {**public_wallet(row), "history": history.data, "paid_features": not config["enabled"] or has_paid_features(row),
+            "enabled": bool(config["enabled"] and config.get("policy_version") == 2), **(await capacity())}
 
 
 def lookup_key(plan_key):
@@ -103,6 +129,8 @@ def lookup_key(plan_key):
 
 
 async def price_for(plan_key):
+    if plan_key not in PAID_PLANS:
+        raise HTTPException(400, "Choose Builder or Creator.")
     plan = PAID_PLANS[plan_key]
     prices = await asyncio.to_thread(stripe.Price.list, active=True,
         lookup_keys=[lookup_key(plan_key)], limit=2, api_key=stripe_key())
@@ -229,7 +257,7 @@ async def sync_subscription(subscription_id):
         raise ValueError("Unexpected subscription items")
     item = items[0]
     price = item["price"]
-    plan = next((p for k, p in PAID_PLANS.items() if price.get("lookup_key") == lookup_key(k)), None)
+    plan = next((p for k, p in SUBSCRIPTION_PLANS.items() if price.get("lookup_key") == lookup_key(k)), None)
     recurring = price.get("recurring") or {}
     if (not plan or price.get("unit_amount") != plan["monthly_cents"] or price.get("currency") != "usd"
             or recurring.get("interval") != "month" or recurring.get("interval_count") != 1):
