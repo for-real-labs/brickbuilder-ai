@@ -12,13 +12,13 @@ from . import auth
 from .database import execute_query
 
 PLANS = (
-    {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 5},
-    {"key": "builder", "name": "Builder", "monthly_cents": 900, "credits": 30},
-    {"key": "creator", "name": "Creator", "monthly_cents": 1900, "credits": 75},
-    {"key": "master", "name": "Master Builder", "monthly_cents": 3900, "credits": 180},
+    {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 300},
+    {"key": "builder", "name": "Builder", "monthly_cents": 900, "credits": 500},
+    {"key": "creator", "name": "Creator", "monthly_cents": 1900, "credits": 750},
+    {"key": "master", "name": "Master Builder", "monthly_cents": 3900, "credits": 1000},
 )
 PAID_PLANS = {p["key"]: p for p in PLANS if p["monthly_cents"]}
-BILLING_TAG = "brickbuilder_credits_v2"
+BILLING_TAG = "brickbuilder_credits_v3"
 
 
 def live_mode():
@@ -99,7 +99,7 @@ async def account(identity):
 
 
 def lookup_key(plan_key):
-    return f"brickbuilder_{plan_key}_monthly_v2"
+    return f"brickbuilder_{plan_key}_monthly_v3"
 
 
 async def price_for(plan_key):

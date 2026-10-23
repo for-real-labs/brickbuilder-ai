@@ -12,7 +12,7 @@ import './billing.css';
 
 export const billingDate = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 const descriptions: Record<PlanKey, string> = {
-  free: 'A few ideas to get you started.', builder: 'For your next weekend project.',
+  free: 'Room to try your ideas.', builder: 'For your next weekend project.',
   creator: 'For builders with a growing idea list.', master: 'For a whole world of possibilities.',
 };
 
@@ -44,10 +44,10 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
           : <button className="billing-plan-button" onClick={() => void subscribe('free', source)}>Start building free</button>
           : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable}
             onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : !checkoutAvailable ? 'At capacity' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
-        <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits}</strong> credits / month</div>
+        <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <ul className="billing-features">
-          <li><Check aria-hidden="true" />{plan.credits} Basic builds{plan.key !== 'free' && ` or ${plan.credits / 15} All parts builds`}</li>
-          <li><Check aria-hidden="true" />{plan.key === 'free' ? 'Basic bricks generation' : 'Mix modes from one credit balance'}</li>
+          <li><Check aria-hidden="true" />{plan.credits.toLocaleString()} Basic builds or {Math.floor(plan.credits / 15)} All parts builds</li>
+          <li><Check aria-hidden="true" />Mix modes from one credit balance</li>
           <li><Check aria-hidden="true" />Instructions & model downloads</li>
           <li><Check aria-hidden="true" />Every Build Buddy included</li>
         </ul>
@@ -63,7 +63,7 @@ export function CreditNudge() {
   const { account, enabled, openUpgrade } = useBilling();
   const { pet } = usePet();
   const low = Boolean(account && (account.credits_remaining <= Math.max(2, Math.floor(account.monthly_credits * .2))
-    || (account.has_subscription && account.monthly_remaining < 15)));
+    || account.monthly_remaining < 15));
   const source = low ? 'low_credits' : 'creation_banner';
   const highest = account?.plan_key === 'master';
   useEffect(() => {
@@ -95,7 +95,7 @@ export function BillingOverlays() {
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
       <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        <p>{account ? `${account.monthly_remaining} monthly credits available for any eligible mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits with a paid plan. Cancel anytime.'}</p></div></div>
+        <p>{account ? `${account.monthly_remaining} monthly credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{account?.plan_key === 'master' && account.credits_remaining === 0 ? `You’re on our largest plan. Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. Cancel anytime.'}</p></div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
@@ -108,13 +108,13 @@ export function BillingOverlays() {
 
 
 export function GenerationCreditQuote({ allParts }: { allParts: boolean }) {
-  const { enabled, account, openUpgrade } = useBilling();
+  const { user } = useAuth();
+  const { enabled, account, signIn } = useBilling();
   if (!enabled) return null;
-  const needsPlan = allParts && (!account || account.plan_key === 'free');
   return <p className="billing-generation-quote" role="status">
     {allParts ? '15 credits · All parts / AI mesh conversion' : '1 credit · Basic build or edit'}
-    {allParts && account && !needsPlan && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
-    {needsPlan && <> · <button type="button" className="billing-text-link" onClick={() => openUpgrade('generation_mode')}>Choose a monthly plan</button></>}
-    {!allParts && !account && ' · One guest trial, then sign in for 5 monthly credits including your trial.'}
+    {allParts && account && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
+    {allParts && !user && <> · <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: 'all_parts' }); signIn(); }}>Sign in for 300 free monthly credits</button></>}
+    {!allParts && !user && ' · One guest trial, then sign in for 300 monthly credits including your trial.'}
   </p>;
 }

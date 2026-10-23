@@ -23,7 +23,7 @@ describe('directory legal pages', () => {
     const terms = renderLegalDocument(shell, 'terms');
     expect(terms).toContain('Operator: Jake Johnson');
     expect(terms).toContain('at least 13 years old');
-    expect(terms).toContain('Free plan includes 5 credits');
+    expect(terms).toContain('Free plan includes 300 credits');
     expect(terms).toContain('renew automatically each month until canceled');
     expect(terms).toContain('My billing → Cancel subscription');
     expect(terms).toContain('Monthly credits reset without rollover');

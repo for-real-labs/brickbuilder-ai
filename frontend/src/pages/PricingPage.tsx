@@ -15,19 +15,19 @@ export function BillingHeader() {
 }
 
 const faqs = [
-  ['What uses a credit?', 'Basic builds and Basic AI edits use 1 credit. All parts builds, All parts edits, and AI image/text-to-mesh conversions use 15 credits and require a paid monthly plan. You can mix modes from your monthly balance. Importing LDraw/GLB/OBJ, manual edits, resizing, instructions, and downloads use no credits. Physical brick kits are purchased separately.'],
-  ['Can I try it first?', 'Yes. Guests get one Basic trial attempt. Sign in for 5 free Basic credits each calendar month; a successful guest trial counts toward that month’s allowance. No payment card is needed.'],
+  ['What uses a credit?', 'Basic builds and Basic AI edits use 1 credit. All parts builds, All parts edits, and AI image/text-to-mesh conversions use 15 credits on every plan, including Free. You can mix modes from your monthly balance. Whole-build examples round down; leftover credits remain usable for Basic builds. Importing LDraw/GLB/OBJ, manual edits, resizing, instructions, and downloads use no credits. Physical brick kits are purchased separately.'],
+  ['Can I try it first?', 'Yes. Guests get one Basic trial attempt. Sign in for 300 free credits each calendar month: 300 Basic builds or 20 All parts builds, or a mix; a successful guest trial counts toward that month’s allowance. No payment card is needed.'],
   ['When do credits reset?', 'Paid credits reset on your monthly billing date. Free credits reset on the first day of each month at 00:00 UTC. Unused monthly credits do not roll over. Your balance shows the reset date in your timezone.'],
   ['What happens to my existing credits?', 'Your existing balance is preserved as legacy bonus credits and never expires. After your monthly credits, redeem up to 5 bonus credits per calendar month for Basic builds. Bonuses cannot be used for All parts or AI mesh conversions. Unused bonuses stay in your account.'],
   ['Can I cancel?', 'Yes. Open My billing → Cancel subscription to confirm cancellation in Stripe. You keep the remaining credits from your paid plan until the end of that billing period. Then your account returns to Free. Your saved models and bonus credits stay available.'],
   ['Can I buy credits without subscribing?', 'We currently offer monthly plans only. If you need more credits, you can change your plan. Stripe shows any prorated charge before you confirm. Upgrades add the difference in credits; downgrades take effect at renewal.'],
-  ['What if a build fails?', 'Failed and canceled builds return their credits automatically to the original credit period. The default daily limit is 10 generation attempts, with one build running at a time. Capacity limits can temporarily pause new builds; your saved models and subscription cancellation remain available.'],
+  ['What if a build fails?', 'Failed and canceled builds return their credits automatically to the original credit period. Monthly credits cover your builds, with one build running at a time. Account restrictions may also apply. Capacity limits can temporarily pause new builds; your saved models and subscription cancellation remain available.'],
 ];
 
 export default function PricingPage() {
   const { error, enabled, account, checkoutAvailable } = useBilling();
   useEffect(() => { posthog.capture('billing_pricing_viewed', { source: 'pricing_page' }); }, []);
-  return <div className="billing-page"><Helmet><title>Plans & credits | BrickBuilder</title><meta name="description" content="Build with AI from $9 per month. Choose 30, 75, or 180 monthly credits. Cancel anytime. Every plan includes your Build Buddy." /></Helmet>
+  return <div className="billing-page"><Helmet><title>Plans & credits | BrickBuilder</title><meta name="description" content="Build with AI from $9 per month. Start with 300 free monthly credits or choose 500, 750, or 1,000. Cancel anytime. Every plan includes your Build Buddy." /></Helmet>
     <BillingHeader />
     <main className="billing-main"><div className="billing-hero"><div className="billing-hero-pets"><PetAvatar id="pip" /><PetAvatar id="nib" /><PetAvatar id="clik" /></div>
       <p className="billing-eyebrow">YOUR IDEAS. YOUR BUDDY. YOUR NEXT BUILD.</p><h1>Keep your ideas building.</h1>
@@ -36,7 +36,7 @@ export default function PricingPage() {
       {!enabled && <p className="billing-launch-notice" role="status">Monthly plans are coming soon. You can keep building with your current access.</p>}
       {enabled && !checkoutAvailable && <p className="billing-launch-notice" role="status">New subscriptions are temporarily at capacity. Please check back soon. Existing subscribers can still manage or cancel in My billing.</p>}
       <PlanGrid source="pricing_page" />
-      <p className="billing-fine-print">Basic builds: 1 credit. All parts and AI mesh conversions: 15 credits with a paid plan. Paid plans renew monthly until canceled. Monthly credits reset without rollover. Physical brick kits are sold separately.</p>
+      <p className="billing-fine-print">Basic builds: 1 credit. All parts and AI mesh conversions: 15 credits on every plan. Paid plans renew monthly until canceled. Monthly credits reset without rollover. Physical brick kits are sold separately.</p>
       <section className="billing-faq" aria-labelledby="billing-faq-title"><p className="billing-eyebrow">THE SMALL PRINT, MADE SIMPLE</p><h2 id="billing-faq-title">A few good questions.</h2>
         {faqs.map(([question, answer]) => <details key={question} onToggle={e => { if (e.currentTarget.open) posthog.capture('billing_faq_opened', { question }); }}><summary>{question}</summary><p>{answer}</p></details>)}
       </section>

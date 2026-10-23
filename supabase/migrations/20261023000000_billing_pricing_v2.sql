@@ -7,6 +7,17 @@ ALTER TABLE public.billing_accounts ADD COLUMN bonus_used integer NOT NULL DEFAU
 ALTER TABLE public.billing_accounts ADD COLUMN bonus_period_start timestamptz NOT NULL
  DEFAULT (date_trunc('month',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC');
 ALTER TABLE public.generations ADD COLUMN billing_policy_version integer NOT NULL DEFAULT 1;
+ALTER TABLE public.billing_accounts ALTER COLUMN monthly_credits SET DEFAULT 300;
+ALTER TABLE public.billing_accounts ALTER COLUMN monthly_remaining SET DEFAULT 300;
+
+-- Increase prelaunch Free wallets without resetting credits already spent.
+WITH adjusted AS (
+ UPDATE public.billing_accounts SET monthly_remaining=monthly_remaining+295,monthly_credits=300
+ WHERE plan_key='free' AND monthly_credits=5 AND period_end>now()
+ RETURNING user_id,livemode,period_start
+)
+INSERT INTO public.billing_credit_history(user_id,livemode,reference,kind,amount,bucket,period_start)
+SELECT user_id,livemode,'free-allowance-v2','upgrade',295,'monthly',period_start FROM adjusted;
 
 CREATE FUNCTION public.billing_activation() RETURNS trigger LANGUAGE plpgsql SET search_path=public AS $$
 BEGIN
@@ -87,12 +98,12 @@ BEGIN
   INSERT INTO public.billing_accounts(user_id,livemode) VALUES(p_user_id,p_live) ON CONFLICT DO NOTHING;
   SELECT * INTO a FROM public.billing_accounts WHERE user_id=p_user_id AND livemode=p_live FOR UPDATE;
   IF a.plan_key='free' AND a.period_end<=now() THEN
-    UPDATE public.billing_accounts SET monthly_remaining=5,monthly_credits=5,
+    UPDATE public.billing_accounts SET monthly_remaining=300,monthly_credits=300,
       period_start=date_trunc('month',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC',
       period_end=(date_trunc('month',now() AT TIME ZONE 'UTC')+interval '1 month') AT TIME ZONE 'UTC'
     WHERE user_id=p_user_id AND livemode=p_live RETURNING * INTO a;
     INSERT INTO public.billing_credit_history(user_id,livemode,reference,kind,amount,bucket,period_start)
-    VALUES(p_user_id,p_live,'free:'||a.period_start,'monthly',5,'monthly',a.period_start) ON CONFLICT DO NOTHING;
+    VALUES(p_user_id,p_live,'free:'||a.period_start,'monthly',300,'monthly',a.period_start) ON CONFLICT DO NOTHING;
   END IF;
   IF a.bonus_period_start < date_trunc('month',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC' THEN
     UPDATE public.billing_accounts SET bonus_used=0,
@@ -117,13 +128,13 @@ BEGIN
  UPDATE public.billing_accounts SET stripe_subscription_id=p_subscription,subscription_status=p_status,
    cancel_at_period_end=p_cancel,sync_version=p_version WHERE user_id=p_user_id AND livemode=p_live;
  IF p_status IN ('canceled','incomplete_expired') THEN
-   UPDATE public.billing_accounts SET plan_key='free',monthly_remaining=5,monthly_credits=5,
+   UPDATE public.billing_accounts SET plan_key='free',monthly_remaining=300,monthly_credits=300,
      period_start=date_trunc('month',now() AT TIME ZONE 'UTC') AT TIME ZONE 'UTC',
      period_end=(date_trunc('month',now() AT TIME ZONE 'UTC')+interval '1 month') AT TIME ZONE 'UTC',cancel_at_period_end=false
    WHERE user_id=p_user_id AND livemode=p_live AND plan_key<>'free';
  ELSIF p_invoice IS NOT NULL AND p_status='active' AND p_end>now() AND p_start<=now() AND p_start<p_end THEN
    IF p_plan NOT IN ('builder','creator','master') OR p_allowance IS DISTINCT FROM
-      (CASE p_plan WHEN 'builder' THEN 30 WHEN 'creator' THEN 75 WHEN 'master' THEN 180 END) THEN
+      (CASE p_plan WHEN 'builder' THEN 500 WHEN 'creator' THEN 750 WHEN 'master' THEN 1000 END) THEN
       RAISE EXCEPTION 'BILLING_INVALID_PLAN';
    END IF;
    INSERT INTO public.billing_paid_invoices VALUES(p_invoice,p_live,p_user_id) ON CONFLICT DO NOTHING RETURNING invoice_id INTO admitted;
@@ -159,12 +170,9 @@ BEGIN
  END IF;
  cost:=CASE WHEN NEW.endpoint='llmToBricks' THEN 1 ELSE 15 END;
  IF NEW.user_type='anonymous' THEN
-   IF cost<>1 THEN RAISE EXCEPTION 'BB_PAID_MODE_REQUIRED'; END IF;
+   IF cost<>1 THEN RAISE EXCEPTION 'BB_SIGN_IN_REQUIRED'; END IF;
  ELSIF NEW.user_id<>'developer' THEN
    a:=public.billing_account(NEW.user_id::uuid,NEW.billing_livemode);
-   IF cost=15 AND (a.plan_key='free' OR a.period_end<=now() OR a.subscription_status NOT IN ('active','past_due')) THEN
-     RAISE EXCEPTION 'BB_PAID_MODE_REQUIRED';
-   END IF;
    IF a.period_end>now() AND a.monthly_remaining>=cost THEN
      chosen_bucket:='monthly';
      UPDATE public.billing_accounts SET monthly_remaining=monthly_remaining-cost WHERE user_id=a.user_id AND livemode=a.livemode;
@@ -279,5 +287,43 @@ $$;
 REVOKE ALL ON FUNCTION public.reserve_guest_ip_generation(text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.reserve_guest_ip_generation(text) TO service_role;
 
+-- Monthly credits replace the default daily cap only while billing is enabled.
+-- Explicit account restrictions and verified owner exemptions remain intact.
+CREATE OR REPLACE FUNCTION public.reserve_daily_generation(owner_id text, owner_type text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+DECLARE
+    today date := (statement_timestamp() AT TIME ZONE 'UTC')::date;
+    admitted integer;
+    effective_limit integer;
+    exempt boolean;
+BEGIN
+    SELECT daily_limit, unlimited INTO effective_limit, exempt FROM public.generation_daily_limit_overrides
+    WHERE user_id = owner_id AND user_type = owner_type;
+    IF effective_limit IS NULL AND owner_type='authenticated'
+       AND (SELECT enabled FROM public.billing_settings WHERE id) THEN
+        exempt := true;
+    END IF;
+    effective_limit := coalesce(effective_limit, 10);
+    IF owner_type = 'authenticated' THEN
+        exempt := coalesce(exempt, false) OR EXISTS (
+            SELECT 1 FROM auth.users u JOIN public.generation_daily_email_exemptions e
+                ON lower(u.email) = e.email
+            WHERE u.id::text = owner_id AND u.email_confirmed_at IS NOT NULL
+                AND NOT coalesce(u.is_anonymous, false)
+        );
+    END IF;
+    INSERT INTO public.generation_daily_usage (user_id, user_type, usage_day, attempts)
+    VALUES (owner_id, owner_type, today, 1)
+    ON CONFLICT (user_id, user_type, usage_day) DO UPDATE
+    SET attempts = generation_daily_usage.attempts + 1
+    WHERE coalesce(exempt, false) OR generation_daily_usage.attempts < effective_limit
+    RETURNING attempts INTO admitted;
+    IF admitted IS NULL THEN
+        RAISE EXCEPTION 'BB_GENERATION_DAILY_LIMIT:%', effective_limit USING ERRCODE = 'P0001';
+    END IF;
+END;
+$$;
+REVOKE ALL ON FUNCTION public.reserve_daily_generation(text, text) FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.reserve_daily_generation(text, text) TO service_role;
 
 NOTIFY pgrst,'reload schema';

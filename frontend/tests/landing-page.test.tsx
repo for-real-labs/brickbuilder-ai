@@ -929,6 +929,6 @@ it('starts the free trial in Basic and preserves a later explicit All parts sele
     act(() => container.querySelector<HTMLButtonElement>('button[value="nova"]')!.click());
     expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.textContent).toContain('15 credits');
-    expect(container.textContent).toContain('Choose a monthly plan');
+    expect(container.textContent).toContain('Sign in for 300 free monthly credits');
   } finally { act(() => root.unmount()); }
 });

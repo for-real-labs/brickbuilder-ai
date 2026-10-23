@@ -12,13 +12,13 @@ reapply it. The new migration is `20261023000000_billing_pricing_v2.sql`.
 
 | Plan | USD / month | Monthly credits | Example use of the shared balance |
 | --- | ---: | ---: | --- |
-| Free | $0 | 5 | 5 Basic builds |
-| Builder | $9 | 30 | 30 Basic or 2 All parts builds |
-| Creator | $19 | 75 | 75 Basic or 5 All parts builds |
-| Master Builder | $39 | 180 | 180 Basic or 12 All parts builds |
+| Free | $0 | 300 | 300 Basic or 20 All parts builds |
+| Builder | $9 | 500 | 500 Basic or 33 All parts builds, with 5 credits left |
+| Creator | $19 | 750 | 750 Basic or 50 All parts builds |
+| Master Builder | $39 | 1,000 | 1,000 Basic or 66 All parts builds, with 10 credits left |
 
 Basic generation and Basic AI edits cost 1 credit. All parts generation/edits and
-AI text/image-to-mesh conversions cost 15 credits and require a paid plan. Modes
+AI text/image-to-mesh conversions cost 15 credits on every plan, including Free. Modes
 share a balance; the example counts are alternatives, not additive allowances.
 Monthly plans only; no annual plans or one-off packs. Physical kits are separate.
 
@@ -27,14 +27,16 @@ counters. A claimed successful or running trial deducts one credit from the
 account's Free allowance if it belongs to the current month. Failed trials can
 sign in for Free access. Existing guest counters are preserved. LDraw/GLB/OBJ
 imports, manual edits, resizing, instructions and downloads do not use credits.
-The default daily limit remains 10 attempts, with one active generation per user;
-existing owner exemptions and account overrides remain intact.
+When billing is enabled, monthly credits replace the default 10-attempt daily
+limit for signed-in accounts so the advertised allowances are usable. There is
+still one active generation per user. Explicit account restrictions and verified
+owner exemptions remain intact. Turning billing off restores the default daily
+limit. Guests retain the separate one-attempt Basic trial.
 
 The 31,700 prelaunch bonus credits are preserved. Users can redeem up to 5 per
 UTC calendar month, after monthly credits, for Basic builds only. They never
 expire. The account page separates the full legacy balance from credits usable
-this month. This transition avoids letting old welcome balances bypass the paid
-All parts requirement, without deleting those balances.
+this month. Monthly credits fund either mode; legacy bonuses remain Basic-only.
 
 Free credits reset each UTC calendar month. Paid credits reset on a verified paid
 Stripe invoice at the billing anniversary, without rollover. Upgrades grant only
@@ -64,18 +66,48 @@ approximately $2.95 including recorded failed-job spend. Reporting is incomplete
 especially for historical failures and some providers. Do not interpret missing
 usage as zero cost or these figures as reconciled provider invoices.
 
-Planning assumptions: 50% audience growth, 1–3% of Generate clickers subscribing,
-60/30/10% paid-plan mix, 70% credit utilization, and $0.25 cost per weighted credit.
-That suggests roughly 14–41 subscribers and $200–$600 MRR at 1.5× audience. The
-central case models about $1,202 monthly AI spend including a $500 reserve;
-3× audience models about $1,905. These estimates exclude legacy bonus redemption:
-if all 317 legacy accounts redeem five extra credits, add roughly $396/month at
-the planning rate. The spending guard also covers those builds.
+With the revised 300-credit Free allowance, 79 of the 89 signed-in builders
+(89%) fit entirely within Free at their observed mix of Basic and All parts.
+Ten exceeded 300 weighted credits; seven exceeded 500, six exceeded 750 and five
+exceeded 1,000. Historical usage therefore provides little reason for most of
+this cohort to upgrade. The larger free plan is a subsidized acquisition offer,
+not evidence that more users will subscribe.
 
-At fixed traffic, the working hypothesis is 20–40% fewer active builders,
-60–80% fewer AI generations and 90–98% fewer All parts generations. These are
-scenario assumptions, not statistical forecasts. Measure actual conversion,
-renewal, cancellations and generation mix after launch.
+Keeping the prior illustrative assumptions (65% of Generate clickers active,
+2% subscribing, 60/30/10% paid-plan mix, 70% paid-credit utilization, $0.25 per
+weighted credit, two free weighted credits used per active free user, and a
+$500 reserve) gives the following *unconstrained demand*, before budget pauses:
+
+| Generate audience | Expected subscribers | Gross MRR | Monthly AI demand |
+| --- | ---: | ---: | ---: |
+| 1× (901 people) | 18 | $270 | $2,755 |
+| 1.5× | 27 | $405 | $3,882 |
+| 2× | 36 | $541 | $5,010 |
+| 3× | 54 | $811 | $7,264 |
+
+The paid allowance average is now 625 credits. At 1.5× traffic, increasing
+average free use from 2 to 20 weighted credits raises the modeled demand to
+$7,714/month. A fully used Free allowance costs about $60–$63 at the recorded
+mode averages, or $75 at the conservative planning rate. Twenty fully used Free
+allowances alone would consume the $1,500 generation budget at that planning
+rate, before any paid use. Legacy bonus redemption is additional: all 317
+legacy accounts redeeming five extra credits adds about $396/month.
+
+The prior 20–40% active-user, 60–80% total-build and 90–98% All parts drop-off
+estimates assumed a five-Basic-only Free plan and no longer apply. Allowances do
+not identify willingness to pay or usage after a paywall. Most observed signed-in
+users can keep their existing habits free; heavy users, guest sign-in friction,
+and capacity pauses will drive any drop-off. At the 1.5× scenario, $1,500 of
+generation capacity covers about 44% of the modeled $3,382 generation demand
+(before the $500 reserve), implying roughly 56% of weighted usage must be
+unserved if that demand materializes at the planning cost. This is a capacity
+scenario, not a prediction of voluntary churn or of the number of builds.
+
+These assumptions are not a measured conversion forecast. Full utilization and
+growth cannot be served within the current budget; the guard will pause service
+before everyone uses their advertised allowance. Do not present this pricing as
+self-funding or promise uninterrupted availability. Measure conversion, renewal,
+cancellations, generation mix, actual spend and capacity rejections after launch.
 
 Meshy's balance badge, pricing modal, creation banner, low-credit nudge, usage
 history and hosted billing informed the flow. BrickBuilder keeps its own design
@@ -117,11 +149,13 @@ pause materially affects paid service, provide a manual billing adjustment.
 1. Verify the production merge is authorized. Apply only the unrecorded v2
    migration transactionally and record it. Keep `billing_settings.enabled=false`.
 2. Run `backend/scripts/provision_billing.py --env-file <existing environment>`
-   for sandbox resources, then `--live` for production. It creates immutable v2
+   for sandbox resources, then `--live` for production. It creates immutable v3
    monthly prices and a cancellation portal, without charging anyone. Save each
    returned portal ID in the corresponding `billing_settings` column. Check that
-   no active v1 subscription exists; expire any old open v1 subscription Checkout
-   sessions and deactivate unused v1 prices before launch.
+   no active v1 or v2 subscription exists; expire old open v1/v2 subscription
+   Checkout sessions and deactivate unused v1/v2 prices before launch. The v3
+   catalog distinguishes the revised allowances from the earlier prelaunch
+   catalogs; the database admission policy remains version 2.
 3. Deploy backend and frontend; verify both exact commit SHAs and the public
    `/billing/plans` prices and policy availability. Old API versions cannot admit
    metered generations after activation. Preserve existing Stripe keys and webhook
@@ -133,7 +167,9 @@ pause materially affects paid service, provide a manual billing adjustment.
 5. Validate sandbox Checkout, invoice replay, upgrade, refund and cancellation.
    Verify live catalog prices and portal settings without a live purchase.
    Then set `billing_settings.enabled=true` and verify anonymous Basic-only
-   admission, signed-in balances, pricing, cancellation and capacity telemetry.
+   admission, signed-in Free All parts access, all four balances, pricing, cancellation and
+   capacity telemetry. The migration increases existing active Free wallets by
+   295 credits while preserving prior spending and legacy bonuses.
 
 The wallet, ledger and budget reservations are service-only. Browser writes to
 balances and generation status remain revoked. Subscription events fetch the

@@ -32,7 +32,7 @@ const click = async (text: string) => act(async () => {
 beforeEach(async () => {
   vi.clearAllMocks();
   auth.user = { id: 'builder-1' };
-  account = { plan_key: 'free', monthly_credits: 5, monthly_remaining: 2, bonus_remaining: 0, credits_remaining: 2,
+  account = { plan_key: 'free', monthly_credits: 300, monthly_remaining: 2, bonus_remaining: 0, credits_remaining: 2,
     period_start: '2026-10-01T00:00:00Z', period_end: '2099-11-01T00:00:00Z', subscription_status: 'none',
     cancel_at_period_end: false, has_subscription: false, enabled: true, history: [] };
   const { INITIAL_PLANS } = await import('../src/services/billingApi');
@@ -89,7 +89,7 @@ it('does not show or report a nudge for a paid account with plenty of credits', 
 });
 
 it('directs an exhausted highest-tier subscriber to usage instead of promising more credits', async () => {
-  account = { ...account, plan_key: 'master', has_subscription: true, subscription_status: 'active', credits_remaining: 0, monthly_remaining: 0, monthly_credits: 300 };
+  account = { ...account, plan_key: 'master', has_subscription: true, subscription_status: 'active', credits_remaining: 0, monthly_remaining: 0, monthly_credits: 1000 };
   await render(<CreditNudge />);
   expect(container.textContent).toContain('View usage');
   expect(container.textContent).not.toContain('Get more credits');
@@ -98,7 +98,7 @@ it('directs an exhausted highest-tier subscriber to usage instead of promising m
 });
 
 it('offers explicit cancellation and sends it to the authenticated portal', async () => {
-  account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active', monthly_credits: 30 };
+  account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active', monthly_credits: 500 };
   await render(<BillingPage />);
   await click('Cancel subscription');
   expect(billingApi.portal).toHaveBeenCalledWith('cancel');
@@ -154,21 +154,33 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
 });
 
 
-it('shows the approved prices and weighted build allowances without promising free All parts', async () => {
+it('shows the approved monthly allowances and whole All parts equivalents on every plan', async () => {
   await render(<PricingPage />);
   const cards = [...container.querySelectorAll('.billing-plan')];
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$9', '$19', '$39']);
-  expect(cards[0].textContent).toContain('5 Basic builds');
-  expect(cards[0].textContent).not.toContain('All parts builds');
-  expect(cards[2].textContent).toContain('75 Basic builds or 5 All parts builds');
+  ['300 Basic builds or 20 All parts builds', '500 Basic builds or 33 All parts builds',
+    '750 Basic builds or 50 All parts builds', '1,000 Basic builds or 66 All parts builds']
+    .forEach((allowance, index) => expect(cards[index].textContent).toContain(allowance));
+  expect(container.textContent).toContain('leftover credits remain usable for Basic builds');
   expect(container.textContent).toContain('up to 5 bonus credits per calendar month');
 });
 
-it('shows the selected mode cost and an instrumented paid-mode nudge', async () => {
+it('offers guests free All parts access through an instrumented sign-in action', async () => {
+  auth.user = null;
   await render(<GenerationCreditQuote allParts />);
   expect(container.textContent).toContain('15 credits');
-  await click('Choose a monthly plan');
-  expect(posthog.capture).toHaveBeenCalledWith('billing_upgrade_opened', expect.objectContaining({ source: 'generation_mode' }));
+  await click('Sign in for 300 free monthly credits');
+  expect(container.textContent).toContain('Sign in to build');
+  expect(posthog.capture).toHaveBeenCalledWith('billing_mode_sign_in_clicked', { mode: 'all_parts' });
+  expect(billingApi.checkout).not.toHaveBeenCalled();
+});
+
+it('lets Free accounts use All parts without a paid-plan nudge', async () => {
+  account = { ...account, monthly_remaining: 300, credits_remaining: 300 };
+  await render(<GenerationCreditQuote allParts />);
+  expect(container.textContent).toContain('300 monthly credits available');
+  expect(container.querySelector('button')).toBeNull();
+  expect(container.textContent).not.toContain('Choose a monthly plan');
 });
 
 it('pauses new sales at capacity while keeping cancellation accessible', async () => {
@@ -190,7 +202,7 @@ it('separates preserved bonus balance from the bonus credits usable this month',
 
 it('does not imply that legacy bonuses can fund an All parts build', async () => {
   account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active',
-    monthly_credits: 30, monthly_remaining: 10, bonus_remaining: 100, bonus_available: 5, credits_remaining: 15 };
+    monthly_credits: 500, monthly_remaining: 10, bonus_remaining: 100, bonus_available: 5, credits_remaining: 15 };
   await render(<><GenerationCreditQuote allParts /><CreditNudge /></>);
   expect(container.textContent).toContain('10 monthly credits available. Legacy bonuses are for Basic only.');
   expect(container.querySelector('.credit-nudge--low')).not.toBeNull();

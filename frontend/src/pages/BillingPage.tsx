@@ -54,7 +54,7 @@ export default function BillingPage() {
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
           <h2 className="billing-account-plan">{plan?.name ?? 'Free'}<span>${(plan?.monthly_cents ?? 0) / 100} / month</span></h2>
           {account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
-            : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : <p>5 free Basic credits each month. No payment method needed.</p>}
+            : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : <p>300 free credits each month for Basic or All parts builds. No payment method needed.</p>}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}
           {account.has_subscription && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>Manage billing & receipts <ArrowUpRight size={16} /></button>
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}

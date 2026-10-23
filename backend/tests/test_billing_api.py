@@ -73,7 +73,7 @@ def test_only_verified_paid_matching_invoices_grant_credits(monkeypatch,identity
     else:
         asyncio.run(billing.sync_subscription('sub_test'))
         assert grant.call_args.kwargs['p_invoice']==('in_test' if change is None else None)
-        assert grant.call_args.kwargs['p_allowance']==(30 if change is None else None)
+        assert grant.call_args.kwargs['p_allowance']==(500 if change is None else None)
 
 
 def test_subscription_checkout_never_reaches_physical_order_processing(monkeypatch):
@@ -148,14 +148,14 @@ def test_capacity_blocks_new_checkout_before_any_stripe_mutation(monkeypatch,ide
 
 def test_preserved_bonus_total_is_not_the_spendable_balance():
     row={'period_start':'2026-01-01T00:00:00Z','period_end':'2099-01-01T00:00:00Z',
-         'plan_key':'free','monthly_credits':5,'monthly_remaining':2,'bonus_remaining':100,
+         'plan_key':'free','monthly_credits':300,'monthly_remaining':2,'bonus_remaining':100,
          'bonus_used':4,'subscription_status':'none','cancel_at_period_end':False}
     result=billing.public_wallet(row)
     assert result['bonus_remaining']==100 and result['bonus_available']==1
     assert result['credits_remaining']==3
 
 
-@pytest.mark.parametrize('code,status', [('BB_PAID_MODE_REQUIRED',402),('BB_AI_CAPACITY',503),('BB_BILLING_VERSION',503)])
+@pytest.mark.parametrize('code,status', [('BB_SIGN_IN_REQUIRED',403),('BB_AI_CAPACITY',503),('BB_BILLING_VERSION',503)])
 def test_admission_errors_are_safe_and_actionable(code,status):
     class Table:
         def insert(self,data):return self
