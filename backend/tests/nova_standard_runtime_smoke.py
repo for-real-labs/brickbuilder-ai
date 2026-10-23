@@ -61,7 +61,7 @@ async def run():
         runtime = (await client.get('/integration/runtime')).json()
         assert runtime == worker.runtime()
         assert 'preview_build_version' not in runtime and 'build_review_version' not in runtime
-        assert runtime['instruction_plan_version'] == 2 and runtime['instruction_publication_version'] == 1
+        assert runtime['instruction_plan_version'] == 3 and runtime['instruction_publication_version'] == 1
         assert runtime['generation_cost_limit_usd'] == 20 and runtime['parts_catalog_version'] == 1
     store = get_store()
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
@@ -122,6 +122,19 @@ async def run():
         assert response.status_code == 200, response.text
         assert response.text.index(mount.strip()) < response.text.index(cover.strip())
         assert sum(line.startswith('1 ') for line in response.text.splitlines()) == 4
+        # An overhanging brick and the plate on its underside are built together.
+        # Exercise real stud metadata, export grouping and the public marker.
+        foundation = placement(0, 0, 0, '3001.dat')
+        bridge = placement(40, -24, 0, '3001.dat')
+        foot = placement(70, 0, 10, '3024.dat')
+        response = await client.post('/integration/instructions',
+            content=('0 FILE main.ldr\n' + foundation + bridge + foot).encode())
+        assert response.status_code == 200, response.text
+        assembly_steps = response.text.split('0 STEP')
+        assert 'BUILD_TOGETHER' not in assembly_steps[0]
+        assert '0 !BRICKBUILDER BUILD_TOGETHER' in assembly_steps[1]
+        assert bridge.strip() in assembly_steps[1] and foot.strip() in assembly_steps[1]
+        assert sum(line.startswith('1 ') for line in response.text.splitlines()) == 3
         disconnected = '0 FILE main.ldr\n' + placement(0, 0, 0, '3001.dat') + placement(400, 0, 0, '3001.dat')
         response = await client.post('/integration/instructions', content=disconnected.encode())
         assert response.status_code == 422 and 'Repair disconnected' in response.text

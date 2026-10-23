@@ -35,3 +35,9 @@
 }
 
 .instructions-retry { min-height: 44px; padding: 8px 20px; border: 1px solid #fecaca; border-radius: 999px; background: #fff; color: #b91c1c; font-weight: 600; }
+
+.instructions-assembly-note { margin: 0 0 8px; font-size: 13px; line-height: 1.4; color: #475569; }
+.instructions-parts[data-build-together] h5 { color: #b45309; }
+.instructions-embedded .instructions-parts[data-build-together] { max-height: 160px; border-color: #fde68a; background: #fffbeb; }
+.instructions-embedded .instructions-parts[data-build-together] .instructions-assembly-note { font-size: 12px; }
+.instructions-embedded .instructions-parts[data-build-together] > div > div:first-child { width: 104px; height: 72px; }

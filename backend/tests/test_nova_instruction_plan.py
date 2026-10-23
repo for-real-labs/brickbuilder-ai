@@ -89,6 +89,82 @@ def stud_edges(*pairs):
     return [dict(contact, kinds=['stud', 'stud_receptacle'], axes=[[0, -1, 0], [0, 1, 0]]) for contact in edges(*pairs)]
 
 
+def planned_steps(parts, contacts):
+    order = flatten.connected_instruction_order(parts, contacts)
+    flatten.verify_instruction_order(order, contacts, parts)
+    assemblies = flatten.instruction_assemblies(order, contacts, parts)
+    return order, assemblies, flatten.instruction_steps([parts[i] for i in order], assemblies)
+
+
+def test_chimney_corner_plate_stays_with_its_upper_support_across_authored_steps():
+    parts = placements(3, [-96, -120, -96])
+    parts[0].path[0].model.steps = [1, 2, 3]
+    for index, part in enumerate(parts):
+        part.path[0].local_step = index
+    assert planned_steps(parts, stud_edges((0, 1), (2, 1))) == ([0, 1, 2], {1: 2}, [1, 2, 2])
+
+
+def test_two_chimney_pairs_are_distinct_assemblies():
+    parts = placements(5, [-96, -120, -96, -120, -96])
+    assert planned_steps(parts, stud_edges((0, 1), (2, 1), (0, 3), (4, 3))) == (
+        [0, 1, 2, 3, 4], {1: 2, 3: 2}, [1, 2, 2, 3, 3])
+
+
+def test_several_hanging_pieces_share_one_step_and_the_next_piece_starts_a_new_step():
+    parts = placements(5, [0, -24, -8, -8, -8])
+    # The last piece has its own mounting connection to the earlier model.
+    contacts = stud_edges((0, 1), (2, 1), (3, 1), (4, 1), (0, 4))
+    assert planned_steps(parts, contacts) == ([0, 4, 1, 2, 3], {2: 3}, [1, 2, 3, 3, 3])
+    # An ordinary piece after a group cannot be folded into it, even at the same height.
+    assert flatten.instruction_steps(placements(4, [-24, 0, 0, 0]), {0: 2}) == [1, 1, 2, 2]
+
+
+def test_dependent_assemblies_are_never_split_to_fit_the_five_piece_cap():
+    parts = placements(7, [0, -24, -8, -8, -8, -8, -8])
+    contacts = stud_edges((0, 1), *[(i, 1) for i in range(2, 7)])
+    order, assemblies, steps = planned_steps(parts, contacts)
+    assert assemblies == {} and max(steps.count(step) for step in steps) <= 5
+    assert len(order) == 7
+    assert planned_steps(parts[:-1], contacts[:-1])[1] == {1: 5}
+
+
+@pytest.mark.parametrize('contact_index', [0, 1])
+def test_sideways_connections_do_not_receive_assemble_first_guidance(contact_index):
+    contacts = stud_edges((0, 1), (2, 1))
+    contacts[contact_index]['axes'] = [[1, 0, 0], [-1, 0, 0]]
+    assert planned_steps(placements(3, [0, -24, -8]), contacts)[1] == {}
+
+
+def test_a_side_connection_to_the_existing_model_prevents_underside_grouping():
+    contacts = stud_edges((0, 1), (2, 1)) + edges((0, 2))
+    assert planned_steps(placements(3, [0, -24, -8]), contacts)[1] == {}
+
+
+def test_unsupported_connector_kinds_and_inverted_parts_keep_separate_steps():
+    parts = placements(3, [0, -24, -8])
+    assert planned_steps(parts, edges((0, 1), (1, 2)))[1] == {}
+    parts[2].matrix.rows = [[1, 0, 0], [0, -1, 0], [0, 0, -1]]
+    assert planned_steps(parts, stud_edges((0, 1), (2, 1)))[1] == {}
+
+
+def test_export_marks_only_the_group_and_preserves_every_placement(monkeypatch):
+    import sys
+    monkeypatch.setitem(sys.modules, 'ldraw_tools.document', SimpleNamespace(section_table=lambda _: {}, is_part=lambda _: False))
+    parts = placements(3, [-96, -120, -96])
+    for index, part in enumerate(parts):
+        part.position.x = part.position.z = 0
+        part.colour = SimpleNamespace(code=15)
+        part.reference = ['3001.dat', '5152.dat', '2420.dat'][index]
+    _, assemblies, _ = planned_steps(parts, stud_edges((0, 1), (2, 1)))
+    result = flatten.serialize_placements(None, parts, instructions=True, assemblies=assemblies)
+    steps = result.split('0 STEP')
+    assert result.count('0 !BRICKBUILDER BUILD_TOGETHER') == 1
+    assert 'BUILD_TOGETHER' not in steps[0]
+    assert 'BUILD_TOGETHER' in steps[1] and '5152.dat' in steps[1] and '2420.dat' in steps[1]
+    assert sum(line.startswith('1 ') for line in result.splitlines()) == 3
+    assert 'BUILD_TOGETHER' not in flatten.serialize_placements(None, parts, assemblies=assemblies)
+
+
 def test_axle_mount_is_seated_before_a_cover_reachable_through_another_support():
     # Source: floor, side wall, cover, axle mount. Both supports sit on the floor.
     parts = placements(4, [0, -24, -48, -24])

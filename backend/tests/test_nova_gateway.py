@@ -210,7 +210,7 @@ def test_runtime_rejects_missing_token_and_invalid_tenant_before_spawn(tmp_path)
         assert client.get('/integration/runtime').status_code == 401
         assert client.get('/api/chats', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': '../../other'}).status_code == 400
         response = client.get('/integration/runtime', headers={'Authorization': 'Bearer runtime-secret', 'X-Nova-Tenant': 'a' * 64})
-        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 2, 'instruction_publication_version': 1}
+        assert response.json() == {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 3, 'instruction_publication_version': 1}
     assert not module._workers
 
 
@@ -292,7 +292,7 @@ def test_worker_exports_precede_upstream_frontend_fallback(tmp_path, monkeypatch
     module.export_sources = lambda chat, model: b'zip'
     with TestClient(upstream) as client:
         headers = {'Authorization': 'Bearer worker-secret'}
-        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 20, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 2, 'instruction_publication_version': 1}
+        assert client.get('/integration/runtime', headers=headers).json() == {'toolkit': 'revision', 'generation_cost_limit_usd': 20, 'generation_usage_version': 1, 'parts_catalog_version': 1, 'instruction_plan_version': 3, 'instruction_publication_version': 1}
         result = client.get('/integration/chats/chat/export/model', headers=headers)
         assert result.content == b'zip' and result.headers['content-type'] == 'application/zip'
         assert client.get('/integration/chats/chat/export/model').status_code == 401

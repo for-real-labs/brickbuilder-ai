@@ -187,19 +187,63 @@ def verify_instruction_order(order, contacts, occurrences):
         placed.add(index)
 
 
-def instruction_steps(occurrences):
-    """Keep authored boundaries, cap size, and separate upper/underside placements."""
+def instruction_assemblies(order, contacts, occurrences):
+    """Group an upright support with the small underside assembly it unlocks.
+
+    Keep the verified placement order. Only group consecutive descendants that
+    have no connection to the earlier model, and whose connections to the group
+    are all vertical studs above them. The support itself must seat on studs
+    below it. This is connector evidence, not a general collision simulation.
+    """
+    neighbors = connection_neighbors(len(occurrences), contacts)
+    above, below = stud_neighbors(occurrences, contacts)
+    placed, assemblies = set(), {}
+    cursor = 0
+    while cursor < len(order):
+        anchor = order[cursor]
+        mounts = neighbors[anchor] & placed
+        group = {anchor}
+        end = cursor + 1
+        if mounts and mounts <= below[anchor]:
+            while end < len(order):
+                candidate = order[end]
+                attachments = neighbors[candidate] & group
+                if (neighbors[candidate] & placed or not attachments
+                        or not attachments <= above[candidate]):
+                    break
+                group.add(candidate)
+                end += 1
+                # Never split a larger dependent assembly just to meet the cap.
+                if len(group) > MAX_PARTS_PER_STEP:
+                    break
+        if 1 < len(group) <= MAX_PARTS_PER_STEP:
+            assemblies[cursor] = len(group)
+            placed.update(group)
+            cursor = end
+        else:
+            placed.add(anchor)
+            cursor += 1
+    return assemblies
+
+
+def instruction_steps(occurrences, assemblies=None):
+    """Keep small assemblies intact; otherwise retain authored boundaries and heights."""
+    assemblies = assemblies or {}
     previous, previous_height, number, result, count = None, None, 0, [], 0
-    for occurrence in occurrences:
+    assembly_end = -1
+    for index, occurrence in enumerate(occurrences):
         path = occurrence.path
         depth = max((i for i, item in enumerate(path) if len(item.model.steps) > 1), default=0)
         key = (*[id(item.piece) for item in path[:depth]], id(path[depth].model), path[depth].local_step)
         height = float(occurrence.position.y)
         height_changed = previous_height is not None and not math.isclose(
             height, previous_height, rel_tol=0, abs_tol=1e-6)
-        if key != previous or count == MAX_PARTS_PER_STEP or height_changed:
+        if (index in assemblies or index == assembly_end or
+                (index >= assembly_end and (key != previous or count == MAX_PARTS_PER_STEP or height_changed))):
             number += 1
             count = 0
+        if index in assemblies:
+            assembly_end = index + assemblies[index]
         result.append(number)
         count += 1
         previous = key
@@ -207,17 +251,20 @@ def instruction_steps(occurrences):
     return result
 
 
-def serialize_placements(original, occurrences, *, instructions=False):
+def serialize_placements(original, occurrences, *, instructions=False, assemblies=None):
     from ldraw_tools.document import section_table, is_part
 
     lines = ['0 BrickBuilder construction export from LDraw Nova' if instructions else
              '0 BrickBuilder display export from LDraw Nova', '0 Name: model.ldr']
-    steps = instruction_steps(occurrences) if instructions else [1] * len(occurrences)
+    assemblies = assemblies or {}
+    steps = instruction_steps(occurrences, assemblies) if instructions else [1] * len(occurrences)
     previous = None
-    for occurrence, step in zip(occurrences, steps):
+    for index, (occurrence, step) in enumerate(zip(occurrences, steps)):
         if instructions and previous is not None and step != previous:
             lines.append('0 STEP')
         previous = step
+        if instructions and index in assemblies:
+            lines.append('0 !BRICKBUILDER BUILD_TOGETHER')
         p = occurrence.position
         values = [p.x, p.y, p.z, *(number for row in occurrence.matrix.rows for number in row)]
         transform = ' '.join(format(float(number), '.12g') for number in values)
@@ -254,6 +301,7 @@ def main():
     parts = common.get_parts(library)
     physical, physical_parts = document.physical_context(original, parts)
     occurrences = physical_occurrences(physical)
+    assemblies = {}
     if instructions:
         from ldraw_tools.geometry import analyze_geometry
         geometry = analyze_geometry(original, parts, contacts='all', detail='full',
@@ -267,6 +315,7 @@ def main():
         try:
             order = connected_instruction_order(occurrences, contacts)
             verify_instruction_order(order, contacts, occurrences)
+            assemblies = instruction_assemblies(order, contacts, occurrences)
         except DisconnectedInstructions as exc:
             # Private repair evidence for the publication tool. Public API
             # failures still use the fixed message in the .error sidecar.
@@ -279,7 +328,8 @@ def main():
             }), encoding='utf-8')
             raise
         occurrences = [occurrences[index] for index in order]
-    output.write_text(serialize_placements(original, occurrences, instructions=instructions), encoding='utf-8')
+    output.write_text(serialize_placements(original, occurrences, instructions=instructions,
+                                          assemblies=assemblies), encoding='utf-8')
 
 
 if __name__ == '__main__':
