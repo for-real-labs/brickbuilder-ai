@@ -1,3 +1,4 @@
+vi.mock('../src/applePurchases', () => ({ ApplePurchases: class { dispose() {} }, appleDispatchScript: () => '' }));
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { BrickBuilderWebView } from '../src/BrickBuilderWebView';

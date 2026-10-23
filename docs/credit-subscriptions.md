@@ -1,5 +1,9 @@
 # Monthly credits and subscriptions
 
+Apple iOS purchases and their non-expiring credit balance are described in
+[Apple subscriptions release](apple-subscriptions.md). The Stripe expiry rules
+below apply to web purchases. Apple launch requires a new binary and App Store configuration.
+
 ## Launch state
 
 Monthly billing is enabled in production. Both `20261022000000` and

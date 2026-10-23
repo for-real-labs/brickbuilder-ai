@@ -17,7 +17,7 @@ vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: ({ id = 'pip' }) =
 vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div role="dialog">Sign in to build</div> : null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/services/billingApi', async importOriginal => ({ ...await importOriginal<typeof import('../src/services/billingApi')>(),
-  billingApi: { plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
+  billingApi: { applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
 }));
 
 let container: HTMLDivElement;
@@ -31,6 +31,8 @@ const click = async (text: string) => act(async () => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  delete window.__BRICKBUILDER_NATIVE_APP__;
+  delete window.ReactNativeWebView;
   auth.user = { id: 'builder-1' };
   account = { plan_key: 'free', monthly_credits: 300, monthly_remaining: 2, bonus_remaining: 0, credits_remaining: 2,
     period_start: '2026-10-01T00:00:00Z', period_end: '2099-11-01T00:00:00Z', subscription_status: 'none',
@@ -45,7 +47,7 @@ beforeEach(async () => {
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() { this.open = true; } });
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
 });
-afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
+afterEach(() => { delete window.__BRICKBUILDER_NATIVE_APP__; delete window.ReactNativeWebView; act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
 it('opens the balance upgrade flow, displays monthly terms, and starts the selected plan', async () => {
   await render(<CreditBalance />);
@@ -53,7 +55,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   await click('credits');
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(container.querySelectorAll('.billing-plan')).toHaveLength(2);
-  expect(container.textContent).toContain('Monthly credits reset and do not roll over');
+  expect(container.textContent).toContain('Web monthly credits reset and do not roll over');
   await click('Choose Creator');
   expect(billingApi.checkout).toHaveBeenCalledWith('creator');
   expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/test');
@@ -208,4 +210,53 @@ it('does not imply that legacy bonuses can fund an All parts build', async () =>
   await render(<><GenerationCreditQuote allParts /><CreditNudge /></>);
   expect(container.textContent).toContain('10 monthly credits available. Legacy bonuses are for Basic only.');
   expect(container.querySelector('.credit-nudge--low')).not.toBeNull();
+});
+
+
+it('uses localized Apple prices and native purchases without Stripe checkout', async () => {
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '0.2.0', applePurchases: true };
+  const sent: Record<string, string>[] = [];
+  window.ReactNativeWebView = { postMessage: raw => {
+    const message = JSON.parse(raw); sent.push(message);
+    const result = message.action === 'products' ? [{ id: 'ai.brickbuilder.app.builder.monthly', displayPrice: '€9.99' }]
+      : message.action === 'pending' || message.action === 'restore' ? [] : null;
+    queueMicrotask(() => window.dispatchEvent(new CustomEvent('brickbuilder:apple-purchases', { detail: { id: message.id, result } })));
+  } };
+  const { INITIAL_PLANS } = await import('../src/services/billingApi');
+  vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, ready: true, apple_ready: true, plans: INITIAL_PLANS });
+  vi.mocked(billingApi.applePrepare).mockResolvedValue({ app_account_token: '00000000-0000-4000-8000-000000000001' });
+  await render(<PlanGrid source="pricing_page" />);
+  expect(container.textContent).toContain('€9.99');
+  expect(container.textContent).toContain('Restore purchases');
+  expect(container.textContent).toContain('never expire');
+  expect(container.textContent).not.toContain('$9');
+  await click('Choose Builder');
+  expect(sent).toContainEqual(expect.objectContaining({ action: 'buy', product: 'ai.brickbuilder.app.builder.monthly' }));
+  expect(billingApi.checkout).not.toHaveBeenCalled();
+  expect(openStripe).not.toHaveBeenCalled();
+});
+
+it('keeps old iOS shells off web checkout and explains the required update', async () => {
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '0.1.0' };
+  await render(<PlanGrid source="pricing_page" />);
+  expect(container.textContent).toContain('Update BrickBuilder');
+  expect([...container.querySelectorAll('.billing-plan-button')].every(b => (b as HTMLButtonElement).disabled)).toBe(true);
+  expect(billingApi.checkout).not.toHaveBeenCalled();
+});
+
+it('restores through the server before finishing the Apple transaction', async () => {
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '0.2.0', applePurchases: true };
+  const actions: string[] = [];
+  window.ReactNativeWebView = { postMessage: raw => {
+    const message = JSON.parse(raw); actions.push(message.action);
+    if (message.action === 'finish') expect(billingApi.appleSync).toHaveBeenCalledWith('123');
+    queueMicrotask(() => window.dispatchEvent(new CustomEvent('brickbuilder:apple-purchases', { detail: {
+      id: message.id, result: message.action === 'restore' ? ['123'] : [],
+    } })));
+  } };
+  vi.mocked(billingApi.appleSync).mockResolvedValue(account);
+  await render(<PlanGrid source="pricing_page" />);
+  await click('Restore purchases');
+  expect(actions).toContain('finish');
+  expect(billingApi.appleSync).toHaveBeenCalledWith('123');
 });

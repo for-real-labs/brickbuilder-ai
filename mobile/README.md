@@ -14,7 +14,8 @@ only native presentation concerns:
 - external-link safety, loading/error states, and offline feedback
 
 There is no duplicated generation, ordering, authentication, or editing
-business logic. Deploying the web app updates those features for both web and
+business logic. Apple subscriptions add a native StoreKit bridge; see
+[release setup](../docs/apple-subscriptions.md). Deploying the web app updates those features for both web and
 mobile users.
 
 Google OAuth is hidden inside the native shell. The existing email-code flow is
@@ -40,7 +41,7 @@ copy `.env.example` to `.env.local` and change `EXPO_PUBLIC_WEB_APP_URL`.
 `http://localhost:<port>` is also accepted for an iOS Simulator.
 
 Because this app includes native modules, use an iOS Simulator/development
-build or Expo Go. A production EAS build does not depend on a locally running
+build. Expo Go does not include the Apple purchase module. A production EAS build does not depend on a locally running
 web server.
 
 ## EAS and TestFlight

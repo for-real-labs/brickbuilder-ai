@@ -1,3 +1,4 @@
+import { ApplePurchases, appleDispatchScript } from './applePurchases';
 import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -73,6 +74,13 @@ function ToolbarButton({
 
 export function BrickBuilderWebView() {
   const webViewRef = useRef<WebView>(null);
+  const purchases = useRef<ApplePurchases | null>(null);
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const bridge = new ApplePurchases(detail => webViewRef.current?.injectJavaScript(appleDispatchScript(detail, WEB_APP_URL)), WEB_APP_URL);
+    purchases.current = bridge;
+    return () => { bridge.dispose(); purchases.current = null; };
+  }, []);
   const [canGoBack, setCanGoBack] = useState(false);
   const [currentUrl, setCurrentUrl] = useState(WEB_APP_URL);
   const [isConnected, setIsConnected] = useState(true);
@@ -217,6 +225,7 @@ export function BrickBuilderWebView() {
               setCurrentUrl(navigationState.url);
             }}
             onMessage={({ nativeEvent }) => {
+              void purchases.current?.handle(nativeEvent.data, nativeEvent.url);
               const enabled = parseChangeRequestAccessMessage(nativeEvent.data);
               if (enabled !== null) setCanRequestChanges(enabled);
             }}

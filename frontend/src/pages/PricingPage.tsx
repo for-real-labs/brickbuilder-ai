@@ -1,3 +1,4 @@
+import { isAppleApp } from '../services/applePurchases';
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
@@ -26,6 +27,14 @@ const faqs = [
   ['What if a build fails?', 'Failed and canceled builds return their credits automatically to the original credit period. Monthly credits cover your builds, with one build running at a time. Account restrictions may also apply. Capacity limits can temporarily pause new builds; your saved models and subscription cancellation remain available.'],
 ];
 
+
+const appleFaqs: Record<string, string> = {
+  'When do credits reset?': 'Apple subscriptions add credits at each verified monthly renewal. Unused Apple credits roll over and never expire, including after cancellation. Free credits reset each UTC calendar month. Web subscriptions have separate monthly allowances without rollover.',
+  'Can I cancel?': 'Open My billing → Manage Apple subscription to cancel in Apple settings. Cancel at least 24 hours before renewal. Paid features remain available through your paid period; unused Apple credits and saved models stay available.',
+  'Can I buy credits without subscribing?': 'We offer monthly plans only. Apple shows the localized subscription price and confirms any plan change before payment. You can restore existing purchases using Restore purchases.',
+  'What if a build fails?': 'Failed and canceled builds return Apple credits without expiration. Free and web monthly credits return to their original period. Capacity and retry limits can pause generation on every plan; upgrading does not remove those limits.',
+};
+
 export default function PricingPage() {
   const { error, enabled, account, checkoutAvailable } = useBilling();
   useEffect(() => { posthog.capture('billing_pricing_viewed', { source: 'pricing_page' }); }, []);
@@ -36,11 +45,11 @@ export default function PricingPage() {
       <p>A little project or a whole brick universe. Find your room to create.</p><span className="billing-monthly-pill">Monthly plans · Cancel anytime</span></div>
       {error && (enabled || account) && <p className="billing-error" role="alert">{error}</p>}
       {!enabled && <p className="billing-launch-notice" role="status">Monthly plans are coming soon. You can keep building with your current access.</p>}
-      {enabled && !checkoutAvailable && <p className="billing-launch-notice" role="status">New subscriptions are temporarily at capacity. Please check back soon. Existing subscribers can still manage or cancel in My billing.</p>}
+      {enabled && !checkoutAvailable && <p className="billing-launch-notice" role="status">{isAppleApp() ? 'Apple subscriptions are currently unavailable. Check your connection or update the app. Existing purchases can still be restored or managed in My billing.' : 'New subscriptions are temporarily at capacity. Please check back soon. Existing subscribers can still manage or cancel in My billing.'}</p>}
       <PlanGrid source="pricing_page" />
-      <p className="billing-fine-print">Basic builds: 1 credit. All parts and AI mesh conversions: 15 credits on every plan. Paid plans renew monthly until canceled. Monthly credits reset without rollover. Physical brick kits are sold separately.</p>
+      <p className="billing-fine-print">Basic builds: 1 credit. All parts and AI mesh conversions: 15 credits on every plan. Paid plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset without rollover.'} Physical brick kits are sold separately.</p>
       <section className="billing-faq" aria-labelledby="billing-faq-title"><p className="billing-eyebrow">THE SMALL PRINT, MADE SIMPLE</p><h2 id="billing-faq-title">A few good questions.</h2>
-        {faqs.map(([question, answer]) => <details key={question} onToggle={e => { if (e.currentTarget.open) posthog.capture('billing_faq_opened', { question }); }}><summary>{question}</summary><p>{answer}</p></details>)}
+        {faqs.map(([question, originalAnswer]) => { const answer = isAppleApp() ? appleFaqs[question] ?? originalAnswer : originalAnswer; return <details key={question} onToggle={e => { if (e.currentTarget.open) posthog.capture('billing_faq_opened', { question }); }}><summary>{question}</summary><p>{answer}</p></details>; })}
       </section>
     </main><footer className="billing-footer"><span>Made for your imagination.</span><Link to="/terms" onClick={() => posthog.capture('billing_terms_clicked')}>Terms</Link><Link to="/privacy" onClick={() => posthog.capture('billing_privacy_clicked')}>Privacy</Link></footer>
   </div>;

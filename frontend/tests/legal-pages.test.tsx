@@ -26,7 +26,9 @@ describe('directory legal pages', () => {
     expect(terms).toContain('Free plan includes 300 credits');
     expect(terms).toContain('renew automatically each month until canceled');
     expect(terms).toContain('My billing → Cancel subscription');
-    expect(terms).toContain('Monthly credits reset without rollover');
+    expect(terms).toContain('Free and web subscription monthly credits reset without rollover');
+    expect(terms).toContain('Credits purchased through Apple subscriptions roll over and never expire');
+    expect(terms).toContain('Manage Apple subscription');
     expect(terms).toContain('revoke the connection');
     expect(terms).toContain('href="mailto:support@brickbuilder.ai"');
     expect(terms).toContain('href="https://brickbuilder.ai/terms"');

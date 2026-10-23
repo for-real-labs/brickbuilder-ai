@@ -16,6 +16,7 @@ export type NativeMobileChangeRequestContext = Readonly<{
 export type NativeMobileShellInfo = Readonly<{
   platform: 'ios' | 'android';
   version: string;
+  applePurchases?: boolean;
   changeRequest?: NativeMobileChangeRequestContext;
 }>;
 
