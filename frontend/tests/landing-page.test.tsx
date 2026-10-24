@@ -103,7 +103,7 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<MemoryRouter><PetProvider><LandingPage /><PetCompanion /></PetProvider></MemoryRouter>));
       expect(container.querySelector('.pet-greeting [aria-label^="Change Build Buddy"]')).toBeNull();
-      expect(container.querySelector('.pet-greeting')?.textContent).toContain('Build something random');
+      expect(container.querySelector('.landing-random-idea')?.textContent).toContain('Try something random');
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
       const tools = container.querySelector<HTMLButtonElement>('header nav button[aria-controls]')!;
       act(() => tools.click());
@@ -121,7 +121,7 @@ describe('LandingPage', () => {
       expect(tools.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('dialog')?.open).toBe(true);
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Choose Clik"]')!.click());
-      expect(container.querySelector('.pet-greeting')?.textContent).toContain('What would you like to do?');
+      expect(container.querySelector('.pet-greeting')?.textContent).toMatch(/brick building buddy|recent builds/);
       expect(container.querySelector('.pet-greeting [data-pet="clik"]')).not.toBeNull();
       expect(panel.querySelector('[aria-label^="Change Build Buddy"]')).toBeNull();
       expect(container.querySelector('dialog')).toBeNull();
@@ -197,7 +197,7 @@ describe('LandingPage', () => {
         { value: 'gpt-6-astra', label: 'GPT-6 Astra' },
       ]);
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
-      const create = container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
+      const create = container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')!;
       await act(async () => create.click());
       expect(generate).toHaveBeenCalledWith(expect.objectContaining({ model: DEFAULT_LLM_MODEL }), undefined);
     } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); container.remove(); }
@@ -262,7 +262,7 @@ describe('LandingPage', () => {
         expect(fileInput.value).toBe('');
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:uploaded-image');
         act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
-        expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+        expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
         const nextPrompt = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
         await act(async () => {
           Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(nextPrompt, 'Anime girl');
@@ -328,7 +328,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      const generate = container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
+      const generate = container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')!;
       await act(async () => generate.click());
       expect(container.querySelector('#generation-input-help')?.textContent).toContain('Describe what you’d like to build');
       expect(container.textContent).not.toContain('Generation Failed');
@@ -358,11 +358,11 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<LandingPage imageLandingPath={path} />));
       act(() => window.dispatchEvent(new Event('scroll')));
-      expect(Boolean(container.textContent?.includes('Imagine. Create. Build.'))).toBe(path !== 'use-ai-to-edit-ldraw');
+      expect(Boolean(container.textContent?.includes('The Easiest Way to Make LEGO'))).toBe(path !== 'use-ai-to-edit-ldraw');
       expect(Boolean(container.querySelector('[aria-label="BrickBuilder generation statistics"]'))).toBe(path !== 'use-ai-to-edit-ldraw');
       if (path !== 'use-ai-to-edit-ldraw') {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
-        expect(container.querySelector('button[type="submit"][aria-label="Create"]')).not.toBeNull();
+        expect(container.querySelector('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')).not.toBeNull();
         const help = container.querySelector('.landing-page-help')!;
         expect(help.getAttribute('aria-hidden')).toBe('true');
         const socialLinks = Array.from(help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a'));
@@ -378,7 +378,7 @@ describe('LandingPage', () => {
         expect(help.getAttribute('aria-hidden')).toBe('true');
         expect(help.querySelector('a')?.tabIndex).toBe(-1);
         expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
-        expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
+        expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
       expect(container.querySelector('[aria-label="Community models"]')).toBeNull();
@@ -405,7 +405,7 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<LandingPage />));
       act(() => container.querySelector<HTMLButtonElement>('#landing-builder-mode button[value="llm"]')!.click());
-      await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!.click());
+      await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')!.click());
       expect(start).not.toHaveBeenCalled();
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ has_prompt: false, has_image: false }));
       const input = container.querySelector('input:not([type="file"])') as HTMLInputElement;
@@ -413,13 +413,13 @@ describe('LandingPage', () => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Red castle');
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      const generate = () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"]')!;
+      const generate = () => container.querySelector<HTMLButtonElement>('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')!;
       await act(async () => generate().click());
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('#landing-build-prompt')).toBeNull();
       expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
-      expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+      expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
       const nextInput = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
       expect(nextInput.value).toBe('');
       act(() => {
@@ -520,7 +520,7 @@ describe('LandingPage', () => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'Spaceport with launch tower, rover, and research lab');
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      await act(async () => findButton('Create').click());
+      await act(async () => findButton('Generate').click());
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: DEFAULT_LLM_MODEL, prompt: 'Spaceport with launch tower, rover, and research lab' }), undefined);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
       expect(llm).not.toHaveBeenCalled();
@@ -530,7 +530,7 @@ describe('LandingPage', () => {
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
-      expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+      expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
       const nextMode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
       act(() => nextMode.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
@@ -542,7 +542,7 @@ describe('LandingPage', () => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(nextInput, 'Red rover');
         nextInput.dispatchEvent(new Event('input', { bubbles: true }));
       });
-      await act(async () => findButton('Create').click());
+      await act(async () => findButton('Generate').click());
       expect(llm).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Red rover', model: DEFAULT_LLM_MODEL }), undefined);
       expect(nova).toHaveBeenCalledTimes(1);
 
@@ -566,11 +566,11 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
-      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_upload_control_shown', { page: '/', upload_position: 'input_left_icon' });
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_upload_control_shown', { page: '/', upload_position: 'landing_upload_card' });
       const choose = vi.spyOn(fileInput, 'click');
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Upload image"]')!.click());
       expect(choose).toHaveBeenCalledOnce();
-      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'input_left_icon' });
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_image_picker_opened', { page: '/', upload_position: 'landing_upload_card' });
       expect(llm).not.toHaveBeenCalled();
       expect(nova).not.toHaveBeenCalled();
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Tools"]')!.click());
@@ -626,25 +626,28 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
-  it('shows landing actions with the restored headline and statistics', () => {
+  it('shows the upload-first hero, quiet welcome, and statistics', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 
-    expect(markup).toContain('Imagine. Create. Build.');
+    expect(markup).toContain('The Easiest Way to ');
     expect(markup).not.toContain('credit-nudge');
     expect(markup).toContain('landing-header-brand');
-    expect(markup).toContain('Build something random');
-    expect(markup).toContain('Show builds');
-    expect(markup).toContain('Show me community models');
+    expect(markup).toContain('Try something random');
+    expect(markup).toContain('BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes');
+    expect(markup).toContain('Upload an image');
+    expect(markup).toContain('Describe your idea');
+    expect(markup).not.toContain('Show builds');
+    expect(markup).not.toContain('Show me community models');
     const container = document.createElement('div');
     container.innerHTML = markup;
-    expect(container.querySelector('.pet-greeting')?.textContent).toContain('What would you like to do?');
+    expect(container.querySelector('.pet-greeting')?.textContent).toMatch(/brick building buddy|recent builds/);
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
     const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
     expect(stats).not.toBeNull();
     expect(stats.previousElementSibling?.tagName).toBe('MAIN');
     expect(stats.querySelector('.tabular-nums')?.className).toContain('text-[14px]');
     expect(stats.querySelector('.tabular-nums')?.className).toContain('sm:text-[16.8px]');
-    expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
+    expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
     expect(form.closest('[aria-label="Build dialogue"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('[aria-label="Build dialogue"]')).toBe(form.closest('[aria-label="Build dialogue"]'));
     expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('form')).toBeNull();
@@ -659,10 +662,10 @@ describe('LandingPage', () => {
       const form = container.querySelector('form[aria-label="Create a brick model"]')!;
       const input = form.querySelector('input[aria-label="Describe your model"]')!;
       const create = form.querySelector('button[type="submit"]')!;
-      expect(create.textContent?.trim()).toBe('');
-      expect(create.getAttribute('aria-label')).toBe('Create');
-      expect(create.querySelector('svg.lucide-arrow-up')).not.toBeNull();
-      expect(create.parentElement).toBe(input.parentElement);
+      expect(create.textContent?.trim()).toBe('Generate');
+      expect(create.getAttribute('aria-label')).toBe('Generate');
+      expect(create.classList.contains('landing-generate-button')).toBe(true);
+      expect(input.compareDocumentPosition(create) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       const model = form.querySelector('#landing-render-model') as HTMLSelectElement;
       const mode = form.querySelector('#landing-builder-mode') as HTMLDivElement;
       const upload = form.querySelector('[aria-label="Upload image"]')!;
@@ -674,8 +677,8 @@ describe('LandingPage', () => {
       expect(upload.closest('#landing-generation-settings')).toBeNull();
       expect(upload.parentElement).toBe(input.parentElement);
       expect(upload.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-      expect(upload.textContent?.trim()).toBe('');
-      expect(upload.getAttribute('title')).toBe('Upload image');
+      expect(upload.textContent?.trim()).toBe('Upload an image');
+      expect(input.getAttribute('placeholder')).toBe('Describe your idea');
       expect(upload.getAttribute('type')).toBe('button');
       expect(model.closest('#landing-generation-settings')?.hasAttribute('hidden')).toBe(true);
       expect(input.compareDocumentPosition(model) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
@@ -843,14 +846,8 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     const github = nav.querySelector<HTMLAnchorElement>('ul a[href="https://github.com/for-real-labs/brickbuilder-ai"]')!;
     expect(github.textContent).toBe('GitHub');
     expect(github.getAttribute('target')).toBe('_blank');
-    const starLink = container.querySelector<HTMLAnchorElement>('[aria-label="View BrickBuilder on GitHub"]')!;
-    expect(starLink.classList.contains('hidden')).toBe(false);
-    expect(starLink.querySelector('span')?.classList.contains('hidden')).toBe(true);
-    expect(starLink.href).toBe('https://github.com/for-real-labs/brickbuilder-ai');
-    expect(starLink.textContent).toBe('10');
-    expect(fetch).toHaveBeenCalledWith('https://api.github.com/repos/for-real-labs/brickbuilder-ai', {
-      headers: { Accept: 'application/vnd.github+json' },
-    });
+    expect(container.querySelector('[aria-label="View BrickBuilder on GitHub"]')).toBeNull();
+    expect(fetch).not.toHaveBeenCalledWith('https://api.github.com/repos/for-real-labs/brickbuilder-ai', expect.anything());
     act(() => github.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
     expect(capture).toHaveBeenCalledWith('landing_header_github_clicked', {
       page: '/', navigation_layout: 'tools_dropdown', destination: github.href, tool: 'GitHub',
@@ -942,13 +939,14 @@ it('starts the free trial in All parts without a credit caption and allows Basic
 });
 
 
-it('places the loading credits balance beside the brand, outside navigation, without a plans banner', () => {
+it('places loading credits immediately before Tools, without a GitHub button or plans banner', () => {
   authSettings.user = { id: 'builder' };
   billingSettings.enabled = true;
   const container = document.createElement('div');
   container.innerHTML = renderToStaticMarkup(<LandingPage />);
-  expect(container.querySelector('.landing-header-brand .credit-balance')).not.toBeNull();
-  expect(container.querySelector('nav .credit-balance')).toBeNull();
+  expect(container.querySelector('.landing-header-brand .credit-balance')).toBeNull();
+  expect(container.querySelector('nav .credit-balance')).not.toBeNull();
+  expect(container.querySelector('nav .credit-balance')?.nextElementSibling?.querySelector('[aria-label="Tools"]')).not.toBeNull();
   expect(container.querySelector('.credit-count')?.textContent).toBe('…');
   expect(container.querySelector('.credit-nudge')).toBeNull();
 });
