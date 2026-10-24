@@ -142,3 +142,7 @@
 .billing-instructions-locked h2 { font-size:24px; font-weight:750; color:#202635; }
 .billing-instructions-locked p { font-size:14px; line-height:1.6; }
 @media(max-width:600px) { .billing-feature-dialog { padding:28px 20px; } .billing-feature-dialog h2 { font-size:22px; } }
+
+.credit-nudge { position:relative; padding-right:48px; }
+.credit-nudge .credit-nudge-dismiss { position:absolute; top:2px; right:2px; justify-content:center; width:40px; height:40px; margin:0; padding:0; border-radius:50%; color:#7e7368; }
+.credit-nudge .credit-nudge-dismiss:hover { background:#f5eade; }

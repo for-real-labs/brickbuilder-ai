@@ -916,7 +916,7 @@ it.each(['claude-haiku-5-5', 'gpt-6-astra'])('selects %s for either generation m
 });
 
 
-it('starts the free trial in Basic and preserves a later explicit All parts selection', async () => {
+it('starts the free trial in All parts without a credit caption and allows Basic selection', async () => {
   billingSettings.enabled = true;
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -924,11 +924,11 @@ it('starts the free trial in Basic and preserves a later explicit All parts sele
   const root = createRoot(container);
   try {
     await act(async () => root.render(<LandingPage />));
-    expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.textContent).toContain('1 credit · Basic build or edit');
-    act(() => container.querySelector<HTMLButtonElement>('button[value="nova"]')!.click());
     expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.textContent).toContain('15 credits');
-    expect(container.textContent).toContain('Sign in for 300 free monthly credits');
+    expect(container.querySelector('.billing-generation-quote')).toBeNull();
+    expect([...container.querySelectorAll('header button')].some(button => button.textContent === 'Plans')).toBe(false);
+    act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+    expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('.billing-generation-quote')).toBeNull();
   } finally { act(() => root.unmount()); }
 });
