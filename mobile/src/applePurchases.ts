@@ -52,9 +52,15 @@ export class ApplePurchases {
         await IAP.requestPurchase({ type: 'subs', request: { apple: { sku: message.product,
           appAccountToken: message.accountToken, andDangerouslyFinishTransactionAutomatically: false } } });
       } else if (action === 'restore' || action === 'pending') {
-        if (action === 'restore') await IAP.syncIOS();
-        const purchases = await IAP.getAvailablePurchases();
-        result = purchases.filter(p => APPLE_PRODUCTS.includes(p.productId)).map(p => {
+        // StoreKit maintains verified current entitlements automatically. Avoid
+        // forcing an Apple login when the purchase is already on this device;
+        // the backend still verifies ownership and current subscription state.
+        let purchases = (await IAP.getAvailablePurchases()).filter(p => APPLE_PRODUCTS.includes(p.productId));
+        if (action === 'restore' && purchases.length === 0) {
+          await IAP.syncIOS();
+          purchases = (await IAP.getAvailablePurchases()).filter(p => APPLE_PRODUCTS.includes(p.productId));
+        }
+        result = purchases.map(p => {
           this.purchases.set(p.id, p); return p.id;
         });
       } else if (action === 'finish') {

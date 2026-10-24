@@ -36,12 +36,48 @@ it('keeps restored transactions unfinished until the web server confirms deliver
   vi.mocked(IAP.getPendingTransactionsIOS).mockResolvedValueOnce([purchase as IAP.PurchaseIOS]);
   const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
   await bridge.handle(message('restore'),origin);
-  expect(IAP.syncIOS).toHaveBeenCalledOnce();
+  expect(IAP.syncIOS).not.toHaveBeenCalled();
   expect(emit).toHaveBeenCalledWith({id:'request',result:['123']});
   expect(IAP.finishTransaction).not.toHaveBeenCalled();
   await bridge.handle(message('finish',{transaction:'123'}),origin);
   expect(IAP.finishTransaction).toHaveBeenCalledWith({purchase,isConsumable:false});
   expect(appleDispatchScript({transaction:'123'},origin)).toContain('window.location.origin === "https://brickbuilder.ai"');
+});
+
+it('syncs and reads again when no matching entitlement is available', async () => {
+  vi.mocked(IAP.getAvailablePurchases)
+    .mockResolvedValueOnce([{id:'other',productId:'unrelated'} as IAP.Purchase])
+    .mockResolvedValueOnce([{id:'123',productId:APPLE_PRODUCTS[0]} as IAP.Purchase]);
+  const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
+  await bridge.handle(message('restore'),origin);
+  expect(IAP.syncIOS).toHaveBeenCalledOnce();
+  expect(IAP.getAvailablePurchases).toHaveBeenCalledTimes(2);
+  expect(emit).toHaveBeenLastCalledWith({id:'request',result:['123']});
+  expect(IAP.finishTransaction).not.toHaveBeenCalled();
+});
+
+it('preserves a failed Apple sync when no entitlement can be restored', async () => {
+  vi.mocked(IAP.syncIOS).mockRejectedValueOnce({code:'unknown'});
+  const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
+  await bridge.handle(message('restore'),origin);
+  expect(emit).toHaveBeenLastCalledWith({id:'request',error:expect.stringContaining('the restore (unknown)')});
+  expect(IAP.finishTransaction).not.toHaveBeenCalled();
+});
+
+it('does not trigger authentication during automatic reconciliation', async () => {
+  const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
+  await bridge.handle(message('pending'),origin);
+  expect(IAP.syncIOS).not.toHaveBeenCalled();
+  expect(emit).toHaveBeenLastCalledWith({id:'request',result:[]});
+});
+
+it('does not return a restored transaction when entitlement verification fails', async () => {
+  vi.mocked(IAP.getAvailablePurchases).mockRejectedValueOnce({code:'verification-failed'});
+  const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
+  await bridge.handle(message('restore'),origin);
+  expect(emit).toHaveBeenLastCalledWith({id:'request',error:expect.stringContaining('verification-failed')});
+  expect(IAP.syncIOS).not.toHaveBeenCalled();
+  expect(IAP.finishTransaction).not.toHaveBeenCalled();
 });
 
 it('does not finish a restored entitlement that Apple has already finished', async () => {
