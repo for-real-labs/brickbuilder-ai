@@ -9,6 +9,7 @@ import { useGenerationNotifications } from "../contexts/GenerationNotificationsC
 import { ChangeRequestMenuItem } from "./ChangeRequestLauncher";
 
 interface ProfileMenuProps {
+  showCredits?: boolean;
   /**
    * Optional navigation override. Pages with guarded navigation (e.g. unsaved
    * changes prompts) can pass their own handler. Defaults to react-router navigate.
@@ -24,7 +25,7 @@ interface ProfileMenuProps {
  * When Supabase is not configured, the menu shows navigation links but hides
  * the username and logout option.
  */
-export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
+export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps) {
   const navigate = useNavigate();
   const { user, userProfile, signOut, isSupabaseConfigured } = useAuth();
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -77,7 +78,7 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
   const showUserIdentity = isSupabaseConfigured && user;
 
   return (
-    <div className="flex items-center gap-2"><CreditBalance /><div ref={container} className="relative shrink-0">
+    <div className="flex items-center gap-2">{showCredits && <CreditBalance />}<div ref={container} className="relative shrink-0">
       <button
         ref={trigger}
         type="button"
