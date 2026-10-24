@@ -78,8 +78,9 @@ it('returns a casual chat to the welcome dialogue without starting a build', asy
   expect(container.querySelector('.pet-dialogue > .pet-dialogue-content > button')).toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
     .find(button => button.textContent === 'Go back')!.click());
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('brick building buddy');
-  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('That sounds fun!');
+  expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
+  expect(container.querySelector('.pet-dialogue')).toBeNull();
+  expect(container.querySelector('.pet-dialogue')?.textContent || '').not.toContain('That sounds fun!');
   expect(container.querySelector('.landing-page--conversation-started')).toBeNull();
   expect(input().value).toBe('');
   expect(NovaToBricksApiService.generate).not.toHaveBeenCalled();

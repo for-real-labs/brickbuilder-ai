@@ -10,7 +10,7 @@ import { ImageUploadSection } from '../components/ImageUploadSection';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
 import { IMAGE_LANDING_PAGES, type ImageLandingPath } from '../imageLandingPages';
 import { GIFT_PROMPT_SUGGESTION } from '../utils/promptExamples';
-import { PetPromptGreeting } from '../components/PetCompanion';
+import { PetAvatar, PetPromptGreeting } from '../components/PetCompanion';
 import { usePet, usePetActivity } from '../contexts/PetContext';
 import { BuildBuddyDialogue } from '../components/BuildBuddyDialogue';
 import { BuildBuddyApi } from '../services/buildBuddyApi';
@@ -998,7 +998,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
             : <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
               <div className="landing-page-intro-content">
-                <h1 className="landing-hero-title landing-fade-in landing-delay-2">The Easiest Way to <span>Make LEGO</span></h1>
+                <div className={`landing-hero-heading${welcomeScreen ? ' landing-hero-heading--with-pet' : ''}`}>
+                  {welcomeScreen && <div className="landing-hero-pet landing-fade-in landing-delay-2"><PetAvatar state={focused ? 'listening' : petState} /></div>}
+                  <h1 className="landing-hero-title landing-fade-in landing-delay-2">The Easiest Way to <span>Make LEGO</span></h1>
+                </div>
                 <p className="landing-hero-description landing-fade-in landing-delay-5">BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes</p>
 
               </div>
@@ -1022,7 +1025,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 canRename={Boolean(session?.access_token)} accessToken={session?.access_token}
                 onRenameRequest={!session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
                 onOrderBarHeightChange={setOrderBarHeight}>
-              <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations} errorMessage={generationError}
+              {!welcomeScreen && <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations} errorMessage={generationError}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
@@ -1049,7 +1052,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
                 username={session ? userProfile?.username || session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.user_metadata?.username : null}>
-              </BuildBuddyDialogue>
+              </BuildBuddyDialogue>}
             {(pendingEdit || pendingGeneration) ? <PendingEditActions key={pendingGenerationId || 'starting'} generationId={pendingGenerationId}
               startedAt={generations.find(generation => generation.id === pendingGenerationId)?.createdAt} isEdit={pendingEdit}
               onCancelled={() => {
@@ -1201,6 +1204,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
             </form> : null}
+            {welcomeScreen && hasBuildsToday && <button type="button" className="landing-recent-builds pet-chat-action" onClick={showBuilds}>Recent builds</button>}
               {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
               {!ldrawLanding && localDevelopment && !loading && !pendingEdit && !pendingGeneration && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
                 <LocalProviderSettings />
