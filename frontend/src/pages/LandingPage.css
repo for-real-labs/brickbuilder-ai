@@ -289,3 +289,13 @@
 @media (prefers-reduced-motion: reduce) {
   .landing-page.landing-page--welcome .landing-page-help { transition: none; }
 }
+
+.landing-upload-prompt--text-first { display: flex; flex-direction: column; }
+.landing-upload-prompt--text-first > input { order: -2; min-height: 96px; padding: 24px; text-align: left; }
+.landing-upload-prompt--text-first > .landing-input-divider { order: -1; }
+.landing-upload-prompt--text-first .landing-upload-target { flex-direction: row; min-height: 58px; padding: 10px 24px; gap: 10px; }
+.landing-upload-prompt--text-first .landing-upload-target > svg { width: 22px; height: 22px; flex-shrink: 0; }
+.landing-upload-prompt--text-first .landing-upload-target > img { width: 36px; height: 36px; object-fit: cover; }
+.landing-upload-prompt--text-first .landing-upload-target > span { font-size: 14px; }
+.landing-upload-prompt--text-first:has(.landing-upload-remove) .landing-upload-target { padding-right: 56px; }
+.landing-upload-prompt--text-first .landing-upload-remove { top: auto; bottom: 11px; }
