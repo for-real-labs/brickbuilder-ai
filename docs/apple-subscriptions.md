@@ -8,7 +8,8 @@ asks users to update. Physical brick orders retain their separate Stripe checkou
 ## Catalog in App Store Connect
 
 App: **BrickBuilder**, Apple ID **6815050463**, bundle **ai.brickbuilder.app**.
-Create one auto-renewable subscription group, **BrickBuilder**, with these products:
+The draft auto-renewable subscription group **BrickBuilder** (ID **22508798**)
+is configured in App Store Connect with these products:
 
 | Product ID | Display name | Duration | US base price | Credits per renewal |
 | --- | --- | --- | --- | --- |
@@ -19,6 +20,30 @@ Creator is level 1 and Builder level 2 in the same subscription group. Do not en
 Family Sharing, introductory trials, or offer codes for this implementation. Store
 prices come from StoreKit, including local currency; the server never trusts a
 client price or credit allowance. Apple confirms charges and plan changes.
+
+### App Store Connect setup status
+
+Both products are **Prepare for Submission**, not approved or live. Builder's Apple
+ID is **6826444764**; Creator's is **6826443242**. Monthly durations, US base prices
+and Apple-calculated regional prices, all-region availability, English (U.S.)
+product/group names, and non-expiring-credit descriptions are saved. Both products
+allow only individual App Store purchases; multiseat purchasing is disabled.
+
+The Business page currently requires the account holder to accept the updated
+Apple Developer Program License Agreement and update legal-entity information
+before signing the Paid Apps Agreement. EU trader-status compliance is also
+outstanding. Complete these steps and confirm banking/tax setup before release.
+
+**Streamlined Purchasing is still on.** Apple rejected turning it off because the
+latest approved binary lacks the required StoreKit APIs. The new `expo-iap` native
+dependency includes OpenIAP's `PurchaseIntent` support. After the new binary is
+approved, turn Streamlined Purchasing off and verify purchases initiated outside
+the app return to the signed-in purchase flow. This implementation requires an
+account token and must not launch with unsupported outside-app purchases enabled.
+Do not enable App Store promotion, win-back offers, or offer-code redemption.
+
+Review screenshots, server signing-key configuration, V2 notifications, deployment,
+native sandbox/device testing, and App Review submission remain outstanding.
 
 Complete each product's localization, review screenshot, tax category, availability,
 and review information. Confirm Paid Apps agreements, banking and tax details are
