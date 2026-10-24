@@ -626,6 +626,15 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
+  it('reserves the first viewport for the welcome flow before the stats', () => {
+    const css = readFileSync('src/pages/LandingPage.css', 'utf8');
+    expect(css).toMatch(/\.landing-page\.landing-page--welcome \.landing-page-main\s*\{[^}]*min-height: calc\(var\(--landing-viewport-height, 100dvh\) - var\(--landing-header-height, 36px\) - 24px\)/);
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(<LandingPage />);
+    expect(container.querySelector('.landing-page-stats')?.previousElementSibling?.tagName).toBe('MAIN');
+    expect(container.querySelector('.landing-page-stats')?.nextElementSibling?.className).toBe('landing-page-help');
+  });
+
   it('centers the welcome and thinking pets against their bubbles', () => {
     const css = readFileSync('src/pages/LandingPage.css', 'utf8');
     expect(css).toMatch(/\.pet-greeting,\s*\.landing-page \.pet-dialogue \.pet-chat-message:has\(\.pet-typing-indicator\)\s*\{ align-items: center;/);
