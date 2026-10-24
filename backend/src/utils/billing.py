@@ -101,7 +101,20 @@ async def require_paid_features(identity):
             and not identity.get("is_developer") and has_paid_features(await wallet(account_id(identity)))):
         return
     raise HTTPException(403, detail={"code": "BB_PAID_FEATURE_REQUIRED",
-        "message": "Instructions and LDR/IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
+        "message": "IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
+
+
+async def ordered_instruction_models(user_id, generation_id=None):
+    """Orders belong to accounts through the exact generation, as in My Orders."""
+    query = (client().table("orders")
+             .select("generation_id,generations!inner(user_id,user_type)")
+             .eq("generations.user_id", user_id)
+             .eq("generations.user_type", "authenticated")
+             .eq("cancelled", False))
+    if generation_id:
+        query = query.eq("generation_id", generation_id).limit(1)
+    result = await execute_query(query)
+    return sorted({order["generation_id"] for order in result.data or []})
 
 
 def public_wallet(row):
@@ -131,6 +144,7 @@ async def account(identity):
         .eq("livemode", live_mode()).order("id", desc=True).limit(30))
     config = await settings()
     return {**public_wallet(row), "history": history.data, "paid_features": not config["enabled"] or has_paid_features(row),
+            "ordered_instruction_models": await ordered_instruction_models(user_id),
             "enabled": bool(config["enabled"] and config.get("policy_version") == 2), **(await capacity())}
 
 

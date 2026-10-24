@@ -49,6 +49,14 @@ const click = async (text: string) => {
   await act(async () => button.click());
 };
 const renderOrder = async (state: object = { generation_id: 'g', priceData: quote }) => act(async () => root.render(<MemoryRouter initialEntries={[{ pathname: '/order', state }]}><OrderKit /></MemoryRouter>));
+
+it('opens the fulfillment postcard model from its link instead of an unrelated cached checkout', async () => {
+  localStorage.setItem('orderState', JSON.stringify({ generation_id: 'old-model', name: 'Old model' }));
+  const read = vi.spyOn(GetGenerationApiService, 'getGeneration');
+  await act(async () => root.render(<MemoryRouter initialEntries={['/order?id=purchased-model']}><OrderKit /></MemoryRouter>));
+  expect(read).toHaveBeenCalledWith('purchased-model', expect.any(AbortSignal));
+  expect(container.textContent).not.toContain('Old model');
+});
 const fill = (name: string, value: string) => {
   const input = container.querySelector(`input[name="${name}"]`);
   if (!input && name === 'line2' && !value) return;
@@ -62,7 +70,14 @@ it('handles absent, invalid, and valid pricing without displaying a fake total',
   expect(getOrderPricing(null)).toBeNull();
   expect(getOrderPricing({ total_price: NaN, total_weight: 0 })).toBeNull();
   expect(getOrderPricing({ total_price: 20, total_weight: -1 })).toBeNull();
-  expect(getOrderPricing(quote)).toMatchObject({ partSubtotalCents: 2210, shippingCents: 290, totalCents: 2500 });
+  expect(getOrderPricing(quote)).toMatchObject({ partSubtotalCents: 4420, shippingCents: 580, totalCents: 5000 });
+});
+
+it.each([
+  [50, 0.1, 5000], [0.01, 0, 400], [10.01, 0, 1001],
+  [100, 0.123, 10000], [44.77, 0.5263, 4477],
+])('matches full-price server rounding for $%s at %s kg', (price, weight, expected) => {
+  expect(getOrderPricing({ total_price: price, total_weight: weight })?.totalCents).toBe(expected);
 });
 
 it('uses a text-only brand link in the checkout header', async () => {
@@ -90,18 +105,19 @@ it.each(['navigation', 'saved order', 'last generation'])(
   },
 );
 
-it('shows regular line items, a separate discount, and crosses out only the original total', async () => {
+it('shows full-price line items and total without launch savings', async () => {
   await renderOrder();
   const rows = container.querySelectorAll('.checkout-price-list > div');
   expect(rows[0].querySelector('dd')?.textContent).toBe('$44.20');
   expect(rows[1].querySelector('dd')?.textContent).toBe('$5.80');
-  expect(rows[2].textContent).toBe('BrickBuilder Launch Discount−$25.00');
+  expect(rows).toHaveLength(3);
+  expect(container.textContent).not.toContain('BrickBuilder Launch Discount');
   expect(rows[0].querySelector('s')).toBeNull();
   expect(rows[1].querySelector('s')).toBeNull();
-  expect(container.querySelector('.checkout-price-list')?.querySelectorAll('s')).toHaveLength(1);
-  expect(container.querySelector('.checkout-total s')?.textContent).toBe('$50.00');
-  expect(container.querySelector('.checkout-total')?.textContent).toContain('USD$25.00');
-  expect(container.querySelector('.checkout-savings')?.textContent).toBe('You save $25.00');
+  expect(container.querySelector('.checkout-price-list')?.querySelectorAll('s')).toHaveLength(0);
+  expect(container.querySelector('.checkout-total s')).toBeNull();
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('USD$50.00');
+  expect(container.querySelector('.checkout-savings')).toBeNull();
 });
 
 it('keeps support and legal links in the compact checkout footer', async () => {
@@ -155,7 +171,7 @@ it('recovers a quote when a model is restored without pricing', async () => {
   const fetchPrice = vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue(quote as never);
   await renderOrder({ generation_id: 'g' });
   expect(fetchPrice).toHaveBeenCalledWith('g', 'auth-token');
-  expect(container.textContent).toContain('$25.00');
+  expect(container.textContent).toContain('$50.00');
 });
 
 it('blocks progression on missing pricing and allows a failed quote to be retried', async () => {
@@ -173,7 +189,7 @@ it('progresses contact → payment, sends auth, retains details when editing, an
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
   await submitContact();
   expect(mocks.initCheckoutElementsSdk).toHaveBeenCalledWith(expect.objectContaining({ elementsOptions: expect.objectContaining({ appearance: expect.objectContaining({ variables: expect.objectContaining({ colorPrimary: '#f44336' }) }) }) }));
-  expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frog', generationId: 'g', uiMode: 'elements', priceCents: 2500 }), 'auth-token');
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ name: 'Frog', generationId: 'g', uiMode: 'elements', priceCents: 5000 }), 'auth-token');
   expect(container.querySelector('.checkout-payment-element')).not.toBeNull();
   expect(mocks.mount).toHaveBeenCalled();
   expect(container.textContent).not.toContain('Continue to secure payment');
@@ -267,7 +283,7 @@ it('bounds a stalled payment load and provides a retry', async () => {
 it('restores the selected model and price when returning from hosted checkout', async () => {
   localStorage.setItem('orderState', JSON.stringify({ generation_id: 'g', priceData: quote }));
   await act(async () => root.render(<MemoryRouter initialEntries={['/order']}><OrderKit /></MemoryRouter>));
-  expect(container.textContent).toContain('$25.00');
+  expect(container.textContent).toContain('$50.00');
   expect(container.querySelector<HTMLButtonElement>('button.checkout-primary[type="submit"]')!.disabled).toBe(false);
 });
 
@@ -276,8 +292,8 @@ it('updates the displayed total from the authoritative checkout quote', async ()
   await renderOrder();
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
   await submitContact();
-  expect(container.querySelector('#checkout-step-2 button[type="submit"]')?.textContent).toBe('Pay $30.00');
-  expect(container.querySelector('.checkout-total')?.textContent).toContain('$30.00');
+  expect(container.querySelector('#checkout-step-2 button[type="submit"]')?.textContent).toBe('Pay $60.00');
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('$60.00');
 });
 
 

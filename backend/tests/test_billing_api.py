@@ -193,13 +193,14 @@ def test_retired_master_cannot_be_selected_but_existing_invoices_still_reconcile
     assert grant.call_args.kwargs['p_allowance']==1000
 
 
-@pytest.mark.parametrize('caller,plan,allowed', [('guest','free',False),('member','free',False),('member','builder',True),('member','creator',True)])
-def test_instruction_endpoint_checks_plan_before_reading_any_steps(monkeypatch,identity,caller,plan,allowed):
+@pytest.mark.parametrize('caller,plan', [('guest','free'),('member','free'),('member','builder'),('member','creator')])
+def test_instruction_endpoint_is_free_without_billing_lookups(monkeypatch,identity,caller,plan):
     from fastapi.testclient import TestClient
     from fastapi.responses import Response
     from src import api
     from src.utils import auth
     monkeypatch.setattr(billing,'local_unmetered',lambda:False)
+    monkeypatch.setattr(billing,'ordered_instruction_models',AsyncMock(return_value=[]))
     monkeypatch.setattr(billing,'settings',AsyncMock(return_value={'enabled':True}))
     wallet=AsyncMock(return_value={'plan_key':plan,'subscription_status':'active' if plan!='free' else 'none',
         'period_end':(datetime.now(timezone.utc)+timedelta(days=1)).isoformat()})
@@ -210,13 +211,9 @@ def test_instruction_endpoint_checks_plan_before_reading_any_steps(monkeypatch,i
     api.app.dependency_overrides[auth.get_optional_identity]=lambda:who
     try:
         response=TestClient(api.app).get(f'/generation/{uuid4()}/nova-instructions.ldr')
-        assert response.status_code==(200 if allowed else 403)
-        if allowed: steps.assert_awaited_once()
-        else:
-            steps.assert_not_called()
-            assert response.json()['detail']['code']=='BB_PAID_FEATURE_REQUIRED'
-        if caller=='guest': wallet.assert_not_called()
-        else: wallet.assert_awaited_once_with(identity['user_id'])
+        assert response.status_code == 200
+        steps.assert_awaited_once()
+        wallet.assert_not_called()
     finally: api.app.dependency_overrides.clear()
 
 
@@ -238,3 +235,75 @@ def test_local_and_deliberately_disabled_billing_preserve_unmetered_features(mon
     monkeypatch.setattr(billing,'local_unmetered',lambda:False)
     monkeypatch.setattr(billing,'settings',AsyncMock(return_value={'enabled':False}))
     asyncio.run(billing.require_paid_features({}))
+
+
+@pytest.fixture
+def order_database(monkeypatch):
+    """Filter order fixtures using the same ownership fields as PostgREST."""
+    rows = []
+
+    class Query:
+        def __init__(self):
+            self.filters = {}
+            self.max_rows = None
+
+        def select(self, columns):
+            assert 'generations!inner(user_id,user_type)' in columns
+            return self
+
+        def eq(self, field, value):
+            self.filters[field] = value
+            return self
+
+        def limit(self, count):
+            self.max_rows = count
+            return self
+
+        def execute(self):
+            matching = [row for row in rows if all(row.get(key) == value for key, value in self.filters.items())]
+            return SimpleNamespace(data=matching[:self.max_rows])
+
+    monkeypatch.setattr(billing, 'client', lambda: SimpleNamespace(table=lambda name: Query()))
+    return rows
+
+
+def test_instruction_endpoint_survives_billing_outage(monkeypatch):
+    from fastapi.testclient import TestClient
+    from fastapi.responses import Response
+    from src import api
+
+    config = AsyncMock(side_effect=RuntimeError('offline'))
+    monkeypatch.setattr(billing, 'settings', config)
+    steps = AsyncMock(return_value=Response('steps'))
+    monkeypatch.setattr(api, 'get_nova_instructions', steps)
+    model_id = str(uuid4())
+    response = TestClient(api.app).get(f'/generation/{model_id}/nova-instructions.ldr')
+    assert response.status_code == 200
+    steps.assert_awaited_once_with(model_id)
+    config.assert_not_called()
+
+
+def test_ordered_model_list_deduplicates_active_orders_and_ignores_other_accounts(identity, order_database):
+    model_id = str(uuid4())
+    order = {'generation_id': model_id, 'generations.user_id': identity['user_id'],
+             'generations.user_type': 'authenticated', 'cancelled': False}
+    order_database.extend([order, order.copy(), {**order, 'generation_id': str(uuid4()), 'cancelled': True},
+                          {**order, 'generation_id': str(uuid4()), 'generations.user_id': str(uuid4())}])
+    assert asyncio.run(billing.ordered_instruction_models(identity['user_id'])) == [model_id]
+
+
+def test_account_exposes_order_access_independently_of_subscription(monkeypatch, identity):
+    row = {'period_start': '2026-01-01T00:00:00Z', 'period_end': '2026-02-01T00:00:00Z',
+           'plan_key': 'free', 'monthly_credits': 300, 'monthly_remaining': 0, 'bonus_remaining': 0,
+           'subscription_status': 'none', 'cancel_at_period_end': False}
+    monkeypatch.setattr(billing, 'wallet', AsyncMock(return_value=row))
+    monkeypatch.setattr(billing, 'client', Mock())
+    monkeypatch.setattr(billing, 'execute_query', AsyncMock(return_value=SimpleNamespace(data=[])))
+    monkeypatch.setattr(billing, 'settings', AsyncMock(return_value={'enabled': True, 'policy_version': 2}))
+    monkeypatch.setattr(billing, 'capacity', AsyncMock(return_value={}))
+    orders = AsyncMock(return_value=[str(uuid4())])
+    monkeypatch.setattr(billing, 'ordered_instruction_models', orders)
+    result = asyncio.run(billing.account(identity))
+    assert result['ordered_instruction_models'] == orders.return_value
+    assert result['paid_features'] is False
+    orders.assert_awaited_once_with(identity['user_id'])

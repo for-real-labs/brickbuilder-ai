@@ -5,7 +5,9 @@
   import { registerMobileShellAnalytics } from "./utils/mobileShellAnalytics";
   import App from "./App.tsx";
   import "./index.css";
+  import { captureInstructionLink } from './utils/instructionLinks';
 
+  captureInstructionLink();
   registerMobileShellAnalytics();
 
   createRoot(document.getElementById("root")!).render(

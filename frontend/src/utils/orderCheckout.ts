@@ -6,16 +6,9 @@ export type OrderQuote = Pick<GetPriceResponse, 'total_price' | 'total_weight'> 
 export function getOrderPricing(quote?: OrderQuote | null) {
   if (!quote || !Number.isFinite(quote.total_price) || quote.total_price <= 0 ||
       !Number.isFinite(quote.total_weight) || quote.total_weight < 0) return null;
-  // Preserve the existing kit discount and shipping calculation.
-  const fullShippingCents = Math.round(quote.total_weight * 1800 + 400);
-  const fullPartSubtotalCents = Math.max(Math.round(quote.total_price * 100) - fullShippingCents, 0);
-  const partSubtotalCents = Math.round(fullPartSubtotalCents * 0.5);
-  const shippingCents = Math.round(fullShippingCents * 0.5);
-  return {
-    partSubtotalCents, shippingCents, totalCents: partSubtotalCents + shippingCents,
-    fullPartSubtotalCents, fullShippingCents,
-    fullTotalCents: fullPartSubtotalCents + fullShippingCents,
-  };
+  const shippingCents = Math.round(quote.total_weight * 1800 + 400);
+  const partSubtotalCents = Math.max(Math.round(quote.total_price * 100) - shippingCents, 0);
+  return { partSubtotalCents, shippingCents, totalCents: partSubtotalCents + shippingCents };
 }
 
 export function formatOrderPrice(cents: number) {

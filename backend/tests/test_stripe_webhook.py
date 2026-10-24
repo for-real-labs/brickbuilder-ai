@@ -8,6 +8,7 @@ import pytest
 import stripe
 
 from src.requests import stripeWebhook as webhook
+from src.utils.instruction_links import instruction_key_hash
 
 
 class EmailLinks(HTMLParser):
@@ -35,7 +36,7 @@ def test_paid_order_saves_postcard_choice_and_instructions_link(monkeypatch, sel
     if selected is not None:
         metadata['shipInstructionsPostcard'] = selected
     session = stripe.StripeObject.construct_from({
-        'id': 'cs', 'metadata': metadata, 'amount_total': 2500, 'payment_intent': 'pi',
+        'id': 'cs', 'metadata': metadata, 'payment_status': 'paid', 'amount_total': 2500, 'payment_intent': 'pi',
         'customer_details': {'email': 'buyer@example.com'},
         'collected_information': {'shipping_details': {'name': 'Builder', 'address': {'line1': '123 Main', 'city': 'Chicago', 'country': 'US'}}},
     }, None)
@@ -50,11 +51,18 @@ def test_paid_order_saves_postcard_choice_and_instructions_link(monkeypatch, sel
     assert info['instructions_postcard'] is expected
     if expected:
         assert info['instructions_postcard_size'] == '6x4in'
-        assert info['instructions_url'] == 'https://brickbuilder.ai/instructions?id=g%2F123'
     else:
         assert 'instructions_postcard_size' not in info
-        assert 'instructions_url' not in info
+    assert 'instructions_url' not in info
+    customer_links = EmailLinks(send.call_args_list[0].args[0]['html']).links
+    instructions = next(url for url in customer_links if '/instructions?' in url)
+    key = parse_qs(urlparse(instructions).fragment)['access'][0]
+    assert instruction_key_hash(key) == save.call_args.kwargs['instructions_key_hash']
+    assert key not in str(save.call_args)
     owner_message = send.call_args.args[0]['html']
+    assert instructions in EmailLinks(owner_message).links
+    assert any(urlparse(url).path == '/order' and parse_qs(urlparse(url).fragment) == {'access': [key]}
+               for url in EmailLinks(owner_message).links)
     assert ('Include 6 × 4 inch QR instructions postcard' if expected else 'Not requested') in owner_message
 
 
@@ -65,7 +73,7 @@ def test_international_payment_intent_shipping_reaches_the_paid_order(monkeypatc
     shipping = {'name': 'Builder', 'address': {'line1': '123 Main', 'city': 'Flying Fish Cove', 'postal_code': '6798', 'country': 'CX'}}
     intent = stripe.StripeObject.construct_from({'id': 'pi', 'shipping': shipping}, None)
     session = stripe.StripeObject.construct_from({
-        'id': 'cs', 'metadata': {'generationId': 'g', 'shippingAddressProvided': 'true'}, 'amount_total': 2500,
+        'id': 'cs', 'metadata': {'generationId': 'g', 'shippingAddressProvided': 'true'}, 'payment_status': 'paid', 'amount_total': 2500,
         'payment_intent': intent if expanded else 'pi', 'customer_details': {'email': 'buyer@example.com'},
         'collected_information': None,
     }, None)
@@ -95,7 +103,7 @@ def test_international_payment_intent_shipping_reaches_the_paid_order(monkeypatc
 
 def test_missing_preprovided_address_requires_a_webhook_retry(monkeypatch):
     from fastapi import HTTPException
-    session = stripe.StripeObject.construct_from({'id': 'cs', 'metadata': {'shippingAddressProvided': 'true'}, 'payment_intent': {'id': 'pi'}}, None)
+    session = stripe.StripeObject.construct_from({'id': 'cs', 'metadata': {'shippingAddressProvided': 'true'}, 'payment_status': 'paid', 'payment_intent': {'id': 'pi'}}, None)
     monkeypatch.setattr(webhook.stripe.checkout.Session, 'retrieve', Mock(return_value=session))
     save = AsyncMock()
     monkeypatch.setattr(webhook, 'generation_storage', SimpleNamespace(update_payment_status=save))
@@ -110,7 +118,7 @@ def test_missing_preprovided_address_requires_a_webhook_retry(monkeypatch):
 def test_shipping_can_be_recovered_from_the_event_after_session_fetch_fails(monkeypatch, mode, key):
     monkeypatch.setenv('API_MODE', mode)
     shipping = {'name': 'Builder', 'address': {'line1': '123 Main', 'city': 'Tokyo', 'postal_code': '100-0001', 'country': 'JP'}}
-    session = stripe.StripeObject.construct_from({'id': 'cs', 'metadata': {'generationId': 'g', 'shippingAddressProvided': 'true'}, 'payment_intent': 'pi', 'collected_information': None}, None)
+    session = stripe.StripeObject.construct_from({'id': 'cs', 'metadata': {'generationId': 'g', 'shippingAddressProvided': 'true'}, 'payment_status': 'paid', 'payment_intent': 'pi', 'collected_information': None}, None)
     monkeypatch.setattr(webhook.stripe.checkout.Session, 'retrieve', Mock(side_effect=RuntimeError('Temporary failure')))
     retrieve_intent = Mock(return_value={'id': 'pi', 'shipping': shipping})
     monkeypatch.setattr(webhook.stripe.PaymentIntent, 'retrieve', retrieve_intent)
@@ -144,7 +152,7 @@ def test_missing_mode_specific_key_requires_retry_before_order_or_email(monkeypa
 
 def test_repeated_paid_checkout_sends_each_confirmation_only_once(monkeypatch):
     session = stripe.StripeObject.construct_from({
-        'id': 'cs_repeat', 'metadata': {'generationId': 'g'}, 'amount_total': 2017,
+        'id': 'cs_repeat', 'metadata': {'generationId': 'g'}, 'payment_status': 'paid', 'amount_total': 2017,
         'payment_intent': 'pi_repeat', 'customer_details': {'email': 'buyer@example.com'},
         'collected_information': {'shipping_details': {'name': 'Builder', 'address': {'line1': '123 Main'}}},
     }, None)
@@ -166,7 +174,7 @@ def test_repeated_paid_checkout_sends_each_confirmation_only_once(monkeypatch):
 @pytest.mark.parametrize('generation_id', ['castle', 'g/123 &instructions=0"<>'])
 def test_order_emails_link_to_landing_model_and_instructions_dialog(monkeypatch, generation_id):
     session = stripe.StripeObject.construct_from({
-        'id': 'cs_links', 'metadata': {'generationId': generation_id, 'petId': 'nib'}, 'amount_total': 2500,
+        'id': 'cs_links', 'metadata': {'generationId': generation_id, 'petId': 'nib'}, 'payment_status': 'paid', 'amount_total': 2500,
         'payment_intent': 'pi_links', 'customer_details': {'email': 'buyer@example.com'},
         'collected_information': {'shipping_details': {'name': 'Builder', 'address': {'line1': '123 Main'}}},
     }, None)
@@ -185,11 +193,35 @@ def test_order_emails_link_to_landing_model_and_instructions_dialog(monkeypatch,
             assert 'https://example.com/castle.png' in message['html']
         links = [urlparse(link) for link in EmailLinks(message['html']).links]
         model_links = [link for link in links if link.netloc == 'brickbuilder.ai']
-        assert len(model_links) == (2 if instructions else 1)
+        assert len(model_links) == (2 if instructions else 3)
         assert model_links[0].scheme == 'https'
         assert model_links[0].path == '/'
         expected = {'id': [generation_id], 'exact': ['1']}
         assert parse_qs(model_links[0].query) == expected
         if instructions:
-            expected['instructions'] = ['1']
-            assert parse_qs(model_links[1].query) == expected
+            assert model_links[1].path == '/instructions'
+            assert parse_qs(model_links[1].query) == {'id': [generation_id]}
+            assert len(parse_qs(model_links[1].fragment)['access'][0]) == 43
+
+
+@pytest.mark.parametrize('payment_status', ['unpaid', 'no_payment_required', None])
+def test_unpaid_checkout_cannot_issue_an_order_key_or_confirmation(monkeypatch, payment_status):
+    session = stripe.StripeObject.construct_from({'id': 'cs_pending', 'payment_status': payment_status}, None)
+    monkeypatch.setattr(webhook.stripe.checkout.Session, 'retrieve', Mock(return_value=session))
+    save, send = AsyncMock(), Mock()
+    monkeypatch.setattr(webhook, 'generation_storage', SimpleNamespace(update_payment_status=save))
+    monkeypatch.setattr(webhook.resend.Emails, 'send', send)
+    asyncio.run(webhook.handle_checkout_session_completed(session))
+    save.assert_not_called()
+    send.assert_not_called()
+
+
+def test_database_failure_requests_a_stripe_retry_instead_of_losing_order_access(monkeypatch):
+    from fastapi import HTTPException
+    session = stripe.StripeObject.construct_from({'id': 'cs_db_failure', 'payment_status': 'paid',
+                                                  'metadata': {'generationId': 'g'}}, None)
+    monkeypatch.setattr(webhook.stripe.checkout.Session, 'retrieve', Mock(return_value=session))
+    monkeypatch.setattr(webhook, 'generation_storage', SimpleNamespace(update_payment_status=AsyncMock(side_effect=RuntimeError('database unavailable'))))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(webhook.handle_checkout_session_completed(session))
+    assert error.value.status_code == 503

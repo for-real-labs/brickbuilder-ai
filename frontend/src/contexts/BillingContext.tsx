@@ -3,14 +3,14 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import posthog from 'posthog-js';
 import { useAuth } from './AuthContext';
 import { billingApi, INITIAL_PLANS, openStripe, type BillingAccount, type PlanKey, type PaidFeature, type FeatureAccess } from '../services/billingApi';
-
 const BillingContext = createContext({
   account: null as BillingAccount | null, plans: INITIAL_PLANS, enabled: false, checkoutAvailable: false, loading: false,
   appleProducts: [] as AppleProduct[], restore: async () => {},
   busy: false, error: '', upgradeSource: '', loginOpen: false,
   featureAccess: 'loading' as FeatureAccess,
-  lockedFeature: null as { feature: PaidFeature; source: string } | null,
-  requireFeature: (_feature: PaidFeature, _source: string): boolean => false,
+  getFeatureAccess: (feature: PaidFeature, _generationId?: string | null): FeatureAccess => (feature === 'instructions' || feature === 'ldraw') ? 'allowed' : 'loading',
+  lockedFeature: null as { feature: PaidFeature; source: string; generationId?: string | null } | null,
+  requireFeature: (feature: PaidFeature, _source: string, _generationId?: string | null): boolean => (feature === 'instructions' || feature === 'ldraw'),
   closeLockedFeature: () => {}, retryAccess: async () => {},
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
@@ -36,7 +36,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState('');
   const [upgradeSource, setUpgradeSource] = useState('');
   const [loginOpen, setLoginOpen] = useState(false);
-  const [lockedFeature, setLockedFeature] = useState<{ feature: PaidFeature; source: string } | null>(null);
+  const [lockedFeature, setLockedFeature] = useState<{ feature: PaidFeature; source: string; generationId?: string | null } | null>(null);
   const refresh = useCallback(async () => {
     const owner = user?.id;
     if (!owner) return;
@@ -119,17 +119,23 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const featureAccess: FeatureAccess = plansStatus === 'loading' ? 'loading' : plansStatus === 'error' ? 'unavailable'
     : !enabled ? 'allowed' : !user ? 'locked' : accountOwner !== user.id || !account ? loading ? 'loading' : 'unavailable'
     : account.paid_features && new Date(account.subscription_provider === 'apple' ? account.apple_expires_at ?? account.period_end : account.period_end).getTime() > Date.now() ? 'allowed' : 'locked';
-  const requireFeature = useCallback((feature: PaidFeature, source: string) => {
-    if (featureAccess === 'allowed') return true;
-    setLockedFeature({ feature, source });
-    posthog.capture('billing_feature_blocked', { feature, source, access: featureAccess });
-    return false;
+  const getFeatureAccess = useCallback((feature: PaidFeature, _generationId?: string | null): FeatureAccess => {
+    return (feature === 'instructions' || feature === 'ldraw') ? 'allowed' : featureAccess;
   }, [featureAccess]);
+  const requireFeature = useCallback((feature: PaidFeature, source: string, generationId?: string | null) => {
+    const access = getFeatureAccess(feature, generationId);
+    if (access === 'allowed') return true;
+    setLockedFeature({ feature, source, ...(generationId ? { generationId } : {}) });
+    posthog.capture('billing_feature_blocked', { feature, source, access });
+    return false;
+  }, [getFeatureAccess]);
   const closeLockedFeature = () => {
     if (lockedFeature) posthog.capture('billing_feature_dismissed', lockedFeature);
     setLockedFeature(null);
   };
-  useEffect(() => { if (featureAccess === 'allowed') setLockedFeature(null); }, [featureAccess]);
+  useEffect(() => {
+    if (lockedFeature && getFeatureAccess(lockedFeature.feature, lockedFeature.generationId) === 'allowed') setLockedFeature(null);
+  }, [getFeatureAccess, lockedFeature]);
   const openUpgrade = useCallback((source: string) => {
     setError(''); setLockedFeature(null); setUpgradeSource(source);
     posthog.capture('billing_upgrade_opened', { source, page: window.location.pathname });
@@ -187,7 +193,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     finally { setBusy(false); }
   };
   return <BillingContext.Provider value={{ account, plans, enabled, appleProducts, restore, checkoutAvailable: checkoutAvailable && (!isAppleApp() || (appleReady && hasApplePurchases() && appleProducts.length > 0)), loading, busy, error, upgradeSource, loginOpen,
-    featureAccess, lockedFeature, requireFeature, closeLockedFeature,
+    featureAccess, getFeatureAccess, lockedFeature, requireFeature, closeLockedFeature,
     retryAccess: async () => { await Promise.all([refreshPlans(), refresh(), refreshProducts()]); },
     refresh, sync, openUpgrade, closeUpgrade, subscribe, manage,
     closeLogin: () => setLoginOpen(false), signIn: () => { posthog.capture('billing_sign_in_clicked'); setLoginOpen(true); },

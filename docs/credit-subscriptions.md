@@ -28,17 +28,43 @@ AI text/image-to-mesh conversions cost 15 credits on every plan, including Free.
 share a balance; the example counts are alternatives, not additive allowances.
 Monthly plans only; no annual plans or one-off packs. Physical kits are separate.
 
-Free includes model creation, 3D previews and CSV/XML parts lists. LDR/IO exports
-and building instructions require Builder or Creator (or an existing Master
+Free includes model creation, 3D previews, CSV/XML parts lists and instructions for
+the account's ordered kits. A non-cancelled order linked to an authenticated account's
+exact generation unlocks that model's instructions, including fulfilled orders.
+It does not unlock other versions/models or LDR/IO exports, and does not depend on
+remaining credits or subscription status. This uses the same order ownership as My Orders.
+LDR/IO exports and instructions for other models require Builder or Creator (or an existing Master
 subscription). The options remain visible with a lock and open the shared
 BrickBuilder upgrade notice. The notice leads to the existing plan picker.
 Direct instruction links, postcard previews and Build Buddy export actions use the same access check.
 A paid account keeps these features through its paid period, even with zero credits
 or cancellation scheduled. Unknown account state does not unlock a feature.
 
-The Nova instructions endpoint checks the requesting account's paid period and uses
+The Nova instructions endpoint checks the requesting account's model order or paid period and uses
 private, non-cacheable responses. Display geometry still reaches the browser for
 3D previews: these are app feature restrictions, not DRM for already-public model data.
+
+Paid kit checkouts also issue a random 256-bit key per order, including guest
+orders. The same `/instructions?id=…#access=…` link is sent in the customer
+confirmation and fulfillment email. The fulfillment email's `/order?id=…#access=…`
+link opens the correct postcard preview with that key encoded in its QR.
+Only a SHA-256 hash is saved in `orders.instructions_key_hash`; raw links are
+retained in the delivery emails, not generation rows or shipping metadata.
+The browser removes the fragment before analytics starts and keeps the key in
+tab session storage. It is sent only in the `X-Instruction-Key` header to
+instruction endpoints. QR elements are excluded from automatic analytics and replay.
+Keys have no automatic expiry because a printed postcard should remain usable.
+Cancellation or clearing/replacing the hash revokes the link. Keys do not grant
+editing, exports, order details, or access to another model/version.
+
+Apply `20261024000000_order_instruction_keys.sql` before deploying the backend.
+For an older guest order, run
+`uv run python scripts/issue_order_instruction_link.py <order-id>` from `backend`
+in an environment with its existing database credentials.
+Deliver the returned instructions link to the buyer and use its postcard link
+for fulfillment. This command does not send emails or change an existing link;
+`--replace` explicitly invalidates an older link, including any printed QR.
+Do not paste keys in public tickets/logs. No historical emails are resent automatically.
 
 Hosted guests get 75 lifetime credits without signing in: 5 All parts builds or
 75 Basic builds, or a mix. Basic AI edits use 1 and All parts/AI mesh work uses 15.

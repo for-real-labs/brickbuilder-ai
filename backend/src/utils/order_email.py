@@ -1,13 +1,14 @@
 """Email-safe, responsive order confirmation rendering."""
 from html import escape
 from urllib.parse import urlencode, urlsplit
+from .instruction_links import instruction_link
 
 PET_NAMES = {'pip': 'Pip', 'nib': 'Nib', 'clik': 'Clik'}
 
 
-def order_email_content(order_id, generation_id, generation, pet_id=None):
+def order_email_content(order_id, generation_id, generation, pet_id=None, *, instruction_key=None):
     model_url = 'https://brickbuilder.ai/?' + urlencode({'id': generation_id, 'exact': '1'})
-    instructions_url = model_url + '&instructions=1'
+    instructions_url = instruction_link(generation_id, instruction_key) if instruction_key else model_url + '&instructions=1'
     title = ' '.join(str(generation.get('name') or 'Your custom brick model').split())[:120]
     preview = generation.get('preview_image_url') or ''
     try:

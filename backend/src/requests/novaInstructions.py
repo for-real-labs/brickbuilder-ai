@@ -16,7 +16,6 @@ async def get_nova_instructions(generation_id: str) -> Response:
     if generation_storage is None:
         raise HTTPException(503, 'Generation storage is unavailable')
     row = await generation_storage.get_generation(generation_id)
-    # The API route checks the viewer's paid access before reading these steps.
     if not row or row.get('status') != 'completed' or row.get('endpoint') != 'novaToBricks':
         raise HTTPException(404, 'Nova instructions are unavailable')
     if row.get('nova_build_mode') == 'preview':

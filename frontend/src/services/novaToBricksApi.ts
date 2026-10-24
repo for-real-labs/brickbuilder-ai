@@ -1,5 +1,6 @@
 import { apiFetch, authenticatedApiFetch } from './apiFetch';
 import { DEFAULT_LLM_MODEL, getLlmModelOption, type LlmToBricksResponse } from './llmToBricksApi';
+import { getInstructionKey } from '../utils/instructionLinks';
 
 export type NovaAuthMode = 'api_key' | 'native';
 
@@ -37,7 +38,9 @@ export class NovaInstructionPlanError extends Error {
 
 export class NovaToBricksApiService {
   static async instructions(generationId: string): Promise<string> {
-    const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-instructions.ldr`);
+    const key = getInstructionKey(generationId);
+    const response = await authenticatedApiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-instructions.ldr`,
+      key ? { headers: { 'X-Instruction-Key': key } } : {});
     if (response.status === 409) {
       const error = await response.json().catch(() => ({}));
       if (['Repair disconnected parts before opening instructions.',
@@ -45,6 +48,13 @@ export class NovaToBricksApiService {
     }
     if (!response.ok) throw new Error('Unable to load Nova construction steps. Please try again.');
     return response.text();
+  }
+
+  static async instructionAccess(generationId: string, key: string): Promise<boolean> {
+    const response = await apiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/instruction-access`,
+      { cache: 'no-store', headers: { 'X-Instruction-Key': key } });
+    if (!response.ok) throw new Error('Could not verify this instruction link.');
+    return (await response.json()).allowed === true;
   }
 
   static async downloadSource(generationId: string): Promise<Blob> {

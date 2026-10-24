@@ -22,7 +22,7 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-const billingSettings = vi.hoisted(() => ({ enabled: false, account: null, loading: false, openUpgrade: vi.fn() }));
+const billingSettings = vi.hoisted(() => ({ enabled: false, account: null, loading: false, getFeatureAccess: () => 'allowed', openUpgrade: vi.fn() }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billingSettings }));
 
 const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false }));

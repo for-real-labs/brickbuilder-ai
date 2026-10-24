@@ -1,4 +1,4 @@
-vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ featureAccess: 'allowed', requireFeature: () => true, enabled: false, openUpgrade: vi.fn(), retryAccess: vi.fn() }) }));
+vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ featureAccess: 'allowed', getFeatureAccess: () => 'allowed', requireFeature: () => true, enabled: false, openUpgrade: vi.fn(), retryAccess: vi.fn() }) }));
 import React, { act } from 'react';
 import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
@@ -615,7 +615,7 @@ it('orders the ready landing model using its displayed quote and dismisses only 
   await act(async () => root.render(<LandingPage />));
   const dialogue = container.querySelector('[aria-label="Build buddy conversation"]');
   const banner = container.querySelector('[aria-label="Order your brick kit"]')!;
-  expect(banner.textContent).toContain('$22.39');
+  expect(banner.textContent).toContain('$44.77');
   await act(async () => banner.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.click());
   expect(navigate).toHaveBeenCalledWith('/order', { state: expect.objectContaining({
     generation_id: 'castle', name: 'Castle', priceData: expect.objectContaining({ total_price: 44.77 }),
@@ -635,12 +635,12 @@ it('shows the model beside a desktop order pane and keeps the mobile banner for 
   const layout = container.querySelector('.landing-model-layout--orderable')!;
   expect(layout.querySelector('.landing-model-panel')).not.toBeNull();
   expect(layout.querySelector('[aria-label="Order pane"] .model-order-card')).not.toBeNull();
-  expect(layout.querySelector('[aria-label="Order pane"]')?.textContent).toContain('$22.39');
+  expect(layout.querySelector('[aria-label="Order pane"]')?.textContent).toContain('$44.77');
   const banner = container.querySelector('.model-mobile-order')!;
   expect(banner.classList.contains('model-mobile-order--all-screens')).toBe(false);
   expect(banner.textContent).toContain('370 pieces');
   expect(banner.textContent).not.toContain('Shipping included');
-  expect(banner.querySelector('strong')?.textContent).toBe('$22.39');
+  expect(banner.querySelector('strong')?.textContent).toBe('$44.77');
 });
 
 it('keeps the dialogue outside the viewer alongside the order pane', async () => {
@@ -708,7 +708,7 @@ it('never applies a late quote to a different displayed model', async () => {
   expect(container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.disabled).toBe(true);
   await renderModel('second');
   await act(async () => finish({ generation_id: 'first', total_price: 100, total_weight: 0, total_parts: 100, parts_breakdown: [] } as never));
-  expect(container.querySelector('.model-mobile-order strong')?.textContent).toBe('$10.00');
+  expect(container.querySelector('.model-mobile-order strong')?.textContent).toBe('$20.00');
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.click());
   expect(navigate).toHaveBeenCalledWith('/order', { state: expect.objectContaining({
     generation_id: 'second', priceData: expect.objectContaining({ total_price: 20 }),

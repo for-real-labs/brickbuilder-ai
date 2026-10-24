@@ -68,6 +68,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
 it('asks guests to sign in before creating a subscription', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
+  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('Free LDR downloads and building instructions');
   await click('Choose Builder');
   expect(container.textContent).toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();

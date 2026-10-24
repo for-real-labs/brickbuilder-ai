@@ -53,8 +53,9 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <ul className="billing-features">
           <li><Check aria-hidden="true" />{plan.credits.toLocaleString()} Basic builds or {Math.floor(plan.credits / 15)} All parts builds</li>
           <li><Check aria-hidden="true" />Mix modes from one credit balance</li>
-          <li>{plan.key === 'free' ? <><PaidFeatureLock />LDR/IO exports & instructions on paid plans</>
-            : <><Check aria-hidden="true" />LDR/IO exports & building instructions</>}</li>
+          <li><Check aria-hidden="true" />Free LDR downloads and building instructions</li>
+          <li>{plan.key === 'free' ? <><PaidFeatureLock />IO exports on paid plans</>
+            : <><Check aria-hidden="true" />IO exports</>}</li>
           <li><Check aria-hidden="true" />Every Build Buddy included</li>
         </ul>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
@@ -108,7 +109,7 @@ export function BillingOverlays() {
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
       <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        <p>{account ? `${account.monthly_remaining + (account.apple_remaining ?? 0)} credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{(account?.plan_key === 'creator' || account?.plan_key === 'master') && account.credits_remaining === 0 ? `Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. Paid plans unlock LDR/IO exports and instructions. Cancel anytime.'}</p></div></div>
+        <p>{account ? `${account.monthly_remaining + (account.apple_remaining ?? 0)} credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{(account?.plan_key === 'creator' || account?.plan_key === 'master') && account.credits_remaining === 0 ? `Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. LDR downloads and building instructions are free. Paid plans unlock IO exports. Cancel anytime.'}</p></div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />

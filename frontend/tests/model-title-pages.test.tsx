@@ -591,7 +591,7 @@ it.each(['Order my kit', 'Order this model'])('opens checkout for the displayed 
   vi.mocked(GetPriceApiService.getPrice).mockResolvedValue(quote as never);
   const Location = () => { const location = useLocation(); return <output>{JSON.stringify({path: location.pathname, state: location.state})}</output>; };
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
-  expect(container.querySelector('.model-order-total')?.textContent).toBe('$22.39');
+  expect(container.querySelector('.model-order-total')?.textContent).toBe('$44.77');
   await act(async () => modelButton(label).click());
   const result = JSON.parse(container.querySelector('output')!.textContent!);
   expect(result.path).toBe('/order');

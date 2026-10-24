@@ -62,7 +62,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
   }, [open, submenu]);
 
   const exportModel = (format: ModelExportFormat, source = 'tools_dropdown') => {
-    if ((format === 'ldraw' || format === 'io') && !requireFeature(format, source)) {
+    if (format === 'io' && !requireFeature(format, source)) {
       setOpen(false);
       trigger.current?.focus();
       return false;
@@ -86,7 +86,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
       } else if (action.startsWith('export_')) {
         if (expectedGenerationId !== model?.generation.generation_id) throw new Error('The selected model changed. Ask again to download the model now shown.');
         reply = exportModel(action.slice(7) as ModelExportFormat, 'buddy_chat')
-          ? 'Starting your download.' : 'LDR and IO exports require a paid plan. I opened the plan access popup.';
+          ? 'Starting your download.' : 'IO exports require a paid plan. I opened the plan access popup.';
       } else if (action === 'export' || action === 'import') {
         focusChoices.current = true;
         setOpen(true);
@@ -173,14 +173,14 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
           {submenu === action && <ul id={`${panelId}-${action}`} aria-label={action === 'export' ? 'Export options' : 'Import options'} className="mx-1 mb-1 list-none rounded-xl bg-slate-50 p-1">
             {action === 'export' ? <>
               {([['ldraw', 'Download LDraw'], ['io', 'Download IO'], ['csv', 'Download parts list CSV'], ['xml', 'Download parts list XML']] as [ModelExportFormat, string][]).map(([format, label]) => <li key={format} className={format === 'csv' ? 'mt-1 border-t border-slate-200 pt-1' : ''}>
-                <button type="button" className={rowClass} disabled={!((format === 'ldraw' || format === 'io') && featureAccess !== 'allowed') && (!model || busy)} onClick={() => {
+                <button type="button" className={rowClass} disabled={!(format === 'io' && featureAccess !== 'allowed') && (!model || busy)} onClick={() => {
                   try {
                     exportModel(format);
                   } catch (error) {
                     setExportError(error instanceof Error ? error.message : 'Unable to download this model. Please try again.');
                     posthog.capture('landing_model_export_failed', { ...attribution(), generation_id: model?.generation.generation_id, format });
                   }
-                }}>{label}{(format === 'ldraw' || format === 'io') && featureAccess !== 'allowed' && <PaidFeatureLock />}</button>
+                }}>{label}{format === 'io' && featureAccess !== 'allowed' && <PaidFeatureLock />}</button>
               </li>)}
               {(!model || busy) && <li className="px-3 py-2 text-xs text-slate-500">{busy ? 'Downloads will be ready when your model finishes.' : 'Open or generate a model to download it.'}</li>}
               {exportError && <li role="alert" className="px-3 py-2 text-xs text-red-600">{exportError}</li>}

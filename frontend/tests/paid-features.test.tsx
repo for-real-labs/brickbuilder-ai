@@ -11,6 +11,8 @@ import { LandingToolsMenu, type LandingToolsHandle } from '../src/components/Lan
 import { LandingModelWorkspace } from '../src/components/LandingModelWorkspace';
 import { InstructionsPage } from '../src/pages/InstructionsPage';
 import BillingPage from '../src/pages/BillingPage';
+import { OrderCard } from '../src/pages/UserDashboard';
+import type { GenerationWithOrder } from '../src/services/getUserGenerationsApi';
 import { billingApi, INITIAL_PLANS, type BillingAccount } from '../src/services/billingApi';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
@@ -42,6 +44,7 @@ const click = (text: string) => act(async () => { expect(button(text), text).toB
 const tools = () => <LandingToolsMenu ref={toolRef} page="/" model={model} />;
 
 beforeEach(() => {
+  sessionStorage.clear();
   vi.clearAllMocks(); auth.user = { id: 'member' };
   account = { plan_key: 'free', paid_features: false, monthly_credits: 300, monthly_remaining: 300, credits_remaining: 300, bonus_remaining: 0,
     period_start: '2026-10-01T00:00:00Z', period_end: '2099-11-01T00:00:00Z', subscription_status: 'none', cancel_at_period_end: false, has_subscription: false, enabled: true, history: [] };
@@ -53,9 +56,9 @@ beforeEach(() => {
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
 });
-afterEach(() => { act(() => root.unmount()); host.remove(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+afterEach(() => { act(() => root.unmount()); host.remove(); sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-it.each([['ldraw','Download LDraw'],['io','Download IO']] as const)('locks %s exports, opens the shared notice and offers only Builder/Creator upgrades', async (feature, label) => {
+it.each([['io','Download IO']] as const)('locks %s exports, opens the shared notice and offers only Builder/Creator upgrades', async (feature, label) => {
   const download = vi.spyOn(modelExport, 'downloadModel').mockImplementation(() => {});
   await render(tools()); await click('Tools'); await click('Export');
   expect(button(label).disabled).toBe(false);
@@ -79,13 +82,14 @@ it('keeps locked exports clickable even before a model is loaded and lets Escape
   expect(host.querySelector('dialog')).toBeNull(); expect(document.body.style.overflow).toBe('');
 });
 
-it('keeps CSV exports available on Free and blocks the buddy LDR shortcut', async () => {
+it('keeps CSV exports and the buddy LDR shortcut available on Free', async () => {
   const download = vi.spyOn(modelExport, 'downloadModel').mockImplementation(() => {});
   await render(tools()); await click('Tools'); await click('Export'); await click('Download parts list CSV');
   expect(download).toHaveBeenCalledExactlyOnceWith('model','Castle','csv');
   let reply = ''; await act(async () => { reply = toolRef.current!.runTool('export_ldraw','castle'); });
-  expect(reply).toContain('require a paid plan'); expect(download).toHaveBeenCalledTimes(1);
-  expect(host.querySelector('.billing-feature-dialog')).not.toBeNull();
+  expect(reply).toBe('Starting your download.');
+  expect(download).toHaveBeenLastCalledWith('model', 'Castle', 'ldraw');
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
 });
 
 it.each(['builder','creator','master'] as const)('allows %s exports even with no remaining credits and scheduled cancellation', async plan => {
@@ -96,47 +100,37 @@ it.each(['builder','creator','master'] as const)('allows %s exports even with no
   await click('Download IO'); expect(download).toHaveBeenCalledExactlyOnceWith('model','Castle','io');
 });
 
-it.each([false,true])('keeps Free instruction controls visible and blocks embedded viewing (deep link: %s)', async deepLink => {
-  const read = vi.spyOn(NovaToBricksApiService,'instructions').mockResolvedValue('steps');
+it.each([false, true])('opens free embedded instructions (deep link: %s)', async deepLink => {
+  const read = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(() => new Promise(() => {}));
   await render(<LandingModelWorkspace model={model} busy={false} requestedInstructionsId={deepLink ? 'castle' : null}>Chat</LandingModelWorkspace>);
-  expect(button('Show instructions').querySelector('.paid-feature-lock')).not.toBeNull();
-  if (!deepLink) await click('Show instructions');
-  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('Building instructions');
-  expect(host.querySelector('[data-model-preview]')).not.toBeNull();
-  expect(host.querySelector('.landing-instructions-view')).toBeNull(); read.mockRestore();
+  if (!deepLink) {
+    expect(button('Show instructions').querySelector('.paid-feature-lock')).toBeNull();
+    await click('Show instructions');
+  }
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+  expect(host.querySelector('.landing-instructions-view')).not.toBeNull();
+  expect(read).toHaveBeenCalledWith('castle');
 });
 
-it('blocks direct instruction URLs before loading model content', async () => {
-  const read = vi.spyOn(GetGenerationApiService,'getGeneration').mockRejectedValue(new Error('must not load'));
+it('loads a direct instruction URL for a signed-out visitor', async () => {
+  auth.user = null;
+  const read = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(() => new Promise(() => {}));
   await render(<InstructionsPage />, '/instructions?id=castle');
-  expect(host.querySelector('[aria-label="Building instructions locked"]')).not.toBeNull();
-  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('not available on the Free plan');
-  expect(read).not.toHaveBeenCalled();
+  expect(read).toHaveBeenCalledWith('castle');
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
 });
 
-it('keeps the postcard preview available underneath its upgrade notice and restores scrolling when both close', async () => {
-  Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value() { this.open = false; this.dispatchEvent(new Event('close')); } });
-  await render(<InstructionsPostcard selected={false} onChange={() => {}} disabled={false} modelName="Castle" modelImage={null} generationId="castle" />);
-  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="About the instructions post card"]')!.click());
-  await act(async () => host.querySelector<HTMLAnchorElement>('.checkout-postcard-qr')!.click());
-  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('not available on the Free plan');
-  expect(host.querySelectorAll('dialog[open]')).toHaveLength(2);
-  expect(document.body.style.overflow).toBe('hidden');
-  await click('Not now');
-  expect(host.querySelector<HTMLDialogElement>('.checkout-postcard-dialog')!.open).toBe(true);
-  expect(document.body.style.overflow).toBe('hidden');
-  await click('Got it'); expect(document.body.style.overflow).toBe('');
-});
-
-it('locks guest access and unmounts open instructions immediately after logout', async () => {
-  account = { ...account, plan_key: 'builder', paid_features: true, subscription_status: 'active', has_subscription: true };
-  const content = <InstructionsAccessGate><div data-private-steps>Steps</div></InstructionsAccessGate>;
-  await render(content); expect(host.querySelector('[data-private-steps]')).not.toBeNull();
-  auth.user = null; await render(content);
-  expect(host.querySelector('[data-private-steps]')).toBeNull();
-  expect(host.querySelector('.billing-feature-dialog')).not.toBeNull();
-  await click('Upgrade plan'); await click('Choose Builder');
-  expect(host.textContent).toContain('Sign in to build'); expect(billingApi.checkout).not.toHaveBeenCalled();
+it.each(['loading', 'error'] as const)('keeps instructions free while billing is %s', async state => {
+  vi.mocked(billingApi.plans).mockImplementation(() => state === 'loading' ? new Promise(() => {}) : Promise.reject(new Error('offline')));
+  function Access() {
+    const { getFeatureAccess, requireFeature } = useBilling();
+    return <div data-access={getFeatureAccess('instructions', 'castle')}><button onClick={() => requireFeature('instructions', 'test', 'castle')}>Open steps</button></div>;
+  }
+  await render(<><Access /><InstructionsAccessGate><div data-steps /></InstructionsAccessGate></>);
+  await click('Open steps');
+  expect(host.querySelector('[data-access="allowed"]')).not.toBeNull();
+  expect(host.querySelector('[data-steps]')).not.toBeNull();
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
 });
 
 it('does not unlock while billing loads or fails and supports retry without suggesting an unnecessary upgrade', async () => {
@@ -144,9 +138,9 @@ it('does not unlock while billing loads or fails and supports retry without sugg
   vi.mocked(billingApi.plans).mockImplementationOnce(() => new Promise(resolve => { resolvePlans = resolve; }));
   const download = vi.spyOn(modelExport,'downloadModel').mockImplementation(() => {});
   await render(tools()); await click('Tools'); await click('Export'); await click('Download IO');
-  expect(host.textContent).toContain('Checking your plan'); expect(button('Upgrade plan')).toBeUndefined();
+  expect(host.textContent).toContain('Checking your access'); expect(button('Upgrade plan')).toBeUndefined();
   await act(async () => resolvePlans({ plans: INITIAL_PLANS, enabled: false, ready: false }));
-  expect(host.textContent).toContain('Couldn’t check your plan'); expect(button('Upgrade plan')).toBeUndefined();
+  expect(host.textContent).toContain('Couldn’t check your access'); expect(button('Upgrade plan')).toBeUndefined();
   await click('Try again'); expect(host.textContent).toContain('not available on the Free plan');
   expect(download).not.toHaveBeenCalled();
 });
@@ -167,4 +161,105 @@ it('preserves an existing Master subscription label and cancellation without off
   expect(host.querySelector('.billing-account-plan')?.textContent).toContain('Master Builder$39 / month');
   expect(button('Cancel subscription')).toBeDefined();
   await click('Explore plans'); expect(button('Choose Master Builder')).toBeUndefined();
+});
+
+it.each(['free', 'builder'] as const)('allows purchased model instructions on %s after the credit or subscription period expires', async plan => {
+  account = { ...account, plan_key: plan, paid_features: false, period_end: '2000-01-01T00:00:00Z',
+    subscription_status: 'canceled', credits_remaining: 0, ordered_instruction_models: ['castle'] };
+  await render(<><InstructionsAccessGate generationId="castle"><div data-ordered-steps>Purchased instructions</div></InstructionsAccessGate>{tools()}</>);
+  expect(host.querySelector('[data-ordered-steps]')).not.toBeNull();
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+  await click('Tools'); await click('Export'); await click('Download IO');
+  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('IO export is a paid feature');
+});
+
+it('keeps instructions available across models, accounts, and logout', async () => {
+  const content = (id: string) => <InstructionsAccessGate generationId={id}><div data-steps /></InstructionsAccessGate>;
+  for (const user of [{ id: 'member' }, { id: 'other' }, null]) {
+    auth.user = user;
+    for (const id of ['castle', 'castle-edit']) {
+      await render(content(id));
+      expect(host.querySelector('[data-steps]')).not.toBeNull();
+      expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+    }
+  }
+});
+
+it.each([false, true])('opens purchased instructions from the model workspace without an upgrade (deep link: %s)', async deepLink => {
+  account.ordered_instruction_models = ['castle'];
+  const read = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(() => new Promise(() => {}));
+  await render(<LandingModelWorkspace model={model} busy={false} requestedInstructionsId={deepLink ? 'castle' : null}>Chat</LandingModelWorkspace>);
+  if (!deepLink) {
+    expect(button('Show instructions').querySelector('.paid-feature-lock')).toBeNull();
+    await click('Show instructions');
+  }
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+  expect(host.querySelector('.landing-instructions-view')).not.toBeNull();
+  expect(read).toHaveBeenCalledWith('castle');
+});
+
+it('loads purchased instructions through a direct URL', async () => {
+  account.ordered_instruction_models = ['castle'];
+  const read = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(() => new Promise(() => {}));
+  await render(<InstructionsPage />, '/instructions?id=castle');
+  expect(read).toHaveBeenCalledExactlyOnceWith('castle');
+  expect(host.querySelector('[aria-label="Building instructions locked"]')).toBeNull();
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+});
+
+it('unlocks the purchased model on the dashboard and postcard preview', async () => {
+  account.ordered_instruction_models = ['castle'];
+  const generation = { id: 'castle', prompt: 'Castle', created_at: '2026-10-01',
+    order: { id: 1, generation_id: 'castle', fulfilled: true } } as GenerationWithOrder;
+  await render(<><OrderCard g={generation} onView={() => {}} />
+    <InstructionsPostcard selected={false} onChange={() => {}} disabled={false} modelName="Castle" modelImage={null} generationId="castle" /></>);
+  const link = host.querySelector<HTMLAnchorElement>('a[href="/instructions?id=castle"]')!;
+  expect(link.querySelector('.paid-feature-lock')).toBeNull();
+  await act(async () => host.querySelector<HTMLButtonElement>('[aria-label="About the instructions post card"]')!.click());
+  const qr = host.querySelector<HTMLAnchorElement>('.checkout-postcard-qr')!;
+  expect(qr.getAttribute('aria-label')).toBe('Open instructions for Castle');
+  const event = new MouseEvent('click', { bubbles: true, cancelable: true });
+  await act(async () => qr.dispatchEvent(event));
+  expect(event.defaultPrevented).toBe(false);
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+});
+
+it('does not require a valid order key and keeps guest exports paid', async () => {
+  auth.user = null;
+  const id = '00000000-0000-4000-8000-000000000001';
+  sessionStorage.setItem(`brickbuilder:instruction-key:${id}`, 'a'.repeat(43));
+  const verify = vi.spyOn(NovaToBricksApiService, 'instructionAccess').mockRejectedValue(new Error('offline'));
+  await render(<><InstructionsAccessGate generationId={id}><div data-steps /></InstructionsAccessGate>{tools()}</>);
+  expect(host.querySelector('[data-steps]')).not.toBeNull();
+  expect(verify).not.toHaveBeenCalled();
+  await click('Tools'); await click('Export'); await click('Download IO');
+  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('IO export is a paid feature');
+});
+
+
+it.each(['free', 'guest', 'loading', 'offline', 'expired'] as const)('allows LDR downloads for %s access', async state => {
+  if (state === 'guest') auth.user = null;
+  if (state === 'loading') vi.mocked(billingApi.plans).mockImplementation(() => new Promise(() => {}));
+  if (state === 'offline') vi.mocked(billingApi.plans).mockRejectedValue(new Error('offline'));
+  if (state === 'expired') account = { ...account, plan_key: 'builder', period_end: '2000-01-01T00:00:00Z', credits_remaining: 0 };
+  const download = vi.spyOn(modelExport, 'downloadModel').mockImplementation(() => {});
+  function Access() {
+    const { getFeatureAccess, requireFeature } = useBilling();
+    return <button data-access={getFeatureAccess('ldraw')} onClick={() => requireFeature('ldraw', 'test')}>Check LDR</button>;
+  }
+  await render(<>{tools()}<Access /></>);
+  expect(host.querySelector('[data-access="allowed"]')).not.toBeNull();
+  await click('Check LDR'); await click('Tools'); await click('Export');
+  expect(button('Download LDraw').querySelector('.paid-feature-lock')).toBeNull();
+  expect(button('Download LDraw').disabled).toBe(false);
+  await click('Download LDraw');
+  expect(download).toHaveBeenCalledExactlyOnceWith('model', 'Castle', 'ldraw');
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+});
+
+it('disables free LDR download until a model is ready', async () => {
+  await render(<LandingToolsMenu page="/" />); await click('Tools'); await click('Export');
+  expect(button('Download LDraw').disabled).toBe(true);
+  await render(<LandingToolsMenu page="/" model={model} busy />); await click('Export');
+  expect(button('Download LDraw').disabled).toBe(true);
 });
