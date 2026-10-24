@@ -241,7 +241,7 @@
 .landing-hero-description { max-width: 600px; margin: 0; color: #697386; font-size: clamp(14px, 1.5vw, 17px); line-height: 1.7; text-wrap: pretty; }
 .landing-page--welcome { overflow-y: auto; }
 .landing-page.landing-page--welcome .landing-page-shell { min-height: 100%; height: auto; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-.landing-page.landing-page--welcome .landing-page-main { flex: none; overflow: visible; }
+.landing-page.landing-page--welcome .landing-page-main { flex: none; min-height: calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - 24px); overflow: visible; }
 .landing-page.landing-page--welcome .landing-page-intro { margin-top: clamp(36px, 6vh, 64px); }
 .landing-page.landing-page--welcome .landing-page-intro-content { gap: 20px; }
 .landing-page.landing-page--welcome .landing-page-content { position: static; padding: 32px 0 0; overflow: visible; flex: none; }
@@ -250,7 +250,7 @@
 .landing-page.landing-page--welcome .landing-model-conversation > form { order: 0; }
 .landing-page.landing-page--welcome .landing-model-conversation > .pet-dialogue { --buddy-height: 60px; order: 1; flex: none; min-height: 0; max-height: none; margin: 20px 0 0; padding: 0; overflow: visible; }
 .landing-page.landing-page--welcome .landing-page-stats { position: static; translate: none; margin-top: clamp(28px, 6vh, 72px); }
-.landing-page.landing-page--welcome .landing-page-help { display: none; }
+.landing-page.landing-page--welcome .landing-page-help { position: static; flex-shrink: 0; margin-top: 32px; opacity: 1; visibility: visible; transform: none; }
 .landing-upload-prompt { position: relative; overflow: hidden; border: 1px solid #f0d5d2; border-radius: 24px; background: #ffffffed; box-shadow: 0 6px 30px #9b302908, 0 0 0 4px #fff6f3; transition: border-color .2s, box-shadow .2s; }
 .landing-upload-prompt:focus-within { border-color: #ef6b60; box-shadow: 0 0 0 4px #ffe9e4; }
 .landing-upload-target { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 124px; padding: 24px 48px 16px; color: #475569; cursor: pointer; }
@@ -279,3 +279,9 @@
   .landing-header .credit-add { width: 15px; height: 15px; line-height: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .landing-upload-prompt, .landing-generate-button { transition: none; } }
+
+/* Keep the buddy centered beside short welcome and thinking bubbles. */
+.landing-page .pet-dialogue .pet-greeting,
+.landing-page .pet-dialogue .pet-chat-message:has(.pet-typing-indicator) { align-items: center; }
+.landing-page .pet-dialogue .pet-greeting > .pet-avatar,
+.landing-page .pet-dialogue .pet-chat-message:has(.pet-typing-indicator) > .pet-avatar { top: 50%; bottom: auto; translate: 0 -50%; }

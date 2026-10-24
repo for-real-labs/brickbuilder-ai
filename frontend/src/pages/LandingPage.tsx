@@ -149,7 +149,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const landingViewportRef = useLandingViewport(!ldrawLanding);
-  const helpVisible = useLandingHelp(landingViewportRef, !ldrawLanding);
   const { session, userProfile, loading: authLoading } = useAuth();
   const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
@@ -917,6 +916,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const conversationStarted = !ldrawLanding
     && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage) || Boolean(randomSuggestion));
   const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
+  const helpVisible = useLandingHelp(landingViewportRef, !ldrawLanding && !welcomeScreen);
+  const footerVisible = welcomeScreen || helpVisible;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
   const todayProcessingBuilds = processingBuilds.filter(row => isBuildFromToday(row.createdAt));
   const todayCompletedBuilds = completedBuilds.filter(row => isBuildFromToday(row.created_at));
@@ -1248,11 +1249,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>}
 
 
-        {!ldrawLanding && <div className="landing-page-help" aria-hidden={!helpVisible}>
+        {!ldrawLanding && <div className="landing-page-help" aria-hidden={!footerVisible}>
           <div>Need help?{' '}
-          <a href="mailto:support@brickbuilder.ai" tabIndex={helpVisible ? 0 : -1}
+          <a href="mailto:support@brickbuilder.ai" tabIndex={footerVisible ? 0 : -1}
             onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a></div>
-          <LandingSocialLinks visible={helpVisible} />
+          <LandingSocialLinks visible={footerVisible} />
         </div>}
       </div>
     </div>

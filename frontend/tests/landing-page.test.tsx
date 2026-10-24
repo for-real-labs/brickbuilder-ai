@@ -364,10 +364,10 @@ describe('LandingPage', () => {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
         expect(container.querySelector('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')).not.toBeNull();
         const help = container.querySelector('.landing-page-help')!;
-        expect(help.getAttribute('aria-hidden')).toBe('true');
+        expect(help.getAttribute('aria-hidden')).toBe(path === undefined ? 'false' : 'true');
         const socialLinks = Array.from(help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a'));
         expect(socialLinks.map(link => link.getAttribute('aria-label'))).toEqual(['GitHub', 'Instagram', 'YouTube', 'TikTok']);
-        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
+        expect(socialLinks.every(link => link.tabIndex === (path === undefined ? 0 : -1))).toBe(true);
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
         expect(help.getAttribute('aria-hidden')).toBe('false');
@@ -375,9 +375,9 @@ describe('LandingPage', () => {
         expect(help.querySelector('a')?.tabIndex).toBe(0);
         expect(socialLinks.every(link => link.tabIndex === 0 && link.target === '_blank' && link.rel === 'noopener noreferrer')).toBe(true);
         act(() => dialogue.dispatchEvent(new Event('pointerdown', { bubbles: true })));
-        expect(help.getAttribute('aria-hidden')).toBe('true');
-        expect(help.querySelector('a')?.tabIndex).toBe(-1);
-        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
+        expect(help.getAttribute('aria-hidden')).toBe(path === undefined ? 'false' : 'true');
+        expect(help.querySelector('a')?.tabIndex).toBe(path === undefined ? 0 : -1);
+        expect(socialLinks.every(link => link.tabIndex === (path === undefined ? 0 : -1))).toBe(true);
         expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
@@ -624,6 +624,21 @@ describe('LandingPage', () => {
       await act(async()=>container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({prompt:'A red lighthouse',model:'claude-opus-5-5',authMode:'api_key'}),undefined);
     } finally {act(()=>root.unmount());container.remove();}
+  });
+
+  it('reserves the first viewport for the welcome flow before the stats', () => {
+    const css = readFileSync('src/pages/LandingPage.css', 'utf8');
+    expect(css).toMatch(/\.landing-page\.landing-page--welcome \.landing-page-main\s*\{[^}]*min-height: calc\(var\(--landing-viewport-height, 100dvh\) - var\(--landing-header-height, 36px\) - 24px\)/);
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(<LandingPage />);
+    expect(container.querySelector('.landing-page-stats')?.previousElementSibling?.tagName).toBe('MAIN');
+    expect(container.querySelector('.landing-page-stats')?.nextElementSibling?.className).toBe('landing-page-help');
+  });
+
+  it('centers the welcome and thinking pets against their bubbles', () => {
+    const css = readFileSync('src/pages/LandingPage.css', 'utf8');
+    expect(css).toMatch(/\.pet-greeting,\s*\.landing-page \.pet-dialogue \.pet-chat-message:has\(\.pet-typing-indicator\)\s*\{ align-items: center;/);
+    expect(css).toMatch(/\.pet-greeting > \.pet-avatar,\s*\.landing-page \.pet-dialogue \.pet-chat-message:has\(\.pet-typing-indicator\) > \.pet-avatar\s*\{ top: 50%; bottom: auto; translate: 0 -50%;/);
   });
 
   it('keeps the welcome bubble styling shared with other pet conversations and uses a gradient headline', () => {
