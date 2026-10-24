@@ -6,7 +6,7 @@ address form, using Brickwith’s first/last name and address field order.
 Address line 2 and State/Province are optional; no phone number is collected. The model preview stays visible above the form on mobile, with
 only the price breakdown collapsible. Checkout previews hide ruler/explode controls.
 It offers all 249 countries and regions listed in Brickwith’s checkout, verified
-on October 9, 2026, with the existing standard shipping calculation and kit discount.
+on October 9, 2026, with the standard shipping calculation. Kits are charged at full price without a launch discount.
 The frontend/backend country snapshots are checked for parity by tests.
 Model data survives a reload; contact details and payment client secrets stay in memory.
 

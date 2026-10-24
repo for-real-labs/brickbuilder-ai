@@ -73,14 +73,14 @@ class CreateCheckoutSessionResponse(BaseModel):
 
 
 def checkout_price_cents(quote: GetPriceResponse) -> int:
-    """Match the existing order page's shipping calculation and 50% discount."""
+    """Match the order page's full-price parts and shipping calculation."""
     if (not math.isfinite(quote.total_price) or quote.total_price <= 0 or
             not math.isfinite(quote.total_weight) or quote.total_weight < 0):
         raise HTTPException(status_code=400, detail="Kit pricing is unavailable")
     # Match JavaScript's rounding of nonnegative cents, including .5 ties.
     shipping = math.floor(quote.total_weight * 1800 + 400 + 0.5)
     parts = max(math.floor(quote.total_price * 100 + 0.5) - shipping, 0)
-    return math.floor(parts * 0.5 + 0.5) + math.floor(shipping * 0.5 + 0.5)
+    return parts + shipping
 
 
 async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_info: dict):

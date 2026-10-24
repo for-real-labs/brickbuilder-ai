@@ -11,16 +11,17 @@ let root: ReturnType<typeof createRoot>;
 beforeEach(() => { container = document.createElement('div'); root = createRoot(container); });
 afterEach(() => act(() => root.unmount()));
 
-it('uses the checkout cent rounding and launch discount with shipping included', () => {
+it('shows the full checkout price with shipping included', () => {
   const order = vi.fn();
   act(() => root.render(<ModelOrderCard quote={quote} loading={false} updating={false} error={null} onOrder={order} />));
   expect(container.querySelector('.model-order-heading p')?.textContent).toBe('Your model, delivered to your door.');
-  expect(container.querySelector('.model-order-total')?.textContent).toBe('$22.39');
-  expect(container.querySelector('.model-order-original')?.textContent).toBe('$44.77');
+  expect(container.querySelector('.model-order-total')?.textContent).toBe('$44.77');
+  expect(container.querySelector('.model-order-original')).toBeNull();
   const priceRow = container.querySelector('.model-order-price')!;
   expect(priceRow.children[0]?.classList.contains('model-order-total')).toBe(true);
-  expect(priceRow.children[1]?.textContent).toBe('$44.77USD · shipping included');
-  expect(container.textContent).toContain('BrickBuilder Launch Discount');
+  expect(priceRow.children[1]?.textContent).toBe('USD · shipping included');
+  expect(container.textContent).not.toContain('BrickBuilder Launch Discount');
+  expect(container.querySelector('.model-mobile-order strong')?.textContent).toBe('$44.77');
   expect(container.textContent).toContain('8–12 business days');
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')!.click());
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.click());
