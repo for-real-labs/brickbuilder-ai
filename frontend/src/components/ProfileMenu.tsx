@@ -2,7 +2,7 @@ import { CreditBalance } from './BillingComponents';
 import { NotificationPanel } from "./NotificationMenu";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, User, ChevronDown, ChevronRight, Sparkles, Settings, LogOut } from "lucide-react";
+import { Bell, User, ChevronDown, ChevronRight, CreditCard, Sparkles, Settings, LogOut } from "lucide-react";
 import posthog from "posthog-js";
 import { useAuth } from "../contexts/AuthContext";
 import { useGenerationNotifications } from "../contexts/GenerationNotificationsContext";
@@ -161,7 +161,7 @@ export function ProfileMenu({ onNavigate }: ProfileMenuProps) {
 
               <button onClick={() => { posthog.capture('billing_navigation_clicked', { source: 'profile_menu' }); go('/billing'); }}
                 className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none">
-                <Sparkles className="h-4 w-4" />Credits & billing
+                <CreditCard aria-hidden="true" className="h-4 w-4" />Manage Plan
               </button>
               <ChangeRequestMenuItem onSelect={() => setDropdownOpen(false)} />
 

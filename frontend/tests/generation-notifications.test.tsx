@@ -316,3 +316,16 @@ it('uses guarded navigation and closes the profile submenu when opening a notifi
   act(() => settings.click());
   expect(onNavigate).toHaveBeenLastCalledWith('/dashboard?tab=settings');
 });
+
+it('makes plan management discoverable in the profile menu and honors guarded navigation', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [], active: [], unread_count: 0 });
+  const navigate = vi.fn();
+  await renderProfile(navigate);
+  act(() => accountButton().click());
+  const manage = [...container.querySelectorAll('button')].find(button => button.textContent === 'Manage Plan');
+  expect(manage).toBeDefined();
+  act(() => manage!.click());
+  expect(navigate).toHaveBeenCalledWith('/billing');
+  expect(accountButton().getAttribute('aria-expanded')).toBe('false');
+  expect(posthog.capture).toHaveBeenCalledWith('billing_navigation_clicked', { source: 'profile_menu' });
+});

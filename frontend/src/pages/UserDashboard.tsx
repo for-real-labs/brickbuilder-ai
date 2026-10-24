@@ -1,3 +1,4 @@
+import { ManagePlanLink } from '../components/ManagePlanLink';
 import { AiBillingSettings } from '../components/AiBillingSettings';
 import { useBilling } from '../contexts/BillingContext';
 import { PaidFeatureLock } from '../components/PaidFeatureDialog';
@@ -97,6 +98,7 @@ const Sidebar: React.FC<{active:TabKey; onChange:(t:TabKey)=>void; onLogout:()=>
             </button>
           );
         })}
+        <ManagePlanLink source="dashboard_sidebar" onClick={onClose} />
       </nav>
 
       {/* Logout — pinned bottom of sidebar (only when Supabase is configured) */}
@@ -833,9 +835,10 @@ const UserDashboard: React.FC = () => {
             <div className="mx-auto max-w-6xl px-4 sm:px-6 py-4 sm:py-6">
               {tab==="dashboard" && (
                 <>
-                  <div className="mb-4 sm:mb-6">
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Welcome back, {displayName}!</h1>
-                    <p className="text-sm sm:text-base text-slate-600">Here's what's happening with your builds</p>
+                  <div className="mb-4 sm:mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+                    <div><h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-1">Welcome back, {displayName}!</h1>
+                    <p className="text-sm sm:text-base text-slate-600">Here's what's happening with your builds</p></div>
+                    <ManagePlanLink source="dashboard_overview" />
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4 sm:mb-6">
