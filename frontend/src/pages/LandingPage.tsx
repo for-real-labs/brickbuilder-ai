@@ -1157,7 +1157,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   </button>
                   <h3 className="text-sm font-semibold text-slate-900">Generation settings</h3>
                 </div>
-                {settingsOpen && <AiBillingSettings key={session?.user.id || 'guest'} />}
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
@@ -1187,6 +1186,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     }
                   }} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} />
                 </div>
+                {settingsOpen && <AiBillingSettings key={session?.user.id || 'guest'} />}
                 {localDevelopment && generationMethod === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>

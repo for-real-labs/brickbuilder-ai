@@ -744,6 +744,9 @@ describe('LandingPage', () => {
       expect(container.querySelector('[aria-label="Upload image"]')?.closest('[hidden]')).toBeNull();
       openSettings();
       expect(panel.hidden).toBe(false);
+      const billing = panel.querySelector('[aria-label="AI billing settings"]')!;
+      expect(panel.querySelector('[aria-label="Mode"]')!.compareDocumentPosition(billing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(panel.querySelector('#landing-render-model')!.compareDocumentPosition(billing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       const connections = container.querySelector('[aria-label="Local provider connections"]')!;
       expect(connections.closest('form')).toBeNull();
       expect(connections.closest('[hidden]')).toBeNull();
