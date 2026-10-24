@@ -94,7 +94,7 @@ async def require_paid_features(identity):
             and not identity.get("is_developer") and has_paid_features(await wallet(account_id(identity)))):
         return
     raise HTTPException(403, detail={"code": "BB_PAID_FEATURE_REQUIRED",
-        "message": "LDR/IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
+        "message": "IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
 
 
 async def ordered_instruction_models(user_id, generation_id=None):

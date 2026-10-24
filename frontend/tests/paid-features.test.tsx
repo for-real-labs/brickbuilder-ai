@@ -58,7 +58,7 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); host.remove(); sessionStorage.clear(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-it.each([['ldraw','Download LDraw'],['io','Download IO']] as const)('locks %s exports, opens the shared notice and offers only Builder/Creator upgrades', async (feature, label) => {
+it.each([['io','Download IO']] as const)('locks %s exports, opens the shared notice and offers only Builder/Creator upgrades', async (feature, label) => {
   const download = vi.spyOn(modelExport, 'downloadModel').mockImplementation(() => {});
   await render(tools()); await click('Tools'); await click('Export');
   expect(button(label).disabled).toBe(false);
@@ -82,13 +82,14 @@ it('keeps locked exports clickable even before a model is loaded and lets Escape
   expect(host.querySelector('dialog')).toBeNull(); expect(document.body.style.overflow).toBe('');
 });
 
-it('keeps CSV exports available on Free and blocks the buddy LDR shortcut', async () => {
+it('keeps CSV exports and the buddy LDR shortcut available on Free', async () => {
   const download = vi.spyOn(modelExport, 'downloadModel').mockImplementation(() => {});
   await render(tools()); await click('Tools'); await click('Export'); await click('Download parts list CSV');
   expect(download).toHaveBeenCalledExactlyOnceWith('model','Castle','csv');
   let reply = ''; await act(async () => { reply = toolRef.current!.runTool('export_ldraw','castle'); });
-  expect(reply).toContain('require a paid plan'); expect(download).toHaveBeenCalledTimes(1);
-  expect(host.querySelector('.billing-feature-dialog')).not.toBeNull();
+  expect(reply).toBe('Starting your download.');
+  expect(download).toHaveBeenLastCalledWith('model', 'Castle', 'ldraw');
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
 });
 
 it.each(['builder','creator','master'] as const)('allows %s exports even with no remaining credits and scheduled cancellation', async plan => {
@@ -233,4 +234,32 @@ it('does not require a valid order key and keeps guest exports paid', async () =
   expect(verify).not.toHaveBeenCalled();
   await click('Tools'); await click('Export'); await click('Download IO');
   expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('IO export is a paid feature');
+});
+
+
+it.each(['free', 'guest', 'loading', 'offline', 'expired'] as const)('allows LDR downloads for %s access', async state => {
+  if (state === 'guest') auth.user = null;
+  if (state === 'loading') vi.mocked(billingApi.plans).mockImplementation(() => new Promise(() => {}));
+  if (state === 'offline') vi.mocked(billingApi.plans).mockRejectedValue(new Error('offline'));
+  if (state === 'expired') account = { ...account, plan_key: 'builder', period_end: '2000-01-01T00:00:00Z', credits_remaining: 0 };
+  const download = vi.spyOn(modelExport, 'downloadModel').mockImplementation(() => {});
+  function Access() {
+    const { getFeatureAccess, requireFeature } = useBilling();
+    return <button data-access={getFeatureAccess('ldraw')} onClick={() => requireFeature('ldraw', 'test')}>Check LDR</button>;
+  }
+  await render(<>{tools()}<Access /></>);
+  expect(host.querySelector('[data-access="allowed"]')).not.toBeNull();
+  await click('Check LDR'); await click('Tools'); await click('Export');
+  expect(button('Download LDraw').querySelector('.paid-feature-lock')).toBeNull();
+  expect(button('Download LDraw').disabled).toBe(false);
+  await click('Download LDraw');
+  expect(download).toHaveBeenCalledExactlyOnceWith('model', 'Castle', 'ldraw');
+  expect(host.querySelector('.billing-feature-dialog')).toBeNull();
+});
+
+it('disables free LDR download until a model is ready', async () => {
+  await render(<LandingToolsMenu page="/" />); await click('Tools'); await click('Export');
+  expect(button('Download LDraw').disabled).toBe(true);
+  await render(<LandingToolsMenu page="/" model={model} busy />); await click('Export');
+  expect(button('Download LDraw').disabled).toBe(true);
 });

@@ -6,9 +6,9 @@ const BillingContext = createContext({
   account: null as BillingAccount | null, plans: INITIAL_PLANS, enabled: false, checkoutAvailable: false, loading: false,
   busy: false, error: '', upgradeSource: '', loginOpen: false,
   featureAccess: 'loading' as FeatureAccess,
-  getFeatureAccess: (feature: PaidFeature, _generationId?: string | null): FeatureAccess => feature === 'instructions' ? 'allowed' : 'loading',
+  getFeatureAccess: (feature: PaidFeature, _generationId?: string | null): FeatureAccess => (feature === 'instructions' || feature === 'ldraw') ? 'allowed' : 'loading',
   lockedFeature: null as { feature: PaidFeature; source: string; generationId?: string | null } | null,
-  requireFeature: (feature: PaidFeature, _source: string, _generationId?: string | null): boolean => feature === 'instructions',
+  requireFeature: (feature: PaidFeature, _source: string, _generationId?: string | null): boolean => (feature === 'instructions' || feature === 'ldraw'),
   closeLockedFeature: () => {}, retryAccess: async () => {},
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
@@ -70,7 +70,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     : !enabled ? 'allowed' : !user ? 'locked' : accountOwner !== user.id || !account ? loading ? 'loading' : 'unavailable'
     : account.paid_features && new Date(account.period_end).getTime() > Date.now() ? 'allowed' : 'locked';
   const getFeatureAccess = useCallback((feature: PaidFeature, _generationId?: string | null): FeatureAccess => {
-    return feature === 'instructions' ? 'allowed' : featureAccess;
+    return (feature === 'instructions' || feature === 'ldraw') ? 'allowed' : featureAccess;
   }, [featureAccess]);
   const requireFeature = useCallback((feature: PaidFeature, source: string, generationId?: string | null) => {
     const access = getFeatureAccess(feature, generationId);
