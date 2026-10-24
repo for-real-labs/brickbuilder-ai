@@ -1,3 +1,5 @@
+import { LandingCreateInput } from '../components/LandingCreateInput';
+import { isBuildFromToday } from '../utils/recentBuilds';
 import { AiBillingSettings } from '../components/AiBillingSettings';
 import { CreditBalance } from '../components/BillingComponents';
 import { LandingSocialLinks } from "../components/LandingSocialLinks";
@@ -17,7 +19,6 @@ import { buildFailureMessage } from '../utils/buildProgress';
 import { useLandingModel, type LandingModel } from '../hooks/useLandingModel';
 import { LandingModelWorkspace } from '../components/LandingModelWorkspace';
 import { PendingEditActions } from '../components/PendingEditActions';
-import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
 import { CreateNewBuildsPrompt } from '../components/CreateNewBuildsPrompt';
 import { RandomBuildPrompt } from '../components/RandomBuildPrompt';
 import { useRecentCompletedBuilds } from '../hooks/useRecentCompletedBuilds';
@@ -28,7 +29,7 @@ import { useLandingHelp } from '../hooks/useLandingHelp';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, Github, ChevronDown, Sparkles, X } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, ChevronDown, Sparkles, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -377,13 +378,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     }
   }, []);
 
-  const onPickImage = (uploadPosition: 'input_left_icon' | 'image_upload_section' | 'buddy_dialogue' = 'image_upload_section') => {
+  const onPickImage = (uploadPosition: 'landing_upload_card' | 'input_left_icon' | 'image_upload_section' | 'buddy_dialogue' = 'image_upload_section') => {
     posthog.capture('landing_image_picker_opened', { page: imageLandingPath ?? '/', upload_position: uploadPosition });
     fileInputRef.current?.click();
   };
   useEffect(() => {
     if (!ldrawLanding) posthog.capture('landing_image_upload_control_shown', {
-      page: imageLandingPath ?? '/', upload_position: 'input_left_icon',
+      page: imageLandingPath ?? '/', upload_position: imageLanding ? 'input_left_icon' : 'landing_upload_card',
     });
   }, [imageLandingPath, ldrawLanding]);
   const selectImage = async (file: File, source: 'picker' | 'drop') => {
@@ -394,7 +395,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       const prepared = await prepareImageUpload(file);
       if (revision !== uploadRevision.current) return;
       setGiftPlanning(false); setImgFile(prepared); setInputValidationMessage(null);
-      setHasEnteredChat(true);
       posthog.capture('landing_image_uploaded', { page: imageLandingPath ?? '/', source, format: prepared.type });
     } catch (error) {
       if (revision === uploadRevision.current) setImageUploadError(error instanceof Error ? error.message : 'Unable to read this image. Please try another file.');
@@ -816,10 +816,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setRecentBuildRefresh(current => current + 1);
     setCreateNewStage('list');
   };
-  const showCommunityModels = () => {
-    posthog.capture('landing_community_models_clicked', { surface: 'pet_dialogue' });
-    navigate('/community');
-  };
   const returnToWelcome = () => {
     posthog.capture('landing_chat_back_clicked', { surface: 'pet_dialogue' });
     buddyChat.resetConversation();
@@ -864,6 +860,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     }
     const text = prompt.trim();
     const image = imgFile;
+    setFocused(false);
     setHasEnteredChat(true);
     const result = await buddyChat.routeMessage(text, image,
       landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'Current model' : undefined,
@@ -918,7 +915,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     && !landingModel.model && !pendingGeneration && !pendingEdit && !loading && !buddyChat.routing
     && !createNewStage && !randomSuggestion;
   const conversationStarted = !ldrawLanding
-    && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage));
+    && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage) || Boolean(randomSuggestion));
+  const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
+  const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
+  const todayProcessingBuilds = processingBuilds.filter(row => isBuildFromToday(row.createdAt));
+  const todayCompletedBuilds = completedBuilds.filter(row => isBuildFromToday(row.created_at));
+  const hasBuildsToday = todayProcessingBuilds.length > 0 || todayCompletedBuilds.length > 0;
 
   const generationActivity = (
     <GenerationActivityList generations={landingModel.model ? displayedGenerations.filter(row => row.status !== 'completed') : displayedGenerations} error={displayedGenerations.length || ldrawLanding ? activityError : null} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
@@ -939,7 +941,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   return (
     <div
       ref={landingViewportRef}
-      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${conversationStarted ? ' landing-page--conversation-started' : ''}${helpVisible ? ' landing-page--help-visible' : ''}`}
+      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${welcomeScreen ? ' landing-page--welcome' : ''}${conversationStarted ? ' landing-page--conversation-started' : ''}${helpVisible ? ' landing-page--help-visible' : ''}`}
       style={{ backgroundColor: "#fbfbfd", '--landing-order-banner-height': `${orderBarHeight}px` } as React.CSSProperties}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -995,7 +997,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
             : <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
               <div className="landing-page-intro-content">
-                <h1 className="text-4xl font-extrabold leading-tight text-slate-900 landing-fade-in landing-delay-2 sm:text-5xl">Imagine. Create. Build.</h1>
+                <h1 className="landing-hero-title landing-fade-in landing-delay-2">The Easiest Way to <span>Make LEGO</span></h1>
+                <p className="landing-hero-description landing-fade-in landing-delay-2">BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes</p>
 
               </div>
             </div>}
@@ -1023,9 +1026,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id,
                   orderable: landingModel.model.generation.orderable !== false && landingModel.model.generation.endpoint !== 'uploadLdraw' } : null}
                 reasoningOnly={pendingEdit} currentOnly showGenerationElapsedTime={!pendingEdit && !pendingGeneration} showOpeningMessage={Boolean(linkedModelId && requestedModelId === linkedModelId && !landingModel.model && !pendingGeneration)}
-                landingWelcome showBuildsScrollHint={Boolean(createNewStage && !landingModel.model && !randomSuggestion)}
+                welcomeMessage={hasBuildsToday ? 'You have some recent builds, want to see them?' : `Hi! I’m ${pet.name}, your brick building buddy.`}
+                showBuildsScrollHint={Boolean(createNewStage && !landingModel.model && !randomSuggestion)}
                 currentMessage={randomSuggestion && !landingModel.model ? <RandomBuildPrompt suggestion={randomSuggestion}
-                  onYes={buildSuggestedIdea} onElse={tryAnotherRandomIdea} onBack={() => {
+                  onElse={tryAnotherRandomIdea} onBack={() => {
                     posthog.capture('landing_random_build_back_clicked');
                     dismissRandomIdea();
                   }} /> : createNewStage && !landingModel.model ? <CreateNewBuildsPrompt
@@ -1037,17 +1041,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
                   }}
                   onView={id => { setCreateNewStage(null); openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }} /> : undefined}
-                welcomeActions={<div className="pet-chat-actions">
-                  {processingBuilds.length > 0 && <div className="w-full text-left text-xs text-slate-500" aria-label="Builds in progress">
-                    {processingBuilds.map((row, index) => <div key={row.id} className="min-w-0 break-words">
-                      <span>{processingBuilds.length > 1 ? `Build ${index + 1} in progress` : 'Build in progress'}</span>
-                      <GenerationElapsedTime startedAt={row.createdAt} />
-                    </div>)}
-                  </div>}
-                  <button type="button" className="pet-chat-action" onClick={buildSomethingRandom}>Build something random</button>
-                  <button type="button" className="pet-chat-action" onClick={showBuilds}>Show builds</button>
-                  <button type="button" className="pet-chat-action" onClick={showCommunityModels}>Show me community models</button>
-                </div>}
+                welcomeActions={hasBuildsToday ? <div className="pet-chat-actions">
+                  <button type="button" className="pet-chat-action" onClick={showBuilds}>Show me</button>
+                </div> : undefined}
                 onBackToWelcome={canReturnToWelcome ? returnToWelcome : undefined}
                 onViewGeneration={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                 state={(focused && !loading && !modelBusy) || buddyChat.routing ? 'listening' : petState} authLoading={authLoading}
@@ -1063,13 +1059,14 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 else { generationAbortRef.current?.abort(); resetWorkspace(); setLoading(false); setActiveGenerationId(null); setCreateNewStage(null); }
               }}
               onStartNew={createNewModel} /> : null}
-            {!pendingEdit && !pendingGeneration && !randomSuggestion && createNewStage !== 'list' ? <form
+            {!pendingEdit && !pendingGeneration && createNewStage !== 'list' ? <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
               onSubmit={event => {
                 event.preventDefault();
                 if (settingsOpen) toggleSettings(false);
-                void handleUserMessage();
+                if (randomSuggestion) buildSuggestedIdea();
+                else void handleUserMessage();
               }}
             >
               {imageLanding && !landingModel.model && <>
@@ -1078,6 +1075,17 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 <ImageUploadSection previewUrl={imagePreviewUrl} fileName={imgFile?.name} busy={loading || buddyChat.routing || preparingImage}
                   error={imageUploadError} onPick={() => onPickImage('image_upload_section')} onRemove={clearSelectedImage} />
               </>}
+              {uploadFirstComposer ? <LandingCreateInput prompt={prompt} onChange={value => {
+                setPrompt(value);
+                if (settingsOpen) toggleSettings(false);
+                if (value.trim()) setInputValidationMessage(null);
+              }} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} inputRef={promptInputRef}
+                previewUrl={imagePreviewUrl} fileName={imgFile?.name}
+                onPick={() => { setGiftPlanning(false); onPickImage('landing_upload_card'); }} onRemove={clearSelectedImage}
+                onRandom={buildSomethingRandom} random={Boolean(randomSuggestion)}
+                busy={loading || buddyChat.routing || preparingImage}
+                submitDisabled={loading || buddyChat.routing || preparingImage || Boolean(randomSuggestion && randomSuggestion.status !== 'ready')}
+                validationId={inputValidationMessage ? 'generation-input-help' : undefined} /> : <>
               <div className="flex w-full items-center gap-2">
                 <div className="relative min-w-0 flex-1">
                   <button type="button" aria-label="Upload image" title="Upload image"
@@ -1096,7 +1104,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     onBlur={() => setFocused(false)}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       setPrompt(event.target.value);
-                      if (event.target.value.trim()) setHasEnteredChat(true);
                       if (settingsOpen) toggleSettings(false);
                       if (event.target.value.trim()) setInputValidationMessage(null);
                     }}
@@ -1130,7 +1137,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     <ArrowUp aria-hidden="true" className="h-5 w-5" />
                   </button>
                 </div>
-              </div>
+              </div></>}
 
               {inputValidationMessage && (
                 <p id="generation-input-help" role="status" className="mt-3 text-center text-sm leading-6 text-slate-600">
@@ -1201,7 +1208,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               {(!imageLanding || landingModel.model) && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
               {(!imageLanding || landingModel.model) && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
               {/* Image thumbnail preview */}
-              {(!imageLanding || landingModel.model) && imagePreviewUrl && (
+              {!uploadFirstComposer && (!imageLanding || landingModel.model) && imagePreviewUrl && (
                 <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
                   <img
                     src={imagePreviewUrl}
@@ -1254,54 +1261,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
 function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy, toolsRef }: { toolsRef?: React.RefObject<LandingToolsHandle | null>; model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
   const { user, isSupabaseConfigured } = useAuth();
-  const [githubStars, setGithubStars] = useState<number | null>(null);
-
-  // Show profile menu if user is logged in OR if Supabase is not configured
   const showProfileMenu = user || !isSupabaseConfigured;
-
-  useEffect(() => {
-    let cancelled = false;
-
-    fetch("https://api.github.com/repos/for-real-labs/brickbuilder-ai", {
-      headers: { Accept: "application/vnd.github+json" },
-    })
-      .then((response) => {
-        if (!response.ok) throw new Error("Failed to load GitHub stars");
-        return response.json();
-      })
-      .then((repo: { stargazers_count?: number }) => {
-        if (!cancelled && typeof repo.stargazers_count === "number") {
-          setGithubStars(repo.stargazers_count);
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setGithubStars(null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const formattedGithubStars = githubStars === null
-    ? "..."
-    : new Intl.NumberFormat("en", {
-        notation: "compact",
-        maximumFractionDigits: 1,
-      }).format(githubStars);
-
-  const githubStarLink = (
-    <a
-      href="https://github.com/for-real-labs/brickbuilder-ai"
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label="View BrickBuilder on GitHub"
-      className="inline-flex h-9 w-9 shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full border border-black bg-black text-sm font-medium text-white shadow-sm transition-colors hover:bg-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 sm:w-auto sm:px-3"
-    >
-      <Github aria-hidden="true" className="h-4 w-4 shrink-0" />
-      <span className="hidden sm:inline">{formattedGithubStars}</span>
-    </a>
-  );
 
   return (
     <header className={`landing-header flex w-full flex-nowrap items-center justify-between gap-2 relative landing-fade-in landing-delay-1${createNew ? ` landing-header--model${showProfileMenu ? '' : ' landing-header--guest-model'}` : ''}`} style={{ zIndex: 50 }}>
@@ -1319,7 +1279,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
           <span className="text-[#ff4b4b]">BRICK</span>
           <span className="text-slate-900">BUILDER</span>
         </span>
-      </a><CreditBalance /></div>
+      </a></div>
 
       {createNew && <button type="button" className="landing-create-new landing-action-button"
         disabled={createNew.disabled} onClick={createNew.onClick}>
@@ -1327,10 +1287,10 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       </button>}
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
-        {githubStarLink}
+        <CreditBalance />
         <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
         {showProfileMenu ? (
-          // Logged in or no Supabase: show GitHub stars and account dropdown
+          // Logged in or no Supabase: show the account dropdown
           <>
             {/* Account dropdown */}
             <ProfileMenu showCredits={false} />

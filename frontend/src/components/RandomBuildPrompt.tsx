@@ -1,9 +1,8 @@
 import React from 'react';
 import { PetChatMessage, PetTypingIndicator } from './PetCompanion';
 
-export function RandomBuildPrompt({ suggestion, onYes, onElse, onBack }: {
+export function RandomBuildPrompt({ suggestion, onElse, onBack }: {
   suggestion: { status: 'loading' | 'ready' | 'error'; idea: string | null };
-  onYes: () => void;
   onElse: () => void;
   onBack: () => void;
 }) {
@@ -20,9 +19,8 @@ export function RandomBuildPrompt({ suggestion, onYes, onElse, onBack }: {
         : `How about ${suggestion.idea}?`}
     </p>
     <div className="pet-chat-actions">
-      {suggestion.status === 'ready' && <button type="button" className="pet-chat-action" onClick={onYes}>Yes</button>}
       <button type="button" className="pet-chat-action" onClick={onElse}>
-        {suggestion.status === 'error' ? 'Try again' : 'No'}
+        Try again
       </button>
       <button type="button" className="pet-chat-action" onClick={onBack}>Go back</button>
     </div>

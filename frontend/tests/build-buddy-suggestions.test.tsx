@@ -78,7 +78,7 @@ it('returns a casual chat to the welcome dialogue without starting a build', asy
   expect(container.querySelector('.pet-dialogue > .pet-dialogue-content > button')).toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
     .find(button => button.textContent === 'Go back')!.click());
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('brick building buddy');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('That sounds fun!');
   expect(container.querySelector('.landing-page--conversation-started')).toBeNull();
   expect(input().value).toBe('');
@@ -127,12 +127,12 @@ it('docks the dialogue after user input while hiding the restored headline and s
   const dialogue = container.querySelector('.landing-model-conversation')!;
   expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
-  expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
+  expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
   act(() => input().focus());
   await submit();
   expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   type(IMAGE_PROMPT_SUGGESTION);
-  expect(page.classList.contains('landing-page--conversation-started')).toBe(true);
+  expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   await submit();
   expect(page.classList.contains('landing-page--conversation-started')).toBe(true);
   expect(container.querySelector('.landing-model-conversation')).toBe(dialogue);
@@ -157,17 +157,16 @@ it.each([undefined, 'photo-to-lego'] as const)('removes suggestion buttons and s
   expect(BuildBuddyApi.reply).toHaveBeenCalledWith(expect.objectContaining({ prompt: expected }), undefined, expect.any(AbortSignal));
 });
 
-it('shows build anything with a blinking caret until the landing input is focused or typed into', async () => {
+it('uses a muted idea placeholder on the welcome screen and the compact composer after chatting', async () => {
   vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'question', confidence: 1 });
   await act(async () => root.render(<LandingPage />));
-  expect(input().placeholder).toBe('');
+  expect(input().placeholder).toBe('Describe your idea');
   expect(input().getAttribute('aria-label')).toBe('Describe your model');
-  expect(container.querySelector('.landing-empty-input-hint')?.textContent).toBe('build anything');
-  expect(container.querySelector('.landing-empty-input-caret')).not.toBeNull();
-  act(() => input().focus());
   expect(container.querySelector('.landing-empty-input-caret')).toBeNull();
+  act(() => input().focus());
   type('My own idea');
-  expect(input().placeholder).toBe('');
+  expect(input().placeholder).toBe('Describe your idea');
+  expect(container.querySelector('.landing-page--welcome')).not.toBeNull();
   await submit();
   expect(input().placeholder).toBe('');
   act(() => input().blur());
@@ -192,7 +191,7 @@ it('resets a Safari back-cache visit to a fresh greeting and a plain prompt', as
     expect(container.textContent).not.toContain('An old castle conversation');
     expect(input().value).toBe('');
     for (let i = 0; i < 6; i++) await act(async () => { await vi.advanceTimersByTimeAsync(70); });
-    expect(input().placeholder).toBe('');
+    expect(input().placeholder).toBe('Describe your idea');
     expect(posthog.capture).toHaveBeenCalledWith('landing_visit_reset', { source: 'history_restore' });
   } finally { vi.useRealTimers(); }
 });

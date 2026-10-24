@@ -62,7 +62,7 @@ const generation = (id: string, endpoint = 'novaToBricks'): GetGenerationRespons
   external_image_url: null, processed_image_url: null, detail_level: 40,
   xyzrgb_url: null, problematic_xyzrgb_url: null, error_message: null,
 });
-const historyBuild = (id: string, prompt: string, created_at = '2026-10-18'): GenerationWithOrder => ({
+const historyBuild = (id: string, prompt: string, created_at = '2026-10-19T18:00:00Z'): GenerationWithOrder => ({
   id, prompt, created_at, status: 'completed', user_id: 'guest', user_type: 'anonymous',
   detail_level: 40, endpoint: 'novaToBricks',
 });
@@ -88,6 +88,7 @@ beforeEach(() => {
   });
   sessionStorage.clear();
   vi.useFakeTimers();
+  vi.setSystemTime(new Date('2026-10-19T19:00:00Z'));
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => setTimeout(() => callback(performance.now()), 16));
   vi.stubGlobal('cancelAnimationFrame', clearTimeout);
@@ -106,7 +107,7 @@ function type(text: string) {
 }
 const submit = () => act(async () => container.querySelector<HTMLFormElement>('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 
-it('keeps the landing dialogue in the centered layout while typing and after clearing the input', async () => {
+it('keeps the upload-first welcome screen stable while typing and after clearing the input', async () => {
   await act(async () => root.render(<LandingPage />));
   const shell = container.querySelector('.landing-page')!;
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
@@ -114,17 +115,17 @@ it('keeps the landing dialogue in the centered layout while typing and after cle
   expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
   expect(container.querySelector('.pet-avatar--listening')).not.toBeNull();
   type('A little castle');
-  expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
+  expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
   expect(shell.querySelector('.landing-model-workspace, .landing-generation-workspace')).toBeNull();
   expect(shell.querySelector('.landing-model-conversation')).not.toBeNull();
   type('');
-  expect(shell.classList.contains('landing-page--conversation-started')).toBe(true);
+  expect(shell.classList.contains('landing-page--conversation-started')).toBe(false);
 });
 
 it('keeps the landing headline and stats visible while the prompt is focused', async () => {
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
-  expect(container.textContent).toContain('Imagine. Create. Build.');
+  expect(container.textContent).toContain('The Easiest Way to Make LEGO');
   act(() => input().focus());
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
   act(() => input().blur());
@@ -154,8 +155,8 @@ it('starts with a choice instead of showing background builds or model cards', a
   const watch = vi.mocked(LlmToBricksApiService.watchOutput);
   for (let visit = 0; visit < 2; visit++) {
     await act(async () => root.render(<LandingPage />));
-    expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
-    expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Show builds');
+    expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
+    expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Show me');
     expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Want to see them?');
     expect(container.querySelector('.landing-page--conversation-started')).toBeNull();
     expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
@@ -187,7 +188,7 @@ it('shows processing and recent completed builds inside pet dialogue only after 
   expect(input()).not.toBeNull();
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
-    .find(button => button.textContent === 'Show builds')!.click());
+    .find(button => button.textContent === 'Show me')!.click());
   expect(container.querySelector('.landing-page--conversation-started')).not.toBeNull();
   expect(container.querySelector('.landing-model-workspace, .landing-generation-workspace')).toBeNull();
   const rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
@@ -200,11 +201,12 @@ it('shows processing and recent completed builds inside pet dialogue only after 
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button'))
     .find(button => button.textContent === 'Go back')!.click());
   expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
   expect(input().getAttribute('aria-label')).toBe('Describe your model');
 });
 
 it('offers a scroll-up cue only while builds are hidden above the dialogue', async () => {
+  activity.rows = [{ id: 'today', status: 'processing', endpoint: 'novaToBricks', createdAt: '2026-10-19T18:00:00Z' }];
   await act(async () => root.render(<LandingPage />));
   const dialogue = container.querySelector<HTMLElement>('.pet-dialogue')!;
   const scrollTo = vi.fn();
@@ -216,7 +218,7 @@ it('offers a scroll-up cue only while builds are hidden above the dialogue', asy
   scroll(120);
   expect(container.querySelector('.pet-builds-scroll-hint')).toBeNull();
   act(() => Array.from(dialogue.querySelectorAll<HTMLButtonElement>('button'))
-    .find(button => button.textContent === 'Show builds')!.click());
+    .find(button => button.textContent === 'Show me')!.click());
   scroll(120);
   const cue = container.querySelector<HTMLButtonElement>('.pet-builds-scroll-hint button')!;
   expect(cue.textContent).toBe('Scroll up to see more builds');
@@ -349,8 +351,8 @@ it('shows a completed build without suggestions and resets from the viewer top l
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
   expect(container.querySelector('[aria-label="Build progress workspace"]')).toBeNull();
   expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Show builds');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Show me');
   expect(input().getAttribute('aria-label')).toBe('Describe your model');
   expect(container.querySelector('[aria-label="Upload image"]')).not.toBeNull();
   expect(input().value).toBe('');
@@ -361,7 +363,7 @@ it('shows a completed build without suggestions and resets from the viewer top l
 
 it('offers recent completed builds after Create new, including viewed ones, with processing first', async () => {
   query.value = 'id=castle&exact=1';
-  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket', createdAt: '2026-10-19' }];
+  activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket', createdAt: '2026-10-19T18:00:00Z' }];
   inbox.notifications = [
     { id: 'ready', prompt: 'Ready car', status: 'completed', seen: false, updated_at: '2026-10-18', is_edit: false },
     { id: 'seen', prompt: 'Already viewed', status: 'completed', seen: true, updated_at: '2026-10-17', is_edit: false },
@@ -373,9 +375,9 @@ it('offers recent completed builds after Create new, including viewed ones, with
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
   await act(async () => root.render(<LandingPage />));
   act(() => container.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-create-new')!.click());
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
   expect(input()).not.toBeNull();
-  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show builds')!.click());
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show me')!.click());
   const rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
   expect(rows).toHaveLength(3);
   expect(rows[0].textContent).toContain('Rocket');
@@ -387,13 +389,13 @@ it('offers recent completed builds after Create new, including viewed ones, with
 });
 
 it('pages recent builds in the pet dialogue and offers more after the first five', async () => {
-  const builds = Array.from({ length: 7 }, (_, index) => historyBuild(`build-${index}`, `Build ${index}`, `2026-10-${String(19 - index).padStart(2, '0')}`));
+  const builds = Array.from({ length: 7 }, (_, index) => historyBuild(`build-${index}`, `Build ${index}`, `2026-10-${String(19 - index).padStart(2, '0')}T18:00:00Z`));
   vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
     generations: builds, total_count: 7, total_user_generations: 7, all_orders: [], has_more: false,
   });
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
-  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show builds')!.click());
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
+  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show me')!.click());
   let rows = [...container.querySelectorAll('[aria-label="Your current builds"] li')];
   expect(rows).toHaveLength(5);
   expect(rows[0].textContent).toContain('Build 0');
@@ -413,25 +415,24 @@ it('suggests random builds before starting one and offers a new idea or a way ba
     .mockResolvedValueOnce('the Millennium Falcon')
     .mockResolvedValueOnce('a tiny Hogwarts greenhouse');
   await act(async () => root.render(<LandingPage />));
-  const actions = [...container.querySelectorAll<HTMLButtonElement>('.pet-greeting .pet-chat-action')];
-  expect(actions.map(button => button.textContent)).toEqual(['Build something random', 'Show builds', 'Show me community models']);
-  act(() => actions[2].click());
-  expect(navigate).toHaveBeenCalledWith('/community');
-  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-greeting .pet-chat-action')).find(button => button.textContent === 'Build something random')!.click());
+  expect(container.querySelectorAll('.pet-greeting .pet-chat-action')).toHaveLength(0);
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-random-idea')!.click());
   const firstIdea = container.querySelector('.pet-dialogue p')?.textContent;
   expect(firstIdea).toBe('How about a Pikachu riding a skateboard?');
   expect(suggest).toHaveBeenCalledWith([], undefined, expect.any(AbortSignal));
   expect(generate).not.toHaveBeenCalled();
+  expect(container.querySelector<HTMLButtonElement>('.landing-generate-button')?.disabled).toBe(false);
+  expect([...container.querySelectorAll('.pet-dialogue button')].map(button => button.textContent)).toEqual(['Try again', 'Go back']);
   expect(container.querySelector('#landing-build-prompt')).toBeNull();
-  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'No')!.click());
+  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Try again')!.click());
   expect(container.querySelector('.pet-dialogue p')?.textContent).toBe('How about the Millennium Falcon?');
   expect(suggest).toHaveBeenLastCalledWith(['a Pikachu riding a skateboard'], undefined, expect.any(AbortSignal));
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
   expect(container.querySelector('.pet-greeting')).not.toBeNull();
-  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-greeting .pet-chat-action')).find(button => button.textContent === 'Build something random')!.click());
-  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Yes')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-random-idea')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-generate-button')!.click());
   expect(generate).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'a tiny Hogwarts greenhouse' }), undefined);
-  expect(posthog.capture).toHaveBeenCalledWith('landing_community_models_clicked', { surface: 'pet_dialogue' });
+  expect(posthog.capture).toHaveBeenCalledWith('landing_random_build_clicked', { prompt: 'a tiny Hogwarts greenhouse' });
 });
 
 it('shows loading and retry states without using an old or failed random suggestion', async () => {
@@ -441,64 +442,63 @@ it('shows loading and retry states without using an old or failed random suggest
     .mockRejectedValueOnce(new Error('private upstream response'))
     .mockResolvedValueOnce('a dancing R2-D2');
   await act(async () => root.render(<LandingPage />));
-  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Build something random')!.click());
+  act(() => container.querySelector<HTMLButtonElement>('.landing-random-idea')!.click());
   expect(container.querySelector('.pet-dialogue [role="status"][aria-label="Build buddy is typing"]')?.querySelectorAll('span[aria-hidden="true"]')).toHaveLength(3);
   expect(container.querySelector('.pet-dialogue .pet-avatar--listening')).not.toBeNull();
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('I’m thinking of something fun to build');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Yes');
+  expect(container.querySelector<HTMLButtonElement>('.landing-generate-button')?.disabled).toBe(true);
   const firstSignal = suggest.mock.calls[0][2];
   act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
   expect(firstSignal.aborted).toBe(true);
   await act(async () => resolve('a stale dragon'));
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('stale dragon');
-  await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Build something random')!.click());
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-random-idea')!.click());
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Want me to try again?');
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('private upstream');
+  expect(container.querySelector<HTMLButtonElement>('.landing-generate-button')?.disabled).toBe(true);
   await act(async () => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Try again')!.click());
   expect(container.querySelector('.pet-dialogue')?.textContent).toContain('How about a dancing R2-D2?');
   expect(container.querySelector('.pet-dialogue [aria-label="Build buddy is typing"]')).toBeNull();
   expect(suggest).toHaveBeenCalledTimes(3);
 });
 
-it('shows an empty build list only when requested and returns to the opening question', async () => {
+it('does not offer a build list without builds from today', async () => {
+  vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
+    generations: [historyBuild('old', 'Old castle', '2026-10-18T18:00:00Z')], total_count: 1, total_user_generations: 1, all_orders: [], has_more: false,
+  });
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
-  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('0 builds');
-  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Show builds')!.click());
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('You don’t have any builds yet.');
-  expect(container.querySelector('[aria-label="Your current builds"]')).toBeNull();
-  expect(container.querySelector('#landing-build-prompt')).toBeNull();
-  act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).find(button => button.textContent === 'Go back')!.click());
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('brick building buddy');
+  expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Show me');
   expect(input()).not.toBeNull();
-  expect(posthog.capture).toHaveBeenCalledWith('landing_builds_opened', { surface: 'pet_dialogue', processing_count: 0, completed_count: 0 });
 });
 
-it('keeps the opening question independent of build counts', async () => {
+it('offers Show me for completed or processing builds from today without listing them immediately', async () => {
   vi.setSystemTime(new Date('2026-10-19T18:01:00Z'));
   activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket', createdAt: '2026-10-19T18:00:00Z' }];
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Rocket');
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Building for 1m 0s');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('You have some recent builds, want to see them?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('Show me');
   act(() => root.render(null));
   activity.rows = [];
   vi.mocked(GetUserGenerationsApiService.getUserGenerations).mockResolvedValue({
     generations: [historyBuild('ready', 'Ready castle')], total_count: 1, total_user_generations: 1, all_orders: [], has_more: false,
   });
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('Ready castle');
 });
 
 it('keeps the opening question and composer if the last processing build clears', async () => {
   activity.rows = [{ id: 'working', status: 'processing', endpoint: 'novaToBricks', prompt: 'Rocket' }];
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
   expect(input()).not.toBeNull();
   activity.rows = [];
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+  expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
   expect(container.querySelector('.pet-dialogue')?.textContent).not.toContain('0 builds');
   expect(input()).not.toBeNull();
 });
@@ -811,7 +811,7 @@ it.each(['Cancel', 'Start new'])('%s leaves an in-progress edit without keeping 
   } else {
     expect(cancel).not.toHaveBeenCalled();
     expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
-    expect(container.querySelector('.pet-dialogue')?.textContent).toContain('What would you like to do?');
+    expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
     expect(input().getAttribute('aria-label')).toBe('Describe your model');
     expect(query.value).not.toContain('id=');
   }
