@@ -1,0 +1,16 @@
+# The Expo app is self-contained in mobile/. Do not upload server/web assets.
+/*
+!/.easignore
+!/mobile
+node_modules/
+.expo/
+dist/
+/mobile/ios/
+/mobile/android/
+/mobile/app-store
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+.env
+.env.*
