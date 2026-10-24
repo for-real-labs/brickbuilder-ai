@@ -626,6 +626,17 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
+  it('keeps the welcome bubble styling shared with other pet conversations and uses a gradient headline', () => {
+    const css = readFileSync('src/pages/LandingPage.css', 'utf8');
+    expect(css).toMatch(/\.landing-hero-title > span\s*\{[^}]*background: linear-gradient/);
+    expect(css).toMatch(/\.landing-hero-title > span\s*\{[^}]*background-clip: text/);
+    expect(css).not.toMatch(/\.landing-page[^{}]*--welcome[^{}]*\.pet-speech\s*\{/);
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(<LandingPage />);
+    expect(container.querySelector('.pet-dialogue .pet-greeting > .pet-avatar')).not.toBeNull();
+    expect(container.querySelector('.pet-dialogue .pet-greeting > .pet-speech')?.textContent).toMatch(/brick building buddy|recent builds/);
+  });
+
   it('shows the upload-first hero, quiet welcome, and statistics', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 

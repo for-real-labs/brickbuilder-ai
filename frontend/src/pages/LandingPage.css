@@ -237,7 +237,7 @@
 .landing-page-stats--hidden { display: none; }
 
 .landing-hero-title { max-width: 760px; margin: 0; color: #172033; font-size: clamp(34px, 4.7vw, 56px); line-height: 1.12; font-weight: 750; letter-spacing: -.045em; text-wrap: balance; }
-.landing-hero-title > span { color: #eb443b; }
+.landing-hero-title > span { color: #eb443b; background: linear-gradient(110deg, #ff7462, #f0443b 60%, #df293d); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .landing-hero-description { max-width: 600px; margin: 0; color: #697386; font-size: clamp(14px, 1.5vw, 17px); line-height: 1.7; text-wrap: pretty; }
 .landing-page--welcome { overflow-y: auto; }
 .landing-page.landing-page--welcome .landing-page-shell { min-height: 100%; height: auto; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
@@ -248,8 +248,7 @@
 .landing-page.landing-page--welcome .landing-model-host { max-width: 620px; }
 .landing-page.landing-page--welcome .landing-model-conversation { position: static; width: 100%; max-height: none; padding: 0; overflow: visible; transform: none; translate: none; }
 .landing-page.landing-page--welcome .landing-model-conversation > form { order: 0; }
-.landing-page.landing-page--welcome .landing-model-conversation > .pet-dialogue { order: 1; flex: none; min-height: 0; max-height: none; margin: 20px 0 0; padding: 0; overflow: visible; }
-.landing-page.landing-page--welcome .pet-dialogue .pet-speech { background: transparent; border-color: transparent; box-shadow: none; color: #64748b; }
+.landing-page.landing-page--welcome .landing-model-conversation > .pet-dialogue { --buddy-height: 60px; order: 1; flex: none; min-height: 0; max-height: none; margin: 20px 0 0; padding: 0; overflow: visible; }
 .landing-page.landing-page--welcome .landing-page-stats { position: static; translate: none; margin-top: clamp(28px, 6vh, 72px); }
 .landing-page.landing-page--welcome .landing-page-help { display: none; }
 .landing-upload-prompt { position: relative; overflow: hidden; border: 1px solid #f0d5d2; border-radius: 24px; background: #ffffffed; box-shadow: 0 6px 30px #9b302908, 0 0 0 4px #fff6f3; transition: border-color .2s, box-shadow .2s; }
