@@ -364,20 +364,25 @@ describe('LandingPage', () => {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
         expect(container.querySelector('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')).not.toBeNull();
         const help = container.querySelector('.landing-page-help')!;
-        expect(help.getAttribute('aria-hidden')).toBe(path === undefined ? 'false' : 'true');
+        expect(help.getAttribute('aria-hidden')).toBe('true');
         const socialLinks = Array.from(help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a'));
         expect(socialLinks.map(link => link.getAttribute('aria-label'))).toEqual(['GitHub', 'Instagram', 'YouTube', 'TikTok']);
-        expect(socialLinks.every(link => link.tabIndex === (path === undefined ? 0 : -1))).toBe(true);
+        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
+        if (path === undefined) {
+          expect(help.getAttribute('aria-hidden')).toBe('true');
+          expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')?.getAttribute('aria-hidden')).toBe('false');
+          act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 180 })));
+        }
         expect(help.getAttribute('aria-hidden')).toBe('false');
         expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
         expect(help.querySelector('a')?.tabIndex).toBe(0);
         expect(socialLinks.every(link => link.tabIndex === 0 && link.target === '_blank' && link.rel === 'noopener noreferrer')).toBe(true);
         act(() => dialogue.dispatchEvent(new Event('pointerdown', { bubbles: true })));
-        expect(help.getAttribute('aria-hidden')).toBe(path === undefined ? 'false' : 'true');
-        expect(help.querySelector('a')?.tabIndex).toBe(path === undefined ? 0 : -1);
-        expect(socialLinks.every(link => link.tabIndex === (path === undefined ? 0 : -1))).toBe(true);
+        expect(help.getAttribute('aria-hidden')).toBe('true');
+        expect(help.querySelector('a')?.tabIndex).toBe-1;
+        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
         expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
@@ -626,13 +631,15 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
-  it('reserves the first viewport for the welcome flow before the stats', () => {
+  it('fades the headline before the description and keeps scroll reveals out of layout', () => {
     const css = readFileSync('src/pages/LandingPage.css', 'utf8');
-    expect(css).toMatch(/\.landing-page\.landing-page--welcome \.landing-page-main\s*\{[^}]*min-height: calc\(var\(--landing-viewport-height, 100dvh\) - var\(--landing-header-height, 36px\) - 24px\)/);
+    expect(css).toMatch(/\.landing-page--welcome \.landing-page-stats\s*\{ position: absolute;[^}]*opacity: 0;/);
     const container = document.createElement('div');
     container.innerHTML = renderToStaticMarkup(<LandingPage />);
-    expect(container.querySelector('.landing-page-stats')?.previousElementSibling?.tagName).toBe('MAIN');
-    expect(container.querySelector('.landing-page-stats')?.nextElementSibling?.className).toBe('landing-page-help');
+    expect(container.querySelector('h1')?.className).toContain('landing-delay-2');
+    expect(container.querySelector('.landing-hero-description')?.className).toContain('landing-delay-5');
+    expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('.landing-page-help')?.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('centers the welcome and thinking pets against their bubbles', () => {
