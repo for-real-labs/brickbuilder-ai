@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { LocalProvidersApiService, safeProviderLoginUrl, type LocalProviderId, type LocalProviderStatus } from '../services/localProvidersApi';
 
 const PROVIDER_LABELS: Record<LocalProviderId, string> = { openai: 'ChatGPT / OpenAI', anthropic: 'Claude / Anthropic', fal: 'fal.ai' };
+const supportedLocalProviders = (providers: LocalProviderStatus[]) => providers.filter(provider => provider.id === 'openai' || provider.id === 'anthropic');
 const LOGIN_LABELS: Record<LocalProviderId, string> = { openai: 'Sign in to ChatGPT', anthropic: 'Sign in to Claude', fal: 'Sign in to fal.ai' };
 
 export function LocalProviderSettings() {
@@ -20,7 +21,7 @@ export function LocalProviderSettings() {
     setLoading(true);
     setError('');
     void LocalProvidersApiService.getStatus(controller.signal)
-      .then(data => { if (!controller.signal.aborted) setProviders(data.providers); })
+      .then(data => { if (!controller.signal.aborted) setProviders(supportedLocalProviders(data.providers)); })
       .catch(reason => { if (!controller.signal.aborted) setError(reason instanceof Error ? reason.message : 'Unable to load provider connections'); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
@@ -31,7 +32,7 @@ export function LocalProviderSettings() {
     const controller = new AbortController();
     const timer = window.setInterval(() => {
       void LocalProvidersApiService.getStatus(controller.signal)
-        .then(data => { if (!controller.signal.aborted) { setProviders(data.providers); setError(''); } })
+        .then(data => { if (!controller.signal.aborted) { setProviders(supportedLocalProviders(data.providers)); setError(''); } })
         .catch(() => { if (!controller.signal.aborted) setError('Waiting to reconnect to the local server…'); });
     }, 2000);
     return () => { window.clearInterval(timer); controller.abort(); };
@@ -49,6 +50,10 @@ export function LocalProviderSettings() {
   };
 
   return <section aria-label="Local provider connections" className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white text-left shadow-sm">
+    <div className="px-4 pt-4">
+      <h2 className="text-base font-semibold text-slate-900">Local development</h2>
+      <p className="mt-2 text-sm leading-6 text-slate-600">Running BrickBuilder locally? Connect your own ChatGPT or Claude account, or add a project API key. These connections are used only by your local server.</p>
+    </div>
     <button type="button" aria-expanded={open} onClick={() => {
       posthog.capture('landing_local_connections_toggled', { expanded: !open });
       setOpen(current => !current);
@@ -57,14 +62,14 @@ export function LocalProviderSettings() {
       <ChevronDown aria-hidden="true" className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
     </button>
     {open && <div className="space-y-4 border-t border-slate-100 p-4">
-      <p className="text-xs leading-5 text-slate-500">Connect your local accounts. ChatGPT and Claude sessions use the local agent tools. fal.ai sign in creates and attaches an API key for SAM3D and Trellis. Project keys stay on the local server.</p>
+      <p className="text-xs leading-5 text-slate-500">ChatGPT and Claude sign-ins use your local agent tools. Project API keys stay on your local server.</p>
       {loading && <p role="status" className="flex items-center gap-2 text-sm text-slate-500"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> Checking connections…</p>}
       {error && <p role="alert" className="break-words rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">{error}</p>}
       {providers.map(provider => <ProviderConnection key={provider.id} provider={provider} disabled={busy !== null} busy={busy === provider.id} onAction={action => update(provider.id, action)} />)}
       <button type="button" disabled={loading || busy !== null} className="inline-flex min-h-10 items-center gap-2 rounded-full px-3 text-xs text-slate-600 hover:bg-slate-100 disabled:opacity-50" onClick={async () => {
         posthog.capture('landing_local_connections_refreshed');
         setLoading(true);
-        try { setProviders((await LocalProvidersApiService.getStatus()).providers); setError(''); }
+        try { setProviders(supportedLocalProviders((await LocalProvidersApiService.getStatus()).providers)); setError(''); }
         catch { setError('Unable to refresh connections. Check the local server and try again.'); }
         finally { setLoading(false); }
       }}><RefreshCw aria-hidden="true" className="h-3.5 w-3.5" /> Refresh connections</button>

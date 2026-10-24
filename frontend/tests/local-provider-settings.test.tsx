@@ -29,7 +29,9 @@ describe('local provider settings', () => {
     await act(async () => button('Local provider connections').click());
     expect(container.textContent).toContain('Sign in to ChatGPT');
     expect(container.textContent).toContain('Sign in to Claude');
-    expect(container.textContent).toContain('Sign in to fal.ai');
+    expect(container.textContent).not.toContain('fal.ai');
+    expect(container.textContent).toContain('Local development');
+    expect(container.textContent).toContain('These connections are used only by your local server.');
     act(() => button('Use API key').click());
     const input = container.querySelector<HTMLInputElement>('#local-key-openai')!;
     expect(input.type).toBe('password');
@@ -77,16 +79,16 @@ describe('local provider settings', () => {
   });
 
   it('removes a project key and cancels a pending local login', async () => {
-    vi.mocked(LocalProvidersApiService.getStatus).mockResolvedValue({ enabled: true, providers: [provider('fal', { api_key_configured: true, login: { status: 'pending' } })] });
-    const cancel = vi.spyOn(LocalProvidersApiService, 'cancelLogin').mockResolvedValue(provider('fal', { api_key_configured: true }));
-    const remove = vi.spyOn(LocalProvidersApiService, 'removeApiKey').mockResolvedValue(provider('fal'));
+    vi.mocked(LocalProvidersApiService.getStatus).mockResolvedValue({ enabled: true, providers: [provider('openai', { api_key_configured: true, login: { status: 'pending' } })] });
+    const cancel = vi.spyOn(LocalProvidersApiService, 'cancelLogin').mockResolvedValue(provider('openai', { api_key_configured: true }));
+    const remove = vi.spyOn(LocalProvidersApiService, 'removeApiKey').mockResolvedValue(provider('openai'));
     await act(async () => root.render(<LocalProviderSettings />));
     await act(async () => button('Local provider connections').click());
     await act(async () => button('Cancel sign in').click());
-    expect(cancel).toHaveBeenCalledWith('fal');
+    expect(cancel).toHaveBeenCalledWith('openai');
     act(() => button('Use API key').click());
     await act(async () => button('Remove project API key').click());
-    expect(remove).toHaveBeenCalledWith('fal');
+    expect(remove).toHaveBeenCalledWith('openai');
     expect(container.textContent).toContain('Not connected');
   });
 
@@ -107,4 +109,12 @@ describe('local provider settings', () => {
     expect(container.textContent).toContain('Account connected');
     expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain('private-auth-code');
   });
+});
+
+it('keeps fal.ai hidden after refreshing local connections', async () => {
+  await act(async () => root.render(<LocalProviderSettings />));
+  await act(async () => button('Local provider connections').click());
+  await act(async () => button('Refresh connections').click());
+  expect(container.textContent).not.toContain('fal.ai');
+  expect(container.querySelectorAll('h3')).toHaveLength(2);
 });
