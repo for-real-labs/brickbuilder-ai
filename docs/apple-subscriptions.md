@@ -51,8 +51,11 @@ Never commit or copy the private key into this document.
 Version 1.0.4 is prepared in App Store Connect with subscription description,
 terms/privacy links and updated review notes. Release is manual so that Streamlined
 Purchasing can be disabled after approval and before launch. Build 8 is being built
-by EAS (`7a5de029-761c-4846-b2bc-884ff450d280`). Review screenshots, a working review
-account, native sandbox/device tests, and App Review submission remain outstanding.
+by EAS (`7a5de029-761c-4846-b2bc-884ff450d280`). A dedicated review login is saved in
+App Store Connect; its account is allowlisted for sandbox purchases. Production
+login and account-bound purchase preparation passed, and Apple's production TEST
+notification returned SUCCESS. Review screenshots, native sandbox/device purchase
+tests, and App Review submission remain outstanding.
 
 Complete each product's localization, review screenshot, tax category, availability,
 and review information. Confirm Paid Apps agreements, banking and tax details are
