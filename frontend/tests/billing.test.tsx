@@ -262,6 +262,35 @@ it('restores through the server before finishing the Apple transaction', async (
   expect(billingApi.appleSync).toHaveBeenCalledWith('123');
 });
 
+it.each([false, true])('only reports restore failure when server verification fails (%s)', async syncFails => {
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '1.0.4', applePurchases: true };
+  const actions: string[] = [];
+  window.ReactNativeWebView = { postMessage: raw => {
+    const message = JSON.parse(raw); actions.push(message.action);
+    queueMicrotask(() => window.dispatchEvent(new CustomEvent('brickbuilder:apple-purchases', { detail: {
+      id: message.id,
+      ...(message.action === 'finish' ? { error: 'Native acknowledgement failed' }
+        : { result: message.action === 'restore' ? ['123'] : [] }),
+    } })));
+  } };
+  if (syncFails) vi.mocked(billingApi.appleSync).mockRejectedValueOnce(new Error('Server verification failed'));
+  else vi.mocked(billingApi.appleSync).mockResolvedValue(account);
+  await render(<PricingPage />);
+  const initialRefreshes = vi.mocked(billingApi.account).mock.calls.length;
+  await click('Restore purchases');
+  expect(container.textContent).not.toContain('Native acknowledgement failed');
+  if (syncFails) {
+    expect(container.textContent).toContain('Server verification failed');
+    expect(actions).not.toContain('finish');
+    expect(posthog.capture).not.toHaveBeenCalledWith('billing_subscription_confirmed', expect.anything());
+  } else {
+    expect(actions).toContain('finish');
+    expect(vi.mocked(billingApi.account).mock.calls.length).toBeGreaterThan(initialRefreshes);
+    expect(posthog.capture).toHaveBeenCalledWith('billing_apple_finish_deferred', { provider: 'apple' });
+    expect(posthog.capture).toHaveBeenCalledWith('billing_subscription_confirmed', { provider: 'apple' });
+  }
+});
+
 it.each([2, 300])('dismisses the plans banner with %s credits and keeps it hidden on rerender', async credits => {
   account = { ...account, credits_remaining: credits, monthly_remaining: credits };
   await render(<CreditNudge />);

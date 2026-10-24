@@ -58,14 +58,23 @@ export class ApplePurchases {
           this.purchases.set(p.id, p); return p.id;
         });
       } else if (action === 'finish') {
-        const purchase = this.purchases.get(String(message.transaction));
-        if (purchase) { await IAP.finishTransaction({ purchase, isConsumable: false }); this.purchases.delete(purchase.id); }
+        const transaction = String(message.transaction);
+        if (this.purchases.has(transaction)) {
+          // Restored entitlements can already be finished. Only acknowledge an
+          // unfinished transaction, using StoreKit's current pending payload.
+          const pending = await IAP.getPendingTransactionsIOS();
+          const purchase = pending.find(p => p.id === transaction && APPLE_PRODUCTS.includes(p.productId));
+          if (purchase) await IAP.finishTransaction({ purchase, isConsumable: false });
+          this.purchases.delete(transaction);
+        }
       } else if (action === 'manage') {
         await IAP.showManageSubscriptionsIOS();
       } else { return; }
       this.emit({ id, result });
-    } catch {
-      this.emit({ id, error: 'Apple could not complete this request. Try again or restore your purchases.' });
+    } catch (error) {
+      const code = typeof error === 'object' && error !== null && 'code' in error
+        && typeof error.code === 'string' && /^[a-z0-9-]{1,60}$/i.test(error.code) ? error.code : 'unknown';
+      this.emit({ id, error: `Apple could not complete ${action === 'restore' ? 'the restore' : action === 'finish' ? 'transaction confirmation' : 'this request'} (${code}). Please try again.` });
     }
   }
 

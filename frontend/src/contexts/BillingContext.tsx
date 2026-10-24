@@ -85,7 +85,15 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     try {
       await billingApi.appleSync(transaction);
       if (identity.current !== owner) return;
-      await appleRequest('finish', { transaction });
+      // Credits are already committed by the server. A StoreKit acknowledgement
+      // failure must not turn a verified restore into a payment failure. Leave
+      // the native transaction queued for the next reconciliation attempt.
+      try {
+        await appleRequest('finish', { transaction });
+      } catch {
+        posthog.capture('billing_apple_finish_deferred', { provider: 'apple' });
+      }
+      if (identity.current !== owner) return;
       await refresh();
       setUpgradeSource('');
       posthog.capture('billing_subscription_confirmed', { provider: 'apple' });
