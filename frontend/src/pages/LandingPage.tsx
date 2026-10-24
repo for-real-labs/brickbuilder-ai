@@ -25,7 +25,7 @@ import { useRecentCompletedBuilds } from '../hooks/useRecentCompletedBuilds';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { useLandingViewport } from '../hooks/useLandingViewport';
-import { useLandingReveal } from '../hooks/useLandingHelp';
+import { useLandingHelp } from '../hooks/useLandingHelp';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -916,8 +916,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const conversationStarted = !ldrawLanding
     && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage) || Boolean(randomSuggestion));
   const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
-  const revealStage = useLandingReveal(landingViewportRef, !ldrawLanding, welcomeScreen);
-  const helpVisible = revealStage === 2;
+  const helpVisible = useLandingHelp(landingViewportRef, !ldrawLanding);
   const footerVisible = helpVisible;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
   const todayProcessingBuilds = processingBuilds.filter(row => isBuildFromToday(row.createdAt));
@@ -943,7 +942,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   return (
     <div
       ref={landingViewportRef}
-      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${welcomeScreen ? ' landing-page--welcome' : ''}${conversationStarted ? ' landing-page--conversation-started' : ''}${helpVisible ? ' landing-page--help-visible' : ''}${welcomeScreen && revealStage > 0 ? ' landing-page--stats-visible' : ''}`}
+      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${welcomeScreen ? ' landing-page--welcome' : ''}${conversationStarted ? ' landing-page--conversation-started' : ''}${helpVisible ? ' landing-page--help-visible' : ''}`}
       style={{ backgroundColor: "#fbfbfd", '--landing-order-banner-height': `${orderBarHeight}px` } as React.CSSProperties}
       onDragEnter={handleDragEnter}
       onDragLeave={handleDragLeave}
@@ -1243,7 +1242,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           {ldrawLanding && generationActivity}
           </div>
         </main>
-        {!ldrawLanding && <div className={`landing-page-stats landing-fade-in landing-delay-2${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted || (welcomeScreen && revealStage === 0)} aria-label="BrickBuilder generation statistics">
+        {!ldrawLanding && <div className={`landing-page-stats landing-fade-in landing-delay-2${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted || welcomeScreen} aria-label="BrickBuilder generation statistics">
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="landing-stat-label">models generated</span></div>
                   <div className="landing-stat-divider" aria-hidden="true" />
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="landing-stat-label">bricks generated</span></div>

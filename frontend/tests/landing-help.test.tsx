@@ -2,7 +2,7 @@ import React, { act, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
-import { useLandingHelp, useLandingReveal } from '../src/hooks/useLandingHelp';
+import { useLandingHelp } from '../src/hooks/useLandingHelp';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 let host: HTMLDivElement;
@@ -95,37 +95,4 @@ it('leaves disabled pages alone and removes listeners', () => {
   expect(remove).toHaveBeenCalledWith('wheel', expect.any(Function));
   expect(remove).toHaveBeenCalledWith('touchmove', expect.any(Function));
   expect(remove).toHaveBeenCalledWith('pointerdown', expect.any(Function), true);
-});
-
-function StagedHarness() {
-  const ref = useRef<HTMLDivElement>(null);
-  const stage = useLandingReveal(ref, true, true);
-  return <div ref={ref} data-stage={stage}><h1>Welcome</h1></div>;
-}
-it('reveals stats before support and reverses without scrolling the page', () => {
-  act(() => root.render(<StagedHarness />));
-  const stage = () => host.firstElementChild?.getAttribute('data-stage');
-  expect(stage()).toBe('0');
-  expect(wheel(undefined, 2000)).toBe(true);
-  expect(stage()).toBe('1');
-  wheel(undefined, 100);
-  expect(stage()).toBe('2');
-  wheel(undefined, -100);
-  expect(stage()).toBe('1');
-  act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
-  expect(stage()).toBe('0');
-});
-it('uses incremental swipe distance for staged reveals', () => {
-  act(() => root.render(<StagedHarness />));
-  const touch = (type: string, y: number) => {
-    const event = new Event(type, { bubbles: true, cancelable: true });
-    Object.defineProperty(event, 'touches', { value: [{ clientX: 100, clientY: y }] });
-    act(() => host.querySelector('h1')!.dispatchEvent(event));
-  };
-  touch('touchstart', 500); touch('touchmove', 420);
-  expect(host.firstElementChild?.getAttribute('data-stage')).toBe('1');
-  touch('touchmove', 400);
-  expect(host.firstElementChild?.getAttribute('data-stage')).toBe('1');
-  touch('touchmove', 230);
-  expect(host.firstElementChild?.getAttribute('data-stage')).toBe('2');
 });

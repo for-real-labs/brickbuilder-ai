@@ -370,11 +370,6 @@ describe('LandingPage', () => {
         expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
-        if (path === undefined) {
-          expect(help.getAttribute('aria-hidden')).toBe('true');
-          expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')?.getAttribute('aria-hidden')).toBe('false');
-          act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 180 })));
-        }
         expect(help.getAttribute('aria-hidden')).toBe('false');
         expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
         expect(help.querySelector('a')?.tabIndex).toBe(0);
@@ -631,9 +626,11 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
-  it('fades the headline before the description and keeps scroll reveals out of layout', () => {
+  it('keeps the original welcome spacing, hides stats, and fades the headline first', () => {
     const css = readFileSync('src/pages/LandingPage.css', 'utf8');
-    expect(css).toMatch(/\.landing-page--welcome \.landing-page-stats\s*\{ position: absolute;[^}]*opacity: 0;/);
+    expect(css).toContain('.landing-page.landing-page--welcome .landing-page-stats { display: none; }');
+    expect(css).not.toContain('@media (max-height: 950px)');
+    expect(css).toContain('min-height: 124px; padding: 24px 48px 16px');
     const container = document.createElement('div');
     container.innerHTML = renderToStaticMarkup(<LandingPage />);
     expect(container.querySelector('h1')?.className).toContain('landing-delay-2');
