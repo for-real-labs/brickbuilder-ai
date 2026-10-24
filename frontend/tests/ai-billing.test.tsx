@@ -60,6 +60,7 @@ it('offers keys after credit exhaustion and opens the secure entry form', async 
 it('clears saved key inputs and never captures key values in analytics or browser storage', async () => {
   const save = vi.spyOn(providerKeysApi, 'save').mockResolvedValue(settings);
   await act(async () => root.render(<AiBillingSettings />));
+  expect(container.textContent).toContain('Use your own OpenAI or Claude API key to use BrickBuilder for free.');
   const input = container.querySelector<HTMLInputElement>('input[type=password]')!;
   const secret = 'sk-test-only-private-key';
   act(() => { Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input,secret); input.dispatchEvent(new Event('input',{bubbles:true})); });
