@@ -214,5 +214,13 @@
   .landing-page .landing-model-conversation { animation: none; }
 }
 
-.landing-page-stats { flex-shrink: 0; width: 100%; padding: 12px 0 max(16px, env(safe-area-inset-bottom)); }
+/* Center the stats two-thirds through the space below the welcome dialogue. */
+.landing-page-stats {
+  position: absolute;
+  left: 0;
+  bottom: max(calc(40px + env(safe-area-inset-bottom)), calc(var(--landing-conversation-bottom) / 3));
+  translate: 0 50%;
+  width: 100%;
+  padding: 12px 16px;
+}
 .landing-page-stats--hidden { display: none; }

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { getGuestSession } from '../src/utils/guestSession';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -950,4 +951,22 @@ it('places the loading credits balance beside the brand, outside navigation, wit
   expect(container.querySelector('nav .credit-balance')).toBeNull();
   expect(container.querySelector('.credit-count')?.textContent).toBe('…');
   expect(container.querySelector('.credit-nudge')).toBeNull();
+});
+
+
+it('positions the stats independently of document flow with room below their center', () => {
+  const style = document.createElement('style');
+  style.textContent = readFileSync('src/pages/LandingPage.css', 'utf8');
+  document.head.append(style);
+  const stats = document.createElement('div');
+  stats.className = 'landing-page-stats';
+  document.body.append(stats);
+  try {
+    const computed = getComputedStyle(stats);
+    expect(computed.position).toBe('absolute');
+    expect(computed.translate).toBe('0 50%');
+    expect(computed.paddingBottom).toBe('12px');
+    stats.classList.add('landing-page-stats--hidden');
+    expect(getComputedStyle(stats).display).toBe('none');
+  } finally { stats.remove(); style.remove(); }
 });
