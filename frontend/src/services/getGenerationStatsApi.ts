@@ -17,7 +17,7 @@ export interface GenerationStats {
 
 export class GetGenerationStatsApiService {
   static async getGenerationStats(signal?: AbortSignal): Promise<GenerationStats> {
-    const response = await fetch(`${API_BASE_URL}/generation-stats`, { signal });
+    const response = await fetch(import.meta.env.VITE_GENERATION_STATS_API_URL || `${API_BASE_URL}/generation-stats`, { signal });
 
     if (!response.ok) {
       throw new Error(`Failed to load generation stats: ${response.status}`);

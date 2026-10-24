@@ -301,3 +301,14 @@ it.each([2, 300])('dismisses the plans banner with %s credits and keeps it hidde
   await render(<CreditNudge />);
   expect(container.querySelector('.credit-nudge')).toBeNull();
 });
+
+it('reserves a stable numeric slot while the balance loads', async () => {
+  let resolveAccount!: (value: BillingAccount) => void;
+  vi.mocked(billingApi.account).mockReturnValue(new Promise(resolve => { resolveAccount = resolve; }));
+  await render(<CreditBalance />);
+  const count = container.querySelector('.credit-count');
+  expect(count?.textContent).toBe('…');
+  await act(async () => resolveAccount({ ...account, credits_remaining: 12345 }));
+  expect(container.querySelector('.credit-count')).toBe(count);
+  expect(count?.textContent).toBe('12,345');
+});

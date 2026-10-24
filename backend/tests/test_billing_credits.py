@@ -306,3 +306,31 @@ def test_expired_paid_credits_cannot_fund_all_parts_even_with_legacy_bonuses(db)
     with pytest.raises(psycopg.errors.RaiseException,match='BB_CREDITS_EXHAUSTED'):
         generate(db,uid,'novaToBricks')
     assert wallet(db,uid)['bonus_remaining']==100
+
+
+def test_plan_purchase_adds_to_existing_credits_and_replay_is_idempotent(db):
+    db.execute((MIGRATION.parent/'20261024020000_preserve_credits_on_plan_purchase.sql').read_text())
+    uid = owner(db, bonus=40)
+    generate(db, uid)
+    first = paid(db, uid)
+    assert first['monthly_remaining'] == 799
+    assert first['bonus_remaining'] == 40
+    replay = paid(db, uid, version=2, start=first['period_start'], end=first['period_end'])
+    assert replay['monthly_remaining'] == 799
+    upgraded = paid(db, uid, invoice='upgrade', plan='creator', amount=750, version=3,
+                    start=first['period_start'], end=first['period_end'])
+    assert upgraded['monthly_remaining'] == 1049
+    next_start = db.execute('SELECT now() AS d').fetchone()['d']
+    renewed = paid(db, uid, invoice='renewal', plan='creator', amount=750, version=4, start=next_start)
+    assert renewed['monthly_remaining'] == 750
+    assert renewed['bonus_remaining'] == 40
+    assert db.execute("SELECT amount FROM billing_credit_history WHERE reference='in_1'").fetchone()['amount'] == 500
+
+
+def test_plan_purchase_does_not_restore_expired_paid_credits(db):
+    db.execute((MIGRATION.parent/'20261024020000_preserve_credits_on_plan_purchase.sql').read_text())
+    uid = owner(db)
+    paid(db, uid)
+    db.execute("UPDATE billing_accounts SET subscription_status='canceled', period_end=now()-interval '1 day' WHERE user_id=%s", (uid,))
+    result = paid(db, uid, invoice='new', sub='sub_new', version=2)
+    assert result['monthly_remaining'] == 500

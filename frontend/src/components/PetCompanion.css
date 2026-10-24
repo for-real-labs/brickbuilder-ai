@@ -3,7 +3,8 @@
 .pet-avatar > video { opacity: 0; transition: opacity .2s; }
 .pet-avatar > .pet-video-ready { opacity: 1; }
 .pet-avatar--transparent { mix-blend-mode: normal; }
-.pet-avatar--alpha-playing > img { visibility: hidden; }
+.pet-avatar > img { opacity: 1; transition: opacity .2s; }
+.pet-avatar--alpha-playing > img { opacity: 0; }
 .pet-avatar--listening-motion > img, .pet-avatar--listening-motion > video { transform-origin: center bottom; animation: pet-listening 1.8s ease-in-out infinite; }
 @keyframes pet-listening { 0%, 100% { transform: rotate(-2deg); } 50% { transform: translateY(-2px) rotate(2deg); } }
 /* Match the app's white cards, slate typography, red accents and pill controls. */

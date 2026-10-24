@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { getGuestSession } from '../src/utils/guestSession';
 import React from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -25,13 +26,13 @@ vi.mock('react-router-dom', async () => {
 const billingSettings = vi.hoisted(() => ({ enabled: false, account: null, loading: false, getFeatureAccess: () => 'allowed', openUpgrade: vi.fn() }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billingSettings }));
 
-const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false }));
+const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false, user: null as { id: string } | null }));
 
 vi.mock('../src/contexts/AuthContext', () => ({
   useAuth: () => ({
     session: null,
     loading: false,
-    user: null,
+    user: authSettings.user,
     isSupabaseConfigured: authSettings.isSupabaseConfigured,
   }),
 }));
@@ -80,6 +81,7 @@ import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 
 beforeEach(() => {
   billingSettings.enabled = false;
+  authSettings.user = null;
   vi.spyOn(BuildBuddyApi, 'classify').mockResolvedValue({ intent: 'generate', confidence: 1 });
 });
 
@@ -628,6 +630,8 @@ describe('LandingPage', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 
     expect(markup).toContain('Imagine. Create. Build.');
+    expect(markup).not.toContain('credit-nudge');
+    expect(markup).toContain('landing-header-brand');
     expect(markup).toContain('Build something random');
     expect(markup).toContain('Show builds');
     expect(markup).toContain('Show me community models');
@@ -635,7 +639,11 @@ describe('LandingPage', () => {
     container.innerHTML = markup;
     expect(container.querySelector('.pet-greeting')?.textContent).toContain('What would you like to do?');
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
-    expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+    const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
+    expect(stats).not.toBeNull();
+    expect(stats.previousElementSibling?.tagName).toBe('MAIN');
+    expect(stats.querySelector('.tabular-nums')?.className).toContain('text-[14px]');
+    expect(stats.querySelector('.tabular-nums')?.className).toContain('sm:text-[16.8px]');
     expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
     expect(form.closest('[aria-label="Build dialogue"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('[aria-label="Build dialogue"]')).toBe(form.closest('[aria-label="Build dialogue"]'));
@@ -931,4 +939,37 @@ it('starts the free trial in All parts without a credit caption and allows Basic
     expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.billing-generation-quote')).toBeNull();
   } finally { act(() => root.unmount()); }
+});
+
+
+it('places the loading credits balance beside the brand, outside navigation, without a plans banner', () => {
+  authSettings.user = { id: 'builder' };
+  billingSettings.enabled = true;
+  const container = document.createElement('div');
+  container.innerHTML = renderToStaticMarkup(<LandingPage />);
+  expect(container.querySelector('.landing-header-brand .credit-balance')).not.toBeNull();
+  expect(container.querySelector('nav .credit-balance')).toBeNull();
+  expect(container.querySelector('.credit-count')?.textContent).toBe('…');
+  expect(container.querySelector('.credit-nudge')).toBeNull();
+});
+
+
+it('positions the stats independently of document flow with room below their center', () => {
+  const style = document.createElement('style');
+  style.textContent = readFileSync('src/pages/LandingPage.css', 'utf8');
+  document.head.append(style);
+  const stats = document.createElement('div');
+  stats.className = 'landing-page-stats';
+  document.body.append(stats);
+  try {
+    const computed = getComputedStyle(stats);
+    expect(computed.position).toBe('absolute');
+    expect(computed.display).toBe('grid');
+    expect(computed.textAlign).toBe('center');
+    expect(computed.gridTemplateColumns).toBe('minmax(0, 140px) 1px minmax(0, 140px)');
+    expect(computed.translate).toBe('0 50%');
+    expect(computed.paddingBottom).toBe('12px');
+    stats.classList.add('landing-page-stats--hidden');
+    expect(getComputedStyle(stats).display).toBe('none');
+  } finally { stats.remove(); style.remove(); }
 });

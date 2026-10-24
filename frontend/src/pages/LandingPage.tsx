@@ -1,5 +1,5 @@
 import { AiBillingSettings } from '../components/AiBillingSettings';
-import { CreditNudge } from '../components/BillingComponents';
+import { CreditBalance } from '../components/BillingComponents';
 import { LandingSocialLinks } from "../components/LandingSocialLinks";
 import { LandingToolsMenu, type LandingToolsHandle, type GenerationSettingsAction } from '../components/LandingToolsMenu';
 import { isBuddyToolIntent } from '../utils/buddyTools';
@@ -990,18 +990,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
             onOpen: trigger => { settingsReturnFocus.current = trigger; toggleSettings(true); },
           }} />
-        <CreditNudge />
 
         <main className={`flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
             : <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
               <div className="landing-page-intro-content">
                 <h1 className="text-4xl font-extrabold leading-tight text-slate-900 landing-fade-in landing-delay-2 sm:text-5xl">Imagine. Create. Build.</h1>
-                <div className="flex items-center justify-center gap-4 text-slate-600 landing-fade-in landing-delay-2 sm:gap-8" aria-label="BrickBuilder generation statistics">
-                  <div className="min-w-0"><span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="whitespace-nowrap text-xs sm:text-sm">models generated</span></div>
-                  <div className="h-10 w-px bg-slate-200" aria-hidden="true" />
-                  <div className="min-w-0"><span className="block text-xl font-bold tabular-nums text-slate-900 sm:text-2xl">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="whitespace-nowrap text-xs sm:text-sm">bricks generated</span></div>
-                </div>
+
               </div>
             </div>}
           <div className={ldrawLanding ? 'w-full' : 'landing-page-content'}>
@@ -1239,6 +1234,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           {ldrawLanding && generationActivity}
           </div>
         </main>
+        {!ldrawLanding && <div className={`landing-page-stats landing-fade-in landing-delay-2${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted} aria-label="BrickBuilder generation statistics">
+                  <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="landing-stat-label">models generated</span></div>
+                  <div className="landing-stat-divider" aria-hidden="true" />
+                  <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="landing-stat-label">bricks generated</span></div>
+                </div>}
+
 
         {!ldrawLanding && <div className="landing-page-help" aria-hidden={!helpVisible}>
           <div>Need help?{' '}
@@ -1304,7 +1305,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
 
   return (
     <header className={`landing-header flex w-full flex-nowrap items-center justify-between gap-2 relative landing-fade-in landing-delay-1${createNew ? ` landing-header--model${showProfileMenu ? '' : ' landing-header--guest-model'}` : ''}`} style={{ zIndex: 50 }}>
-      <a href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
+      <div className="landing-header-brand"><a href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
         <img
           src="/logo.svg"
           alt="BrickBuilder"
@@ -1318,7 +1319,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
           <span className="text-[#ff4b4b]">BRICK</span>
           <span className="text-slate-900">BUILDER</span>
         </span>
-      </a>
+      </a><CreditBalance /></div>
 
       {createNew && <button type="button" className="landing-create-new landing-action-button"
         disabled={createNew.disabled} onClick={createNew.onClick}>
@@ -1332,7 +1333,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
           // Logged in or no Supabase: show GitHub stars and account dropdown
           <>
             {/* Account dropdown */}
-            <ProfileMenu />
+            <ProfileMenu showCredits={false} />
           </>
         ) : (
           // Not logged in: show login button

@@ -170,14 +170,14 @@
 .landing-header--model > nav { justify-self: end; }
 @media (max-width: 639px) {
   .landing-header--model { column-gap: 6px; }
-  .landing-header--model > a > span { font-size: 14px; }
+  .landing-header--model > .landing-header-brand > a > span { font-size: 14px; }
   .landing-header--model .landing-create-new { padding-inline: 10px; font-size: 12px; }
 }
-@media (max-width: 359px) { .landing-header--model > a > span { font-size: 11px; } }
+@media (max-width: 359px) { .landing-header--model > .landing-header-brand > a > span { font-size: 11px; } }
 
 @media (max-width: 639px) {
   .landing-header--guest-model { grid-template-columns: minmax(0, 1fr) auto; }
-  .landing-header--guest-model > a { grid-column: 1; grid-row: 1; }
+  .landing-header--guest-model > .landing-header-brand { grid-column: 1; grid-row: 1; }
   .landing-header--guest-model > nav { grid-column: 2; grid-row: 1; }
   .landing-header--guest-model .landing-create-new { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
 }
@@ -188,15 +188,50 @@
 
 /* Reserve one row for the brand and navigation at narrow phone widths. */
 @media (max-width: 639px) {
-  .landing-header > a { flex-shrink: 1; }
-  .landing-header > a > img { display: none; }
-  .landing-header > a > span { font-size: 14px; }
+  .landing-header-brand > a { flex-shrink: 1; }
+  .landing-header-brand > a > img { display: none; }
+  .landing-header-brand > a > span { font-size: 14px; }
   .landing-header > nav, .landing-header > nav > div { gap: 6px; }
   .landing-header--model { grid-template-columns: minmax(0, 1fr) auto; }
-  .landing-header--model > a { grid-column: 1; grid-row: 1; }
+  .landing-header--model > .landing-header-brand { grid-column: 1; grid-row: 1; }
   .landing-header--model > nav { grid-column: 2; grid-row: 1; }
   .landing-header--model .landing-create-new { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
 }
 @media (max-width: 380px) {
   .landing-header > nav > a[aria-label="View BrickBuilder on GitHub"] { display: none; }
 }
+
+/* Opacity only: keep the fixed conversation anchored to the viewport. */
+@keyframes landingConversationIn { from { opacity: 0; } to { opacity: 1; } }
+.landing-page .landing-model-conversation { animation: landingConversationIn .6s ease .9s backwards; }
+.landing-header-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.landing-header-brand > a { min-width: 0; }
+.landing-header-brand .credit-balance { flex-shrink: 0; }
+@media (max-width: 639px) {
+  .landing-header-brand { gap: 6px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing-page .landing-model-conversation { animation: none; }
+}
+
+/* Center the stats two-thirds through the space below the welcome dialogue. */
+.landing-page-stats {
+  position: absolute;
+  left: 0;
+  bottom: max(calc(40px + env(safe-area-inset-bottom)), calc(var(--landing-conversation-bottom) / 3));
+  translate: 0 50%;
+  width: 100%;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 140px) 1px minmax(0, 140px);
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
+}
+.landing-stat { display: grid; justify-items: center; gap: 5px; min-width: 0; }
+.landing-stat .tabular-nums { letter-spacing: -.02em; }
+.landing-stat-label { color: #64748b; font-size: 12px; line-height: 1.5; white-space: nowrap; }
+.landing-stat-divider { height: 30px; background: linear-gradient(transparent, #cbd5e1, transparent); }
+@media (min-width: 640px) { .landing-page-stats { gap: 32px; } }
+.landing-page-stats--hidden { display: none; }

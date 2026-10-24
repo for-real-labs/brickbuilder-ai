@@ -189,6 +189,17 @@ describe('build buddies', () => {
     expect(container.querySelector('img')?.getAttribute('src')).toBe('/pets/pip.webp');
   });
 
+  it('waits for playback again after pausing and resuming the same clip', () => {
+    render(<PetAvatar />);
+    act(() => container.querySelector('video')?.dispatchEvent(new Event('playing')));
+    expect(container.querySelector('.pet-video-ready')).not.toBeNull();
+    render(<PetAvatar still />);
+    render(<PetAvatar />);
+    expect(container.querySelector('video')).not.toBeNull();
+    expect(container.querySelector('.pet-video-ready')).toBeNull();
+    expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
+  });
+
   it('falls back to a poster if the clip fails to load', () => {
     render(<PetAvatar />);
     act(() => container.querySelector('video')?.dispatchEvent(new Event('error')));
