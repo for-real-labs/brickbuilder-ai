@@ -261,3 +261,14 @@ it('restores through the server before finishing the Apple transaction', async (
   expect(actions).toContain('finish');
   expect(billingApi.appleSync).toHaveBeenCalledWith('123');
 });
+
+it.each([2, 300])('dismisses the plans banner with %s credits and keeps it hidden on rerender', async credits => {
+  account = { ...account, credits_remaining: credits, monthly_remaining: credits };
+  await render(<CreditNudge />);
+  expect(container.querySelector('.credit-nudge')).not.toBeNull();
+  await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Dismiss plans banner"]')!.click());
+  expect(container.querySelector('.credit-nudge')).toBeNull();
+  expect(posthog.capture).toHaveBeenCalledWith('billing_nudge_dismissed', { source: credits === 2 ? 'low_credits' : 'creation_banner', plan_key: 'free' });
+  await render(<CreditNudge />);
+  expect(container.querySelector('.credit-nudge')).toBeNull();
+});

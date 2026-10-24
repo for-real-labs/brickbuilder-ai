@@ -1,6 +1,5 @@
 import { AiBillingSettings } from '../components/AiBillingSettings';
-import { CreditNudge, GenerationCreditQuote } from '../components/BillingComponents';
-import { useBilling } from '../contexts/BillingContext';
+import { CreditNudge } from '../components/BillingComponents';
 import { LandingSocialLinks } from "../components/LandingSocialLinks";
 import { LandingToolsMenu, type LandingToolsHandle, type GenerationSettingsAction } from '../components/LandingToolsMenu';
 import { isBuddyToolIntent } from '../utils/buddyTools';
@@ -151,8 +150,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const landingViewportRef = useLandingViewport(!ldrawLanding);
   const helpVisible = useLandingHelp(landingViewportRef, !ldrawLanding);
   const { session, userProfile, loading: authLoading } = useAuth();
-  const { enabled: billingEnabled, account: billingAccount, loading: billingLoading } = useBilling();
-  const billingModeInitialized = useRef(false);
   const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
@@ -278,14 +275,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const requestedModelId = searchParams.get('id');
   const [linkedModelId] = useState(requestedModelId);
   const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
-  useEffect(() => {
-    if (!billingEnabled || authLoading || billingLoading || billingModeInitialized.current
-        || (session?.user.id && !billingAccount)) return;
-    billingModeInitialized.current = true;
-    if ((!billingAccount || billingAccount.plan_key === 'free') && !startWithAllParts && !requestedModelId && !landingModel.model) {
-      setGenerationMethod('llm');
-    }
-  }, [billingEnabled, billingLoading, billingAccount, authLoading, session?.user.id, startWithAllParts, requestedModelId, landingModel.model]);
   const openModel = useCallback((id: string, retainModel = false) => {
     landingModel.open(id, retainModel);
     setSearchParams(current => {
@@ -1148,7 +1137,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>
               </div>
 
-              {!ldrawLanding && <GenerationCreditQuote allParts={generationMethod !== 'llm'} personalSupported={generationMethod !== '3d'} />}
               {inputValidationMessage && (
                 <p id="generation-input-help" role="status" className="mt-3 text-center text-sm leading-6 text-slate-600">
                   {inputValidationMessage}
@@ -1264,7 +1252,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 }
 
 function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy, toolsRef }: { toolsRef?: React.RefObject<LandingToolsHandle | null>; model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
-  const { openUpgrade } = useBilling();
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
 
@@ -1316,7 +1303,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
   );
 
   return (
-    <header className={`flex w-full flex-wrap items-center justify-between gap-y-2 relative landing-fade-in landing-delay-1${createNew ? ` landing-header--model${showProfileMenu ? '' : ' landing-header--guest-model'}` : ''}`} style={{ zIndex: 50 }}>
+    <header className={`landing-header flex w-full flex-nowrap items-center justify-between gap-2 relative landing-fade-in landing-delay-1${createNew ? ` landing-header--model${showProfileMenu ? '' : ' landing-header--guest-model'}` : ''}`} style={{ zIndex: 50 }}>
       <a href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
         <img
           src="/logo.svg"
@@ -1339,7 +1326,6 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       </button>}
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
-        <button type="button" className="h-9 rounded-full px-3 text-xs font-semibold text-slate-600 hover:bg-red-50 cursor-pointer bg-transparent border-none" onClick={() => openUpgrade('header')}>Plans</button>
         {githubStarLink}
         <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
         {showProfileMenu ? (

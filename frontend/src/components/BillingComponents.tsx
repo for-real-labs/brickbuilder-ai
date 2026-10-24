@@ -72,6 +72,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
 }
 
 export function CreditNudge() {
+  const [dismissed, setDismissed] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { account, enabled, openUpgrade } = useBilling();
@@ -81,14 +82,15 @@ export function CreditNudge() {
   const source = low ? 'low_credits' : 'creation_banner';
   const highest = account?.plan_key === 'creator' || account?.plan_key === 'master';
   useEffect(() => {
-    if (enabled && (!account?.has_subscription || low)) posthog.capture('billing_nudge_shown', { source, plan_key: account?.plan_key ?? 'guest' });
-  }, [enabled, source, account?.plan_key, account?.has_subscription, low]);
-  if (!enabled || (account?.has_subscription && !low)) return null;
+    if (!dismissed && enabled && (!account?.has_subscription || low)) posthog.capture('billing_nudge_shown', { source, plan_key: account?.plan_key ?? 'guest' });
+  }, [dismissed, enabled, source, account?.plan_key, account?.has_subscription, low]);
+  if (dismissed || !enabled || (account?.has_subscription && !low)) return null;
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
     <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? account?.subscription_provider === 'apple' ? 'Check your Apple credits and subscription in billing.' : 'Check your credit usage and next reset in billing.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
       : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $9.'} Basic builds use 1 credit; All parts uses 15.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing'); } else openUpgrade(source); }}>{low ? highest ? 'View usage' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
+    <button type="button" className="credit-nudge-dismiss" aria-label="Dismiss plans banner" onClick={() => { setDismissed(true); posthog.capture('billing_nudge_dismissed', { source, plan_key: account?.plan_key ?? 'guest' }); }}><X size={18} aria-hidden="true" /></button>
   </div>;
 }
 
