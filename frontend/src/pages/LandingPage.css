@@ -183,6 +183,7 @@
 }
 
 @media (max-height: 740px) {
+  .landing-page.landing-page--welcome .landing-page-main { max-height: calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - 200px); }
   .landing-page:has(.landing-model-panel[data-view="instructions"]) .pet-dialogue { display: none; }
 }
 
@@ -299,6 +300,7 @@
   .landing-page.landing-page--welcome .landing-page-stats, .landing-page.landing-page--welcome .landing-page-help { transition: none; }
 }
 @media (max-height: 740px) {
+  .landing-page.landing-page--welcome .landing-page-main { max-height: calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - 200px); }
   .landing-page.landing-page--welcome .landing-page-intro { margin-top: 0; }
   .landing-page.landing-page--welcome .landing-page-intro-content { gap: 8px; }
   .landing-page--welcome .landing-hero-title { font-size: 28px; }
