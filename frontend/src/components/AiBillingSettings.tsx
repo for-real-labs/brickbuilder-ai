@@ -25,7 +25,7 @@ export function AiBillingSettings() {
   };
   return <section aria-label="AI billing settings" className="my-4 min-w-0 rounded-2xl border border-slate-200 bg-white p-4 text-left sm:p-5">
     <h2 className="text-base font-semibold text-slate-900">AI billing & API keys</h2>
-    <p className="mt-2 text-sm leading-6 text-slate-600">Use your own OpenAI or Claude API key for Basic bricks and All parts builds with no BrickBuilder credit limit. Your provider charges for API usage; subscription allowances do not apply. Provider rate limits still apply.</p>
+    <p className="mt-2 text-sm leading-6 text-slate-600">Use your own OpenAI or Claude API key to use BrickBuilder for free.</p>
     {!user ? <a href="/login" className="mt-3 inline-block text-sm font-medium text-red-700" onClick={() => posthog.capture('ai_billing_sign_in_clicked')}>Sign in to save your keys</a> : <>
       {settings && <label className="mt-4 block text-sm font-medium text-slate-700">Pay for builds with
         <select aria-label="AI billing source" value={settings.billing_source} disabled={busy} className="mt-2 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3"
