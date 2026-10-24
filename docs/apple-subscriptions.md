@@ -29,10 +29,10 @@ and Apple-calculated regional prices, all-region availability, English (U.S.)
 product/group names, and non-expiring-credit descriptions are saved. Both products
 allow only individual App Store purchases; multiseat purchasing is disabled.
 
-The Business page currently requires the account holder to accept the updated
-Apple Developer Program License Agreement and update legal-entity information
-before signing the Paid Apps Agreement. EU trader-status compliance is also
-outstanding. Complete these steps and confirm banking/tax setup before release.
+As verified October 23, 2026, the Free Apps and Paid Apps agreements, bank account,
+and W-9 are active. The account holder completed the agreement and business setup.
+EU Digital Services Act trader verification is **In Review**. Confirm its outcome
+before release in affected regions.
 
 **Streamlined Purchasing is still on.** Apple rejected turning it off because the
 latest approved binary lacks the required StoreKit APIs. The new `expo-iap` native
@@ -61,9 +61,11 @@ Deploy the backend before the frontend. Configure these server-only settings:
 - `APPLE_IAP_KEY_ID`, `APPLE_IAP_ISSUER_ID`, `APPLE_IAP_PRIVATE_KEY`: the Apple
   In-App Purchase server API signing key (PEM with actual newlines). Never put
   the private key in Expo public variables or the browser bundle.
-- `APPLE_ROOT_CERTIFICATES_DIR`: directory of Apple's DER `.cer` root certificates
-  downloaded from [Apple PKI](https://www.apple.com/certificateauthority/).
-  Verification uses Apple's official server library with online certificate checks.
+- `APPLE_ROOT_CERTIFICATES_DIR`: the Docker image defaults to
+  `/app/certificates/apple`, containing the three public DER roots downloaded from
+  [Apple PKI](https://www.apple.com/certificateauthority/). Their fingerprints are
+  pinned by a deployment test. Verification uses Apple's official server library
+  with online certificate checks.
 - `APPLE_SANDBOX_REVIEW_USER_IDS`: optional comma-separated UUIDs of dedicated
   BrickBuilder App Review/TestFlight accounts. Production falls back to Apple's
   sandbox only on Apple's transaction-not-found response, and only these verified
