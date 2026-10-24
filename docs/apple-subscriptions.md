@@ -53,7 +53,7 @@ the Privacy Policy URL (`https://brickbuilder.ai/privacy`) configured.
 
 ## Backend setup
 
-Apply `20261024000000_apple_subscriptions.sql` after existing migrations, once.
+Apply `20261024010000_apple_subscriptions.sql` after existing migrations, once.
 Deploy the backend before the frontend. Configure these server-only settings:
 
 - `APPLE_IAP_ENABLED=true` only after configuring and testing the catalog.

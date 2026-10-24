@@ -5,7 +5,7 @@ from test_billing_credits import db, server, owner, wallet, generate, MIGRATION
 
 def migrate(db):
     db.execute('ALTER TABLE generations ADD COLUMN personal_billing boolean NOT NULL DEFAULT false')
-    db.execute((MIGRATION.parent/'20261024000000_apple_subscriptions.sql').read_text())
+    db.execute((MIGRATION.parent/'20261024010000_apple_subscriptions.sql').read_text())
 
 
 def purchase(db, uid, tx='1', version=1, revoked=False, upgraded=False, plan='builder', start=None, end=None):
