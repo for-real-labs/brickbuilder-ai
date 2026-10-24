@@ -364,10 +364,10 @@ describe('LandingPage', () => {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
         expect(container.querySelector('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')).not.toBeNull();
         const help = container.querySelector('.landing-page-help')!;
-        expect(help.getAttribute('aria-hidden')).toBe('true');
+        expect(help.getAttribute('aria-hidden')).toBe(path === undefined ? 'false' : 'true');
         const socialLinks = Array.from(help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a'));
         expect(socialLinks.map(link => link.getAttribute('aria-label'))).toEqual(['GitHub', 'Instagram', 'YouTube', 'TikTok']);
-        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
+        expect(socialLinks.every(link => link.tabIndex === (path === undefined ? 0 : -1))).toBe(true);
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
         expect(help.getAttribute('aria-hidden')).toBe('false');
@@ -375,9 +375,9 @@ describe('LandingPage', () => {
         expect(help.querySelector('a')?.tabIndex).toBe(0);
         expect(socialLinks.every(link => link.tabIndex === 0 && link.target === '_blank' && link.rel === 'noopener noreferrer')).toBe(true);
         act(() => dialogue.dispatchEvent(new Event('pointerdown', { bubbles: true })));
-        expect(help.getAttribute('aria-hidden')).toBe('true');
-        expect(help.querySelector('a')?.tabIndex).toBe(-1);
-        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
+        expect(help.getAttribute('aria-hidden')).toBe(path === undefined ? 'false' : 'true');
+        expect(help.querySelector('a')?.tabIndex).toBe(path === undefined ? 0 : -1);
+        expect(socialLinks.every(link => link.tabIndex === (path === undefined ? 0 : -1))).toBe(true);
         expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
