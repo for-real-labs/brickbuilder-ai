@@ -222,5 +222,16 @@
   translate: 0 50%;
   width: 100%;
   padding: 12px 16px;
+  display: grid;
+  grid-template-columns: minmax(0, 140px) 1px minmax(0, 140px);
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  text-align: center;
 }
+.landing-stat { display: grid; justify-items: center; gap: 5px; min-width: 0; }
+.landing-stat .tabular-nums { letter-spacing: -.02em; }
+.landing-stat-label { color: #64748b; font-size: 12px; line-height: 1.5; white-space: nowrap; }
+.landing-stat-divider { height: 30px; background: linear-gradient(transparent, #cbd5e1, transparent); }
+@media (min-width: 640px) { .landing-page-stats { gap: 32px; } }
 .landing-page-stats--hidden { display: none; }

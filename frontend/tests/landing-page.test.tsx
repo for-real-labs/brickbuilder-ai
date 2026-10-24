@@ -964,6 +964,9 @@ it('positions the stats independently of document flow with room below their cen
   try {
     const computed = getComputedStyle(stats);
     expect(computed.position).toBe('absolute');
+    expect(computed.display).toBe('grid');
+    expect(computed.textAlign).toBe('center');
+    expect(computed.gridTemplateColumns).toBe('minmax(0, 140px) 1px minmax(0, 140px)');
     expect(computed.translate).toBe('0 50%');
     expect(computed.paddingBottom).toBe('12px');
     stats.classList.add('landing-page-stats--hidden');
