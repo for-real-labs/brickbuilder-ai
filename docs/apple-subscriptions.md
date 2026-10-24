@@ -42,8 +42,20 @@ the app return to the signed-in purchase flow. This implementation requires an
 account token and must not launch with unsupported outside-app purchases enabled.
 Do not enable App Store promotion, win-back offers, or offer-code redemption.
 
-Review screenshots, server signing-key configuration, V2 notifications, deployment,
-native sandbox/device testing, and App Review submission remain outstanding.
+PR #305 was merged into main at `31a2cbc` on October 23, 2026. The uniquely
+versioned Apple migration was applied to production and recorded in migration
+history. Apple API signing credentials are stored on Railway, and both notification
+URLs point to `https://brickai-backend-production.up.railway.app/billing/apple/notifications`.
+Never commit or copy the private key into this document.
+
+Version 1.0.4 is prepared in App Store Connect with subscription description,
+terms/privacy links and updated review notes. Release is manual so that Streamlined
+Purchasing can be disabled after approval and before launch. Build 8 is being built
+by EAS (`7a5de029-761c-4846-b2bc-884ff450d280`). A dedicated review login is saved in
+App Store Connect; its account is allowlisted for sandbox purchases. Production
+login and account-bound purchase preparation passed, and Apple's production TEST
+notification returned SUCCESS. Review screenshots, native sandbox/device purchase
+tests, and App Review submission remain outstanding.
 
 Complete each product's localization, review screenshot, tax category, availability,
 and review information. Confirm Paid Apps agreements, banking and tax details are
@@ -105,6 +117,9 @@ at both providers and requires support to reconcile billing.
 1. Use a supported Node version (22.13+ or another Expo-supported even release),
    install mobile dependencies, and run mobile tests/typecheck. `expo-iap` is a native
    module: use a development build, not Expo Go. Rebuild after installing it.
+   The repository-root `.easignore` includes only the self-contained mobile app;
+   server/web assets and App Store screenshot archives are excluded. Check uploads
+   with `eas build:inspect --platform ios --stage archive --output <new-directory>`.
 2. Build a new production iOS version with EAS; do not reuse the old binary. Use
    `eas build --platform ios --profile production`, then submit that exact build to
    TestFlight. Backend/frontend releases must be live before testing that build.
