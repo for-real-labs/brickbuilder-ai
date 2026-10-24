@@ -77,7 +77,7 @@ def test_random_keys_are_unrelated_to_the_public_model_id():
 @pytest.mark.parametrize('case,allowed', [('valid', True), ('wrong_model', False), ('wrong_key', False),
                                         ('cancelled', False), ('revoked', False), ('missing_order', False),
                                         ('model_uuid', False), ('malformed', False)])
-def test_guest_key_scopes_api_access_to_one_active_order(db, monkeypatch, case, allowed):
+def test_legacy_key_validation_does_not_restrict_free_instructions(db, monkeypatch, case, allowed):
     from src import api
     generation_id, key = str(uuid4()), links.new_instruction_key()
     if case != 'missing_order':
@@ -99,9 +99,8 @@ def test_guest_key_scopes_api_access_to_one_active_order(db, monkeypatch, case, 
         assert access.json() == {'allowed': allowed}
         assert access.headers['cache-control'] == 'private, no-store'
         response = client.get(f'/generation/{generation_id}/nova-instructions.ldr', headers=headers)
-        assert response.status_code == (200 if allowed else 403)
-        if allowed: steps.assert_awaited_once_with(generation_id)
-        else: steps.assert_not_called()
+        assert response.status_code == 200
+        steps.assert_awaited_once_with(generation_id)
         assert key not in response.text
     finally:
         api.app.dependency_overrides.clear()

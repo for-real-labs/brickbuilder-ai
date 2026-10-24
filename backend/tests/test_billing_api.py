@@ -193,8 +193,8 @@ def test_retired_master_cannot_be_selected_but_existing_invoices_still_reconcile
     assert grant.call_args.kwargs['p_allowance']==1000
 
 
-@pytest.mark.parametrize('caller,plan,allowed', [('guest','free',False),('member','free',False),('member','builder',True),('member','creator',True)])
-def test_instruction_endpoint_checks_plan_before_reading_any_steps(monkeypatch,identity,caller,plan,allowed):
+@pytest.mark.parametrize('caller,plan', [('guest','free'),('member','free'),('member','builder'),('member','creator')])
+def test_instruction_endpoint_is_free_without_billing_lookups(monkeypatch,identity,caller,plan):
     from fastapi.testclient import TestClient
     from fastapi.responses import Response
     from src import api
@@ -211,13 +211,9 @@ def test_instruction_endpoint_checks_plan_before_reading_any_steps(monkeypatch,i
     api.app.dependency_overrides[auth.get_optional_identity]=lambda:who
     try:
         response=TestClient(api.app).get(f'/generation/{uuid4()}/nova-instructions.ldr')
-        assert response.status_code==(200 if allowed else 403)
-        if allowed: steps.assert_awaited_once()
-        else:
-            steps.assert_not_called()
-            assert response.json()['detail']['code']=='BB_PAID_FEATURE_REQUIRED'
-        if caller=='guest': wallet.assert_not_called()
-        else: wallet.assert_awaited_once_with(identity['user_id'])
+        assert response.status_code == 200
+        steps.assert_awaited_once()
+        wallet.assert_not_called()
     finally: api.app.dependency_overrides.clear()
 
 
@@ -235,7 +231,6 @@ def test_local_and_deliberately_disabled_billing_preserve_unmetered_features(mon
     config=AsyncMock(side_effect=AssertionError('local development has no database'))
     monkeypatch.setattr(billing,'settings',config)
     asyncio.run(billing.require_paid_features({}))
-    asyncio.run(billing.require_instruction_access({}, str(uuid4())))
     config.assert_not_called()
     monkeypatch.setattr(billing,'local_unmetered',lambda:False)
     monkeypatch.setattr(billing,'settings',AsyncMock(return_value={'enabled':False}))
@@ -272,50 +267,20 @@ def order_database(monkeypatch):
     return rows
 
 
-@pytest.mark.parametrize('case,allowed', [
-    ('ordered', True), ('fulfilled', True), ('cancelled', False),
-    ('other_owner', False), ('other_version', False), ('anonymous_owner', False),
-    ('guest', False), ('developer', False), ('no_order', False),
-])
-def test_free_instruction_access_requires_own_order_for_exact_model(monkeypatch, identity, order_database, case, allowed):
+def test_instruction_endpoint_survives_billing_outage(monkeypatch):
     from fastapi.testclient import TestClient
     from fastapi.responses import Response
     from src import api
-    from src.utils import auth
 
-    model_id = str(uuid4())
-    row = {'generation_id': model_id, 'generations.user_id': identity['user_id'],
-           'generations.user_type': 'authenticated', 'cancelled': False, 'fulfilled': case == 'fulfilled'}
-    if case == 'cancelled': row['cancelled'] = True
-    if case == 'other_owner': row['generations.user_id'] = str(uuid4())
-    if case == 'other_version': row['generation_id'] = str(uuid4())
-    if case == 'anonymous_owner': row['generations.user_type'] = 'anonymous'
-    if case != 'no_order': order_database.append(row)
-    who = identity
-    if case == 'guest': who = {**identity, 'authenticated': False, 'is_anonymous': True}
-    if case == 'developer': who = {**identity, 'is_developer': True}
-    monkeypatch.setattr(billing, 'local_unmetered', lambda: False)
-    monkeypatch.setattr(billing, 'settings', AsyncMock(return_value={'enabled': True}))
-    wallet = AsyncMock(return_value={'plan_key': 'free', 'subscription_status': 'none'})
-    monkeypatch.setattr(billing, 'wallet', wallet)
-    steps = AsyncMock(return_value=Response('steps', headers={'Cache-Control': 'private, no-store'}))
+    config = AsyncMock(side_effect=RuntimeError('offline'))
+    monkeypatch.setattr(billing, 'settings', config)
+    steps = AsyncMock(return_value=Response('steps'))
     monkeypatch.setattr(api, 'get_nova_instructions', steps)
-    api.app.dependency_overrides[auth.get_optional_identity] = lambda: who
-    try:
-        response = TestClient(api.app).get(f'/generation/{model_id}/nova-instructions.ldr')
-        assert response.status_code == (200 if allowed else 403)
-        if allowed:
-            steps.assert_awaited_once_with(model_id)
-            assert response.headers['cache-control'] == 'private, no-store'
-            wallet.assert_not_called()
-            # A kit unlocks instructions only, never general paid features.
-            with pytest.raises(HTTPException) as error:
-                asyncio.run(billing.require_paid_features(identity))
-            assert error.value.status_code == 403
-        else:
-            steps.assert_not_called()
-    finally:
-        api.app.dependency_overrides.clear()
+    model_id = str(uuid4())
+    response = TestClient(api.app).get(f'/generation/{model_id}/nova-instructions.ldr')
+    assert response.status_code == 200
+    steps.assert_awaited_once_with(model_id)
+    config.assert_not_called()
 
 
 def test_ordered_model_list_deduplicates_active_orders_and_ignores_other_accounts(identity, order_database):

@@ -10,7 +10,6 @@ from fastapi import HTTPException
 
 from . import auth
 from .database import execute_query
-from .instruction_links import has_instruction_key
 
 PLANS = (
     {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 300},
@@ -95,7 +94,7 @@ async def require_paid_features(identity):
             and not identity.get("is_developer") and has_paid_features(await wallet(account_id(identity)))):
         return
     raise HTTPException(403, detail={"code": "BB_PAID_FEATURE_REQUIRED",
-        "message": "Instructions and LDR/IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
+        "message": "LDR/IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
 
 
 async def ordered_instruction_models(user_id, generation_id=None):
@@ -109,18 +108,6 @@ async def ordered_instruction_models(user_id, generation_id=None):
         query = query.eq("generation_id", generation_id).limit(1)
     result = await execute_query(query)
     return sorted({order["generation_id"] for order in result.data or []})
-
-
-async def require_instruction_access(identity, generation_id, instruction_key=None):
-    if local_unmetered():
-        return
-    if await has_instruction_key(generation_id, instruction_key):
-        return
-    if (identity.get("authenticated") and not identity.get("is_anonymous")
-            and not identity.get("is_developer")
-            and await ordered_instruction_models(account_id(identity), generation_id)):
-        return
-    await require_paid_features(identity)
 
 
 def public_wallet(row):

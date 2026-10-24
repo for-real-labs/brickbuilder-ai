@@ -173,10 +173,7 @@ async def nova_source_endpoint(generation_id: UUID, auth_info: dict = Depends(ge
 
 
 @app.get("/generation/{generation_id}/nova-instructions.ldr")
-async def nova_instructions_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity),
-                                     x_instruction_key: str | None = Header(default=None, max_length=128)):
-    from .utils.billing import require_instruction_access
-    await require_instruction_access(auth_info, str(generation_id), x_instruction_key)
+async def nova_instructions_endpoint(generation_id: UUID):
     return await get_nova_instructions(str(generation_id))
 
 
