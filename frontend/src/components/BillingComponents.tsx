@@ -25,7 +25,7 @@ export function CreditBalance() {
   if (!user || !enabled) return null;
   return <button type="button" className="credit-balance" aria-label={account ? `${account.credits_remaining} credits. View plans and usage` : 'View credits and plans'}
     onClick={() => openUpgrade('credit_balance')}>
-    <Coins size={16} aria-hidden="true" /><span>{account?.credits_remaining.toLocaleString() ?? '…'}</span><span className="credit-label">credits</span>
+    <Coins size={16} aria-hidden="true" /><span className="credit-count">{account?.credits_remaining.toLocaleString() ?? '…'}</span><span className="credit-label">credits</span>
     <span className="credit-add" aria-hidden="true">+</span>
   </button>;
 }

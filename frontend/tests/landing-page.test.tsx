@@ -25,13 +25,13 @@ vi.mock('react-router-dom', async () => {
 const billingSettings = vi.hoisted(() => ({ enabled: false, account: null, loading: false, getFeatureAccess: () => 'allowed', openUpgrade: vi.fn() }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billingSettings }));
 
-const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false }));
+const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false, user: null as { id: string } | null }));
 
 vi.mock('../src/contexts/AuthContext', () => ({
   useAuth: () => ({
     session: null,
     loading: false,
-    user: null,
+    user: authSettings.user,
     isSupabaseConfigured: authSettings.isSupabaseConfigured,
   }),
 }));
@@ -80,6 +80,7 @@ import { BuildBuddyApi } from '../src/services/buildBuddyApi';
 
 beforeEach(() => {
   billingSettings.enabled = false;
+  authSettings.user = null;
   vi.spyOn(BuildBuddyApi, 'classify').mockResolvedValue({ intent: 'generate', confidence: 1 });
 });
 
@@ -628,6 +629,8 @@ describe('LandingPage', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 
     expect(markup).toContain('Imagine. Create. Build.');
+    expect(markup).not.toContain('credit-nudge');
+    expect(markup).toContain('landing-header-brand');
     expect(markup).toContain('Build something random');
     expect(markup).toContain('Show builds');
     expect(markup).toContain('Show me community models');
@@ -931,4 +934,16 @@ it('starts the free trial in All parts without a credit caption and allows Basic
     expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.billing-generation-quote')).toBeNull();
   } finally { act(() => root.unmount()); }
+});
+
+
+it('places the loading credits balance beside the brand, outside navigation, without a plans banner', () => {
+  authSettings.user = { id: 'builder' };
+  billingSettings.enabled = true;
+  const container = document.createElement('div');
+  container.innerHTML = renderToStaticMarkup(<LandingPage />);
+  expect(container.querySelector('.landing-header-brand .credit-balance')).not.toBeNull();
+  expect(container.querySelector('nav .credit-balance')).toBeNull();
+  expect(container.querySelector('.credit-count')?.textContent).toBe('…');
+  expect(container.querySelector('.credit-nudge')).toBeNull();
 });

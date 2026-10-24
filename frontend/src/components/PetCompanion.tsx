@@ -39,10 +39,11 @@ export function PetAvatar({ id, state = 'idle', still = false, videoSource }: { 
   }, []);
 
   const playing = motion && !reduced && !hidden && visible && !still && failedSource !== source;
+  useEffect(() => { setReadySource(null); }, [playing, source]);
   return <span ref={ref} className={`pet-avatar pet-avatar--${state}${state === 'listening' && playing ? ' pet-avatar--listening-motion' : ''}${transparent ? ' pet-avatar--transparent' : ''}${transparent && playing && readySource === source ? ' pet-avatar--alpha-playing' : ''}`} aria-hidden="true" data-pet={petId}>
     <img src={`/pets/${petId}.webp`} alt="" width="512" height="512" draggable={false} />
     {playing && <video key={source} poster={`/pets/${petId}.webp`} autoPlay muted loop playsInline disablePictureInPicture
-      preload="none" className={readySource === source ? 'pet-video-ready' : ''}
+      preload="auto" className={readySource === source ? 'pet-video-ready' : ''}
       onPlaying={() => setReadySource(source)} onError={event => {
         if (event.target === event.currentTarget) setFailedSource(source);
       }}>
