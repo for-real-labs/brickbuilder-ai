@@ -299,3 +299,14 @@
 .landing-upload-prompt--text-first .landing-upload-target > span { font-size: 14px; }
 .landing-upload-prompt--text-first:has(.landing-upload-remove) .landing-upload-target { padding-right: 56px; }
 .landing-upload-prompt--text-first .landing-upload-remove { top: auto; bottom: 11px; }
+
+.landing-hero-heading { position: relative; max-width: 760px; }
+.landing-hero-heading--with-pet { width: calc(100% - 128px); }
+.landing-hero-pet { position: absolute; right: calc(100% + 8px); top: 10%; height: 80%; aspect-ratio: 1; pointer-events: none; }
+.landing-hero-pet > .pet-avatar { width: 100%; height: 100%; }
+@media (max-width: 639px) {
+  .landing-hero-heading--with-pet { width: calc(100% - 112px); }
+  .landing-hero-heading--with-pet .landing-hero-title { font-size: clamp(22px, 7.3vw, 30px); }
+}
+
+.landing-hero-pet > .pet-avatar > img, .landing-hero-pet > .pet-avatar > video { scale: 1.6; }

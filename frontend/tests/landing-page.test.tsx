@@ -121,8 +121,8 @@ describe('LandingPage', () => {
       expect(tools.getAttribute('aria-expanded')).toBe('false');
       expect(container.querySelector('dialog')?.open).toBe(true);
       act(() => container.querySelector<HTMLButtonElement>('[aria-label="Choose Clik"]')!.click());
-      expect(container.querySelector('.pet-greeting')?.textContent).toMatch(/brick building buddy|recent builds/);
-      expect(container.querySelector('.pet-greeting [data-pet="clik"]')).not.toBeNull();
+      expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
+      expect(container.querySelector('.landing-hero-pet [data-pet="clik"]')).not.toBeNull();
       expect(panel.querySelector('[aria-label^="Change Build Buddy"]')).toBeNull();
       expect(container.querySelector('dialog')).toBeNull();
       act(() => tools.click());
@@ -255,14 +255,14 @@ describe('LandingPage', () => {
         else reject(new Error(outcome === 'daily limit' ? limitMessage : 'Submission failed'));
       });
       if (outcome === 'accepted') {
-        expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
+        expect(container.querySelector('[aria-label="Build buddy conversation"]')?.textContent || '').not.toContain('email');
         expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
         expect(container.querySelector('[alt="Uploaded preview"]')).toBeNull();
         expect(container.querySelector('[aria-label="Remove image"]')).toBeNull();
         expect(fileInput.value).toBe('');
         expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:uploaded-image');
         act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
-        expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
+        expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
         const nextPrompt = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
         await act(async () => {
           Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(nextPrompt, 'Anime girl');
@@ -419,7 +419,7 @@ describe('LandingPage', () => {
       expect(container.querySelector('#landing-build-prompt')).toBeNull();
       expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
-      expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
+      expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
       const nextInput = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
       expect(nextInput.value).toBe('');
       act(() => {
@@ -530,7 +530,7 @@ describe('LandingPage', () => {
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
-      expect(container.querySelector('.pet-dialogue')?.textContent).toMatch(/brick building buddy|recent builds/);
+      expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
       const nextMode = container.querySelector('#landing-builder-mode') as HTMLDivElement;
       act(() => nextMode.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
       expect(model.value).toBe(DEFAULT_LLM_MODEL);
@@ -595,7 +595,7 @@ describe('LandingPage', () => {
       }), undefined);
       if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
       expect(other).not.toHaveBeenCalled();
-      expect(container.querySelector('[aria-label="Build buddy conversation"]')!.textContent).not.toContain('email');
+      expect(container.querySelector('[aria-label="Build buddy conversation"]')?.textContent || '').not.toContain('email');
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
     } finally { act(() => root.unmount()); container.remove(); }
   });
@@ -652,8 +652,8 @@ describe('LandingPage', () => {
     expect(css).not.toMatch(/\.landing-page[^{}]*--welcome[^{}]*\.pet-speech\s*\{/);
     const container = document.createElement('div');
     container.innerHTML = renderToStaticMarkup(<LandingPage />);
-    expect(container.querySelector('.pet-dialogue .pet-greeting > .pet-avatar')).not.toBeNull();
-    expect(container.querySelector('.pet-dialogue .pet-greeting > .pet-speech')?.textContent).toMatch(/brick building buddy|recent builds/);
+    expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
+    expect(container.querySelector('.pet-dialogue')).toBeNull();
   });
 
   it('shows the upload-first hero, quiet welcome, and statistics', () => {
@@ -670,7 +670,7 @@ describe('LandingPage', () => {
     expect(markup).not.toContain('Show me community models');
     const container = document.createElement('div');
     container.innerHTML = markup;
-    expect(container.querySelector('.pet-greeting')?.textContent).toMatch(/brick building buddy|recent builds/);
+    expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
     const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
     expect(stats).not.toBeNull();
@@ -679,8 +679,8 @@ describe('LandingPage', () => {
     expect(stats.querySelector('.tabular-nums')?.className).toContain('sm:text-[16.8px]');
     expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
     expect(form.closest('[aria-label="Build dialogue"]')).not.toBeNull();
-    expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('[aria-label="Build dialogue"]')).toBe(form.closest('[aria-label="Build dialogue"]'));
-    expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('form')).toBeNull();
+    expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBeNull();
+    expect(container.textContent).not.toContain('brick building buddy');
   });
 
   it('keeps settings collapsed and upload available in the browser and native shell', () => {
