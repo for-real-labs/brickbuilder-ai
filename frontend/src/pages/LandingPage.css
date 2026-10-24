@@ -183,7 +183,6 @@
 }
 
 @media (max-height: 740px) {
-  .landing-page.landing-page--welcome .landing-page-main { max-height: calc(var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - 200px); }
   .landing-page:has(.landing-model-panel[data-view="instructions"]) .pet-dialogue { display: none; }
 }
 
