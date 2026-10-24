@@ -213,3 +213,6 @@
 @media (prefers-reduced-motion: reduce) {
   .landing-page .landing-model-conversation { animation: none; }
 }
+
+.landing-page-stats { flex-shrink: 0; width: 100%; padding: 12px 0 max(16px, env(safe-area-inset-bottom)); }
+.landing-page-stats--hidden { display: none; }

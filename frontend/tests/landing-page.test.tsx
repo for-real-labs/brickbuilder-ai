@@ -638,7 +638,11 @@ describe('LandingPage', () => {
     container.innerHTML = markup;
     expect(container.querySelector('.pet-greeting')?.textContent).toContain('What would you like to do?');
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
-    expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
+    const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
+    expect(stats).not.toBeNull();
+    expect(stats.previousElementSibling?.tagName).toBe('MAIN');
+    expect(stats.querySelector('.tabular-nums')?.className).toContain('text-[14px]');
+    expect(stats.querySelector('.tabular-nums')?.className).toContain('sm:text-[16.8px]');
     expect(container.querySelector('h1')?.textContent).toBe('Imagine. Create. Build.');
     expect(form.closest('[aria-label="Build dialogue"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Build buddy conversation"]')?.closest('[aria-label="Build dialogue"]')).toBe(form.closest('[aria-label="Build dialogue"]'));
