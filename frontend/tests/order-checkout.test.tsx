@@ -49,6 +49,14 @@ const click = async (text: string) => {
   await act(async () => button.click());
 };
 const renderOrder = async (state: object = { generation_id: 'g', priceData: quote }) => act(async () => root.render(<MemoryRouter initialEntries={[{ pathname: '/order', state }]}><OrderKit /></MemoryRouter>));
+
+it('opens the fulfillment postcard model from its link instead of an unrelated cached checkout', async () => {
+  localStorage.setItem('orderState', JSON.stringify({ generation_id: 'old-model', name: 'Old model' }));
+  const read = vi.spyOn(GetGenerationApiService, 'getGeneration');
+  await act(async () => root.render(<MemoryRouter initialEntries={['/order?id=purchased-model']}><OrderKit /></MemoryRouter>));
+  expect(read).toHaveBeenCalledWith('purchased-model', expect.any(AbortSignal));
+  expect(container.textContent).not.toContain('Old model');
+});
 const fill = (name: string, value: string) => {
   const input = container.querySelector(`input[name="${name}"]`);
   if (!input && name === 'line2' && !value) return;

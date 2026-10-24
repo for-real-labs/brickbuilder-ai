@@ -10,6 +10,7 @@ from fastapi import HTTPException
 
 from . import auth
 from .database import execute_query
+from .instruction_links import has_instruction_key
 
 PLANS = (
     {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 300},
@@ -97,6 +98,31 @@ async def require_paid_features(identity):
         "message": "Instructions and LDR/IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
 
 
+async def ordered_instruction_models(user_id, generation_id=None):
+    """Orders belong to accounts through the exact generation, as in My Orders."""
+    query = (client().table("orders")
+             .select("generation_id,generations!inner(user_id,user_type)")
+             .eq("generations.user_id", user_id)
+             .eq("generations.user_type", "authenticated")
+             .eq("cancelled", False))
+    if generation_id:
+        query = query.eq("generation_id", generation_id).limit(1)
+    result = await execute_query(query)
+    return sorted({order["generation_id"] for order in result.data or []})
+
+
+async def require_instruction_access(identity, generation_id, instruction_key=None):
+    if local_unmetered():
+        return
+    if await has_instruction_key(generation_id, instruction_key):
+        return
+    if (identity.get("authenticated") and not identity.get("is_anonymous")
+            and not identity.get("is_developer")
+            and await ordered_instruction_models(account_id(identity), generation_id)):
+        return
+    await require_paid_features(identity)
+
+
 def public_wallet(row):
     end = datetime.fromisoformat(row["period_end"].replace("Z", "+00:00"))
     remaining = row["monthly_remaining"] if end > datetime.now(timezone.utc) else 0
@@ -121,6 +147,7 @@ async def account(identity):
         .eq("livemode", live_mode()).order("id", desc=True).limit(30))
     config = await settings()
     return {**public_wallet(row), "history": history.data, "paid_features": not config["enabled"] or has_paid_features(row),
+            "ordered_instruction_models": await ordered_instruction_models(user_id),
             "enabled": bool(config["enabled"] and config.get("policy_version") == 2), **(await capacity())}
 
 

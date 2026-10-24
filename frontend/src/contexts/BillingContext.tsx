@@ -2,13 +2,18 @@ import React, { createContext, useCallback, useContext, useEffect, useRef, useSt
 import posthog from 'posthog-js';
 import { useAuth } from './AuthContext';
 import { billingApi, INITIAL_PLANS, openStripe, type BillingAccount, type PlanKey, type PaidFeature, type FeatureAccess } from '../services/billingApi';
+import { NovaToBricksApiService } from '../services/novaToBricksApi';
+import { captureInstructionLink, instructionKeys } from '../utils/instructionLinks';
+
+type InstructionLinks = Record<string, { key: string; access: FeatureAccess }>;
 
 const BillingContext = createContext({
   account: null as BillingAccount | null, plans: INITIAL_PLANS, enabled: false, checkoutAvailable: false, loading: false,
   busy: false, error: '', upgradeSource: '', loginOpen: false,
   featureAccess: 'loading' as FeatureAccess,
-  lockedFeature: null as { feature: PaidFeature; source: string } | null,
-  requireFeature: (_feature: PaidFeature, _source: string): boolean => false,
+  getFeatureAccess: (_feature: PaidFeature, _generationId?: string | null): FeatureAccess => 'loading',
+  lockedFeature: null as { feature: PaidFeature; source: string; generationId?: string | null } | null,
+  requireFeature: (_feature: PaidFeature, _source: string, _generationId?: string | null): boolean => false,
   closeLockedFeature: () => {}, retryAccess: async () => {},
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
@@ -23,6 +28,27 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   identity.current = user?.id;
   const [account, setAccount] = useState<BillingAccount | null>(null);
   const [accountOwner, setAccountOwner] = useState<string>();
+  const [links, setLinks] = useState<InstructionLinks>(() => Object.fromEntries(instructionKeys().map(([id, key]) => [id, { key, access: 'loading' }])));
+  const linkRefresh = useRef(0);
+  const refreshInstructionLinks = useCallback(async () => {
+    const revision = ++linkRefresh.current;
+    captureInstructionLink();
+    const keys = instructionKeys();
+    setLinks(previous => Object.fromEntries(keys.map(([id, key]) => [id,
+      previous[id]?.key === key ? previous[id] : { key, access: 'loading' }])));
+    const verified = await Promise.all(keys.map(async ([id, key]) => {
+      try { return [id, { key, access: await NovaToBricksApiService.instructionAccess(id, key) ? 'allowed' : 'unavailable' }] as const; }
+      catch { return [id, { key, access: 'unavailable' }] as const; }
+    }));
+    if (revision === linkRefresh.current) setLinks(Object.fromEntries(verified));
+  }, []);
+  useEffect(() => {
+    const update = () => { if (!document.hidden) void refreshInstructionLinks(); };
+    update();
+    window.addEventListener('focus', update);
+    window.addEventListener('hashchange', update);
+    return () => { linkRefresh.current++; window.removeEventListener('focus', update); window.removeEventListener('hashchange', update); };
+  }, [refreshInstructionLinks]);
   const [plansStatus, setPlansStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [plans, setPlans] = useState(INITIAL_PLANS);
   const [enabled, setEnabled] = useState(false);
@@ -32,7 +58,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState('');
   const [upgradeSource, setUpgradeSource] = useState('');
   const [loginOpen, setLoginOpen] = useState(false);
-  const [lockedFeature, setLockedFeature] = useState<{ feature: PaidFeature; source: string } | null>(null);
+  const [lockedFeature, setLockedFeature] = useState<{ feature: PaidFeature; source: string; generationId?: string | null } | null>(null);
   const refresh = useCallback(async () => {
     const owner = user?.id;
     if (!owner) return;
@@ -69,17 +95,26 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const featureAccess: FeatureAccess = plansStatus === 'loading' ? 'loading' : plansStatus === 'error' ? 'unavailable'
     : !enabled ? 'allowed' : !user ? 'locked' : accountOwner !== user.id || !account ? loading ? 'loading' : 'unavailable'
     : account.paid_features && new Date(account.period_end).getTime() > Date.now() ? 'allowed' : 'locked';
-  const requireFeature = useCallback((feature: PaidFeature, source: string) => {
-    if (featureAccess === 'allowed') return true;
-    setLockedFeature({ feature, source });
-    posthog.capture('billing_feature_blocked', { feature, source, access: featureAccess });
+  const getFeatureAccess = useCallback((feature: PaidFeature, generationId?: string | null): FeatureAccess => {
+    if (feature === 'instructions' && generationId && user && accountOwner === user.id
+      && account?.ordered_instruction_models?.includes(generationId)) return 'allowed';
+    if (feature === 'instructions' && generationId && featureAccess !== 'allowed' && links[generationId]) return links[generationId].access;
+    return featureAccess;
+  }, [featureAccess, user?.id, accountOwner, account, links]);
+  const requireFeature = useCallback((feature: PaidFeature, source: string, generationId?: string | null) => {
+    const access = getFeatureAccess(feature, generationId);
+    if (access === 'allowed') return true;
+    setLockedFeature({ feature, source, ...(generationId ? { generationId } : {}) });
+    posthog.capture('billing_feature_blocked', { feature, source, access });
     return false;
-  }, [featureAccess]);
+  }, [getFeatureAccess]);
   const closeLockedFeature = () => {
     if (lockedFeature) posthog.capture('billing_feature_dismissed', lockedFeature);
     setLockedFeature(null);
   };
-  useEffect(() => { if (featureAccess === 'allowed') setLockedFeature(null); }, [featureAccess]);
+  useEffect(() => {
+    if (lockedFeature && getFeatureAccess(lockedFeature.feature, lockedFeature.generationId) === 'allowed') setLockedFeature(null);
+  }, [getFeatureAccess, lockedFeature]);
   const openUpgrade = useCallback((source: string) => {
     setError(''); setLockedFeature(null); setUpgradeSource(source);
     posthog.capture('billing_upgrade_opened', { source, page: window.location.pathname });
@@ -123,8 +158,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     finally { setBusy(false); }
   };
   return <BillingContext.Provider value={{ account, plans, enabled, checkoutAvailable, loading, busy, error, upgradeSource, loginOpen,
-    featureAccess, lockedFeature, requireFeature, closeLockedFeature,
-    retryAccess: async () => { await Promise.all([refreshPlans(), refresh()]); },
+    featureAccess, getFeatureAccess, lockedFeature, requireFeature, closeLockedFeature,
+    retryAccess: async () => { await Promise.all([refreshPlans(), refresh(), refreshInstructionLinks()]); },
     refresh, sync, openUpgrade, closeUpgrade, subscribe, manage,
     closeLogin: () => setLoginOpen(false), signIn: () => { posthog.capture('billing_sign_in_clicked'); setLoginOpen(true); },
   }}>{children}</BillingContext.Provider>;

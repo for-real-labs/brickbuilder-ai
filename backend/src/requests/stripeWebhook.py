@@ -15,6 +15,7 @@ from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
 from ..utils.billing import handle_billing_event
 from ..utils.order_email import order_email_content
+from ..utils.instruction_links import new_instruction_key, instruction_key_hash, instruction_link
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ async def stripe_webhook(request: Request, auth_info: dict):
         if await handle_billing_event(event):
             return StripeWebhookResponse(success=True)
 
-        if event.type == 'checkout.session.completed':
+        if event.type in ('checkout.session.completed', 'checkout.session.async_payment_succeeded'):
             session = event.data.object  # contains a stripe.checkout.Session
             logger.info(f"Checkout session completed: {session.id}")
             await handle_checkout_session_completed(session)
@@ -177,6 +178,10 @@ async def handle_checkout_session_completed(session):
     except Exception as e:
         logger.error(f"Failed to retrieve full session from Stripe: {e}")
         full_session = session  # Fallback to event data
+
+    if full_session.get('payment_status') != 'paid':
+        logger.info('Checkout %s is awaiting payment; no order or instruction access issued', session.id)
+        return
     
     # Extract custom metadata
     metadata = full_session.get('metadata') or {}
@@ -245,8 +250,6 @@ async def handle_checkout_session_completed(session):
     
     if shipping_info['instructions_postcard']:
         shipping_info['instructions_postcard_size'] = '6x4in'
-    if shipping_info['instructions_postcard'] and generation_id:
-        shipping_info['instructions_url'] = 'https://brickbuilder.ai/instructions?' + urlencode({'id': generation_id})
 
     logger.info(f"Shipping info - Name: {shipping_info['name']}, Email: {shipping_info['email']}, City: {shipping_info['address']['city']}, State: {shipping_info['address']['state']}, Country: {shipping_info['address']['country']}")
 
@@ -266,12 +269,14 @@ async def handle_checkout_session_completed(session):
 
     # Update payment status in database
     try:
+        instruction_key = new_instruction_key()
         order_id = await generation_storage.update_payment_status(
             generation_id=generation_id,
             amount_paid=amount_total,
             stripe_session_id=full_session.id,
             stripe_payment_intent=payment_intent,
-            shipping_info=shipping_info
+            shipping_info=shipping_info,
+            instructions_key_hash=instruction_key_hash(instruction_key),
         )
         
         if order_id:
@@ -291,7 +296,7 @@ async def handle_checkout_session_completed(session):
                         except Exception:
                             logger.warning("Order preview unavailable; sending confirmation without it")
                             generation = {}
-                        content = order_email_content(order_id, generation_id, generation, metadata.get('petId'))
+                        content = order_email_content(order_id, generation_id, generation, metadata.get('petId'), instruction_key=instruction_key)
                         
                         email_params = {
                             "from": "BrickBuilder <no-reply@info.brickbuilder.ai>",
@@ -322,6 +327,8 @@ async def handle_checkout_session_completed(session):
                                         <tr><td style="padding: 8px; font-weight: bold;">Stripe Session:</td><td style="padding: 8px;">{full_session.id}</td></tr>
                                     </table>
                                     <p style="margin-top: 16px;"><a href="{escape(model_url, quote=True)}" style="color: #ef4444;">View model in BrickBuilder</a></p>
+                                    <p><a href="{escape(instruction_link(generation_id, instruction_key), quote=True)}">Purchased instructions (no sign-in required)</a></p>
+                                    <p><a href="{escape(instruction_link(generation_id, instruction_key, postcard=True), quote=True)}">Postcard preview with this order’s instruction QR code</a></p>
                                     <p style="margin-top: 16px;"><a href="https://dashboard.stripe.com/payments/{payment_intent}" style="color: #ef4444;">View in Stripe</a></p>
                                 </div>
                             """
@@ -336,13 +343,13 @@ async def handle_checkout_session_completed(session):
                             resend.Emails.send(owner_email_params)
                             logger.info(f"Sent owner notification email for order {order_id}")
                         except Exception as owner_email_error:
-                            logger.error(f"Failed to send owner notification email: {owner_email_error}")
+                            logger.error('Failed to send owner notification email (%s)', type(owner_email_error).__name__)
                         
                     else:
                         logger.warning("RESEND_API_KEY not configured, skipping order confirmation email")
                 except Exception as email_error:
                     # Don't fail the webhook if email fails
-                    logger.error(f"Failed to send order confirmation email to {customer_email}: {email_error}")
+                    logger.error('Failed to send order confirmation email (%s)', type(email_error).__name__)
             else:
                 logger.warning("No customer email found, skipping order confirmation email")
             
@@ -359,7 +366,8 @@ async def handle_checkout_session_completed(session):
             logger.info("No new order for checkout %s; skipping confirmation emails", full_session.id)
             
     except Exception as e:
-        logger.error(f"Error updating payment status for generation {generation_id}: {e}")
+        logger.error('Error recording paid order (%s)', type(e).__name__)
+        raise HTTPException(503, 'Could not record the paid order. Please retry this webhook.') from e
     
     # Log the full stripe session object data (commented out to reduce noise)
     # logger.info(f"Complete checkout session data: {json.dumps(dict(session), indent=2, default=str)}")

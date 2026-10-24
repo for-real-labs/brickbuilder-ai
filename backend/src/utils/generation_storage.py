@@ -847,7 +847,8 @@ class GenerationStorage:
         brickowl_cart_url: Optional[str] = None,
         brickowl_wishlist_name: Optional[str] = None,
         parts_list_csv_url: Optional[str] = None,
-        shipping_info: Optional[dict] = None
+        shipping_info: Optional[dict] = None,
+        instructions_key_hash: Optional[str] = None,
     ) -> Optional[int]:
         """
         Update the payment status of a generation by creating an order record and updating generation
@@ -873,6 +874,8 @@ class GenerationStorage:
                 "amount_paid": f"{amount_paid/100:.2f}",
                 "stripe_session_id": stripe_session_id,
             }
+            if instructions_key_hash:
+                order_data["instructions_key_hash"] = instructions_key_hash
             
             # Add payment intent if provided
             if stripe_payment_intent:
@@ -927,7 +930,7 @@ class GenerationStorage:
             
         except Exception as e:
             logger.error(f"Failed to create order for generation {generation_id}: {e}")
-            return None
+            raise
     
     async def get_generation(self, generation_id: str) -> Optional[Dict[str, Any]]:
         """

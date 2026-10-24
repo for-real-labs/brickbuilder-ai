@@ -50,7 +50,8 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <ul className="billing-features">
           <li><Check aria-hidden="true" />{plan.credits.toLocaleString()} Basic builds or {Math.floor(plan.credits / 15)} All parts builds</li>
           <li><Check aria-hidden="true" />Mix modes from one credit balance</li>
-          <li>{plan.key === 'free' ? <><PaidFeatureLock />LDR/IO exports & instructions on paid plans</>
+          <li><Check aria-hidden="true" />Instructions included with ordered kits</li>
+          <li>{plan.key === 'free' ? <><PaidFeatureLock />LDR/IO exports & other model instructions on paid plans</>
             : <><Check aria-hidden="true" />LDR/IO exports & building instructions</>}</li>
           <li><Check aria-hidden="true" />Every Build Buddy included</li>
         </ul>

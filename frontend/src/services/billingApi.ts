@@ -9,6 +9,7 @@ export interface BillingAccount {
   plan_key: PlanKey; credits_remaining: number; monthly_credits: number; monthly_remaining: number;
   bonus_remaining: number; bonus_available?: number; available?: boolean; checkout_available?: boolean; period_start: string; period_end: string; subscription_status: string;
   cancel_at_period_end: boolean; has_subscription: boolean; enabled: boolean; paid_features?: boolean;
+  ordered_instruction_models?: string[];
   history: { id: number; kind: string; amount: number; bucket: string; created_at: string }[];
 }
 export const INITIAL_PLANS: CreditPlan[] = [
