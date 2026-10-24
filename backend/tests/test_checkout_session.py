@@ -39,7 +39,7 @@ def test_custom_checkout_uses_server_price_and_preserves_fulfillment(setup):
     _, create, _ = setup
     result = run(uiMode='custom', priceCents=1, brickowlCartId='cart')
     params = create.call_args.kwargs
-    assert params['line_items'][0]['price_data']['unit_amount'] == 2500
+    assert params['line_items'][0]['price_data']['unit_amount'] == 5000
     assert params['line_items'][0]['price_data']['product_data']['name'] == 'Test Frog'
     assert params['ui_mode'] == 'custom'
     assert params['payment_method_types'] == ['card']
@@ -87,7 +87,7 @@ def test_validates_checkout_request(kwargs):
         checkout.CreateCheckoutSessionRequest(**kwargs)
 
 
-@pytest.mark.parametrize('price,weight,expected', [(50, 0.1, 2500), (0.01, 0, 200), (10.01, 0, 501), (100, 0.123, 5001)])
+@pytest.mark.parametrize('price,weight,expected', [(50, 0.1, 5000), (0.01, 0, 400), (10.01, 0, 1001), (100, 0.123, 10000), (44.77, 0.5263, 4477)])
 def test_price_matches_frontend_cent_rounding(price, weight, expected):
     quote = GetPriceResponse(generation_id='g', total_price=price, total_parts=1,
                             total_weight=weight, unique_part_types=1, message='quote')
@@ -130,7 +130,7 @@ def test_checkout_records_postcard_choice_for_fulfillment(setup, selected):
     _, create, _ = setup
     run(uiMode='elements', shipInstructionsPostcard=selected)
     assert create.call_args.kwargs['metadata']['shipInstructionsPostcard'] == str(selected).lower()
-    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 2500
+    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 5000
 
 
 @pytest.mark.parametrize('value', ['true', 1, None, {'selected': True}])

@@ -142,8 +142,7 @@ return HTTP 422 rather than a partial or invented total; missing catalog files
 return HTTP 503. Legacy models may therefore have no quote until repaired. The
 returned amount is a supplier parts subtotal, excluding shipping, taxes, customer
 discounts and quantity-specific promotions. It reflects the recorded snapshot
-time, not a live checkout guarantee. The existing BrickBuilder checkout discount
-and shipping formula remains in `orderCheckout.ts`/`createCheckoutSession.py` and
+time, not a live checkout guarantee. The BrickBuilder checkout shipping formula remains in `orderCheckout.ts`/`createCheckoutSession.py` and
 consumes this new subtotal; checkout policy should be reviewed separately if a
 different retail margin or shipping policy is desired.
 

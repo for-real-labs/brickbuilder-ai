@@ -93,12 +93,9 @@
 .checkout-price-list > div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 10px; }
 .checkout-price-list dd { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; margin: 0; }
 .checkout-price-list s { font-size: 11px; color: #9097a0; }
-.checkout-price-list .checkout-discount { color: #f44336; }
 .checkout-price-list .checkout-total { border-top: 1px solid #eceef2; padding-top: 14px; margin: 14px 0 0; font-weight: 600; font-size: 23px; letter-spacing: -.6px; }
 .checkout-total dd { flex-wrap: wrap; justify-content: flex-end; }
-.checkout-total dd s { font-size: 14px; font-weight: 400; letter-spacing: 0; }
 .checkout-total dd span { font-size: 10px; color: #686c73; font-weight: 400; letter-spacing: 0; }
-.checkout-savings { display: flex; align-items: center; gap: 5px; color: #f44336; margin: 12px 0 0; font-size: 12px; }
 .checkout-summary-benefits { margin-top: 16px; }
 .checkout-summary-benefits p { display: flex; align-items: center; gap: 7px; font-size: 11px; color: #686c73; margin: 0; }
 .checkout-empty { max-width: 520px; padding: 50px 28px; background: #fff; border-radius: 20px; text-align: center; margin: 50px auto; }

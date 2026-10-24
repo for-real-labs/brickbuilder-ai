@@ -275,12 +275,10 @@ export default function OrderKit() {
             <div id="checkout-price-breakdown" className={`checkout-price-breakdown ${summaryExpanded ? 'is-expanded' : ''}`}>
             {pricing ? <>
               <dl className="checkout-price-list">
-                <div><dt>Parts subtotal</dt><dd>{formatOrderPrice(pricing.fullPartSubtotalCents)}</dd></div>
-                <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.fullShippingCents)}</dd></div>
-                <div className="checkout-discount"><dt>BrickBuilder Launch Discount</dt><dd>−{formatOrderPrice(pricing.fullTotalCents - pricing.totalCents)}</dd></div>
-                <div className="checkout-total"><dt>Total</dt><dd><s>{formatOrderPrice(pricing.fullTotalCents)}</s><span>USD</span>{formatOrderPrice(pricing.totalCents)}</dd></div>
+                <div><dt>Parts subtotal</dt><dd>{formatOrderPrice(pricing.partSubtotalCents)}</dd></div>
+                <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.shippingCents)}</dd></div>
+                <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{formatOrderPrice(pricing.totalCents)}</dd></div>
               </dl>
-              <p className="checkout-savings"><Check size={14} />You save {formatOrderPrice(pricing.fullTotalCents - pricing.totalCents)}</p>
             </> : <p className="checkout-section-note">{quoteLoading ? 'Calculating your kit price…' : 'Kit price unavailable'}</p>}
             </div>
             <div className="checkout-summary-benefits"><p><Truck size={16} />Estimated delivery: 8–12 business days</p></div>
