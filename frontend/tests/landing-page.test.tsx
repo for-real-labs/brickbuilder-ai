@@ -626,6 +626,12 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
+  it('centers the welcome and thinking pets against their bubbles', () => {
+    const css = readFileSync('src/pages/LandingPage.css', 'utf8');
+    expect(css).toMatch(/\.pet-greeting,\s*\.landing-page \.pet-dialogue \.pet-chat-message:has\(\.pet-typing-indicator\)\s*\{ align-items: center;/);
+    expect(css).toMatch(/\.pet-greeting > \.pet-avatar,\s*\.landing-page \.pet-dialogue \.pet-chat-message:has\(\.pet-typing-indicator\) > \.pet-avatar\s*\{ top: 50%; bottom: auto; translate: 0 -50%;/);
+  });
+
   it('keeps the welcome bubble styling shared with other pet conversations and uses a gradient headline', () => {
     const css = readFileSync('src/pages/LandingPage.css', 'utf8');
     expect(css).toMatch(/\.landing-hero-title > span\s*\{[^}]*background: linear-gradient/);

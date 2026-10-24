@@ -279,3 +279,9 @@
   .landing-header .credit-add { width: 15px; height: 15px; line-height: 14px; }
 }
 @media (prefers-reduced-motion: reduce) { .landing-upload-prompt, .landing-generate-button { transition: none; } }
+
+/* Keep the buddy centered beside short welcome and thinking bubbles. */
+.landing-page .pet-dialogue .pet-greeting,
+.landing-page .pet-dialogue .pet-chat-message:has(.pet-typing-indicator) { align-items: center; }
+.landing-page .pet-dialogue .pet-greeting > .pet-avatar,
+.landing-page .pet-dialogue .pet-chat-message:has(.pet-typing-indicator) > .pet-avatar { top: 50%; bottom: auto; translate: 0 -50%; }
