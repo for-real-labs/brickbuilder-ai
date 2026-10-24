@@ -38,6 +38,7 @@ dependencies = [
     "psycopg[binary]>=3.1",
     "rtree>=1.4.1",
     "mcp>=1.30,<2",
+    "app-store-server-library>=3.1.2",
 ]
 
 [project.scripts]

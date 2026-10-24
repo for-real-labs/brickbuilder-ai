@@ -32,7 +32,8 @@ export function createNativeBootstrapScript(
 ): string {
   const shellInfo = JSON.stringify({
     platform,
-    version: '0.1.0',
+    version: '0.2.0',
+    applePurchases: platform === 'ios',
     changeRequest,
   });
 

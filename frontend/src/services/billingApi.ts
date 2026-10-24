@@ -1,3 +1,4 @@
+import { isAppleApp } from './applePurchases';
 import { authenticatedApiFetch } from './apiFetch';
 import { readApiError } from './apiError';
 
@@ -6,6 +7,7 @@ export type PaidFeature = 'ldraw' | 'io' | 'instructions';
 export type FeatureAccess = 'loading' | 'unavailable' | 'locked' | 'allowed';
 export interface CreditPlan { key: PlanKey; name: string; monthly_cents: number; credits: number }
 export interface BillingAccount {
+  subscription_provider?: 'apple' | 'stripe' | null; apple_remaining?: number; apple_plan?: PlanKey; apple_expires_at?: string;
   plan_key: PlanKey; credits_remaining: number; monthly_credits: number; monthly_remaining: number;
   bonus_remaining: number; bonus_available?: number; available?: boolean; checkout_available?: boolean; period_start: string; period_end: string; subscription_status: string;
   cancel_at_period_end: boolean; has_subscription: boolean; enabled: boolean; paid_features?: boolean;
@@ -31,14 +33,17 @@ async function request<T>(path: string, body?: object): Promise<T> {
   return response.json();
 }
 export const billingApi = {
-  plans: () => request<{ plans: CreditPlan[]; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
+  plans: () => request<{ plans: CreditPlan[]; apple_ready?: boolean; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
   account: () => request<BillingAccount>('account'),
-  checkout: (plan_key: PlanKey) => request<{ url: string }>('checkout', { plan_key }),
+  applePrepare: () => request<{ app_account_token: string }>('apple/prepare', {}),
+  appleSync: (transaction_id: string) => request<BillingAccount>('apple/sync', { transaction_id }),
+  checkout: (plan_key: PlanKey) => isAppleApp() ? Promise.reject(new Error('Use Apple subscriptions in the iOS app.')) : request<{ url: string }>('checkout', { plan_key }),
   portal: (action: 'manage' | 'cancel') => request<{ url: string }>('portal', { action }),
   sync: (session_id?: string) => request<BillingAccount>('sync', { session_id }),
 };
 
 export function openStripe(url: string) {
+  if (isAppleApp()) throw new Error('Manage web subscriptions on the BrickBuilder website.');
   const parsed = new URL(url);
   if (parsed.protocol !== 'https:' || !['checkout.stripe.com', 'billing.stripe.com'].includes(parsed.hostname)) {
     throw new Error('Unable to open secure billing. Please try again.');

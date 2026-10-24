@@ -1,3 +1,4 @@
+import { isAppleApp, hasApplePurchases, appleProduct } from '../services/applePurchases';
 import { providerKeysApi } from '../services/providerKeysApi';
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -31,21 +32,23 @@ export function CreditBalance() {
 
 export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnly?: boolean }) {
   const { user } = useAuth();
-  const { plans, account, busy, enabled, checkoutAvailable, subscribe, closeUpgrade } = useBilling();
-  return <div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
+  const { plans, account, busy, enabled, checkoutAvailable, subscribe, closeUpgrade, appleProducts, restore, retryAccess } = useBilling();
+  const apple = isAppleApp();
+  return <><div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
     {plans.filter(plan => !paidOnly || plan.key !== 'free').map(plan => {
-      const current = Boolean(user && account?.plan_key === plan.key);
+      const current = Boolean(user && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
+      const applePrice = appleProducts?.find(p => p.id === appleProduct(plan.key))?.displayPrice;
       const petId = plan.key === 'creator' ? 'nib' : 'pip';
       return <article key={plan.key} className={`billing-plan${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
         {plan.key === 'creator' && <span className="billing-recommendation">Room to explore</span>}
         <div className="billing-plan-top"><h2>{plan.name}</h2><PetAvatar id={petId} still /></div>
         <p className="billing-plan-description">{descriptions[plan.key]}</p>
-        <p className="billing-price"><strong>${plan.monthly_cents / 100}</strong><span>/ month</span></p>
-        <p className="billing-renewal">{plan.monthly_cents ? 'USD · billed monthly' : 'No credit card needed'}</p>
+        <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
+        <p className="billing-renewal">{plan.monthly_cents ? apple ? 'Billed monthly by Apple' : 'USD · billed monthly' : 'No credit card needed'}</p>
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>
           : <button className="billing-plan-button" onClick={() => void subscribe('free', source)}>Start building free</button>
-          : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable}
-            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : !checkoutAvailable ? 'At capacity' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
+          : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
+            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <ul className="billing-features">
           <li><Check aria-hidden="true" />{plan.credits.toLocaleString()} Basic builds or {Math.floor(plan.credits / 15)} All parts builds</li>
@@ -58,7 +61,14 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
       </article>;
     })}
-  </div>;
+  </div>{apple && <div className="billing-fine-print">
+    {!hasApplePurchases() && <p>Update BrickBuilder from the App Store to subscribe.</p>}
+    <p>Payment is charged to your Apple account. Subscriptions renew monthly unless canceled at least 24 hours before renewal. Apple credits roll over and never expire. Paid features last through your subscription period.</p>
+    {hasApplePurchases() && !appleProducts.length && <><button className="billing-text-link" disabled={busy} onClick={() => { posthog.capture('billing_apple_retry_clicked'); void retryAccess(); }}>Retry Apple connection</button>{' · '}</>}
+    <button className="billing-text-link" disabled={busy} onClick={() => void restore()}>Restore purchases</button>{' · '}
+    <Link to="/terms" onClick={() => { posthog.capture('billing_terms_clicked'); closeUpgrade(); }}>Terms of Use</Link>{' · '}
+    <Link to="/privacy" onClick={() => { posthog.capture('billing_privacy_clicked'); closeUpgrade(); }}>Privacy Policy</Link>
+  </div>}</>;
 }
 
 export function CreditNudge() {
@@ -67,7 +77,7 @@ export function CreditNudge() {
   const { account, enabled, openUpgrade } = useBilling();
   const { pet } = usePet();
   const low = Boolean(account && (account.credits_remaining <= Math.max(2, Math.floor(account.monthly_credits * .2))
-    || account.monthly_remaining < 15));
+    || (account.monthly_remaining + (account.apple_remaining ?? 0)) < 15));
   const source = low ? 'low_credits' : 'creation_banner';
   const highest = account?.plan_key === 'creator' || account?.plan_key === 'master';
   useEffect(() => {
@@ -76,8 +86,8 @@ export function CreditNudge() {
   if (!enabled || (account?.has_subscription && !low)) return null;
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
-    <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Check your credit usage and next reset in billing.' : <>Choose a plan to keep creating{account && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
-      : <><strong>More ideas? More bricks.</strong> Monthly plans from $9. Basic builds use 1 credit; All parts uses 15.</>}</p>
+    <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? account?.subscription_provider === 'apple' ? 'Check your Apple credits and subscription in billing.' : 'Check your credit usage and next reset in billing.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
+      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $9.'} Basic builds use 1 credit; All parts uses 15.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing'); } else openUpgrade(source); }}>{low ? highest ? 'View usage' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
   </div>;
 }
@@ -99,11 +109,11 @@ export function BillingOverlays() {
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
       <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        <p>{account ? `${account.monthly_remaining} monthly credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{(account?.plan_key === 'creator' || account?.plan_key === 'master') && account.credits_remaining === 0 ? `Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. LDR downloads and building instructions are free. Paid plans unlock IO exports. Cancel anytime.'}</p></div></div>
+        <p>{account ? `${account.monthly_remaining + (account.apple_remaining ?? 0)} credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{(account?.plan_key === 'creator' || account?.plan_key === 'master') && account.credits_remaining === 0 ? `Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. LDR downloads and building instructions are free. Paid plans unlock IO exports. Cancel anytime.'}</p></div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
-      <p className="billing-fine-print">Plans renew monthly until canceled. Monthly credits reset and do not roll over. Legacy bonuses never expire; use up to 5 per month on Basic builds. Failed or canceled builds return their credits.</p>
+      <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Legacy bonuses never expire; use up to 5 per month on Basic builds. Failed or canceled builds return their credits.</p>
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={closeLogin} redirectTo="/pricing" />

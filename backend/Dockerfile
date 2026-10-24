@@ -37,6 +37,7 @@ RUN uv sync --frozen
 # Nova runs in its own pinned upstream container, reached via NOVA_SERVICE_URL.
 # The API image only needs the parts library to package imported MPDs.
 ENV LDRAW_DIR=/root/ldraw
+ENV APPLE_ROOT_CERTIFICATES_DIR=/app/certificates/apple
 
 # Note: Background removal now uses fal.ai BiRefNet v2 (GPU) instead of local rembg.
 # rembg is kept as a fallback dependency but the u2net model is no longer pre-downloaded.

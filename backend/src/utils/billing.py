@@ -74,7 +74,14 @@ async def wallet(user_id):
     return await rpc("billing_account", p_user_id=user_id, p_live=live_mode())
 
 
+def apple_active(row):
+    return bool(row.get("apple_plan") and row.get("apple_expires_at")
+                and datetime.fromisoformat(row["apple_expires_at"].replace("Z", "+00:00")) > datetime.now(timezone.utc))
+
+
 def has_paid_features(row):
+    if apple_active(row):
+        return True
     return (row["plan_key"] in SUBSCRIPTION_PLANS
             and row["subscription_status"] in ("active", "past_due")
             and datetime.fromisoformat(row["period_end"].replace("Z", "+00:00")) > datetime.now(timezone.utc))
@@ -116,13 +123,16 @@ def public_wallet(row):
     bonus_available = min(row["bonus_remaining"], max(0, 5-row.get("bonus_used", 0)))
     return {
         "bonus_available": bonus_available,
-        "plan_key": row["plan_key"], "monthly_credits": row["monthly_credits"],
+        "plan_key": row["apple_plan"] if apple_active(row) else row["plan_key"], "monthly_credits": row["monthly_credits"],
         "monthly_remaining": remaining, "bonus_remaining": row["bonus_remaining"],
-        "credits_remaining": remaining + bonus_available,
+        "credits_remaining": remaining + bonus_available + max(0, row.get("apple_remaining", 0)),
+        "apple_remaining": max(0, row.get("apple_remaining", 0)),
+        "subscription_provider": "apple" if apple_active(row) else "stripe" if row.get("stripe_subscription_id") else None,
+        "apple_plan": row.get("apple_plan"), "apple_expires_at": row.get("apple_expires_at"),
         "period_start": row["period_start"], "period_end": row["period_end"],
         "subscription_status": row["subscription_status"],
         "cancel_at_period_end": row["cancel_at_period_end"],
-        "has_subscription": row["subscription_status"] not in ("none", "canceled", "incomplete_expired"),
+        "has_subscription": apple_active(row) or row["subscription_status"] not in ("none", "canceled", "incomplete_expired"),
     }
 
 
@@ -204,6 +214,8 @@ async def checkout(identity, plan_key):
         raise HTTPException(409, "Your checkout is already opening. Please try again in a moment.")
     try:
         row = await wallet(user_id)
+        if apple_active(row):
+            raise HTTPException(409, "Manage your Apple subscription in App Store subscription settings.")
         customer = row.get("stripe_customer_id")
         if not customer:
             created = await asyncio.to_thread(stripe.Customer.create, email=identity.get("user_email"),

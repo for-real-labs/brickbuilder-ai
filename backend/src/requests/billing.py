@@ -49,7 +49,8 @@ async def plans():
             capacity = await billing.capacity()
     except Exception:
         pass
-    return {"plans": billing.PLANS, "enabled": enabled, "ready": ready, **capacity}
+    from ..utils.apple_billing import ready as apple_ready
+    return {"apple_ready": apple_ready(), "plans": billing.PLANS, "enabled": enabled, "ready": ready, **capacity}
 
 
 @router.get("/account")
@@ -70,3 +71,31 @@ async def portal(request: PortalRequest, identity: dict = Depends(get_optional_i
 @router.post("/sync")
 async def sync(request: SyncRequest, identity: dict = Depends(get_optional_identity)):
     return await run(billing.sync_checkout(identity, request.session_id))
+
+
+class AppleTransactionRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    transaction_id: str = Field(pattern=r'^\d{1,40}$')
+
+
+class AppleNotificationRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    signedPayload: str = Field(min_length=1, max_length=100000)
+
+
+@router.post('/apple/prepare')
+async def apple_prepare(identity: dict = Depends(get_optional_identity)):
+    from ..utils import apple_billing
+    return await run(apple_billing.prepare(identity))
+
+
+@router.post('/apple/sync')
+async def apple_sync(request: AppleTransactionRequest, identity: dict = Depends(get_optional_identity)):
+    from ..utils import apple_billing
+    return await run(apple_billing.sync(identity, request.transaction_id))
+
+
+@router.post('/apple/notifications')
+async def apple_notifications(request: AppleNotificationRequest):
+    from ..utils import apple_billing
+    return await run(apple_billing.notification(request.signedPayload))

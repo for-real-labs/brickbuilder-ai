@@ -176,7 +176,7 @@ export default function PrivacyPolicyPage() {
                   error diagnostics;
                 </li>
                 <li>
-                  <strong className="text-slate-800">Stripe</strong> for payment processing;
+                  <strong className="text-slate-800">Stripe</strong> for web and physical-kit payment processing; Apple for iOS subscription purchases. We associate Apple transaction identifiers and subscription status with your account to deliver credits, restore purchases, and process renewals or refunds;
                 </li>
                 <li>
                   <strong className="text-slate-800">Railway and Vercel</strong> for application

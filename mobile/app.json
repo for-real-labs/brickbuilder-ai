@@ -2,7 +2,7 @@
   "expo": {
     "name": "BrickBuilder",
     "slug": "brickbuilder",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "default",
     "scheme": "brickbuilder",
     "icon": "./assets/icon.png",
@@ -30,6 +30,9 @@
         "projectId": "a4cde02d-2b94-4193-89e4-54eaccb5e311"
       }
     },
-    "owner": "jakesessiongalaxys-team"
+    "owner": "jakesessiongalaxys-team",
+    "plugins": [
+      "expo-iap"
+    ]
   }
 }

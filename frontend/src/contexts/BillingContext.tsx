@@ -1,9 +1,11 @@
+import { APPLE_EVENT, appleRequest, appleProduct, isAppleApp, hasApplePurchases, type AppleProduct } from '../services/applePurchases';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
 import { useAuth } from './AuthContext';
 import { billingApi, INITIAL_PLANS, openStripe, type BillingAccount, type PlanKey, type PaidFeature, type FeatureAccess } from '../services/billingApi';
 const BillingContext = createContext({
   account: null as BillingAccount | null, plans: INITIAL_PLANS, enabled: false, checkoutAvailable: false, loading: false,
+  appleProducts: [] as AppleProduct[], restore: async () => {},
   busy: false, error: '', upgradeSource: '', loginOpen: false,
   featureAccess: 'loading' as FeatureAccess,
   getFeatureAccess: (feature: PaidFeature, _generationId?: string | null): FeatureAccess => (feature === 'instructions' || feature === 'ldraw') ? 'allowed' : 'loading',
@@ -21,6 +23,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
   const identity = useRef(user?.id);
   identity.current = user?.id;
+  const [appleProducts, setAppleProducts] = useState<AppleProduct[]>([]);
+  const [appleReady, setAppleReady] = useState(false);
   const [account, setAccount] = useState<BillingAccount | null>(null);
   const [accountOwner, setAccountOwner] = useState<string>();
   const [plansStatus, setPlansStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -45,6 +49,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const refreshPlans = useCallback(async () => {
     try {
       const result = await billingApi.plans();
+      setAppleReady(Boolean(result.apple_ready));
       setPlans(result.plans.filter(plan => plan.key !== 'master'));
       setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled);
       setPlansStatus(result.ready ? 'ready' : 'error');
@@ -66,9 +71,54 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     const interval = window.setInterval(update, 30000);
     return () => { window.clearInterval(interval); window.removeEventListener('focus', update); window.removeEventListener('brickbuilder:credits-changed', update); };
   }, [refresh]);
+  const refreshProducts = useCallback(async () => {
+    if (!hasApplePurchases()) return;
+    try { setAppleProducts(await appleRequest<AppleProduct[]>('products')); }
+    catch { setAppleProducts([]); setError('Could not load Apple prices. Retry the Apple connection or restore an existing purchase.'); }
+  }, []);
+  useEffect(() => { void refreshProducts(); }, [refreshProducts]);
+  const processing = useRef(new Set<string>());
+  const confirmApple = useCallback(async (transaction: string) => {
+    const owner = user?.id;
+    if (!owner || !/^\d{1,40}$/.test(transaction) || processing.current.has(transaction)) return;
+    processing.current.add(transaction);
+    try {
+      await billingApi.appleSync(transaction);
+      if (identity.current !== owner) return;
+      await appleRequest('finish', { transaction });
+      await refresh();
+      setUpgradeSource('');
+      posthog.capture('billing_subscription_confirmed', { provider: 'apple' });
+    } finally { processing.current.delete(transaction); }
+  }, [user?.id, refresh]);
+  useEffect(() => {
+    if (!user || !hasApplePurchases()) return;
+    const listener = (event: Event) => {
+      const detail = (event as CustomEvent).detail;
+      if (detail?.transaction) void confirmApple(detail.transaction).catch(e => setError(e.message));
+      if (detail?.error && !detail.id) setError(detail.error);
+    };
+    window.addEventListener(APPLE_EVENT, listener);
+    void appleRequest<string[]>('pending').then(async ids => {
+      for (const id of ids) await confirmApple(id);
+    }).catch(() => {});
+    return () => window.removeEventListener(APPLE_EVENT, listener);
+  }, [user?.id, confirmApple]);
+  const restore = async () => {
+    posthog.capture('billing_restore_clicked', { provider: 'apple' });
+    if (!user) { setLoginOpen(true); return; }
+    setBusy(true); setError('');
+    try {
+      const ids = await appleRequest<string[]>('restore');
+      for (const id of ids) await confirmApple(id);
+      if (!ids.length) setError('No Apple subscriptions were found for this Apple account.');
+      await refresh();
+    } catch (e) { setError(e instanceof Error ? e.message : 'Could not restore purchases.'); }
+    finally { setBusy(false); }
+  };
   const featureAccess: FeatureAccess = plansStatus === 'loading' ? 'loading' : plansStatus === 'error' ? 'unavailable'
     : !enabled ? 'allowed' : !user ? 'locked' : accountOwner !== user.id || !account ? loading ? 'loading' : 'unavailable'
-    : account.paid_features && new Date(account.period_end).getTime() > Date.now() ? 'allowed' : 'locked';
+    : account.paid_features && new Date(account.subscription_provider === 'apple' ? account.apple_expires_at ?? account.period_end : account.period_end).getTime() > Date.now() ? 'allowed' : 'locked';
   const getFeatureAccess = useCallback((feature: PaidFeature, _generationId?: string | null): FeatureAccess => {
     return (feature === 'instructions' || feature === 'ldraw') ? 'allowed' : featureAccess;
   }, [featureAccess]);
@@ -113,6 +163,14 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     if (key === 'free' || busy) return;
     setBusy(true); setError('');
     try {
+      if (isAppleApp()) {
+        if (!hasApplePurchases()) throw new Error('Update BrickBuilder from the App Store to subscribe.');
+        const prepared = await billingApi.applePrepare();
+        if (identity.current !== user.id) return;
+        await appleRequest('buy', { product: appleProduct(key), accountToken: prepared.app_account_token });
+        posthog.capture('billing_checkout_started', { plan_key: key, source, provider: 'apple' });
+        return;
+      }
       const { url } = await billingApi.checkout(key);
       posthog.capture('billing_checkout_started', { plan_key: key, source }); openStripe(url);
     } catch (e) {
@@ -124,13 +182,19 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     if (busy) return;
     posthog.capture(action === 'cancel' ? 'billing_cancel_clicked' : 'billing_portal_clicked', { source: 'billing' });
     setBusy(true); setError('');
-    try { openStripe((await billingApi.portal(action)).url); }
+    try {
+      if (account?.subscription_provider === 'apple') {
+        if (isAppleApp()) { await appleRequest('manage'); await refresh(); }
+        else window.location.assign('https://apps.apple.com/account/subscriptions');
+      } else if (isAppleApp()) throw new Error('Your subscription was purchased on the web. Manage it from your account on the BrickBuilder website.');
+      else openStripe((await billingApi.portal(action)).url);
+    }
     catch (e) { setError(e instanceof Error ? e.message : 'Could not open billing. Please try again.'); }
     finally { setBusy(false); }
   };
-  return <BillingContext.Provider value={{ account, plans, enabled, checkoutAvailable, loading, busy, error, upgradeSource, loginOpen,
+  return <BillingContext.Provider value={{ account, plans, enabled, appleProducts, restore, checkoutAvailable: checkoutAvailable && (!isAppleApp() || (appleReady && hasApplePurchases() && appleProducts.length > 0)), loading, busy, error, upgradeSource, loginOpen,
     featureAccess, getFeatureAccess, lockedFeature, requireFeature, closeLockedFeature,
-    retryAccess: async () => { await Promise.all([refreshPlans(), refresh()]); },
+    retryAccess: async () => { await Promise.all([refreshPlans(), refresh(), refreshProducts()]); },
     refresh, sync, openUpgrade, closeUpgrade, subscribe, manage,
     closeLogin: () => setLoginOpen(false), signIn: () => { posthog.capture('billing_sign_in_clicked'); setLoginOpen(true); },
   }}>{children}</BillingContext.Provider>;
