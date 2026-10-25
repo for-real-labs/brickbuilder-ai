@@ -1246,7 +1246,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           {ldrawLanding && generationActivity}
           </div>
         </main>
-        {!ldrawLanding && <div className={`landing-page-stats landing-fade-in landing-delay-2${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted || welcomeScreen} aria-label="BrickBuilder generation statistics">
+        {!ldrawLanding && <div className={`landing-page-stats${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted || helpVisible} aria-label="BrickBuilder generation statistics">
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="landing-stat-label">models generated</span></div>
                   <div className="landing-stat-divider" aria-hidden="true" />
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="landing-stat-label">bricks generated</span></div>

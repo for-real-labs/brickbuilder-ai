@@ -228,6 +228,9 @@
   align-items: center;
   gap: 20px;
   text-align: center;
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 400ms ease, visibility 400ms;
 }
 .landing-stat { display: grid; justify-items: center; gap: 5px; min-width: 0; }
 .landing-stat .tabular-nums { letter-spacing: -.02em; }
@@ -235,13 +238,14 @@
 .landing-stat-divider { height: 30px; background: linear-gradient(transparent, #cbd5e1, transparent); }
 @media (min-width: 640px) { .landing-page-stats { gap: 32px; } }
 .landing-page-stats--hidden { display: none; }
+.landing-page--help-visible .landing-page-stats { opacity: 0; visibility: hidden; pointer-events: none; }
 
 .landing-hero-title { max-width: 760px; margin: 0; color: #172033; font-size: clamp(34px, 4.7vw, 56px); line-height: 1.12; font-weight: 750; letter-spacing: -.045em; text-wrap: balance; }
 .landing-hero-title > span { color: #eb443b; background: linear-gradient(110deg, #ff7462, #f0443b 60%, #df293d); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .landing-hero-description { max-width: 600px; margin: 0; color: #697386; font-size: clamp(14px, 1.5vw, 17px); line-height: 1.7; text-wrap: pretty; }
 .landing-page--welcome { overflow: hidden; }
-.landing-page.landing-page--welcome .landing-page-shell { min-height: 100%; height: 100%; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
-.landing-page.landing-page--welcome .landing-page-main { flex: 1; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+.landing-page.landing-page--welcome .landing-page-shell { min-height: 100%; height: 100%; padding-bottom: 0; }
+.landing-page.landing-page--welcome .landing-page-main { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
 .landing-page.landing-page--welcome .landing-page-intro { margin-top: clamp(36px, 6vh, 64px); }
 .landing-page.landing-page--welcome .landing-page-intro-content { gap: 20px; }
 .landing-page.landing-page--welcome .landing-page-content { position: static; padding: 32px 0 0; overflow: visible; flex: none; }
@@ -249,7 +253,8 @@
 .landing-page.landing-page--welcome .landing-model-conversation { position: static; width: 100%; max-height: none; padding: 0; overflow: visible; transform: none; translate: none; }
 .landing-page.landing-page--welcome .landing-model-conversation > form { order: 0; }
 .landing-page.landing-page--welcome .landing-model-conversation > .pet-dialogue { --buddy-height: 60px; order: 1; flex: none; min-height: 0; max-height: none; margin: 20px 0 0; padding: 0; overflow: visible; }
-.landing-page.landing-page--welcome .landing-page-stats { display: none; }
+/* Equal space above and below the stats in the area beneath Generate. */
+.landing-page.landing-page--welcome .landing-page-stats { position: relative; bottom: auto; translate: none; flex: 1 0 80px; }
 .landing-page.landing-page--welcome .landing-page-help { position: absolute; bottom: max(12px, env(safe-area-inset-bottom)); margin: 0; transform: none; transition: opacity 400ms ease, visibility 400ms; }
 .landing-upload-prompt { position: relative; overflow: hidden; border: 1px solid #f0d5d2; border-radius: 24px; background: #ffffffed; box-shadow: 0 6px 30px #9b302908, 0 0 0 4px #fff6f3; transition: border-color .2s, box-shadow .2s; }
 .landing-upload-prompt:focus-within { border-color: #ef6b60; box-shadow: 0 0 0 4px #ffe9e4; }
@@ -287,7 +292,7 @@
 .landing-page .pet-dialogue .pet-chat-message:has(.pet-typing-indicator) > .pet-avatar { top: 50%; bottom: auto; translate: 0 -50%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-page.landing-page--welcome .landing-page-help { transition: none; }
+  .landing-page.landing-page--welcome .landing-page-help, .landing-page-stats { transition: none; }
 }
 
 .landing-upload-prompt--text-first { display: flex; flex-direction: column; }

@@ -371,10 +371,12 @@ describe('LandingPage', () => {
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
         expect(help.getAttribute('aria-hidden')).toBe('false');
+        expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('true');
         expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
         expect(help.querySelector('a')?.tabIndex).toBe(0);
         expect(socialLinks.every(link => link.tabIndex === 0 && link.target === '_blank' && link.rel === 'noopener noreferrer')).toBe(true);
-        act(() => dialogue.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+        act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: -80 })));
+        expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('false');
         expect(help.getAttribute('aria-hidden')).toBe('true');
         expect(help.querySelector('a')?.tabIndex).toBe-1;
         expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
@@ -626,16 +628,16 @@ describe('LandingPage', () => {
     } finally {act(()=>root.unmount());container.remove();}
   });
 
-  it('keeps the original welcome spacing, hides stats, and fades the headline first', () => {
+  it('keeps the welcome spacing, shows stats, and fades the headline first', () => {
     const css = readFileSync('src/pages/LandingPage.css', 'utf8');
-    expect(css).toContain('.landing-page.landing-page--welcome .landing-page-stats { display: none; }');
+    expect(css).toContain('.landing-page.landing-page--welcome .landing-page-stats { position: relative; bottom: auto; translate: none; flex: 1 0 80px; }');
     expect(css).not.toContain('@media (max-height: 950px)');
     expect(css).toContain('min-height: 124px; padding: 24px 48px 16px');
     const container = document.createElement('div');
     container.innerHTML = renderToStaticMarkup(<LandingPage />);
     expect(container.querySelector('h1')?.className).toContain('landing-delay-2');
     expect(container.querySelector('.landing-hero-description')?.className).toContain('landing-delay-5');
-    expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('false');
     expect(container.querySelector('.landing-page-help')?.getAttribute('aria-hidden')).toBe('true');
   });
 
