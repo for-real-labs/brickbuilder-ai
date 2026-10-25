@@ -1,3 +1,4 @@
+import { StudioEditButton } from "./StudioEditButton";
 import React, { lazy, Suspense, useEffect, useId, useRef, useState } from 'react';
 import { ArrowLeft, BookOpen, Box, Maximize2, Sparkles } from 'lucide-react';
 import posthog from 'posthog-js';
@@ -179,6 +180,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           </button>
         </div>}
         {!pendingEdit && <div className="landing-model-bottom-toolbar">
+          <StudioEditButton model={model} disabled={busy} />
           <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
             aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
               if (!showingInstructions && !requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;

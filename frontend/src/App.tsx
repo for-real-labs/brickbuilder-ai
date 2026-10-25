@@ -1,3 +1,4 @@
+import { StudioTransferGate } from "./components/StudioTransferGate";
 import { AiBillingPrompt } from './components/AiBillingPrompt';
 import ImageToModelPage from './pages/ImageToModelPage';
 import { IMAGE_MODEL_PAGES } from './imageModelPages';
@@ -59,6 +60,7 @@ export default function App() {
       <ChangeRequestProvider>
         {/* <ProtectedRoute> */}
         {/* <AnnouncementBanner /> */}
+        <StudioTransferGate>
         <Routes>
           {/* Public */}
           {IMAGE_MODEL_PAGES.map(({ path, output }) => <Route key={path} path={path} element={<ImageToModelPage key={path} output={output} />} />)}
@@ -105,6 +107,7 @@ export default function App() {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </StudioTransferGate>
         {/* </ProtectedRoute> */}
       </ChangeRequestProvider>
       </GenerationNotificationsProvider>
