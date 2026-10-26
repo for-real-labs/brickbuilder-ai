@@ -1,3 +1,4 @@
+import { StudioEditButton } from "./StudioEditButton";
 import React, { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { Box, ChevronDown, Download, Upload, Github, Image, LifeBuoy, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
@@ -193,6 +194,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
             </li>)}
           </ul>}
         </li>)}
+        {model && <li><StudioEditButton model={model} disabled={busy} className={rowClass} /></li>}
         <li role="separator" className="my-1 border-t border-slate-200" />
         {generationSettings && <>
           <li>

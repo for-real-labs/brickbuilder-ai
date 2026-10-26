@@ -26,6 +26,7 @@ from ..utils.brick_design import (
     render_ldraw_preview_png,
     render_preview_png,
 )
+from ..utils.build_design_guidance import BUILD_DESIGN_GUIDANCE
 from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import generation_storage
 from ..utils.authorization import require_generation_access
@@ -439,7 +440,7 @@ def _model_size_guidance(request: LlmToBricksRequest) -> str:
 
 
 def _direct_system_prompt(request: LlmToBricksRequest) -> str:
-    return DIRECT_SYSTEM_PROMPT + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request)
+    return DIRECT_SYSTEM_PROMPT + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE
 
 
 def _reference_image_guidance(request: LlmToBricksRequest) -> str:
@@ -469,7 +470,7 @@ def _design_system_prompt(request: LlmToBricksRequest) -> str:
     return DESIGN_SYSTEM_PROMPT.format(
         size_hint=_design_size_hint(request.detail_level),
         palette=palette_prompt_text(),
-    ) + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request)
+    ) + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE
 
 
 @dataclass(frozen=True)

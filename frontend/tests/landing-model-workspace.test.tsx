@@ -1189,6 +1189,7 @@ it('shows icon only expand control and Share at the bottom right of the model', 
     const instructionsButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-instructions-toggle')!;
     expect(container.querySelector('.landing-model-workspace')?.contains(instructionsButton)).toBe(true);
     expect(instructionsButton.textContent).toBe('Show instructions');
+    expect(container.textContent).not.toContain('Edit in BrickBuilder Studio');
     const shareButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-model-share button')!;
     expect(shareButton.textContent).toContain('Share');
     expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).justifyContent).toBe('space-between');

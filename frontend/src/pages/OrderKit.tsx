@@ -1,3 +1,4 @@
+import { ImportedStudioOrder } from "../components/ImportedStudioOrder";
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, LockKeyhole, Package, Truck } from "lucide-react";
@@ -43,6 +44,12 @@ const emptyDelivery: DeliveryDetails = { email: '', firstName: '', lastName: '',
 const stepNames = ['Contact & delivery', 'Payment'];
 
 export default function OrderKit() {
+  const location = useLocation();
+  const id = new URLSearchParams(location.search).get('imported');
+  if (id && /^[a-f0-9-]{36}$/i.test(id)) return <ImportedStudioOrder id={id} />;
+  return <OrderCheckout />;
+}
+function OrderCheckout() {
   const { user, session: authSession } = useAuth();
   const { pet } = usePet();
   const location = useLocation();

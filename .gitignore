@@ -7,3 +7,4 @@ __pycache__/
 
 # Supabase CLI project-link metadata
 supabase/.temp/
+.vercel
