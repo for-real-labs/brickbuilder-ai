@@ -71,8 +71,9 @@ def test_runtime_without_publication_checks_is_rejected_before_creating_generati
     create.assert_not_awaited()
 
 
+@pytest.mark.parametrize("prompt", ["castle", None, "Make a mosaic of this image"])
 @pytest.mark.parametrize("disconnect", [False, True])
-def test_nova_import_saves_original_model_and_durable_session_before_charging(monkeypatch, tmp_path, disconnect):
+def test_nova_import_saves_original_model_and_durable_session_before_charging(monkeypatch, tmp_path, disconnect, prompt):
     calls = []
     session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'versions': {'toolkit': 'revision'}, 'model_id': 'new'}
     result = NovaResult('hierarchical MPD', 'flat LDR', b'png', b'archive', session, 'verified instructions')
@@ -90,10 +91,15 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
         async def store_model_file(self, generation_id, content, file_type, **kwargs): calls.append(('model', file_type, content))
         async def store_parts_list_csv(self, generation_id, content, **kwargs): calls.append(('parts', content))
         async def store_preview_image(self, generation_id, content): calls.append(('preview', content))
+        async def store_images(self, **kwargs): calls.append(('images', kwargs))
     class Service:
         async def __aenter__(self): return self
         async def __aexit__(self, *args): pass
         async def run(self, request, provider, save, on_output, previous, **kwargs):
+            from src.utils.build_design_guidance import BUILD_DESIGN_GUIDANCE
+            assert request.prompt.startswith(BUILD_DESIGN_GUIDANCE)
+            assert request.prompt.endswith(prompt or "Create a model from the reference image.")
+            assert request.image_base64 == "aW1hZ2U="
             await save(session)
             return result
     class Packer:
@@ -109,9 +115,10 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     monkeypatch.setattr(module, 'LDrawPacker', Packer)
     monkeypatch.setattr(module, 'deduct_credits', charge)
     monkeypatch.setattr(module, 'track_image_conversion', lambda **kwargs: None)
-    request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5')
+    request = module.NovaToBricksRequest(prompt=prompt, image_base64='aW1hZ2U=', model='gpt-5.5')
     assert asyncio.run(module.process_nova_to_bricks_task('generation', request,
         {'user_email': 'test', 'is_developer': False}, {})) is None
+    assert request.prompt == prompt
     assert calls[1][1] == 'generation/nova-session.json'
     assert json.loads(calls[1][2]) == session
     assert ('model', 'ldr', 'flat LDR') in calls

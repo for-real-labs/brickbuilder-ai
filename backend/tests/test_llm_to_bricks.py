@@ -736,3 +736,15 @@ def test_voxel_patch_preserves_untouched_cells_and_uses_shared_converter(monkeyp
 def test_voxel_edit_rejects_invalid_cells(content):
     with pytest.raises(ValueError):
         module._voxel_cells(content)
+
+
+@pytest.mark.parametrize("prompt_builder", [module._design_system_prompt, module._direct_system_prompt])
+@pytest.mark.parametrize("prompt", ["Build a cat", None, "Make a flat mosaic of this portrait"])
+def test_build_format_defaults_to_3d_but_honors_explicit_flat_requests(prompt_builder, prompt):
+    request = LlmToBricksRequest(prompt=prompt, image_base64="aW1hZ2U=")
+    system = prompt_builder(request)
+    assert "three-dimensional LEGO model by default" in system
+    assert "infer plausible unseen sides" in system
+    assert "Only create a mosaic" in system
+    assert "Explicit user requests for those formats take precedence" in system
+    assert request.prompt == prompt
