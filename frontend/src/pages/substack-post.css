@@ -11,3 +11,9 @@
 .substack-article blockquote { border-left: 3px solid #f44336; padding-left: 1rem; }
 .substack-article figcaption { font-size: .875rem; line-height: 1.5; color: #64748b; }
 .substack-article pre { overflow-x: auto; padding: 1rem; background: #f1f5f9; }
+.substack-article .article-copy-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: .75rem 1rem; border: 1px solid #e2e8f0; border-bottom: 0; border-radius: .75rem .75rem 0 0; background: #f8fafc; }
+.article-copy-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-height: 44px; padding: .5rem 1rem; border: 0; border-radius: .5rem; background: #c62828; color: white; font: 600 .875rem/1.5 system-ui; cursor: pointer; }
+.article-copy-button:hover { background: #a51f1f; }
+.article-copy-button:focus-visible { outline: 2px solid #c62828; outline-offset: 3px; }
+.article-copy-status { font-size: .8rem; line-height: 1.5; color: #475569; }
+.substack-article .article-copy-toolbar + pre { margin-top: 0; border: 1px solid #e2e8f0; border-radius: 0 0 .75rem .75rem; white-space: pre-wrap; overflow-wrap: anywhere; font-size: .875rem; line-height: 1.7; }

@@ -1,4 +1,5 @@
 import React from 'react';
+import { CopyableArticle } from '../components/CopyableArticle';
 import { Link, Navigate, useParams } from 'react-router-dom';
 import posthog from 'posthog-js';
 import { ArrowLeft } from 'lucide-react';
@@ -30,7 +31,7 @@ export default function SubstackPostPage() {
             <p className="mt-5 text-lg leading-8 text-slate-600">{post.description}</p>
             <p className="mt-5 text-sm text-slate-500">{post.author}{post.publishedAt && <> · <time dateTime={post.publishedAt}>{new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(post.publishedAt))}</time></>}</p>
             {/* Only sanitized, checked-in public HTML from the feed importer reaches this boundary. */}
-            <div className="substack-article mt-9 text-base leading-8 text-slate-700" dangerouslySetInnerHTML={{ __html: post.content }} />
+            <CopyableArticle content={post.content} />
             <p className="mt-10 text-sm text-slate-500">Originally published on <a href={post.sourceUrl} onClick={() => posthog.capture('blog_original_source_clicked', { source: 'substack' })} className="text-[#f44336] underline" rel="noopener noreferrer">AI and LEGO on Substack</a>.</p>
           </article>
         </main>
