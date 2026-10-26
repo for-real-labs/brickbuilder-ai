@@ -55,6 +55,8 @@ describe('Substack article route', () => {
   it('renders imported public content with attribution and its original link', () => {
     const markup = renderToStaticMarkup(<MemoryRouter initialEntries={['/blog/new-brick-ideas']}><Routes><Route path="/blog/:slug" element={<SubstackPostPage />} /></Routes></MemoryRouter>);
     expect(markup).toContain('<h2>Build</h2><p>Use bricks.</p>');
+    expect(markup.indexOf('<iframe')).toBeGreaterThan(markup.indexOf('</article>'));
+    expect(markup).toContain('https://legoai.substack.com/embed');
     expect(markup).toContain('New brick ideas');
     expect(markup).toContain('https://writer.substack.com/p/new-brick-ideas');
     expect(markup).toContain('October 5, 2026');

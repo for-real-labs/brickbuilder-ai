@@ -1,3 +1,4 @@
+import { SubstackSubscribe } from '../components/SubstackSubscribe';
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink, LayoutDashboard } from "lucide-react";
@@ -186,6 +187,7 @@ export default function BestAiLegoDesignTools2026Page() {
               authorize, or endorse this site.
             </p>
           </article>
+          <SubstackSubscribe placement="article" />
         </main>
 
         <SiteFooter />

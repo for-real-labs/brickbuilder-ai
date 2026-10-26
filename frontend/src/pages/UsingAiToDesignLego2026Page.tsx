@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { SubstackSubscribe } from '../components/SubstackSubscribe';
+import React, { type ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft, ExternalLink, LayoutDashboard } from "lucide-react";
 
@@ -283,6 +284,7 @@ export default function UsingAiToDesignLego2026Page() {
               authorize, or endorse this site.
             </p>
           </article>
+          <SubstackSubscribe placement="article" />
         </main>
 
         <SiteFooter />

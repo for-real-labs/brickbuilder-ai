@@ -1,3 +1,4 @@
+import { SubstackSubscribe } from '../components/SubstackSubscribe';
 import React from 'react';
 import { CopyableArticle } from '../components/CopyableArticle';
 import { Link, Navigate, useParams } from 'react-router-dom';
@@ -34,6 +35,7 @@ export default function SubstackPostPage() {
             <CopyableArticle content={post.content} />
             <p className="mt-10 text-sm text-slate-500">Originally published on <a href={post.sourceUrl} onClick={() => posthog.capture('blog_original_source_clicked', { source: 'substack' })} className="text-[#f44336] underline" rel="noopener noreferrer">AI and LEGO on Substack</a>.</p>
           </article>
+          <SubstackSubscribe placement="article" />
         </main>
         <SiteFooter />
       </div>

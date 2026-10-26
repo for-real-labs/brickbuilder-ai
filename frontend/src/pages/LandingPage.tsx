@@ -1258,6 +1258,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           <a href="mailto:support@brickbuilder.ai" tabIndex={footerVisible ? 0 : -1}
             onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a></div>
           <LandingSocialLinks visible={footerVisible} />
+          <a href="/blog" tabIndex={footerVisible ? 0 : -1}
+            onClick={() => posthog.capture('landing_blog_clicked')}>Blog</a>
         </div>}
       </div>
     </div>

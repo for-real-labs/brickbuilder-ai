@@ -1,3 +1,4 @@
+import { SubstackSubscribe } from '../components/SubstackSubscribe';
 import React from "react";
 import { Link } from "react-router-dom";
 import { ArrowRight, LayoutDashboard } from "lucide-react";
@@ -72,6 +73,8 @@ export default function BlogIndexPage() {
               Practical articles about turning images, prompts, and 3D models into
               LEGO-compatible brick builds with AI.
             </p>
+
+            <SubstackSubscribe placement="blog_index" />
 
             <div className="mt-10 divide-y divide-slate-200 border-y border-slate-200">
               {posts.map((post) => (

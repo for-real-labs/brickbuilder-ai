@@ -365,12 +365,16 @@ describe('LandingPage', () => {
         expect(container.querySelector('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')).not.toBeNull();
         const help = container.querySelector('.landing-page-help')!;
         expect(help.getAttribute('aria-hidden')).toBe('true');
+        const blog = help.querySelector<HTMLAnchorElement>('a[href="/blog"]')!;
+        expect(blog.textContent).toBe('Blog');
+        expect(blog.tabIndex).toBe(-1);
         const socialLinks = Array.from(help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a'));
         expect(socialLinks.map(link => link.getAttribute('aria-label'))).toEqual(['GitHub', 'Instagram', 'YouTube', 'TikTok']);
         expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
         act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
         expect(help.getAttribute('aria-hidden')).toBe('false');
+        expect(blog.tabIndex).toBe(0);
         expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('true');
         expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
         expect(help.querySelector('a')?.tabIndex).toBe(0);
