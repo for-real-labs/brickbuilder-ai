@@ -156,7 +156,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}
               modelName={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
-              animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} />}
+              animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} defaultShowRuler />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id} embedded active={showingInstructions} />
             </div>}

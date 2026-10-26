@@ -41,10 +41,10 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, modelPath, onModelLoaded }: { modelContent?: string; modelName?: string; modelPath?: string; onModelLoaded?: () => void }) => {
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, modelPath, onModelLoaded, defaultShowRuler, showModelControls }: { defaultShowRuler?: boolean; showModelControls?: boolean; modelContent?: string; modelName?: string; modelPath?: string; onModelLoaded?: () => void }) => {
   if (modelPath) return <div data-testid="generation-3d-animation" data-scene={modelPath} />;
   viewer.loaded = onModelLoaded;
-  return <div data-testid="viewer" data-model-name={modelName}>{modelContent}</div>;
+  return <div data-testid="viewer" data-model-name={modelName} data-ruler={String(defaultShowRuler)} data-controls={String(showModelControls)}>{modelContent}</div>;
 } }));
 vi.mock('../src/components/FallingBricks', () => ({ default: () => null }));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
@@ -249,6 +249,8 @@ it('shows the model name at the top of the viewer while retaining it for model a
   const stage = container.querySelector('[aria-label="3D model viewer"]')!;
   expect(stage.textContent).not.toContain('Castle');
   expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-model-name')).toBe('Castle');
+  expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-ruler')).toBe('true');
+  expect(stage.querySelector('[data-testid="viewer"]')?.getAttribute('data-controls')).toBe('false');
   const heading = container.querySelector('.landing-model-heading')!;
   const workspace = container.querySelector('.landing-model-workspace')!;
   expect(heading.querySelector('h2')?.textContent).toBe('Castle');

@@ -1499,6 +1499,7 @@ interface ThreeLDRViewerProps {
   totalSteps?: number;        // Total number of steps in model
   showBaseplate?: boolean;    // Whether to show baseplate with studs
   topLeftOverlay?: React.ReactNode;
+  defaultShowRuler?: boolean; // Show measurements immediately after the model loads
   showModelControls?: boolean; // Whether to show ruler and explode controls
   presentation?: 'room' | 'model';
   onViewInteractionEnd?: () => void;
@@ -1554,6 +1555,7 @@ export function ThreeLDRViewer({
   buildAnimationStyle = 'drop',
   topLeftOverlay,
   showModelControls = true,
+  defaultShowRuler = false,
   presentation = 'room',
   onViewInteractionEnd,
 }: ThreeLDRViewerProps) {
@@ -1572,7 +1574,7 @@ export function ThreeLDRViewer({
   const [loading, setLoading] = useState(true);
   const [instanced, setInstanced] = useState(false);
   const [explodeMode, setExplodeMode] = useState<ExplodeMode>('assembled');
-  const [showRulerGrid, setShowRulerGrid] = useState(false);
+  const [showRulerGrid, setShowRulerGrid] = useState(defaultShowRuler);
   const collisionCountRef = useRef(0);
   const isCaptureInProgressRef = useRef(false);
   const buildAnimationRef = useRef<BuildAnimationState | null>(null);
@@ -2190,7 +2192,7 @@ export function ThreeLDRViewer({
       ? meshesRef.current.length || 1
       : stepBoundariesRef.current[currentStepIndex] ?? meshesRef.current.length;
     rulerGrid.visible = showRulerGrid && visibleCount > 0;
-  }, [showRulerGrid, currentStepIndex, meshesReady]);
+  }, [showRulerGrid, currentStepIndex, meshesReady, loading]);
 
   // Update part visibility and materials when step changes (instant - no re-parsing)
   useEffect(() => {
