@@ -36,6 +36,10 @@ const chimneyInstructions = `0 BrickBuilder construction export from LDraw Nova
 0 STEP
 1 15 0 -144 0 1 0 0 0 1 0 0 0 1 3001.dat
 0 STEP
+0 FILE parts/5152.dat
+0 Brick 1 x 2 with Groove
+0 FILE parts/2420.dat
+0 Plate 2 x 2 Corner
 `;
 
 it('keeps the chimney pair together and limits assembly metadata to its own step', () => {
@@ -64,8 +68,9 @@ it('shows assemble-first guidance and both chimney pieces only on their grouped 
     expect(container.querySelector('.instructions-step-heading')?.textContent).toContain('Add 2 parts');
     expect(container.querySelector('.instructions-assembly-note')?.textContent).toBe('Connect these pieces first, then attach them to the model.');
     const parts = container.querySelector('.instructions-parts[data-build-together="true"]')!;
-    expect(parts.textContent).toContain('5152.dat');
-    expect(parts.textContent).toContain('2420.dat');
+    expect(parts.textContent).toContain('Brick 1x2 with Groove');
+    expect(parts.textContent).toContain('Plate 2x2 Corner');
+    expect(parts.textContent).not.toContain('.dat');
     await act(async () => next().click());
     expect(container.querySelector('.instructions-assembly-note')).toBeNull();
     expect(container.querySelector('.instructions-step-heading')?.textContent).toContain('Add 1 part');
@@ -111,7 +116,8 @@ it('loads Nova construction steps into the existing viewer and supports Previous
     const next = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Next'))!;
     act(() => next.click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
-    expect(container.textContent).toContain('custom.dat');
+    expect(container.textContent).toContain('Custom part');
+    expect(container.textContent).not.toContain('custom.dat');
     const previous = Array.from(container.querySelectorAll('button')).find(button => button.textContent?.includes('Previous'))!;
     act(() => previous.click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 1');

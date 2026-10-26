@@ -20,6 +20,7 @@ import { SEO } from '../components/SEO';
 import { SiteFooter } from '../components/SiteFooter';
 import { ProfileMenu } from '../components/ProfileMenu';
 import './InstructionsViewer.css';
+import { getPartName, parsePartNames } from '../utils/partNames';
 
 function Header() {
   const navigate = useNavigate();
@@ -111,23 +112,6 @@ const getApiUrls = () => {
 };
 
 const API_URLS = getApiUrls();
-
-// Part type mapping based on common LEGO brick files
-const PART_TYPE_MAP: { [key: string]: string } = {
-  '3005.dat': '1x1',
-  '3004.dat': '1x2', 
-  '3622.dat': '1x3',
-  '3010.dat': '1x4',
-  '3009.dat': '1x6',
-  '3008.dat': '1x8',
-  '6111.dat': '1x10',
-  '3003.dat': '2x2',
-  '3002.dat': '2x3',
-  '3001.dat': '2x4',
-  '2456.dat': '2x6',
-  '3007.dat': '2x8',
-  '3006.dat': '2x10',
-};
 
 // Function to extract part information from MPD content
 const extractPartInfo = (mpdContent: string) => {
@@ -305,6 +289,8 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
   
   // MPD content for download
   const [mpdContent, setMpdContent] = useState<string | null>(null);
+
+  const partNames = useMemo(() => parsePartNames(mpdContent || ldrContent || ''), [mpdContent, ldrContent]);
 
   // File input ref for LDR upload
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -718,7 +704,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
       for (let partIndex = 0; partIndex < sortedParts.length; partIndex++) {
         const [partKey, quantity] = sortedParts[partIndex];
         const [colorCode, filename] = partKey.split(':');
-        const partName = filename.replace('.dat', '').replace(/[_-]/g, ' ');
+        const partName = getPartName(filename, partNames);
         
         currentStep++;
         updateProgress(currentStep, `Adding part ${partIndex + 1} of ${sortedParts.length} to parts list...`);
@@ -766,23 +752,23 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
               
               // Add part image and text with color name
               pdf.addImage(partImage, 'PNG', 20, yPos, 20, 13); // Small part image for parts list
-              pdf.text(`${quantity}x ${colorName}: ${partName}`, 50, yPos + 7);
+              pdf.text(`${quantity}x ${colorName}: ${partName}`, 50, yPos + 7, { maxWidth: 140 });
             } else {
               // Fallback if part content is "0" or invalid
               const colorName = getColorNameWithFallback(parseInt(colorCode), colorMap);
-              pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7);
+              pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7, { maxWidth: 140 });
             }
           } else {
             // Fallback if part API fails
-            pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7);
+            pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7, { maxWidth: 140 });
           }
         } catch (partError) {
           console.warn(`Failed to get part image for parts list ${filename}:`, partError);
           // Fallback text only
-          pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7);
+          pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7, { maxWidth: 140 });
         }
         
-        yPos += 20; // Space for next part (increased for image)
+        yPos += Math.max(20, pdf.splitTextToSize(`${quantity}x ${getColorNameWithFallback(Number(colorCode), colorMap)}: ${partName}`, 140).length * 5 + 10);
       }
       
       // Add each step (all steps now included)
@@ -864,7 +850,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
           const uniqueParts = Array.from(stepPartsCount.entries());
           uniqueParts.forEach(([partKey, quantity]) => {
             const [colorCode, filename] = partKey.split(':');
-            const partName = filename.replace('.dat', '').replace(/[_-]/g, ' ');
+            const partName = getPartName(filename, partNames);
             const colorName = getColorNameWithFallback(parseInt(colorCode), colorMap);
             
             if (yPos > 270) { // Start new page if needed
@@ -873,8 +859,8 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
               yPos = 40; // Split the difference for new pages too: (30 + 50) / 2 = 40
             }
             
-            pdf.text(`x ${quantity} ${colorName}: ${partName}`, 60, yPos);
-            yPos += 12;
+            pdf.text(`x ${quantity} ${colorName}: ${partName}`, 60, yPos, { maxWidth: 130 });
+            yPos += Math.max(12, pdf.splitTextToSize(`x ${quantity} ${colorName}: ${partName}`, 130).length * 5 + 5);
           });
           
         } catch (imageError) {
@@ -888,9 +874,9 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
               pdf.setFontSize(12);
               yPos = 30;
             }
-            const partName = part.filename.replace('.dat', '').replace(/[_-]/g, ' ');
-            pdf.text(`• Color ${part.colorCode}: ${partName}`, 30, yPos);
-            yPos += 10;
+            const partName = getPartName(part.filename, partNames);
+            pdf.text(`• Color ${part.colorCode}: ${partName}`, 30, yPos, { maxWidth: 160 });
+            yPos += Math.max(10, pdf.splitTextToSize(`• Color ${part.colorCode}: ${partName}`, 160).length * 6 + 4);
           });
         }
       }
@@ -971,7 +957,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
       for (let partIndex = 0; partIndex < sortedParts.length; partIndex++) {
         const [partKey, quantity] = sortedParts[partIndex];
         const [colorCode, filename] = partKey.split(':');
-        const partName = filename.replace('.dat', '').replace(/[_-]/g, ' ');
+        const partName = getPartName(filename, partNames);
         
         currentStep++;
         updateProgress(currentStep, `Adding part ${partIndex + 1} of ${sortedParts.length}...`);
@@ -1016,24 +1002,24 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
               
               // Add part image and text with color name
               pdf.addImage(partImage, 'PNG', 20, yPos, 20, 13);
-              pdf.text(`${quantity}x ${colorName}: ${partName}`, 50, yPos + 7);
+              pdf.text(`${quantity}x ${colorName}: ${partName}`, 50, yPos + 7, { maxWidth: 140 });
             } else {
               // Fallback if part content is "0" or invalid
               const colorName = getColorNameWithFallback(parseInt(colorCode), colorMap);
-              pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7);
+              pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7, { maxWidth: 140 });
             }
           } else {
             // Fallback if part API fails
             const colorName = getColorNameWithFallback(parseInt(colorCode), colorMap);
-            pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7);
+            pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7, { maxWidth: 140 });
           }
         } catch (partError) {
           console.error(`Failed to get part image for ${filename}:`, partError);
           const colorName = getColorNameWithFallback(parseInt(colorCode), colorMap);
-          pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7);
+          pdf.text(`${quantity}x ${colorName}: ${partName}`, 30, yPos + 7, { maxWidth: 140 });
         }
         
-        yPos += 25;
+        yPos += Math.max(25, pdf.splitTextToSize(`${quantity}x ${getColorNameWithFallback(Number(colorCode), colorMap)}: ${partName}`, 140).length * 5 + 10);
       }
       
       // Save the PDF
@@ -1367,10 +1353,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                       return (
                         <div className="space-y-2">
                           {stepParts.map((part, index) => {
-                            // Extract just the part number from filename (e.g., "parts/3005" -> "3005.dat")
-                            const partNumber = part.filename.replace('parts/', '').replace(/\.dat/i, '');
-                            const partWithDat = `${partNumber}.dat`;
-                            const partType = PART_TYPE_MAP[partWithDat] || partWithDat;
+                            const partType = getPartName(part.filename, partNames);
                             const colorName = getColorNameWithFallback(part.colorCode, parseLDrawColors(currentLastStepMpd));
                             return (
                               <div key={index} className="text-sm text-slate-600">
