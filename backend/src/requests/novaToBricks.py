@@ -23,6 +23,7 @@ from ..utils.authorization import require_generation_access
 from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
+from ..utils.build_design_guidance import guided_build_prompt
 from ..utils.nova_service import NovaService, INSTRUCTIONS_FILE
 from ..utils.storage_upload import upload_artifact
 from ..utils.pack_ldraw_model import LDrawPacker
@@ -170,7 +171,8 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
         provider = SUPPORTED_MODELS[request.model].provider
         async with _nova_service(request, auth_info) as nova:
             try:
-                result = await asyncio.wait_for(nova.run(request, provider,
+                build_request = request.model_copy(update={"prompt": guided_build_prompt(request.prompt)})
+                result = await asyncio.wait_for(nova.run(build_request, provider,
                     lambda session: _save_session(generation_id, session), on_thinking, request._nova_session,
                     on_progress=on_progress),
                     timeout=_generation_timeout())

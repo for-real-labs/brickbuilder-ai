@@ -81,8 +81,10 @@ unset or `0` disables that limit. Progress labels come directly from Nova,
 without additional Claude or OpenAI summarization calls. Failed or cancelled
 Nova cards offer **Resume build**, preserving the original conversation,
 workspace and provider settings instead of starting over.
-Describe scale and part preferences in the prompt. There are no separate
-BrickBuilder planning prompts, tool schemas, render loop or acceptance rules.
+Describe scale and part preferences in the prompt. BrickBuilder adds shared design guidance to the build request: create a 3D LEGO
+model, including for uploaded references, unless the user explicitly requests a
+mosaic or another flat format. Existing-model edits preserve the established format.
+There are no separate BrickBuilder planning prompts, tool schemas, render loop or acceptance rules.
 
 Set `TYPESAFE_API_KEY` in the ignored backend environment to configure Jev in
 Nova's protected settings. Nova chooses its own search workflow and fallback.
