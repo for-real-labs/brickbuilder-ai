@@ -41,3 +41,5 @@
 .instructions-embedded .instructions-parts[data-build-together] { max-height: 160px; border-color: #fde68a; background: #fffbeb; }
 .instructions-embedded .instructions-parts[data-build-together] .instructions-assembly-note { font-size: 12px; }
 .instructions-embedded .instructions-parts[data-build-together] > div > div:first-child { width: 104px; height: 72px; }
+
+.instructions-parts-list { min-width: 0; overflow-wrap: anywhere; }
