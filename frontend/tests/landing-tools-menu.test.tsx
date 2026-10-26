@@ -22,7 +22,7 @@ const mount = (selected: LandingModel | null = model, busy = false) => act(() =>
 it('puts Import first and Export second, separates groups, and keeps Community/GitHub together above Feedback/Support', () => {
   mount(); act(() => button('Tools').click());
   const rows = [...host.querySelectorAll('ul[aria-label="Tools"] > li')];
-  expect(rows.map(row => row.textContent)).toEqual(['Import', 'Export', '', 'Generation settings', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Build Buddy', '', 'Community', 'GitHub', '', 'Feedback', 'Support']);
+  expect(rows.map(row => row.textContent)).toEqual(['Import', 'Export', 'Edit in BrickBuilder Studio', '', 'Generation settings', '', 'Image to LEGO', 'GLB to LEGO', 'OBJ to LEGO', '', 'Build Buddy', '', 'Community', 'GitHub', '', 'Feedback', 'Support']);
   expect(host.querySelectorAll('[role="separator"]')).toHaveLength(5);
   expect(button('Export').querySelector('.lucide-download')).not.toBeNull();
   act(() => button('Import').click());
@@ -106,4 +106,16 @@ it.each(['feedback', 'support'] as const)('pet opens %s for user submission', ac
  const fetch = vi.spyOn(globalThis, 'fetch'); mountBuddy();
  expect(run(action)).toContain('press Send'); expect(host.querySelector('[role="dialog"]')?.textContent).toContain(action === 'support' ? 'Support' : 'Feedback');
  expect(fetch).not.toHaveBeenCalled();
+});
+
+const studio = vi.hoisted(() => ({ send: vi.fn().mockResolvedValue(undefined) }));
+vi.mock('../src/utils/studioTransfer', () => ({ sendModel: studio.send, STUDIO_ORIGIN: 'https://studio.brickbuilder.ai' }));
+it('opens the selected model in Studio from Tools and disables it during generation', async () => {
+  mount(); act(() => button('Tools').click());
+  await act(async () => button('Edit in BrickBuilder Studio').click());
+  expect(studio.send).toHaveBeenCalledWith('https://studio.brickbuilder.ai/', { name: 'Castle', content: model.content });
+  mount(model, true);
+  expect(button('Edit in BrickBuilder Studio').disabled).toBe(true);
+  mount(null);
+  expect(button('Edit in BrickBuilder Studio')).toBeUndefined();
 });

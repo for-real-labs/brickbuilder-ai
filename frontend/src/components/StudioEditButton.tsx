@@ -6,9 +6,11 @@ import type { LandingModel } from "../hooks/useLandingModel";
 export function StudioEditButton({
   model,
   disabled = false,
+  className = "landing-action-button",
 }: {
   model: LandingModel;
   disabled?: boolean;
+  className?: string;
 }) {
   const [busy, setBusy] = useState(false),
     [error, setError] = useState("");
@@ -38,11 +40,11 @@ export function StudioEditButton({
     <div>
       <button
         type="button"
-        className="landing-action-button"
+        className={className}
         disabled={disabled || busy}
         onClick={() => void open()}
       >
-        <PencilRuler size={16} aria-hidden="true" />
+        <PencilRuler size={16} className="shrink-0" aria-hidden="true" />
         <span>{busy ? "Opening Studio…" : "Edit in BrickBuilder Studio"}</span>
       </button>
       {error && (
