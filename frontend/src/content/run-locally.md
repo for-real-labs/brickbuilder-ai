@@ -1,0 +1,11 @@
+# Install and run BrickBuilder on my computer
+
+Install and run the open-source app at https://github.com/for-real-labs/brickbuilder-ai on this computer. Do the setup, rather than only explaining the commands.
+
+1. Detect my operating system and read the repository's current README and local setup scripts. Check Git, Node.js 18+, Python 3.10+, and Docker Desktop (or a working Docker engine). Install missing prerequisites from official sources when possible; tell me about any manual installation or permission needed. Start Docker for All parts mode.
+2. Clone the repository into a new folder, or reuse an existing checkout without overwriting my changes. Work from the repository root.
+3. Copy backend/.env-example to backend/.env and frontend/.env-example to frontend/.env only if those files do not exist. Keep VITE_API_MODE=local and VITE_LOCAL_API_URL=http://127.0.0.1:8002. Keep credentials private and out of Git, browser bundles, and chat.
+4. Run npm install, then npm start. The root scripts install the Python backend and frontend, build the pinned Nova Docker runtime, and start the local services. Allow time and disk space for the first Docker build. Diagnose setup errors using the current repository documentation.
+5. Open the frontend URL printed by Vite (normally http://127.0.0.1:3000). Verify that the frontend and local backend respond. For All parts, check npm run nova:status and guide me through the app's local OpenAI/Claude provider sign-in, or help me configure my own project API key privately. Let me complete authentication myself. Basic bricks needs an OPENAI_API_KEY or ANTHROPIC_API_KEY in backend/.env and a matching model selection. AI provider charges or subscription limits may apply.
+6. If Docker is unavailable, offer Basic bricks only by setting NOVA_SKIP_SETUP=true for both npm install and npm start, using syntax appropriate for my shell. Explain that All parts will be unavailable in that mode.
+7. Leave the app running and give me the local URL, a short status report, and stop/restart instructions. Ctrl+C stops the app servers; Nova's Docker container stays running. Do not claim a successful AI build unless one was actually tested with my authorization.

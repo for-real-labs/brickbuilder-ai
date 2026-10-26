@@ -1,3 +1,4 @@
+import { RunLocallyButton } from './RunLocallyButton';
 import { CreditBalance } from './BillingComponents';
 import { NotificationPanel } from "./NotificationMenu";
 import React, { useEffect, useId, useRef, useState } from "react";
@@ -78,7 +79,7 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
   const showUserIdentity = isSupabaseConfigured && user;
 
   return (
-    <div className="flex items-center gap-2">{showCredits && <CreditBalance />}<div ref={container} className="relative shrink-0">
+    <div className="flex items-center gap-2">{showCredits && <><CreditBalance /><RunLocallyButton /></>}<div ref={container} className="relative shrink-0">
       <button
         ref={trigger}
         type="button"

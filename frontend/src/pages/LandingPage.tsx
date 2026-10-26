@@ -1,3 +1,4 @@
+import { RunLocallyButton } from '../components/RunLocallyButton';
 import { LandingCreateInput } from '../components/LandingCreateInput';
 import { isBuildFromToday } from '../utils/recentBuilds';
 import { AiBillingSettings } from '../components/AiBillingSettings';
@@ -1293,6 +1294,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         <CreditBalance />
+        <RunLocallyButton />
         <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
         {showProfileMenu ? (
           // Logged in or no Supabase: show the account dropdown
