@@ -13,8 +13,8 @@ from .database import execute_query
 
 PLANS = (
     {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 300},
-    {"key": "builder", "name": "Builder", "monthly_cents": 900, "credits": 500},
-    {"key": "creator", "name": "Creator", "monthly_cents": 1900, "credits": 750},
+    {"key": "builder", "name": "Builder", "monthly_cents": 900, "credits": 800},
+    {"key": "creator", "name": "Creator", "monthly_cents": 1900, "credits": 1500},
 )
 PAID_PLANS = {p["key"]: p for p in PLANS if p["monthly_cents"]}
 # Retired plans still need invoice reconciliation and cancellation support.

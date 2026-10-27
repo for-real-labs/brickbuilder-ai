@@ -15,8 +15,8 @@ from fastapi import HTTPException
 from . import billing
 
 PRODUCTS = {
-    'ai.brickbuilder.app.builder.monthly': ('builder', 500),
-    'ai.brickbuilder.app.creator.monthly': ('creator', 750),
+    'ai.brickbuilder.app.builder.monthly': ('builder', 800),
+    'ai.brickbuilder.app.creator.monthly': ('creator', 1500),
 }
 BUNDLE_ID = 'ai.brickbuilder.app'
 

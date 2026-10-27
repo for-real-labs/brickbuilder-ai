@@ -1,6 +1,6 @@
 import { isAppleApp } from '../services/applePurchases';
 import React, { useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import posthog from 'posthog-js';
@@ -9,10 +9,12 @@ import { PlanGrid } from '../components/BillingComponents';
 import { PetAvatar } from '../components/PetCompanion';
 
 export function BillingHeader() {
+  const { pathname } = useLocation();
+  const destination = pathname === '/billing' ? '/pricing' : '/billing';
   const track = (destination: string) => posthog.capture('billing_navigation_clicked', { destination, page: window.location.pathname });
   return <header className="billing-header"><Link to="/" onClick={() => track('/')} className="billing-brand"><span><b>BRICK</b>BUILDER</span></Link>
     <nav aria-label="Billing navigation"><Link to="/" aria-label="Back to building" onClick={() => track('/')}><ArrowLeft size={15} /> <span>Back to building</span></Link>
-      <Link to="/billing" onClick={() => track('/billing')}>My billing <ArrowUpRight size={15} /></Link></nav></header>;
+      <Link to={destination} onClick={() => track(destination)}>{destination === '/pricing' ? 'Pricing' : 'My billing'} <ArrowUpRight size={15} /></Link></nav></header>;
 }
 
 const faqs = [
@@ -38,7 +40,7 @@ const appleFaqs: Record<string, string> = {
 export default function PricingPage() {
   const { error, enabled, account, checkoutAvailable } = useBilling();
   useEffect(() => { posthog.capture('billing_pricing_viewed', { source: 'pricing_page' }); }, []);
-  return <div className="billing-page"><Helmet><title>Plans & credits | BrickBuilder</title><meta name="description" content="Start with 300 free monthly credits. Builder includes 500 credits for $9/month; Creator includes 750 for $19/month. LDR downloads and building instructions are free. Paid plans unlock IO exports. Cancel anytime." /></Helmet>
+  return <div className="billing-page"><Helmet><title>Plans & credits | BrickBuilder</title><meta name="description" content="Start with 300 free monthly credits. Builder includes 800 credits for $9/month; Creator includes 1,500 for $19/month. LDR downloads and building instructions are free. Paid plans unlock IO exports. Cancel anytime." /></Helmet>
     <BillingHeader />
     <main className="billing-main"><div className="billing-hero"><div className="billing-hero-pets"><PetAvatar id="pip" /><PetAvatar id="nib" /><PetAvatar id="clik" /></div>
       <p className="billing-eyebrow">YOUR IDEAS. YOUR BUDDY. YOUR NEXT BUILD.</p><h1>Keep your ideas building.</h1>

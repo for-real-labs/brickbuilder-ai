@@ -148,3 +148,38 @@
 .credit-nudge .credit-nudge-dismiss:hover { background:#f5eade; }
 
 .credit-count { min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Shared monthly usage and compact, touch-friendly billing layouts. */
+.billing-dialog-heading > div { flex:1; min-width:0; }
+.billing-monthly-usage { margin-top:18px; max-width:560px; }
+.billing-monthly-usage strong { color:#343b46; font-variant-numeric:tabular-nums; }
+.billing-monthly-usage progress { display:block; appearance:none; width:100%; height:9px; margin-top:10px; border:0; border-radius:99px; overflow:hidden; background:#eee7df; }
+.billing-monthly-usage progress::-webkit-progress-bar { background:#eee7df; }
+.billing-monthly-usage progress::-webkit-progress-value { background:#e94f40; border-radius:99px; }
+.billing-monthly-usage progress::-moz-progress-bar { background:#e94f40; border-radius:99px; }
+.billing-account-card { min-width:0; }
+@media(max-width:600px) {
+ .billing-header { align-items:center; padding:16px; }
+ .billing-header nav { gap:8px; }
+ .billing-header nav a { min-height:44px; padding:8px 4px; }
+ .billing-main { padding-inline:16px; }
+ .billing-dialog { padding:58px 16px 24px; overscroll-behavior:contain; }
+ .billing-close { width:44px; height:44px; top:10px; right:10px; }
+ .billing-dialog-heading { display:block; margin:0 0 28px; }
+ .billing-dialog-heading > .pet-avatar { display:none; }
+ .billing-dialog-heading h1 { font-size:26px; max-width:330px; }
+ .billing-dialog-heading p:not(.billing-eyebrow) { font-size:13px; }
+ .billing-plan { padding:20px; border-radius:18px; }
+ .billing-plan--recommended { padding:19px; }
+ .billing-plan-description, .billing-renewal { font-size:13px; }
+ .billing-plan-button { min-height:48px; font-size:14px!important; }
+ .billing-features li, .billing-credit-allocation { font-size:14px; }
+ .billing-fine-print { font-size:12px; }
+ .billing-dialog > .billing-text-link { min-height:44px; text-align:center; line-height:1.5; }
+ .billing-balance-row { flex-wrap:wrap; }
+ .billing-account-title > div { min-width:0; }
+ .billing-account-title > .pet-avatar { flex-shrink:0; width:64px; height:64px; }
+ .billing-account-actions { align-items:stretch; }
+ .billing-feature-dialog { padding-top:58px; }
+ .billing-feature-actions { flex-direction:column; }
+}

@@ -73,7 +73,7 @@ def test_only_verified_paid_matching_invoices_grant_credits(monkeypatch,identity
     else:
         asyncio.run(billing.sync_subscription('sub_test'))
         assert grant.call_args.kwargs['p_invoice']==('in_test' if change is None else None)
-        assert grant.call_args.kwargs['p_allowance']==(500 if change is None else None)
+        assert grant.call_args.kwargs['p_allowance']==(800 if change is None else None)
 
 
 def test_subscription_checkout_never_reaches_physical_order_processing(monkeypatch):

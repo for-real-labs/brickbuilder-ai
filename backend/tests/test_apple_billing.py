@@ -37,7 +37,7 @@ def test_current_server_state_is_used_for_refunded_device_transaction(monkeypatc
     api.get_transaction_info.assert_called_once_with('123')
     verifier.verify_and_decode_signed_transaction.assert_called_once_with('current-signed-state')
     assert rpc.call_args.kwargs['p_revoked'] is True
-    assert rpc.call_args.kwargs['p_allowance'] == 500
+    assert rpc.call_args.kwargs['p_allowance'] == 800
 
 
 def test_prepare_blocks_duplicate_web_subscription(monkeypatch):

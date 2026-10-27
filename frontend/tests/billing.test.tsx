@@ -6,7 +6,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
 import { BillingProvider } from '../src/contexts/BillingContext';
-import { BillingOverlays, CreditBalance, CreditNudge, PlanGrid, GenerationCreditQuote } from '../src/components/BillingComponents';
+import { BillingOverlays, MonthlyCreditUsage, CreditBalance, CreditNudge, PlanGrid, GenerationCreditQuote } from '../src/components/BillingComponents';
 import BillingPage from '../src/pages/BillingPage';
 import PricingPage from '../src/pages/PricingPage';
 import { billingApi, openStripe, type BillingAccount } from '../src/services/billingApi';
@@ -69,7 +69,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
 it('asks guests to sign in before creating a subscription', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
-  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('Free LDR downloads and building instructions');
+  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('Model exporting');
   await click('Choose Builder');
   expect(container.textContent).toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();
@@ -158,15 +158,38 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
 });
 
 
-it('shows the approved monthly allowances and whole All parts equivalents on every plan', async () => {
+it('shows the monthly allowances and simplified features on every plan', async () => {
   await render(<PricingPage />);
   const cards = [...container.querySelectorAll('.billing-plan')];
-  expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$9', '$19']);
-  ['300 Basic builds or 20 All parts builds', '500 Basic builds or 33 All parts builds',
-    '750 Basic builds or 50 All parts builds']
-    .forEach((allowance, index) => expect(cards[index].textContent).toContain(allowance));
-  expect(container.textContent).toContain('leftover credits remain usable for Basic builds');
-  expect(container.textContent).toContain('up to 5 bonus credits per calendar month');
+  expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['300', '800', '1,500']);
+  for (const card of cards) {
+    expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['Model exporting', 'Building instructions']);
+  }
+});
+
+it.each([[300, 270, 30], [800, 0, 800], [800, 1000, 0], [0, 0, 0]])('bounds monthly usage for allowance %s and balance %s', async (total, remaining, used) => {
+  await render(<MonthlyCreditUsage account={{ monthly_credits: total, monthly_remaining: remaining }} />);
+  const progress = container.querySelector('progress')!;
+  expect(progress.value).toBe(used);
+  expect(progress.max).toBe(Math.max(1, total));
+  expect(progress.getAttribute('aria-valuetext')).toBe(`${used} of ${total} monthly credits used`);
+});
+
+it('shows monthly usage beneath the popup title without counting bonuses or Apple credits', async () => {
+  account = { ...account, monthly_remaining: 270, bonus_remaining: 5, apple_remaining: 800 };
+  await render(<CreditBalance />);
+  await click('credits');
+  const heading = container.querySelector('.billing-dialog-heading')!;
+  expect(heading.textContent).toContain('You’ve used 30 of your 300 monthly credits.');
+  expect(heading.textContent).not.toContain('BUILD WITH');
+  expect(heading.querySelector('progress')?.value).toBe(30);
+});
+
+it('links to Pricing from the billing page header', async () => {
+  await act(async () => root.render(<HelmetProvider><MemoryRouter initialEntries={['/billing']}><BillingProvider><BillingPage /></BillingProvider></MemoryRouter></HelmetProvider>));
+  const nav = container.querySelector('nav[aria-label="Billing navigation"]')!;
+  expect(nav.querySelector('a[href="/pricing"]')?.textContent).toContain('Pricing');
+  expect(nav.querySelector('a[href="/billing"]')).toBeNull();
 });
 
 it.each([false,true])('explains guest access without requiring login and offers optional signup (All parts: %s)', async allParts => {

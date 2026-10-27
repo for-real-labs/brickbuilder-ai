@@ -9,8 +9,8 @@ import { useBilling } from '../contexts/BillingContext';
 import { usePet } from '../contexts/PetContext';
 import { PetAvatar } from './PetCompanion';
 import LoginModal from './LoginModal';
-import { PaidFeatureDialog, PaidFeatureLock } from './PaidFeatureDialog';
-import type { PlanKey } from '../services/billingApi';
+import { PaidFeatureDialog } from './PaidFeatureDialog';
+import type { BillingAccount, PlanKey } from '../services/billingApi';
 import './billing.css';
 
 export const billingDate = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
@@ -51,12 +51,8 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
             onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <ul className="billing-features">
-          <li><Check aria-hidden="true" />{plan.credits.toLocaleString()} Basic builds or {Math.floor(plan.credits / 15)} All parts builds</li>
-          <li><Check aria-hidden="true" />Mix modes from one credit balance</li>
-          <li><Check aria-hidden="true" />Free LDR downloads and building instructions</li>
-          <li>{plan.key === 'free' ? <><PaidFeatureLock />IO exports on paid plans</>
-            : <><Check aria-hidden="true" />IO exports</>}</li>
-          <li><Check aria-hidden="true" />Every Build Buddy included</li>
+          <li><Check aria-hidden="true" />Model exporting</li>
+          <li><Check aria-hidden="true" />Building instructions</li>
         </ul>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
       </article>;
@@ -94,9 +90,17 @@ export function CreditNudge() {
   </div>;
 }
 
+export function MonthlyCreditUsage({ account }: { account: Pick<BillingAccount, 'monthly_credits' | 'monthly_remaining'> }) {
+  const total = Math.max(0, account.monthly_credits);
+  const used = Math.min(total, Math.max(0, total - account.monthly_remaining));
+  return <div className="billing-monthly-usage">
+    <p>You’ve used <strong>{used.toLocaleString()}</strong> of your <strong>{total.toLocaleString()}</strong> monthly credits.</p>
+    <progress max={Math.max(1, total)} value={used} aria-label="Monthly credits used" aria-valuetext={`${used} of ${total} monthly credits used`} />
+  </div>;
+}
+
 export function BillingOverlays() {
   const { upgradeSource, closeUpgrade, account, enabled, error, loginOpen, closeLogin } = useBilling();
-  const { pet } = usePet();
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (!upgradeSource) return;
@@ -109,13 +113,14 @@ export function BillingOverlays() {
     {upgradeSource && <dialog ref={dialog} className="billing-dialog" aria-labelledby="billing-upgrade-title"
       onCancel={e => { e.preventDefault(); closeUpgrade(); }} onClose={closeUpgrade}>
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
-      <div className="billing-dialog-heading"><PetAvatar /><div><p className="billing-eyebrow">BUILD WITH {pet.name.toUpperCase()}</p>
+      <div className="billing-dialog-heading"><PetAvatar /><div>
         <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        <p>{account ? `${account.monthly_remaining + (account.apple_remaining ?? 0)} credits available for either mode. ${account.bonus_available ?? 0} legacy bonuses available for Basic only. ` : ''}{(account?.plan_key === 'creator' || account?.plan_key === 'master') && account.credits_remaining === 0 ? `Review your credit usage and reset date in billing.` : 'Basic builds: 1 credit. All parts: 15 credits on every plan. LDR downloads and building instructions are free. Paid plans unlock IO exports. Cancel anytime.'}</p></div></div>
+        {account && <MonthlyCreditUsage account={account} />}
+      </div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
-      <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Legacy bonuses never expire; use up to 5 per month on Basic builds. Failed or canceled builds return their credits.</p>
+      <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Legacy bonuses never expire. Failed or canceled builds return their credits.</p>
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={closeLogin} redirectTo="/pricing" />
