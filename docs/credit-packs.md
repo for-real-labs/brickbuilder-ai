@@ -67,3 +67,17 @@ archive. Native sandbox purchases and App Review submission remain unverified.
 Resume with cloud build capacity or sufficient local disk space, run native
 purchase tests, capture review screenshots, upload/attach the validated 1.0.5
 binary, and submit that version together with both first-time consumables.
+
+### New Expo account project
+
+At the user's request, created `@jjohnson5253/brickbuilder` under their Gmail
+Expo account instead of transferring the old organization project. New EAS
+project ID: `92d07dc7-90af-4583-8894-0a2df516b467`. The Apple bundle identifier
+and App Store app remain unchanged. New distribution signing credentials were
+configured successfully for the existing Apple team. No EAS Update configuration
+was present to migrate. Mobile type checking and all 27 mobile tests passed.
+
+Version 1.0.5 build 22 was accepted into the cloud build queue:
+`cb39ed6b-e1d0-45bb-a836-7ddd50523daa`. This supersedes the old account's quota
+blocker; build completion, native purchase validation, and Apple submission are
+still pending.

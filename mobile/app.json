@@ -10,7 +10,7 @@
     "backgroundColor": "#ffffff",
     "ios": {
       "bundleIdentifier": "ai.brickbuilder.app",
-      "buildNumber": "1",
+      "buildNumber": "20",
       "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -27,10 +27,10 @@
     },
     "extra": {
       "eas": {
-        "projectId": "a4cde02d-2b94-4193-89e4-54eaccb5e311"
+        "projectId": "92d07dc7-90af-4583-8894-0a2df516b467"
       }
     },
-    "owner": "jakesessiongalaxys-team",
+    "owner": "jjohnson5253",
     "plugins": [
       "expo-iap"
     ]
