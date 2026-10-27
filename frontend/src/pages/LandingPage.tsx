@@ -916,7 +916,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const conversationStarted = !ldrawLanding
     && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage) || Boolean(randomSuggestion));
   const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
-  const helpVisible = useLandingHelp(landingViewportRef, !ldrawLanding);
+  const footerEnabled = !ldrawLanding && !conversationStarted && !pendingGeneration;
+  const helpVisible = useLandingHelp(landingViewportRef, footerEnabled);
   const footerVisible = helpVisible;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
   const todayProcessingBuilds = processingBuilds.filter(row => isBuildFromToday(row.createdAt));
@@ -1253,7 +1254,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>}
 
 
-        {!ldrawLanding && <div className="landing-page-help" aria-hidden={!footerVisible}>
+        {footerEnabled && <div className="landing-page-help" aria-hidden={!footerVisible}>
           <div>Need help?{' '}
           <a href="mailto:support@brickbuilder.ai" tabIndex={footerVisible ? 0 : -1}
             onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a></div>

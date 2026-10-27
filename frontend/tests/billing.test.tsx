@@ -1,4 +1,5 @@
 import React, { act } from 'react';
+import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
@@ -302,7 +303,7 @@ it.each([2, 300])('dismisses the plans banner with %s credits and keeps it hidde
   expect(container.querySelector('.credit-nudge')).toBeNull();
 });
 
-it('reserves a stable numeric slot while the balance loads', async () => {
+it('updates the same numeric element when the balance loads', async () => {
   let resolveAccount!: (value: BillingAccount) => void;
   vi.mocked(billingApi.account).mockReturnValue(new Promise(resolve => { resolveAccount = resolve; }));
   await render(<CreditBalance />);
@@ -311,4 +312,20 @@ it('reserves a stable numeric slot while the balance loads', async () => {
   await act(async () => resolveAccount({ ...account, credits_remaining: 12345 }));
   expect(container.querySelector('.credit-count')).toBe(count);
   expect(count?.textContent).toBe('12,345');
+});
+
+
+it.each([0, 2, 12345])('lets the header balance fit %s credits without reserving empty digit space', async credits => {
+  account.credits_remaining = credits;
+  const style = document.createElement('style');
+  style.textContent = readFileSync('src/components/billing.css', 'utf8')
+    + readFileSync('src/pages/LandingPage.css', 'utf8');
+  document.head.append(style);
+  try {
+    await render(<header className="landing-header"><CreditBalance /></header>);
+    const count = container.querySelector('.credit-count')!;
+    expect(count.textContent).toBe(credits.toLocaleString());
+    expect(getComputedStyle(count).minWidth).toBe('0');
+    expect(getComputedStyle(count).fontVariantNumeric).toBe('tabular-nums');
+  } finally { style.remove(); }
 });

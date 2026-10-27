@@ -147,4 +147,4 @@
 .credit-nudge .credit-nudge-dismiss { position:absolute; top:2px; right:2px; justify-content:center; width:40px; height:40px; margin:0; padding:0; border-radius:50%; color:#7e7368; }
 .credit-nudge .credit-nudge-dismiss:hover { background:#f5eade; }
 
-.credit-count { min-width: 7ch; text-align: right; font-variant-numeric: tabular-nums; }
+.credit-count { min-width: 0; text-align: right; font-variant-numeric: tabular-nums; }
