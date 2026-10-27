@@ -167,7 +167,14 @@ export default function FallingBricks({
       if (arr.length > want) {
         arr.length = want;
       } else {
-        while (arr.length < want) arr.push(makeBrick());
+        while (arr.length < want) {
+          const brick = makeBrick();
+          // Start throughout the viewport, with one random position per vertical
+          // band so the background is populated from its very first frame.
+          brick.x = rand(0, canvas.clientWidth);
+          brick.y = ((arr.length + Math.random()) / want) * canvas.clientHeight;
+          arr.push(brick);
+        }
       }
     }
 
