@@ -55,7 +55,7 @@ def test_paid_order_saves_postcard_choice_and_instructions_link(monkeypatch, sel
         assert 'instructions_postcard_size' not in info
     assert 'instructions_url' not in info
     customer_links = EmailLinks(send.call_args_list[0].args[0]['html']).links
-    instructions = next(url for url in customer_links if '/instructions?' in url)
+    instructions = next(url for url in customer_links if parse_qs(urlparse(url).query).get('instructions') == ['1'])
     key = parse_qs(urlparse(instructions).fragment)['access'][0]
     assert instruction_key_hash(key) == save.call_args.kwargs['instructions_key_hash']
     assert key not in str(save.call_args)
@@ -199,8 +199,8 @@ def test_order_emails_link_to_landing_model_and_instructions_dialog(monkeypatch,
         expected = {'id': [generation_id], 'exact': ['1']}
         assert parse_qs(model_links[0].query) == expected
         if instructions:
-            assert model_links[1].path == '/instructions'
-            assert parse_qs(model_links[1].query) == {'id': [generation_id]}
+            assert model_links[1].path == '/'
+            assert parse_qs(model_links[1].query) == {**expected, 'instructions': ['1']}
             assert len(parse_qs(model_links[1].fragment)['access'][0]) == 43
 
 

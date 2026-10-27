@@ -387,14 +387,14 @@ def test_nova_usage_is_read_for_only_this_generation_including_failed_edits(monk
     assert ledger.values()['estimated_cost_usd'] == '0.002'
 
 
-@pytest.mark.parametrize('version', [None, 0, 1, 2])
+@pytest.mark.parametrize('version', [None, 0, 1, 2, 3])
 def test_instructions_require_the_connected_exporter(version):
     async def run():
         info = {**VERSIONS, 'instruction_plan_version': version}
         service = NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
             lambda request: httpx.Response(200, json=info))))
         async with service:
-            with pytest.raises(ValueError, match='five-piece connected instructions with underside assemblies'):
+            with pytest.raises(ValueError, match='baseplate-aware connected instructions and underside assemblies'):
                 await service.instructions('model')
     asyncio.run(run())
 
