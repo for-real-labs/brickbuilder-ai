@@ -278,7 +278,6 @@
   .landing-page.landing-page--welcome .landing-page-intro { margin-top: 36px; }
   .landing-page.landing-page--welcome .landing-page-intro-content { gap: 18px; }
   .landing-page.landing-page--welcome .landing-page-content { padding-top: 28px; }
-  .landing-header .credit-count { min-width: 4ch; }
   .landing-header .credit-balance { gap: 3px; padding: 6px; }
   .landing-header .credit-balance > svg { width: 13px; }
   .landing-header .credit-add { width: 15px; height: 15px; line-height: 14px; }
