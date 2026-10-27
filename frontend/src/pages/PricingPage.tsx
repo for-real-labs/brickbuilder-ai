@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import posthog from 'posthog-js';
 import { useBilling } from '../contexts/BillingContext';
-import { PlanGrid } from '../components/BillingComponents';
+import { PlanGrid, CreditPacks } from '../components/BillingComponents';
 import { PetAvatar } from '../components/PetCompanion';
 
 export function BillingHeader() {
@@ -25,7 +25,7 @@ const faqs = [
   ['What if builds keep failing or I keep canceling?', 'Failed or canceled builds return credits, but AI work may already have a cost. After 5 failed or canceled AI builds within 24 hours, new builds using BrickBuilder credits pause until fewer than 5 remain in that window. We show when you can retry. Running builds reserve retry slots too. This applies to every plan and guest browser/network; upgrading does not remove the pause. Your own API-key usage is exempt.'],
   ['What happens to my existing credits?', 'Your existing balance is preserved as legacy bonus credits and never expires. After your monthly credits, redeem up to 5 bonus credits per calendar month for Basic builds. Bonuses cannot be used for All parts or AI mesh conversions. Unused bonuses stay in your account.'],
   ['Can I cancel?', 'Yes. Open My billing → Cancel subscription to confirm cancellation in Stripe. You keep the remaining credits from your paid plan until the end of that billing period. Then your account returns to Free. Your saved models and bonus credits stay available.'],
-  ['Can I buy credits without subscribing?', 'We currently offer monthly plans only. If you need more credits, you can change your plan. Stripe shows any prorated charge before you confirm. Upgrades add the difference in credits; downgrades take effect at renewal.'],
+  ['Can I buy credits without subscribing?', 'Yes. Buy 800 credits for $10.80 or 1,500 credits for $22.80 without changing your plan. One-time credits never expire and cost 20% more than the matching monthly plan. You can also upgrade for a larger monthly allowance.'],
   ['What if a build fails?', 'Failed and canceled builds return their credits automatically to the original credit period. Monthly credits cover your builds, with one build running at a time. Account restrictions may also apply. Capacity limits can temporarily pause new builds; your saved models and subscription cancellation remain available.'],
 ];
 
@@ -33,7 +33,7 @@ const faqs = [
 const appleFaqs: Record<string, string> = {
   'When do credits reset?': 'Apple subscriptions add credits at each verified monthly renewal. Unused Apple credits roll over and never expire, including after cancellation. Free credits reset each UTC calendar month. Web subscriptions have separate monthly allowances without rollover.',
   'Can I cancel?': 'Open My billing → Manage Apple subscription to cancel in Apple settings. Cancel at least 24 hours before renewal. Paid features remain available through your paid period; unused Apple credits and saved models stay available.',
-  'Can I buy credits without subscribing?': 'We offer monthly plans only. Apple shows the localized subscription price and confirms any plan change before payment. You can restore existing purchases using Restore purchases.',
+  'Can I buy credits without subscribing?': 'Yes. Buy an 800-credit or 1,500-credit pack through Apple in the latest app. Apple shows the localized one-time price before payment. Purchased credits never expire and stay linked to your BrickBuilder account.',
   'What if a build fails?': 'Failed and canceled builds return Apple credits without expiration. Free and web monthly credits return to their original period. Capacity and retry limits can pause generation on every plan; upgrading does not remove those limits.',
 };
 
@@ -49,6 +49,7 @@ export default function PricingPage() {
       {!enabled && <p className="billing-launch-notice" role="status">Monthly plans are coming soon. You can keep building with your current access.</p>}
       {enabled && !checkoutAvailable && <p className="billing-launch-notice" role="status">{isAppleApp() ? 'Apple subscriptions are currently unavailable. Check your connection or update the app. Existing purchases can still be restored or managed in My billing.' : 'New subscriptions are temporarily at capacity. Please check back soon. Existing subscribers can still manage or cancel in My billing.'}</p>}
       <PlanGrid source="pricing_page" />
+      <CreditPacks source="pricing_page" />
       <p className="billing-fine-print">Basic builds: 1 credit. All parts and AI mesh conversions: 15 credits on every plan. Paid plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset without rollover.'} Physical brick kits are sold separately.</p>
       <section className="billing-faq" aria-labelledby="billing-faq-title"><p className="billing-eyebrow">THE SMALL PRINT, MADE SIMPLE</p><h2 id="billing-faq-title">A few good questions.</h2>
         {faqs.map(([question, originalAnswer]) => { const answer = isAppleApp() ? appleFaqs[question] ?? originalAnswer : originalAnswer; return <details key={question} onToggle={e => { if (e.currentTarget.open) posthog.capture('billing_faq_opened', { question }); }}><summary>{question}</summary><p>{answer}</p></details>; })}

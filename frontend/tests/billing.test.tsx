@@ -18,7 +18,7 @@ vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: ({ id = 'pip' }) =
 vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div role="dialog">Sign in to build</div> : null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/services/billingApi', async importOriginal => ({ ...await importOriginal<typeof import('../src/services/billingApi')>(),
-  billingApi: { applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
+  billingApi: { creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
 }));
 
 let container: HTMLDivElement;
@@ -55,7 +55,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   expect(container.querySelector('button')?.getAttribute('aria-label')).toContain('2 credits');
   await click('credits');
   expect(container.querySelector('dialog')?.open).toBe(true);
-  expect(container.querySelectorAll('.billing-plan')).toHaveLength(2);
+  expect(container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')).toHaveLength(2);
   expect(container.textContent).toContain('Web monthly credits reset and do not roll over');
   await click('Choose Creator');
   expect(billingApi.checkout).toHaveBeenCalledWith('creator');
@@ -92,12 +92,12 @@ it('does not show or report a nudge for a paid account with plenty of credits', 
   expect(posthog.capture).not.toHaveBeenCalledWith('billing_nudge_shown', expect.objectContaining({ plan_key: 'creator' }));
 });
 
-it('directs an exhausted highest-tier subscriber to usage instead of promising more credits', async () => {
+it('directs an exhausted highest-tier subscriber to additional credit purchases', async () => {
   account = { ...account, plan_key: 'master', has_subscription: true, subscription_status: 'active', credits_remaining: 0, monthly_remaining: 0, monthly_credits: 1000 };
   await render(<CreditNudge />);
-  expect(container.textContent).toContain('View usage');
+  expect(container.textContent).toContain('Buy more credits');
   expect(container.textContent).not.toContain('Get more credits');
-  await click('View usage');
+  await click('Buy more credits');
   expect(posthog.capture).toHaveBeenCalledWith('billing_usage_clicked', { source: 'low_credits' });
 });
 
@@ -124,7 +124,7 @@ it('keeps a failed checkout in the app with a useful error', async () => {
   await click('Choose Creator');
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again in a moment.');
   expect(openStripe).not.toHaveBeenCalled();
-  expect(container.textContent).toContain('monthly plans only');
+  expect(container.textContent).toContain('One-time credits never expire');
 });
 
 it('disables paid checkout until billing is enabled', async () => {
@@ -160,7 +160,7 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
 
 it('shows the monthly allowances and simplified features on every plan', async () => {
   await render(<PricingPage />);
-  const cards = [...container.querySelectorAll('.billing-plan')];
+  const cards = [...container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')];
   expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['300', '800', '1,500']);
   for (const card of cards) {
     expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['Model exporting', 'Building instructions']);
@@ -351,4 +351,16 @@ it.each([0, 2, 12345])('lets the header balance fit %s credits without reserving
     expect(getComputedStyle(count).minWidth).toBe('0');
     expect(getComputedStyle(count).fontVariantNumeric).toBe('tabular-nums');
   } finally { style.remove(); }
+});
+
+
+it('buys a one-time pack without changing the subscription', async () => {
+  vi.mocked(billingApi.creditCheckout).mockResolvedValue({url:'https://checkout.stripe.com/c/pay/pack'});
+  await render(<PricingPage />);
+  expect(container.querySelector('#credit-packs')?.textContent).toContain('$10.80');
+  expect(container.querySelector('#credit-packs')?.textContent).toContain('$22.80');
+  await click('Buy credits');
+  expect(billingApi.creditCheckout).toHaveBeenCalledWith('builder');
+  expect(billingApi.checkout).not.toHaveBeenCalled();
+  expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/pack');
 });

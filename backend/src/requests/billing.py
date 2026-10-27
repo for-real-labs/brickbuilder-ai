@@ -99,3 +99,20 @@ async def apple_sync(request: AppleTransactionRequest, identity: dict = Depends(
 async def apple_notifications(request: AppleNotificationRequest):
     from ..utils import apple_billing
     return await run(apple_billing.notification(request.signedPayload))
+
+
+class CreditPackRequest(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    pack_key: Literal['builder', 'creator']
+
+
+@router.post('/credits/checkout')
+async def credit_checkout(request: CreditPackRequest, identity: dict = Depends(get_optional_identity)):
+    from ..utils import credit_packs
+    return await run(credit_packs.checkout(identity, request.pack_key))
+
+
+@router.post('/apple/credits/prepare')
+async def apple_credit_prepare(identity: dict = Depends(get_optional_identity)):
+    from ..utils import apple_billing
+    return await run(apple_billing.prepare(identity, consumable=True))

@@ -13,6 +13,7 @@ from appstoreserverlibrary.signed_data_verifier import SignedDataVerifier, Verif
 from fastapi import HTTPException
 
 from . import billing
+from .credit_packs import APPLE_PRODUCTS
 
 PRODUCTS = {
     'ai.brickbuilder.app.builder.monthly': ('builder', 800),
@@ -51,10 +52,12 @@ def sandbox_reviewers():
 
 
 def validate_transaction(tx, user_id=None, expected_environment=None):
-    if (tx.bundleId != BUNDLE_ID or tx.environment != (expected_environment or environment()) or tx.productId not in PRODUCTS
-            or tx.type != 'Auto-Renewable Subscription' or tx.inAppOwnershipType != 'PURCHASED'
+    consumable = tx.productId in APPLE_PRODUCTS
+    if (tx.bundleId != BUNDLE_ID or tx.environment != (expected_environment or environment()) or tx.productId not in {**PRODUCTS, **APPLE_PRODUCTS}
+            or tx.type != ('Consumable' if consumable else 'Auto-Renewable Subscription') or tx.inAppOwnershipType != 'PURCHASED'
             or not tx.transactionId or not tx.originalTransactionId or not tx.purchaseDate
-            or not tx.expiresDate or not tx.signedDate or tx.expiresDate <= tx.purchaseDate):
+            or not tx.signedDate or (not consumable and (not tx.expiresDate or tx.expiresDate <= tx.purchaseDate))
+            or (consumable and getattr(tx, "quantity", 1) != 1)):
         raise HTTPException(400, 'Unsupported Apple subscription.')
     try:
         owner = str(UUID(tx.appAccountToken))
@@ -87,6 +90,8 @@ async def reconcile(transaction_id, user_id=None):
     if tx.transactionId != transaction_id:
         raise HTTPException(400, 'Apple transaction mismatch.')
     await apply_transaction(tx, owner)
+    if tx.productId in APPLE_PRODUCTS:
+        return
     # Recover missed renewals/refunds after webhook outages. Apple credits persist,
     # so restoring only the current entitlement would lose earlier monthly grants.
     revision = None
@@ -116,6 +121,13 @@ async def decode(verifier, signed):
 
 
 async def apply_transaction(tx, owner):
+    if tx.productId in APPLE_PRODUCTS:
+        pack = APPLE_PRODUCTS[tx.productId]
+        namespace = 'sandbox:' if tx.environment == Environment.SANDBOX else 'production:'
+        await billing.rpc('billing_apply_credit_pack', p_user_id=owner, p_live=billing.live_mode(),
+            p_transaction='apple:'+namespace+tx.transactionId, p_pack=pack['key'],
+            p_version=tx.signedDate, p_granted=0 if tx.revocationDate else pack['credits'])
+        return
     plan, allowance = PRODUCTS[tx.productId]
     namespace = 'sandbox:' if tx.environment == Environment.SANDBOX else 'production:'
     await billing.rpc('billing_apply_apple_transaction', p_user_id=owner, p_live=billing.live_mode(),
@@ -124,13 +136,13 @@ async def apply_transaction(tx, owner):
         p_revoked=bool(tx.revocationDate), p_upgraded=bool(tx.isUpgraded), p_allowance=allowance)
 
 
-async def prepare(identity):
+async def prepare(identity, consumable=False):
     user_id = billing.account_id(identity)
     await billing.require_enabled()
     if not ready() or not (await billing.capacity())['checkout_available']:
         raise HTTPException(503, 'New Apple subscriptions are temporarily unavailable. Restore and management remain available.')
     row = await billing.wallet(user_id)
-    if row.get('stripe_subscription_id') and row['subscription_status'] not in ('none', 'canceled', 'incomplete_expired'):
+    if not consumable and row.get('stripe_subscription_id') and row['subscription_status'] not in ('none', 'canceled', 'incomplete_expired'):
         raise HTTPException(409, 'You already have a web subscription. Manage or cancel it before starting an Apple subscription.')
     return {'app_account_token': user_id}
 

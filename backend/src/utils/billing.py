@@ -307,9 +307,13 @@ async def sync_checkout(identity, session_id=None):
     user_id = account_id(identity)
     if session_id:
         session = await asyncio.to_thread(stripe.checkout.Session.retrieve, session_id, api_key=stripe_key())
-        if (session.get("client_reference_id") != user_id or session.get("metadata", {}).get("integration") != BILLING_TAG
+        if (session.get("client_reference_id") != user_id or session.get("metadata", {}).get("integration") not in (BILLING_TAG, "brickbuilder_credit_pack_v1")
                 or session.get("livemode") is not live_mode()):
             raise HTTPException(403, "This checkout belongs to another account.")
+        if (session.get("metadata") or {}).get("integration") == "brickbuilder_credit_pack_v1":
+            from . import credit_packs
+            paid = bool(session.get('payment_intent')) and await credit_packs.reconcile(object_id(session['payment_intent']), user_id)
+            return {**await account(identity), "purchase_confirmed": paid}
         subscription_id = object_id(session.get("subscription"))
         if subscription_id:
             await sync_subscription(subscription_id)
@@ -322,6 +326,9 @@ async def sync_checkout(identity, session_id=None):
 
 async def handle_billing_event(event):
     """Return True for billing events; physical orders retain their existing handler."""
+    from . import credit_packs
+    if await credit_packs.event(event):
+        return True
     obj = event.data.object
     related = (event.type.startswith(("customer.subscription.", "invoice.")) or
         (event.type in ("checkout.session.completed", "checkout.session.async_payment_succeeded") and obj.get("mode") == "subscription"))

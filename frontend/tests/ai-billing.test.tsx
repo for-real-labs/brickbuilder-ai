@@ -8,11 +8,16 @@ import { prepareAiBilling, providerKeysApi, type AiBillingSettings as Settings }
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: { id: 'alice' } }) }));
 vi.mock('../src/components/PetCompanion', () => ({ PetChatMessage: ({ children }: { children: React.ReactNode }) => <div data-pet-message>{children}</div> }));
+const navigate = vi.hoisted(() => vi.fn());
+let account: {plan_key: string; has_subscription: boolean} | null = null;
+vi.mock('react-router-dom', () => ({useNavigate: () => navigate}));
+vi.mock('../src/contexts/BillingContext', () => ({useBilling: () => ({account})}));
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 let settings: Settings;
 const click = async (label: string) => act(async () => { const b = [...container.querySelectorAll('button')].find(b => b.textContent === label); expect(b).toBeDefined(); b!.click(); });
 beforeEach(() => {
+  account = null;
   settings = { billing_source: 'personal', skip_confirmation: false, providers: ['openai'] };
   vi.spyOn(providerKeysApi, 'status').mockImplementation(async () => settings);
   vi.spyOn(providerKeysApi, 'preferences').mockImplementation(async value => ({ ...settings, ...value }));
@@ -48,13 +53,19 @@ it('honors saved confirmation preference and rejects missing provider keys witho
   expect(JSON.parse(await prepareAiBilling('{"model":"claude-opus-5-5"}')).billing_source).toBe('brickbuilder');
 });
 
-it('offers keys after credit exhaustion and opens the secure entry form', async () => {
+it.each([
+  ['free', false, 'See pricing plans', '/pricing'],
+  ['builder', true, 'Upgrade plan', '/pricing'],
+  ['creator', true, 'Buy more credits', '/billing#credit-packs'],
+  ['master', true, 'Buy more credits', '/billing#credit-packs'],
+])('routes exhausted %s accounts to the right purchase option', async (plan, paid, label, destination) => {
+  account = {plan_key: plan as string, has_subscription: paid as boolean};
   await act(async () => root.render(<AiBillingPrompt />));
   await act(async () => window.dispatchEvent(new Event('brickbuilder:credits-required')));
   expect(container.textContent).toContain('out of BrickBuilder credits');
-  expect(container.textContent).toContain('no BrickBuilder credit limit');
-  await click('Yes, add API keys');
-  expect(container.querySelectorAll('input[type=password]')).toHaveLength(2);
+  expect(container.textContent).not.toContain('API keys');
+  await click(label as string);
+  expect(navigate).toHaveBeenCalledWith(destination);
 });
 
 it('clears saved key inputs and never captures key values in analytics or browser storage', async () => {

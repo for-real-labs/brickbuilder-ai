@@ -83,9 +83,9 @@ export function CreditNudge() {
   if (dismissed || !enabled || (account?.has_subscription && !low)) return null;
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
-    <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? account?.subscription_provider === 'apple' ? 'Check your Apple credits and subscription in billing.' : 'Check your credit usage and next reset in billing.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
+    <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Buy additional credits to keep building.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
       : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $9.'} Basic builds use 1 credit; All parts uses 15.</>}</p>
-    <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing'); } else openUpgrade(source); }}>{low ? highest ? 'View usage' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
+    <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing#credit-packs'); } else openUpgrade(source); }}>{low ? highest ? 'Buy more credits' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
     <button type="button" className="credit-nudge-dismiss" aria-label="Dismiss plans banner" onClick={() => { setDismissed(true); posthog.capture('billing_nudge_dismissed', { source, plan_key: account?.plan_key ?? 'guest' }); }}><X size={18} aria-hidden="true" /></button>
   </div>;
 }
@@ -120,6 +120,7 @@ export function BillingOverlays() {
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
+      <CreditPacks source={upgradeSource} />
       <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Legacy bonuses never expire. Failed or canceled builds return their credits.</p>
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
     </dialog>}
@@ -149,4 +150,26 @@ export function GenerationCreditQuote({ allParts, personalSupported = true }: { 
     {!user && <> · 75 lifetime guest credits: 5 All parts builds or 75 Basic builds, or a mix. No login needed.{' '}
       <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' }); signIn(); }}>Sign in for 300 free monthly credits</button></>}
   </p>;
+}
+
+
+export function CreditPacks({ source }: { source: string }) {
+  const { busy, enabled, checkoutAvailable, buyCredits, appleProducts } = useBilling();
+  const apple = isAppleApp();
+  return <section id="credit-packs" className="billing-account-card billing-credit-packs">
+    <h2>Buy more credits</h2>
+    <p>A one-time purchase. Credits never expire, and your plan stays the same.</p>
+    <div className="billing-plan-grid billing-plan-grid--paid">
+      {[{ key: 'builder', credits: 800, price: '$10.80' }, { key: 'creator', credits: 1500, price: '$22.80' }].map(pack => {
+        const price = apple ? appleProducts.find(p => p.id === `ai.brickbuilder.app.credits.${pack.credits}`)?.displayPrice : pack.price;
+        return <article key={pack.key} className="billing-plan billing-credit-pack">
+          <h3>{pack.credits.toLocaleString()} credits</h3>
+          <p className="billing-price"><strong>{price ?? '—'}</strong><span>one time{!apple && ' · USD'}</span></p>
+          <button className="billing-plan-button billing-plan-button--primary" disabled={busy || !enabled || !checkoutAvailable || !price}
+            onClick={() => void buyCredits(pack.key, source)}>{busy ? 'Opening…' : price ? 'Buy credits' : 'Update app to purchase'}</button>
+        </article>;
+      })}
+    </div>
+    <p className="billing-muted">{apple ? 'Priced approximately 20% above the matching monthly plan, using Apple’s available price points.' : 'Priced 20% above the matching monthly plan.'} No subscription or paid-feature access is included.</p>
+  </section>;
 }

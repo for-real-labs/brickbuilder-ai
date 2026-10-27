@@ -183,3 +183,9 @@
  .billing-feature-dialog { padding-top:58px; }
  .billing-feature-actions { flex-direction:column; }
 }
+
+.billing-credit-packs { margin-top: 24px; scroll-margin-top: 24px; }
+.billing-credit-packs > h2 { margin: 0 0 8px; font-size: 24px; font-weight: 750; }
+.billing-credit-packs > p { margin-bottom: 20px; }
+.billing-credit-pack h3 { font-size: 18px; font-weight: 700; }
+.billing-credit-packs .billing-muted { margin: 16px 0 0; }

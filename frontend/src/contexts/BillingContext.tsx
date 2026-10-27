@@ -14,6 +14,7 @@ const BillingContext = createContext({
   closeLockedFeature: () => {}, retryAccess: async () => {},
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
+  buyCredits: async (_key: string, _source: string) => {},
   subscribe: async (_key: PlanKey, _source: string) => {},
   manage: async (_action: 'manage' | 'cancel') => {},
   closeLogin: () => {}, signIn: () => {},
@@ -186,6 +187,29 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
       posthog.capture('billing_checkout_failed', { plan_key: key, source });
     } finally { setBusy(false); }
   };
+  const buyCredits = async (key: string, source: string) => {
+    posthog.capture('billing_credit_pack_selected', { pack_key: key, source });
+    if (!user) { setUpgradeSource(''); setLoginOpen(true); return; }
+    if (busy) return;
+    setBusy(true); setError('');
+    try {
+      if (isAppleApp()) {
+        const product = `ai.brickbuilder.app.credits.${key === 'builder' ? 800 : 1500}`;
+        if (!appleProducts.some(p => p.id === product)) throw new Error('Update BrickBuilder from the App Store to buy additional credits.');
+        const prepared = await billingApi.appleCreditPrepare();
+        if (identity.current !== user.id) return;
+        await appleRequest('buy', { product, accountToken: prepared.app_account_token });
+      } else {
+        const { url } = await billingApi.creditCheckout(key);
+        if (identity.current !== user.id) return;
+        openStripe(url);
+      }
+      posthog.capture('billing_credit_pack_checkout_started', { pack_key: key, source, provider: isAppleApp() ? 'apple' : 'stripe' });
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Could not purchase credits. Please try again.');
+      posthog.capture('billing_credit_pack_checkout_failed', { pack_key: key, source });
+    } finally { setBusy(false); }
+  };
   const manage = async (action: 'manage' | 'cancel') => {
     if (busy) return;
     posthog.capture(action === 'cancel' ? 'billing_cancel_clicked' : 'billing_portal_clicked', { source: 'billing' });
@@ -203,7 +227,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   return <BillingContext.Provider value={{ account, plans, enabled, appleProducts, restore, checkoutAvailable: checkoutAvailable && (!isAppleApp() || (appleReady && hasApplePurchases() && appleProducts.length > 0)), loading, busy, error, upgradeSource, loginOpen,
     featureAccess, getFeatureAccess, lockedFeature, requireFeature, closeLockedFeature,
     retryAccess: async () => { await Promise.all([refreshPlans(), refresh(), refreshProducts()]); },
-    refresh, sync, openUpgrade, closeUpgrade, subscribe, manage,
+    refresh, sync, openUpgrade, closeUpgrade, subscribe, buyCredits, manage,
     closeLogin: () => setLoginOpen(false), signIn: () => { posthog.capture('billing_sign_in_clicked'); setLoginOpen(true); },
   }}>{children}</BillingContext.Provider>;
 }

@@ -26,7 +26,7 @@ support; Master Builder is no longer offered for a new checkout or plan change.
 Basic generation and Basic AI edits cost 1 credit. All parts generation/edits and
 AI text/image-to-mesh conversions cost 15 credits on every plan, including Free. Modes
 share a balance; the example counts are alternatives, not additive allowances.
-Monthly plans only; no annual plans or one-off packs. Physical kits are separate.
+Monthly subscriptions only; no annual plans. Non-expiring one-time packs are described in [Credit packs](credit-packs.md). Physical kits are separate.
 
 Free includes model creation, 3D previews, CSV/XML parts lists and instructions for
 the account's ordered kits. A non-cancelled order linked to an authenticated account's

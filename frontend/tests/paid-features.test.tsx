@@ -70,7 +70,7 @@ it.each([['io','Download IO']] as const)('locks %s exports, opens the shared not
   expect(posthog.capture).toHaveBeenCalledWith('billing_feature_blocked', { feature, source: 'tools_dropdown', access: 'locked' });
   await click('Upgrade plan');
   expect(host.querySelector('.billing-feature-dialog')).toBeNull();
-  expect(host.querySelectorAll('.billing-plan')).toHaveLength(2);
+  expect(host.querySelectorAll('.billing-plan:not(.billing-credit-pack)')).toHaveLength(2);
   expect(host.textContent).toContain('Choose Builder'); expect(host.textContent).toContain('Choose Creator');
   expect(host.textContent).not.toContain('Master Builder');
 });

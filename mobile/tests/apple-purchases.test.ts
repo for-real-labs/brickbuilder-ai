@@ -33,7 +33,7 @@ it('returns store-localized pricing and binds purchase to the account UUID', asy
 it('keeps restored transactions unfinished until the web server confirms delivery', async () => {
   const purchase={id:'123',productId:APPLE_PRODUCTS[0]} as IAP.Purchase;
   vi.mocked(IAP.getAvailablePurchases).mockResolvedValueOnce([purchase]);
-  vi.mocked(IAP.getPendingTransactionsIOS).mockResolvedValueOnce([purchase as IAP.PurchaseIOS]);
+  vi.mocked(IAP.getPendingTransactionsIOS).mockResolvedValueOnce([purchase as IAP.PurchaseIOS]).mockResolvedValueOnce([purchase as IAP.PurchaseIOS]);
   const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
   await bridge.handle(message('restore'),origin);
   expect(IAP.syncIOS).not.toHaveBeenCalled();
@@ -86,7 +86,7 @@ it('does not finish a restored entitlement that Apple has already finished', asy
   const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
   await bridge.handle(message('restore'),origin);
   await bridge.handle(message('finish',{transaction:'456'}),origin);
-  expect(IAP.getPendingTransactionsIOS).toHaveBeenCalledOnce();
+  expect(IAP.getPendingTransactionsIOS).toHaveBeenCalledTimes(2);
   expect(IAP.finishTransaction).not.toHaveBeenCalled();
   expect(emit).toHaveBeenLastCalledWith({id:'request',result:null});
 });
@@ -94,7 +94,7 @@ it('does not finish a restored entitlement that Apple has already finished', asy
 it('retains an unfinished transaction when acknowledgement fails so it can retry', async () => {
   const purchase={id:'789',productId:APPLE_PRODUCTS[0]} as IAP.PurchaseIOS;
   vi.mocked(IAP.getAvailablePurchases).mockResolvedValueOnce([purchase]);
-  vi.mocked(IAP.getPendingTransactionsIOS).mockResolvedValueOnce([purchase]).mockResolvedValueOnce([purchase]);
+  vi.mocked(IAP.getPendingTransactionsIOS).mockResolvedValueOnce([purchase]).mockResolvedValueOnce([purchase]).mockResolvedValueOnce([purchase]);
   vi.mocked(IAP.finishTransaction).mockRejectedValueOnce({code:'service-error'});
   const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
   await bridge.handle(message('restore'),origin);
@@ -103,4 +103,18 @@ it('retains an unfinished transaction when acknowledgement fails so it can retry
   await bridge.handle(message('finish',{transaction:'789'}),origin);
   expect(IAP.finishTransaction).toHaveBeenCalledTimes(2);
   expect(emit).toHaveBeenLastCalledWith({id:'request',result:null});
+});
+
+
+it('recovers unfinished consumables and finishes only after delivery', async () => {
+  const purchase = {id:'990',productId:'ai.brickbuilder.app.credits.800'} as IAP.PurchaseIOS;
+  const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
+  await bridge.handle(message('buy', {product:purchase.productId,accountToken:'00000000-0000-4000-8000-000000000001'}),origin);
+  expect(IAP.requestPurchase).toHaveBeenCalledWith(expect.objectContaining({type:'in-app'}));
+  vi.mocked(IAP.getPendingTransactionsIOS).mockResolvedValueOnce([purchase]).mockResolvedValueOnce([purchase]);
+  await bridge.handle(message('pending'),origin);
+  expect(emit).toHaveBeenLastCalledWith({id:'request',result:['990']});
+  expect(IAP.finishTransaction).not.toHaveBeenCalled();
+  await bridge.handle(message('finish',{transaction:'990'}),origin);
+  expect(IAP.finishTransaction).toHaveBeenCalledWith({purchase,isConsumable:true});
 });
