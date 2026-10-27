@@ -654,10 +654,7 @@ const UserDashboard: React.FC = () => {
   // Keep the active tab in sync with the URL (?tab=...), e.g. when navigating
   // here from the profile menu while already on the dashboard.
   useEffect(() => {
-    if (isValidTab(tabParam) && tabParam !== tab) {
-      setTab(tabParam);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    setTab(isValidTab(tabParam) ? tabParam : "dashboard");
   }, [tabParam]);
 
   const handleTabChange = (t: TabKey) => {

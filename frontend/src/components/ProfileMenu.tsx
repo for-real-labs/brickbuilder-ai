@@ -2,7 +2,7 @@ import { CreditBalance } from './BillingComponents';
 import { NotificationPanel } from "./NotificationMenu";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, User, ChevronDown, ChevronRight, CreditCard, Sparkles, Settings, LogOut } from "lucide-react";
+import { Bell, User, ChevronDown, ChevronRight, CreditCard, Sparkles, Settings, LogOut, LayoutDashboard } from "lucide-react";
 import posthog from "posthog-js";
 import { useAuth } from "../contexts/AuthContext";
 import { useGenerationNotifications } from "../contexts/GenerationNotificationsContext";
@@ -88,10 +88,10 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
         aria-controls={panelId}
         aria-describedby={feed.unread_count > 0 ? unreadId : undefined}
         onClick={() => { setView("profile"); setDropdownOpen(!dropdownOpen); }}
-        className="relative inline-flex h-9 w-9 cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/90 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 sm:w-auto sm:px-3"
+        className="relative inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/90 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 px-3 sm:h-9"
       >
         <User aria-hidden="true" className="h-4 w-4" />
-        <span className="hidden sm:inline">Profile</span>
+        <span>Profile</span>
         <ChevronDown
           aria-hidden="true"
           className={`hidden h-3.5 w-3.5 transition-transform sm:block ${
@@ -145,8 +145,18 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
               </button>
 
               <button
-                onClick={() => go("/dashboard?tab=generations")}
-                className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none"
+                type="button"
+                onClick={() => { posthog.capture('profile_navigation_clicked', { destination: '/dashboard' }); go('/dashboard'); }}
+                className="w-full min-h-11 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none"
+              >
+                <LayoutDashboard aria-hidden="true" className="h-4 w-4" />
+                Dashboard
+              </button>
+
+              <button
+                type="button"
+                onClick={() => { posthog.capture('profile_navigation_clicked', { destination: '/dashboard?tab=generations' }); go('/dashboard?tab=generations'); }}
+                className="w-full min-h-11 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none"
               >
                 <Sparkles className="h-4 w-4" />
                 My Generations
@@ -154,14 +164,14 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
 
               <button
                 onClick={() => go("/dashboard?tab=settings")}
-                className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none"
+                className="w-full min-h-11 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none"
               >
                 <Settings className="h-4 w-4" />
                 Settings
               </button>
 
               <button onClick={() => { posthog.capture('billing_navigation_clicked', { source: 'profile_menu' }); go('/billing'); }}
-                className="w-full px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none">
+                className="w-full min-h-11 px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer bg-transparent border-none">
                 <CreditCard aria-hidden="true" className="h-4 w-4" />Manage Plan
               </button>
               <ChangeRequestMenuItem onSelect={() => setDropdownOpen(false)} />
@@ -177,7 +187,7 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
                       await signOut();
                       navigate("/");
                     }}
-                    className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer bg-transparent border-none"
+                    className="w-full min-h-11 px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer bg-transparent border-none"
                   >
                     <LogOut className="h-4 w-4" />
                     Log out
