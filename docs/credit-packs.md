@@ -38,3 +38,32 @@ Both product records have US pricing, regional availability, and English metadat
 App Review screenshots, a validated build, native purchase tests, and submission
 must be verified separately before claiming Apple availability. Old binaries never
 offer these product IDs and display an update notice instead of web checkout.
+
+## Release verification — October 27, 2026
+
+Implementation commits: `7571173`, followed by Stripe dispute API compatibility
+fix `5c4df56`, pushed to main at the user's explicit request. Production migration
+`20261027010000` is applied and recorded. Stripe's existing webhook now includes
+refund and dispute events. Both live Checkout amounts were verified using the
+existing review account, unpaid sessions granted no credits, and both sessions
+were expired without charges. GitHub's full Test suite passed for `5c4df56`.
+Local checks included 1,252 frontend tests, the frontend build, 1,720 backend tests
+(69.67% coverage), the additional dispute regression, 27 mobile tests, mobile type
+checking, 35 root tests, and nine agent-configuration tests. Pricing layouts were
+inspected at 390px and 1440px widths.
+
+App Store version ID: `1ac32df1-0878-4500-86dd-ca024630d58d` (1.0.5,
+`AFTER_APPROVAL`, Prepare for Submission). English release notes and review notes
+are saved; existing review login is retained. Both consumables have localized
+names/descriptions, all-territory availability, and verified US prices $10.90 and
+$22.90. They remain Missing Metadata pending review screenshots and submission.
+
+No new binary was uploaded or submitted. EAS cloud builds were blocked by the
+organization's exhausted free iOS quota until November 1. Local build setup passed
+signing after installing Apple's official WWDR G3 intermediate, but was stopped
+during CocoaPods installation when free disk space fell below 1 GB. Temporary
+build cleanup restored roughly 1.9 GB; this is still insufficient for a native
+archive. Native sandbox purchases and App Review submission remain unverified.
+Resume with cloud build capacity or sufficient local disk space, run native
+purchase tests, capture review screenshots, upload/attach the validated 1.0.5
+binary, and submit that version together with both first-time consumables.
