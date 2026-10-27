@@ -17,7 +17,7 @@ it('strips the key from the URL before analytics and keeps it scoped to this mod
   expect(getInstructionKey(id)).toBe(key);
   expect(getInstructionKey('other')).toBeUndefined();
   expect(instructionKeys()).toEqual([[id, key]]);
-  expect(instructionsUrl(id)).toBe(`https://brickbuilder.ai/instructions?id=${id}#access=${key}`);
+  expect(instructionsUrl(id)).toBe(`https://brickbuilder.ai/?id=${id}&exact=1&instructions=1#access=${key}`);
   expect(JSON.stringify(localStorage)).not.toContain(key);
 });
 

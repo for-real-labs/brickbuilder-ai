@@ -258,3 +258,75 @@ def test_contact_axes_resolve_exact_feature_ids_and_transform_to_world(monkeypat
     contact['feature_ids'][1] = 'missing-feature'
     with pytest.raises(flatten.DisconnectedInstructions, match='axis evidence'):
         flatten.contact_axes(occurrences, [contact], parts)
+
+
+def test_baseplate_seats_separate_feet_before_their_bridge():
+    parts = placements(3, [-8, -24, -8])
+    contacts = stud_edges((0, 1), (2, 1))
+    order = flatten.connected_instruction_order(parts, contacts, {0, 2})
+    assert order == [0, 2, 1]
+    flatten.verify_instruction_order(order, contacts, parts, {0, 2})
+    with pytest.raises(flatten.DisconnectedInstructions, match='baseplate-supported'):
+        flatten.verify_instruction_order([0, 1, 2], contacts, parts, {0, 2})
+
+
+def test_baseplate_support_cannot_hide_a_disconnected_model():
+    parts = placements(3, [-8, -24, -8])
+    with pytest.raises(flatten.DisconnectedInstructions, match='disconnected'):
+        flatten.connected_instruction_order(parts, stud_edges((0, 1)), {0, 2})
+    with pytest.raises(flatten.DisconnectedInstructions, match='disconnected'):
+        flatten.verify_instruction_order([0, 2, 1], stud_edges((0, 1)), parts, {0, 2})
+
+
+def test_ground_first_still_places_axle_mounts_before_covers():
+    parts = placements(5, [0, -24, -48, -24, 0])
+    contacts = stud_edges((0, 1), (1, 2), (0, 3), (3, 2), (4, 3))
+    order = flatten.connected_instruction_order(parts, contacts, {0, 4})
+    assert order == [0, 4, 1, 3, 2]
+    flatten.verify_instruction_order(order, contacts, parts, {0, 4})
+
+
+class GroundVector:
+    def __init__(self, x=0, y=0, z=0):
+        self.x, self.y, self.z = x, y, z
+
+    def __add__(self, other):
+        return GroundVector(self.x + other.x, self.y + other.y, self.z + other.z)
+
+
+class GroundMatrix:
+    def __init__(self, inverted=False):
+        self.rows = [[1, 0, 0], [0, -1 if inverted else 1, 0], [0, 0, 1]]
+
+    def __mul__(self, vector):
+        return GroundVector(vector.x, self.rows[1][1] * vector.y, vector.z)
+
+
+def ground_occurrence(code, y=0, x=10, inverted=False):
+    return SimpleNamespace(part_code=code, position=GroundVector(x, y, 10), matrix=GroundMatrix(inverted))
+
+
+def ground_library():
+    def part(code):
+        # Real LDraw plate/brick receivers sit 8/24 LDU below their origins.
+        height = {'plate': 8, 'brick': 24, 'wheel': 0}[code]
+        return SimpleNamespace(connections=[] if code == 'wheel' else [SimpleNamespace(
+            kind='stud_receptacle', occupied=False, position=GroundVector(0, height, 0),
+            axis=GroundVector(0, -1, 0))])
+    return SimpleNamespace(geometry=part)
+
+
+def test_foundation_uses_receiver_height_not_origin_and_accepts_translated_grid():
+    parts = [ground_occurrence('plate', -8), ground_occurrence('brick', -24, 30),
+             ground_occurrence('plate', -16, 50), ground_occurrence('plate', -8, 15),
+             ground_occurrence('plate', 8, 70, inverted=True)]
+    assert flatten.baseplate_foundation(parts, {'bounds': {'max': [100, 0, 100]}}, ground_library()) == {0, 1}
+
+
+def test_wheels_set_ground_below_chassis_so_car_keeps_connected_build_order():
+    parts = [ground_occurrence('wheel', 0), ground_occurrence('plate', -8)]
+    # Tire bottom at y=16; the chassis underside at y=0 is not a foundation.
+    foundation = flatten.baseplate_foundation(parts, {'bounds': {'max': [100, 16, 100]}}, ground_library())
+    assert foundation == set()
+    assert flatten.connected_instruction_order(placements(3, [0, 0, -24]),
+                                               stud_edges((0, 2), (1, 2)), foundation) == [0, 2, 1]

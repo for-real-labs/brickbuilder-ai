@@ -122,7 +122,7 @@ def test_nova_import_saves_original_model_and_durable_session_before_charging(mo
     assert calls[1][1] == 'generation/nova-session.json'
     assert json.loads(calls[1][2]) == session
     assert ('model', 'ldr', 'flat LDR') in calls
-    assert ('upload', 'generation/nova-instructions-reviewed-v4.ldr', b'verified instructions') in calls
+    assert ('upload', 'generation/nova-instructions-reviewed-v5.ldr', b'verified instructions') in calls
     assert not any(call[:2] == ('model', 'mpd') for call in calls)
     assert calls[-2:] == [('charge', 1), ('status', 'completed')]
     assert len(attempts) == (2 if disconnect else 1)
