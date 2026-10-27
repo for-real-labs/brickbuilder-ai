@@ -81,3 +81,19 @@ Version 1.0.5 build 22 was accepted into the cloud build queue:
 `cb39ed6b-e1d0-45bb-a836-7ddd50523daa`. This supersedes the old account's quota
 blocker; build completion, native purchase validation, and Apple submission are
 still pending.
+
+### Verified Apple submission — October 27, 2026
+
+Version 1.0.5 build 22 finished, uploaded, passed Apple processing (`VALID`), and
+was attached to the version. The user supplied native TestFlight screenshots of
+both purchase sheets and a successful purchase. Production's purchase ledger
+confirmed both sandbox purchases granted exactly 800 and 1,500 credits. The clear
+purchase-screen screenshot was resized from its chat-compressed dimensions to
+1320 × 2868 for Apple review; both product screenshots processed successfully.
+
+Review submission `b2ff6a99-6817-4f09-b5d2-1cb3ad03da95` was submitted at
+2026-10-27 22:48:53 UTC. Independent reads confirmed **WAITING_FOR_REVIEW** for
+app version `1ac32df1-0878-4500-86dd-ca024630d58d` and both consumable versions
+(`f507dd43-4c88-45a9-a9d1-a4facfc4cf3d`,
+`64d16608-74e9-414a-bb57-8618a02674e7`). Release remains **AFTER_APPROVAL**.
+No further developer action is pending unless Apple requests changes.
