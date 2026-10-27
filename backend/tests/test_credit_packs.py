@@ -56,3 +56,23 @@ async def test_apple_consumables_validate_and_refund_without_subscription(monkey
     assert rpc.call_args.kwargs['p_granted']==0
     tx.quantity=2
     with pytest.raises(HTTPException): apple_billing.validate_transaction(tx,USER)
+
+
+@async_test
+async def test_dispute_reversal_restores_verified_payment(monkeypatch):
+    monkeypatch.setattr(billing, 'stripe_key', lambda: 'test')
+    monkeypatch.setattr(billing, 'live_mode', lambda: False)
+    rpc = AsyncMock(); monkeypatch.setattr(billing, 'rpc', rpc)
+    payment = stripe.PaymentIntent.construct_from(dict(id='pi_one',metadata={'integration':credit_packs.TAG,'brickbuilder_user_id':USER,'pack_key':'builder'},
+        livemode=False,currency='usd',amount=1080,status='succeeded',latest_charge={'paid':True,'amount_refunded':0,'disputed':True}), 'test')
+    def retrieve(*args, **kwargs):
+        assert kwargs['expand'] == ['latest_charge']
+        return payment
+    monkeypatch.setattr(stripe.PaymentIntent, 'retrieve', retrieve)
+    dispute = SimpleNamespace(status='needs_response')
+    monkeypatch.setattr(stripe.Dispute, 'list', lambda **kwargs: SimpleNamespace(data=[dispute]))
+    await credit_packs.reconcile('pi_one', USER)
+    assert rpc.call_args.kwargs['p_granted'] == 0
+    dispute.status='won'
+    await credit_packs.reconcile('pi_one', USER)
+    assert rpc.call_args.kwargs['p_granted'] == 800

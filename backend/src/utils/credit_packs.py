@@ -37,7 +37,7 @@ async def checkout(identity, pack_key):
 async def reconcile(payment_id, owner=None):
     version = time.time_ns() // 1000000
     payment = await asyncio.to_thread(stripe.PaymentIntent.retrieve, payment_id,
-        expand=['latest_charge.dispute'], api_key=billing.stripe_key())
+        expand=['latest_charge'], api_key=billing.stripe_key())
     meta = payment.get('metadata') or {}
     if meta.get('integration') != TAG:
         return False
@@ -52,8 +52,10 @@ async def reconcile(payment_id, owner=None):
     if payment.get('status') != 'succeeded' or not charge.get('paid'):
         return False
     refunded = charge.get('amount_refunded', 0)
-    dispute = charge.get('dispute') or {}
-    disputed = charge.get('disputed') and (not isinstance(dispute, dict) or dispute.get('status') != 'won')
+    disputed = False
+    if charge.get('disputed'):
+        disputes = await asyncio.to_thread(stripe.Dispute.list, payment_intent=payment.id, limit=100, api_key=billing.stripe_key())
+        disputed = not disputes.data or any(d.status not in ('won', 'warning_closed') for d in disputes.data)
     remaining = 0 if disputed else pack['credits'] * max(0, pack['cents']-refunded) // pack['cents']
     await billing.rpc('billing_apply_credit_pack', p_user_id=user, p_live=billing.live_mode(),
         p_transaction='stripe:'+payment.id, p_pack=meta['pack_key'], p_version=version,
