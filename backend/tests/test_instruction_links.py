@@ -129,3 +129,11 @@ def test_migration_does_not_replace_order_history_or_existing_keys(db):
     db.execute('INSERT INTO orders VALUES (1,%s,false,%s)', (uuid4(), 'existing-hash'))
     db.execute(MIGRATION)
     assert db.execute('SELECT instructions_key_hash FROM orders').fetchone()['instructions_key_hash'] == 'existing-hash'
+
+
+def test_order_links_open_exact_landing_instructions_but_postcard_links_open_preview():
+    key = 'a' * 43
+    assert links.instruction_link('ghost & revision', key) == (
+        'https://brickbuilder.ai/?id=ghost+%26+revision&exact=1&instructions=1#access=' + key)
+    assert links.instruction_link('ghost', key, postcard=True) == (
+        'https://brickbuilder.ai/order?id=ghost#access=' + key)

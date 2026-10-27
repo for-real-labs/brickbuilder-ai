@@ -127,9 +127,65 @@ def trapped_parts(index, placed, above, below):
     return enclosed(above) | enclosed(below)
 
 
-def connected_instruction_order(occurrences, contacts):
+def baseplate_foundation(occurrences, geometry, parts):
+    """Find upright receivers on the complete model's physical ground plane.
+
+    Use rendered bounds, not part origins: wheel origins sit above the road,
+    and a car's chassis receivers are above its tires. A receiver must be at
+    the bottom surface and aligned to the baseplate's 20-LDU stud grid.
+    """
+    floor = float(geometry['bounds']['max'][1])
+    if not math.isfinite(floor):
+        raise DisconnectedInstructions('Invalid ground-plane evidence')
+    foundation, cache = set(), {}
+    grid_origin = None
+    for index, occurrence in enumerate(occurrences):
+        if not all(math.isclose(occurrence.matrix.rows[row][1], value, abs_tol=1e-6)
+                   for row, value in enumerate((0, 1, 0))):
+            continue
+        code = occurrence.part_code.casefold()
+        if code not in cache:
+            cache[code] = parts.geometry(code)
+        for feature in cache[code].connections:
+            if feature.kind != 'stud_receptacle' or feature.occupied:
+                continue
+            point = occurrence.matrix * feature.position + occurrence.position
+            axis = occurrence.matrix * feature.axis
+            if (math.isclose(float(point.y), floor, rel_tol=0, abs_tol=1e-4)
+                    and math.isclose(abs(float(axis.y)), 1, abs_tol=1e-6)
+                    and math.isclose(float(axis.x), 0, abs_tol=1e-6)
+                    and math.isclose(float(axis.z), 0, abs_tol=1e-6)):
+                if grid_origin is None:
+                    grid_origin = (float(point.x), float(point.z))
+                if all(math.isclose((float(value) - origin) / 20,
+                                    round((float(value) - origin) / 20), rel_tol=0, abs_tol=1e-6)
+                       for value, origin in zip((point.x, point.z), grid_origin)):
+                    foundation.add(index)
+                    break
+    return foundation
+
+
+def validate_foundation(neighbors, foundation):
+    """A display baseplate must never disguise a disconnected source model."""
+    foundation = set(foundation)
+    if any(type(index) is not int or not 0 <= index < len(neighbors) for index in foundation):
+        raise DisconnectedInstructions('Invalid baseplate support evidence')
+    if foundation:
+        reached, frontier = {0}, [0]
+        while frontier:
+            for neighbor in neighbors[frontier.pop()] - reached:
+                reached.add(neighbor)
+                frontier.append(neighbor)
+        if len(reached) != len(neighbors):
+            raise DisconnectedInstructions('Model is disconnected without the display baseplate',
+                                           remaining=sorted(set(range(len(neighbors))) - reached))
+    return foundation
+
+
+def connected_instruction_order(occurrences, contacts, foundation=()):
     """Grow an attached assembly without trapping an unplaced studded part.
 
+    Seat verified ground receivers on the display baseplate first. Otherwise
     LDraw's positive Y points down, so start with the lowest part origin.
     Prefer lower placements, then authored order among safe attachments. A part
     can still attach from underneath a bridge while its lower support is absent. This checks upright
@@ -139,14 +195,18 @@ def connected_instruction_order(occurrences, contacts):
     if not occurrences:
         raise DisconnectedInstructions('Missing physical placements')
     above, below = stud_neighbors(occurrences, contacts)
+    foundation = validate_foundation(neighbors, foundation)
     seed = max(range(len(occurrences)), key=lambda i: (occurrences[i].position.y, -i))
     def priority(index):
-        return (-float(occurrences[index].position.y), index)
-    frontier, discovered, scheduled = [priority(seed)], {seed}, {seed}
+        return (index not in foundation, -float(occurrences[index].position.y), index)
+    seeds = foundation or {seed}
+    frontier = [priority(index) for index in seeds]
+    heapq.heapify(frontier)
+    discovered, scheduled = set(seeds), set(seeds)
     waiting = [set() for _ in occurrences]
     placed, order = set(), []
     while frontier:
-        _, index = heapq.heappop(frontier)
+        _, _, index = heapq.heappop(frontier)
         scheduled.remove(index)
         blockers = trapped_parts(index, placed, above, below)
         if blockers:
@@ -170,15 +230,18 @@ def connected_instruction_order(occurrences, contacts):
     return order
 
 
-def verify_instruction_order(order, contacts, occurrences):
+def verify_instruction_order(order, contacts, occurrences, foundation=()):
     """Independently check every prefix for attachment and trapped parts."""
     neighbors = connection_neighbors(len(order), contacts)
     if sorted(order) != list(range(len(order))) or len(occurrences) != len(order):
         raise ValueError('Instruction order must contain every physical placement exactly once')
+    foundation = validate_foundation(neighbors, foundation)
     above, below = stud_neighbors(occurrences, contacts)
     placed = set()
     for index in order:
-        if placed and not neighbors[index].intersection(placed):
+        if index not in foundation and foundation - placed:
+            raise DisconnectedInstructions('Place baseplate-supported pieces before building above them')
+        if placed and index not in foundation and not neighbors[index].intersection(placed):
             raise DisconnectedInstructions('Placement requires a later connection; repair the model')
         # Deliberately validate the prefix directly rather than trust the
         # planner's incremental blocked-candidate queue.
@@ -313,8 +376,9 @@ def main():
             raise DisconnectedInstructions('Complete connector evidence is required to order instructions')
         contacts = contact_axes(occurrences, geometry['contacts'], physical_parts)
         try:
-            order = connected_instruction_order(occurrences, contacts)
-            verify_instruction_order(order, contacts, occurrences)
+            foundation = baseplate_foundation(occurrences, geometry, physical_parts)
+            order = connected_instruction_order(occurrences, contacts, foundation)
+            verify_instruction_order(order, contacts, occurrences, foundation)
             assemblies = instruction_assemblies(order, contacts, occurrences)
         except DisconnectedInstructions as exc:
             # Private repair evidence for the publication tool. Public API

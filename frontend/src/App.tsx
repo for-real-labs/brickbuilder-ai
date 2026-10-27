@@ -13,7 +13,6 @@ import LandingPage from "./pages/LandingPage";
 import { GeneratedModelRedirect } from "./components/GeneratedModelRedirect";
 import OrderKit from "./pages/OrderKit";
 import Success from "./pages/Success";
-import { InstructionsPage } from "./pages/InstructionsPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import OAuthConsentPage from "./pages/OAuthConsentPage";
@@ -83,7 +82,7 @@ export default function App() {
           {VOXEL_CONVERTERS.map(({ path, input, output }) => <Route key={path} path={path} element={<ModelToVoxelPage key={path} input={input} output={output} />} />)}
           <Route path="/obj-to-glb" element={<ModelFormatConverterPage inputFormat="obj" />} />
           <Route path="/glb-to-obj" element={<ModelFormatConverterPage inputFormat="glb" />} />
-          <Route path="/instructions" element={<InstructionsPage />} />
+          <Route path="/instructions" element={<GeneratedModelRedirect instructions />} />
           <Route path="/order" element={<OrderKit />} />
           <Route path="/success" element={<Success />} />
           <Route path="/community" element={<CommunityPage />} />

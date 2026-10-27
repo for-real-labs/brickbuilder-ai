@@ -42,5 +42,5 @@ export function instructionKeys(): [string, string][] {
 
 export function instructionsUrl(generationId: string): string {
   const key = getInstructionKey(generationId);
-  return `https://brickbuilder.ai/instructions?id=${encodeURIComponent(generationId)}${key ? `#access=${key}` : ''}`;
+  return `https://brickbuilder.ai/?id=${encodeURIComponent(generationId)}&exact=1&instructions=1${key ? `#access=${key}` : ''}`;
 }

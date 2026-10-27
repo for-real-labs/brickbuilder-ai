@@ -61,7 +61,7 @@ async def run():
         runtime = (await client.get('/integration/runtime')).json()
         assert runtime == worker.runtime()
         assert 'preview_build_version' not in runtime and 'build_review_version' not in runtime
-        assert runtime['instruction_plan_version'] == 3 and runtime['instruction_publication_version'] == 1
+        assert runtime['instruction_plan_version'] == 4 and runtime['instruction_publication_version'] == 1
         assert runtime['generation_cost_limit_usd'] == 20 and runtime['parts_catalog_version'] == 1
     store = get_store()
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
@@ -135,6 +135,16 @@ async def run():
         assert '0 !BRICKBUILDER BUILD_TOGETHER' in assembly_steps[1]
         assert bridge.strip() in assembly_steps[1] and foot.strip() in assembly_steps[1]
         assert sum(line.startswith('1 ') for line in response.text.splitlines()) == 3
+        # Two separate bottom plates must be seated on a baseplate before the
+        # bridge connects them, rather than inserted underneath it afterward.
+        left = placement(-20, -8, 0, '3024.dat')
+        right = placement(20, -8, 0, '3024.dat')
+        bridge = placement(0, -16, 0, '3623.dat')
+        response = await client.post('/integration/instructions',
+            content=('0 FILE main.ldr\n' + left + bridge + right).encode())
+        assert response.status_code == 200, response.text
+        assert response.text.index(right.strip()) < response.text.index(bridge.strip())
+        assert 'BUILD_TOGETHER' not in response.text
         disconnected = '0 FILE main.ldr\n' + placement(0, 0, 0, '3001.dat') + placement(400, 0, 0, '3001.dat')
         response = await client.post('/integration/instructions', content=disconnected.encode())
         assert response.status_code == 422 and 'Repair disconnected' in response.text

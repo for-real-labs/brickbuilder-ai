@@ -18,8 +18,11 @@ def instruction_key_hash(key):
 
 
 def instruction_link(generation_id, key, *, postcard=False):
-    page = 'order' if postcard else 'instructions'
-    return f'https://brickbuilder.ai/{page}?' + urlencode({'id': generation_id}) + '#access=' + key
+    page = 'order' if postcard else ''
+    query = {'id': generation_id}
+    if not postcard:
+        query.update(exact='1', instructions='1')
+    return f'https://brickbuilder.ai/{page}?' + urlencode(query) + '#access=' + key
 
 
 async def has_instruction_key(generation_id, key):

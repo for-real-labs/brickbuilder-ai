@@ -38,3 +38,11 @@ it('restores old model links without an ID from the last generation', async () =
   </MemoryRouter>));
   expect(container.querySelector('output')?.textContent).toBe('/?id=last+%26+model');
 });
+
+
+it('opens old printed instruction links in the exact landing model instructions view', async () => {
+  await act(async () => root.render(<MemoryRouter initialEntries={['/instructions?id=ghost&exact=0#access=kept']}>
+    <Routes><Route path="/instructions" element={<GeneratedModelRedirect instructions />} /><Route path="/" element={<Destination />} /></Routes>
+  </MemoryRouter>));
+  expect(container.querySelector('output')?.textContent).toBe('/?id=ghost&exact=1&instructions=1#access=kept');
+});

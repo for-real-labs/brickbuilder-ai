@@ -150,7 +150,7 @@ stays visible during the edit; progress, cancellation and “This can take up to
 
 The private `generation-output` bucket retains:
 
-- `nova-instructions-reviewed-v4.ldr`: connected physical placements with at most five pieces per step, including marked underside assemblies.
+- `nova-instructions-reviewed-v5.ldr`: connected physical placements with at most five pieces per step, including marked underside assemblies.
 - `nova-session.json`: tenant/session identity, published model identity, model
   connection settings and exact upstream source revisions; no credentials.
 - `nova-source.zip`: the original MPD, flat export, preview, original Nova BOM,
@@ -315,6 +315,15 @@ mounts before the plates above them while allowing accessible underside
 attachments and retaining every placement. The exported sequence is checked
 again independently of the planner queue.
 
+Before growing the model, upright stud receivers on the complete model's lowest
+geometry plane are seated on the displayed baseplate. Receivers must share a
+20-LDU stud grid; their transformed socket positions, rather than part origins,
+determine ground contact. All such foundation pieces precede upper pieces, even
+when they only connect to each other later through a bridge. Wheels lower the
+geometry plane below the chassis, so elevated chassis receivers do not become
+baseplate supports. The original model must still be connected without the
+virtual baseplate. Axle-cover insertion checks and underside grouping remain.
+
 Disconnected models, blocked placement sequences, or incomplete evidence return
 repair feedback;
 no piece is force-placed or deleted. Connector evidence does not prove balance
@@ -333,9 +342,9 @@ connector query evidence only; part geometry and transforms are preserved.
 Long or uncapped pin holes retain their original interpretation.
 
 Deploy the rebuilt Nova runtime with the API. Instruction export requires
-`instruction_plan_version: 3`, and generation requires
+`instruction_plan_version: 4`, and generation requires
 `instruction_publication_version: 1`; older instruction caches are not reused. The
-`nova-instructions-reviewed-v4.ldr` cache is regenerated from the saved source
+`nova-instructions-reviewed-v5.ldr` cache is regenerated from the saved source
 on first request.
 
 Opus 5.5 builds using an API key automatically request Anthropic fast mode.

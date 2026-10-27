@@ -69,7 +69,7 @@ it.each([false, true])('renders a decodable QR for the selected model, including
       }
     }
   }
-  const url = `https://brickbuilder.ai/instructions?id=${encodeURIComponent(id)}${purchased ? `#access=${key}` : ''}`;
+  const url = `https://brickbuilder.ai/?id=${encodeURIComponent(id)}&exact=1&instructions=1${purchased ? `#access=${key}` : ''}`;
   expect(jsQR(pixels, width, width)?.data).toBe(url);
   expect(container.querySelector('a.checkout-postcard-qr')?.getAttribute('href')).toBe(url);
   expect(container.querySelector('a.checkout-postcard-qr')?.classList.contains('ph-no-capture')).toBe(true);
