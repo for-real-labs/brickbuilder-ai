@@ -1244,3 +1244,45 @@ it.each(['novaToBricks', 'llmToBricks'])('sends an attached edit image to %s wit
   if (endpoint === 'novaToBricks') expect(nova).toHaveBeenCalledWith('castle', 'Match these colors', undefined, image, { model: 'claude-opus-5-5', authMode: 'api_key' });
   else expect(llm).toHaveBeenCalledWith({ sourceGenerationId: 'castle', prompt: 'Match these colors', model: 'claude-opus-5-5', ...image }, undefined);
 });
+
+
+it('limits footer gestures to the initial flow and clears a revealed footer when opening a model', async () => {
+  await act(async () => root.render(<LandingPage />));
+  const wheel = () => act(() => container.querySelector('.landing-page')!.dispatchEvent(
+    new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 80 })));
+  wheel();
+  expect(container.querySelector('.landing-page--help-visible')).not.toBeNull();
+  expect(container.querySelector('.landing-page-help')?.getAttribute('aria-hidden')).toBe('false');
+
+  let resolveModel!: (value: GetGenerationResponse) => void;
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockReturnValue(new Promise(resolve => { resolveModel = resolve; }));
+  query.value = 'id=castle&exact=1';
+  await act(async () => root.render(<LandingPage />));
+  const assertFooterDisabled = () => {
+    vi.mocked(posthog.capture).mockClear();
+    wheel();
+    const shell = container.querySelector('.landing-page')!;
+    for (const [type, y] of [['touchstart', 300], ['touchmove', 100]] as const) {
+      const event = new Event(type, { bubbles: true, cancelable: true });
+      Object.defineProperty(event, 'touches', { value: [{ clientX: 100, clientY: y }] });
+      act(() => shell.dispatchEvent(event));
+    }
+    act(() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'PageDown', bubbles: true })));
+    expect(container.querySelector('.landing-page--help-visible')).toBeNull();
+    expect(container.querySelector('.landing-page-help')).toBeNull();
+    expect(posthog.capture).not.toHaveBeenCalledWith('landing_help_toggled', expect.anything());
+  };
+  assertFooterDisabled();
+  await act(async () => resolveModel(generation('castle')));
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+  assertFooterDisabled();
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  expect(container.textContent).toContain('Building instructions');
+  assertFooterDisabled();
+
+  query.value = '';
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('.landing-page--help-visible')).toBeNull();
+  wheel();
+  expect(container.querySelector('.landing-page-help')?.getAttribute('aria-hidden')).toBe('false');
+});
