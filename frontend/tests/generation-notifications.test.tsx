@@ -329,3 +329,37 @@ it('makes plan management discoverable in the profile menu and honors guarded na
   expect(accountButton().getAttribute('aria-expanded')).toBe('false');
   expect(posthog.capture).toHaveBeenCalledWith('billing_navigation_clicked', { source: 'profile_menu' });
 });
+
+
+it.each([['Dashboard', '/dashboard'], ['My Generations', '/dashboard?tab=generations']])('opens %s through guarded account navigation', async (label, destination) => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [], active: [], unread_count: 0 });
+  const navigate = vi.fn();
+  await renderProfile(navigate);
+  expect(accountButton().querySelector('span')?.className).not.toContain('hidden');
+  act(() => accountButton().click());
+  const action = [...container.querySelectorAll('button')].find(button => button.textContent === label)!;
+  expect(action.className).toContain('min-h-11');
+  act(() => action.click());
+  expect(navigate).toHaveBeenCalledWith(destination);
+  expect(accountButton().getAttribute('aria-expanded')).toBe('false');
+  expect(posthog.capture).toHaveBeenCalledWith('profile_navigation_clicked', { destination });
+});
+
+it('returns from My Generations to the dashboard overview through the profile menu', async () => {
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [], active: [], unread_count: 0 });
+  vi.spyOn(GetUserGenerationsApiService, 'getUserGenerations').mockResolvedValue({
+    generations: [], total_count: 0, total_user_generations: 0, all_orders: [], has_more: false,
+  });
+  await act(async () => root.render(<MemoryRouter initialEntries={['/dashboard?tab=generations']}>
+    <GenerationNotificationsProvider><UserDashboard /></GenerationNotificationsProvider>
+  </MemoryRouter>));
+  expect(container.querySelector('h1')?.textContent).toBe('My Generations');
+  act(() => accountButton().click());
+  const dashboard = [...container.querySelectorAll('header button')].find(button => button.textContent === 'Dashboard')!;
+  await act(async () => dashboard.click());
+  expect(container.querySelector('h1')?.textContent).toContain('Welcome back');
+  act(() => accountButton().click());
+  const generations = [...container.querySelectorAll('header button')].find(button => button.textContent === 'My Generations')!;
+  await act(async () => generations.click());
+  expect(container.querySelector('h1')?.textContent).toBe('My Generations');
+});

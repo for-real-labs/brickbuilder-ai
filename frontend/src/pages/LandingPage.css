@@ -315,3 +315,11 @@
 }
 
 .landing-hero-pet > .pet-avatar > img, .landing-hero-pet > .pet-avatar > video { scale: 1.6; }
+
+/* Keep labeled account navigation reachable without squeezing the brand on phones. */
+@media (max-width: 639px) {
+  .landing-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; }
+  .landing-header > .landing-header-brand { grid-column: 1; grid-row: 1; }
+  .landing-header > nav { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; justify-content: flex-end; }
+  .landing-header .landing-create-new { grid-column: 2; grid-row: 1; justify-self: end; }
+}
