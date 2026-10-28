@@ -20,3 +20,15 @@ test('first-time email-code signup can still use the same confirmation email', (
   assert.match(template, /name="viewport"/);
   assert.match(template, /max-width: 600px/);
 });
+
+
+test('native iOS delivery has code instructions with no link, while web keeps its button', () => {
+  const parts = template.split('{{ if eq .RedirectTo "https://brickbuilder.ai/login?verification=ios-code" }}');
+  assert.equal(parts.length, 2);
+  const [ios, rest] = parts[1].split('{{ else }}');
+  const [web, shared] = rest.split('{{ end }}');
+  assert.match(ios, /Enter the code below in the BrickBuilder app/);
+  assert.doesNotMatch(ios, /href=|ConfirmationURL|Click the button/);
+  assert.match(web, /href="\{\{ \.ConfirmationURL \}\}"/);
+  assert.match(shared, /\{\{ \.Token \}\}/);
+});

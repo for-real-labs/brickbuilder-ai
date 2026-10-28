@@ -1,3 +1,5 @@
+import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
+import { SignupCodeVerification } from '../components/SignupCodeVerification';
 import { PasswordRecovery } from '../components/PasswordRecovery';
 import React, { useState, useEffect, FormEvent } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
@@ -19,6 +21,7 @@ export default function LoginPage() {
   const fromState = (location.state as { from?: string } | null)?.from;
   const redirectTo = loginRedirect(location.search, fromState);
   const connectingApp = isOAuthLogin(redirectTo);
+  const nativeIos = getNativeMobileShellInfo()?.platform === 'ios';
   const { signIn, signInWithGoogle, signInWithOtp, verifyOtp } = useAuth();
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -111,7 +114,7 @@ export default function LoginPage() {
         setError(authError.message);
         return;
       }
-      if (needsConfirmation) { setConfirmationRequired(true); return; }
+      if (needsConfirmation) { setPassword(""); setConfirmationRequired(true); return; }
       if (remember) localStorage.setItem("remember_email", email);
       else localStorage.removeItem("remember_email");
       navigate(redirectTo);
@@ -153,14 +156,14 @@ export default function LoginPage() {
           <h1 className="text-2xl font-extrabold">{connectingApp ? "Sign in to connect" : "Welcome!"}</h1>
           <p className="mt-1 text-sm text-slate-600">
             {otpSent
-              ? "Check your email for a magic link or enter the code we sent."
+              ? (nativeIos ? "Enter the code we sent to your email." : "Check your email for a magic link or enter the code we sent.")
               : authMethod === "password"
                 ? "Sign in with your password, or create an account if you’re new."
                 : "Enter email to login or sign-up."}
           </p>
 
           {/* Email Entry Form */}
-          {!otpSent && authMethod === "magic_link" && (
+          {!confirmationRequired && !otpSent && authMethod === "magic_link" && (
             <form onSubmit={handleGetCode} className="mt-5 space-y-4">
               {/* Email */}
               <div>
@@ -192,7 +195,7 @@ export default function LoginPage() {
                     : 'bg-[#f44336] hover:bg-[#ff6b6b] cursor-pointer'
                 }`}
               >
-                {loading ? "Sending..." : "Continue with magic link"}
+                {loading ? "Sending..." : nativeIos ? "Continue with email code" : "Continue with magic link"}
               </button>
 
               <button
@@ -209,7 +212,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          {!otpSent && authMethod === "password" && (
+          {!confirmationRequired && !otpSent && authMethod === "password" && (
             <form onSubmit={handlePasswordSignIn} className="mt-5 space-y-4">
               <div>
                 <label htmlFor="login-email" className="block text-sm font-medium text-slate-700 mb-1">Email</label>
@@ -261,7 +264,7 @@ export default function LoginPage() {
                 onClick={() => selectAuthMethod("magic_link")}
                 className="block w-full text-center text-sm text-slate-500 transition-colors hover:text-slate-700 hover:underline"
               >
-                Use magic link instead
+                {nativeIos ? "Use email code instead" : "Use magic link instead"}
               </button>
 
               {error && (
@@ -325,7 +328,8 @@ export default function LoginPage() {
             </form>
           )}
 
-          {confirmationRequired && <p role="status" className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">If this is a new account, check your email to confirm it before signing in. Already registered? Your password may be incorrect; use the reset link below.</p>}
+          {confirmationRequired && <SignupCodeVerification email={email} redirectPath={redirectTo} surface="login_page"
+            onVerified={() => { if (remember) localStorage.setItem("remember_email", email); else localStorage.removeItem("remember_email"); navigate(redirectTo); }} onBack={() => setConfirmationRequired(false)} />}
           <PasswordRecovery email={email} surface="login_page" />
 
           <div data-native-mobile-hidden="true">
