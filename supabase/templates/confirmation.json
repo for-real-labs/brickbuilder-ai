@@ -1,0 +1,4 @@
+{
+  "mailer_subjects_confirmation": "Verify your email for BrickBuilder",
+  "content_path": "confirmation.html"
+}
