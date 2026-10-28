@@ -198,31 +198,17 @@ Sources: [pricing](https://www.meshy.ai/pricing) and
 
 ## Spending safeguards and limitations
 
-The $2,000 monthly operating target is split into $1,500 for generation and $500
-for short assistant/title calls outside reserved jobs. Admission reserves $21 per
-job atomically across API workers: the existing $20 provider limit plus a title
-buffer. Only a successful Basic/All parts job with finalized reported usage
-releases the unused amount. Failures, cancellations, incomplete reports and
-legacy mesh jobs retain the conservative hold. Credit refunds never erase spend.
-Short calls reserve a conservative token-price bound before contacting the
-provider, settle on reported usage and retain the hold on unknown outcomes.
+Monthly spending no longer blocks generation, assistant calls, new checkouts, or
+plan changes. The former $1,500 generation budget, $500 assistant budget, and
+$200 checkout threshold are not enforced. The existing $20 per-generation
+provider limit and customer credit requirements remain in place.
 
-New checkouts/plan changes pause with less than $200 generation capacity left.
-New generation requests stop when less than their $21 reservation remains;
-rejected requests consume neither credits nor guest/daily allowances. Free and
-internal usage also consume the global generation budget. Existing models and
-subscription cancellation remain accessible. Never offer an upgrade as the
-solution to a global capacity error.
-
-Reservations reset by UTC calendar month. Tracking begins when the feature is
-first enabled; it does not retroactively reimburse or cap prelaunch spending.
-This is a conservative admission guard, not a guaranteed ceiling on provider
-invoices: provider timing, month-crossing jobs, unreported external charges and
-legacy AI paths can differ. Reconcile actual provider bills, including the
-Anthropic daily reports. Review retained holds before adjusting them; never
-release uncertain failed-job spend just because user credits were refunded.
-A capacity pause does not cancel renewals or extend paid credit expiry. If a
-pause materially affects paid service, provide a manual billing adjustment.
+AI reservations and reported usage are still recorded for cost accounting.
+Generation jobs reserve $21 (including a title buffer), and successful jobs with
+finalized usage release the unused amount. Failed or unfinished jobs may retain
+the conservative hold. These records are not a provider balance or invoice;
+reconcile actual provider bills separately. Billing enablement, cancellation,
+and subscription renewals are unchanged.
 
 ## Rollout
 
@@ -259,9 +245,8 @@ current Stripe state, validate owner/mode/price and apply paid invoices once.
 Physical-kit webhook handling stays separate. A failed webhook returns an error
 for Stripe retries; authenticated `/billing/sync` also reconciles on return.
 
-For an incident, stopping new generation admission while retaining enforcement
-is safer than disabling billing: set the generation budget to a small positive
-value below existing usage. `enabled=false` restores unmetered signed-in access
+The stored monthly budget values no longer serve as a spending kill switch.
+`enabled=false` restores unmetered signed-in access
 and the default daily cap; the hosted 75-credit lifetime guest limit remains.
 This is a billing rollback switch, not a spending kill switch.
 Subscriptions still renew until canceled in Stripe. Keep the portal and webhook
