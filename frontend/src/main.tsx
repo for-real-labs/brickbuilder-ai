@@ -1,3 +1,4 @@
+import { preparePasswordRecoveryPage } from './services/passwordAuth';
   import { createRoot } from "react-dom/client";
   import { PostHogProvider } from "posthog-js/react";
   import { HelmetProvider } from "react-helmet-async";
@@ -10,7 +11,7 @@
   captureInstructionLink();
   registerMobileShellAnalytics();
 
-  createRoot(document.getElementById("root")!).render(
+  const renderApp = () => createRoot(document.getElementById("root")!).render(
     <HelmetProvider>
       <PostHogProvider
         apiKey={import.meta.env.VITE_PUBLIC_POSTHOG_KEY}
@@ -28,3 +29,9 @@
       </PostHogProvider>
     </HelmetProvider>
   );
+
+  if (window.location.pathname === '/reset-password') {
+    void preparePasswordRecoveryPage().then(renderApp);
+  } else {
+    renderApp();
+  }

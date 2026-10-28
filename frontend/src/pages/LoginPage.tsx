@@ -1,3 +1,4 @@
+import { PasswordRecovery } from '../components/PasswordRecovery';
 import React, { useState, useEffect, FormEvent } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { SEO } from "../components/SEO";
@@ -25,8 +26,9 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmationRequired, setConfirmationRequired] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
-  const [authMethod, setAuthMethod] = useState<AuthMethod>(connectingApp ? "password" : "magic_link");
+  const [authMethod, setAuthMethod] = useState<AuthMethod>(connectingApp || new URLSearchParams(location.search).get("method") === "password" ? "password" : "magic_link");
 
   useEffect(() => {
     const saved = localStorage.getItem("remember_email");
@@ -34,6 +36,7 @@ export default function LoginPage() {
   }, []);
 
   const selectAuthMethod = (method: AuthMethod) => {
+    setConfirmationRequired(false);
     setAuthMethod(method);
     setError(null);
     setOtpCode("");
@@ -90,6 +93,7 @@ export default function LoginPage() {
 
   const handlePasswordSignIn = async (e: FormEvent) => {
     e.preventDefault();
+    setConfirmationRequired(false);
     setError(null);
     if (!email.trim()) {
       setError("Please enter your email.");
@@ -102,11 +106,12 @@ export default function LoginPage() {
     try {
       setLoading(true);
       trackPasswordLoginSubmitted("login_page");
-      const { error: authError } = await signIn(email, password);
+      const { error: authError, confirmationRequired: needsConfirmation } = await signIn(email, password, redirectTo);
       if (authError) {
         setError(authError.message);
         return;
       }
+      if (needsConfirmation) { setConfirmationRequired(true); return; }
       if (remember) localStorage.setItem("remember_email", email);
       else localStorage.removeItem("remember_email");
       navigate(redirectTo);
@@ -150,7 +155,7 @@ export default function LoginPage() {
             {otpSent
               ? "Check your email for a magic link or enter the code we sent."
               : authMethod === "password"
-                ? "Use your email and password to sign in."
+                ? "Sign in with your password, or create an account if you’re new."
                 : "Enter email to login or sign-up."}
           </p>
 
@@ -248,7 +253,7 @@ export default function LoginPage() {
                     : 'bg-[#f44336] hover:bg-[#ff6b6b] cursor-pointer'
                 }`}
               >
-                {loading ? "Signing in..." : "Sign in with password"}
+                {loading ? "Continuing..." : "Sign in or create account"}
               </button>
 
               <button
@@ -319,6 +324,9 @@ export default function LoginPage() {
               )}
             </form>
           )}
+
+          {confirmationRequired && <p role="status" className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">If this is a new account, check your email to confirm it before signing in. Already registered? Your password may be incorrect; use the reset link below.</p>}
+          <PasswordRecovery email={email} surface="login_page" />
 
           <div data-native-mobile-hidden="true">
             {/* Divider */}

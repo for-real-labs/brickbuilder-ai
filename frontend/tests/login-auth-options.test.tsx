@@ -48,6 +48,7 @@ vi.mock('../src/components/SiteFooter', () => ({
 
 import LoginModal from '../src/components/LoginModal';
 import LoginPage from '../src/pages/LoginPage';
+import SignupPage from '../src/pages/SignupPage';
 
 function renderIntoBody(node: React.ReactNode) {
   const container = document.createElement('div');
@@ -108,6 +109,30 @@ describe('login auth options', () => {
     });
   });
 
+  it('offers password signup with the intended destination', () => {
+    loginLocation.state = { from: '/community' };
+    const { container, unmount } = renderIntoBody(<MemoryRouter><SignupPage /></MemoryRouter>);
+    try {
+      const link = [...container.querySelectorAll('a')].find(a => a.textContent === 'Sign up with a password');
+      expect(link?.getAttribute('href')).toBe('/login?method=password&next=%2Fcommunity');
+    } finally { unmount(); }
+  });
+
+  it.each(['page', 'modal'])('does not navigate before signup confirmation on %s', async surface => {
+    auth.signIn.mockResolvedValue({ error: null, confirmationRequired: true });
+    const onSuccess = vi.fn();
+    const { container, unmount } = renderIntoBody(surface === 'page' ? <MemoryRouter><LoginPage /></MemoryRouter> : <LoginModal open onClose={() => undefined} onSuccess={onSuccess} />);
+    try {
+      act(() => findButton(container, 'Use password')?.click());
+      changeInput(container.querySelector('input[type="email"]')!, 'new@example.test');
+      changeInput(container.querySelector('input[type="password"]')!, 'new-password');
+      await act(async () => { container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+      expect(container.querySelector('[role="status"]')?.textContent).toContain('check your email');
+      expect(container.textContent).toContain('Can’t log in?');
+      expect(navigate).not.toHaveBeenCalled(); expect(onSuccess).not.toHaveBeenCalled();
+    } finally { unmount(); }
+  });
+
   it('keeps the modal on the email flow by default and exposes a password toggle', () => {
     const { container, unmount } = renderIntoBody(
       <LoginModal open onClose={() => undefined} />,
@@ -126,7 +151,7 @@ describe('login auth options', () => {
       });
 
       expect(container.querySelector('input[type="password"]')).not.toBeNull();
-      expect(container.textContent).toContain('Use your email and password to sign in.');
+      expect(container.textContent).toContain('Sign in with your password, or create an account if you’re new.');
       expect(posthog.capture).toHaveBeenCalledWith('auth_method_selected', {
         surface: 'login_modal',
         method: 'password',
@@ -158,7 +183,7 @@ describe('login auth options', () => {
         form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
       });
 
-      expect(auth.signIn).toHaveBeenCalledWith('builder@example.com', 'secret-password');
+      expect(auth.signIn).toHaveBeenCalledWith('builder@example.com', 'secret-password', undefined);
       expect(onSuccess).toHaveBeenCalledOnce();
       expect(localStorage.getItem('remember_email')).toBe('builder@example.com');
       expect(posthog.capture).toHaveBeenCalledWith('auth_password_login_submitted', {
@@ -195,7 +220,7 @@ describe('login auth options', () => {
         form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
       });
 
-      expect(auth.signIn).toHaveBeenCalledWith('reviewer@example.com', 'app-store-password');
+      expect(auth.signIn).toHaveBeenCalledWith('reviewer@example.com', 'app-store-password', '/dashboard');
       expect(navigate).toHaveBeenCalledWith('/dashboard');
       expect(posthog.capture).toHaveBeenCalledWith('auth_method_selected', {
         surface: 'login_page',
@@ -267,7 +292,7 @@ describe('login auth options', () => {
       await act(async () => {
         container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
       });
-      expect(auth.signIn).toHaveBeenCalledWith('reviewer@example.com', 'review-password');
+      expect(auth.signIn).toHaveBeenCalledWith('reviewer@example.com', 'review-password', destination);
       expect(auth.signInWithOtp).not.toHaveBeenCalled();
       expect(navigate).toHaveBeenCalledWith(destination);
     } finally {
