@@ -36,7 +36,7 @@ export function DeleteAccount() {
   };
   if (deleted) return <section role="status" className="mt-6 max-w-2xl rounded-xl border border-slate-200 bg-white p-5">
     <h2 className="text-lg font-semibold">Account deleted</h2><p>Your account has been permanently deleted.</p>
-    <a href="/" className="inline-block py-3 underline">Return to BrickBuilder</a>
+    <a href="/" className="inline-block py-3 underline" onClick={() => posthog.capture('account_deletion_home_clicked')}>Return to BrickBuilder</a>
   </section>;
   return <section className="mt-6 max-w-2xl rounded-xl border border-red-200 bg-white p-5 sm:p-6" aria-label="Delete account">
     <h2 className="text-lg font-semibold text-slate-900">Delete account</h2>
@@ -55,4 +55,16 @@ export function DeleteAccount() {
       </div>
     </div>}
   </section>;
+}
+
+export function AccountDeleted() {
+  return <main className="mx-auto max-w-lg px-6 py-16">
+    <h1 className="text-2xl font-bold">Account deleted</h1>
+    <p className="mt-4">Your BrickBuilder account has been permanently deleted.</p>
+    <p className="mt-3">If you had an Apple subscription, cancel it in Apple subscription settings to stop future charges.</p>
+    <a className="mt-6 block underline" href="https://apps.apple.com/account/subscriptions"
+      onClick={() => posthog.capture('account_deletion_apple_subscriptions_clicked')}>Manage Apple subscriptions</a>
+    <a className="mt-4 block underline" href="/"
+      onClick={() => posthog.capture('account_deletion_home_clicked')}>Return to BrickBuilder</a>
+  </main>;
 }
