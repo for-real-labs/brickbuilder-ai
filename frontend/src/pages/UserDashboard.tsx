@@ -1,4 +1,5 @@
 import { ManagePlanLink } from '../components/ManagePlanLink';
+import { DeleteAccount } from '../components/DeleteAccount';
 import { AiBillingSettings } from '../components/AiBillingSettings';
 import { useBilling } from '../contexts/BillingContext';
 import { PaidFeatureLock } from '../components/PaidFeatureDialog';
@@ -537,6 +538,7 @@ const SettingsPanel: React.FC = () => {
     <div>
       <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-3 sm:mb-4">Settings</h1>
       <AiBillingSettings />
+      <DeleteAccount />
 
       <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 max-w-2xl">
         <h2 className="text-lg font-semibold text-slate-900 mb-1">Profile</h2>

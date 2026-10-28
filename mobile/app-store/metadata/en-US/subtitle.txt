@@ -1,1 +1,1 @@
-LEGO-compatible AI 3D Models
+Make LEGO-compatible models

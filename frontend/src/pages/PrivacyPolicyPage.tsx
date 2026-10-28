@@ -217,8 +217,7 @@ export default function PrivacyPolicyPage() {
                 In the Expo mobile app, permission is saved on this device. You can decline and continue browsing or ordering
                 physical bricks, or withdraw permission using AI privacy in the app footer. Withdrawal
                 stops future AI requests; it does not reverse processing already started. After
-                withdrawal, we ask again before another AI request. For deletion requests, contact
-                support@brickbuilder.ai.
+                withdrawal, we ask again before another AI request. Delete your account in Profile → Settings → Delete account. This removes your account, saved models, community posts, settings, and unused credits. Physical order records and necessary model files are retained for fulfillment and financial records; a minimal security record prevents reuse of a deleted account. Apple subscriptions must be canceled separately in Apple subscription settings.
               </p>
             </PolicySection>
 

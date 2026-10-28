@@ -91,6 +91,7 @@ export default function App() {
           <Route path="/blog/using-ai-to-design-lego-in-2026" element={<UsingAiToDesignLego2026Page />} />
           <Route path="/blog/best-ai-lego-design-tools-2026" element={<BestAiLegoDesignTools2026Page />} />
           <Route path="/blog/:slug" element={<SubstackPostPage />} />
+          <Route path="/account-deleted" element={<main className="mx-auto max-w-lg px-6 py-16"><h1 className="text-2xl font-bold">Account deleted</h1><p className="mt-4">Your BrickBuilder account has been permanently deleted.</p><p className="mt-3">If you had an Apple subscription, cancel it in Apple subscription settings to stop future charges.</p><a className="mt-6 block underline" href="https://apps.apple.com/account/subscriptions">Manage Apple subscriptions</a><a className="mt-4 block underline" href="/">Return to BrickBuilder</a></main>} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/terms" element={<TermsOfServicePage />} />
           <Route path="/pet-preview" element={<PetPreviewPage />} />

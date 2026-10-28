@@ -48,3 +48,25 @@ each device set were saved and resubmitted in version 1.0.1 with processed build
 3 on October 15, 2026 at 1:29 PM CDT. Apple confirmed "1 Item Submitted" and
 **Waiting for Review**. No new app binary or website deployment was needed for
 this listing-only revision; automatic release after approval remains selected.
+
+## October 28, 2026 review fixes (1.0.5, build 22)
+
+Apple flagged account deletion (5.1.1(v)) and possible LEGO affiliation in the
+subtitle (4.1(a)). The revised subtitle is **Make LEGO-compatible models** (27
+characters); promotional text is **Easiest way to make LEGO-compatible Models**.
+The LEGO trademark and independence notice stays in the description. Compatibility
+wording requests reconsideration; it is not a license or a guarantee of approval.
+
+Account deletion is under Dashboard → Settings → Delete account. Type DELETE,
+then select Permanently delete account. The server verifies the signed-in account,
+cancels web subscriptions, erases account files/data, and deletes the Auth user.
+Apple subscriptions require separate cancellation through Apple's subscription
+settings, linked in the confirmation. Physical order records and required model
+files remain for fulfillment/financial records. A UUID security record prevents
+late jobs from recreating the deleted account's models.
+
+Apple specifically requires a physical-device screen recording showing sign-in
+(or creating a disposable account), navigation to deletion, confirmation, and the
+final Account deleted screen. Attach that recording before resubmitting. A desktop
+or simulator test does not meet that evidence request. Version 1.0.4 remains the
+released native version until Apple approves/releases 1.0.5.
