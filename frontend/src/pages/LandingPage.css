@@ -307,6 +307,7 @@
 .landing-hero-heading { position: relative; max-width: 760px; }
 .landing-hero-heading--with-pet { width: calc(100% - 128px); }
 .landing-hero-pet { position: absolute; right: calc(100% + 8px); top: 10%; height: 80%; aspect-ratio: 1; pointer-events: none; }
+.landing-hero-heading--compatible .landing-hero-pet { height: clamp(48px, 8vw, 80px); top: 50%; transform: translateY(-50%); }
 .landing-hero-pet > .pet-avatar { width: 100%; height: 100%; }
 @media (max-width: 639px) {
   .landing-hero-heading--with-pet { width: calc(100% - 112px); }
