@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { DeleteAccount } from '../src/components/DeleteAccount';
+import { AccountDeleted, DeleteAccount } from '../src/components/DeleteAccount';
 const mocks = vi.hoisted(() => ({ fetch: vi.fn(), signOut: vi.fn(), navigate: vi.fn(), capture: vi.fn(), reset: vi.fn() }));
 vi.mock('../src/services/apiFetch', () => ({ authenticatedApiFetch: mocks.fetch }));
 vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { signOut: mocks.signOut } } }));
@@ -42,4 +42,17 @@ it('keeps the session and allows retry after server failure', async () => {
 });
 it('canceling never sends a request', async () => {
   await click('Delete my account'); await click('Keep account'); expect(mocks.fetch).not.toHaveBeenCalled();
+});
+
+it('confirmation page keeps Apple cancellation accessible and records navigation', async () => {
+  await act(async () => root.render(<AccountDeleted />));
+  expect(container.textContent).toContain('permanently deleted');
+  const links = [...container.querySelectorAll('a')];
+  expect(links[0].href).toBe('https://apps.apple.com/account/subscriptions');
+  for (const link of links) {
+    link.addEventListener('click', event => event.preventDefault());
+    await act(async () => link.click());
+  }
+  expect(mocks.capture).toHaveBeenCalledWith('account_deletion_apple_subscriptions_clicked');
+  expect(mocks.capture).toHaveBeenCalledWith('account_deletion_home_clicked');
 });
