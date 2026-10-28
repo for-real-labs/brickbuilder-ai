@@ -46,6 +46,11 @@
                     <tr>
                         <td style="background-color: #ffffff; padding: 0 40px 40px 40px; border-radius: 0 0 8px 8px;" class="content">
 
+                            {{ if eq .RedirectTo "https://brickbuilder.ai/login?verification=ios-code" }}
+                            <p style="margin: 10px 0 24px; font-size: 16px; line-height: 1.6; color: #475569;">
+                                Enter the code below in the BrickBuilder app to verify your email and sign in. You do not need to enter your password again.
+                            </p>
+                            {{ else }}
                             <p style="margin: 10px 0 24px 0; font-size: 16px; line-height: 1.6; color: #475569;">
                                 Click the button below to verify your email and finish creating your BrickBuilder account.
                             </p>
@@ -56,6 +61,7 @@
                             <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #475569;">
                                 After verifying, return to BrickBuilder and sign in. If the app is asking for a verification code, you can use the code below instead.
                             </p>
+                            {{ end }}
                             <!-- Verification code -->
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="margin: 32px 0;">
                                 <tr>

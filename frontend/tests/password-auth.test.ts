@@ -1,11 +1,11 @@
 import { beforeEach, expect, it, vi } from 'vitest';
-const mocks = vi.hoisted(() => ({ signIn: vi.fn(), signUp: vi.fn(), reset: vi.fn(), update: vi.fn(), rpc: vi.fn(), session: vi.fn() }));
+const mocks = vi.hoisted(() => ({ signIn: vi.fn(), signUp: vi.fn(), reset: vi.fn(), update: vi.fn(), rpc: vi.fn(), session: vi.fn(), resend: vi.fn(), verify: vi.fn() }));
 vi.mock('../src/lib/supabase', () => ({
-  supabase: { auth: { signInWithPassword: mocks.signIn, signUp: mocks.signUp, updateUser: mocks.update, getSession: mocks.session }, rpc: mocks.rpc },
+  supabase: { auth: { signInWithPassword: mocks.signIn, signUp: mocks.signUp, updateUser: mocks.update, getSession: mocks.session, resend: mocks.resend, verifyOtp: mocks.verify }, rpc: mocks.rpc },
   passwordRecoveryClient: () => ({ auth: { resetPasswordForEmail: mocks.reset } }),
 }));
-import { signInOrCreateAccount, sendPasswordRecovery, hasAccountPassword, saveAccountPassword, preparePasswordRecoveryPage } from '../src/services/passwordAuth';
-beforeEach(() => vi.resetAllMocks());
+import { signInOrCreateAccount, sendPasswordRecovery, hasAccountPassword, saveAccountPassword, preparePasswordRecoveryPage, resendSignupCode, verifySignupCode } from '../src/services/passwordAuth';
+beforeEach(() => { vi.resetAllMocks(); delete window.__BRICKBUILDER_NATIVE_APP__; });
 it('signs in existing accounts without trying signup', async () => {
   mocks.signIn.mockResolvedValue({ error: null });
   expect(await signInOrCreateAccount(' person@example.test ', 'existing')).toEqual({ error: null, confirmationRequired: false });
@@ -25,7 +25,7 @@ it('never overwrites the password when an existing account is returned as an obf
   expect((await signInOrCreateAccount('existing@example.test', 'wrong-password')).confirmationRequired).toBe(true);
   expect(mocks.update).not.toHaveBeenCalled();
 });
-it.each(['over_request_rate_limit', 'email_not_confirmed', 'request_timeout'])('does not signup on %s', async code => {
+it.each(['over_request_rate_limit', 'request_timeout'])('does not signup on %s', async code => {
   const error = { code }; mocks.signIn.mockResolvedValue({ error });
   expect((await signInOrCreateAccount('person@example.test', 'password')).error).toBe(error);
   expect(mocks.signUp).not.toHaveBeenCalled();
@@ -77,4 +77,32 @@ it('cleans failed callbacks too and leaves normal login URLs alone', async () =>
   mocks.session.mockClear(); window.history.replaceState(null, '', '/login?next=%2Fcommunity');
   await preparePasswordRecoveryPage(); expect(mocks.session).not.toHaveBeenCalled(); expect(location.search).toContain('next');
   window.history.replaceState(null, '', '/');
+});
+
+it('uses code-only delivery for native iOS signup and resend, but not Safari', async () => {
+  mocks.signIn.mockResolvedValue({ error: { code: 'invalid_credentials' } });
+  mocks.signUp.mockResolvedValue({ error: null, data: { session: null } });
+  mocks.resend.mockResolvedValue({ error: null });
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '1.0.5' };
+  await signInOrCreateAccount('ios@example.test', 'password');
+  expect(mocks.signUp.mock.calls[0][0].options.emailRedirectTo).toBe('https://brickbuilder.ai/login?verification=ios-code');
+  await resendSignupCode('ios@example.test');
+  expect(mocks.resend.mock.calls[0][0].options.emailRedirectTo).toBe('https://brickbuilder.ai/login?verification=ios-code');
+  delete window.__BRICKBUILDER_NATIVE_APP__;
+  await signInOrCreateAccount('web@example.test', 'password');
+  expect(mocks.signUp.mock.calls[1][0].options.emailRedirectTo).toBe(`${location.origin}/dashboard`);
+});
+it('resends confirmation for an unconfirmed account without changing its password', async () => {
+  mocks.signIn.mockResolvedValue({ error: { code: 'email_not_confirmed' } });
+  mocks.resend.mockResolvedValue({ error: null });
+  expect(await signInOrCreateAccount('pending@example.test','password')).toEqual({ error: null, confirmationRequired: true });
+  expect(mocks.signUp).not.toHaveBeenCalled(); expect(mocks.update).not.toHaveBeenCalled();
+});
+it('verifies a signup code and requires the returned authenticated session', async () => {
+  mocks.verify.mockResolvedValueOnce({ error: null, data: { session: { access_token: 'test' } } });
+  await verifySignupCode(' person@example.test ', ' 123456 ');
+  expect(mocks.verify).toHaveBeenCalledWith({ email: 'person@example.test', token: '123456', type: 'email' });
+  mocks.verify.mockResolvedValueOnce({ error: null, data: { session: null } });
+  await expect(verifySignupCode('person@example.test','123456')).rejects.toThrow('Verification did not complete');
+  expect(mocks.signIn).not.toHaveBeenCalled();
 });

@@ -34,6 +34,7 @@ function createStubClient(): SupabaseClient {
       }),
       signInWithPassword: async () => ({ data: { user: null, session: null }, error: notConfiguredError }),
       signUp: async () => ({ data: { user: null, session: null }, error: notConfiguredError }),
+      resend: async () => ({ data: {}, error: notConfiguredError }),
       resetPasswordForEmail: async () => ({ data: {}, error: notConfiguredError }),
       updateUser: async () => ({ data: { user: null }, error: notConfiguredError }),
       signOut: async () => ({ error: null }),

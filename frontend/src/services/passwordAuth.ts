@@ -1,10 +1,33 @@
 import { supabase, passwordRecoveryClient } from '../lib/supabase';
+import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
 import { loginRedirect } from '../utils/loginRedirect';
+
+// Per-request marker selects the code-only template; it is not an auth permission.
+export function confirmationRedirect(redirectPath?: string) {
+  if (getNativeMobileShellInfo()?.platform === 'ios') return 'https://brickbuilder.ai/login?verification=ios-code';
+  return `${window.location.origin}${loginRedirect('', redirectPath)}`;
+}
+
+export async function resendSignupCode(email: string, redirectPath?: string) {
+  const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(),
+    options: { emailRedirectTo: confirmationRedirect(redirectPath) } });
+  if (error) throw error;
+}
+
+export async function verifySignupCode(email: string, token: string) {
+  const { data, error } = await supabase.auth.verifyOtp({ email: email.trim(), token: token.trim(), type: 'email' });
+  if (error) throw error;
+  if (!data.session) throw new Error('Verification did not complete. Please request a new code.');
+}
 
 export async function signInOrCreateAccount(email: string, password: string, redirectPath?: string) {
   const credentials = { email: email.trim(), password };
   const signedIn = await supabase.auth.signInWithPassword(credentials);
   if (!signedIn.error) return { error: null, confirmationRequired: false };
+  if (signedIn.error.code === 'email_not_confirmed') {
+    try { await resendSignupCode(email, redirectPath); return { error: null, confirmationRequired: true }; }
+    catch (error) { return { error: error as typeof signedIn.error, confirmationRequired: false }; }
+  }
   // Supabase deliberately does not distinguish an unknown email from a wrong
   // password. Signup cannot overwrite an existing confirmed account's password.
   if (signedIn.error.code !== 'invalid_credentials') {
@@ -12,7 +35,7 @@ export async function signInOrCreateAccount(email: string, password: string, red
   }
   const signedUp = await supabase.auth.signUp({
     ...credentials,
-    options: { data: { password_configured: true }, emailRedirectTo: `${window.location.origin}${loginRedirect('', redirectPath)}` },
+    options: { data: { password_configured: true }, emailRedirectTo: confirmationRedirect(redirectPath) },
   });
   return { error: signedUp.error, confirmationRequired: !signedUp.error && !signedUp.data.session };
 }

@@ -5,6 +5,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import posthog from 'posthog-js';
 
+const signup = vi.hoisted(() => ({ verify: vi.fn(), resend: vi.fn() }));
+vi.mock('../src/services/passwordAuth', async () => ({
+  ...await vi.importActual('../src/services/passwordAuth'), verifySignupCode: signup.verify, resendSignupCode: signup.resend,
+}));
 const navigate = vi.fn();
 const loginLocation = vi.hoisted(() => ({ search: '', state: null as { from: string } | null }));
 const auth = {
@@ -91,6 +95,7 @@ function changeInput(input: HTMLInputElement, value: string) {
 
 describe('login auth options', () => {
   beforeEach(() => {
+    delete window.__BRICKBUILDER_NATIVE_APP__;
     loginLocation.search = '';
     loginLocation.state = null;
     auth.signIn.mockReset();
@@ -130,7 +135,30 @@ describe('login auth options', () => {
       expect(container.querySelector('[role="status"]')?.textContent).toContain('check your email');
       expect(container.textContent).toContain('Can’t log in?');
       expect(navigate).not.toHaveBeenCalled(); expect(onSuccess).not.toHaveBeenCalled();
+      expect(container.querySelector('input[type="password"]')).toBeNull();
+      changeInput(container.querySelector('input[autocomplete="one-time-code"]')!, '123456');
+      signup.verify.mockRejectedValueOnce(new Error('Code expired'));
+      await act(async () => { container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+      expect(container.textContent).toContain('Code expired');
+      expect(navigate).not.toHaveBeenCalled(); expect(onSuccess).not.toHaveBeenCalled();
+      signup.resend.mockResolvedValue(undefined);
+      await act(async () => findButton(container, 'Resend code')?.click());
+      expect(signup.resend).toHaveBeenCalledWith('new@example.test', surface === 'page' ? '/dashboard' : undefined);
+      signup.verify.mockResolvedValue(undefined);
+      await act(async () => { container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
+      expect(signup.verify).toHaveBeenCalledWith('new@example.test', '123456');
+      expect(auth.signIn).toHaveBeenCalledTimes(1);
+      if (surface === 'page') expect(navigate).toHaveBeenCalledWith('/dashboard');
+      else expect(onSuccess).toHaveBeenCalledTimes(1);
+
     } finally { unmount(); }
+  });
+
+  it.each(['page', 'modal'])('offers code-only email login copy in native iOS on %s', surface => {
+    window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '1.0.5' };
+    const { container, unmount } = renderIntoBody(surface === 'page' ? <MemoryRouter><LoginPage /></MemoryRouter> : <LoginModal open onClose={() => undefined} />);
+    try { expect(container.textContent).toContain('Continue with email code'); expect(container.textContent).not.toContain('magic link'); }
+    finally { unmount(); delete window.__BRICKBUILDER_NATIVE_APP__; }
   });
 
   it('keeps the modal on the email flow by default and exposes a password toggle', () => {

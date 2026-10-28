@@ -1,4 +1,4 @@
-import { signInOrCreateAccount } from '../services/passwordAuth'
+import { signInOrCreateAccount, confirmationRedirect } from '../services/passwordAuth'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
@@ -218,7 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       options: {
         shouldCreateUser: true,
-        emailRedirectTo: `${window.location.origin}${safePath}`
+        emailRedirectTo: confirmationRedirect(safePath)
       }
     })
     return { error }

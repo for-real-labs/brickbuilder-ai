@@ -1,3 +1,5 @@
+import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
+import { SignupCodeVerification } from './SignupCodeVerification';
 import { PasswordRecovery } from './PasswordRecovery';
 import React, { useEffect, useRef, useState, FormEvent } from "react";
 import { Mail, X } from "lucide-react";
@@ -29,6 +31,7 @@ export default function LoginModal({
   redirectTo,
   onBeforeOAuthRedirect,
 }: LoginModalProps) {
+  const nativeIos = getNativeMobileShellInfo()?.platform === 'ios';
   const { signIn, signInWithGoogle, signInWithOtp, verifyOtp } = useAuth();
   const [email, setEmail] = useState("");
   const [otpCode, setOtpCode] = useState("");
@@ -151,7 +154,7 @@ export default function LoginModal({
         setError(authError.message);
         return;
       }
-      if (needsConfirmation) { setConfirmationRequired(true); return; }
+      if (needsConfirmation) { setPassword(""); setConfirmationRequired(true); return; }
       handleLoginSuccess(true);
     } catch {
       setError("Password sign-in failed. Please try again.");
@@ -228,13 +231,13 @@ export default function LoginModal({
         <h2 className="text-md pr-8">Sign in to save builds and add to community!</h2>
         <p className="mt-1 text-sm text-slate-600">
           {otpSent
-            ? "Check your email for a magic link or enter the code we sent."
+            ? (nativeIos ? "Enter the code we sent to your email." : "Check your email for a magic link or enter the code we sent.")
             : authMethod === "password"
               ? "Sign in with your password, or create an account if you’re new."
               : "Enter email to login or sign-up."}
         </p>
 
-        {!otpSent && authMethod === "magic_link" && (
+        {!confirmationRequired && !otpSent && authMethod === "magic_link" && (
           <form onSubmit={handleGetCode} className="mt-5 space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
@@ -275,7 +278,7 @@ export default function LoginModal({
                   : "bg-[#f44336] hover:bg-[#ff6b6b] cursor-pointer"
               }`}
             >
-              {loading ? "Sending..." : "Continue with magic link"}
+              {loading ? "Sending..." : nativeIos ? "Continue with email code" : "Continue with magic link"}
             </button>
 
             <button
@@ -294,7 +297,7 @@ export default function LoginModal({
           </form>
         )}
 
-        {!otpSent && authMethod === "password" && (
+        {!confirmationRequired && !otpSent && authMethod === "password" && (
           <form onSubmit={handlePasswordSignIn} className="mt-5 space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">Email</label>
@@ -347,7 +350,7 @@ export default function LoginModal({
               onClick={() => selectAuthMethod("magic_link")}
               className="block w-full text-center text-sm text-slate-500 transition-colors hover:text-slate-700 hover:underline"
             >
-              Use magic link instead
+              {nativeIos ? "Use email code instead" : "Use magic link instead"}
             </button>
 
             {error && (
@@ -416,7 +419,8 @@ export default function LoginModal({
           </form>
         )}
 
-          {confirmationRequired && <p role="status" className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">If this is a new account, check your email to confirm it before signing in. Already registered? Your password may be incorrect; use the reset link below.</p>}
+          {confirmationRequired && <SignupCodeVerification email={email} redirectPath={redirectTo} surface="login_modal"
+            onVerified={() => handleLoginSuccess(true)} onBack={() => setConfirmationRequired(false)} />}
           <PasswordRecovery email={email} surface="login_modal" />
 
         <div data-native-mobile-hidden="true">
