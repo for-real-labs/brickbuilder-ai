@@ -418,6 +418,41 @@ describe('LandingPage', () => {
     } finally { act(() => root.unmount()); }
   });
 
+  it.each([true, false])('attributes a random suggestion only after the generation API accepts it (success=%s)', async success => {
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
+    vi.spyOn(BuildBuddyApi, 'randomIdea').mockResolvedValue('A tiny lighthouse');
+    let resolveStart!: (value: { generation_id: string; message: string }) => void;
+    let rejectStart!: (reason: Error) => void;
+    const start = vi.spyOn(LlmToBricksApiService, 'generate').mockImplementation(() => new Promise((resolve, reject) => {
+      resolveStart = resolve; rejectStart = reject;
+    }));
+    const capture = (await import('posthog-js')).default.capture;
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      act(() => container.querySelector<HTMLButtonElement>('#landing-builder-mode button[value="llm"]')!.click());
+      await act(async () => container.querySelector<HTMLButtonElement>('.landing-random-idea')!.click());
+      expect(capture).toHaveBeenCalledWith('landing_random_build_requested', { source: 'initial' });
+      expect(container.textContent).toContain('A tiny lighthouse');
+      await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
+      expect(start).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'A tiny lighthouse' }), undefined);
+      expect(capture).not.toHaveBeenCalledWith('landing_random_build_started', expect.anything());
+      await act(async () => {
+        if (success) resolveStart({ generation_id: 'random-one', message: 'Started' });
+        else rejectStart(new Error('Generation unavailable'));
+      });
+      if (success) {
+        expect(capture).toHaveBeenCalledWith('landing_random_build_started', { generation_id: 'random-one', generation_method: 'llm' });
+        expect(capture).toHaveBeenCalledWith('generation_started', expect.objectContaining({ generation_id: 'random-one', generation_source: 'random_suggestion' }));
+      } else {
+        expect(capture).not.toHaveBeenCalledWith('landing_random_build_started', expect.anything());
+      }
+    } finally { act(() => root.unmount()); container.remove(); }
+  });
+
   it('starts LLM jobs in the background and allows another submission while they run', async () => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
@@ -458,6 +493,8 @@ describe('LandingPage', () => {
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('[aria-label="Your generations"]')).toBeNull();
       expect(start).toHaveBeenCalledTimes(2);
+      expect((await import('posthog-js')).default.capture).not.toHaveBeenCalledWith('landing_random_build_started', expect.anything());
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('generation_started', expect.objectContaining({ generation_id: 'two', generation_source: 'composer' }));
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', {
         generation_method: 'llm', model: DEFAULT_LLM_MODEL, has_prompt: true,
         has_image: false, size: 'big', is_authenticated: false, page: '/', input_type: 'text',

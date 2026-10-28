@@ -492,7 +492,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     }
   };
 
-  const onGenerate = async (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number) => {
+  const onGenerate = async (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number, generationSource: 'composer' | 'random_suggestion' = 'composer') => {
     // Prevent multiple simultaneous calls
     if (loading || preparingImage || checkingProviderRef.current || providerLogin) return;
 
@@ -646,7 +646,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       buddyChat.updateTurn(turnId, { generationId, method: generationMethod });
       setPrompt('');
       posthog.capture('generation_started', { generation_id: generationId, page: window.location.pathname,
-        input_type: requestedImage ? 'image' : 'text', generation_method: generationMethod });
+        input_type: requestedImage ? 'image' : 'text', generation_method: generationMethod, generation_source: generationSource });
+      if (generationSource === 'random_suggestion') {
+        posthog.capture('landing_random_build_started', { generation_id: generationId, generation_method: generationMethod });
+      }
       clearSelectedImage();
       setActiveGenerationId(generationId);
       console.log('Generation started, polling for status:', generationId);
@@ -763,7 +766,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setCreateNewStage(null);
   };
 
-  const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number) => {
+  const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number, generationSource: 'composer' | 'random_suggestion' = 'composer') => {
     if (loading) return;
     posthog.capture('landing_generate_clicked', {
       page: window.location.pathname,
@@ -775,7 +778,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       size,
       is_authenticated: Boolean(session),
     });
-    void onGenerate(requestedPrompt, requestedImage, existingTurnId);
+    void onGenerate(requestedPrompt, requestedImage, existingTurnId, generationSource);
   };
   const requestRandomIdea = (previousIdeas: string[] = []) => {
     randomRequestRef.current?.abort();
@@ -808,7 +811,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setHasEnteredChat(true);
     dismissRandomIdea();
     setCreateNewStage(null);
-    submitGeneration(idea, null);
+    submitGeneration(idea, null, undefined, 'random_suggestion');
   };
   const showBuilds = () => {
     posthog.capture('landing_builds_opened', { surface: 'pet_dialogue', processing_count: processingBuilds.length, completed_count: completedBuilds.length });
