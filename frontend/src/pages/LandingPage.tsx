@@ -1,3 +1,4 @@
+import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
 import { LandingCreateInput } from '../components/LandingCreateInput';
 import { isBuildFromToday } from '../utils/recentBuilds';
 import { AiBillingSettings } from '../components/AiBillingSettings';
@@ -145,6 +146,7 @@ export default function LandingPage({ imageLandingPath }: { imageLandingPath?: I
 }
 
 function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandingPath }) {
+  const nativeIosApp = getNativeMobileShellInfo()?.platform === 'ios';
   const { pet } = usePet();
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
@@ -999,11 +1001,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
             : <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
               <div className="landing-page-intro-content">
-                <div className={`landing-hero-heading${welcomeScreen ? ' landing-hero-heading--with-pet' : ''}`}>
+                <div className={`landing-hero-heading${welcomeScreen ? ' landing-hero-heading--with-pet' : ''}${nativeIosApp ? ' landing-hero-heading--compatible' : ''}`}>
                   {welcomeScreen && <div className="landing-hero-pet landing-fade-in landing-delay-2"><PetAvatar state={focused ? 'listening' : petState} /></div>}
-                  <h1 className="landing-hero-title landing-fade-in landing-delay-2">The Easiest Way to <span>Make LEGO</span></h1>
+                  <h1 className="landing-hero-title landing-fade-in landing-delay-2">The Easiest Way to <span>{nativeIosApp ? 'Make LEGO-compatible Models' : 'Make LEGO'}</span></h1>
                 </div>
-                <p className="landing-hero-description landing-fade-in landing-delay-5">BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes</p>
+                <p className="landing-hero-description landing-fade-in landing-delay-5">{nativeIosApp
+                  ? 'BrickBuilder is a free AI brick model generator that turns text or images into ready-to-build LEGO-compatible models in under 30 minutes'
+                  : 'BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes'}</p>
 
               </div>
             </div>}

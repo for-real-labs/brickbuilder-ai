@@ -91,6 +91,28 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
+  it.each([undefined, 'ios', 'android'] as const)('uses compatibility copy only for the native iOS shell (%s)', platform => {
+    // The same iPhone Safari UA must keep website copy without the native marker.
+    const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1',
+    );
+    if (platform) window.__BRICKBUILDER_NATIVE_APP__ = { platform, version: '0.2.0' };
+    else delete window.__BRICKBUILDER_NATIVE_APP__;
+    try {
+      const container = document.createElement('div');
+      container.innerHTML = renderToStaticMarkup(<LandingPage />);
+      expect(container.querySelector('h1')?.textContent).toBe(platform === 'ios'
+        ? 'The Easiest Way to Make LEGO-compatible Models'
+        : 'The Easiest Way to Make LEGO');
+      expect(container.querySelector('.landing-hero-description')?.textContent).toContain(platform === 'ios'
+        ? 'ready-to-build LEGO-compatible models'
+        : 'ready-to-build LEGO models');
+    } finally {
+      delete window.__BRICKBUILDER_NATIVE_APP__;
+      userAgent.mockRestore();
+    }
+  });
+
   it('keeps build buddy switching in Tools and out of generation settings without submitting', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
