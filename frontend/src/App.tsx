@@ -1,3 +1,4 @@
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import { AccountDeleted } from './components/DeleteAccount';
 import { StudioTransferGate } from "./components/StudioTransferGate";
 import { AiBillingPrompt } from './components/AiBillingPrompt';
@@ -69,6 +70,7 @@ export default function App() {
           <Route path="/image-to-lego" element={<LandingPage imageLandingPath="image-to-lego" />} />
           <Route path="/photo-to-lego" element={<LandingPage imageLandingPath="photo-to-lego" />} />
           <Route path="/landing" element={<Navigate to="/" replace />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/oauth/consent" element={<OAuthConsentPage />} />

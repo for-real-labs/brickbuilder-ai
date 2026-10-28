@@ -34,12 +34,15 @@ function createStubClient(): SupabaseClient {
       }),
       signInWithPassword: async () => ({ data: { user: null, session: null }, error: notConfiguredError }),
       signUp: async () => ({ data: { user: null, session: null }, error: notConfiguredError }),
+      resetPasswordForEmail: async () => ({ data: {}, error: notConfiguredError }),
+      updateUser: async () => ({ data: { user: null }, error: notConfiguredError }),
       signOut: async () => ({ error: null }),
       signInWithOtp: async () => ({ data: {}, error: notConfiguredError }),
       verifyOtp: async () => ({ data: { user: null, session: null }, error: notConfiguredError }),
       signInWithOAuth: async () => ({ data: {}, error: notConfiguredError }),
     },
     from: () => queryBuilder,
+    rpc: async () => ({ data: null, error: notConfiguredError }),
   }
 
   return stub as unknown as SupabaseClient
@@ -53,7 +56,9 @@ export const supabase: SupabaseClient = isSupabaseConfigured
         // Auto-refresh tokens before they expire
         autoRefreshToken: true,
         // Session will persist for 30 days
-        flowType: 'pkce',
+        // Recovery email may open Safari instead of the requesting iOS WebView.
+        // Its one-time link establishes its own session without a device-bound verifier.
+        flowType: typeof window !== 'undefined' && window.location.pathname === '/reset-password' ? 'implicit' : 'pkce',
       },
       // Additional client options for session persistence
       global: {
@@ -64,3 +69,14 @@ export const supabase: SupabaseClient = isSupabaseConfigured
     })
   : createStubClient()
 
+
+// Only sends recovery mail; never persists a second session or parses callbacks.
+// Other sign-in flows keep PKCE. Supabase validates and consumes the recovery link.
+let recoveryClient: SupabaseClient | undefined;
+export function passwordRecoveryClient(): SupabaseClient {
+  if (!isSupabaseConfigured) return supabase;
+  return recoveryClient ??= createClient(supabaseUrl, supabaseAnonKey, {
+    auth: { flowType: 'implicit', persistSession: false, autoRefreshToken: false,
+      detectSessionInUrl: false, storageKey: 'brickbuilder-password-recovery' },
+  });
+}

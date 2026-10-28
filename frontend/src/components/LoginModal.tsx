@@ -1,3 +1,4 @@
+import { PasswordRecovery } from './PasswordRecovery';
 import React, { useEffect, useRef, useState, FormEvent } from "react";
 import { Mail, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
@@ -35,6 +36,7 @@ export default function LoginModal({
   const [remember, setRemember] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [confirmationRequired, setConfirmationRequired] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
   const [authMethod, setAuthMethod] = useState<AuthMethod>("magic_link");
   const dialogRef = useRef<HTMLDivElement | null>(null);
@@ -49,6 +51,7 @@ export default function LoginModal({
   // Reset transient state whenever the modal closes
   useEffect(() => {
     if (open) return;
+    setConfirmationRequired(false);
     setOtpCode("");
     setPassword("");
     setOtpSent(false);
@@ -82,6 +85,7 @@ export default function LoginModal({
   if (!open) return null;
 
   const selectAuthMethod = (method: AuthMethod) => {
+    setConfirmationRequired(false);
     setAuthMethod(method);
     setError(null);
     setOtpCode("");
@@ -129,6 +133,7 @@ export default function LoginModal({
 
   const handlePasswordSignIn = async (e: FormEvent) => {
     e.preventDefault();
+    setConfirmationRequired(false);
     setError(null);
     if (!email.trim()) {
       setError("Please enter your email.");
@@ -141,11 +146,12 @@ export default function LoginModal({
     try {
       setLoading(true);
       trackPasswordLoginSubmitted("login_modal");
-      const { error: authError } = await signIn(email, password);
+      const { error: authError, confirmationRequired: needsConfirmation } = await signIn(email, password, redirectTo);
       if (authError) {
         setError(authError.message);
         return;
       }
+      if (needsConfirmation) { setConfirmationRequired(true); return; }
       handleLoginSuccess(true);
     } catch {
       setError("Password sign-in failed. Please try again.");
@@ -207,7 +213,7 @@ export default function LoginModal({
     >
       <div
         ref={dialogRef}
-        className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        className="relative max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
         onMouseDown={(e) => e.stopPropagation()}
       >
         <button
@@ -224,7 +230,7 @@ export default function LoginModal({
           {otpSent
             ? "Check your email for a magic link or enter the code we sent."
             : authMethod === "password"
-              ? "Use your email and password to sign in."
+              ? "Sign in with your password, or create an account if you’re new."
               : "Enter email to login or sign-up."}
         </p>
 
@@ -333,7 +339,7 @@ export default function LoginModal({
                   : "bg-[#f44336] hover:bg-[#ff6b6b] cursor-pointer"
               }`}
             >
-              {loading ? "Signing in..." : "Sign in with password"}
+              {loading ? "Continuing..." : "Sign in or create account"}
             </button>
 
             <button
@@ -409,6 +415,9 @@ export default function LoginModal({
             )}
           </form>
         )}
+
+          {confirmationRequired && <p role="status" className="mt-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-900">If this is a new account, check your email to confirm it before signing in. Already registered? Your password may be incorrect; use the reset link below.</p>}
+          <PasswordRecovery email={email} surface="login_modal" />
 
         <div data-native-mobile-hidden="true">
           <div className="flex items-center gap-3 pt-4 mt-2">

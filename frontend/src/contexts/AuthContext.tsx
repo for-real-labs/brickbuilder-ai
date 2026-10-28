@@ -1,3 +1,4 @@
+import { signInOrCreateAccount } from '../services/passwordAuth'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
@@ -21,7 +22,7 @@ interface AuthContextType {
   loading: boolean
   userProfile: UserProfile | null
   isSupabaseConfigured: boolean
-  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signIn: (email: string, password: string, redirectPath?: string) => Promise<{ error: AuthError | null; confirmationRequired?: boolean }>
   signUp: (email: string, password: string) => Promise<{ error: AuthError | null }>
   signOut: () => Promise<{ error: AuthError | null }>
   signInWithOtp: (email: string, redirectPath?: string) => Promise<{ error: AuthError | null }>
@@ -166,13 +167,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => { active = false; subscription.unsubscribe() }
   }, [])
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
-    return { error }
-  }
+  const signIn = signInOrCreateAccount
 
   const signUp = async (email: string, password: string) => {
     const { error } = await supabase.auth.signUp({

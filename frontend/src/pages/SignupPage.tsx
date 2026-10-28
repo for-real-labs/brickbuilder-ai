@@ -1,3 +1,6 @@
+import posthog from 'posthog-js';
+import { PasswordRecovery } from '../components/PasswordRecovery';
+import { loginRedirect } from '../utils/loginRedirect';
 import React, { useState, useEffect, FormEvent } from "react";
 import { useNavigate, useLocation, Link, useSearchParams } from "react-router-dom";
 import { SEO } from "../components/SEO";
@@ -10,7 +13,7 @@ function SignupPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromState = (location.state as { from?: string } | null)?.from;
-  const redirectTo = fromState && fromState.startsWith("/") ? fromState : "/dashboard";
+  const redirectTo = loginRedirect(location.search, fromState);
   const [searchParams] = useSearchParams();
   const { signInWithOtp, verifyOtp, signInWithGoogle } = useAuth();
 
@@ -179,6 +182,11 @@ function SignupPage() {
               </p>
             </form>
           )}
+
+          {!otpSent && <Link className="mt-4 block min-h-11 py-3 text-center text-sm text-[#c83228] underline"
+            to={`/login?method=password&next=${encodeURIComponent(redirectTo)}`}
+            onClick={() => posthog.capture('auth_method_selected', { surface: 'signup_page', method: 'password' })}>Sign up with a password</Link>}
+          <PasswordRecovery email={email} surface="signup_page" />
 
           {/* OTP Verification */}
           {otpSent && (
