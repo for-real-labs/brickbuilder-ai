@@ -334,3 +334,34 @@ def test_plan_purchase_does_not_restore_expired_paid_credits(db):
     db.execute("UPDATE billing_accounts SET subscription_status='canceled', period_end=now()-interval '1 day' WHERE user_id=%s", (uid,))
     result = paid(db, uid, invoice='new', sub='sub_new', version=2)
     assert result['monthly_remaining'] == 500
+
+
+@pytest.mark.parametrize('live', [True, False])
+def test_monthly_spending_no_longer_blocks_purchases_or_generation(db, live):
+    db.execute((MIGRATION.parent/'20261028000000_remove_monthly_budget_restrictions.sql').read_text())
+    db.execute('UPDATE billing_settings SET generation_budget_usd=1,assistant_budget_usd=.01')
+    for bucket in ('generation', 'assistant'):
+        for index in range(2):
+            assert db.execute('SELECT billing_reserve_ai(%s,%s,%s,21) reserved',
+                              (f'{bucket}:{index}',live,bucket)).fetchone()['reserved']
+    assert db.execute('SELECT billing_capacity(%s) capacity',(live,)).fetchone()['capacity'] == {
+        'available': True, 'checkout_available': True}
+    assert db.execute('SELECT sum(amount) amount FROM billing_ai_reservations WHERE livemode=%s',
+                      (live,)).fetchone()['amount'] == 84
+    uid = owner(db)
+    generate(db, uid, live=live)
+    assert wallet(db,uid,live)['monthly_remaining'] == 299
+    db.execute('UPDATE billing_accounts SET monthly_remaining=0,bonus_remaining=0 WHERE user_id=%s',(uid,))
+    with pytest.raises(psycopg.errors.RaiseException,match='BB_CREDITS_EXHAUSTED'):
+        generate(db,uid,live=live)
+    with pytest.raises(psycopg.errors.RaiseException,match='BILLING_DUPLICATE_RESERVATION'):
+        db.execute("SELECT billing_reserve_ai('generation:0',%s,'generation',21)",(live,))
+    with pytest.raises(psycopg.errors.RaiseException,match='BILLING_INVALID_RESERVATION'):
+        db.execute("SELECT billing_reserve_ai('invalid',%s,'generation',22)",(live,))
+    for role in ('anon','authenticated'):
+        for signature in ('billing_reserve_ai(text,boolean,text,numeric)','billing_capacity(boolean)'):
+            assert not db.execute("SELECT has_function_privilege(%s,%s,'EXECUTE') p",
+                                  (role,signature)).fetchone()['p']
+    db.execute('UPDATE billing_settings SET enabled=false')
+    assert db.execute('SELECT billing_capacity(%s) capacity',(live,)).fetchone()['capacity'] == {
+        'available': False, 'checkout_available': False}
