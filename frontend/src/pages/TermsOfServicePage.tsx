@@ -41,7 +41,7 @@ export default function TermsOfServicePage() {
           </section>)}
           <section className="space-y-3">
             <h2 className="text-xl font-bold sm:text-2xl">Privacy, support, and ending use</h2>
-            <p className="text-[15px] leading-7 text-slate-600 sm:text-base">Our <Link to="/privacy" onClick={() => posthog.capture("terms_of_service_interaction", { action: "view_privacy" })} className="font-semibold text-[#c62828] underline">Privacy Policy</Link> explains information handling. You may stop using the service and disconnect applications at any time. For support or account-deletion requests, email <a href="mailto:support@brickbuilder.ai" onClick={() => posthog.capture("terms_of_service_interaction", { action: "email_support" })} className="font-semibold text-[#c62828] underline break-all">support@brickbuilder.ai</a>.</p>
+            <p className="text-[15px] leading-7 text-slate-600 sm:text-base">Our <Link to="/privacy" onClick={() => posthog.capture("terms_of_service_interaction", { action: "view_privacy" })} className="font-semibold text-[#c62828] underline">Privacy Policy</Link> explains information handling. You may stop using the service and disconnect applications at any time. Delete your account in Profile → Settings → Delete account. For support, email <a href="mailto:support@brickbuilder.ai" onClick={() => posthog.capture("terms_of_service_interaction", { action: "email_support" })} className="font-semibold text-[#c62828] underline break-all">support@brickbuilder.ai</a>.</p>
           </section>
         </div>
       </main>
