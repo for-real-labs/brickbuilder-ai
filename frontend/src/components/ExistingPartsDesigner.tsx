@@ -67,7 +67,7 @@ export function ExistingPartsDesigner({ onSelect, onBack }: { onSelect: (invento
       <div className="existing-parts-icon"><Blocks size={28} strokeWidth={1.5} aria-hidden="true" /></div>
       <p className="existing-parts-eyebrow">SAME BRICKS. NEW POSSIBILITIES.</p>
       <h1 id="existing-parts-title">Upload a parts list to create a new LEGO from your existing parts</h1>
-      <p>Give your bricks a new story. Nova designs with only your parts, colors, and quantities.</p>
+      <p>Give your bricks a new story. BrickBuilder designs with only your parts, colors, and quantities.</p>
     </div>
     <div className="existing-parts-card" onDragOver={event => { event.preventDefault(); event.stopPropagation(); }}
       onDragEnter={event => event.stopPropagation()} onDrop={event => { event.preventDefault(); event.stopPropagation(); upload(event.dataTransfer.files[0]); }}>
