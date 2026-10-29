@@ -722,6 +722,37 @@ describe('LandingPage', () => {
     expect(container.querySelector('.pet-dialogue')).toBeNull();
   });
 
+  it.each([false, true])('reserves layout space for the entire enlarged hero pet (native iOS: %s)', nativeIos => {
+    if (nativeIos) window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '0.2.0' };
+    const style = document.createElement('style');
+    style.textContent = readFileSync('src/components/PetCompanion.css', 'utf8') + readFileSync('src/pages/LandingPage.css', 'utf8');
+    const container = document.createElement('div');
+    container.innerHTML = renderToStaticMarkup(<LandingPage />);
+    document.head.append(style);
+    document.body.append(container);
+    try {
+      const heading = getComputedStyle(container.querySelector('.landing-hero-heading')!);
+      const pet = getComputedStyle(container.querySelector('.landing-hero-pet')!);
+      const image = getComputedStyle(container.querySelector('.landing-hero-pet img')!);
+      expect(heading.display).toBe('grid');
+      expect(heading.gridTemplateColumns).toBe('auto minmax(0, 1fr)');
+      expect(heading.width).toBe('100%');
+      expect(pet.position).toBe('relative');
+      expect(pet.width).toBe('var(--hero-pet-size)');
+      expect(pet.height).toBe(pet.width);
+      // The margin must account for the media extending beyond both sides.
+      const scale = Number(image.scale);
+      const marginFactor = Number(pet.margin.match(/\*\s*([\d.]+)/)?.[1]);
+      expect(marginFactor * 2 + 1).toBeGreaterThanOrEqual(scale);
+      container.querySelector('.landing-hero-pet .pet-avatar')!.classList.add('pet-avatar--listening-motion');
+      expect(getComputedStyle(container.querySelector('.landing-hero-pet img')!).transformOrigin).toBe('center');
+    } finally {
+      delete window.__BRICKBUILDER_NATIVE_APP__;
+      style.remove();
+      container.remove();
+    }
+  });
+
   it('shows the upload-first hero, quiet welcome, and statistics', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 
