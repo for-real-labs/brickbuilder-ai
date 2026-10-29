@@ -78,6 +78,7 @@ import { GenerationEmailApi } from '../src/services/generationEmailApi';
 import { PetProvider } from '../src/contexts/PetContext';
 import { PetCompanion } from '../src/components/PetCompanion';
 import { BuildBuddyApi } from '../src/services/buildBuddyApi';
+import { PartsInventoryApi } from '../src/services/partsInventoryApi';
 
 beforeEach(() => {
   billingSettings.enabled = false;
@@ -1068,4 +1069,44 @@ it('positions the stats independently of document flow with room below their cen
     stats.classList.add('landing-page-stats--hidden');
     expect(getComputedStyle(stats).display).toBe('none');
   } finally { stats.remove(); style.remove(); }
+});
+
+
+it('returns from a parts upload to the existing composer and submits its exact inventory to Nova', async () => {
+  vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+  const inventory = { name: 'owned.csv', source: 'upload' as const, parts: [{ part_id: '3001', color_id: 4, quantity: 2 }] };
+  vi.spyOn(PartsInventoryApi, 'upload').mockResolvedValue({ inventory, unavailable: [] });
+  const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('Stop after submission'));
+  const container = document.createElement('div'); document.body.append(container); const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    act(() => container.querySelectorAll<HTMLButtonElement>('.existing-parts-tabs button')[1].click());
+    expect(container.textContent).toContain('Upload a parts list to create a new LEGO');
+    const picker = container.querySelector<HTMLInputElement>('input[aria-label="Upload parts list"]')!;
+    Object.defineProperty(picker, 'files', { value: [new File(['parts'], 'owned.csv')] });
+    await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
+    expect(container.querySelector('h1')?.textContent).toContain('Using owned.csv to design a new LEGO');
+    expect(container.querySelector<HTMLButtonElement>('button[value="llm"]')!.disabled).toBe(true);
+    const prompt = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'A tiny car');
+      prompt.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => { container.querySelector<HTMLButtonElement>('button[type=submit]')!.click(); await vi.waitFor(() => expect(nova).toHaveBeenCalled()); });
+    expect(nova).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'A tiny car', partsInventory: inventory }), undefined);
+  } finally { act(() => root.unmount()); container.remove(); }
+});
+
+it('preserves the inventory through a login redirect and forces Nova mode', async () => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const inventory = { name: 'My set', source: 'set', parts: [{ part_id: '3001', color_id: 4, quantity: 2 }] };
+  sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Car', generationMethod: 'llm', partsInventory: inventory }));
+  const container = document.createElement('div'); const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    expect(container.querySelector('h1')?.textContent).toContain('Using My set to design a new LEGO');
+    expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
+  } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); }
 });

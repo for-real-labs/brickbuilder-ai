@@ -1,4 +1,6 @@
 import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
+import { ExistingPartsDesigner } from '../components/ExistingPartsDesigner';
+import { inventoryQuantity, type PartsInventory } from '../services/partsInventoryApi';
 import { LandingCreateInput } from '../components/LandingCreateInput';
 import { isBuildFromToday } from '../utils/recentBuilds';
 import { AiBillingSettings } from '../components/AiBillingSettings';
@@ -164,6 +166,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [recentBuildRefresh, setRecentBuildRefresh] = useState(0);
   const completedBuilds = useRecentCompletedBuilds(session?.access_token, session?.user.id, `${recentBuildRefresh}:${notifications.map(row => `${row.id}:${row.status}`).join(',')}`);
   const [prompt, setPrompt] = useState("");
+  const [inventoryOpen, setInventoryOpen] = useState(false);
+  const [partsInventory, setPartsInventory] = useState<PartsInventory | null>(null);
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [giftPlanning, setGiftPlanning] = useState(false);
   const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
@@ -351,6 +355,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         threeDModel?: string;
         llmModel?: string;
         novaOptions?: NovaOptions;
+        partsInventory?: PartsInventory;
         image?: { name: string; type: string; base64: string } | null;
       };
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
@@ -360,6 +365,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         ? payload.generationMethod : DEFAULT_GENERATION_METHOD);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
         setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, model: DEFAULT_LLM_MODEL, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
+      }
+      if (payload.partsInventory?.parts?.length && typeof payload.partsInventory.name === 'string') {
+        setPartsInventory(payload.partsInventory);
+        setGenerationMethod('nova');
       }
       if (payload.image && payload.image.base64) {
         try {
@@ -484,6 +493,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         threeDModel,
         llmModel,
         novaOptions: { ...novaOptions, model: llmModel },
+        partsInventory,
         image: imageData,
       };
       sessionStorage.setItem(PENDING_LANDING_STATE_KEY, JSON.stringify(payload));
@@ -514,7 +524,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setInputValidationMessage(null);
 
     let novaAuthMode = novaOptions.authMode;
-    if (generationMethod === 'nova' && localDevelopment) {
+    if ((partsInventory || generationMethod === 'nova') && localDevelopment) {
       const mode = await checkNovaConnection(llmModel);
       if (!mode) return;
       novaAuthMode = mode;
@@ -586,9 +596,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       // Trellis (non-streamed).
       const stream3d = threeDModel === 'sam3d';
 
-      if (generationMethod === 'nova') {
+      if (partsInventory || generationMethod === 'nova') {
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
+          partsInventory: partsInventory ?? undefined,
           model: llmModel,
           authMode: localDevelopment ? novaAuthMode : 'api_key',
           prompt: requestedPrompt.trim() || undefined,
@@ -866,6 +877,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     const image = imgFile;
     setFocused(false);
     setHasEnteredChat(true);
+    if (partsInventory && !landingModel.model) {
+      submitGeneration(text, image);
+      return;
+    }
     const result = await buddyChat.routeMessage(text, image,
       landingModel.model ? landingModel.model.generation.name || landingModel.model.generation.prompt || 'Current model' : undefined,
       giftPlanning);
@@ -950,10 +965,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       ref={landingViewportRef}
       className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${welcomeScreen ? ' landing-page--welcome' : ''}${conversationStarted ? ' landing-page--conversation-started' : ''}${helpVisible ? ' landing-page--help-visible' : ''}`}
       style={{ backgroundColor: "#fbfbfd", '--landing-order-banner-height': `${orderBarHeight}px` } as React.CSSProperties}
-      onDragEnter={handleDragEnter}
-      onDragLeave={handleDragLeave}
-      onDragOver={handleDragOver}
-      onDrop={handleDrop}
+      onDragEnter={inventoryOpen ? undefined : handleDragEnter}
+      onDragLeave={inventoryOpen ? undefined : handleDragLeave}
+      onDragOver={inventoryOpen ? undefined : handleDragOver}
+      onDrop={inventoryOpen ? undefined : handleDrop}
     >
       {/* Drag-and-drop overlay */}
       {isDragging && (
@@ -1000,17 +1015,34 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             onOpen: trigger => { settingsReturnFocus.current = trigger; toggleSettings(true); },
           }} />
 
-        <main className={`flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
+        {!ldrawLanding && !landingModel.model && <div className="existing-parts-tabs" role="group" aria-label="Design source">
+          <button type="button" aria-pressed={!inventoryOpen} onClick={() => {
+            setInventoryOpen(false); posthog.capture('existing_parts_tab_selected', { tab: 'create' });
+          }}>Create a design</button>
+          <button type="button" aria-pressed={inventoryOpen} disabled={loading || modelBusy || buddyChat.routing} onClick={() => {
+            setInventoryOpen(true); setSettingsOpen(false); posthog.capture('existing_parts_tab_selected', { tab: 'existing_set' });
+          }}>Design from existing set</button>
+        </div>}
+        {inventoryOpen ? <ExistingPartsDesigner onBack={() => setInventoryOpen(false)} onSelect={inventory => {
+          setPartsInventory(inventory); setGenerationMethod('nova'); setInventoryOpen(false);
+          setGiftPlanning(false); setCreateNewStage(null); dismissRandomIdea();
+        }} /> : <main className={`${partsInventory ? 'landing-inventory-return ' : ''}flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
             : <div className={`landing-page-intro${conversationStarted ? ' landing-page-intro--hidden' : ''}`} aria-hidden={conversationStarted}>
               <div className="landing-page-intro-content">
                 <div className={`landing-hero-heading${welcomeScreen ? ' landing-hero-heading--with-pet' : ''}${nativeIosApp ? ' landing-hero-heading--compatible' : ''}`}>
                   {welcomeScreen && <div className="landing-hero-pet landing-fade-in landing-delay-2"><PetAvatar state={focused ? 'listening' : petState} /></div>}
-                  <h1 className="landing-hero-title landing-fade-in landing-delay-2">The Easiest Way to <span>{nativeIosApp ? 'Make LEGO-compatible Models' : 'Make LEGO'}</span></h1>
+                  <h1 className={`landing-hero-title landing-fade-in landing-delay-2${partsInventory ? ' landing-inventory-title' : ''}`}>{partsInventory
+                    ? <>Using <span>{partsInventory.name}</span> to design a new LEGO</>
+                    : <>The Easiest Way to <span>{nativeIosApp ? 'Make LEGO-compatible Models' : 'Make LEGO'}</span></>}</h1>
                 </div>
-                <p className="landing-hero-description landing-fade-in landing-delay-5">{nativeIosApp
+                {partsInventory ? <div className="existing-parts-summary">
+                  <span>{inventoryQuantity(partsInventory).toLocaleString()} pieces · Exact parts and colors · No extra pieces</span>
+                  <button type="button" onClick={() => { setInventoryOpen(true); posthog.capture('existing_parts_change_clicked'); }}>Change parts</button>
+                  <button type="button" onClick={() => { setPartsInventory(null); posthog.capture('existing_parts_removed'); }}>Remove</button>
+                </div> : <p className="landing-hero-description landing-fade-in landing-delay-5">{nativeIosApp
                   ? 'BrickBuilder is a free AI brick model generator that turns text or images into ready-to-build LEGO-compatible models in under 30 minutes'
-                  : 'BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes'}</p>
+                  : 'BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes'}</p>}
 
               </div>
             </div>}
@@ -1171,7 +1203,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
                       <button key={value} type="button" value={value}
                         aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d'}
+                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d' || Boolean(partsInventory)}
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);
@@ -1253,15 +1285,15 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
           {ldrawLanding && generationActivity}
           </div>
-        </main>
-        {!ldrawLanding && <div className={`landing-page-stats${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted || helpVisible} aria-label="BrickBuilder generation statistics">
+        </main>}
+        {!inventoryOpen && !ldrawLanding && <div className={`landing-page-stats${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted || helpVisible} aria-label="BrickBuilder generation statistics">
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="landing-stat-label">models generated</span></div>
                   <div className="landing-stat-divider" aria-hidden="true" />
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="landing-stat-label">bricks generated</span></div>
                 </div>}
 
 
-        {footerEnabled && <div className="landing-page-help" aria-hidden={!footerVisible}>
+        {!inventoryOpen && footerEnabled && <div className="landing-page-help" aria-hidden={!footerVisible}>
           <div>Need help?{' '}
           <a href="mailto:support@brickbuilder.ai" tabIndex={footerVisible ? 0 : -1}
             onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a></div>

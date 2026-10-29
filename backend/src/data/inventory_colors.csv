@@ -1,0 +1,300 @@
+system,color_id,ldraw_id,name
+bricklink,1,15,White
+bricklink,2,19,Tan
+bricklink,3,14,Yellow
+bricklink,4,25,Orange
+bricklink,5,4,Red
+bricklink,6,2,Green
+bricklink,7,1,Blue
+bricklink,8,6,Brown
+bricklink,9,7,Light Gray
+bricklink,10,8,Dark Gray
+bricklink,11,0,Black
+bricklink,12,47,Trans-Clear
+bricklink,13,40,Trans-Brown
+bricklink,14,33,Trans-Dark Blue
+bricklink,15,43,Trans-Light Blue
+bricklink,16,42,Trans-Neon Green
+bricklink,17,36,Trans-Red
+bricklink,18,38,Trans-Neon Orange
+bricklink,19,46,Trans-Yellow
+bricklink,20,34,Trans-Green
+bricklink,21,334,Chrome Gold
+bricklink,22,383,Chrome Silver
+bricklink,23,13,Pink
+bricklink,24,22,Purple
+bricklink,25,12,Salmon
+bricklink,26,100,Light Salmon
+bricklink,27,216,Rust
+bricklink,28,92,Nougat
+bricklink,29,366,Earth Orange
+bricklink,31,462,Medium Orange
+bricklink,32,125,Light Orange
+bricklink,33,18,Light Yellow
+bricklink,34,27,Lime
+bricklink,35,120,Light Lime
+bricklink,36,10,Bright Green
+bricklink,37,74,Medium Green
+bricklink,38,17,Light Green
+bricklink,39,3,Dark Turquoise
+bricklink,40,11,Light Turquoise
+bricklink,41,118,Aqua
+bricklink,42,73,Medium Blue
+bricklink,43,110,Violet
+bricklink,44,20,Light Violet
+bricklink,46,21,Glow in Dark Opaque
+bricklink,47,5,Dark Pink
+bricklink,48,378,Sand Green
+bricklink,49,503,Very Light Gray
+bricklink,50,37,Trans-Dark Pink
+bricklink,51,52,Trans-Purple
+bricklink,52,61,Chrome Blue
+bricklink,54,373,Sand Purple
+bricklink,55,379,Sand Blue
+bricklink,56,77,Light Pink
+bricklink,57,60,Chrome Antique Brass
+bricklink,58,335,Sand Red
+bricklink,59,320,Dark Red
+bricklink,60,79,Milky White
+bricklink,61,142,Pearl Light Gold
+bricklink,62,9,Light Blue
+bricklink,63,272,Dark Blue
+bricklink,64,62,Chrome Green
+bricklink,66,135,Pearl Light Gray
+bricklink,67,80,Metallic Silver
+bricklink,68,484,Dark Orange
+bricklink,69,28,Dark Tan
+bricklink,70,81,Metallic Green
+bricklink,71,26,Magenta
+bricklink,72,313,Maersk Blue
+bricklink,73,112,Medium Violet
+bricklink,74,41,Trans-Medium Blue
+bricklink,76,115,Medium Lime
+bricklink,77,148,Pearl Dark Gray
+bricklink,78,137,Pearl Sand Blue
+bricklink,80,288,Dark Green
+bricklink,81,147,Flat Dark Gold
+bricklink,83,183,Pearl White
+bricklink,84,134,Copper
+bricklink,85,72,Dark Bluish Gray
+bricklink,86,71,Light Bluish Gray
+bricklink,87,232,Sky Blue
+bricklink,88,70,Reddish Brown
+bricklink,89,85,Dark Purple
+bricklink,90,78,Light Nougat
+bricklink,91,86,Light Brown
+bricklink,93,69,Light Purple
+bricklink,94,351,Medium Dark Pink
+bricklink,95,179,Flat Silver
+bricklink,96,68,Very Light Orange
+bricklink,97,89,Royal Blue(Old Blue-Violet)
+bricklink,98,57,Trans-Orange
+bricklink,99,151,Very Light Bluish Gray
+bricklink,100,114,Glitter Trans-Dark Pink
+bricklink,101,117,Glitter Trans-Clear
+bricklink,102,129,Glitter Trans-Purple
+bricklink,103,226,Bright Light Yellow
+bricklink,104,29,Bright Pink
+bricklink,105,212,Bright Light Blue
+bricklink,106,450,Fabuland Brown
+bricklink,107,45,Trans-Pink
+bricklink,108,35,Trans-Bright Green
+bricklink,109,23,Dark Royal Blue
+bricklink,110,191,Bright Light Orange
+bricklink,114,284,Trans-Light Purple
+bricklink,115,297,Pearl Gold
+bricklink,116,75,Speckle Black-Copper
+bricklink,117,76,Speckle DBGray-Silver
+bricklink,118,294,Glow In Dark Trans
+bricklink,119,150,Pearl Very Light Gray
+bricklink,120,308,Dark Brown
+bricklink,121,54,Trans-Neon Yellow
+bricklink,150,84,Medium Nougat
+bricklink,152,323,Light Aqua
+bricklink,153,321,Dark Azure
+bricklink,154,31,Lavender
+bricklink,155,330,Olive Green
+bricklink,156,322,Medium Azure
+bricklink,157,30,Medium Lavender
+bricklink,158,326,Yellowish Green
+bricklink,159,329,Glow In Dark White
+bricklink,160,509,Fabuland Orange
+bricklink,164,231,Trans-Light Orange
+bricklink,167,402,Reddish Orange
+bricklink,168,423,Umber
+bricklink,169,422,Sienna
+bricklink,173,424,Ochre Yellow
+bricklink,220,353,Coral
+bricklink,221,285,Trans-Light Green
+bricklink,222,341,Glitter Trans-Orange
+bricklink,223,362,Satin Trans-Light Blue
+bricklink,224,364,Satin Trans-Dark Pink
+bricklink,225,128,Dark Nougat
+bricklink,226,227,Trans-Light Bright Green
+bricklink,227,218,Clikits Lavender
+bricklink,228,360,Satin Trans-Clear
+bricklink,229,363,Satin Trans-Brown
+bricklink,230,365,Satin Trans-Purple
+bricklink,232,10366,Satin Trans-Dark Blue
+bricklink,233,367,Satin Trans-Bright Green
+bricklink,234,44,Trans-Medium Purple
+bricklink,235,189,Reddish Gold
+bricklink,236,368,Neon Yellow
+bricklink,237,176,Bionicle Copper
+bricklink,238,178,Bionicle Gold
+bricklink,240,370,Medium Brown
+bricklink,241,371,Medium Tan
+bricklink,244,83,Pearl Black
+bricklink,245,219,Lilac
+bricklink,248,510,Fabuland Lime
+bricklink,249,346,Reddish Copper
+bricklink,250,300,Metallic Copper
+bricklink,251,10375,Trans-Black
+bricklink,252,184,Pearl Red
+bricklink,253,186,Pearl Green
+bricklink,254,185,Pearl Blue
+bricklink,255,187,Pearl Brown
+rebrickable,0,0,Black
+rebrickable,1,1,Blue
+rebrickable,2,2,Green
+rebrickable,3,3,Dark Turquoise
+rebrickable,4,4,Red
+rebrickable,5,5,Dark Pink
+rebrickable,6,6,Brown
+rebrickable,7,7,Light Gray
+rebrickable,8,8,Dark Gray
+rebrickable,9,9,Light Blue
+rebrickable,10,10,Bright Green
+rebrickable,11,11,Light Turquoise
+rebrickable,12,12,Salmon
+rebrickable,13,13,Pink
+rebrickable,14,14,Yellow
+rebrickable,15,15,White
+rebrickable,17,17,Light Green
+rebrickable,18,18,Light Yellow
+rebrickable,19,19,Tan
+rebrickable,20,20,Light Violet
+rebrickable,21,21,Glow In Dark Opaque
+rebrickable,22,22,Purple
+rebrickable,23,23,Dark Blue-Violet
+rebrickable,25,25,Orange
+rebrickable,26,26,Magenta
+rebrickable,27,27,Lime
+rebrickable,28,28,Dark Tan
+rebrickable,29,29,Bright Pink
+rebrickable,30,30,Medium Lavender
+rebrickable,31,31,Lavender
+rebrickable,33,33,Trans-Dark Blue
+rebrickable,34,34,Trans-Green
+rebrickable,35,35,Trans-Bright Green
+rebrickable,36,36,Trans-Red
+rebrickable,40,40,Trans-Brown
+rebrickable,41,43,Trans-Light Blue
+rebrickable,42,42,Trans-Neon Green
+rebrickable,45,37,Trans-Dark Pink
+rebrickable,46,46,Trans-Yellow
+rebrickable,47,47,Trans-Clear
+rebrickable,52,52,Trans-Purple
+rebrickable,54,54,Trans-Neon Yellow
+rebrickable,57,38,Trans-Neon Orange
+rebrickable,60,60,Chrome Antique Brass
+rebrickable,61,61,Chrome Blue
+rebrickable,62,62,Chrome Green
+rebrickable,68,68,Very Light Orange
+rebrickable,69,69,Light Purple
+rebrickable,70,70,Reddish Brown
+rebrickable,71,71,Light Bluish Gray
+rebrickable,72,72,Dark Bluish Gray
+rebrickable,73,73,Medium Blue
+rebrickable,74,74,Medium Green
+rebrickable,75,75,Speckle Black-Copper
+rebrickable,76,76,Speckle DBGray-Silver
+rebrickable,77,77,Light Pink
+rebrickable,78,78,Light Nougat
+rebrickable,79,79,Milky White
+rebrickable,80,80,Metallic Silver
+rebrickable,81,81,Metallic Green
+rebrickable,84,84,Medium Nougat
+rebrickable,85,85,Dark Purple
+rebrickable,86,86,Light Brown
+rebrickable,92,92,Nougat
+rebrickable,100,100,Light Salmon
+rebrickable,110,110,Violet
+rebrickable,114,114,Glitter Trans-Dark Pink
+rebrickable,115,115,Medium Lime
+rebrickable,117,117,Glitter Trans-Clear
+rebrickable,118,118,Aqua
+rebrickable,120,120,Light Lime
+rebrickable,125,125,Light Orange
+rebrickable,129,129,Glitter Trans-Purple
+rebrickable,134,134,Copper
+rebrickable,135,135,Pearl Light Gray
+rebrickable,137,137,Pearl Sand Blue
+rebrickable,142,142,Pearl Light Gold
+rebrickable,143,41,Trans-Medium Blue
+rebrickable,148,148,Pearl Dark Gray
+rebrickable,150,150,Pearl Very Light Gray
+rebrickable,151,151,Very Light Bluish Gray
+rebrickable,158,326,Yellowish Green
+rebrickable,178,147,Flat Dark Gold
+rebrickable,179,179,Flat Silver
+rebrickable,182,57,Trans-Orange
+rebrickable,183,183,Pearl White
+rebrickable,191,191,Bright Light Orange
+rebrickable,212,212,Bright Light Blue
+rebrickable,216,216,Rust
+rebrickable,226,226,Bright Light Yellow
+rebrickable,230,45,Trans-Pink
+rebrickable,232,232,Sky Blue
+rebrickable,236,284,Trans-Light Purple
+rebrickable,272,272,Dark Blue
+rebrickable,288,288,Dark Green
+rebrickable,294,294,Glow In Dark Trans
+rebrickable,297,297,Pearl Gold
+rebrickable,308,308,Dark Brown
+rebrickable,313,313,Maersk Blue
+rebrickable,320,320,Dark Red
+rebrickable,321,321,Dark Azure
+rebrickable,322,322,Medium Azure
+rebrickable,323,323,Light Aqua
+rebrickable,326,330,Olive Green
+rebrickable,334,334,Chrome Gold
+rebrickable,335,335,Sand Red
+rebrickable,351,351,Medium Dark Pink
+rebrickable,366,366,Earth Orange
+rebrickable,373,373,Sand Purple
+rebrickable,378,378,Sand Green
+rebrickable,379,379,Sand Blue
+rebrickable,383,383,Chrome Silver
+rebrickable,450,450,Fabuland Brown
+rebrickable,462,462,Medium Orange
+rebrickable,484,484,Dark Orange
+rebrickable,503,503,Very Light Gray
+rebrickable,1000,329,Glow in Dark White
+rebrickable,1001,112,Medium Violet
+rebrickable,1007,218,Reddish Lilac
+rebrickable,1012,509,Fabuland Orange
+rebrickable,1050,353,Coral
+rebrickable,1052,341,Glitter Trans-Orange
+rebrickable,1053,362,Opal Trans-Light Blue
+rebrickable,1054,364,Opal Trans-Dark Pink
+rebrickable,1055,360,Opal Trans-Clear
+rebrickable,1057,227,Trans-Light Bright Green
+rebrickable,1058,285,Trans-Light Green
+rebrickable,1059,365,Opal Trans-Purple
+rebrickable,1061,10366,Opal Trans-Dark Blue
+rebrickable,1065,189,Reddish Gold
+rebrickable,1067,128,Dark Nougat
+rebrickable,1070,185,Pearl Blue
+rebrickable,1071,186,Pearl Green
+rebrickable,1072,187,Pearl Brown
+rebrickable,1073,83,Pearl Black
+rebrickable,1077,510,Fabuland Lime
+rebrickable,1092,300,Metallic Copper
+rebrickable,1094,44,Trans-Medium Purple
+rebrickable,1095,10375,Trans-Black
+rebrickable,1136,402,Reddish Orange
+rebrickable,1137,422,Sienna Brown
+rebrickable,1138,423,Umber Brown
+rebrickable,1145,424,Ochre Yellow
+rebrickable,1147,89,Blue Violet

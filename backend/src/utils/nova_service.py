@@ -260,8 +260,13 @@ class NovaService:
                 chat_id, before = self.session_id(created['id']), {'models': {}}
         from .supplier_catalog import catalog_path
         from .parts_catalog import PartsCatalog
-        catalog_csv = catalog_path().read_text(encoding='utf-8')
-        catalog = PartsCatalog.from_csv(catalog_csv)
+        inventory = getattr(request, 'parts_inventory', None)
+        if inventory is not None:
+            catalog = inventory.catalog()
+            catalog_csv = catalog.to_palette_csv()
+        else:
+            catalog_csv = catalog_path().read_text(encoding='utf-8')
+            catalog = PartsCatalog.from_csv(catalog_csv)
         palette_csv = catalog.to_palette_csv()
         configured = await self.request('PUT', f'integration/chats/{chat_id}/parts-catalog',
                                         json={'csv': palette_csv})
@@ -274,8 +279,12 @@ class NovaService:
         session['parts_catalog'] = {'sha256': hashlib.sha256(catalog_csv.encode()).hexdigest(),
                                    'palette_sha256': hashlib.sha256(palette_csv.encode()).hexdigest(),
                                    'allowed_combinations': len(catalog.parts)}
+        if inventory is not None:
+            session['parts_inventory'] = inventory.model_dump()
         await save_session(session)
         text = request.prompt or 'Create a model from the reference image.'
+        if inventory is not None:
+            text = ('Build only from the configured finite inventory. Match exact part IDs and colors, never exceed any max_quantity, and do not add a baseplate or other pieces outside that inventory. You may leave pieces unused. Adapt the requested design to the available pieces.\n\n' + text)
         images = ([f'data:{request.image_media_type};base64,{request.image_base64}'] if request.image_base64 else [])
         started = False
         usage_poller = None

@@ -469,3 +469,35 @@ def test_live_usage_polling_is_idempotent_and_retains_checkpoint_on_outage(monke
             assert len(ledger.calls) == 1
             assert ledger.values()['tokens_used'] == 15
     asyncio.run(run())
+
+
+@pytest.mark.parametrize('count,valid', [(2, True), (3, False)])
+def test_uploaded_inventory_is_enforced_at_runtime_and_independent_import_gate(count, valid):
+    from src.utils.parts_inventory import PartsInventory
+    from src.utils.nova_service import NovaResult
+    inventory = PartsInventory.model_validate({'name': 'my bricks.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
+            service.generation_ready = AsyncMock(return_value=VERSIONS)
+            service.configure_model = AsyncMock(return_value='config')
+            service.request = AsyncMock(return_value={'parts_catalog_version': 1})
+            service.chat = AsyncMock(side_effect=[{'chat': {'running': False}, 'models': {}},
+                {'chat': {'running': False}, 'models': {'new': {'id': 'new', 'created_at': 1}}}])
+            service.wait_for_turn = AsyncMock()
+            service.cancel = AsyncMock()
+            model = '1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n' * count
+            service.export = AsyncMock(return_value=NovaResult(model, model, None, b'archive', {}))
+            service.instructions = AsyncMock(return_value='instructions')
+            request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='build', image_base64=None, parts_inventory=inventory)
+            save = AsyncMock()
+            if valid:
+                await service.run(request, 'openai', save, previous={'chat_id': 'chat'})
+                service.instructions.assert_awaited_once()
+            else:
+                with pytest.raises(ValueError, match='requested 3, available 2'):
+                    await service.run(request, 'openai', save, previous={'chat_id': 'chat'})
+                service.instructions.assert_not_awaited()
+            palette = service.request.call_args_list[0].kwargs['json']['csv']
+            assert palette == 'part_id,color_id,sku,max_quantity\n3001,4,inventory-1,2\n'
+            assert save.call_args.args[0]['parts_inventory'] == inventory.model_dump()
+    asyncio.run(run())
