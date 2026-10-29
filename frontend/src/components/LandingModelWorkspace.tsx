@@ -1,5 +1,5 @@
 import React, { lazy, Suspense, useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Box, Maximize2, Sparkles } from 'lucide-react';
+import { ArrowLeft, BookOpen, Box, Maximize2, Ruler, Sparkles } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
@@ -47,6 +47,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const stageId = useId();
   const [instructionsId, setInstructionsId] = useState<string | null>(null);
   const [view, setView] = useState<'model' | 'instructions'>('model');
+  const [showRuler, setShowRuler] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const panel = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
@@ -156,7 +157,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}
               modelName={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
-              animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} defaultShowRuler />}
+              animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={showRuler} />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id} embedded active={showingInstructions} />
             </div>}
@@ -165,6 +166,21 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
         {!pendingEdit && <div className="landing-model-toolbar">
           {onCreateNew && <button type="button" className="landing-create-new landing-action-button" disabled={createNewDisabled} onClick={onCreateNew}>
             <Sparkles size={16} aria-hidden="true" /><span>Create new</span>
+          </button>}
+          <div className="landing-view-controls">
+          {!showingInstructions && <button type="button" className="landing-action-button landing-ruler-toggle"
+            aria-label={showRuler ? 'Hide ruler' : 'Show ruler'} title={showRuler ? 'Hide ruler' : 'Show ruler'}
+            aria-pressed={showRuler} aria-controls={stageId} onClick={() => {
+              setShowRuler(!showRuler);
+              posthog.capture('landing_model_ruler_toggled', {
+                generation_id: generation.generation_id, visible: !showRuler, source: 'viewer_toolbar',
+              });
+            }}>
+            <span className="landing-ruler-icon"><Ruler size={18} aria-hidden="true" />
+              {!showRuler && <svg className="landing-ruler-slash" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3 3 21 21" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>}
+            </span>
           </button>}
           <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded}
             aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'}
@@ -177,6 +193,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             }}>
             <Maximize2 size={18} aria-hidden="true" />
           </button>
+          </div>
         </div>}
         {!pendingEdit && <div className="landing-model-bottom-toolbar">
           <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}

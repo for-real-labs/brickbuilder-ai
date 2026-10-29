@@ -1499,6 +1499,8 @@ interface ThreeLDRViewerProps {
   totalSteps?: number;        // Total number of steps in model
   showBaseplate?: boolean;    // Whether to show baseplate with studs
   topLeftOverlay?: React.ReactNode;
+  showRuler?: boolean; // Optional controlled measurement visibility
+  onShowRulerChange?: (visible: boolean) => void;
   defaultShowRuler?: boolean; // Show measurements immediately after the model loads
   showModelControls?: boolean; // Whether to show ruler and explode controls
   presentation?: 'room' | 'model';
@@ -1556,6 +1558,8 @@ export function ThreeLDRViewer({
   topLeftOverlay,
   showModelControls = true,
   defaultShowRuler = false,
+  showRuler,
+  onShowRulerChange,
   presentation = 'room',
   onViewInteractionEnd,
 }: ThreeLDRViewerProps) {
@@ -1574,7 +1578,8 @@ export function ThreeLDRViewer({
   const [loading, setLoading] = useState(true);
   const [instanced, setInstanced] = useState(false);
   const [explodeMode, setExplodeMode] = useState<ExplodeMode>('assembled');
-  const [showRulerGrid, setShowRulerGrid] = useState(defaultShowRuler);
+  const [internalShowRuler, setInternalShowRuler] = useState(defaultShowRuler);
+  const showRulerGrid = showRuler ?? internalShowRuler;
   const collisionCountRef = useRef(0);
   const isCaptureInProgressRef = useRef(false);
   const buildAnimationRef = useRef<BuildAnimationState | null>(null);
@@ -2300,7 +2305,10 @@ export function ThreeLDRViewer({
           )}
           {showModelControls && <button
             type="button"
-            onClick={() => setShowRulerGrid((visible) => !visible)}
+            onClick={() => {
+              setInternalShowRuler(!showRulerGrid);
+              onShowRulerChange?.(!showRulerGrid);
+            }}
             disabled={loading || !!error}
             className={`absolute z-20 inline-flex items-center gap-2 rounded-full border border-slate-700/30 bg-slate-950/85 px-2.5 py-2 text-xs font-semibold text-white shadow-lg shadow-black/25 backdrop-blur-sm transition-all duration-150 hover:bg-slate-800 hover:scale-[1.03] disabled:cursor-not-allowed disabled:opacity-60 sm:px-4 ${topLeftOverlay ? 'right-3 top-14' : 'left-3 top-3'}`}
             title={showRulerGrid ? 'Hide ruler' : 'Show ruler'}

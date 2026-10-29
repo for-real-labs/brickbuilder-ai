@@ -52,7 +52,10 @@
 .landing-model-rename-cancel { border: 1px solid #cbd5e1; color: #334155; }
 .landing-model-rename-save:disabled, .landing-model-rename-cancel:disabled { opacity: .5; cursor: not-allowed; }
 .landing-model-rename-form [role="alert"] { margin-top: 6px; font-size: 12px; }
-.landing-view-expand { width: 44px; min-width: 44px; padding: 0; }
+.landing-view-controls { display: flex; gap: 8px; margin-left: auto; }
+.landing-ruler-icon { position: relative; display: flex; }
+.landing-ruler-slash { position: absolute; inset: 0; filter: drop-shadow(0 0 1px white); }
+.landing-ruler-toggle, .landing-view-expand { width: 44px; min-width: 44px; padding: 0; }
 .landing-model-bottom-toolbar { position: absolute; z-index: 45; right: 12px; bottom: 12px; left: 12px; display: flex; align-items: end; justify-content: space-between; gap: 12px; pointer-events: none; }
 .landing-model-bottom-toolbar > * { pointer-events: auto; }
 .landing-model-workspace[data-view="instructions"] .landing-model-bottom-toolbar { top: 112px; bottom: auto; }

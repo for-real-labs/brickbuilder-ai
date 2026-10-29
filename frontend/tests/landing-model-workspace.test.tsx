@@ -41,10 +41,10 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, modelPath, onModelLoaded, defaultShowRuler, showModelControls }: { defaultShowRuler?: boolean; showModelControls?: boolean; modelContent?: string; modelName?: string; modelPath?: string; onModelLoaded?: () => void }) => {
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, modelPath, onModelLoaded, showRuler, showModelControls }: { showRuler?: boolean; showModelControls?: boolean; modelContent?: string; modelName?: string; modelPath?: string; onModelLoaded?: () => void }) => {
   if (modelPath) return <div data-testid="generation-3d-animation" data-scene={modelPath} />;
   viewer.loaded = onModelLoaded;
-  return <div data-testid="viewer" data-model-name={modelName} data-ruler={String(defaultShowRuler)} data-controls={String(showModelControls)}>{modelContent}</div>;
+  return <div data-testid="viewer" data-model-name={modelName} data-ruler={String(showRuler)} data-controls={String(showModelControls)}>{modelContent}</div>;
 } }));
 vi.mock('../src/components/FallingBricks', () => ({ default: () => null }));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
@@ -1184,7 +1184,7 @@ it('shows icon only expand control and Share at the bottom right of the model', 
   try {
     await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false} onCreateNew={vi.fn()} onRenameRequest={vi.fn()}>{null}</LandingModelWorkspace>));
     const controls = container.querySelector('.landing-model-toolbar')!;
-    expect(controls.querySelectorAll('button')).toHaveLength(2);
+    expect(controls.querySelectorAll('button')).toHaveLength(3);
     expect(controls.querySelector('button:first-child')?.textContent).toBe('Create new');
     expect(controls.querySelector('.landing-view-expand')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
     expect(controls.querySelector('.landing-view-expand')?.textContent).toBe('');
@@ -1198,7 +1198,7 @@ it('shows icon only expand control and Share at the bottom right of the model', 
     expect(getComputedStyle(shareButton).fontWeight).toBe(getComputedStyle(instructionsButton).fontWeight);
     expect(getComputedStyle(shareButton).lineHeight).toBe('20px');
     for (const button of [controls.querySelector('button:first-child')!, container.querySelector('.landing-model-heading-edit')!,
-      controls.querySelector('.landing-view-expand')!, instructionsButton, shareButton]) {
+      controls.querySelector('.landing-view-expand')!, controls.querySelector('.landing-ruler-toggle')!, instructionsButton, shareButton]) {
       expect(getComputedStyle(button).height).toBe('44px');
       expect(getComputedStyle(button).fontSize).toBe('14px');
       expect(getComputedStyle(button).fontFamily).toBe(getComputedStyle(instructionsButton).fontFamily);
@@ -1285,4 +1285,30 @@ it('limits footer gestures to the initial flow and clears a revealed footer when
   expect(container.querySelector('.landing-page--help-visible')).toBeNull();
   wheel();
   expect(container.querySelector('.landing-page-help')?.getAttribute('aria-hidden')).toBe('false');
+});
+
+
+it('toggles measurements beside expand and preserves the choice across viewer modes', async () => {
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'castle mpd' }} busy={false}>{null}</LandingModelWorkspace>));
+  const toggle = container.querySelector<HTMLButtonElement>('.landing-ruler-toggle')!;
+  const rulerVisible = () => container.querySelector('[data-testid="viewer"]')?.getAttribute('data-ruler');
+  expect(toggle.nextElementSibling?.classList.contains('landing-view-expand')).toBe(true);
+  expect(rulerVisible()).toBe('true');
+  await act(async () => toggle.click());
+  expect(rulerVisible()).toBe('false');
+  expect(toggle.getAttribute('aria-label')).toBe('Show ruler');
+  expect(toggle.getAttribute('aria-pressed')).toBe('false');
+  expect(toggle.querySelector('.landing-ruler-slash')).not.toBeNull();
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_ruler_toggled', {
+    generation_id: 'castle', visible: false, source: 'viewer_toolbar',
+  });
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
+  expect(rulerVisible()).toBe('false');
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  expect(container.querySelector('.landing-ruler-toggle')).toBeNull();
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  expect(rulerVisible()).toBe('false');
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-ruler-toggle')!.click());
+  expect(rulerVisible()).toBe('true');
+  expect(container.querySelector('.landing-ruler-slash')).toBeNull();
 });
