@@ -275,6 +275,7 @@ async def handle_checkout_session_completed(session):
             amount_paid=amount_total,
             stripe_session_id=full_session.id,
             stripe_payment_intent=payment_intent,
+            parts_list_csv_url=metadata.get('partsListCsvUrl'),
             shipping_info=shipping_info,
             instructions_key_hash=instruction_key_hash(instruction_key),
         )

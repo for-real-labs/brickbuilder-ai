@@ -1,11 +1,17 @@
 import { beforeEach, expect, it, vi } from 'vitest';
 import { PartsInventoryApi, inventoryQuantity } from '../src/services/partsInventoryApi';
 import { NovaToBricksApiService, DEFAULT_NOVA_OPTIONS } from '../src/services/novaToBricksApi';
-import { apiFetch } from '../src/services/apiFetch';
+import { apiFetch, authenticatedApiFetch } from '../src/services/apiFetch';
 vi.mock('../src/services/apiFetch', () => ({ apiFetch: vi.fn(), authenticatedApiFetch: vi.fn() }));
 const response = (data: unknown, ok = true) => ({ ok, json: async () => data }) as Response;
 beforeEach(() => vi.clearAllMocks());
 const inventory = { name: 'box.csv', source: 'upload' as const, parts: [{ part_id: '3001', color_id: 4, quantity: 3 }] };
+it('loads an owned order through authenticated transport with cancellation', async () => {
+  vi.mocked(authenticatedApiFetch).mockResolvedValue(response({ inventory: { ...inventory, source: 'order' }, unavailable: [] }));
+  const signal = new AbortController().signal;
+  expect((await PartsInventoryApi.order(42, signal)).inventory.source).toBe('order');
+  expect(authenticatedApiFetch).toHaveBeenCalledWith(expect.stringContaining('/parts-inventory/orders/42'), { signal });
+});
 it('uploads multipart and preserves normalized quantity data', async () => {
   vi.mocked(apiFetch).mockResolvedValue(response({ inventory, unavailable: [] }));
   const file = new File(['data'], 'box.csv');

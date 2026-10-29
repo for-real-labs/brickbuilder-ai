@@ -1,8 +1,8 @@
-import { apiFetch } from './apiFetch';
+import { apiFetch, authenticatedApiFetch } from './apiFetch';
 import { NOVA_API_BASE_URL } from './novaToBricksApi';
 
 export interface InventoryPart { part_id: string; color_id: number; quantity: number }
-export interface PartsInventory { name: string; source: 'upload' | 'set'; parts: InventoryPart[] }
+export interface PartsInventory { name: string; source: 'upload' | 'set' | 'order'; parts: InventoryPart[] }
 export interface InventoryResult {
   inventory: PartsInventory;
   unavailable: InventoryPart[];
@@ -19,6 +19,9 @@ async function readResponse<T>(response: Response): Promise<T> {
 }
 
 export const PartsInventoryApi = {
+  async order(orderId: number, signal?: AbortSignal): Promise<InventoryResult> {
+    return readResponse(await authenticatedApiFetch(`${NOVA_API_BASE_URL}/parts-inventory/orders/${orderId}`, { signal }));
+  },
   async upload(file: File, signal?: AbortSignal): Promise<InventoryResult> {
     if (file.size > 16 * 1024 * 1024) throw new Error('Choose a parts list smaller than 16 MB.');
     const body = new FormData();

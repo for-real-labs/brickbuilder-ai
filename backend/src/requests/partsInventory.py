@@ -2,15 +2,21 @@
 import asyncio
 import logging
 
-from fastapi import APIRouter, File, HTTPException, Query, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Path, Query, UploadFile
 from pydantic import ValidationError
 
-from ..utils.auth import supabase_client
+from ..utils.auth import get_optional_identity, supabase_client
+from ..utils.order_inventory import inventory_from_order
 from ..utils.lego_sets import CATALOG_TABLE, search_sets, set_inventory
 from ..utils.parts_inventory import MAX_UPLOAD_BYTES, parse_inventory
 
 router = APIRouter(prefix='/parts-inventory', tags=['Parts inventory'])
 logger = logging.getLogger(__name__)
+
+
+@router.get('/orders/{order_id}')
+async def get_order_inventory(order_id: int = Path(gt=0), auth_info: dict = Depends(get_optional_identity)):
+    return await inventory_from_order(order_id, auth_info)
 
 
 @router.post('/upload')

@@ -3,8 +3,9 @@ import { ArrowRight, FileUp, Loader2, Search } from 'lucide-react';
 import posthog from 'posthog-js';
 import { PartsInventoryApi, inventoryQuantity, type InventoryResult, type LegoSet, type PartsInventory } from '../services/partsInventoryApi';
 import './ExistingPartsDesigner.css';
+import { PreviousOrderParts } from './PreviousOrderParts';
 
-export function ExistingPartsDesigner({ onSelect }: { onSelect: (inventory: PartsInventory) => void }) {
+export function ExistingPartsDesigner({ onSelect, onLogin }: { onSelect: (inventory: PartsInventory) => void; onLogin?: () => void }) {
   const [query, setQuery] = useState('');
   const [sets, setSets] = useState<LegoSet[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -66,6 +67,8 @@ export function ExistingPartsDesigner({ onSelect }: { onSelect: (inventory: Part
     </div>
     <div className="existing-parts-card" onDragOver={event => { event.preventDefault(); event.stopPropagation(); }}
       onDragEnter={event => event.stopPropagation()} onDrop={event => { event.preventDefault(); event.stopPropagation(); upload(event.dataTransfer.files[0]); }}>
+      <PreviousOrderParts onSelect={choose} onLogin={onLogin} disabled={busy} />
+      <div className="existing-parts-divider"><span />or<span /></div>
       <label className="existing-parts-search"><Search size={19} aria-hidden="true" />
         <input aria-label="Search LEGO sets" value={query} maxLength={100} placeholder="Search by set name or number" disabled={busy}
           onChange={event => { setQuery(event.target.value); setReview(null); }} />

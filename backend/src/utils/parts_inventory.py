@@ -41,7 +41,7 @@ class InventoryPart(BaseModel):
 class PartsInventory(BaseModel):
     model_config = ConfigDict(extra='forbid')
     name: str = Field(min_length=1, max_length=200)
-    source: Literal['upload', 'set'] = 'upload'
+    source: Literal['upload', 'set', 'order'] = 'upload'
     parts: list[InventoryPart] = Field(min_length=1, max_length=MAX_ROWS)
 
     @field_validator('name')
