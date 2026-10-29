@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 # Tables the application uses. Each is created as (pk, id, doc jsonb).
 _TABLES = (
     "generations",
+    "lego_set_catalog",
     "orders",
     "user_profiles",
     "anonymous_users",
@@ -112,6 +113,10 @@ class _QueryBuilder:
         self._filters.append(("eq", column, value))
         return self
 
+    def ilike(self, column: str, value: str) -> "_QueryBuilder":
+        self._filters.append(("ilike", column, value))
+        return self
+
     def neq(self, column: str, value: Any) -> "_QueryBuilder":
         self._filters.append(("neq", column, value))
         return self
@@ -156,6 +161,9 @@ class _QueryBuilder:
             if kind == "eq":
                 clauses.append(f"{alias} @> %s::jsonb")
                 params.append(Json({col: val}))
+            elif kind == "ilike":
+                clauses.append(f"({alias}->>%s) ILIKE %s")
+                params.extend([col, val])
             elif kind == "neq":
                 clauses.append(f"NOT ({alias} @> %s::jsonb)")
                 params.append(Json({col: val}))

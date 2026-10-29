@@ -1,0 +1,13 @@
+{
+  "generated_at": "2026-10-29T13:33:23.779010+00:00",
+  "entries": 296,
+  "sources": [
+    "https://rebrickable.com/downloads/",
+    "https://www.bricklink.com/v3/studio/download.page",
+    "https://www.ldraw.org/article/547.html"
+  ],
+  "ldraw_colors_sha256": "98f4ecc6d8aea02406cdc29f91be47a9639ef3d8ae4cde99c7245b44db2432dc",
+  "studio_colors_sha256": "81cf426358ff92614f1d474a915c74993ac8379ba73cb385d8883ee4981a8693",
+  "rebrickable_colors_sha256": "e3eed93dd344b746e9237cd757643314f9aca2536db41a766dc97431f9c7023c",
+  "matching": "Exact canonical color names resolved against official LDConfig; original Studio entries only; no RGB approximation"
+}

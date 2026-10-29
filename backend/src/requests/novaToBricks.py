@@ -25,6 +25,7 @@ from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
 from ..utils.nova_service import NovaService, INSTRUCTIONS_FILE
+from ..utils.parts_inventory import PartsInventory
 from ..utils.storage_upload import upload_artifact
 from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.posthog_client import track_error, track_image_conversion
@@ -52,6 +53,7 @@ def _generation_timeout() -> float | None:
 
 class NovaToBricksRequest(LlmToBricksRequest):
     auth_mode: Literal["api_key", "native"] = "api_key"
+    parts_inventory: PartsInventory | None = None
     _nova_session: dict | None = PrivateAttr(default=None)
     _nova_source_ldr: str | None = PrivateAttr(default=None)
     _nova_uploaded_source: bool = PrivateAttr(default=False)
@@ -70,6 +72,15 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         if source.get('endpoint') == 'uploadLdraw':
             raise
         owned = False
+    if owned and source.get('has_parts_inventory'):
+        try:
+            bucket = generation_storage.client.storage.from_('generation-output')
+            data = await asyncio.to_thread(bucket.download, f'{request.generation_id}/parts-inventory.json')
+            if len(data) > 2 * 1024 * 1024:
+                raise ValueError('Oversized inventory')
+            request.parts_inventory = PartsInventory.model_validate_json(data)
+        except Exception:
+            raise HTTPException(409, 'The original parts inventory is unavailable. Upload it again to start a new build.') from None
     request._nova_input_type = source.get('input_type') or infer_input_type(source.get('endpoint'))
     request._nova_input_format = source.get('input_format')
     request._nova_uploaded_source = owned and source.get('endpoint') in {'uploadLdraw', 'glbToBricks', 'objToBricks'}
@@ -84,6 +95,9 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             # geometry into a fresh chat. Anthropic thinking signatures belong to
             # the account that created them and cannot follow a credential switch.
             previous = request._nova_session
+            # Owned edits/resumes keep their original inventory, including provider switches.
+            if previous.get('parts_inventory'):
+                request.parts_inventory = PartsInventory.model_validate(previous['parts_inventory'])
             account_changed = (previous['model'].startswith('claude-')
                                and previous['auth_mode'] == 'api_key'
                                and previous.get('provider_key_id') != _anthropic_key_id(request._provider_api_key))
@@ -141,7 +155,7 @@ async def _owned_session(generation_id: str, auth_info: dict) -> dict:
     try:
         bucket = generation_storage.client.storage.from_("generation-output")
         data = await asyncio.to_thread(bucket.download, f"{generation_id}/nova-session.json")
-        if len(data) > 16000:
+        if len(data) > 2 * 1024 * 1024:
             raise ValueError("Oversized session metadata")
         session = json.loads(data)
         NovaService.session_id(session['chat_id'])
@@ -149,6 +163,8 @@ async def _owned_session(generation_id: str, auth_info: dict) -> dict:
             raise ValueError('Invalid tenant metadata')
         if session['model'] not in SUPPORTED_MODELS or session['auth_mode'] not in {'api_key', 'native'}:
             raise ValueError("Invalid session metadata")
+        if session.get('parts_inventory'):
+            PartsInventory.model_validate(session['parts_inventory'])
         return session
     except Exception:
         raise HTTPException(status_code=409, detail="This generation predates the Nova runtime integration or its session is unavailable") from None
@@ -263,6 +279,17 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         input_format=request._nova_input_format, entry_page=request.entry_page,
         edit_generation_id=request.generation_id if request._nova_session or request._nova_uploaded_source else None,
     )
+    if request.parts_inventory is not None:
+        try:
+            bucket = generation_storage.client.storage.from_('generation-output')
+            await upload_artifact(bucket, path=f'{generation_id}/parts-inventory.json',
+                file=request.parts_inventory.model_dump_json().encode(), content_type='application/json')
+            await asyncio.to_thread(lambda: generation_storage.client.table('generations').update({
+                'has_parts_inventory': True
+            }).eq('id', generation_id).execute())
+        except Exception:
+            await generation_storage.update_status(generation_id, 'failed', 'Could not save the parts inventory. Please try again.')
+            raise HTTPException(503, 'Could not save the parts inventory. Please try again.') from None
     task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info, native_progress=True))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)

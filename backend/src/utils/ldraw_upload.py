@@ -30,7 +30,7 @@ def _decode(data: bytes) -> str:
         return data.decode('cp1252')
 
 
-def normalize_ldraw_upload(filename: str, data: bytes) -> str:
+def normalize_ldraw_upload(filename: str, data: bytes, *, inventory_only: bool = False) -> str:
     extension = PurePosixPath(filename.replace('\\', '/')).suffix.lower()
     if extension not in {'.io', '.ldr', '.mpd'}:
         raise ValueError('Choose a Studio .io, LDraw .ldr, or .mpd file.')
@@ -56,7 +56,9 @@ def normalize_ldraw_upload(filename: str, data: bytes) -> str:
                     raise ValueError('This Studio file does not contain model.ldr.')
                 data = archive.read(model, pwd=STUDIO_PASSWORD)
                 for entry in entries:
-                    if entry is model or entry.is_dir():
+                    # Studio's model2.ldr is an alternate render export with
+                    # embedded geometry and BrickLink colors, not extra bricks.
+                    if entry is model or entry.is_dir() or (inventory_only and entry.filename.lower() == 'model2.ldr'):
                         continue
                     if PurePosixPath(entry.filename).suffix.lower() in {'.dat', '.ldr', '.mpd'}:
                         additions.append((_safe_name(entry.filename), _decode(archive.read(entry, pwd=STUDIO_PASSWORD))))

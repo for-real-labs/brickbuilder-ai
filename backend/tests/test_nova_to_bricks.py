@@ -338,3 +338,75 @@ def test_another_users_upload_is_not_importable(monkeypatch, endpoint):
         asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
     assert error.value.status_code == 404
     download.assert_not_awaited()
+
+
+@pytest.mark.parametrize('lost_session', [True, False])
+def test_original_inventory_survives_provider_switch_or_lost_session(monkeypatch, lost_session):
+    from src.utils.parts_inventory import PartsInventory
+    inventory = PartsInventory.model_validate({'name': 'original.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
+    session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'model': 'gpt-5.5', 'auth_mode': 'api_key', 'parts_inventory': inventory.model_dump()}
+    monkeypatch.setattr(module, '_owned_session', AsyncMock(side_effect=HTTPException(409) if lost_session else None, return_value=session))
+    class Bucket:
+        def download(self, path):
+            assert path == 'source/parts-inventory.json'
+            return inventory.model_dump_json().encode()
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated', 'status': 'completed',
+            'endpoint': 'novaToBricks', 'ldr_url': 'public', 'has_parts_inventory': True}),
+        client=SimpleNamespace(storage=SimpleNamespace(from_=lambda _: Bucket())),
+        download_file_from_storage=AsyncMock(return_value=b'geometry')))
+    request = module.NovaToBricksRequest(prompt='edit', generation_id='source', model='gpt-6.1-sol',
+        parts_inventory={'name': 'attempted replacement', 'parts': [{'part_id': '3002', 'color_id': 0, 'quantity': 100}]})
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert request.parts_inventory == inventory and request._nova_session is None
+
+
+def test_missing_private_inventory_blocks_edit_instead_of_removing_limits(monkeypatch):
+    class Bucket:
+        def download(self, _): raise FileNotFoundError()
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated', 'status': 'completed',
+            'endpoint': 'novaToBricks', 'has_parts_inventory': True}),
+        client=SimpleNamespace(storage=SimpleNamespace(from_=lambda _: Bucket()))))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(module._prepare_edit(module.NovaToBricksRequest(prompt='edit', generation_id='source'),
+            {'user_id': 'caller', 'authenticated': True}))
+    assert error.value.status_code == 409
+
+
+@pytest.mark.parametrize('storage_failure', [False, True])
+def test_generation_persists_private_inventory_before_starting_agent(monkeypatch, storage_failure):
+    from unittest.mock import Mock
+    events = []
+    query = Mock()
+    query.update.return_value = query; query.eq.return_value = query
+    query.execute.side_effect = lambda: events.append('marker')
+    storage = SimpleNamespace(create_generation=AsyncMock(return_value='new'), update_status=AsyncMock(),
+        client=SimpleNamespace(storage=SimpleNamespace(from_=lambda _: 'private bucket'), table=lambda _: query))
+    class Service:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        generation_ready = AsyncMock(); configure_model = AsyncMock()
+    async def upload(*args, **kwargs):
+        assert kwargs['path'] == 'new/parts-inventory.json'
+        assert json.loads(kwargs['file'])['parts'][0]['quantity'] == 2
+        if storage_failure: raise OSError('Storage offline')
+        events.append('inventory')
+    def start(_, coroutine):
+        events.append('agent'); coroutine.close()
+        future = asyncio.get_running_loop().create_future(); future.set_result(None); return future
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
+    monkeypatch.setattr(module, 'upload_artifact', upload)
+    monkeypatch.setattr(module, 'start_generation_task', start)
+    monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **kwargs: {'user_email': 'caller', 'is_anonymous': False})
+    request = module.NovaToBricksRequest(prompt='car', parts_inventory={'name': 'parts.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
+    if storage_failure:
+        with pytest.raises(HTTPException) as error:
+            asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))
+        assert error.value.status_code == 503 and events == []
+        storage.update_status.assert_awaited_once()
+    else:
+        asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))
+        assert events == ['inventory', 'marker', 'agent']
+        query.update.assert_called_once_with({'has_parts_inventory': True})
