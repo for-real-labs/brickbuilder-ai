@@ -1,3 +1,4 @@
+import { claimPendingReferral, referralSignupMetadata } from '../services/referrals'
 import { signInOrCreateAccount, confirmationRedirect } from '../services/passwordAuth'
 import React, { createContext, useContext, useEffect, useState } from 'react'
 import { User, Session, AuthError } from '@supabase/supabase-js'
@@ -167,6 +168,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => { active = false; subscription.unsubscribe() }
   }, [])
 
+  useEffect(() => {
+    if (user?.email_confirmed_at && !user.is_anonymous) void claimPendingReferral()
+  }, [user?.id, user?.email_confirmed_at, user?.is_anonymous])
+
   const signIn = signInOrCreateAccount
 
   const signUp = async (email: string, password: string) => {
@@ -174,6 +179,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       password,
       options: {
+        data: await referralSignupMetadata(),
         emailRedirectTo: `${window.location.origin}/dashboard`
       }
     })
@@ -218,6 +224,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       email,
       options: {
         shouldCreateUser: true,
+        data: await referralSignupMetadata(),
         emailRedirectTo: confirmationRedirect(safePath)
       }
     })
@@ -235,6 +242,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signInWithGoogle = async (redirectPath?: string) => {
     const safePath = redirectPath && redirectPath.startsWith('/') ? redirectPath : '/dashboard'
+    await referralSignupMetadata()
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {

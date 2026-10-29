@@ -39,7 +39,7 @@ export default function BillingPage() {
   }, [user?.id, sessionId]);
   const apple = account?.subscription_provider === 'apple';
   const plan = plans.find(p => p.key === (apple ? account?.apple_plan : account?.plan_key)) ?? (account?.plan_key === 'master' ? LEGACY_MASTER_PLAN : undefined);
-  const labels: Record<string, string> = { purchase: 'Credits purchased', purchase_refund: 'Purchase refunded', welcome: 'Existing credits preserved', monthly: 'Monthly credits', upgrade: 'Plan upgrade', generation: 'AI build or edit', refund: 'Build credit returned' };
+  const labels: Record<string, string> = { referral: 'Account referral reward', purchase: 'Credits purchased', purchase_refund: 'Purchase refunded', welcome: 'Existing credits preserved', monthly: 'Monthly credits', upgrade: 'Plan upgrade', generation: 'AI build or edit', refund: 'Build credit returned' };
   return <div className="billing-page"><BillingHeader /><main className="billing-account-main">
     <div className="billing-account-title"><div><p className="billing-eyebrow">YOUR BUILDING ROOM</p><h1>Credits & billing</h1><p>More ideas ahead. Here’s where you stand.</p></div><PetAvatar state={confirmed ? 'celebrating' : 'idle'} /></div>
     {error && (enabled || account) && <div className="billing-error" role="alert">{error} <button onClick={() => { posthog.capture('billing_retry_clicked'); void refresh(); }}>Try again</button></div>}
@@ -53,7 +53,7 @@ export default function BillingPage() {
           <p className="billing-big-balance">{account.credits_remaining}<span>ready for your next idea</span></p>
           {!apple && <><div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" /></>}
-          <div className="billing-balance-row"><span>Purchased credits · never expire</span><strong>{account.apple_remaining ?? 0}</strong></div>
+          <div className="billing-balance-row"><span>Purchased & earned credits · never expire</span><strong>{account.apple_remaining ?? 0}</strong></div>
           <div className="billing-balance-row"><span>Legacy bonus balance · never expires</span><strong>{account.bonus_remaining}</strong></div>
           <p className="billing-muted">{account.bonus_available ?? 0} bonus credits available for Basic builds this month, used after monthly credits. Maximum 5 per month.</p>
           {!apple && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
@@ -70,7 +70,7 @@ export default function BillingPage() {
         <CreditPacks source="billing" />
         <section className="billing-account-card billing-history"><div className="billing-history-heading"><h2>Credit history</h2><button type="button" aria-label="Refresh credit history" onClick={() => { posthog.capture('billing_history_refreshed'); void refresh(); }}><RefreshCw size={17} /></button></div>
           {account.history.length ? <div className="billing-table-wrap"><table><thead><tr><th>Activity</th><th>Date</th><th>Credits</th></tr></thead><tbody>
-            {account.history.map(row => <tr key={row.id}><td>{labels[row.kind] ?? 'Credit adjustment'}<span>{row.bucket === 'apple' ? 'Purchased credits' : row.bucket === 'bonus' ? 'Bonus credits' : 'Monthly credits'}</span></td><td>{billingDate(row.created_at)}</td><td className={row.amount > 0 ? 'billing-positive' : ''}>{row.amount > 0 ? '+' : ''}{row.amount}</td></tr>)}
+            {account.history.map(row => <tr key={row.id}><td>{labels[row.kind] ?? 'Credit adjustment'}<span>{row.kind === 'referral' ? 'Referral credits' : row.bucket === 'apple' ? 'Purchased credits' : row.bucket === 'bonus' ? 'Bonus credits' : 'Monthly credits'}</span></td><td>{billingDate(row.created_at)}</td><td className={row.amount > 0 ? 'billing-positive' : ''}>{row.amount > 0 ? '+' : ''}{row.amount}</td></tr>)}
           </tbody></table></div> : <p>Your builds and credit updates will appear here.</p>}
           <p className="billing-muted">Your 30 most recent credit updates.</p></section>
       </>}

@@ -1,3 +1,4 @@
+import { captureReferralLink } from './services/referrals';
 import { preparePasswordRecoveryPage } from './services/passwordAuth';
   import { createRoot } from "react-dom/client";
   import { PostHogProvider } from "posthog-js/react";
@@ -9,6 +10,7 @@ import { preparePasswordRecoveryPage } from './services/passwordAuth';
   import { captureInstructionLink } from './utils/instructionLinks';
 
   captureInstructionLink();
+  void captureReferralLink();
   registerMobileShellAnalytics();
 
   const renderApp = () => createRoot(document.getElementById("root")!).render(

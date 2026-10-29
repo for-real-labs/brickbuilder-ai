@@ -1,3 +1,4 @@
+import { referralSignupMetadata } from './referrals';
 import { supabase, passwordRecoveryClient } from '../lib/supabase';
 import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
 import { loginRedirect } from '../utils/loginRedirect';
@@ -35,7 +36,7 @@ export async function signInOrCreateAccount(email: string, password: string, red
   }
   const signedUp = await supabase.auth.signUp({
     ...credentials,
-    options: { data: { password_configured: true }, emailRedirectTo: confirmationRedirect(redirectPath) },
+    options: { data: { password_configured: true, ...await referralSignupMetadata() }, emailRedirectTo: confirmationRedirect(redirectPath) },
   });
   return { error: signedUp.error, confirmationRequired: !signedUp.error && !signedUp.data.session };
 }

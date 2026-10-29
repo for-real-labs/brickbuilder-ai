@@ -4,10 +4,13 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
 import { ModelShareMenu } from '../src/components/ModelShareMenu';
 
+const auth = vi.hoisted(() => ({ user: null as null | { id: string; is_anonymous?: boolean } }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 let root: ReturnType<typeof createRoot>, container: HTMLDivElement;
 const writeText = vi.fn();
 beforeEach(() => {
+  auth.user = null;
   writeText.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
@@ -109,4 +112,38 @@ it.each(['missing', 'denied'])('copies using the selected-input fallback when cl
   } finally {
     Reflect.deleteProperty(document, 'execCommand');
   }
+});
+
+
+it('adds the signed-in sender ID to copied and social links', async () => {
+  auth.user = { id: '11111111-1111-4111-8111-111111111111' };
+  act(() => root.render(<ModelShareMenu generationId="model" modelName="Model" />));
+  open();
+  const url = container.querySelector('input')!.value;
+  expect(new URL(url).searchParams.get('ref')).toBe(auth.user.id);
+  expect(new URL(container.querySelector<HTMLAnchorElement>('a')!.href).searchParams.get('u')).toBe(url);
+  await act(async () => button('Copy link').click());
+  expect(writeText).toHaveBeenCalledWith(url);
+});
+
+it('never adds a referral for guests, including anonymous Auth users', () => {
+  auth.user = { id: '11111111-1111-4111-8111-111111111111', is_anonymous: true };
+  act(() => root.render(<ModelShareMenu generationId="model" modelName="Model" />));
+  open();
+  expect(new URL(container.querySelector('input')!.value).searchParams.has('ref')).toBe(false);
+});
+
+it('explains rewards on hover and click with the required account wording', () => {
+  open();
+  const info = container.querySelector<HTMLButtonElement>('[aria-label="About referral credits"]')!;
+  expect(container.textContent).toContain('+ 300');
+  expect(container.textContent).not.toContain('Anyone who');
+  act(() => info.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
+  expect(container.textContent).toContain('Anyone who creates an account from your shared link will give you + 300 credits! You must have an account to receive credits.');
+  act(() => info.click());
+  act(() => info.dispatchEvent(new MouseEvent('mouseout', { bubbles: true })));
+  expect(container.textContent).toContain('Anyone who');
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_referral_info_clicked', { authenticated: false });
+  act(() => info.click());
+  expect(container.textContent).not.toContain('Anyone who');
 });

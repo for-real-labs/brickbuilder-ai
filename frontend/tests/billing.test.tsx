@@ -364,3 +364,15 @@ it('buys a one-time pack without changing the subscription', async () => {
   expect(billingApi.checkout).not.toHaveBeenCalled();
   expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/pack');
 });
+
+it('shows earned referral credits with their own history label', async () => {
+  account = { ...account, apple_remaining: 300, credits_remaining: 302,
+    history: [{ id: 1, kind: 'referral', amount: 300, bucket: 'apple', created_at: '2026-10-29T12:00:00Z' }] };
+  await render(<BillingPage />);
+  expect(container.textContent).toContain('Purchased & earned credits · never expire');
+  const row = container.querySelector('tbody tr')!;
+  expect(row.textContent).toContain('Account referral reward');
+  expect(row.textContent).toContain('Referral credits');
+  expect(row.textContent).toContain('+300');
+  expect(row.textContent).not.toContain('Purchased credits');
+});
