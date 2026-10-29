@@ -5,6 +5,7 @@ import { ExistingPartsDesigner } from '../src/components/ExistingPartsDesigner';
 import { PartsInventoryApi } from '../src/services/partsInventoryApi';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false }) }));
 vi.mock('../src/services/partsInventoryApi', () => ({
   inventoryQuantity: (v: { parts: { quantity: number }[] }) => v.parts.reduce((n, p) => n + p.quantity, 0),
   PartsInventoryApi: { upload: vi.fn(), search: vi.fn(), select: vi.fn() },

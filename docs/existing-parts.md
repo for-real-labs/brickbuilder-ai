@@ -65,3 +65,18 @@ The original normalized inventory is saved privately as
 or recovering lost sessions. An unavailable inventory blocks continuation instead of
 silently removing limits. Nova session metadata also retains a copy. Public-model copies
 do not expose another owner's private unused inventory.
+
+## Previous orders
+
+The first choice opens the current account's order history with previews. Selecting
+an order shows its exact model link and a confirmation to reuse its parts. Accounts
+without orders see completed generations with checkout links in a scrollable list.
+History is loaded on demand, paginated, and cleared when the account changes.
+
+Apply `20261029143000_order_parts_snapshots.sql` before deploying. Paid checkout
+webhooks preserve the quoted CSV URL on the order. The migration recovers older
+orders only when their exact generation's CSV predates the order. Missing or
+unreadable snapshots require the original parts list to be uploaded manually.
+The inventory endpoint checks generation ownership, excludes cancelled orders,
+and reads only that generation's CSV from our storage bucket. It never downloads
+an arbitrary URL or silently substitutes the model's latest inventory.

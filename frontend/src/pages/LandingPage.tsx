@@ -1023,7 +1023,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             setInventoryOpen(true); setSettingsOpen(false); posthog.capture('existing_parts_tab_selected', { tab: 'existing_set' });
           }}>Design from existing set</button>
         </div>}
-        {inventoryOpen ? <ExistingPartsDesigner onSelect={inventory => {
+        {inventoryOpen ? <ExistingPartsDesigner onLogin={() => setShowLoginModal(true)} onSelect={inventory => {
           setPartsInventory(inventory); setGenerationMethod('nova'); setInventoryOpen(false);
           setGiftPlanning(false); setCreateNewStage(null); dismissRandomIdea();
         }} /> : <main className={`${partsInventory ? 'landing-inventory-return ' : ''}flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
