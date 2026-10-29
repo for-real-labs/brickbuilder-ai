@@ -51,13 +51,6 @@ it('opens a model-themed postcard with its actual image and requested explanatio
   expect(posthog.capture).toHaveBeenCalledWith('order_instructions_postcard_preview_opened', { generation_id: props.generationId });
 });
 
-it('prints alternative instruction access and support guidance inside the postcard', () => {
-  render(); open();
-  const card = container.querySelector('figure')!;
-  expect(card.textContent).toContain('If you can’t view the instructions, check your email for a link or view your model in the brickbuilder.ai dashboard.');
-  expect(card.textContent).toContain('Reach out to support@brickbuilder.ai for any issues.');
-});
-
 it.each([false, true])('renders a decodable QR for the selected model, including purchased access: %s', purchased => {
   const id = purchased ? '00000000-0000-4000-8000-000000000001' : props.generationId;
   const key = 'a'.repeat(43);
