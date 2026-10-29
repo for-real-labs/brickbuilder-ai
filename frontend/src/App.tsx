@@ -12,6 +12,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { GenerationNotificationsProvider } from "./contexts/GenerationNotificationsContext";
 
 import LandingPage from "./pages/LandingPage";
+import VideoPage from "./pages/VideoPage";
 import { GeneratedModelRedirect } from "./components/GeneratedModelRedirect";
 import OrderKit from "./pages/OrderKit";
 import Success from "./pages/Success";
@@ -49,9 +50,9 @@ function ExternalRedirect({ to }: { to: string }) {
   return null;
 }
 
-export default function App() {
+function MainApp() {
   return (
-    <BrowserRouter>
+    <>
       <MobileAppBanner />
       <PetProvider>
       <BillingProvider>
@@ -118,6 +119,17 @@ export default function App() {
       <BillingOverlays />
       </BillingProvider>
       </PetProvider>
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/video" element={<VideoPage />} />
+        <Route path="*" element={<MainApp />} />
+      </Routes>
     </BrowserRouter>
   );
 }
