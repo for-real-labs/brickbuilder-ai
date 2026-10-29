@@ -1083,7 +1083,7 @@ it('returns from a parts upload to the existing composer and submits its exact i
   try {
     await act(async () => root.render(<LandingPage />));
     act(() => container.querySelectorAll<HTMLButtonElement>('.existing-parts-tabs button')[1].click());
-    expect(container.textContent).toContain('Upload a parts list to create a new LEGO');
+    expect(container.textContent).toContain('Design LEGO from your existing sets');
     const picker = container.querySelector<HTMLInputElement>('input[aria-label="Upload parts list"]')!;
     Object.defineProperty(picker, 'files', { value: [new File(['parts'], 'owned.csv')] });
     await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
