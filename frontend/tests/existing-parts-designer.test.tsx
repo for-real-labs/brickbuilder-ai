@@ -14,7 +14,7 @@ let element: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => { vi.useFakeTimers(); element = document.createElement('div'); document.body.append(element); root = createRoot(element); });
 afterEach(() => { act(() => root.unmount()); element.remove(); vi.useRealTimers(); vi.clearAllMocks(); });
-const render = (select = vi.fn()) => { act(() => root.render(<ExistingPartsDesigner onSelect={select} onBack={vi.fn()} />)); return select; };
+const render = (select = vi.fn()) => { act(() => root.render(<ExistingPartsDesigner onSelect={select} />)); return select; };
 const inputValue = (input: HTMLInputElement, value: string) => {
   Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, value);
   input.dispatchEvent(new Event('input', { bubbles: true }));
