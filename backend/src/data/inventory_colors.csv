@@ -29,7 +29,7 @@ bricklink,27,216,Rust
 bricklink,28,92,Nougat
 bricklink,29,366,Earth Orange
 bricklink,31,462,Medium Orange
-bricklink,32,121,Light Orange
+bricklink,32,125,Light Orange
 bricklink,33,18,Light Yellow
 bricklink,34,27,Lime
 bricklink,35,120,Light Lime
@@ -80,8 +80,9 @@ bricklink,85,72,Dark Bluish Gray
 bricklink,86,71,Light Bluish Gray
 bricklink,87,232,Sky Blue
 bricklink,88,70,Reddish Brown
+bricklink,89,85,Dark Purple
 bricklink,90,78,Light Nougat
-bricklink,91,370,Light Brown
+bricklink,91,86,Light Brown
 bricklink,93,69,Light Purple
 bricklink,94,351,Medium Dark Pink
 bricklink,95,179,Flat Silver
@@ -100,6 +101,7 @@ bricklink,107,45,Trans-Pink
 bricklink,108,35,Trans-Bright Green
 bricklink,109,23,Dark Royal Blue
 bricklink,110,191,Bright Light Orange
+bricklink,114,284,Trans-Light Purple
 bricklink,115,297,Pearl Gold
 bricklink,116,75,Speckle Black-Copper
 bricklink,117,76,Speckle DBGray-Silver
@@ -213,7 +215,8 @@ rebrickable,79,79,Milky White
 rebrickable,80,80,Metallic Silver
 rebrickable,81,81,Metallic Green
 rebrickable,84,84,Medium Nougat
-rebrickable,86,370,Light Brown
+rebrickable,85,85,Dark Purple
+rebrickable,86,86,Light Brown
 rebrickable,92,92,Nougat
 rebrickable,100,100,Light Salmon
 rebrickable,110,110,Violet
@@ -222,7 +225,7 @@ rebrickable,115,115,Medium Lime
 rebrickable,117,117,Glitter Trans-Clear
 rebrickable,118,118,Aqua
 rebrickable,120,120,Light Lime
-rebrickable,125,121,Light Orange
+rebrickable,125,125,Light Orange
 rebrickable,129,129,Glitter Trans-Purple
 rebrickable,134,134,Copper
 rebrickable,135,135,Pearl Light Gray
@@ -243,6 +246,7 @@ rebrickable,216,216,Rust
 rebrickable,226,226,Bright Light Yellow
 rebrickable,230,45,Trans-Pink
 rebrickable,232,232,Sky Blue
+rebrickable,236,284,Trans-Light Purple
 rebrickable,272,272,Dark Blue
 rebrickable,288,288,Dark Green
 rebrickable,294,294,Glow In Dark Trans
@@ -286,7 +290,6 @@ rebrickable,1071,186,Pearl Green
 rebrickable,1072,187,Pearl Brown
 rebrickable,1073,83,Pearl Black
 rebrickable,1077,510,Fabuland Lime
-rebrickable,1088,370,Medium Brown
 rebrickable,1092,300,Metallic Copper
 rebrickable,1094,44,Trans-Medium Purple
 rebrickable,1095,10375,Trans-Black

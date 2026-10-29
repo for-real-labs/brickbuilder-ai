@@ -22,16 +22,21 @@ def cross_references(studio_rows, rebrickable_rows, ldraw_text):
     official = defaultdict(set)
     for name, code in re.findall(r'^0\s+!COLOUR\s+(\S+)\s+CODE\s+(\d+)\b', ldraw_text, re.MULTILINE):
         official[normalize(name)].add(int(code))
+    official_codes = {code for values in official.values() for code in values}
     for row in studio_rows:
         if ('o' not in row['note'].split(',') or not row['LDraw Color Code'].isdigit()
                 or not row['BL Color Code'].isdigit()):
             continue
         # Resolve the canonical name against the official library; Studio may
         # still list provisional codes for recently standardized colors.
+        declared = int(row['LDraw Color Code'])
         matches = official[normalize(row['LDraw Color Name'])]
-        if len(matches) != 1:
+        if declared in official_codes:
+            color = declared
+        elif len(matches) == 1:
+            color = next(iter(matches))
+        else:
             continue
-        color = next(iter(matches))
         if color in {16, 24}:
             continue
         bricklink[int(row['BL Color Code'])].add((color, row['BL Color Name']))

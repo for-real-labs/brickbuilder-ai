@@ -97,6 +97,8 @@ def test_request_quantities_are_strict_integers_and_combined_limits_are_bounded(
 
 def test_common_modern_colors_and_transparent_colors_are_available():
     from src.utils.parts_inventory import mapped_color
+    assert mapped_color(85, 'rebrickable') == 85  # Dark Purple / renamed Medium Lilac.
+    assert mapped_color(1136, 'rebrickable') == 402  # Standardized Reddish Orange.
     assert mapped_color(71, 'rebrickable') == 71
     assert mapped_color(86, 'bricklink') == 71
     assert mapped_color(47, 'rebrickable') == 47

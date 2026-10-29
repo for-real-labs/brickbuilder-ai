@@ -16,7 +16,7 @@ substitute colors, or exceed the quantity of any part/color pair.
   individual parts only (`ITEMTYPE=P`).
 
 Duplicate rows are summed. The checked-in `inventory_colors.csv` cross-reference
-converts 143 Rebrickable and 153 BrickLink colors exactly; missing mappings fail visibly. It uses exact canonical color names from Rebrickable and the original entries in
+converts 144 Rebrickable and 155 BrickLink colors exactly; missing mappings fail visibly. It uses exact canonical color names from Rebrickable and the original entries in
 Studio’s color definition table, resolved against official LDraw colors. Source hashes are in its metadata file. Refresh with
 `backend/scripts/refresh_inventory_colors.py` and the three source files. No RGB approximation
 or mold substitution is performed. LDraw imports count repeated nested submodels and
