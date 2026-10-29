@@ -114,6 +114,8 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
                 posthog.capture('order_instructions_postcard_link_clicked', { generation_id: generationId });
               }}><InstructionsQrCode url={instructionsUrl} /></a>
               <span className="checkout-postcard-scan">Scan to start building</span>
+              <p className="checkout-postcard-help">If you can’t view the instructions, check your email for a link or view your model in the brickbuilder.ai dashboard.</p>
+              <p className="checkout-postcard-help">Reach out to support@brickbuilder.ai for any issues.</p>
               <span className="checkout-postcard-site">brickbuilder.ai</span>
             </div>
           </div>
