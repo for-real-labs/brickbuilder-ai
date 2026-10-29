@@ -73,3 +73,40 @@ it('closes after a social link and resets the menu when navigating to another re
   open();
   expect(container.querySelector('input')!.value).toContain('id=next&exact=1');
 });
+
+it.each(['Copy link', 'Instagram'])('keeps %s actionable after Safari blurs without a focus target', async label => {
+  open();
+  const target = button(label);
+  act(() => document.activeElement!.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: null })));
+  expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+  await act(async () => target.click());
+  expect(writeText).toHaveBeenCalledOnce();
+  expect(container.querySelector('[role="status"]')!.textContent).toContain('Link copied');
+});
+
+it('closes when keyboard focus moves to an outside control', () => {
+  open();
+  const outside = document.createElement('button');
+  document.body.appendChild(outside);
+  act(() => outside.focus());
+  expect(container.querySelector('[role="dialog"]')).toBeNull();
+  outside.remove();
+});
+
+it.each(['missing', 'denied'])('copies using the selected-input fallback when clipboard access is %s', async mode => {
+  if (mode === 'missing') Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+  else writeText.mockRejectedValue(new Error('Denied'));
+  const legacyCopy = vi.fn(() => true);
+  Object.defineProperty(document, 'execCommand', { configurable: true, value: legacyCopy });
+  try {
+    open();
+    await act(async () => button('Instagram').click());
+    expect(legacyCopy).toHaveBeenCalledWith('copy');
+    const input = container.querySelector('input')!;
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(input.value.length);
+    expect(container.querySelector('[role="status"]')!.textContent).toContain('Link copied');
+  } finally {
+    Reflect.deleteProperty(document, 'execCommand');
+  }
+});

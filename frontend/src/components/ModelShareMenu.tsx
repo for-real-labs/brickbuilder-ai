@@ -1,6 +1,7 @@
 import React, { useEffect, useId, useRef, useState } from 'react';
 import { Check, ChevronDown, Facebook, Instagram, Link, Share2 } from 'lucide-react';
 import posthog from 'posthog-js';
+import { copyShareLink } from '../utils/copyShareLink';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 
 interface Props { generationId: string; modelName: string; placement?: 'above' | 'below' }
@@ -28,14 +29,23 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
     const dismiss = (event: PointerEvent) => {
       if (!container.current?.contains(event.target as Node)) setOpen(false);
     };
+    // Safari can blur a button to the document body before dispatching a tap.
+    // Dismiss only when focus actually enters another control, or on an outside tap.
+    const dismissOnFocus = (event: FocusEvent) => {
+      if (!container.current?.contains(event.target as Node)) setOpen(false);
+    };
     document.addEventListener('pointerdown', dismiss);
-    return () => document.removeEventListener('pointerdown', dismiss);
+    document.addEventListener('focusin', dismissOnFocus);
+    return () => {
+      document.removeEventListener('pointerdown', dismiss);
+      document.removeEventListener('focusin', dismissOnFocus);
+    };
   }, [open]);
 
   const copy = async (destination: 'url' | 'instagram') => {
     track(destination);
     try {
-      await navigator.clipboard.writeText(url);
+      await copyShareLink(url, input.current);
       setCopied(true);
       setMessage(destination === 'instagram' ? 'Link copied. Paste it into an Instagram message or story link sticker.' : 'Link copied!');
     } catch {
@@ -47,8 +57,6 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
 
   return <div ref={container} className="relative shrink-0" onKeyDown={event => {
     if (event.key === 'Escape') { event.stopPropagation(); setOpen(false); trigger.current?.focus(); }
-  }} onBlur={event => {
-    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false);
   }}>
     <button ref={trigger} type="button" aria-expanded={open} aria-controls={menuId} aria-haspopup="dialog"
       className="inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500"
