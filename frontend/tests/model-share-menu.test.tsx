@@ -147,3 +147,16 @@ it('explains rewards on hover and click with the required account wording', () =
   act(() => info.click());
   expect(container.textContent).not.toContain('Anyone who');
 });
+
+
+it('shows the referral badge on the closed Share button and opens sharing when clicked', () => {
+  const trigger = container.querySelector('button')!;
+  const badge = trigger.querySelector<HTMLElement>('[aria-label="Earn 300 credits by sharing"]')!;
+  expect(badge.textContent).toContain('+ 300');
+  expect(container.querySelector('[role="dialog"]')).toBeNull();
+  act(() => badge.click());
+  expect(trigger.getAttribute('aria-expanded')).toBe('true');
+  expect(container.querySelector('[role="dialog"]')).not.toBeNull();
+  expect(container.querySelector('[role="dialog"]')!.textContent).not.toContain('+ 300');
+  expect(posthog.capture).toHaveBeenCalledWith('generated_model_referral_badge_clicked', { authenticated: false });
+});
