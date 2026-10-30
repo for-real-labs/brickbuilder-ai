@@ -6,6 +6,10 @@
 
 **A LEGO® building agent.** Tell Pip what you want to build, or give it a reference image. BrickBuilder uses an LLM to design the model, checks the build, and gives you a 3D preview, building instructions, a parts list, and downloadable LDraw files. You can ask for changes and keep building from the result.
 
+## Use in ChatGPT
+
+[Add the BrickBuilder plugin to ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6abee10605488191a105dfe0a2f045d4) to build with BrickBuilder from your chats.
+
 ## Choose your builder
 
 | Mode | How it builds |
