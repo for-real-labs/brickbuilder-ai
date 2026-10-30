@@ -32,9 +32,11 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
       <div className="model-order-price">
         <span className="model-order-total">{price}</span>
         <div className="model-order-price-details">
-          <span>USD · shipping included</span>
+          {pricing && pricing.memberDiscountCents > 0 && <del className="model-order-original">{formatOrderPrice(pricing.fullTotalCents)}</del>}
+          <span>USD · estimated US shipping included</span>
         </div>
       </div>
+      {pricing && pricing.memberDiscountCents > 0 && <p className="model-member-discount">Paid plan · 20% off model bricks</p>}
       {status && <p role="status" className="model-order-status">{status}</p>}
       {updating && <p role="status" className="model-order-status">Your kit will be ready to order when the update finishes.</p>}
       <button type="button" aria-label="Order my kit" className="model-order-button" disabled={unavailable} onClick={() => onOrder('card')}>

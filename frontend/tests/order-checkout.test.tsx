@@ -1,3 +1,4 @@
+import { orderPricing } from './fixtures/orderPricing';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -22,11 +23,12 @@ vi.mock('../src/contexts/PetContext', () => ({ usePet: () => ({ pet: { id: 'clik
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, session: null }) }));
 vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { getSession: async () => ({ data: { session: { access_token: 'auth-token' } } }) } } }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-const quote = { total_price: 50, total_weight: 0.1, total_parts: 240 };
+const quote = { total_price: 50, order_pricing: orderPricing(5000), total_weight: 0.1, total_parts: 240 };
 const details = { email: 'test@example.com', firstName: 'Test', lastName: 'Builder', line1: '123 Test Street', line2: '', city: 'Chicago', region: 'IL', postalCode: '60601' };
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
+  vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue(quote as never);
   vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example');
   mocks.applyPromotionCode.mockReset(); mocks.removePromotionCode.mockReset();
   mocks.confirm.mockReset(); mocks.destroy.mockReset(); mocks.mount.mockReset();
@@ -70,15 +72,13 @@ const submitContact = () => act(async () => container.querySelector('#checkout-s
 it('handles absent, invalid, and valid pricing without displaying a fake total', () => {
   expect(getOrderPricing(null)).toBeNull();
   expect(getOrderPricing({ total_price: NaN, total_weight: 0 })).toBeNull();
-  expect(getOrderPricing({ total_price: 20, total_weight: -1 })).toBeNull();
+  expect(getOrderPricing({ total_price: 20, order_pricing: orderPricing(2000), total_weight: -1 })).toBeNull();
   expect(getOrderPricing(quote)).toMatchObject({ partSubtotalCents: 4420, shippingCents: 580, totalCents: 5000 });
 });
 
-it.each([
-  [50, 0.1, 5000], [0.01, 0, 400], [10.01, 0, 1001],
-  [100, 0.123, 10000], [44.77, 0.5263, 4477],
-])('matches full-price server rounding for $%s at %s kg', (price, weight, expected) => {
-  expect(getOrderPricing({ total_price: price, total_weight: weight })?.totalCents).toBe(expected);
+it('rejects cached catalog-only quotes and inconsistent server totals', () => {
+  expect(getOrderPricing({ total_price: 50, total_weight: .1 })).toBeNull();
+  expect(getOrderPricing({ ...quote, order_pricing: { ...orderPricing(), total_cents: 1 } })).toBeNull();
 });
 
 it('uses a text-only brand link in the checkout header', async () => {
@@ -171,7 +171,7 @@ it('shows a useful empty checkout when no model is selected', async () => {
 it('recovers a quote when a model is restored without pricing', async () => {
   const fetchPrice = vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue(quote as never);
   await renderOrder({ generation_id: 'g' });
-  expect(fetchPrice).toHaveBeenCalledWith('g', 'auth-token');
+  expect(fetchPrice).toHaveBeenCalledWith('g', 'auth-token', 'US');
   expect(container.textContent).toContain('$50.00');
 });
 
@@ -232,6 +232,7 @@ it('provides recovery when Stripe fails to initialize', async () => {
 });
 
 it('keeps contact details and fails on the page when payment configuration is missing', async () => {
+  vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue(quote as never);
   vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', '');
   const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', checkout_url: 'https://checkout.stripe.com/c/pay/cs' });
   await renderOrder();
@@ -289,7 +290,7 @@ it('restores the selected model and price when returning from hosted checkout', 
 });
 
 it('updates the displayed total from the authoritative checkout quote', async () => {
-  vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs_test', client_secret: 'secret', price_data: { ...quote, total_price: 60 } });
+  vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs_test', client_secret: 'secret', price_data: { ...quote, total_price: 60, order_pricing: orderPricing(6000) } });
   await renderOrder();
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
   await submitContact();
@@ -455,4 +456,48 @@ it('blocks card and wallet confirmation while a promotion is changing', async ()
   });
   expect(mocks.confirm).not.toHaveBeenCalled();
   await act(async () => finish({ type: 'success', session: { total: { total: { minorUnitsAmount: 2000 } } } }));
+});
+
+it('keeps automatic member savings when a promo is applied and removed', async () => {
+  const memberQuote = { ...quote, order_pricing: orderPricing(4600, 600, 1000) };
+  vi.mocked(GetPriceApiService.getPrice).mockResolvedValue(memberQuote as never);
+  vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({
+    session_id: 'cs_member', client_secret: 'secret', price_data: memberQuote,
+  });
+  mocks.applyPromotionCode.mockResolvedValue({ type: 'success', session: { total: { total: { minorUnitsAmount: 3800 } } } });
+  mocks.removePromotionCode.mockResolvedValue({ type: 'success', session: { total: { total: { minorUnitsAmount: 4600 } } } });
+  await renderOrder();
+  expect(container.querySelector('.checkout-total del')?.textContent).toBe('$56.00');
+  expect(container.querySelector('.checkout-member-discount')?.textContent).toContain('−$10.00');
+  act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
+  await submitContact();
+  act(() => {
+    const input = container.querySelector('#order-promo')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'LINKEDIN');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await click('Apply');
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('$38.00');
+  expect(container.textContent).toContain('Promo discount−$8.00');
+  expect(container.querySelector('.checkout-member-discount')?.textContent).toContain('−$10.00');
+  await click('Remove');
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('$46.00');
+  expect(container.querySelector('.checkout-total del')?.textContent).toBe('$56.00');
+  expect(container.querySelector('.checkout-member-discount')?.textContent).toContain('−$10.00');
+});
+
+it('refreshes country shipping and ignores an older request that finishes later', async () => {
+  let finishOlder: (value: unknown) => void = () => {};
+  vi.mocked(GetPriceApiService.getPrice).mockResolvedValueOnce(quote as never)
+    .mockImplementationOnce(() => new Promise(resolve => { finishOlder = resolve; }) as never)
+    .mockResolvedValueOnce({ ...quote, order_pricing: orderPricing(5500, 1080, 0, 'PL') } as never);
+  await renderOrder();
+  const country = container.querySelector('select[name="country"]') as HTMLSelectElement;
+  await act(async () => { country.value = 'GB'; country.dispatchEvent(new Event('change', { bubbles: true })); });
+  expect(container.querySelector<HTMLButtonElement>('#checkout-step-1 button[type="submit"]')?.disabled).toBe(true);
+  await act(async () => { country.value = 'PL'; country.dispatchEvent(new Event('change', { bubbles: true })); });
+  expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('g', 'auth-token', 'PL');
+  await act(async () => finishOlder({ ...quote, order_pricing: orderPricing(4900, 480, 0, 'GB') }));
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('$55.00');
+  expect(container.querySelector('.checkout-pricing-note')?.textContent).toContain('Poland');
 });

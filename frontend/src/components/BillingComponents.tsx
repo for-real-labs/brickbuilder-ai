@@ -39,21 +39,26 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
       const current = Boolean(user && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
       const applePrice = appleProducts?.find(p => p.id === appleProduct(plan.key))?.displayPrice;
       const petId = plan.key === 'creator' ? 'nib' : 'pip';
-      return <article key={plan.key} className={`billing-plan${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
-        {plan.key === 'creator' && <span className="billing-recommendation">Room to explore</span>}
+      return <article key={plan.key} className={`billing-plan${plan.key === 'free' ? ' billing-plan--free' : ''}${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
+        {plan.key === 'creator' && <span className="billing-recommendation">Recommended</span>}
         <div className="billing-plan-top"><h2>{plan.name}</h2><PetAvatar id={petId} still /></div>
         <p className="billing-plan-description">{descriptions[plan.key]}</p>
         <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
         <p className="billing-renewal">{plan.monthly_cents ? apple ? 'Billed monthly by Apple' : 'USD · billed monthly' : 'No credit card needed'}</p>
+        <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
+        <ul className="billing-features">
+          <li><Check aria-hidden="true" />LDR model downloads</li>
+          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>{plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}IO model exports</li>
+          <li><Check aria-hidden="true" />Building instructions</li>
+          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : 'billing-feature-saving'}>
+            {plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}
+            <span><strong>20% off every model purchase</strong><small>Physical model bricks · promo codes stack</small></span>
+          </li>
+        </ul>
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>
           : <button className="billing-plan-button" onClick={() => void subscribe('free', source)}>Start building free</button>
           : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
             onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
-        <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
-        <ul className="billing-features">
-          <li><Check aria-hidden="true" />Model exporting</li>
-          <li><Check aria-hidden="true" />Building instructions</li>
-        </ul>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
       </article>;
     })}
@@ -84,7 +89,7 @@ export function CreditNudge() {
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
     <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Buy additional credits to keep building.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
-      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $9.'} Basic builds use 1 credit; All parts uses 15.</>}</p>
+      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $9.'} Basic builds use 1 credit; All parts uses 15. Paid plans also save 20% on model bricks.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing#credit-packs'); } else openUpgrade(source); }}>{low ? highest ? 'Buy more credits' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
     <button type="button" className="credit-nudge-dismiss" aria-label="Dismiss plans banner" onClick={() => { setDismissed(true); posthog.capture('billing_nudge_dismissed', { source, plan_key: account?.plan_key ?? 'guest' }); }}><X size={18} aria-hidden="true" /></button>
   </div>;
@@ -119,6 +124,7 @@ export function BillingOverlays() {
       </div></div>
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
+      <p className="billing-member-intro">Every paid plan includes 20% off model bricks. Applied automatically at checkout, with promo codes on top.</p>
       <PlanGrid source={upgradeSource} paidOnly />
       <CreditPacks source={upgradeSource} />
       <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Legacy bonuses never expire. Failed or canceled builds return their credits.</p>

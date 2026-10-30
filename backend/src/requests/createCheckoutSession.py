@@ -1,7 +1,6 @@
 import os
 import logging
 import asyncio
-import math
 import json
 from pathlib import Path
 from typing import Literal, Optional
@@ -73,14 +72,10 @@ class CreateCheckoutSessionResponse(BaseModel):
 
 
 def checkout_price_cents(quote: GetPriceResponse) -> int:
-    """Match the order page's full-price parts and shipping calculation."""
-    if (not math.isfinite(quote.total_price) or quote.total_price <= 0 or
-            not math.isfinite(quote.total_weight) or quote.total_weight < 0):
-        raise HTTPException(status_code=400, detail="Kit pricing is unavailable")
-    # Match JavaScript's rounding of nonnegative cents, including .5 ties.
-    shipping = math.floor(quote.total_weight * 1800 + 400 + 0.5)
-    parts = max(math.floor(quote.total_price * 100 + 0.5) - shipping, 0)
-    return parts + shipping
+    """Use only the fresh server quote, including verified member eligibility."""
+    if quote.order_pricing is None or quote.order_pricing.total_cents <= 0:
+        raise HTTPException(400, "Kit pricing is unavailable")
+    return quote.order_pricing.total_cents
 
 
 async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_info: dict):
@@ -104,25 +99,36 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         parts_list_csv_url = generation.get("parts_list_csv_url")
         if not parts_list_csv_url:
             raise HTTPException(status_code=400, detail="Kit parts list is unavailable")
-        quote = await get_price(GetPriceRequest(generation_id=request.generationId), auth_info)
+        quote = await get_price(GetPriceRequest(generation_id=request.generationId,
+            shipping_country=request.shippingAddress.address.country if request.shippingAddress else "US"), auth_info)
         amount = checkout_price_cents(quote)
+        pricing = quote.order_pricing
         track_api_call(endpoint="/create-checkout-session", user_id=user_email,
                        request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})
         metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url,
                     "shipInstructionsPostcard": str(request.shipInstructionsPostcard).lower()}
         if request.petId:
             metadata["petId"] = request.petId
+        metadata.update({"fullPartsCents": str(pricing.full_parts_cents),
+                         "memberDiscountCents": str(pricing.member_discount_cents),
+                         "memberDiscountPercent": str(pricing.member_discount_percent),
+                         "shippingCents": str(pricing.shipping_cents),
+                         "shippingCountry": pricing.shipping_country})
         if request.brickowlCartId:
             metadata["brickowlCartId"] = request.brickowlCartId
         params = {
             "line_items": [{"price_data": {
                 "currency": "usd",
                 "product_data": {"name": generation.get('name') or 'Custom brick model'},
-                "unit_amount": amount,
+                "unit_amount": pricing.parts_cents,
             }, "quantity": 1}],
+            "shipping_options": [{"shipping_rate_data": {
+                "type": "fixed_amount", "fixed_amount": {"amount": pricing.shipping_cents, "currency": "usd"},
+                "display_name": "Standard shipping",
+            }}],
             "mode": "payment", "ui_mode": request.uiMode,
             "allow_promotion_codes": True,
-            "shipping_address_collection": {"allowed_countries": STRIPE_SHIPPING_COUNTRIES},
+            "shipping_address_collection": {"allowed_countries": [pricing.shipping_country]},
             "metadata": metadata,
             "phone_number_collection": {"enabled": False},
         }

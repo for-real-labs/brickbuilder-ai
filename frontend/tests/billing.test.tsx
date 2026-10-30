@@ -69,7 +69,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
 it('asks guests to sign in before creating a subscription', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
-  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('Model exporting');
+  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('LDR model downloads');
   await click('Choose Builder');
   expect(container.textContent).toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();
@@ -163,7 +163,7 @@ it('shows the monthly allowances and simplified features on every plan', async (
   const cards = [...container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')];
   expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['300', '800', '1,500']);
   for (const card of cards) {
-    expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['Model exporting', 'Building instructions']);
+    expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['LDR model downloads', 'IO model exports', 'Building instructions', '20% off every model purchasePhysical model bricks · promo codes stack']);
   }
 });
 
@@ -375,4 +375,25 @@ it('shows earned referral credits with their own history label', async () => {
   expect(row.textContent).toContain('Referral credits');
   expect(row.textContent).toContain('+300');
   expect(row.textContent).not.toContain('Purchased credits');
+});
+
+it('includes member savings on paid plans and marks the Free benefit unavailable', async () => {
+  await render(<PlanGrid source="pricing_page" />);
+  for (const name of ['Builder', 'Creator']) {
+    const plan = container.querySelector(`[aria-label="${name} plan"]`)!;
+    const benefit = plan.querySelector('.billing-feature-saving')!;
+    expect(benefit.textContent).toContain('20% off every model purchase');
+    expect(benefit.querySelector('[aria-label="Included"]')).not.toBeNull();
+    expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);
+  }
+  const free = container.querySelector('[aria-label="Free plan"]')!;
+  const benefit = [...free.querySelectorAll('li')].find(li => li.textContent?.includes('20% off'))!;
+  expect(benefit.querySelector('[aria-label="Not included"]')).not.toBeNull();
+});
+
+it('explains automatic savings, promo stacking and shipping exclusions on pricing', async () => {
+  await render(<PricingPage />);
+  expect(container.textContent).toContain('Eligible promo codes apply on top of your member price');
+  expect(container.textContent).toContain('Shipping is charged separately');
+  expect(container.textContent).toContain('Free plans and one-time credit packs do not include the discount');
 });

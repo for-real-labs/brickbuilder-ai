@@ -29,8 +29,7 @@ require HTTPS and the appropriate domain registration. The UI does not offer
 unconfigured cryptocurrency, newsletter, or referral services.
 
 Checkout computes the charged price from the stored model's parts list on the
-server; it does not trust the amount supplied by the browser. The returned quote
-updates the displayed total before payment. The address is validated on the backend and supplied through
+server; it does not trust the amount supplied by the browser. The returned quote includes `order_pricing` in integer cents and updates the displayed total before payment. Catalog `total_price` remains the supplier cost, not a retail total. The address is validated on the backend and supplied through
 `payment_intent_data.shipping`; the webhook reads that address from the expanded
 PaymentIntent. This supports Brickwith entries omitted from Stripe’s address
 selector without putting addresses in session metadata or analytics. Older
@@ -91,11 +90,52 @@ The frontend tests decode the rendered QR using an independent QR reader.
 Physical-order sessions enable Stripe promotion codes. The payment step applies and
 removes codes through Stripe, displays Stripe's returned total in both the payment
 button and order summary, and blocks payment while the discount is changing.
-Subscription and credit-pack checkout are unchanged. The kit and shipping are one
-Stripe line item, so percentage discounts apply to the combined order total.
+Subscription and credit-pack checkout are unchanged. Member savings are already included in the kit line item. Shipping is a separate
+Stripe shipping rate, so percentage promo discounts apply to model bricks only.
 
 Live Stripe has the reusable `LINKEDIN` code backed by coupon
 `brickbuilder_linkedin_20`: 20% off, forever, without expiration, a first-order
 restriction, or a redemption limit. The coupon is not product-restricted in Stripe
 because kit products are generated per order; code entry is enabled only in the
 physical-order flow. Test-mode coupons must be configured separately.
+
+
+## Paid plan savings and pricing
+
+A verified active paid entitlement (Stripe or Apple, including existing Master
+Builder subscriptions) receives 20% off physical model bricks. Credit packs,
+guests, Free accounts and developer access do not qualify. Cancellation at period
+end keeps eligibility until the paid period ends; the existing paid-feature grace
+policy applies. An entitlement lookup failure blocks a fresh quote rather than
+silently charging a member full price.
+
+`utils/order_pricing.py` owns the pricing policy. The member brick price targets a
+20% gross margin on catalog cost: `cost / 0.8`. The regular price grosses that up
+by another `/ 0.8`, so the 20% member discount leaves the target margin intact.
+Round the member target and regular price upward to whole cents, then round the
+member charge half up. Supplier coupons are not assumed. Payment fees, postcard
+costs and extra promotional discounts are outside this brick margin target.
+
+Shipping is separate and excluded from the member discount. Rates were calibrated
+on October 29, 2026 using the previous two months of Brickwith account receipts,
+matched by supplier order ID. A supplier purchase covering more than one customer
+order counts once. Cancelled purchases are excluded. The US fit has 14 matched
+supplier shipments; Australia, Germany, Spain, the UK, Lithuania and Poland each
+have one. US and fallback rates use a linear fit; single-country observations use
+a $4 base plus weight-based rate. These are estimates, not live carrier quotes;
+small international samples and large parcels can differ from actual charges.
+Recalibrate as more receipts become available. Avoid committing private customer
+or supplier order details.
+
+The browser refreshes quotes when entering checkout, changing country or changing
+identity. Cached catalog-only prices cannot be used as retail quotes. The server
+rechecks the subscription and destination when creating payment. Legacy hosted
+sessions without a supplied address are limited to the quoted US destination.
+Modern on-page checkout still supports every listed destination.
+
+Stripe receives the member price as the product's `unit_amount`, with a separate
+fixed shipping rate. `allow_promotion_codes` remains enabled: a valid promo applies
+on top of the member price without replacing member savings. The original regular
+price and automatic savings remain visible when a promo is applied or removed.
+Stripe session metadata records the regular brick price, membership savings and
+quoted shipping for later reconciliation.
