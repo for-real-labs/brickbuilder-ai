@@ -21,10 +21,20 @@ describe('SEO metadata ownership', () => {
     const host = document.createElement('div');
     document.body.appendChild(host);
     root = createRoot(host);
-    for (const [path, noIndex] of [['/blog', false], ['/order', true], ['/glb-to-lego', false]] as const) {
+    for (const [path, noIndex] of [['/blog', false], ['/order', true], ['/glb-to-lego', false], ['/', false]] as const) {
       const url = `https://brickbuilder.ai${path}`;
-      act(() => root!.render(<HelmetProvider><SEO title={path} url={url} noIndex={noIndex} /></HelmetProvider>));
-      expect(document.title).toBe(path);
+      act(() => root!.render(<HelmetProvider><SEO title={path === '/' ? undefined : path} url={url} noIndex={noIndex} /></HelmetProvider>));
+      const title = path === '/' ? 'Free AI LEGO-compatible Model Maker | BrickBuilder AI' : path;
+      expect(document.title).toBe(title);
+      for (const selector of ['meta[name="title"]', 'meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+        expect(document.head.querySelectorAll(selector)).toHaveLength(1);
+        expect(document.head.querySelector(selector)?.getAttribute('content')).toBe(title);
+      }
+      if (path === '/') {
+        for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
+          expect(document.head.querySelector(selector)?.getAttribute('content')).toBe(shell.head.querySelector(selector)?.getAttribute('content'));
+        }
+      }
       expect(document.head.querySelectorAll('link[rel="canonical"]')).toHaveLength(1);
       expect(document.head.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(url);
       expect(document.head.querySelectorAll('meta[name="description"]')).toHaveLength(1);

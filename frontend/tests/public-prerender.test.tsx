@@ -47,11 +47,19 @@ describe('public page indexing', () => {
     expect(JSON.stringify(schema)).not.toContain('aggregateRating');
   });
 
-  it('keeps homepage share previews free of experimental and demo disclaimers', () => {
-    const document = new JSDOM(renderPublicDocument(shell, '/')).window.document;
-    const description = 'Turn your photos and ideas into 3D brick models with BrickBuilder AI. Explore your creation, preview every detail, and get building instructions to bring it to life.';
+  it.each(['static shell', 'prerender'])('keeps homepage SEO consistent in the %s', source => {
+    const document = new JSDOM(source === 'static shell' ? shell : renderPublicDocument(shell, '/')).window.document;
+    const title = 'Free AI LEGO-compatible Model Maker | BrickBuilder AI';
+    expect(document.title).toBe(title);
+    for (const selector of ['meta[name="title"]', 'meta[property="og:title"]', 'meta[name="twitter:title"]']) {
+      expect(document.querySelector(selector)?.getAttribute('content')).toBe(title);
+    }
+    const description = 'Create LEGO-compatible models from text or photos with AI. Start with free monthly credits, preview your model in 3D, and download free building instructions.';
     for (const selector of ['meta[name="description"]', 'meta[property="og:description"]', 'meta[name="twitter:description"]']) {
       expect(document.querySelector(selector)?.getAttribute('content')).toBe(description);
+    }
+    for (const script of document.querySelectorAll('script[type="application/ld+json"]')) {
+      expect(JSON.parse(script.textContent!).description).toBe(description);
     }
     expect(document.querySelector('meta[property="og:image"]')?.getAttribute('content')).toBe('https://brickbuilder.ai/share-card.png');
     expect(document.querySelector('meta[property="og:image:width"]')?.getAttribute('content')).toBe('1200');
