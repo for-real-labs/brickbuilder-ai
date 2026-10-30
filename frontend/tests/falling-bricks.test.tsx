@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import FallingBricks from '../src/components/FallingBricks';
+import FallingBricks, { HALLOWEEN_SYMBOLS } from '../src/components/FallingBricks';
 
 let host: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -12,7 +12,7 @@ const translate = vi.fn();
 const context = {
   save: vi.fn(), restore: vi.fn(), translate, rotate: vi.fn(), beginPath: vi.fn(),
   moveTo: vi.fn(), arcTo: vi.fn(), closePath: vi.fn(), fill: vi.fn(), arc: vi.fn(),
-  setTransform: vi.fn(), scale: vi.fn(), clearRect: vi.fn(),
+  setTransform: vi.fn(), scale: vi.fn(), clearRect: vi.fn(), fillText: vi.fn(),
 };
 function tick(milliseconds = 0) {
   now += milliseconds;
@@ -58,4 +58,13 @@ it('continues falling and recycles above the screen instead of repopulating insi
     if (tick(50).some(position => position.y < 0)) { recycled = true; break; }
   }
   expect(recycled).toBe(true);
+});
+
+it('renders only Halloween decorations and keeps them out of the accessibility tree', () => {
+  act(() => root.render(<FallingBricks />));
+  tick();
+  expect(context.fillText).toHaveBeenCalledTimes(22);
+  for (const [symbol] of context.fillText.mock.calls) expect(HALLOWEEN_SYMBOLS).toContain(symbol);
+  expect(context.arc).not.toHaveBeenCalled();
+  expect(host.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
 });

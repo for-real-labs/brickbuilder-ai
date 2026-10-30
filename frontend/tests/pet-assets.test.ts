@@ -1,11 +1,11 @@
 import { readFileSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { expect, it } from 'vitest';
-import { PETS, petVideoPath, petVideoSources } from '../src/pets';
+import { PETS, petPosterPath, petVideoPath, petVideoSources } from '../src/pets';
 
 it.each(PETS)('ships $name artwork and every animation without a remote runtime dependency', pet => {
   const asset = (path: string) => resolve(process.cwd(), 'public', path.slice(1));
-  const poster = readFileSync(asset(`/pets/${pet.id}.webp`));
+  const poster = readFileSync(asset(petPosterPath(pet.id)));
   expect(poster.subarray(8, 12).toString()).toBe('WEBP');
   for (const state of ['idle', 'building', 'celebrating'] as const) {
     const path = asset(petVideoPath(pet.id, state));
@@ -51,25 +51,39 @@ it.each(PETS)('ships Safari HEVC color and alpha layers for every $name animatio
 it('ships the exact nine clips that passed decoded loop-boundary verification', async () => {
   const { createHash } = await import('node:crypto');
   const { assertAlphaQuality, assertLoopQuality } = await import('../scripts/pets/verify-loops.mjs');
+  const halloween = JSON.parse(readFileSync(resolve(process.cwd(), '../docs/pets/halloween-pip.json'), 'utf8'));
   const ledger = JSON.parse(readFileSync(resolve(process.cwd(), '../docs/pets/seamless-loops.json'), 'utf8'));
   expect(ledger.clips).toHaveLength(9);
   for (const pet of PETS) {
     for (const state of ['idle', 'building', 'celebrating'] as const) {
-      const clip = ledger.clips.find((item: { clip: string }) => item.clip === `${pet.id}-${state}`);
+      const activeLedger = pet.id === 'pip' ? halloween : ledger;
+      const clip = activeLedger.clips.find((item: { clip: string }) => item.clip === `${pet.id}-${state}`);
       expect(clip).toBeDefined();
       expect(clip.webm.metrics.frames).toBe(122);
       expect(clip.hevc.metrics.frames).toBe(122);
-      expect(clip.generation_input.image_url).toBe(clip.generation_input.tail_image_url);
+      if (pet.id === 'pip') {
+        expect(clip.generation_input.reference_sha256).toBe(clip.generation_input.tail_reference_sha256);
+      } else {
+        expect(clip.generation_input.image_url).toBe(clip.generation_input.tail_image_url);
+      }
       expect(() => assertLoopQuality(clip.webm.metrics)).not.toThrow();
       expect(() => assertLoopQuality(clip.hevc.metrics)).not.toThrow();
       expect(() => assertAlphaQuality(clip.webm.metrics)).not.toThrow();
       expect(() => assertAlphaQuality(clip.hevc.metrics)).not.toThrow();
       for (const source of petVideoSources(pet.id, state)) {
-        expect(source.src).toContain('/pets/loops-v2/');
+        expect(source.src).toContain(pet.id === 'pip' ? '/pets/halloween-v1/' : '/pets/loops-v2/');
         const format = source.src.endsWith('.webm') ? clip.webm : clip.hevc;
         const bytes = readFileSync(resolve(process.cwd(), 'public', source.src.slice(1)));
         expect(createHash('sha256').update(bytes).digest('hex')).toBe(format.sha256);
       }
     }
+  }
+});
+
+it('applies the Halloween costume only to Pip', () => {
+  expect(petPosterPath('pip')).toBe('/pets/halloween-v1/pip.webp');
+  for (const id of ['nib', 'clik'] as const) {
+    expect(petPosterPath(id)).toBe(`/pets/${id}.webp`);
+    expect(petVideoPath(id, 'idle')).toBe(`/pets/loops-v2/${id}-idle-alpha.webm`);
   }
 });

@@ -186,7 +186,7 @@ describe('build buddies', () => {
     vi.mocked(window.matchMedia).mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() } as unknown as MediaQueryList);
     render(<PetAvatar />);
     expect(container.querySelector('video')).toBeNull();
-    expect(container.querySelector('img')?.getAttribute('src')).toBe('/pets/pip.webp');
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/pets/halloween-v1/pip.webp');
   });
 
   it('waits for playback again after pausing and resuming the same clip', () => {
@@ -219,14 +219,14 @@ describe('build buddies', () => {
     act(() => sources[1].dispatchEvent(new Event('error')));
     expect(container.querySelector('video')).toBeNull();
     expect(container.querySelector('.pet-avatar--alpha-playing')).toBeNull();
-    expect(container.querySelector('img')?.getAttribute('src')).toBe('/pets/pip.webp');
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/pets/halloween-v1/pip.webp');
   });
 
   it('uses transparent clips for every pet state and hides the still poster after playback starts', () => {
-    expect(petVideoPath('pip', 'idle')).toBe('/pets/loops-v2/pip-idle-alpha.webm');
-    expect(petVideoPath('pip', 'listening')).toBe('/pets/loops-v2/pip-idle-alpha.webm');
-    expect(petVideoPath('pip', 'building')).toBe('/pets/loops-v2/pip-building-alpha.webm');
-    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/loops-v2/pip-celebrating-alpha.webm');
+    expect(petVideoPath('pip', 'idle')).toBe('/pets/halloween-v1/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'listening')).toBe('/pets/halloween-v1/pip-idle-alpha.webm');
+    expect(petVideoPath('pip', 'building')).toBe('/pets/halloween-v1/pip-building-alpha.webm');
+    expect(petVideoPath('pip', 'celebrating')).toBe('/pets/halloween-v1/pip-celebrating-alpha.webm');
     expect(petVideoPath('nib', 'idle')).toBe('/pets/loops-v2/nib-idle-alpha.webm');
     render(<PetAvatar />);
     expect(container.querySelector('.pet-avatar--transparent')).not.toBeNull();

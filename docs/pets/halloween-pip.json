@@ -1,0 +1,221 @@
+{
+  "date": "2026-10-30",
+  "scope": "Pip only; Nib and Clik unchanged.",
+  "method": "Built-in imagegen costume edit; identical white-reference bytes uploaded into both Kling first and last image fields. Complete gestures by four seconds, ease back to identical rest. Bria removes white background. No endpoint correction, crossfade, reversed playback, held frames or runtime loop workaround needed.",
+  "image_prompt": "Use case: identity-preserve. Edit target: supplied Pip character cutout. Create a full-body Halloween costume version of exactly this red plush brick mascot Pip. Preserve his fuzzy red brick-shaped body, glossy black bead eyes, tiny curved friendly smile, cream mitten hands, dark red feet, proportions and charming high-quality soft 3D plush style. Add a clearly recognizable deep purple witch hat with a gently crooked point, orange band and small gold buckle, resting over his single stud. Pip holds a small traditional wooden broom with warm straw bristles in one mitten, upright at a slight diagonal beside his body. Keep the entire hat, broom and feet fully visible with generous transparent padding on every side; center the complete silhouette in a square canvas, occupying about 75% of its height. Friendly, cute Halloween, no scary expression. Neutral relaxed standing pose suited to identical first and last video frames. Actual transparent background, no scenery, no ground or cast shadow, no pumpkins or other characters, no words or logos. Change only the costume and held broom; maintain Pip's unmistakable identity.",
+  "poster": {
+    "path": "frontend/public/pets/halloween-v1/pip.webp",
+    "sha256": "776bffe931e8fa6b06e7ededf637337ed79ec3b8fca98deee5e78f3f05b5b593"
+  },
+  "provider_cost_estimate_usd": 3.185,
+  "provider_cost_note": "Three Kling jobs at displayed $0.35 each plus three 122/24-second Bria clips at displayed $0.14 per second. Estimate based on displayed rates and output duration, not a billing reconciliation.",
+  "encoding": {
+    "webm": "ffmpeg -c:v libvpx-vp9 -i INPUT -vf scale=512:512,fps=24 -an -c:v libvpx-vp9 -pix_fmt yuva420p -auto-alt-ref 0 -crf 36 -b:v 0 -row-mt 1 -cpu-used 4 OUTPUT.webm",
+    "hevc": "ffmpeg -c:v libvpx-vp9 -i INPUT -an -vf scale=512:512,fps=24,format=rgba,premultiply=inplace=1,format=bgra -c:v hevc_videotoolbox -allow_sw 1 -alpha_quality 1 -q:v 85 -b:v 0 -tag:v hvc1 -force_key_frames expr:eq(n,121) -movflags +faststart OUTPUT.mov"
+  },
+  "validation": {
+    "sample_size": [
+      128,
+      128
+    ],
+    "fps": 24,
+    "frames": 122,
+    "duration_seconds": 5.083333333333333,
+    "metric": "Mean absolute difference of premultiplied RGB over the union of foreground pixels. Use the worse of black and white composites. Compare final to first frame, every adjacent frame, and the six steps on either side of the join.",
+    "seam_mae_max": 2,
+    "seam_relative_max": "median_step_mae * 0.5 + 0.35",
+    "boundary_step_max": "max(median_step_mae * 3, 2)",
+    "every_frame_alpha_minimum_fraction": {
+      "clear": 0.4,
+      "opaque": 0.05,
+      "soft": 0.001
+    },
+    "hevc_decoder": "AVAssetReader, BGRA with 128px output, unpremultiplied to RGBA; alpha metadata and every frame validated.",
+    "browser_checks": "Native Safari HEVC and Brave Chromium WebM: all three play transparently at 512px through repeated complete loops on checkerboard, light and dark backgrounds. Homepage checked at 390\u00d7844 and desktop widths, with no horizontal overflow and full hat/broom visible."
+  },
+  "clips": [
+    {
+      "clip": "pip-idle",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a18d1f-c666-7801-be13-c62c940bacc1",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0ab076c7/2MEfWK03xeKaMqddCfX3A_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0ab076c7/IuRca8uwBqOPp6F67E8Bq_pip-reference.png",
+        "reference_sha256": "ad995987e047ceb91cf9f65843472e49cd4a0414799efd684095b86c434a6c02",
+        "tail_reference_sha256": "ad995987e047ceb91cf9f65843472e49cd4a0414799efd684095b86c434a6c02",
+        "prompt": "One complete five-second seamless looping animation of this exact red plush Pip wearing this purple witch hat and holding this single broom. Gentle breathing, one natural blink in the middle, a tiny curious head tilt. Keep broom held steadily. Begin relaxed in the supplied first-frame pose. Finish the gesture by four seconds and ease into the EXACT supplied last-frame pose: identical head angle, expression, hands, feet, witch hat and broom positions. Both ends relaxed and nearly motionless. Locked camera, pure white background, stable centered full-body size and position. Keep entire hat and broom visible throughout. Preserve plush texture and anatomy. No zoom, cuts, extra limbs, new props or text.",
+        "duration": "5",
+        "negative_prompt": "blur, distort, and low quality",
+        "cfg_scale": 0.5,
+        "enable_safety_checker": true
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0ab076cf/8JKVnmE_lvx10sXsD5nTx_output.mp4",
+      "generation_cost_usd": 0.35,
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a18d21-831e-7bb0-8957-ec8502ea1415",
+      "alpha_input": {
+        "video_url": "https://v3b.fal.media/files/b/0ab076cf/8JKVnmE_lvx10sXsD5nTx_output.mp4",
+        "background_color": "Transparent",
+        "output_container_and_codec": "webm_vp9"
+      },
+      "alpha_output_url": "https://v3b.fal.media/files/b/0ab076d4/Ncvkj8oDD70d_1tIdIH2o_3a122ff4-724c-41e9-9c0d-52215228b133.webm",
+      "webm": {
+        "path": "frontend/public/pets/halloween-v1/pip-idle-alpha.webm",
+        "sha256": "39fa87af64553e7456f7682ef15b47c09d1eb1f39348dfd17041fb3b48ff67b2",
+        "size_bytes": 69008,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.76495361328125,
+            "opaque": 0.197998046875,
+            "soft": 0.03533935546875
+          },
+          "seam_mae": 0.06477797747788913,
+          "median_step_mae": 0.30642120476707874,
+          "max_step_mae": 3.9072000352013787,
+          "boundary_step_max": 0.6648832431298091
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/halloween-v1/pip-idle-alpha.mov",
+        "sha256": "74207bb250b1bfbe5f58ca67d4641124bdec0b1cde416105042a391058ce1668",
+        "size_bytes": 976367,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.75677490234375,
+            "opaque": 0.19012451171875,
+            "soft": 0.050048828125
+          },
+          "seam_mae": 0.4829004166227985,
+          "median_step_mae": 0.3159050307244693,
+          "max_step_mae": 3.260301178342296,
+          "boundary_step_max": 0.9867255587140686
+        }
+      }
+    },
+    {
+      "clip": "pip-building",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a18d20-acc8-7e00-aba7-31f1242cb5ff",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0ab076cc/hB0rzPwKcWaIrM4tyw1Pp_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0ab076cc/Rdbsg9mYO3ver17ax0iHX_pip-reference.png",
+        "reference_sha256": "ad995987e047ceb91cf9f65843472e49cd4a0414799efd684095b86c434a6c02",
+        "tail_reference_sha256": "ad995987e047ceb91cf9f65843472e49cd4a0414799efd684095b86c434a6c02",
+        "prompt": "One complete five-second seamless looping animation of this exact red plush Pip wearing this purple witch hat and holding this single broom. Pip gently sweeps the broom in two small deliberate side-to-side motions, looks down, gives a satisfied nod, then returns both paws and broom to the exact starting pose. Same broom held throughout. Begin relaxed in the supplied first-frame pose. Finish by four seconds and ease into the EXACT supplied last-frame pose: identical head angle, expression, hands, feet, hat and broom positions. Both ends nearly motionless. Locked camera, pure white background, stable centered full-body size and position. Entire hat and broom always visible. Preserve plush texture and anatomy. No zoom, cuts, extra limbs, new props or text.",
+        "duration": "5",
+        "negative_prompt": "blur, distort, and low quality",
+        "cfg_scale": 0.5,
+        "enable_safety_checker": true
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0ab076d5/NiCeyn4VTxK30bRs4Agqc_output.mp4",
+      "generation_cost_usd": 0.35,
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a18d22-a8b8-7870-830b-bac0ec4aebbc",
+      "alpha_input": {
+        "video_url": "https://v3b.fal.media/files/b/0ab076d5/NiCeyn4VTxK30bRs4Agqc_output.mp4",
+        "background_color": "Transparent",
+        "output_container_and_codec": "webm_vp9"
+      },
+      "alpha_output_url": "https://v3b.fal.media/files/b/0ab076dc/F2Oys4oNxCr2bq6gtUZH3_4e76d5ad-6346-473b-9ac4-223f09a4f0ac.webm",
+      "webm": {
+        "path": "frontend/public/pets/halloween-v1/pip-building-alpha.webm",
+        "sha256": "30a638b9061dd1db6892d067769b758ea8c9c3870a7a0fb53d810b47dd5ba5d9",
+        "size_bytes": 279829,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.75958251953125,
+            "opaque": 0.1915283203125,
+            "soft": 0.03369140625
+          },
+          "seam_mae": 0.04102389105272036,
+          "median_step_mae": 4.258466333789641,
+          "max_step_mae": 18.397488648056427,
+          "boundary_step_max": 0.616320911241073
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/halloween-v1/pip-building-alpha.mov",
+        "sha256": "8b440d1c37080e77e5bc40e730b900cf13e33cb07f8573da393bdb14ccc7d091",
+        "size_bytes": 1832690,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.75299072265625,
+            "opaque": 0.1859130859375,
+            "soft": 0.04522705078125
+          },
+          "seam_mae": 0.4937096855815973,
+          "median_step_mae": 3.8705212797844912,
+          "max_step_mae": 16.955120863778003,
+          "boundary_step_max": 0.8892942551913242
+        }
+      }
+    },
+    {
+      "clip": "pip-celebrating",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a18d21-15dc-7f03-b384-d6e7cca629e0",
+      "generation_input": {
+        "image_url": "https://v3b.fal.media/files/b/0ab076cf/RxbbQA96HTTiqPvHcbxsO_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0ab076cf/7ZUi3guB4_MfcWV7G-ulC_pip-reference.png",
+        "reference_sha256": "ad995987e047ceb91cf9f65843472e49cd4a0414799efd684095b86c434a6c02",
+        "tail_reference_sha256": "ad995987e047ceb91cf9f65843472e49cd4a0414799efd684095b86c434a6c02",
+        "prompt": "One complete five-second seamless looping animation of this exact red plush Pip wearing this purple witch hat and holding this single broom. One small delighted bounce and friendly cheer with the free mitten, while holding the same broom steady in the other mitten; lower the free mitten and settle gently. Begin relaxed in the supplied first-frame pose. Finish by four seconds and ease into the EXACT supplied last-frame pose: identical head angle, expression, hands, feet, witch hat and broom positions. Both ends relaxed and nearly motionless. Locked camera, pure white background, stable centered full-body size and position. Entire hat and broom always visible. Preserve plush texture and anatomy. No zoom, cuts, extra limbs, new props or text.",
+        "duration": "5",
+        "negative_prompt": "blur, distort, and low quality",
+        "cfg_scale": 0.5,
+        "enable_safety_checker": true
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0ab076d7/OVXeNSqwtx-hs3ukHkP9a_output.mp4",
+      "generation_cost_usd": 0.35,
+      "alpha_model": "bria/video/background-removal",
+      "alpha_request_id": "01a18d23-2a4a-7a61-8948-f8dade96c2cf",
+      "alpha_input": {
+        "video_url": "https://v3b.fal.media/files/b/0ab076d7/OVXeNSqwtx-hs3ukHkP9a_output.mp4",
+        "background_color": "Transparent",
+        "output_container_and_codec": "webm_vp9"
+      },
+      "alpha_output_url": "https://v3b.fal.media/files/b/0ab076df/Wfhea_qfGKjAyzPtxwhEC_b5248a43-b7f6-4260-b8d8-937743ed9411.webm",
+      "webm": {
+        "path": "frontend/public/pets/halloween-v1/pip-celebrating-alpha.webm",
+        "sha256": "4e75d028994ada89da1b4b2d0edb9b133c83cac238bc7842280892151ab71f3a",
+        "size_bytes": 195786,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.755615234375,
+            "opaque": 0.19622802734375,
+            "soft": 0.035888671875
+          },
+          "seam_mae": 0.04699891282734615,
+          "median_step_mae": 1.166776675110978,
+          "max_step_mae": 25.50327727034448,
+          "boundary_step_max": 0.2844908752385457
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/halloween-v1/pip-celebrating-alpha.mov",
+        "sha256": "872c37a12de1ae07f0bceec49d79b1aed1bae1bae2e5f2708419cd302c368e76",
+        "size_bytes": 1636973,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.7479248046875,
+            "opaque": 0.19000244140625,
+            "soft": 0.049560546875
+          },
+          "seam_mae": 0.4718856254279182,
+          "median_step_mae": 0.9455717632617593,
+          "max_step_mae": 23.79674427540467,
+          "boundary_step_max": 0.7105386193406799
+        }
+      }
+    }
+  ]
+}

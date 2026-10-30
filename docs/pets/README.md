@@ -149,3 +149,25 @@ HEVC is independently decoded with AVAssetReader, with alpha metadata and all
 remain transparent through repeated loops, plus the app preview at desktop and
 375 × 812 mobile widths. Chromium app checks cover each pet/activity and confirm
 that the ordered sources select the WebM version.
+
+## Halloween Pip (October 30, 2026)
+
+Pip now wears a purple witch hat and holds a straw broom in all three activities.
+Idle/listening breathes and blinks; building makes small sweeping gestures;
+celebrating bounces and cheers with the free mitten. Nib and Clik retain their
+existing artwork and loops. The homepage's falling decorations are pumpkins,
+skulls, crescent moons, ghosts, bats and bones.
+
+`halloween-pip.json` records the six provider requests, actual prompts and
+reference URLs, identical endpoint-image hashes, encoding and decoded metrics.
+The browser playground uploaded the same reference file separately for each
+endpoint; all six CDN copies were downloaded and verified to have the same hash.
+All three clips pass the existing loop/alpha thresholds in both final formats
+without endpoint corrections. `frontend/public/pets/halloween-v1/` contains the
+versioned poster and six videos. `petPosterPath` and `petVideoPath` route only Pip
+to these assets. The original v2 loops remain available as historical assets.
+
+The reusable `create-edit-brickbuilder-pet` skill is saved in `.agents/skills/`
+and installed in the user's personal Codex skills. It includes the original
+matching-endpoint technique, browser format requirements, quality thresholds,
+request resumption, and a tested AVFoundation alpha decoder.
