@@ -231,3 +231,5 @@
 .checkout-pricing-note { color:#707680; font-size:12px; line-height:1.6; margin:14px 0 0; }
 .checkout-summary-toggle strong { text-align:right; }
 @media(max-width:480px) { .checkout-summary-toggle del { display:block; margin:0 0 2px; } }
+
+.checkout-member-badge { margin:0 0 14px; padding:9px 12px; border-radius:10px; background:#eff8f2; color:#237554; font-size:12px; line-height:1.5; font-weight:650; }

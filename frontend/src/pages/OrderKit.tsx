@@ -277,6 +277,7 @@ function OrderCheckout() {
               }} />
             <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} onPreviewCaptured={setModelImage} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
             <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
+            {pricing && pricing.memberDiscountCents > 0 && <p className="checkout-member-badge">Your paid plan saves 20% on model bricks</p>}
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
               setSummaryExpanded(value => !value); posthog.capture('order_summary_toggled', { generation_id: generationId, expanded: !summaryExpanded });
             }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? <>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</> : '—'}</strong></button>

@@ -468,6 +468,8 @@ it('keeps automatic member savings when a promo is applied and removed', async (
   mocks.removePromotionCode.mockResolvedValue({ type: 'success', session: { total: { total: { minorUnitsAmount: 4600 } } } });
   await renderOrder();
   expect(container.querySelector('.checkout-total del')?.textContent).toBe('$56.00');
+  expect(container.querySelector('.checkout-member-badge')?.textContent).toContain('20%');
+  expect(container.querySelector('#checkout-price-breakdown .checkout-member-badge')).toBeNull();
   expect(container.querySelector('.checkout-member-discount')?.textContent).toContain('−$10.00');
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
   await submitContact();
