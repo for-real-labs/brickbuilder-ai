@@ -722,7 +722,7 @@ describe('LandingPage', () => {
     expect(container.querySelector('.pet-dialogue')).toBeNull();
   });
 
-  it.each([false, true])('reserves layout space for the entire enlarged hero pet (native iOS: %s)', nativeIos => {
+  it.each([false, true])('centers the headline between equal gutters while reserving the enlarged pet bounds (native iOS: %s)', nativeIos => {
     if (nativeIos) window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '0.2.0' };
     const style = document.createElement('style');
     style.textContent = readFileSync('src/components/PetCompanion.css', 'utf8') + readFileSync('src/pages/LandingPage.css', 'utf8');
@@ -732,10 +732,14 @@ describe('LandingPage', () => {
     document.body.append(container);
     try {
       const heading = getComputedStyle(container.querySelector('.landing-hero-heading')!);
+      const title = getComputedStyle(container.querySelector('.landing-hero-title')!);
       const pet = getComputedStyle(container.querySelector('.landing-hero-pet')!);
       const image = getComputedStyle(container.querySelector('.landing-hero-pet img')!);
       expect(heading.display).toBe('grid');
-      expect(heading.gridTemplateColumns).toBe('auto minmax(0, 1fr)');
+      expect(heading.gridTemplateColumns).toBe('var(--hero-pet-space) minmax(0, 1fr) var(--hero-pet-space)');
+      expect(heading.getPropertyValue('--hero-pet-space')).toBe('calc(var(--hero-pet-size) * 1.6 + 12px)');
+      expect(title.gridColumn).toBe('2');
+      expect(title.width).toBe('100%');
       expect(heading.width).toBe('100%');
       expect(pet.position).toBe('relative');
       expect(pet.width).toBe('var(--hero-pet-size)');
