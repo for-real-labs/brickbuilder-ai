@@ -16,3 +16,6 @@
 .model-resize-link:disabled { opacity: .5; cursor: not-allowed; }
 @media (min-width: 1024px) { .model-order-card { padding: 18px; } }
 @media (max-width: 639px) { .model-order-card { padding: 20px; border-radius: 20px; } }
+
+.model-order-original { color:#8a8f97; font-size:15px; }
+.model-member-discount { display:inline-block; padding:6px 10px; border-radius:8px; background:#eef8f2; color:#237554; font-size:12px; font-weight:650; margin:0 0 16px; }

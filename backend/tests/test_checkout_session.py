@@ -8,6 +8,7 @@ from pydantic import ValidationError
 
 from src.requests import createCheckoutSession as checkout
 from src.requests.getPrice import GetPriceResponse
+from src.utils.order_pricing import price_order
 
 
 @pytest.fixture
@@ -20,7 +21,7 @@ def setup(monkeypatch):
     storage = AsyncMock(return_value=row)
     monkeypatch.setattr(checkout, 'generation_storage', SimpleNamespace(get_generation=storage))
     quote = GetPriceResponse(generation_id='g', total_price=50, total_parts=240,
-                            total_weight=0.1, unique_part_types=3, message='quote')
+                            total_weight=0.1, unique_part_types=3, message='quote', order_pricing=price_order(50, .1))
     monkeypatch.setattr(checkout, 'get_price', AsyncMock(return_value=quote))
     create = Mock(return_value=SimpleNamespace(id='cs', url=None, client_secret='client-secret'))
     monkeypatch.setattr(checkout.stripe.checkout.Session, 'create', create)
@@ -39,14 +40,14 @@ def test_custom_checkout_uses_server_price_and_preserves_fulfillment(setup):
     _, create, _ = setup
     result = run(uiMode='custom', priceCents=1, brickowlCartId='cart')
     params = create.call_args.kwargs
-    assert params['line_items'][0]['price_data']['unit_amount'] == 5000
+    assert params['line_items'][0]['price_data']['unit_amount'] == 7813
     assert params['line_items'][0]['price_data']['product_data']['name'] == 'Test Frog'
     assert params['ui_mode'] == 'custom'
     assert params['payment_method_types'] == ['card']
     assert params['return_url'] == 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}'
     assert 'success_url' not in params and 'cancel_url' not in params
-    assert params['metadata'] == {'generationId': 'g', 'partsListCsvUrl': 'https://example.com/parts.csv', 'brickowlCartId': 'cart', 'shipInstructionsPostcard': 'false'}
-    assert params['shipping_address_collection'] == {'allowed_countries': checkout.STRIPE_SHIPPING_COUNTRIES}
+    assert params['metadata'].items() >= {'generationId': 'g', 'partsListCsvUrl': 'https://example.com/parts.csv', 'brickowlCartId': 'cart', 'shipInstructionsPostcard': 'false'}.items()
+    assert params['shipping_address_collection'] == {'allowed_countries': ['US']}
     assert result.client_secret == 'client-secret' and result.price_data.total_price == 50
 
 
@@ -68,7 +69,7 @@ def test_physical_orders_allow_stripe_validated_promotion_codes(setup, mode):
     _, create, _ = setup
     run(uiMode=mode)
     assert create.call_args.kwargs['allow_promotion_codes'] is True
-    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 5000
+    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 7813
 
 
 def test_private_checkout_cannot_be_started_by_other_user(setup):
@@ -95,11 +96,24 @@ def test_validates_checkout_request(kwargs):
         checkout.CreateCheckoutSessionRequest(**kwargs)
 
 
-@pytest.mark.parametrize('price,weight,expected', [(50, 0.1, 5000), (0.01, 0, 400), (10.01, 0, 1001), (100, 0.123, 10000), (44.77, 0.5263, 4477)])
-def test_price_matches_frontend_cent_rounding(price, weight, expected):
-    quote = GetPriceResponse(generation_id='g', total_price=price, total_parts=1,
-                            total_weight=weight, unique_part_types=1, message='quote')
-    assert checkout.checkout_price_cents(quote) == expected
+def test_checkout_refuses_catalog_only_quote():
+    quote = GetPriceResponse(generation_id='g', total_price=50, total_parts=1,
+                            total_weight=.1, unique_part_types=1, message='catalog only')
+    with pytest.raises(HTTPException):
+        checkout.checkout_price_cents(quote)
+
+
+def test_member_price_is_baked_into_line_item_so_promos_stack(setup):
+    checkout.get_price.return_value.order_pricing = price_order(100, 1, 'GB', member=True)
+    _, create, _ = setup
+    result = run(uiMode='elements', priceCents=1)
+    params = create.call_args.kwargs
+    assert params['line_items'][0]['price_data']['unit_amount'] == 12500
+    assert params['allow_promotion_codes'] is True
+    assert 'discounts' not in params
+    assert params['shipping_options'][0]['shipping_rate_data']['fixed_amount']['amount'] == 1242
+    assert params['metadata']['memberDiscountCents'] == '3125'
+    assert result.price_data.order_pricing.member_discount_percent == 20
 
 
 def test_guest_owner_can_order_without_an_account(setup):
@@ -138,7 +152,7 @@ def test_checkout_records_postcard_choice_for_fulfillment(setup, selected):
     _, create, _ = setup
     run(uiMode='elements', shipInstructionsPostcard=selected)
     assert create.call_args.kwargs['metadata']['shipInstructionsPostcard'] == str(selected).lower()
-    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 5000
+    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 7813
 
 
 @pytest.mark.parametrize('value', ['true', 1, None, {'selected': True}])
@@ -173,7 +187,7 @@ def test_every_brickwith_destination_can_be_provided_to_checkout(setup, country)
 def test_legacy_selector_only_contains_supported_stripe_codes(setup):
     _, create, _ = setup
     result = run(uiMode='hosted')
-    assert len(create.call_args.kwargs['shipping_address_collection']['allowed_countries']) == 234
+    assert create.call_args.kwargs['shipping_address_collection']['allowed_countries'] == ['US']
     assert result.shipping_address_provided is False
 
 
@@ -213,3 +227,10 @@ def test_checkout_preserves_selected_pet(setup, pet):
 def test_checkout_rejects_unknown_pet():
     with pytest.raises(ValidationError):
         checkout.CreateCheckoutSessionRequest(petId='../other')
+
+
+def test_checkout_requotes_for_the_submitted_destination(setup):
+    run(uiMode='elements', shippingAddress={**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], 'country': 'PL'}})
+    request, identity = checkout.get_price.call_args.args
+    assert request.shipping_country == 'PL'
+    assert identity['user_id'] == 'owner'

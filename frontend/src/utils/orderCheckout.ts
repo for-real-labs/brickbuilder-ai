@@ -1,14 +1,23 @@
 import type { GetPriceResponse } from '../services/getPriceApi';
 
 export type OrderQuote = Pick<GetPriceResponse, 'total_price' | 'total_weight'> &
-  Partial<Pick<GetPriceResponse, 'total_parts' | 'unique_part_types'>>;
+  Partial<Pick<GetPriceResponse, 'total_parts' | 'unique_part_types' | 'order_pricing'>>;
 
 export function getOrderPricing(quote?: OrderQuote | null) {
   if (!quote || !Number.isFinite(quote.total_price) || quote.total_price <= 0 ||
       !Number.isFinite(quote.total_weight) || quote.total_weight < 0) return null;
-  const shippingCents = Math.round(quote.total_weight * 1800 + 400);
-  const partSubtotalCents = Math.max(Math.round(quote.total_price * 100) - shippingCents, 0);
-  return { partSubtotalCents, shippingCents, totalCents: partSubtotalCents + shippingCents };
+  // Cached catalog costs are not retail quotes. Only display the server's
+  // destination-specific price with its verified subscription entitlement.
+  const price = quote.order_pricing;
+  if (!price || ![price.full_parts_cents, price.parts_cents, price.shipping_cents,
+    price.member_discount_cents, price.full_total_cents, price.total_cents].every(value => Number.isSafeInteger(value) && value >= 0)
+    || price.total_cents <= 0 || price.parts_cents + price.shipping_cents !== price.total_cents
+    || price.full_parts_cents - price.member_discount_cents !== price.parts_cents
+    || price.full_parts_cents + price.shipping_cents !== price.full_total_cents) return null;
+  return { partSubtotalCents: price.parts_cents, shippingCents: price.shipping_cents,
+    totalCents: price.total_cents, fullPartSubtotalCents: price.full_parts_cents,
+    fullTotalCents: price.full_total_cents, memberDiscountCents: price.member_discount_cents,
+    memberDiscountPercent: price.member_discount_percent, shippingCountry: price.shipping_country };
 }
 
 export function formatOrderPrice(cents: number) {

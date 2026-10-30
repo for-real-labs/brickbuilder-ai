@@ -10,6 +10,18 @@ export interface PartBreakdownItem {
   sku?: string;
 }
 
+export interface OrderPricing {
+  full_parts_cents: number;
+  parts_cents: number;
+  shipping_cents: number;
+  member_discount_cents: number;
+  member_discount_percent: number;
+  full_total_cents: number;
+  total_cents: number;
+  shipping_country: string;
+  shipping_estimated: boolean;
+}
+
 export interface GetPriceResponse {
   generation_id: string;
   total_price: number;
@@ -20,6 +32,7 @@ export interface GetPriceResponse {
   parts_breakdown: PartBreakdownItem[];
   message: string;
   price_source?: string;
+  order_pricing?: OrderPricing;
 }
 
 // API Configuration
@@ -50,7 +63,8 @@ const API_URLS = getApiUrls();
 export class GetPriceApiService {
   static async getPrice(
     generationId: string,
-    authToken?: string
+    authToken?: string,
+    shippingCountry = 'US'
   ): Promise<GetPriceResponse> {
     
     if (!generationId) {
@@ -73,7 +87,7 @@ export class GetPriceApiService {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          generation_id: generationId
+          generation_id: generationId, shipping_country: shippingCountry
         }),
       });
 

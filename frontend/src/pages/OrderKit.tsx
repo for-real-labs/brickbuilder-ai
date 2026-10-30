@@ -106,14 +106,14 @@ function OrderCheckout() {
   }, [generationId, user?.id]);
 
   React.useEffect(() => {
-    if (getOrderPricing(state.priceData)) { setQuote(state.priceData!); return; }
     if (!generationId) return;
     let disposed = false;
+    setQuote(null); setSession(null); setDiscountedTotal(null); setStep(0);
     setQuoteLoading(true); setQuoteError(false);
     void (async () => {
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
-        const data = await GetPriceApiService.getPrice(generationId, token);
+        const data = await GetPriceApiService.getPrice(generationId, token, country);
         if (!getOrderPricing(data)) throw new Error('No valid quote');
         if (!disposed) setQuote(data);
       } catch {
@@ -121,7 +121,7 @@ function OrderCheckout() {
       } finally { if (!disposed) setQuoteLoading(false); }
     })();
     return () => { disposed = true; };
-  }, [generationId, state.priceData, quoteAttempt]);
+  }, [generationId, country, authSession?.access_token, quoteAttempt]);
 
   React.useEffect(() => {
     if (step > 0) {
@@ -277,17 +277,20 @@ function OrderCheckout() {
               }} />
             <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} onPreviewCaptured={setModelImage} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
             <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
+            {pricing && pricing.memberDiscountCents > 0 && <p className="checkout-member-badge">Your paid plan saves 20% on model bricks</p>}
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
               setSummaryExpanded(value => !value); posthog.capture('order_summary_toggled', { generation_id: generationId, expanded: !summaryExpanded });
-            }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? formatOrderPrice(pricing.totalCents) : '—'}</strong></button>
+            }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? <>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</> : '—'}</strong></button>
             <div id="checkout-price-breakdown" className={`checkout-price-breakdown ${summaryExpanded ? 'is-expanded' : ''}`}>
             {pricing ? <>
               <dl className="checkout-price-list">
-                <div><dt>Parts subtotal</dt><dd>{formatOrderPrice(pricing.partSubtotalCents)}</dd></div>
+                <div><dt>Model bricks</dt><dd>{formatOrderPrice(pricing.fullPartSubtotalCents)}</dd></div>
+                {pricing.memberDiscountCents > 0 && <div className="checkout-member-discount"><dt>Paid plan · 20% off model bricks</dt><dd>−{formatOrderPrice(pricing.memberDiscountCents)}</dd></div>}
                 <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.shippingCents)}</dd></div>
                 {discountedTotal !== null && discountedTotal < pricing.totalCents && <div><dt>Promo discount</dt><dd>−{formatOrderPrice(pricing.totalCents - discountedTotal)}</dd></div>}
-                <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</dd></div>
+                <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</dd></div>
               </dl>
+              <p className="checkout-pricing-note">Shipping estimated for {shippingCountries.find(destination => destination.code === country)?.name}. {pricing.memberDiscountCents > 0 ? "Your member savings are automatic. Promo codes apply on top." : "Paid plans save 20% on model bricks."}</p>
             </> : <p className="checkout-section-note">{quoteLoading ? 'Calculating your kit price…' : 'Kit price unavailable'}</p>}
             </div>
             <div className="checkout-summary-benefits"><p><Truck size={16} />Estimated delivery: 8–12 business days</p></div>

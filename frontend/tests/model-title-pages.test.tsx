@@ -1,3 +1,4 @@
+import { orderPricing } from './fixtures/orderPricing';
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -381,7 +382,7 @@ function mockPendingEdit() {
   vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id =>
     (id === 'old' ? completedEditSource : pendingEdit) as never);
   vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({
-    generation_id: 'old', total_price: 60, total_parts: 120, total_weight: 0.2,
+    generation_id: 'old', total_price: 60, order_pricing: orderPricing(6000), total_parts: 120, total_weight: 0.2,
     currency: 'USD', parts_breakdown: [],
   } as never);
   vi.spyOn(LlmToBricksApiService, 'watchOutput').mockImplementation(async (_id, onOutput, signal) => {
@@ -587,7 +588,7 @@ it('hides model controls and keeps the resolved order title visible', async () =
 
 
 it.each(['Order my kit', 'Order this model'])('opens checkout for the displayed model from %s with the same quote', async label => {
-  const quote = {generation_id: 'g', total_price: 44.77, total_parts: 370, total_weight: .5263, currency: 'USD', parts_breakdown: []};
+  const quote = {generation_id: 'g', total_price: 44.77, order_pricing: orderPricing(4477), total_parts: 370, total_weight: .5263, currency: 'USD', parts_breakdown: []};
   vi.mocked(GetPriceApiService.getPrice).mockResolvedValue(quote as never);
   const Location = () => { const location = useLocation(); return <output>{JSON.stringify({path: location.pathname, state: location.state})}</output>; };
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /><Location /></MemoryRouter>));
@@ -672,7 +673,7 @@ it('opens uploaded LDraw geometry for Nova editing while blocking both order con
 it('enables ordering for a completed catalog-validated Nova revision of an uploaded model', async () => {
   vi.mocked(GetGenerationApiService.getGeneration).mockResolvedValue({ generation_id: 'g', endpoint: 'novaToBricks', orderable: true,
     status: 'completed', name: 'Imported castle', ldr_content: 'ldr' } as never);
-  vi.mocked(GetPriceApiService.getPrice).mockResolvedValue({ generation_id: 'g', total_price: 10, total_parts: 1, total_weight: .01, currency: 'USD', parts_breakdown: [] } as never);
+  vi.mocked(GetPriceApiService.getPrice).mockResolvedValue({ generation_id: 'g', total_price: 10, order_pricing: orderPricing(1000), total_parts: 1, total_weight: .01, currency: 'USD', parts_breakdown: [] } as never);
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g&exact=1']}><GeneratedModel /></MemoryRouter>));
   expect(container.querySelector('[aria-label="Imported model ordering"]')).toBeNull();
   expect(container.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')?.disabled).toBe(false);

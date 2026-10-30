@@ -1,3 +1,4 @@
+import { orderPricing } from './fixtures/orderPricing';
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ featureAccess: 'allowed', getFeatureAccess: () => 'allowed', requireFeature: () => true, enabled: false, openUpgrade: vi.fn(), retryAccess: vi.fn() }) }));
 import React, { act } from 'react';
 import { readFileSync } from 'node:fs';
@@ -80,7 +81,7 @@ beforeEach(() => {
   query.value = '';
   query.set.mockReset();
   query.set.mockImplementation(next => { query.value = next(new URLSearchParams(query.value)).toString(); });
-  vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({ generation_id: 'castle', total_price: 44.77, total_weight: .5263, total_parts: 370, currency: 'USD', parts_breakdown: [] } as never);
+  vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({ generation_id: 'castle', total_price: 44.77, order_pricing: orderPricing(4477), total_weight: .5263, total_parts: 370, currency: 'USD', parts_breakdown: [] } as never);
   vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
   vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
   vi.spyOn(GetUserGenerationsApiService, 'getUserGenerations').mockResolvedValue({
@@ -700,14 +701,14 @@ it('keeps a dismissed banner closed for the current model and shows it for the n
 it('never applies a late quote to a different displayed model', async () => {
   let finish!: (quote: Awaited<ReturnType<typeof GetPriceApiService.getPrice>>) => void;
   vi.mocked(GetPriceApiService.getPrice).mockImplementationOnce(() => new Promise(resolve => { finish = resolve; }))
-    .mockResolvedValue({ generation_id: 'second', total_price: 20, total_weight: 0, total_parts: 10, parts_breakdown: [] } as never);
+    .mockResolvedValue({ generation_id: 'second', total_price: 20, order_pricing: orderPricing(2000), total_weight: 0, total_parts: 10, parts_breakdown: [] } as never);
   const renderModel = (id: string) => act(async () => root.render(<LandingModelWorkspace
     model={{ generation: generation(id), content: 'model' }} busy={false}
    ><div>Conversation</div></LandingModelWorkspace>));
   await renderModel('first');
   expect(container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.disabled).toBe(true);
   await renderModel('second');
-  await act(async () => finish({ generation_id: 'first', total_price: 100, total_weight: 0, total_parts: 100, parts_breakdown: [] } as never));
+  await act(async () => finish({ generation_id: 'first', total_price: 100, order_pricing: orderPricing(10000), total_weight: 0, total_parts: 100, parts_breakdown: [] } as never));
   expect(container.querySelector('.model-mobile-order strong')?.textContent).toBe('$20.00');
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.click());
   expect(navigate).toHaveBeenCalledWith('/order', { state: expect.objectContaining({

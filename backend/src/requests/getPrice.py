@@ -4,18 +4,29 @@ from decimal import Decimal, ROUND_HALF_UP
 
 import httpx
 from fastapi import HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from ..utils.generation_storage import generation_storage
 from ..utils.parts_catalog import PartsUnavailable, normalize_part_id, parts_csv_inventory
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.supplier_catalog import get_supplier_catalog
 
+from ..utils.order_pricing import COUNTRY_CODES, OrderPricing, member_discount_eligible, price_order
+
 logger = logging.getLogger(__name__)
 
 
 class GetPriceRequest(BaseModel):
     generation_id: str
+    shipping_country: str = "US"
+
+    @field_validator("shipping_country")
+    @classmethod
+    def valid_country(cls, value):
+        value = value.upper()
+        if value not in COUNTRY_CODES:
+            raise ValueError("Unsupported shipping country")
+        return value
 
 
 class PartPriceDetail(BaseModel):
@@ -37,6 +48,7 @@ class GetPriceResponse(BaseModel):
     parts_breakdown: list[PartPriceDetail] = Field(default_factory=list)
     message: str
     price_source: str = "Brickwith catalog snapshot"
+    order_pricing: OrderPricing | None = None
 
 
 async def fetch_csv_content(url: str) -> str:
@@ -87,9 +99,11 @@ async def get_price(request: GetPriceRequest, auth_info: dict) -> GetPriceRespon
         except ValueError as exc:
             raise HTTPException(422, str(exc)) from None
         count = sum(inventory.values())
+        pricing = price_order(total, weight, request.shipping_country,
+                              member=await member_discount_eligible(auth_info))
         return GetPriceResponse(generation_id=request.generation_id, total_price=total,
             total_parts=count, total_weight=weight, unique_part_types=len(inventory),
-            parts_breakdown=breakdown, price_source=catalog.name,
+            parts_breakdown=breakdown, price_source=catalog.name, order_pricing=pricing,
             message=f"Parts estimate: ${total:.2f} USD for {count} parts. Catalog prices exclude shipping, tax and discounts.")
     except HTTPException:
         raise

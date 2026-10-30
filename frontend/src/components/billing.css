@@ -189,3 +189,46 @@
 .billing-credit-packs > p { margin-bottom: 20px; }
 .billing-credit-pack h3 { font-size: 18px; font-weight: 700; }
 .billing-credit-packs .billing-muted { margin: 16px 0 0; }
+
+/* Give the plan's value and action one clear reading order on every screen. */
+.billing-member-intro { max-width:680px; margin:0 auto 32px; text-align:center; font-size:15px; line-height:1.7; color:#656e77; }
+.billing-member-intro strong { color:#237554; }
+.billing-plan { display:flex; flex-direction:column; }
+.billing-plan .billing-plan-button { margin-top:24px; }
+.billing-plan .billing-credit-allocation { margin-top:0; padding-top:16px; }
+.billing-plan .billing-features { flex:1; margin-bottom:0; }
+.billing-features li { font-size:13px; }
+.billing-features .billing-feature-unavailable, .billing-feature-unavailable svg { color:#92969e; }
+.billing-features .billing-feature-saving { color:#237554; background:#eff8f2; border-radius:12px; padding:12px; margin-inline:-8px; }
+.billing-features strong { font-weight:650; }
+.billing-features small { display:block; font-size:11px; line-height:1.6; margin-top:3px; font-weight:400; }
+.billing-plan--free { background:#fafaf7; }
+.billing-plan-benefit { padding:12px 14px; border-radius:12px; background:#eff8f2; color:#237554; }
+@media(max-width:600px) {
+ .billing-hero { margin-bottom:20px; }
+ .billing-hero-pets { height:68px; }
+ .billing-hero-pets .pet-avatar { width:64px; height:64px; }
+ .billing-hero-pets .pet-avatar:nth-child(2) { width:80px; height:80px; }
+ .billing-hero h1 { font-size:34px; letter-spacing:-1.2px; }
+ .billing-member-intro { font-size:14px; line-height:1.6; margin-bottom:28px; text-align:left; }
+ .billing-plan-grid, .billing-plan-grid--paid { gap:28px; }
+ .billing-plan { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 12px; padding:22px 20px; border-radius:22px; }
+ .billing-plan--recommended { padding:21px 19px; }
+ .billing-plan-top { grid-column:1; grid-row:1; min-height:36px; }
+ .billing-plan-top .pet-avatar { display:none; }
+ .billing-price { grid-column:2; grid-row:1; justify-content:flex-end; align-self:center; }
+ .billing-price strong { font-size:34px; letter-spacing:-1px; }
+ .billing-price span { font-size:11px; }
+ .billing-plan-description { grid-column:1 / -1; margin:8px 0 0; font-size:13px; }
+ .billing-renewal { grid-column:1 / -1; margin:4px 0 18px; font-size:11px; }
+ .billing-credit-allocation, .billing-features, .billing-plan-button, .billing-current-link { grid-column:1 / -1; }
+ .billing-credit-allocation { font-size:14px; }
+ .billing-features { gap:10px; }
+ .billing-features li { font-size:14px; }
+ .billing-features small { font-size:12px; }
+ .billing-plan .billing-plan-button { margin-top:20px; min-height:48px; }
+ .billing-credit-pack { display:flex; }
+ .billing-credit-pack .billing-price { justify-content:flex-start; flex-wrap:wrap; }
+ .billing-footer { flex-wrap:wrap; row-gap:12px; }
+}
+@media(max-width:360px) { .billing-plan { gap:0 8px; padding-inline:16px; } .billing-price strong { font-size:30px; } .billing-plan-top h2 { font-size:20px; } }
