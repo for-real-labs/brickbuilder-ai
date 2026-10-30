@@ -24,7 +24,7 @@ describe('SEO metadata ownership', () => {
     for (const [path, noIndex] of [['/blog', false], ['/order', true], ['/glb-to-lego', false], ['/', false]] as const) {
       const url = `https://brickbuilder.ai${path}`;
       act(() => root!.render(<HelmetProvider><SEO title={path === '/' ? undefined : path} url={url} noIndex={noIndex} /></HelmetProvider>));
-      const title = path === '/' ? 'Free AI LEGO-compatible Model Maker | BrickBuilder AI' : path;
+      const title = path === '/' ? 'Free AI LEGO® Model Maker | BrickBuilder AI' : path;
       expect(document.title).toBe(title);
       for (const selector of ['meta[name="title"]', 'meta[property="og:title"]', 'meta[name="twitter:title"]']) {
         expect(document.head.querySelectorAll(selector)).toHaveLength(1);
