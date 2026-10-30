@@ -23,11 +23,12 @@ const checkoutAppearance: Appearance = {
   },
 };
 
-export function CheckoutPayment({ session, publishableKey, details, country, totalCents, generationId, onBack, onRetry, onBusyChange }: {
+export function CheckoutPayment({ session, publishableKey, details, country, totalCents, generationId, onBack, onRetry, onBusyChange, onTotalChange }: {
   session: CreateCheckoutSessionResponse; publishableKey: string;
   details: DeliveryDetails; country: string; totalCents: number;
   generationId?: string; onBack: () => void; onRetry: () => void;
   onBusyChange?: (busy: boolean) => void;
+  onTotalChange?: (total: number) => void;
 }) {
   const mountRef = React.useRef<HTMLDivElement>(null);
   const walletMountRef = React.useRef<HTMLDivElement>(null);
@@ -42,6 +43,12 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   const [accepted, setAccepted] = React.useState(false);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [promoCode, setPromoCode] = React.useState('');
+  const [appliedCode, setAppliedCode] = React.useState('');
+  const [promoBusy, setPromoBusy] = React.useState(false);
+  const [promoError, setPromoError] = React.useState<string | null>(null);
+  const [paymentTotal, setPaymentTotal] = React.useState(totalCents);
+  const operationRef = React.useRef(false);
   const [loadFailed, setLoadFailed] = React.useState(false);
 
   React.useEffect(() => {
@@ -112,9 +119,10 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   }, [session.client_secret, publishableKey, generationId]);
 
   const confirmPayment = async (walletEvent?: StripeExpressCheckoutElementConfirmEvent) => {
-    if (!ready || loading || !accepted) return;
+    if (!ready || operationRef.current || !accepted) return;
+    operationRef.current = true;
     setLoading(true); onBusyChange?.(true); setError(null);
-    posthog.capture('order_checkout_clicked', { generation_id: generationId, total_cents: totalCents, currency: 'USD', checkout_mode: 'elements' });
+    posthog.capture('order_checkout_clicked', { generation_id: generationId, total_cents: paymentTotal, currency: 'USD', checkout_mode: 'elements' });
     try {
       if (!actionsRef.current) throw new Error('Payment unavailable');
       const result = await actionsRef.current.confirm({
@@ -131,10 +139,32 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
     } catch {
       setError('Payment could not be completed. Please try again.');
       posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'confirm' });
-    } finally { setLoading(false); onBusyChange?.(false); }
+    } finally { operationRef.current = false; setLoading(false); onBusyChange?.(false); }
   };
 
-  acceptedRef.current = accepted;
+  const updatePromo = async (remove = false) => {
+    if (!ready || operationRef.current || !actionsRef.current || (!remove && !promoCode.trim())) return;
+    operationRef.current = true;
+    setPromoBusy(true); onBusyChange?.(true); setPromoError(null);
+    try {
+      const result = remove ? await actionsRef.current.removePromotionCode() : await actionsRef.current.applyPromotionCode(promoCode.trim());
+      if (result.type === 'error') {
+        setPromoError(result.error.message);
+        posthog.capture('order_promo_failed', { generation_id: generationId });
+      } else {
+        const total = result.session.total.total.minorUnitsAmount;
+        setPaymentTotal(total); onTotalChange?.(total);
+        setAppliedCode(remove ? '' : promoCode.trim());
+        if (remove) setPromoCode('');
+        posthog.capture(remove ? 'order_promo_removed' : 'order_promo_applied', { generation_id: generationId, total_cents: total });
+      }
+    } catch {
+      setPromoError('Could not update the promo code. Please try again.');
+      posthog.capture('order_promo_failed', { generation_id: generationId });
+    } finally { operationRef.current = false; setPromoBusy(false); onBusyChange?.(false); }
+  };
+
+  acceptedRef.current = accepted && !promoBusy;
   confirmRef.current = confirmPayment;
   const chooseMethod = (method: 'card' | 'applePay' | 'googlePay') => {
     setSelectedMethod(method); setError(null);
@@ -146,13 +176,24 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   };
   return <form onSubmit={event => { event.preventDefault(); if (selectedMethod === 'card') void confirmPayment(); }}>
     {!ready && !loadFailed && <div role="status" className="checkout-payment-loading"><span className="checkout-spinner" />Loading secure payment…</div>}
+    <div className="checkout-promo">
+      <label className="checkout-field" htmlFor="order-promo"><span>Promo code</span>
+        <input id="order-promo" value={promoCode} autoComplete="off" maxLength={100} disabled={!ready || loading || promoBusy || !!appliedCode}
+          onChange={event => setPromoCode(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void updatePromo(); } }} />
+      </label>
+      <button type="button" className="checkout-promo-button" disabled={!ready || loading || promoBusy || (!appliedCode && !promoCode.trim())} onClick={() => void updatePromo(!!appliedCode)}>
+        {promoBusy ? 'Updating…' : appliedCode ? 'Remove' : 'Apply'}
+      </button>
+      {appliedCode && <p role="status">{appliedCode} applied. Total: {formatOrderPrice(paymentTotal)}</p>}
+      {promoError && <p role="alert" className="checkout-error">{promoError}</p>}
+    </div>
     <div className="checkout-payment-methods" role="radiogroup" aria-label="Payment method">
       <section className={`checkout-payment-option ${selectedMethod === 'card' ? 'is-selected' : ''}`}>
-        <button type="button" role="radio" aria-checked={selectedMethod === 'card'} disabled={loading} onClick={() => chooseMethod('card')}><span className="checkout-method-radio" />Card payment<span aria-hidden="true" className="checkout-method-mark">VISA · Mastercard</span></button>
+        <button type="button" role="radio" aria-checked={selectedMethod === 'card'} disabled={loading || promoBusy} onClick={() => chooseMethod('card')}><span className="checkout-method-radio" />Card payment<span aria-hidden="true" className="checkout-method-mark">VISA · Mastercard</span></button>
         <div hidden={selectedMethod !== 'card'} ref={mountRef} className="checkout-payment-element" aria-label="Secure payment details" />
       </section>
       <section className={`checkout-payment-option ${selectedMethod === 'applePay' ? 'is-selected' : ''}`}>
-        <button type="button" role="radio" aria-checked={selectedMethod === 'applePay'} aria-describedby={!wallets.applePay ? 'apple-pay-unavailable' : undefined} disabled={loading || !wallets.applePay} onClick={() => chooseMethod('applePay')}><span className="checkout-method-radio" />Apple Pay<span aria-hidden="true" className="checkout-method-mark">Apple Pay</span></button>
+        <button type="button" role="radio" aria-checked={selectedMethod === 'applePay'} aria-describedby={!wallets.applePay ? 'apple-pay-unavailable' : undefined} disabled={loading || promoBusy || !wallets.applePay} onClick={() => chooseMethod('applePay')}><span className="checkout-method-radio" />Apple Pay<span aria-hidden="true" className="checkout-method-mark">Apple Pay</span></button>
         {!wallets.applePay && <p id="apple-pay-unavailable" className="checkout-method-note">{window.location.protocol === 'http:' ? 'Available on secure HTTPS checkout.' : 'Unavailable in this browser or device.'}</p>}
       </section>
       <section className="checkout-payment-option">
@@ -160,7 +201,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         <p id="paypal-unavailable" className="checkout-method-note">PayPal is not available yet.</p>
       </section>
       <section className={`checkout-payment-option ${selectedMethod === 'googlePay' ? 'is-selected' : ''}`}>
-        <button type="button" role="radio" aria-checked={selectedMethod === 'googlePay'} aria-describedby={!wallets.googlePay ? 'google-pay-unavailable' : undefined} disabled={loading || !wallets.googlePay} onClick={() => chooseMethod('googlePay')}><span className="checkout-method-radio" />Google Pay<span aria-hidden="true" className="checkout-method-mark">Google Pay</span></button>
+        <button type="button" role="radio" aria-checked={selectedMethod === 'googlePay'} aria-describedby={!wallets.googlePay ? 'google-pay-unavailable' : undefined} disabled={loading || promoBusy || !wallets.googlePay} onClick={() => chooseMethod('googlePay')}><span className="checkout-method-radio" />Google Pay<span aria-hidden="true" className="checkout-method-mark">Google Pay</span></button>
         {!wallets.googlePay && <p id="google-pay-unavailable" className="checkout-method-note">{window.location.protocol === 'http:' ? 'Available on secure HTTPS checkout.' : 'Unavailable in this browser or device.'}</p>}
       </section>
     </div>
@@ -168,21 +209,21 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       posthog.capture('order_payment_retry_clicked', { generation_id: generationId }); onRetry();
     }}>Try again</button>}</div>}
     <label className="checkout-consent">
-      <input type="checkbox" required checked={accepted} disabled={loading} onChange={event => {
+      <input type="checkbox" required checked={accepted} disabled={loading || promoBusy} onChange={event => {
         setAccepted(event.target.checked);
         posthog.capture('order_terms_changed', { generation_id: generationId, accepted: event.target.checked });
       }} />
       <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" onClick={() => posthog.capture('order_terms_opened', { generation_id: generationId })}>Terms of Service</a>.</span>
     </label>
     <div className="checkout-actions">
-      <button type="button" className="checkout-back" aria-label="Back to contact and delivery" disabled={loading} onClick={onBack}><ArrowLeft size={22} /></button>
-      <button hidden={selectedMethod !== 'card'} type="submit" className="checkout-primary" disabled={!ready || !accepted || loading || loadFailed}>
-        {loading ? 'Processing…' : `Pay ${formatOrderPrice(totalCents)}`}
+      <button type="button" className="checkout-back" aria-label="Back to contact and delivery" disabled={loading || promoBusy} onClick={onBack}><ArrowLeft size={22} /></button>
+      <button hidden={selectedMethod !== 'card'} type="submit" className="checkout-primary" disabled={!ready || !accepted || loading || promoBusy || loadFailed}>
+        {loading ? 'Processing…' : `Pay ${formatOrderPrice(paymentTotal)}`}
       </button>
     </div>
     <div className={`checkout-wallet-payment ${selectedMethod === 'card' ? 'is-inactive' : ''}`} aria-hidden={selectedMethod === 'card'}>
       {!accepted && <p className="checkout-method-note">Agree to the Terms of Service to continue with your wallet.</p>}
-      <div className={!accepted || loading ? 'is-inactive' : undefined} aria-hidden={!accepted || loading} ref={walletMountRef} />
+      <div className={!accepted || loading || promoBusy ? 'is-inactive' : undefined} aria-hidden={!accepted || loading || promoBusy} ref={walletMountRef} />
       {loading && <p role="status">Processing…</p>}
     </div>
     <p className="checkout-secure-note"><LockKeyhole size={14} />Secure, encrypted payment</p>
