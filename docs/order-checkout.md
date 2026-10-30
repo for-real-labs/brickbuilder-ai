@@ -85,3 +85,17 @@ contact details, and model images.
 Postcard checks: `npm --prefix frontend test` and
 `cd backend && uv run pytest tests/test_checkout_session.py tests/test_stripe_webhook.py`.
 The frontend tests decode the rendered QR using an independent QR reader.
+
+## Promotion codes
+
+Physical-order sessions enable Stripe promotion codes. The payment step applies and
+removes codes through Stripe, displays Stripe's returned total in both the payment
+button and order summary, and blocks payment while the discount is changing.
+Subscription and credit-pack checkout are unchanged. The kit and shipping are one
+Stripe line item, so percentage discounts apply to the combined order total.
+
+Live Stripe has the reusable `LINKEDIN` code backed by coupon
+`brickbuilder_linkedin_20`: 20% off, forever, without expiration, a first-order
+restriction, or a redemption limit. The coupon is not product-restricted in Stripe
+because kit products are generated per order; code entry is enabled only in the
+physical-order flow. Test-mode coupons must be configured separately.

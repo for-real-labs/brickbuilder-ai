@@ -63,6 +63,14 @@ def test_hosted_checkout_retains_redirects_and_does_not_track_contact(setup):
     assert 'builder@example.com' not in str(track.call_args)
 
 
+@pytest.mark.parametrize('mode', ['hosted', 'custom', 'embedded', 'elements'])
+def test_physical_orders_allow_stripe_validated_promotion_codes(setup, mode):
+    _, create, _ = setup
+    run(uiMode=mode)
+    assert create.call_args.kwargs['allow_promotion_codes'] is True
+    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 5000
+
+
 def test_private_checkout_cannot_be_started_by_other_user(setup):
     storage, create, _ = setup
     storage.return_value['user_id'] = 'other'

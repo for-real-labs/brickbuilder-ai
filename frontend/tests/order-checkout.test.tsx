@@ -11,7 +11,7 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
 import shippingCountries from '../src/data/shippingCountries.json';
 
-const mocks = vi.hoisted(() => ({ confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
+const mocks = vi.hoisted(() => ({ applyPromotionCode: vi.fn(), removePromotionCode: vi.fn(), confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
 vi.mock('@stripe/stripe-js/pure', () => ({ loadStripe: mocks.loadStripe }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ showModelControls }: { showModelControls?: boolean }) => <div data-testid="model-preview" data-controls={String(showModelControls)}>Model preview</div> }));
 vi.mock('../src/services/ldrToMpdApi', () => ({ LdrToMpdApiService: { convertLdrToMpd: async () => ({ mpd_content: '0 Frog' }) } }));
@@ -28,10 +28,11 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 beforeEach(() => {
   vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example');
+  mocks.applyPromotionCode.mockReset(); mocks.removePromotionCode.mockReset();
   mocks.confirm.mockReset(); mocks.destroy.mockReset(); mocks.mount.mockReset();
   mocks.paymentEvents = {}; mocks.walletEvents = {}; mocks.walletUpdate.mockReset();
   mocks.mount.mockImplementation(() => mocks.paymentEvents.ready?.());
-  mocks.loadActions.mockResolvedValue({ type: 'success', actions: { confirm: mocks.confirm } });
+  mocks.loadActions.mockResolvedValue({ type: 'success', actions: { confirm: mocks.confirm, applyPromotionCode: mocks.applyPromotionCode, removePromotionCode: mocks.removePromotionCode } });
   mocks.initCheckoutElementsSdk.mockReset();
   mocks.initCheckoutElementsSdk.mockImplementation(() => ({ loadActions: mocks.loadActions, createPaymentElement: () => ({
     on: (event: string, callback: (event?: unknown) => void) => { mocks.paymentEvents[event] = callback; }, mount: mocks.mount, destroy: mocks.destroy,
@@ -407,4 +408,51 @@ it('offers every verified Brickwith country and sends the selected address to ch
   act(() => container.querySelector<HTMLInputElement>('.checkout-consent input')!.click());
   await act(async () => container.querySelector('#checkout-step-2 form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   expect(mocks.confirm).toHaveBeenCalledWith({ email: details.email, redirect: 'if_required' });
+});
+
+const renderPromoCheckout = async () => {
+  const onTotalChange = vi.fn();
+  await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} onTotalChange={onTotalChange} />));
+  act(() => {
+    const input = container.querySelector('#order-promo')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, ' LINKEDIN ');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  return onTotalChange;
+};
+it('applies and removes a Stripe-validated promo and updates the displayed total', async () => {
+  mocks.applyPromotionCode.mockResolvedValue({ type: 'success', session: { total: { total: { minorUnitsAmount: 2000 } } } });
+  mocks.removePromotionCode.mockResolvedValue({ type: 'success', session: { total: { total: { minorUnitsAmount: 2500 } } } });
+  const onTotalChange = await renderPromoCheckout();
+  await click('Apply');
+  expect(mocks.applyPromotionCode).toHaveBeenCalledWith('LINKEDIN');
+  expect(container.textContent).toContain('Pay $20.00');
+  expect(onTotalChange).toHaveBeenLastCalledWith(2000);
+  expect(posthog.capture).toHaveBeenCalledWith('order_promo_applied', expect.objectContaining({ total_cents: 2000 }));
+  await click('Remove');
+  expect(mocks.removePromotionCode).toHaveBeenCalledOnce();
+  expect(container.textContent).toContain('Pay $25.00');
+  expect(onTotalChange).toHaveBeenLastCalledWith(2500);
+});
+it.each(['invalid', 'network'])('preserves the total and allows retry after a %s promo error', async failure => {
+  if (failure === 'network') mocks.applyPromotionCode.mockRejectedValue(new Error('offline'));
+  else mocks.applyPromotionCode.mockResolvedValue({ type: 'error', error: { message: 'Invalid promotion code.' } });
+  await renderPromoCheckout();
+  await click('Apply');
+  expect(container.querySelector('[role="alert"]')).not.toBeNull();
+  expect(container.textContent).toContain('Pay $25.00');
+  expect((container.querySelector('#order-promo') as HTMLInputElement).disabled).toBe(false);
+});
+it('blocks card and wallet confirmation while a promotion is changing', async () => {
+  let finish: (value: unknown) => void = () => {};
+  mocks.applyPromotionCode.mockReturnValue(new Promise(resolve => { finish = resolve; }));
+  await renderPromoCheckout();
+  act(() => (container.querySelector('input[type="checkbox"]') as HTMLInputElement).click());
+  await click('Apply');
+  await act(async () => {
+    container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+    await mocks.walletEvents.confirm?.({ expressPaymentType: 'google_pay' });
+  });
+  expect(mocks.confirm).not.toHaveBeenCalled();
+  await act(async () => finish({ type: 'success', session: { total: { total: { minorUnitsAmount: 2000 } } } }));
 });

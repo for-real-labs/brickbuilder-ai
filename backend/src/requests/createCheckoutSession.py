@@ -121,6 +121,7 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
                 "unit_amount": amount,
             }, "quantity": 1}],
             "mode": "payment", "ui_mode": request.uiMode,
+            "allow_promotion_codes": True,
             "shipping_address_collection": {"allowed_countries": STRIPE_SHIPPING_COUNTRIES},
             "metadata": metadata,
             "phone_number_collection": {"enabled": False},

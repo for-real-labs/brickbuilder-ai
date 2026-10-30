@@ -78,6 +78,7 @@ function OrderCheckout() {
   const [country, setCountry] = React.useState<string>('US');
   const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
   const [session, setSession] = React.useState<CreateCheckoutSessionResponse | null>(null);
+  const [discountedTotal, setDiscountedTotal] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [summaryExpanded, setSummaryExpanded] = React.useState(false);
@@ -205,7 +206,7 @@ function OrderCheckout() {
 
   const goToStep = (next: number) => {
     if (loading) return;
-    setError(null); setSession(null); setStep(next);
+    setError(null); setSession(null); setDiscountedTotal(null); setStep(next);
     posthog.capture('order_step_changed', { generation_id: generationId, step: stepNames[next], direction: next > step ? 'forward' : 'back' });
   };
 
@@ -225,7 +226,7 @@ function OrderCheckout() {
       }, token);
       if (!data.client_secret) throw new Error('Embedded payment unavailable');
       if (data.price_data) setQuote(data.price_data);
-      setSession(data); setStep(1);
+      setSession(data); setDiscountedTotal(null); setStep(1);
       posthog.capture('order_step_changed', { generation_id: generationId, step: 'Payment', direction: 'forward' });
     } catch {
       setError('We couldn’t start payment. Your details are still here — please try again.');
@@ -284,7 +285,8 @@ function OrderCheckout() {
               <dl className="checkout-price-list">
                 <div><dt>Parts subtotal</dt><dd>{formatOrderPrice(pricing.partSubtotalCents)}</dd></div>
                 <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.shippingCents)}</dd></div>
-                <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{formatOrderPrice(pricing.totalCents)}</dd></div>
+                {discountedTotal !== null && discountedTotal < pricing.totalCents && <div><dt>Promo discount</dt><dd>−{formatOrderPrice(pricing.totalCents - discountedTotal)}</dd></div>}
+                <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</dd></div>
               </dl>
             </> : <p className="checkout-section-note">{quoteLoading ? 'Calculating your kit price…' : 'Kit price unavailable'}</p>}
             </div>
@@ -316,7 +318,7 @@ function OrderCheckout() {
             </form>
           </CheckoutStep>
           <CheckoutStep title="Payment" number={2} active={step === 1} complete={false} disabled={loading} onEdit={() => {}}>
-            {session && pricing && <CheckoutPayment key={session.session_id} session={session} publishableKey={publishableKey} details={delivery} country={country} totalCents={pricing.totalCents} generationId={generationId} onBack={() => goToStep(0)} onRetry={() => { goToStep(0); void startPayment(); }} onBusyChange={setLoading} />}
+            {session && pricing && <CheckoutPayment key={session.session_id} session={session} publishableKey={publishableKey} details={delivery} country={country} totalCents={pricing.totalCents} generationId={generationId} onBack={() => goToStep(0)} onRetry={() => { goToStep(0); void startPayment(); }} onBusyChange={setLoading} onTotalChange={setDiscountedTotal} />}
           </CheckoutStep>
         </div>
       </div>}
