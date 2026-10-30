@@ -8,10 +8,13 @@ from pydantic import BaseModel
 
 from . import billing
 
-# Calibrated from matched Brickwith receipts, Aug 29–Oct 29, 2026.
-# Country samples outside the US are sparse; these remain estimates, not carrier quotes.
+# Standard-shipping quotes to Chicago, Oct 29, 2026: (parts weight in grams, cents).
+# Use exact SKU weights, not the checkout's rounded kg display (100 pins = 16g).
+US_SHIPPING_QUOTES = ((16, 408), (160, 641), (220, 721), (550, 1344),
+                      (1100, 2268), (2200, 4157), (4400, 8129))
+# Other destinations retain receipt-based estimates from Aug 29–Oct 29, 2026.
 SHIPPING_RATES = {
-    'US': (562, 1786), 'AU': (400, 1583), 'DE': (400, 1601),
+    'AU': (400, 1583), 'DE': (400, 1601),
     'ES': (400, 1746), 'GB': (400, 842), 'LT': (400, 1975),
     'PL': (400, 2505),
 }
@@ -43,6 +46,22 @@ async def member_discount_eligible(identity: dict) -> bool:
     return billing.has_paid_features(await billing.wallet(billing.account_id(identity)))
 
 
+def _shipping_cents(weight: Decimal, country: str) -> int:
+    if country == 'US':
+        grams = weight * 1000
+        if grams <= US_SHIPPING_QUOTES[0][0]:
+            return US_SHIPPING_QUOTES[0][1]
+        # Interpolate measured quotes; above 4.4 kg extend the last segment.
+        for (low_weight, low_cost), (high_weight, high_cost) in zip(US_SHIPPING_QUOTES, US_SHIPPING_QUOTES[1:]):
+            if grams <= high_weight:
+                break
+        cents = low_cost + (grams - low_weight) * (high_cost - low_cost) / (high_weight - low_weight)
+    else:
+        base, per_kg = SHIPPING_RATES.get(country, DEFAULT_SHIPPING_RATE)
+        cents = Decimal(base) + weight * per_kg
+    return int(cents.to_integral_value(rounding=ROUND_HALF_UP))
+
+
 def price_order(cost: float, weight: float, country: str = 'US', *, member: bool = False) -> OrderPricing:
     cost, weight = Decimal(str(cost)), Decimal(str(weight))
     if not cost.is_finite() or cost <= 0 or not weight.is_finite() or weight < 0:
@@ -54,8 +73,7 @@ def price_order(cost: float, weight: float, country: str = 'US', *, member: bool
     member_target = (cost * 100 / (1 - TARGET_BRICK_MARGIN)).to_integral_value(rounding=ROUND_CEILING)
     full_parts = int((member_target / Decimal('0.8')).to_integral_value(rounding=ROUND_CEILING))
     parts = int((Decimal(full_parts) * Decimal('0.8')).to_integral_value(rounding=ROUND_HALF_UP)) if member else full_parts
-    base, per_kg = SHIPPING_RATES.get(country, DEFAULT_SHIPPING_RATE)
-    shipping = int((Decimal(base) + weight * per_kg).to_integral_value(rounding=ROUND_HALF_UP))
+    shipping = _shipping_cents(weight, country)
     return OrderPricing(full_parts_cents=full_parts, parts_cents=parts, shipping_cents=shipping,
         member_discount_cents=full_parts-parts, member_discount_percent=MEMBER_DISCOUNT_PERCENT if member else 0,
         full_total_cents=full_parts+shipping, total_cents=parts+shipping, shipping_country=country)

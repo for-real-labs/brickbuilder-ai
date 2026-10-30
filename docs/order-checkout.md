@@ -116,16 +116,35 @@ Round the member target and regular price upward to whole cents, then round the
 member charge half up. Supplier coupons are not assumed. Payment fees, postcard
 costs and extra promotional discounts are outside this brick margin target.
 
-Shipping is separate and excluded from the member discount. Rates were calibrated
-on October 29, 2026 using the previous two months of Brickwith account receipts,
-matched by supplier order ID. A supplier purchase covering more than one customer
-order counts once. Cancelled purchases are excluded. The US fit has 14 matched
-supplier shipments; Australia, Germany, Spain, the UK, Lithuania and Poland each
-have one. US and fallback rates use a linear fit; single-country observations use
-a $4 base plus weight-based rate. These are estimates, not live carrier quotes;
-small international samples and large parcels can differ from actual charges.
-Recalibrate as more receipts become available. Avoid committing private customer
-or supplier order details.
+Shipping is separate, has no added margin, and is excluded from the member discount.
+US standard shipping uses direct Brickwith checkout quotes to the saved Chicago
+destination, tested October 29, 2026. Prices interpolate between these measured
+parts weights, rounding half up to cents:
+
+| Parts weight | Standard shipping |
+| --- | --- |
+| 16 g | $4.08 |
+| 160 g | $6.41 |
+| 220 g | $7.21 |
+| 550 g | $13.44 |
+| 1.1 kg | $22.68 |
+| 2.2 kg | $41.57 |
+| 4.4 kg | $81.29 |
+
+The two light samples used 100/1,000 medium-nougat 3673 pins (0.16 g each).
+The remaining samples used 100/250/500/1,000/2,000 dark-tan 3001 bricks (2.2 g each).
+Use exact catalog weights; the checkout rounds its displayed kg weight. Below
+16 g, charge the smallest observed quote, $4.08. Above 4.4 kg, extrapolate the last
+segment (about $18.05 per additional kg). These are estimates from one US
+destination, not live carrier quotes; other ZIP codes and larger parcels may vary.
+
+Other countries retain the previous two-month receipt calibration, matched by
+supplier order ID with shared purchases counted once and cancelled purchases
+excluded. Australia, Germany, Spain, the UK, Lithuania and Poland each have one
+matched shipment; these use a $4 base plus a weight rate. Unmeasured countries
+use the pooled receipt fit. US cart measurements do not establish international
+rates. Recalibrate as more direct quotes become available, without committing
+private addresses or order details.
 
 The browser refreshes quotes when entering checkout, changing country or changing
 identity. Cached catalog-only prices cannot be used as retail quotes. The server

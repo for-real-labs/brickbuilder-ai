@@ -16,8 +16,30 @@ def test_margin_is_retained_after_member_discount_and_shipping_is_separate():
     assert (member.parts_cents - 10000) / member.parts_cents == .2
     assert member.member_discount_cents == 3125
     assert member.full_total_cents == regular.total_cents
-    assert regular.shipping_cents == member.shipping_cents == 2348
-    assert member.total_cents == 14848
+    assert regular.shipping_cents == member.shipping_cents == 2100
+    assert member.total_cents == 14600
+
+
+@pytest.mark.parametrize('weight,cents', [
+    (.016, 408), (.16, 641), (.22, 721), (.55, 1344),
+    (1.1, 2268), (2.2, 4157), (4.4, 8129),
+])
+def test_us_shipping_matches_direct_brickwith_standard_quotes(weight, cents):
+    assert pricing.price_order(100, weight).shipping_cents == cents
+
+
+@pytest.mark.parametrize('weight,cents', [(0, 408), (.001, 408), (.088, 525), (.825, 1806), (6.6, 12101)])
+def test_us_shipping_interpolates_and_extends_the_measured_weight_curve(weight, cents):
+    assert pricing.price_order(100, weight).shipping_cents == cents
+
+
+def test_shipping_depends_on_weight_not_brick_price_or_membership():
+    assert pricing.price_order(3, .22).shipping_cents == pricing.price_order(200, .22, member=True).shipping_cents == 721
+    # Crossing a measured weight must never lower the shipping charge.
+    weights = [.0159, .016, .0161, .1599, .16, .1601, .2199, .22, .2201,
+               .5499, .55, .5501, 1.0999, 1.1, 1.1001, 2.1999, 2.2, 2.2001, 4.3999, 4.4, 4.4001]
+    charges = [pricing.price_order(100, weight).shipping_cents for weight in weights]
+    assert charges == sorted(charges)
 
 
 @pytest.mark.parametrize('cost', [.01, .37, 10, 42.11, 107.02, 172.78])
