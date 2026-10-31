@@ -368,10 +368,11 @@ def main():
     import ldraw_tools.document as document
 
     instructions = '--instructions' in sys.argv
-    source, output, library = map(Path, [arg for arg in sys.argv[1:] if arg != '--instructions'])
+    publication = '--publication' in sys.argv
+    source, output, library = map(Path, [arg for arg in sys.argv[1:] if arg not in {'--instructions', '--publication'}])
     common.CACHE = document.CACHE = output.parent / 'cache'
     parts = common.get_parts(library)
-    if instructions:
+    if publication:
         from ldraw_tools.validation import validate_file
         original, diagnostics = validate_file(source, parts, assembly=True, instance_limit=MAX_INSTANCES)
         require_valid_geometry(diagnostics, output)

@@ -148,6 +148,21 @@ async def run():
         disconnected = '0 FILE main.ldr\n' + placement(0, 0, 0, '3001.dat') + placement(400, 0, 0, '3001.dat')
         response = await client.post('/integration/instructions', content=disconnected.encode())
         assert response.status_code == 422 and 'Repair disconnected' in response.text
+    # Publication's immutable review must reject both real Peacock failure modes.
+    # Keep these independent of catalog checks and the provider's self-review.
+    from brickbuilder_integration.instruction_policy import review_instructions, TOOLKIT_ROOT
+    import settings
+    header = '0 FILE main.ldr\n0 Collision regression\n0 Name: main.ldr\n0 Author: Runtime test\n0 !LDRAW_ORG Model\n'
+    regressions = [
+        '1 85 -30 -96 30 0 0 1 0 1 0 -1 0 0 27925.dat\n'
+        '1 85 -10 -96 30 0 0 1 0 1 0 -1 0 0 27925.dat\n',
+        '1 323 -40 -120 50 1 0 0 0 1 0 0 0 1 22885.dat\n'
+        '1 322 -30 -88 20 1 0 0 0 1 0 0 0 1 3021.dat\n',
+    ]
+    for placements in regressions:
+        feedback = await asyncio.to_thread(review_instructions, (header + placements).encode(), TOOLKIT_ROOT, settings.LDRAW_DIR)
+        assert feedback['passed'] is False, feedback
+        assert any(d['code'] == 'assembly.material_overlap' for d in feedback['diagnostics']), feedback
     assert len(worker.generation_usage(chat['id'], generation)['calls']) == 4
     # Historical preview metadata survives the rollback, but cannot be
     # exported through the restored complete-generation contract.

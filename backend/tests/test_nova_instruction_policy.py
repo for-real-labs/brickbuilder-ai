@@ -74,7 +74,7 @@ def test_review_runs_exact_snapshot_unprivileged_and_requires_export(tmp_path, m
     monkeypatch.setattr(policy.os, 'chown', lambda *args: None)
     def run(args, **kwargs):
         assert Path(args[2]).read_bytes() == b'original MPD'
-        assert args[-1] == '--instructions'
+        assert args[-2:] == ['--instructions', '--publication']
         assert kwargs['user'] == 65534 and kwargs['extra_groups'] == []
         assert kwargs['env']['PYTHONPATH'] == str(tmp_path)
         output = Path(args[3])

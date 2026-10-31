@@ -27,7 +27,7 @@ def review_instructions(source: bytes, toolkit: Path, library: Path) -> dict:
         model.write_bytes(source)
         try:
             subprocess.run([str(toolkit / '.venv/bin/python'), str(Path(__file__).with_name('flatten.py')),
-                            str(model), str(output), str(library), '--instructions'],
+                            str(model), str(output), str(library), '--instructions', '--publication'],
                            cwd=toolkit, user=account.pw_uid, group=account.pw_gid, extra_groups=[],
                            env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(toolkit),
                                 'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(root)},
