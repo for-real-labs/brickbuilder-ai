@@ -330,3 +330,17 @@ def test_wheels_set_ground_below_chassis_so_car_keeps_connected_build_order():
     assert foundation == set()
     assert flatten.connected_instruction_order(placements(3, [0, 0, -24]),
                                                stud_edges((0, 2), (1, 2)), foundation) == [0, 2, 1]
+
+
+@pytest.mark.parametrize('code', ['assembly.body_overlap', 'assembly.duplicate', 'geometry.incomplete'])
+def test_validation_errors_cannot_be_published_as_warnings(tmp_path, code):
+    output = tmp_path / 'instructions.ldr'
+    with pytest.raises(flatten.DisconnectedInstructions, match='Validation errors'):
+        flatten.require_valid_geometry([{'code': code, 'severity': 'error'}], output)
+    import json
+    assert json.loads(output.with_suffix('.review.json').read_text())['diagnostics'][0]['code'] == code
+    assert not output.exists()
+
+
+def test_coverage_warnings_do_not_claim_or_require_full_material_proof(tmp_path):
+    flatten.require_valid_geometry([{'code': 'coverage.collision_review', 'severity': 'warning'}], tmp_path / 'instructions.ldr')

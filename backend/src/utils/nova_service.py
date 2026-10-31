@@ -153,7 +153,7 @@ class NovaService:
 
     async def generation_ready(self) -> dict:
         info = await self.ready()
-        if info.get('instruction_publication_version') != 1:
+        if info.get('instruction_publication_version') != 2:
             raise ValueError('Rebuild Nova with instruction checks before publication before starting All parts builds.')
         return info
 

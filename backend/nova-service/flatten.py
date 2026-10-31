@@ -352,6 +352,16 @@ def physical_occurrences(physical):
     return occurrences
 
 
+def require_valid_geometry(diagnostics, output):
+    errors = [item for item in diagnostics if item.get('severity') == 'error']
+    if errors:
+        output.with_suffix('.review.json').write_text(json.dumps({
+            'error': 'Validation failed; repair the reported parts before publication.',
+            'diagnostics': errors[:50],
+        }), encoding='utf-8')
+        raise DisconnectedInstructions('Validation errors block publication')
+
+
 def main():
     import sys
     import ldraw_tools.common as common
@@ -360,15 +370,31 @@ def main():
     instructions = '--instructions' in sys.argv
     source, output, library = map(Path, [arg for arg in sys.argv[1:] if arg != '--instructions'])
     common.CACHE = document.CACHE = output.parent / 'cache'
-    original = document.parse_source(source)
     parts = common.get_parts(library)
+    if instructions:
+        from ldraw_tools.validation import validate_file
+        original, diagnostics = validate_file(source, parts, assembly=True, instance_limit=MAX_INSTANCES)
+        require_valid_geometry(diagnostics, output)
+        if original is None:
+            raise DisconnectedInstructions('Validation did not produce a model')
+    else:
+        original = document.parse_source(source)
     physical, physical_parts = document.physical_context(original, parts)
     occurrences = physical_occurrences(physical)
     assemblies = {}
     if instructions:
-        from ldraw_tools.geometry import analyze_geometry
+        from ldraw_tools.geometry import analyze_geometry, profiles
+        from material_collision import review_material
+        collisions = review_material(occurrences, profiles())
+        if collisions:
+            output.with_suffix('.review.json').write_text(json.dumps({
+                'error': 'Solid parts overlap; repair the reported placements.',
+                'diagnostics': collisions,
+            }), encoding='utf-8')
+            raise DisconnectedInstructions('Solid parts overlap')
         geometry = analyze_geometry(original, parts, contacts='all', detail='full',
                                     output_limit=MAX_INSTANCES, pair_limit=20, instance_limit=MAX_INSTANCES)
+        require_valid_geometry(geometry['diagnostics'], output)
         if (geometry['complete'] is not True or geometry['contacts_checked'] is not True
                 or geometry['contacts_truncated'] or geometry['instances_truncated']
                 or geometry['occurrence_count'] != len(occurrences)

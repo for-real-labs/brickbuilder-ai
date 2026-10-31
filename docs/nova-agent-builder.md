@@ -354,3 +354,23 @@ and each API usage record includes the speed used. If Anthropic rejects a fast
 request for capacity (429 or 529) before streaming starts, Nova tries once at
 standard speed. Other models and native Claude login sessions keep their existing
 settings. See [Anthropic fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode).
+
+## Physical collision publication checks
+
+Publication policy v2 independently validates the captured MPD with the immutable
+Nova toolkit. Any validation error blocks publication and returns repair evidence
+to the agent; the upstream publisher's warning-only failure behavior cannot waive
+this check. The backend requires policy v2 before starting new All parts builds.
+
+Before connection and insertion-order review, supplemental solid-material checks
+cover the top skin of curved tile 27925, hollow side studs on 11211 and 22885, and
+top skins/exterior walls of Nova's curated rectangular parts. Checks use inscribed
+material volumes with transformed orientations and a small contact tolerance;
+sockets and hollow stud centres stay empty. Collision feedback identifies both
+placements and asks the agent to move or replace them before retrying publication.
+Regression cases reproduce the Peacock Car's overlapping seat tiles and backrest
+studs, and preserve legal stacked and side-stud/socket connections.
+
+These checks expand coverage; they do not certify every LEGO shape, clutch, or
+structural property. Unsupported geometry retains Nova's coverage warnings.
+Existing saved generations are not rewritten by this change.

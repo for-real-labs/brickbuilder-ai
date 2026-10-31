@@ -10,7 +10,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
-PUBLICATION_VERSION = 1
+PUBLICATION_VERSION = 2
 MAX_MODEL_BYTES = 16 * 1024 * 1024
 TOOLKIT_ROOT = Path('/opt/ldraw-nova')
 
@@ -58,7 +58,7 @@ def install_instruction_policy(tools, settings):
         content = source.read_bytes()
         if len(content) > MAX_MODEL_BYTES:
             raise tools.ToolError('Model exceeds the 16 MB instruction source limit')
-        ctx.emit('progress', {'summary': 'Checking connections and instruction placement order.'})
+        ctx.emit('progress', {'summary': 'Checking solid collisions, validation, and instruction placement order.'})
         try:
             # The owner toolkit is private and has writable discovery caches.
             # Independent review uses only the image's immutable toolkit.
@@ -67,7 +67,7 @@ def install_instruction_policy(tools, settings):
             raise tools.ToolError('Instruction review could not finish. Publication is blocked; retry the check.') from None
         if report.get('passed') is not True:
             return tools.ToolResult(json.dumps({**report, 'reason': report.get('error'), 'error':
-                'Publication blocked: repair disconnected or blocked pieces, then retry publish_model. '
+                'Publication blocked: repair invalid, overlapping, disconnected or blocked pieces, then retry publish_model. '
                 'Use the full connector report to verify every remaining piece. A warning about missing '
                 'metadata is not evidence of a connection.'}))
         # The existing publisher reads the same captured bytes that were checked.
@@ -81,7 +81,9 @@ def install_instruction_policy(tools, settings):
 
     schema['function']['description'] += (
         ' Publication requires complete connector evidence and a connected instruction insertion sequence. '
-        'Repair any reported remaining pieces and retry; disconnected warnings cannot be waived.')
+        'Repair reported collisions and invalid or remaining pieces before retrying. '
+        'Curved tiles and side studs need clearance: an attached part can still intersect solid plastic. '
+        'Validation errors cannot be waived by visual review.')
     tools.TOOLS['publish_model'] = (schema, checked_publish)
     tools.t_publish_model = checked_publish
     tools._brickbuilder_instruction_policy = True

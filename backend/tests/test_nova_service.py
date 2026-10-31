@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock
 from src.utils.nova_service import NovaService, read_export
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'parts_catalog_version': 1, 'instruction_plan_version': 4, 'instruction_publication_version': 1}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'parts_catalog_version': 1, 'instruction_plan_version': 4, 'instruction_publication_version': 2}
 
 
 @pytest.mark.parametrize('versions,error', [({}, 'cost limit'),
@@ -410,10 +410,11 @@ def test_instruction_failure_returns_repair_feedback_without_runtime_source():
     asyncio.run(run())
 
 
-def test_old_runtime_cannot_start_a_build_without_publication_instruction_checks():
+@pytest.mark.parametrize('version', [None, 1])
+def test_old_runtime_cannot_start_a_build_without_publication_instruction_checks(version):
     async def run():
         async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
-            service.ready = AsyncMock(return_value={k: v for k, v in VERSIONS.items() if k != 'instruction_publication_version'})
+            service.ready = AsyncMock(return_value={**VERSIONS, 'instruction_publication_version': version})
             service.configure_model = AsyncMock()
             with pytest.raises(ValueError, match='instruction checks before publication'):
                 await service.run(SimpleNamespace(), 'openai', AsyncMock())

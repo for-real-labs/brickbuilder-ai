@@ -61,7 +61,7 @@ async def run():
         runtime = (await client.get('/integration/runtime')).json()
         assert runtime == worker.runtime()
         assert 'preview_build_version' not in runtime and 'build_review_version' not in runtime
-        assert runtime['instruction_plan_version'] == 4 and runtime['instruction_publication_version'] == 1
+        assert runtime['instruction_plan_version'] == 4 and runtime['instruction_publication_version'] == 2
         assert runtime['generation_cost_limit_usd'] == 20 and runtime['parts_catalog_version'] == 1
     store = get_store()
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
