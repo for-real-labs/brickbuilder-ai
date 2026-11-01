@@ -7,15 +7,18 @@ export function captureTransparentPreview(
   camera: THREE.Camera,
 ): string {
   const background = scene.background;
+  const fog = scene.fog;
   const clearAlpha = renderer.getClearAlpha();
 
   try {
     scene.background = null;
+    scene.fog = null;
     renderer.setClearAlpha(0);
     renderer.render(scene, camera);
     return renderer.domElement.toDataURL('image/png');
   } finally {
     scene.background = background;
+    scene.fog = fog;
     renderer.setClearAlpha(clearAlpha);
   }
 }

@@ -17,6 +17,8 @@ import { captureTransparentPreview } from '../utils/captureTransparentPreview';
 import { adjustModelCamera, configureModelViewRange } from '../utils/adjustModelCamera';
 import { disposeLDrawScene, instantiateLDraw, planLDrawInstances } from '../utils/instancedLDraw';
 import { createBaseplateStuds } from '../utils/baseplateStuds';
+import { buildDioramaStage, createDioramaLighting, fitDioramaCamera, getDioramaViewDistance, getDioramaViewBounds, updateDioramaFog, prepareDioramaBricks, DIORAMA_BACKGROUND } from '../utils/dioramaPresentation';
+import { createDioramaEffects } from '../utils/dioramaEffects';
 
 // Build a simple stylized room with a table, sized to fit the model.
 const buildRoom = (
@@ -392,7 +394,7 @@ export const captureCleanPreview = (
     const center = bbox.getCenter(new THREE.Vector3());
     const size = bbox.getSize(new THREE.Vector3());
     const maxDimension = Math.max(size.x, size.y, size.z);
-    const distance = maxDimension * 1.8;
+    const distance = getDioramaViewDistance(camera, bbox);
 
     const offset = new THREE.Vector3(-1, 0.5, 1)
       .normalize()
@@ -442,7 +444,7 @@ const captureScreenshots = (
   const center = bbox.getCenter(new THREE.Vector3());
   const size = bbox.getSize(new THREE.Vector3());
   const maxDimension = Math.max(size.x, size.y, size.z);
-  const distance = maxDimension * 1.8;
+  const distance = getDioramaViewDistance(camera, bbox);
   
   // Angle 1: Front-left view
   camera.position.copy(center).add(new THREE.Vector3(-1, 0.5, 1).normalize().multiplyScalar(distance));
@@ -639,6 +641,7 @@ const capturePreviewVideo = async (
   const originalTarget = controls.target.clone();
   const originalBackground = scene.background;
   const originalAutoRotate = controls.autoRotate;
+  const originalFog = scene.fog;
   const room = scene.getObjectByName('display-room');
   const baseplate = scene.getObjectByName('baseplate');
   const rulerGrid = scene.getObjectByName('ruler-grid');
@@ -658,7 +661,7 @@ const capturePreviewVideo = async (
   const center = bbox.getCenter(new THREE.Vector3());
   const size = bbox.getSize(new THREE.Vector3());
   const maxDimension = Math.max(size.x, size.y, size.z);
-  const distance = maxDimension * 1.8;
+  const distance = getDioramaViewDistance(camera, bbox);
   const startAngle = THREE.MathUtils.degToRad(15);
   const baseOffset = new THREE.Vector3(-1, 0.5, 1)
     .normalize()
@@ -675,6 +678,7 @@ const capturePreviewVideo = async (
   if (baseplate) baseplate.visible = false;
   if (rulerGrid) rulerGrid.visible = false;
   scene.background = new THREE.Color(0xffffff);
+  scene.fog = null;
 
   const videoBuildAnimation = animateFirstSpin
     ? createBuildAnimation(model as THREE.Group, bbox, maxDimension, firstSpinDurationMs)
@@ -737,6 +741,7 @@ const capturePreviewVideo = async (
     completeBuildAnimation(videoBuildAnimation);
     scene.background = originalBackground;
     controls.autoRotate = originalAutoRotate;
+    scene.fog = originalFog;
     if (room) room.visible = roomWasVisible;
     if (baseplate) baseplate.visible = baseplateWasVisible;
     if (rulerGrid) rulerGrid.visible = rulerGridWasVisible;
@@ -1660,6 +1665,8 @@ export function ThreeLDRViewer({
     const catalogAbort = new AbortController();
     let drag: ReturnType<typeof attachGenerationDrag> | undefined;
     let removeResizeListener: (() => void) | undefined;
+    let lighting: ReturnType<typeof createDioramaLighting> | undefined;
+    let effects: ReturnType<typeof createDioramaEffects> | undefined;
     const initThreeJS = async () => {
       try {
         const container = containerRef.current!;
@@ -1668,10 +1675,10 @@ export function ThreeLDRViewer({
         
         // Scene setup
         const scene = new THREE.Scene();
-        scene.background = presentation === 'model' ? null : new THREE.Color(0xf5f0e8); // warm off-white
+        scene.background = presentation === 'model' ? null : new THREE.Color(DIORAMA_BACKGROUND);
 
         // Camera setup
-        const camera = new THREE.PerspectiveCamera(45, width / height, 1, 10000);
+        const camera = new THREE.PerspectiveCamera(presentation === 'room' && !generationDrops ? 35 : 45, width / height, 1, 10000);
         camera.position.set(150, 200, 250);
 
         // Renderer setup
@@ -1680,7 +1687,7 @@ export function ThreeLDRViewer({
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         renderer.setSize(width, height);
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 0.85;
+        renderer.toneMappingExposure = 1;
         container.appendChild(renderer.domElement);
 
         // Environment setup (soft studio lighting for reflections)
@@ -1692,30 +1699,11 @@ export function ThreeLDRViewer({
 
         // Enable shadows for the room
         renderer.shadowMap.enabled = true;
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        const floatTargets = renderer.extensions.has('EXT_color_buffer_float');
+        renderer.shadowMap.type = floatTargets ? THREE.VSMShadowMap : THREE.PCFSoftShadowMap;
 
-        // Key light (casts shadows) – kept subtle since RoomEnvironment already lights the scene
-        const keyLight = new THREE.DirectionalLight(0xfff5e6, 0.8);
-        keyLight.position.set(200, 400, 200);
-        keyLight.castShadow = true;
-        keyLight.shadow.mapSize.width = 1024;
-        keyLight.shadow.mapSize.height = 1024;
-        keyLight.shadow.camera.near = 1;
-        keyLight.shadow.camera.far = 2000;
-        keyLight.shadow.camera.left = -500;
-        keyLight.shadow.camera.right = 500;
-        keyLight.shadow.camera.top = 500;
-        keyLight.shadow.camera.bottom = -500;
-        scene.add(keyLight);
-
-        // Soft fill light from opposite side
-        const fillLight = new THREE.DirectionalLight(0xe8f0ff, 0.3);
-        fillLight.position.set(-150, 200, -100);
-        scene.add(fillLight);
-
-        // Ambient to fill darkest areas
-        const ambient = new THREE.AmbientLight(0xffffff, 0.15);
-        scene.add(ambient);
+        const touchDevice = window.matchMedia('(pointer: coarse)').matches;
+        lighting = createDioramaLighting(scene, touchDevice ? 1024 : 2048);
 
         // Controls setup
         const controls = new OrbitControls(camera, renderer.domElement);
@@ -1724,6 +1712,10 @@ export function ThreeLDRViewer({
         controls.dampingFactor = 0.1;
         controls.autoRotate = autoRotate;
         controls.autoRotateSpeed = 1.5;
+        let viewAdjusted = Boolean(initialCameraState);
+        let modelBounds: THREE.Box3 | undefined;
+        let dioramaExtent = 1;
+        controls.addEventListener('start', () => { viewAdjusted = true; });
 
         // Disable auto-rotate when user interacts (only if auto-rotate is enabled)
         if (autoRotate && interactionEnabled) {
@@ -1767,7 +1759,7 @@ export function ThreeLDRViewer({
           
           // Configure the loader
           lDrawLoader.setConditionalLineMaterial(LDrawConditionalLineMaterial);
-          lDrawLoader.smoothNormals = false;
+          lDrawLoader.smoothNormals = true;
           
           // Determine what to load
           let modelSource: string;
@@ -1826,25 +1818,7 @@ export function ThreeLDRViewer({
                 setMeshesReady(true);
               }
 
-              // Soften brick edge lines by making them lighter and semi-transparent
-              if (softenEdges) {
-                model.traverse((obj) => {
-                  if (obj.type === 'LineSegments' || obj.type === 'Line2' || obj.type === 'Line') {
-                    const line = obj as THREE.LineSegments;
-                    if (line.material) {
-                      const mats = Array.isArray(line.material) ? line.material : [line.material];
-                      mats.forEach((mat) => {
-                        mat.transparent = true;
-                        mat.opacity = 0.2;
-                        if ('color' in mat) {
-                          (mat as any).color.lerp(new THREE.Color(0x999999), 0.6);
-                        }
-                        mat.needsUpdate = true;
-                      });
-                    }
-                  }
-                });
-              }
+              prepareDioramaBricks(model, softenEdges);
 
               // Add outline effect to new parts if highlighting is enabled
               if (highlightNewParts && newPartsContent) {
@@ -1853,20 +1827,33 @@ export function ThreeLDRViewer({
 
               // Calculate bounding box and adjust camera to fit model optimally
               const bbox = new THREE.Box3().setFromObject(model);
+              modelBounds = getDioramaViewBounds(bbox, showBaseplate);
               const size = bbox.getSize(new THREE.Vector3());
               const maxDimension = Math.max(size.x, size.y, size.z);
               const center = bbox.getCenter(new THREE.Vector3());
+              dioramaExtent = maxDimension;
               configureModelViewRange(camera, controls, maxDimension);
+              lighting?.fit(bbox);
               
-              // Calculate minimum distance needed to fit the model (50% more zoomed out)
-              const minDistance = maxDimension * 1.8 / (generationDrops ? Math.min(camera.aspect, 1) : 1);
+              // Fit the miniature view to the current viewport, including portrait screens.
+              const minDistance = presentation === 'room' && !generationDrops
+                ? getDioramaViewDistance(camera, modelBounds)
+                : maxDimension * 1.8 / (generationDrops ? Math.min(camera.aspect, 1) : 1);
 
               buildRulerGrid(scene, bbox, maxDimension);
               const rulerGrid = scene.getObjectByName('ruler-grid');
               if (rulerGrid) rulerGrid.visible = false;
 
               // ── Build display room with table ──
-              if (presentation === 'room') buildRoom(scene, bbox, center, size, maxDimension, showBaseplate);
+              if (presentation === 'room') {
+                if (generationDrops) buildRoom(scene, bbox, center, size, maxDimension, showBaseplate);
+                else buildDioramaStage(scene, bbox, showBaseplate);
+              }
+              // Keep instruction highlights, transparent exports and falling-brick physics lightweight.
+              if (presentation === 'room' && !generationDrops && currentStepIndex === undefined
+                && !touchDevice && floatTargets) {
+                effects = createDioramaEffects(renderer, scene, camera, maxDimension);
+              }
               
               if (presentation === 'model' && initialCameraState) {
                 camera.position.set(initialCameraState.position.x, initialCameraState.position.y, initialCameraState.position.z);
@@ -1898,8 +1885,11 @@ export function ThreeLDRViewer({
                 // Match the front-left screenshot angle
                 const camOffset = new THREE.Vector3(-1, 0.5, 1).normalize().multiplyScalar(minDistance);
                 camera.position.copy(center).add(camOffset);
-
                 controls.target.copy(center);
+                if (presentation === 'room' && !generationDrops) {
+                  fitDioramaCamera(camera, modelBounds);
+                  modelBounds.getCenter(controls.target);
+                }
                 
                 // Make sure controls are updated
                 controls.update();
@@ -1958,6 +1948,7 @@ export function ThreeLDRViewer({
                     const oldParts = new THREE.Group();
                     [...model.children].forEach(part => oldParts.add(part));
                     disposeLDrawScene(oldParts);
+                    prepareDioramaBricks(catalog, softenEdges);
                     [...catalog.children].forEach(part => model.add(part));
                     return createExplodePhysics(model, table, true, () => disposed);
                   }).then(physics => {
@@ -2137,9 +2128,11 @@ export function ThreeLDRViewer({
             baseplate.visible = isAbove;
           }
 
+          updateDioramaFog(scene, camera.position.distanceTo(controls.target), dioramaExtent);
           updateRulerLabelScales(scene, camera, renderer);
           
-          renderer.render(scene, camera);
+          if (effects && !scene.getObjectByName('ruler-grid')?.visible) effects.render();
+          else renderer.render(scene, camera);
         };
         animate();
 
@@ -2147,7 +2140,12 @@ export function ThreeLDRViewer({
         removeResizeListener = observeElementSize(container, (newWidth, newHeight) => {
           camera.aspect = newWidth / newHeight;
           camera.updateProjectionMatrix();
+          if (modelBounds && !viewAdjusted && presentation === 'room' && !generationDrops) {
+            const distance = getDioramaViewDistance(camera, modelBounds);
+            camera.position.sub(controls.target).setLength(distance).add(controls.target);
+          }
           renderer.setSize(newWidth, newHeight);
+          effects?.resize(newWidth, newHeight);
         });
 
       } catch (error) {
@@ -2165,6 +2163,8 @@ export function ThreeLDRViewer({
       catalogAbort.abort();
       drag?.dispose();
       removeResizeListener?.();
+      effects?.dispose();
+      lighting?.dispose();
       sceneRef.current.controls?.dispose();
       if (onExportCaptureReady) {
         onExportCaptureReady(null);

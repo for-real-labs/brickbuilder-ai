@@ -21,9 +21,12 @@ describe('transparent model previews', () => {
     const scene = new THREE.Scene();
     const background = new THREE.Color(0xf5f0e8);
     scene.background = background;
+    const fog = new THREE.FogExp2(0x788b80, 0.01);
+    scene.fog = fog;
     const camera = new THREE.PerspectiveCamera();
     const renderer = previewRenderer(() => {
       expect(scene.background).toBeNull();
+      expect(scene.fog).toBeNull();
       expect(renderer.getClearAlpha()).toBe(0);
       return 'data:image/png;base64,preview';
     });
@@ -32,6 +35,7 @@ describe('transparent model previews', () => {
     expect(renderer.domElement.toDataURL).toHaveBeenCalledWith('image/png');
     expect(renderer.render).toHaveBeenCalledWith(scene, camera);
     expect(scene.background).toBe(background);
+    expect(scene.fog).toBe(fog);
     expect(renderer.getClearAlpha()).toBe(1);
   });
 
@@ -39,11 +43,14 @@ describe('transparent model previews', () => {
     const scene = new THREE.Scene();
     const background = new THREE.Color('white');
     scene.background = background;
+    const fog = new THREE.FogExp2(0x788b80, 0.01);
+    scene.fog = fog;
     const renderer = previewRenderer(() => { throw new Error('capture failed'); });
     renderer.setClearAlpha(0.5);
 
     expect(() => captureTransparentPreview(renderer, scene, new THREE.Camera())).toThrow('capture failed');
     expect(scene.background).toBe(background);
+    expect(scene.fog).toBe(fog);
     expect(renderer.getClearAlpha()).toBe(0.5);
   });
 
@@ -51,6 +58,8 @@ describe('transparent model previews', () => {
     const scene = new THREE.Scene();
     const background = new THREE.Color(0xf5f0e8);
     scene.background = background;
+    const fog = new THREE.FogExp2(0x788b80, 0.01);
+    scene.fog = fog;
     const model = new THREE.Mesh(new THREE.BoxGeometry(40, 24, 20));
     model.name = 'ldraw-model';
     scene.add(model);
@@ -68,6 +77,7 @@ describe('transparent model previews', () => {
     const originalTarget = controls.target.clone();
     const renderer = previewRenderer(() => {
       expect(scene.background).toBeNull();
+      expect(scene.fog).toBeNull();
       expect(renderer.getClearAlpha()).toBe(0);
       expect(renderer.getSize(new THREE.Vector2())).toEqual(new THREE.Vector2(1024, 1024));
       expect(camera.aspect).toBe(1);
@@ -80,6 +90,7 @@ describe('transparent model previews', () => {
     try {
       expect(captureCleanPreview(camera, controls, renderer, scene)).toBe(fail ? null : 'data:image/png;base64,model');
       expect(scene.background).toBe(background);
+      expect(scene.fog).toBe(fog);
       expect(renderer.getClearAlpha()).toBe(1);
       expect(renderer.getSize(new THREE.Vector2())).toEqual(new THREE.Vector2(800, 400));
       expect(camera.aspect).toBe(2);
