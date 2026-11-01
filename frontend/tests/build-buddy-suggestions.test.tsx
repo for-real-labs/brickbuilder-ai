@@ -16,7 +16,7 @@ vi.mock('../src/hooks/useGenerationActivity', async () => ({
   ...await vi.importActual('../src/hooks/useGenerationActivity'),
   useGenerationActivity: () => ({ generations: [], trackGeneration: vi.fn(), dismissGeneration: vi.fn() }),
 }));
-vi.mock('../src/services/localProvidersApi', () => ({ isLocalDevelopment: () => false }));
+vi.mock('../src/services/localProvidersApi', () => ({ isLocalDevelopment: () => true, LocalProvidersApiService: { getProviderStatus: async () => ({ cli_connected: true }) } }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 0, brick_count: 0 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
 vi.mock('../src/components/FallingBricks', () => ({ default: () => null }));

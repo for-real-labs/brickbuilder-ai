@@ -8,7 +8,8 @@ import { startImageModel, waitForImageModel, downloadImageModel } from '../src/s
 import { convertModelFormat } from '../src/services/modelFormatConversion';
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: { access_token: 'owner-token' } }) }));
+const auth = vi.hoisted(() => ({ session: { access_token: 'owner-token' } as { access_token: string } | null, isSupabaseConfigured: true, loading: false }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../src/components/ModelMeshPreview', () => ({ ModelMeshPreview: () => <div>3D preview</div> }));
 vi.mock('../src/services/imageToModel', () => ({ startImageModel: vi.fn(), waitForImageModel: vi.fn(), downloadImageModel: vi.fn() }));
 vi.mock('../src/services/modelFormatConversion', () => ({ convertModelFormat: vi.fn() }));
@@ -28,6 +29,7 @@ async function select(file = new File(['image'], 'photo.png', { type: 'image/png
 }
 beforeEach(() => {
   vi.clearAllMocks();
+  auth.session = { access_token: 'owner-token' }; sessionStorage.clear();
   Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:model') });
   Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
   vi.mocked(startImageModel).mockResolvedValue('generation-id');
@@ -99,4 +101,28 @@ it('aborts result polling when leaving the page', async () => {
   const signal = vi.mocked(waitForImageModel).mock.calls[0][1];
   await act(async () => root.unmount());
   expect(signal.aborted).toBe(true);
+});
+
+
+it('requires signup before image generation and resumes the retained image after authentication', async () => {
+  auth.session = null;
+  mount(); await select();
+  await act(async () => button('Generate 3D model').click());
+  expect(startImageModel).not.toHaveBeenCalled();
+  expect(host.querySelector('[role=dialog]')?.textContent).toContain('claim 300 free credits');
+  auth.session = { access_token: 'signup-token' };
+  await act(async () => root.render(<MemoryRouter><ImageModelUploadCard output="3d" /></MemoryRouter>));
+  expect(startImageModel).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ name: 'photo.png' }), 'signup-token');
+  expect(host.querySelector('[role=dialog]')).toBeNull();
+});
+
+it('does not start a cancelled signup request when the user later signs in', async () => {
+  auth.session = null;
+  mount(); await select();
+  await act(async () => button('Generate 3D model').click());
+  act(() => host.querySelector<HTMLButtonElement>('[aria-label=Close]')!.click());
+  auth.session = { access_token: 'later-token' };
+  await act(async () => root.render(<MemoryRouter><ImageModelUploadCard output="3d" /></MemoryRouter>));
+  expect(startImageModel).not.toHaveBeenCalled();
+  expect(host.textContent).toContain('photo.png');
 });

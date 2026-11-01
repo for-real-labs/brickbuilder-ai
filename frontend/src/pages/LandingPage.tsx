@@ -60,9 +60,6 @@ import { startPolling } from '../utils/polling';
 import { useAnimatedGenerationStats } from '../hooks/useAnimatedGenerationStats';
 import { GetGenerationStatsApiService, type GenerationStats } from '../services/getGenerationStatsApi';
 
-// Toggle whether users must be logged in before starting a generation.
-const REQUIRE_LOGIN_FOR_GENERATION = false;
-
 // LocalStorage keys for persisting generated models
 const STORAGE_KEYS = {
   LDR_CONTENT: 'lastLdrContent',
@@ -153,7 +150,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const ldrawLanding = imageLandingPath === 'use-ai-to-edit-ldraw';
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const landingViewportRef = useLandingViewport(!ldrawLanding);
-  const { session, userProfile, loading: authLoading } = useAuth();
+  const { session, userProfile, loading: authLoading, isSupabaseConfigured } = useAuth();
   const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
@@ -328,7 +325,18 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   }, []);
   // Login modal state
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [pendingGenerateAfterLogin, setPendingGenerateAfterLogin] = useState(false);
+  const [pendingGenerateAfterLogin, setPendingGenerateAfterLogin] = useState<{ prompt: string; image: File | null; edit: boolean } | null>(null);
+  const requireGenerationSignup = (requestedPrompt: string, requestedImage: File | null, edit = false) => {
+    if (!isSupabaseConfigured && localDevelopment) return false;
+    if (authLoading) return true;
+    if (session) return false;
+    setPrompt(requestedPrompt);
+    setImgFile(requestedImage);
+    setPendingGenerateAfterLogin({ prompt: requestedPrompt, image: requestedImage, edit });
+    setShowLoginModal(true);
+    posthog.capture('generation_signup_gate_shown', { surface: 'landing', input_type: requestedImage ? 'image' : 'text', is_edit: edit });
+    return true;
+  };
 
   // Generate preview URL for uploaded image
   useEffect(() => {
@@ -356,6 +364,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         llmModel?: string;
         novaOptions?: NovaOptions;
         partsInventory?: PartsInventory;
+        resumeGeneration?: boolean;
+        edit?: boolean;
         image?: { name: string; type: string; base64: string } | null;
       };
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
@@ -370,6 +380,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         setPartsInventory(payload.partsInventory);
         setGenerationMethod('nova');
       }
+      if (payload.resumeGeneration) {
+        if (payload.generationMethod === '3d') setGenerationMethod('3d');
+        if (payload.threeDModel === 'sam3d' || payload.threeDModel === 'trellis') setThreeDModel(payload.threeDModel);
+        if (GENERATION_MODEL_OPTIONS.some(option => option.id === payload.llmModel)) setLlmModel(payload.llmModel!);
+      }
+      let restoredImage: File | null = null;
       if (payload.image && payload.image.base64) {
         try {
           const binary = atob(payload.image.base64);
@@ -379,10 +395,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           }
           const restored = new File([bytes], payload.image.name, { type: payload.image.type });
           setImgFile(restored);
+          restoredImage = restored;
         } catch (decodeErr) {
           console.warn('Failed to restore uploaded image after login:', decodeErr);
         }
       }
+      if (payload.resumeGeneration) setPendingGenerateAfterLogin({ prompt: payload.prompt || '', image: restoredImage, edit: Boolean(payload.edit) });
     } catch (err) {
       console.warn('Failed to parse pending landing state:', err);
     }
@@ -495,10 +513,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         novaOptions: { ...novaOptions, model: llmModel },
         partsInventory,
         image: imageData,
+        resumeGeneration: Boolean(pendingGenerateAfterLogin),
+        edit: pendingGenerateAfterLogin?.edit,
       };
       sessionStorage.setItem(PENDING_LANDING_STATE_KEY, JSON.stringify(payload));
     } catch (err) {
-      console.warn('Failed to persist landing state before login redirect:', err);
+      throw new Error('Unable to save your draft before sign-in. Try a smaller image.', { cause: err });
     }
   };
 
@@ -523,21 +543,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
     setInputValidationMessage(null);
 
+    if (requireGenerationSignup(requestedPrompt, requestedImage)) return;
+
     let novaAuthMode = novaOptions.authMode;
     if ((partsInventory || generationMethod === 'nova') && localDevelopment) {
       const mode = await checkNovaConnection(llmModel);
       if (!mode) return;
       novaAuthMode = mode;
-    }
-
-    if (REQUIRE_LOGIN_FOR_GENERATION && authLoading) {
-      return;
-    }
-
-    if (REQUIRE_LOGIN_FOR_GENERATION && !session) {
-      setShowLoginModal(true);
-      setPendingGenerateAfterLogin(true);
-      return;
     }
 
     // Clear previous results and errors
@@ -713,6 +725,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const submitModelEdit = async (existingTurnId?: number, requestedPrompt = prompt, requestedImage = imgFile) => {
     const model = landingModel.model;
     if (!model || modelBusy || preparingImage || editSubmittingRef.current || !requestedPrompt.trim()) return;
+    if (requireGenerationSignup(requestedPrompt, requestedImage, true)) return;
     editSubmittingRef.current = true;
     setCreateNewStage(null);
     setEditSubmitting(true);
@@ -916,14 +929,19 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     }
   };
 
-  // After a successful login from the modal, automatically continue generation
+  // Resume only after AuthContext exposes the new token; never reuse a guest closure.
   useEffect(() => {
-    if (pendingGenerateAfterLogin && session && !authLoading && !loading) {
-      setPendingGenerateAfterLogin(false);
-      onGenerate();
-    }
+    if (!pendingGenerateAfterLogin || !session || authLoading || loading) return;
+    if (pendingGenerateAfterLogin.edit && !landingModel.model) return;
+    const pending = pendingGenerateAfterLogin;
+    setPendingGenerateAfterLogin(null);
+    setShowLoginModal(false);
+    sessionStorage.removeItem(PENDING_LANDING_STATE_KEY);
+    posthog.capture('generation_signup_gate_completed', { surface: 'landing' });
+    if (pending.edit) void submitModelEdit(undefined, pending.prompt, pending.image);
+    else void onGenerate(pending.prompt, pending.image);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingGenerateAfterLogin, session, authLoading]);
+  }, [pendingGenerateAfterLogin, session, authLoading, loading, landingModel.model]);
 
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
@@ -993,12 +1011,14 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
       <LoginModal
         open={showLoginModal}
+        intent={pendingGenerateAfterLogin ? "claim_credits" : "sign_in"}
         onClose={() => {
           setShowLoginModal(false);
-          setPendingGenerateAfterLogin(false);
+          setPendingGenerateAfterLogin(null);
+          sessionStorage.removeItem(PENDING_LANDING_STATE_KEY);
         }}
         onSuccess={() => setShowLoginModal(false)}
-        redirectTo={imageLandingPath ? `/${imageLandingPath}` : "/"}
+        redirectTo={typeof window === 'undefined' ? '/' : window.location.pathname + window.location.search}
         onBeforeOAuthRedirect={savePendingLandingState}
       />
       <NovaProviderLoginModal provider={providerLogin} onClose={() => setProviderLogin(null)} onConnected={mode => {

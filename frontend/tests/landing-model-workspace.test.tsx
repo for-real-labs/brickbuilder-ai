@@ -35,7 +35,7 @@ vi.mock('../src/hooks/useGenerationActivity', async () => ({
   ...await vi.importActual('../src/hooks/useGenerationActivity'),
   useGenerationActivity: () => ({ generations: activity.rows, trackGeneration: activity.track, dismissGeneration: vi.fn() }),
 }));
-vi.mock('../src/services/localProvidersApi', () => ({ isLocalDevelopment: () => false }));
+vi.mock('../src/services/localProvidersApi', () => ({ isLocalDevelopment: () => true, LocalProvidersApiService: { getProviderStatus: async () => ({ cli_connected: true }) } }));
 vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ turns: [], startTurn: () => 1,
   routing: false, routeMessage: async () => ({ id: 1, intent: 'generate', confidence: 1 }),
   requestReply: vi.fn(), updateTurn: buddy.updateTurn, resetConversation: vi.fn() }) }));

@@ -10,6 +10,8 @@ vi.mock('../src/services/passwordAuth', async () => ({
   ...await vi.importActual('../src/services/passwordAuth'), verifySignupCode: signup.verify, resendSignupCode: signup.resend,
 }));
 const navigate = vi.fn();
+const billing = vi.hoisted(() => ({ plans: [{ key: 'free', credits: 300 }] }));
+vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billing }));
 const loginLocation = vi.hoisted(() => ({ search: '', state: null as { from: string } | null }));
 const auth = {
   signIn: vi.fn(),
@@ -363,4 +365,42 @@ describe('login auth options', () => {
       unmount();
     }
   });
+});
+
+
+it('presents the credits gate with Google first and verifies email signup before continuing', async () => {
+  auth.signInWithOtp.mockResolvedValue({ error: null }); auth.verifyOtp.mockResolvedValue({ error: null });
+  const savedDraft = vi.fn(); const onSuccess = vi.fn();
+  const { container, unmount } = renderIntoBody(<LoginModal open intent="claim_credits" onClose={() => undefined} onSuccess={onSuccess} onBeforeOAuthRedirect={savedDraft} redirectTo="/" />);
+  try {
+    expect(container.textContent).toContain('Sign up and claim 300 free credits.');
+    expect(container.textContent!.indexOf('Continue with Google')).toBeLessThan(container.textContent!.indexOf('Get code'));
+    changeInput(container.querySelector('input[type=email]')!, 'new@example.com');
+    await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(savedDraft).toHaveBeenCalledOnce(); expect(auth.signInWithOtp).toHaveBeenCalledWith('new@example.com', '/');
+    expect(onSuccess).not.toHaveBeenCalled();
+    changeInput(container.querySelector('input[autocomplete="one-time-code"]')!, '123456');
+    await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+    expect(onSuccess).toHaveBeenCalledOnce();
+    expect(container.querySelector('a[href="/terms"]')).not.toBeNull();
+    expect(posthog.capture).toHaveBeenCalledWith('auth_modal_opened', { surface: 'login_modal', intent: 'claim_credits' });
+  } finally { unmount(); }
+});
+
+it('does not redirect or lose the draft when persisting an uploaded image fails', async () => {
+  auth.signInWithGoogle.mockClear();
+  const { container, unmount } = renderIntoBody(<LoginModal open intent="claim_credits" onClose={() => undefined} onBeforeOAuthRedirect={() => { throw new Error('Storage full'); }} />);
+  try {
+    await act(async () => findButton(container, 'Continue with Google')!.click());
+    expect(auth.signInWithGoogle).not.toHaveBeenCalled();
+    expect(container.querySelector('[role=alert]')?.textContent).toContain('save your draft');
+  } finally { unmount(); }
+});
+
+
+it('uses the current free-plan allowance instead of a hard-coded signup amount', () => {
+  billing.plans = [{ key: 'free', credits: 450 }];
+  const { container, unmount } = renderIntoBody(<LoginModal open intent="claim_credits" onClose={() => undefined} />);
+  try { expect(container.textContent).toContain('Sign up and claim 450 free credits.'); }
+  finally { unmount(); billing.plans = [{ key: 'free', credits: 300 }]; }
 });

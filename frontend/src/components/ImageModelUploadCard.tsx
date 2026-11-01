@@ -3,6 +3,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Box, Download, Loader2, Upload } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import posthog from 'posthog-js';
+import LoginModal from './LoginModal';
+import { isLocalDevelopment } from '../services/localProvidersApi';
+import { saveSignupImage, restoreSignupImage } from '../utils/signupImage';
 import { useAuth } from '../contexts/AuthContext';
 import { ModelMeshPreview } from './ModelMeshPreview';
 import { IMAGE_UPLOAD_ACCEPT, prepareImageUpload } from '../utils/prepareImageUpload';
@@ -10,7 +13,10 @@ import { downloadImageModel, startImageModel, waitForImageModel } from '../servi
 import type { ImageModelOutput } from '../imageModelPages';
 
 export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
-  const { session } = useAuth();
+  const { session, loading: authLoading, isSupabaseConfigured } = useAuth();
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [pendingSignup, setPendingSignup] = useState(false);
+  const draftKey = `signup-image-to-${output}`;
   const picker = useRef<HTMLInputElement>(null);
   const controller = useRef<AbortController | null>(null);
   const selection = useRef(0);
@@ -27,6 +33,17 @@ export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
   const attribution = { page: `/image-to-${output}`, input_type: 'image', output_format: output };
   const track = (event: string, extra: Record<string, unknown> = {}) => posthog.capture(event, { ...attribution, ...extra });
 
+  useEffect(() => {
+    const restored = restoreSignupImage(draftKey);
+    if (restored) { setFile(restored); setPendingSignup(true); }
+  }, [draftKey]);
+  useEffect(() => {
+    if (!pendingSignup || !session || authLoading || busy || !file) return;
+    setPendingSignup(false); setSignupOpen(false);
+    sessionStorage.removeItem(draftKey);
+    track('generation_signup_gate_completed', { surface: 'image_model' });
+    void generate();
+  }, [pendingSignup, session, authLoading, busy, file]);
   useEffect(() => () => { controller.current?.abort(); selection.current++; }, []);
   useEffect(() => {
     if (!file) { setPreview(null); return; }
@@ -61,6 +78,14 @@ export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
 
   async function generate() {
     if (!file || busy) return;
+    if (!generationId && (isSupabaseConfigured || !isLocalDevelopment())) {
+      if (authLoading) return;
+      if (!session) {
+        setPendingSignup(true); setSignupOpen(true);
+        track('generation_signup_gate_shown', { surface: 'image_model' });
+        return;
+      }
+    }
     const abort = new AbortController(); controller.current = abort;
     setBusy(true); setError(''); setStatus(generationId ? 'Loading your existing generation…' : 'Starting your 3D model…');
     try {
@@ -104,8 +129,11 @@ export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
 
   const downloadClass = 'inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-[#f44336] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#e53935] disabled:opacity-50';
   return <section aria-label="Image to 3D model upload" className="mt-6 w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-5 text-left sm:p-6">
+    <LoginModal open={signupOpen} intent="claim_credits" onClose={() => {
+      setSignupOpen(false); setPendingSignup(false); sessionStorage.removeItem(draftKey);
+    }} onSuccess={() => setSignupOpen(false)} onBeforeOAuthRedirect={() => file ? saveSignupImage(draftKey, file) : undefined} />
     <h2 className="flex items-center gap-2 text-lg font-semibold"><Box className="h-5 w-5 text-[#f44336]" />Create your 3D model</h2>
-    <p className="mt-2 text-sm leading-6 text-slate-500">Start with one clear image. Generation uses your existing credits or guest allowance and can take several minutes.</p>
+    <p className="mt-2 text-sm leading-6 text-slate-500">Start with one clear image. Sign up to claim your free credits. Generation uses account credits and can take several minutes.</p>
     <input ref={picker} type="file" accept={IMAGE_UPLOAD_ACCEPT} aria-label="Choose source image" disabled={busy || exporting} className="hidden"
       onChange={event => { void selectFile(event.target.files?.[0]); event.target.value = ''; }} />
     {preview && <img src={preview} alt="Your source image for 3D generation" className="mx-auto mt-5 max-h-48 max-w-full rounded-lg object-contain" />}
