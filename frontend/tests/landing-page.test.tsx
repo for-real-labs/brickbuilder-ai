@@ -26,12 +26,12 @@ vi.mock('react-router-dom', async () => {
 const billingSettings = vi.hoisted(() => ({ enabled: false, account: null, loading: false, getFeatureAccess: () => 'allowed', openUpgrade: vi.fn() }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billingSettings }));
 
-const authSettings = vi.hoisted(() => ({ isSupabaseConfigured: false, user: null as { id: string } | null }));
+const authSettings = vi.hoisted(() => ({ user: null as { id: string } | null, isSupabaseConfigured: false, loading: false, session: null as { access_token: string; user: { id: string } } | null }));
 
 vi.mock('../src/contexts/AuthContext', () => ({
   useAuth: () => ({
-    session: null,
-    loading: false,
+    session: authSettings.session,
+    loading: authSettings.loading,
     user: authSettings.user,
     isSupabaseConfigured: authSettings.isSupabaseConfigured,
   }),
@@ -46,7 +46,9 @@ vi.mock('../src/components/FallingBricks', () => ({
 }));
 
 vi.mock('../src/components/LoginModal', () => ({
-  default: () => null,
+  default: ({ open, intent, onClose, onBeforeOAuthRedirect }: any) => open ? <div role="dialog" data-intent={intent}>
+    <button onClick={onClose}>Dismiss signup</button><button onClick={onBeforeOAuthRedirect}>Save signup draft</button>
+  </div> : null,
 }));
 
 vi.mock('../src/components/StreamingMeshViewer', () => ({
@@ -83,6 +85,7 @@ import { PartsInventoryApi } from '../src/services/partsInventoryApi';
 beforeEach(() => {
   billingSettings.enabled = false;
   authSettings.user = null;
+  authSettings.session = null; authSettings.loading = false;
   vi.spyOn(BuildBuddyApi, 'classify').mockResolvedValue({ intent: 'generate', confidence: 1 });
 });
 
@@ -1144,4 +1147,54 @@ it('preserves the inventory through a login redirect and forces Nova mode', asyn
     expect(container.querySelector('h1')?.textContent).toContain('Using My set to design a new LEGO');
     expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
   } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); }
+});
+
+describe('generation signup gate', () => {
+  it.each(['llm', 'nova'])('blocks guest %s creation, preserves the request, and resumes with the account token', async method => {
+    authSettings.isSupabaseConfigured = true;
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
+    const llm = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('stop after submission'));
+    const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('stop after submission'));
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'A red dragon', generationMethod: method }));
+    const container = document.createElement('div'); document.body.append(container); const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      await act(async () => container.querySelector<HTMLButtonElement>('button[type=submit]')!.click());
+      expect(llm).not.toHaveBeenCalled(); expect(nova).not.toHaveBeenCalled();
+      expect(container.querySelector('[role=dialog]')?.getAttribute('data-intent')).toBe('claim_credits');
+      const button = (label: string) => Array.from(container.querySelectorAll('button')).find(b => b.textContent === label)!;
+      await act(async () => button('Save signup draft').click());
+      expect(JSON.parse(sessionStorage.getItem('pendingLandingState')!)).toMatchObject({ prompt: 'A red dragon', resumeGeneration: true });
+      act(() => button('Dismiss signup').click());
+      expect(sessionStorage.getItem('pendingLandingState')).toBeNull();
+      expect(container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')?.value).toBe('A red dragon');
+      await act(async () => container.querySelector<HTMLButtonElement>('button[type=submit]')!.click());
+      authSettings.session = { access_token: 'new-account-token', user: { id: 'new-builder' } };
+      await act(async () => root.render(<LandingPage />));
+      await vi.waitFor(() => expect(method === 'llm' ? llm : nova).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: 'A red dragon' }), 'new-account-token'));
+      expect(container.querySelector('[role=dialog]')).toBeNull();
+    } finally { act(() => root.unmount()); container.remove(); authSettings.isSupabaseConfigured = false; authSettings.session = null; sessionStorage.clear(); }
+  });
+
+  it('restores an image and model choice after signup redirect and waits for authentication', async () => {
+    authSettings.isSupabaseConfigured = true; authSettings.loading = true;
+    Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:signup-image') });
+    Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+    const generate = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('stop after submission'));
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Blue robot', generationMethod: 'llm', llmModel: 'gpt-6-astra', resumeGeneration: true,
+      image: { name: 'robot.png', type: 'image/png', base64: btoa('robot-image') } }));
+    const container = document.createElement('div'); document.body.append(container); const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      expect(generate).not.toHaveBeenCalled();
+      authSettings.loading = false; authSettings.session = { access_token: 'redirect-token', user: { id: 'returning-builder' } };
+      await act(async () => root.render(<LandingPage />));
+      expect(generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: 'Blue robot', model: 'gpt-6-astra', imageBase64: btoa('robot-image') }), 'redirect-token');
+      expect(sessionStorage.getItem('pendingLandingState')).toBeNull();
+    } finally { act(() => root.unmount()); container.remove(); authSettings.isSupabaseConfigured = false; authSettings.session = null; authSettings.loading = false; sessionStorage.clear(); }
+  });
 });

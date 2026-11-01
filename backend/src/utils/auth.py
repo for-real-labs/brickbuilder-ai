@@ -391,6 +391,13 @@ def handle_auth_and_tracking(
     Raises:
         HTTPException: If user has insufficient credits
     """
+    # Hosted generation requires an account. Guest identities remain valid for
+    # reading existing builds and free tools; offline local checkouts keep working.
+    if required_credits > 0 and not LOCAL_DB_ENABLED and (
+        not auth_info.get("authenticated") or auth_info.get("is_anonymous")
+    ):
+        raise HTTPException(status_code=401, detail="Sign up to claim your free credits and start building.")
+
     from .posthog_client import track_api_call
     
     # Extract user info for tracking
