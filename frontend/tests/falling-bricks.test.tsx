@@ -12,7 +12,7 @@ const translate = vi.fn();
 const context = {
   save: vi.fn(), restore: vi.fn(), translate, rotate: vi.fn(), beginPath: vi.fn(),
   moveTo: vi.fn(), arcTo: vi.fn(), closePath: vi.fn(), fill: vi.fn(), arc: vi.fn(),
-  setTransform: vi.fn(), scale: vi.fn(), clearRect: vi.fn(), fillText: vi.fn(),
+  setTransform: vi.fn(), scale: vi.fn(), clearRect: vi.fn(), fillText: vi.fn(), fillRect: vi.fn(),
 };
 function tick(milliseconds = 0) {
   now += milliseconds;
@@ -66,5 +66,22 @@ it('renders studded bricks and keeps them out of the accessibility tree', () => 
   expect(context.fillText).not.toHaveBeenCalled();
   expect(context.arc).toHaveBeenCalled();
   expect(context.arcTo).toHaveBeenCalled();
+  expect(context.fillRect).not.toHaveBeenCalled();
   expect(host.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
+});
+
+it.each([false, true])('keeps half the falling items as studded Christmas icons through recycling (mobile: %s)', isMobile => {
+  mobile = isMobile;
+  let currentItem = -1;
+  const icons = new Set<number>();
+  translate.mockImplementation(() => { currentItem++; });
+  context.fillRect.mockImplementation(() => { icons.add(currentItem); });
+  act(() => root.render(<FallingBricks christmas />));
+  const count = mobile ? 13 : 22;
+  for (let step = 0; step < 150; step++) {
+    currentItem = -1; icons.clear();
+    tick(50);
+    expect(icons.size).toBe(Math.floor(count / 2));
+    expect([...icons].every(index => index % 2 === 1)).toBe(true);
+  }
 });

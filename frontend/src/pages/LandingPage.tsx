@@ -1007,7 +1007,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         url={`https://brickbuilder.ai/${imageLandingPath ?? ""}`}
       />
 
-      <FallingBricks density={22} opacity={0.25} zIndex={0} />
+      <FallingBricks density={22} opacity={0.25} zIndex={0} christmas />
 
       <LoginModal
         open={showLoginModal}

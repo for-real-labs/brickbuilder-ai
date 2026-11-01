@@ -171,3 +171,18 @@ The reusable `create-edit-brickbuilder-pet` skill is saved in `.agents/skills/`
 and installed in the user's personal Codex skills. It includes the original
 matching-endpoint technique, browser format requirements, quality thresholds,
 request resumption, and a tested AVFoundation alpha decoder.
+
+## Christmas Pip (November 1, 2026)
+
+Pip wears a red Santa hat with white fur trim and a pom-pom in the poster and
+idle/listening, building and celebrating animations. Nib and Clik keep their
+regular artwork and v2 loops. Versioned media lives in
+`frontend/public/pets/christmas-v1/`; `christmas-pip.json` records the exact image
+and motion prompts, six provider requests, identical endpoint-image hashes,
+encoding, and decoded loop/alpha measurements.
+
+The landing page opts into a Christmas background: alternating regular studded
+bricks and small studded mosaics depicting trees, presents, candy canes and
+snowflakes. Recycling preserves each slot's kind, so the mix remains half and
+half (within one item for odd mobile counts). Other pages retain regular bricks.
+The existing centered headline and mobile pet bounds are preserved.

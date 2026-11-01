@@ -1,6 +1,10 @@
 import React, { useEffect, useRef } from "react";
 
+type ChristmasIcon = 'tree' | 'gift' | 'candy-cane' | 'snowflake';
+type ItemKind = 'brick' | ChristmasIcon;
+
 type Brick = {
+  kind: ItemKind;
   x: number;
   y: number;
   vx: number;
@@ -32,6 +36,35 @@ const BRICK_SIZES: Array<[number, number]> = [
   [3, 3],
   [4, 2],
 ];
+
+// Each cell is a small studded brick, so the decorations match the existing bricks.
+const CHRISTMAS_ICONS: Record<ChristmasIcon, string[]> = {
+  tree: ['...Y...', '...G...', '..GGG..', '.GGGGG.', '..GGG..', '.GGGGG.', 'GGGGGGG', '...B...'],
+  gift: ['.Y.Y.', '..Y..', 'RRYRR', 'RRYRR', 'YYYYY', 'RRYRR', 'RRYRR'],
+  'candy-cane': ['.RRW.', 'RW.WR', 'WR.RW', '...WR', '...RW', '...WR', '...RW'],
+  snowflake: ['W..C..W', '.W.C.W.', '..CCC..', 'CCCCCCC', '..CCC..', '.W.C.W.', 'W..C..W'],
+};
+const CHRISTMAS_COLORS: Record<string, string> = { G: '#20874b', R: '#d83838', Y: '#efbc39', W: '#f2f5fa', C: '#70badd', B: '#90613d' };
+const CHRISTMAS_KINDS = Object.keys(CHRISTMAS_ICONS) as ChristmasIcon[];
+
+function drawChristmasIcon(ctx: CanvasRenderingContext2D, item: Brick) {
+  const rows = CHRISTMAS_ICONS[item.kind as ChristmasIcon];
+  const cell = Math.min(item.w / rows[0].length, item.h / rows.length);
+  ctx.save();
+  ctx.translate(item.x, item.y);
+  ctx.rotate(item.rot);
+  rows.forEach((row, y) => [...row].forEach((color, x) => {
+    if (color === '.') return;
+    const left = (x - row.length / 2) * cell, top = (y - rows.length / 2) * cell;
+    ctx.fillStyle = CHRISTMAS_COLORS[color];
+    ctx.fillRect(left, top, cell - .4, cell - .4);
+    ctx.beginPath();
+    ctx.arc(left + cell / 2, top + cell / 2, cell * .23, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,.35)';
+    ctx.fill();
+  }));
+  ctx.restore();
+}
 
 function rand(min: number, max: number) {
   return Math.random() * (max - min) + min;
@@ -111,10 +144,12 @@ export default function FallingBricks({
   density = 22,
   zIndex = 0,
   opacity = 0.25,
+  christmas = false,
 }: {
-  density?: number;   // number of bricks (desktop baseline)
+  density?: number;   // total falling items; half bricks, half Christmas icons
   zIndex?: number;    // stacking context
   opacity?: number;   // canvas global alpha
+  christmas?: boolean;
 }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
@@ -123,6 +158,7 @@ export default function FallingBricks({
   useEffect(() => {
     const canvas = ref.current!;
     const ctx = canvas.getContext("2d", { alpha: true })!;
+    bricksRef.current = [];
     let dpr = Math.max(1, Math.min(window.devicePixelRatio || 1, 2));
     let width = 0;
     let height = 0;
@@ -144,13 +180,13 @@ export default function FallingBricks({
       seedBricks();
     }
 
-    function makeBrick(): Brick {
+    function makeBrick(kind: ItemKind): Brick {
       const size = pick(BRICK_SIZES);
       const studsX = size[0];
       const studsY = size[1];
       const pxPerStud = rand(12, 20); // scale bricks
-      const w = studsX * pxPerStud + rand(2, 4);
-      const h = studsY * pxPerStud + rand(2, 4);
+      const w = kind === 'brick' ? studsX * pxPerStud + rand(2, 4) : rand(44, 68);
+      const h = kind === 'brick' ? studsY * pxPerStud + rand(2, 4) : w;
       const x = rand(-w, canvas.clientWidth + w);
       const y = rand(-canvas.clientHeight, -h * 2);
       const vy = rand(30, 70); // px/s
@@ -158,7 +194,7 @@ export default function FallingBricks({
       const rot = rand(0, Math.PI * 2);
       const omega = rand(-0.6, 0.6); // rad/s
       const color = pick(COLORS);
-      return { x, y, vx, vy, w, h, rot, omega, color, studsX, studsY };
+      return { kind, x, y, vx, vy, w, h, rot, omega, color, studsX, studsY };
     }
 
     function seedBricks() {
@@ -168,7 +204,9 @@ export default function FallingBricks({
         arr.length = want;
       } else {
         while (arr.length < want) {
-          const brick = makeBrick();
+          const index = arr.length;
+          const kind = !christmas || index % 2 === 0 ? 'brick' : CHRISTMAS_KINDS[Math.floor(index / 2) % CHRISTMAS_KINDS.length];
+          const brick = makeBrick(kind);
           // Start throughout the viewport, with one random position per vertical
           // band so the background is populated from its very first frame.
           brick.x = rand(0, canvas.clientWidth);
@@ -195,11 +233,12 @@ export default function FallingBricks({
 
         // recycle when below
         if (b.y - b.h > canvas.clientHeight + 40) {
-          bricksRef.current[i] = makeBrick();
+          bricksRef.current[i] = makeBrick(b.kind);
           bricksRef.current[i].y = -bricksRef.current[i].h - rand(0, 100);
         }
 
-        drawBrick(ctx, b);
+        if (b.kind === 'brick') drawBrick(ctx, b);
+        else drawChristmasIcon(ctx, b);
       }
 
       rafRef.current = requestAnimationFrame(() => step(now));
@@ -226,7 +265,7 @@ export default function FallingBricks({
       window.removeEventListener("resize", resize);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [density]);
+  }, [density, christmas]);
 
   return (
     <div

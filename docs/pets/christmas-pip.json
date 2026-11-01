@@ -1,0 +1,224 @@
+{
+  "date": "2026-11-01",
+  "scope": "Christmas Santa hat on Pip only.",
+  "image_prompt": "Use case: identity-preserve. Edit target: the supplied transparent cutout of Pip, BrickBuilder's red plush brick mascot. Preserve exactly Pip's fuzzy red rectangular brick body, glossy black bead eyes, tiny curved friendly smile, cream mitten hands, dark red feet, proportions, and soft high-quality 3D plush texture. Add ONLY a traditional cheerful Christmas Santa hat: rich red plush fabric, fluffy white folded fur brim and a fluffy round white pom-pom at a gently drooping tip, fitted over his top stud. No witch hat, broom or other props. Hands empty in the same relaxed neutral standing pose. Full body and complete hat fully visible, centered in a square canvas with generous transparent padding and room for animation. Entire silhouette occupies about 75 percent of canvas height. Actual transparent background, no scenery, no cast shadow, no text, no logo, no other characters. Match Pip's exact recognizable face and body; change only the added Santa hat.",
+  "method": "Built-in imagegen costume edit. Identical white reference image bytes supplied as both Kling endpoints; gestures finish by four seconds and ease back to rest. Bria restores transparency. No crossfade, reversed playback, held frames, endpoint correction or runtime workaround.",
+  "poster": {
+    "path": "frontend/public/pets/christmas-v1/pip.webp",
+    "sha256": "df8885cdde3b25c4ead3e64062a5ce718ed10ddee9aafb74f7c8c3ceb4682b76"
+  },
+  "provider_cost_estimate_usd": 3.185,
+  "provider_cost_note": "Estimate: three Kling jobs at displayed $0.35 each plus three 122/24-second Bria clips at displayed $0.14/second; no billing reconciliation.",
+  "encoding": {
+    "webm": "ffmpeg -c:v libvpx-vp9 -i INPUT -vf scale=512:512,fps=24 -an -c:v libvpx-vp9 -pix_fmt yuva420p -auto-alt-ref 0 -crf 36 -b:v 0 -row-mt 1 -cpu-used 4 OUTPUT.webm",
+    "hevc": "ffmpeg -c:v libvpx-vp9 -i INPUT -an -vf scale=512:512,fps=24,format=rgba,premultiply=inplace=1,format=bgra -c:v hevc_videotoolbox -allow_sw 1 -alpha_quality 1 -q:v 85 -b:v 0 -tag:v hvc1 -force_key_frames expr:eq(n,121) -movflags +faststart OUTPUT.mov"
+  },
+  "validation": {
+    "sample_size": [
+      128,
+      128
+    ],
+    "fps": 24,
+    "frames": 122,
+    "duration_seconds": 5.083333333333333,
+    "metric": "Mean absolute difference of premultiplied RGB over the union of foreground pixels. Use the worse of black and white composites. Compare final to first frame, every adjacent frame, and the six steps on either side of the join.",
+    "seam_mae_max": 2,
+    "seam_relative_max": "median_step_mae * 0.5 + 0.35",
+    "boundary_step_max": "max(median_step_mae * 3, 2)",
+    "every_frame_alpha_minimum_fraction": {
+      "clear": 0.4,
+      "opaque": 0.05,
+      "soft": 0.001
+    },
+    "hevc_decoder": "AVAssetReader, BGRA with 128px output, unpremultiplied to RGBA; alpha metadata and every frame validated.",
+    "browser_checks": "Native Safari HEVC and Chromium WebM: all three play transparently at 512px through repeated loops on checkerboard, light and dark backgrounds. Landing verified at desktop, 390px and 320px, including focused listening motion: centered headline, full Santa hat visible, no horizontal overflow."
+  },
+  "clips": [
+    {
+      "clip": "pip-idle",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a19975-5dde-73c0-af78-aaafb507b2c7",
+      "generation_input": {
+        "prompt": "One complete five-second seamless looping animation of this exact red plush brick pet Pip wearing this exact red Santa hat with fluffy white brim and pom-pom. Gentle soft breathing, one natural blink in the middle and a tiny curious head tilt. Keep the hat and pom-pom stable. Begin relaxed in the supplied first-frame pose. Finish the gesture by four seconds and smoothly ease into the EXACT supplied last-frame pose: identical head angle, expression, mittens, feet, hat and pom-pom positions. Both ends relaxed and nearly motionless. Locked camera, pure white background, stable centered full-body size and position. Entire hat and all limbs remain visible throughout. Preserve exact plush texture, colors and anatomy. No zoom, cuts, extra limbs, props, text or scene changes.",
+        "duration": "5",
+        "cfg_scale": 0.5,
+        "negative_prompt": "blur, distort, and low quality",
+        "enable_safety_checker": true,
+        "reference_file": "pip-reference.png",
+        "tail_reference_file": "pip-reference.png",
+        "image_url": "https://v3b.fal.media/files/b/0ab0c79c/k3ukBOqm2iLZ96qhHb1-Y_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0ab0c79c/yODolnkTdWAJ48XYdVdi3_pip-reference.png",
+        "reference_sha256": "8f9687cc0f27059bc019e6e93bb4861b71b9cd023e4db72b3a85857a92294a5c",
+        "tail_reference_sha256": "8f9687cc0f27059bc019e6e93bb4861b71b9cd023e4db72b3a85857a92294a5c"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0ab0c7a6/T5-xXUtT8si-bamXuhdIS_output.mp4",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0ab0c7ab/HL3N9qpGtazq4S2jpwgW9_578e8e3e-ec6a-4627-9727-e34836ce480c.webm",
+      "alpha_request_id": "01a19977-2e8c-7860-a647-2433c85370d8",
+      "alpha_model": "bria/video/background-removal",
+      "alpha_input": {
+        "video_url": "https://v3b.fal.media/files/b/0ab0c7a6/T5-xXUtT8si-bamXuhdIS_output.mp4",
+        "background_color": "Transparent",
+        "output_container_and_codec": "webm_vp9"
+      },
+      "webm": {
+        "path": "frontend/public/pets/christmas-v1/pip-idle-alpha.webm",
+        "sha256": "d5c072497520f8b113ead946b7c8f96382f8b343a43830ab3e71d2daee5c4040",
+        "size_bytes": 86964,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.7662353515625,
+            "opaque": 0.20703125,
+            "soft": 0.022705078125
+          },
+          "seam_mae": 0.09851019804906883,
+          "median_step_mae": 0.6430111341018825,
+          "max_step_mae": 10.316094853351716,
+          "boundary_step_max": 0.3769694879626896
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/christmas-v1/pip-idle-alpha.mov",
+        "sha256": "a448e1f2b751fce68663a4d349fbaf9d43ec296c9d06fb7e47a938dcd5ce8a9a",
+        "size_bytes": 994020,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.7606201171875,
+            "opaque": 0.20257568359375,
+            "soft": 0.03216552734375
+          },
+          "seam_mae": 0.47108808154559834,
+          "median_step_mae": 0.7154157425399262,
+          "max_step_mae": 8.653221849300284,
+          "boundary_step_max": 0.8954425013248544
+        }
+      }
+    },
+    {
+      "clip": "pip-building",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a19975-7f99-70f2-9f34-b739cdf1a39d",
+      "generation_input": {
+        "prompt": "One complete five-second seamless looping animation of this exact red plush brick pet Pip wearing this exact red Santa hat with fluffy white brim and pom-pom. Look down, bring the empty mittens together in two small deliberate assembly motions, give a satisfied nod and lift the gaze back. Empty hands throughout; no objects appear. Begin relaxed in the supplied first-frame pose. Finish the gesture by four seconds and smoothly ease into the EXACT supplied last-frame pose: identical head angle, expression, mittens, feet, hat and pom-pom positions. Both ends relaxed and nearly motionless. Locked camera, pure white background, stable centered full-body size and position. Entire hat and all limbs remain visible throughout. Preserve exact plush texture, colors and anatomy. No zoom, cuts, extra limbs, props, text or scene changes.",
+        "duration": "5",
+        "cfg_scale": 0.5,
+        "negative_prompt": "blur, distort, and low quality",
+        "enable_safety_checker": true,
+        "reference_file": "pip-reference.png",
+        "tail_reference_file": "pip-reference.png",
+        "image_url": "https://v3b.fal.media/files/b/0ab0c79d/Uu5bdGX5zawK49vFGIR5k_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0ab0c79d/HxAx3VrjPMTWO-ngLHDsT_pip-reference.png",
+        "reference_sha256": "8f9687cc0f27059bc019e6e93bb4861b71b9cd023e4db72b3a85857a92294a5c",
+        "tail_reference_sha256": "8f9687cc0f27059bc019e6e93bb4861b71b9cd023e4db72b3a85857a92294a5c"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0ab0c7a7/B1KB5J4P2sn6CD7aVdcAu_output.mp4",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0ab0c7b0/M2eafzaB9ZLjjIxxNmuqI_46303d67-fe59-45ff-b406-c937698c7dd5.webm",
+      "alpha_request_id": "01a19977-e4e1-7d82-ae78-ac52cb303e8c",
+      "alpha_model": "bria/video/background-removal",
+      "alpha_input": {
+        "video_url": "https://v3b.fal.media/files/b/0ab0c7a7/B1KB5J4P2sn6CD7aVdcAu_output.mp4",
+        "background_color": "Transparent",
+        "output_container_and_codec": "webm_vp9"
+      },
+      "webm": {
+        "path": "frontend/public/pets/christmas-v1/pip-building-alpha.webm",
+        "sha256": "160d907805eaaca9ea38f80e0bc88d9dce5950dbcf7281473ffce70d8cd163ea",
+        "size_bytes": 93517,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.7664794921875,
+            "opaque": 0.2056884765625,
+            "soft": 0.021728515625
+          },
+          "seam_mae": 0.09888936250828834,
+          "median_step_mae": 1.5836428774408344,
+          "max_step_mae": 7.239976183710207,
+          "boundary_step_max": 0.4888327311600978
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/christmas-v1/pip-building-alpha.mov",
+        "sha256": "f2b4ef6b1fa79e5827b2cfab9b02a4eddbd0c6edaa71b9f5808f44bda9dccf2f",
+        "size_bytes": 1030747,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.760986328125,
+            "opaque": 0.201171875,
+            "soft": 0.03125
+          },
+          "seam_mae": 0.503307371377196,
+          "median_step_mae": 1.4181218494610606,
+          "max_step_mae": 5.898723116242899,
+          "boundary_step_max": 0.9059988618493947
+        }
+      }
+    },
+    {
+      "clip": "pip-celebrating",
+      "generation_model": "fal-ai/kling-video/v2.5-turbo/pro/image-to-video",
+      "generation_request_id": "01a19975-a329-7b62-8b10-41137691a592",
+      "generation_input": {
+        "prompt": "One complete five-second seamless looping animation of this exact red plush brick pet Pip wearing this exact red Santa hat with fluffy white brim and pom-pom. One small delighted bounce and a proud little cheer with raised mittens, a happy blink in the middle, then gently lower both mittens and settle back down. Begin relaxed in the supplied first-frame pose. Finish the gesture by four seconds and smoothly ease into the EXACT supplied last-frame pose: identical head angle, expression, mittens, feet, hat and pom-pom positions. Both ends relaxed and nearly motionless. Locked camera, pure white background, stable centered full-body size and position. Entire hat and all limbs remain visible throughout. Preserve exact plush texture, colors and anatomy. No zoom, cuts, extra limbs, props, text or scene changes.",
+        "duration": "5",
+        "cfg_scale": 0.5,
+        "negative_prompt": "blur, distort, and low quality",
+        "enable_safety_checker": true,
+        "reference_file": "pip-reference.png",
+        "tail_reference_file": "pip-reference.png",
+        "image_url": "https://v3b.fal.media/files/b/0ab0c79e/tx8D5gR_fCK3KFe_Mnwr3_pip-reference.png",
+        "tail_image_url": "https://v3b.fal.media/files/b/0ab0c79e/GjLlnHNNhGYgaLCTnuJ2o_pip-reference.png",
+        "reference_sha256": "8f9687cc0f27059bc019e6e93bb4861b71b9cd023e4db72b3a85857a92294a5c",
+        "tail_reference_sha256": "8f9687cc0f27059bc019e6e93bb4861b71b9cd023e4db72b3a85857a92294a5c"
+      },
+      "generation_output_url": "https://v3b.fal.media/files/b/0ab0c7a8/2gL2hHIm724RuEuU2guh8_output.mp4",
+      "alpha_output_url": "https://v3b.fal.media/files/b/0ab0c7b4/krZzs3wJGMtTsm_IpjImO_178a0e2b-6dc8-4530-a647-b78020c8228a.webm",
+      "alpha_request_id": "01a19978-8418-7423-800b-2020f7cea66b",
+      "alpha_model": "bria/video/background-removal",
+      "alpha_input": {
+        "video_url": "https://v3b.fal.media/files/b/0ab0c7a8/2gL2hHIm724RuEuU2guh8_output.mp4",
+        "background_color": "Transparent",
+        "output_container_and_codec": "webm_vp9"
+      },
+      "webm": {
+        "path": "frontend/public/pets/christmas-v1/pip-celebrating-alpha.webm",
+        "sha256": "0350a72e45b6d6e8a2c3c88bd4048965fb40510df3a7f4216c469a096aaa72ac",
+        "size_bytes": 142045,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.75335693359375,
+            "opaque": 0.206298828125,
+            "soft": 0.021240234375
+          },
+          "seam_mae": 0.061114066922452456,
+          "median_step_mae": 2.40035066015523,
+          "max_step_mae": 24.422184157139615,
+          "boundary_step_max": 0.7095429450550714
+        }
+      },
+      "hevc": {
+        "path": "frontend/public/pets/christmas-v1/pip-celebrating-alpha.mov",
+        "sha256": "62d48eec9e0c539a575480089b07b75eac24db7db24f530066f4f30abe542c53",
+        "size_bytes": 1284190,
+        "contains_alpha": true,
+        "metrics": {
+          "frames": 122,
+          "alpha_minimum_fraction": {
+            "clear": 0.7476806640625,
+            "opaque": 0.20196533203125,
+            "soft": 0.0311279296875
+          },
+          "seam_mae": 0.41579535049270794,
+          "median_step_mae": 2.1755997026244263,
+          "max_step_mae": 22.236604177610083,
+          "boundary_step_max": 0.9245475499524961
+        }
+      }
+    }
+  ]
+}
