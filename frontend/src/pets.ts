@@ -14,13 +14,12 @@ export function isPetId(value: unknown): value is PetId {
 }
 
 export function petPosterPath(id: PetId) {
-  return id === 'pip' ? '/pets/halloween-v1/pip.webp' : `/pets/${id}.webp`;
+  return `/pets/${id}.webp`;
 }
 
 export function petVideoPath(id: PetId, state: PetState) {
   const clip = state === 'listening' ? 'idle' : state;
-  const directory = id === 'pip' ? 'halloween-v1' : 'loops-v2';
-  return `/pets/${directory}/${id}-${clip}-alpha.webm`;
+  return `/pets/loops-v2/${id}-${clip}-alpha.webm`;
 }
 
 export function petVideoSources(id: PetId, state: PetState) {

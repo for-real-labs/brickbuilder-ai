@@ -1,7 +1,7 @@
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import FallingBricks, { HALLOWEEN_SYMBOLS } from '../src/components/FallingBricks';
+import FallingBricks from '../src/components/FallingBricks';
 
 let host: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -60,11 +60,11 @@ it('continues falling and recycles above the screen instead of repopulating insi
   expect(recycled).toBe(true);
 });
 
-it('renders only Halloween decorations and keeps them out of the accessibility tree', () => {
+it('renders studded bricks and keeps them out of the accessibility tree', () => {
   act(() => root.render(<FallingBricks />));
   tick();
-  expect(context.fillText).toHaveBeenCalledTimes(22);
-  for (const [symbol] of context.fillText.mock.calls) expect(HALLOWEEN_SYMBOLS).toContain(symbol);
-  expect(context.arc).not.toHaveBeenCalled();
+  expect(context.fillText).not.toHaveBeenCalled();
+  expect(context.arc).toHaveBeenCalled();
+  expect(context.arcTo).toHaveBeenCalled();
   expect(host.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
 });

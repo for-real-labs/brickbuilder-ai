@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-type FallingItem = {
+type Brick = {
   x: number;
   y: number;
   vx: number;
@@ -9,28 +9,102 @@ type FallingItem = {
   h: number;   // height in px
   rot: number; // radians
   omega: number; // angular velocity
-  symbol: typeof HALLOWEEN_SYMBOLS[number];
+  color: string;
+  studsX: number; // studs across
+  studsY: number; // studs along
 };
 
-export const HALLOWEEN_SYMBOLS = ['🎃', '💀', '🌙', '👻', '🦇', '🦴'] as const;
+const COLORS = [
+  "#D32F2F", // red
+  "#1976D2", // blue
+  "#FBC02D", // yellow
+  "#2E7D32", // green
+  "#6A1B9A", // purple
+  "#FF6F00", // orange
+  "#455A64", // dark gray
+];
+
+// Brick sizes in studs (x by y)
+const BRICK_SIZES: Array<[number, number]> = [
+  [2, 2],
+  [2, 3],
+  [2, 4],
+  [3, 3],
+  [4, 2],
+];
 
 function rand(min: number, max: number) {
   return Math.random() * (max - min) + min;
 }
 
-function pick<T>(arr: readonly T[]): T {
+function pick<T>(arr: T[]): T {
   return arr[(Math.random() * arr.length) | 0];
 }
 
-function drawHalloweenItem(ctx: CanvasRenderingContext2D, item: FallingItem) {
+function drawBrick(ctx: CanvasRenderingContext2D, b: Brick) {
   ctx.save();
-  ctx.translate(item.x, item.y);
-  ctx.rotate(item.rot);
-  ctx.font = `${item.h}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(item.symbol, 0, 0);
+  ctx.translate(b.x, b.y);
+  ctx.rotate(b.rot);
+
+  // brick body
+  const r = Math.min(b.w, b.h) * 0.12; // corner radius
+  const bw = b.w;
+  const bh = b.h;
+
+  // body shadow
+  ctx.fillStyle = "rgba(0,0,0,0.05)";
+  roundRect(ctx, -bw / 2 + 3, -bh / 2 + 5, bw, bh, r);
+  ctx.fill();
+
+  // body
+  ctx.fillStyle = b.color;
+  roundRect(ctx, -bw / 2, -bh / 2, bw, bh, r);
+  ctx.fill();
+
+  // top studs (simple circles)
+  const studR = Math.min(bw / (b.studsX * 3.2), bh / (b.studsY * 3.2));
+  const padX = bw / (b.studsX + 1);
+  const padY = bh / (b.studsY + 1);
+  for (let iy = 1; iy <= b.studsY; iy++) {
+    for (let ix = 1; ix <= b.studsX; ix++) {
+      const sx = -bw / 2 + padX * ix;
+      const sy = -bh / 2 + padY * iy;
+      // stud shading
+      ctx.beginPath();
+      ctx.arc(sx + 1, sy + 1, studR, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,0,0.12)";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(sx, sy, studR, 0, Math.PI * 2);
+      // slightly lighter than body for perceived top light
+      ctx.fillStyle = lighten(b.color, 0.08);
+      ctx.fill();
+    }
+  }
+
   ctx.restore();
+}
+
+function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rr = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function lighten(hex: string, amt: number): string {
+  const c = parseInt(hex.slice(1), 16);
+  let r = (c >> 16) & 255;
+  let g = (c >> 8) & 255;
+  let b = c & 255;
+  r = Math.min(255, Math.round(r + (255 - r) * amt));
+  g = Math.min(255, Math.round(g + (255 - g) * amt));
+  b = Math.min(255, Math.round(b + (255 - b) * amt));
+  return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
 }
 
 export default function FallingBricks({
@@ -38,13 +112,13 @@ export default function FallingBricks({
   zIndex = 0,
   opacity = 0.25,
 }: {
-  density?: number;   // number of Halloween items (desktop baseline)
+  density?: number;   // number of bricks (desktop baseline)
   zIndex?: number;    // stacking context
   opacity?: number;   // canvas global alpha
 }) {
   const ref = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number>(0);
-  const bricksRef = useRef<FallingItem[]>([]);
+  const bricksRef = useRef<Brick[]>([]);
 
   useEffect(() => {
     const canvas = ref.current!;
@@ -70,17 +144,21 @@ export default function FallingBricks({
       seedBricks();
     }
 
-    function makeBrick(): FallingItem {
-      const w = rand(32, 58);
-      const h = w;
+    function makeBrick(): Brick {
+      const size = pick(BRICK_SIZES);
+      const studsX = size[0];
+      const studsY = size[1];
+      const pxPerStud = rand(12, 20); // scale bricks
+      const w = studsX * pxPerStud + rand(2, 4);
+      const h = studsY * pxPerStud + rand(2, 4);
       const x = rand(-w, canvas.clientWidth + w);
       const y = rand(-canvas.clientHeight, -h * 2);
       const vy = rand(30, 70); // px/s
       const vx = rand(-10, 10); // slight drift
       const rot = rand(0, Math.PI * 2);
       const omega = rand(-0.6, 0.6); // rad/s
-      const symbol = pick(HALLOWEEN_SYMBOLS);
-      return { x, y, vx, vy, w, h, rot, omega, symbol };
+      const color = pick(COLORS);
+      return { x, y, vx, vy, w, h, rot, omega, color, studsX, studsY };
     }
 
     function seedBricks() {
@@ -121,7 +199,7 @@ export default function FallingBricks({
           bricksRef.current[i].y = -bricksRef.current[i].h - rand(0, 100);
         }
 
-        drawHalloweenItem(ctx, b);
+        drawBrick(ctx, b);
       }
 
       rafRef.current = requestAnimationFrame(() => step(now));
