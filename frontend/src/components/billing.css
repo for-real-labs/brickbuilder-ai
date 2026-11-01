@@ -232,3 +232,5 @@
  .billing-footer { flex-wrap:wrap; row-gap:12px; }
 }
 @media(max-width:360px) { .billing-plan { gap:0 8px; padding-inline:16px; } .billing-price strong { font-size:30px; } .billing-plan-top h2 { font-size:20px; } }
+
+.billing-set-estimate { margin: 0.5rem 0 0; color: #64748b; font-size: 0.875rem; line-height: 1.5; }

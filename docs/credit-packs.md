@@ -1,7 +1,7 @@
 # One-time credits
 
-Web packs: 800 credits for $10.80 or 1,500 for $22.80 (USD), exactly 20% above
-matching monthly plans. Apple uses its nearest price points: $10.90 and $22.90
+Web packs: 800 credits for $10.80 or 1,500 for $22.80 (USD), sold separately
+from monthly subscriptions. Apple uses its nearest price points: $10.90 and $22.90
 in the US, with localized prices returned by StoreKit.
 
 Packs never expire, do not change subscriptions, and do not unlock paid features.

@@ -12,9 +12,9 @@ from . import auth
 from .database import execute_query
 
 PLANS = (
-    {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 300},
-    {"key": "builder", "name": "Builder", "monthly_cents": 900, "credits": 800},
-    {"key": "creator", "name": "Creator", "monthly_cents": 1900, "credits": 1500},
+    {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 75},
+    {"key": "builder", "name": "Builder", "monthly_cents": 299, "credits": 225},
+    {"key": "creator", "name": "Creator", "monthly_cents": 1999, "credits": 1500},
 )
 PAID_PLANS = {p["key"]: p for p in PLANS if p["monthly_cents"]}
 # Retired plans still need invoice reconciliation and cancellation support.
@@ -149,7 +149,7 @@ async def account(identity):
 
 
 def lookup_key(plan_key):
-    return f"brickbuilder_{plan_key}_monthly_v3"
+    return f"brickbuilder_{plan_key}_monthly_{'v3' if plan_key == 'master' else 'v4'}"
 
 
 async def price_for(plan_key):
@@ -284,8 +284,14 @@ async def sync_subscription(subscription_id):
     item = items[0]
     price = item["price"]
     plan = next((p for k, p in SUBSCRIPTION_PLANS.items() if price.get("lookup_key") == lookup_key(k)), None)
+    expected_cents = plan["monthly_cents"] if plan else None
+    # Retired v3 prices still reconcile and renew existing subscriptions.
+    if plan is None:
+        plan = next((p for k, p in PAID_PLANS.items()
+                     if price.get("lookup_key") == f"brickbuilder_{k}_monthly_v3"), None)
+        expected_cents = {"builder": 900, "creator": 1900}.get(plan["key"]) if plan else None
     recurring = price.get("recurring") or {}
-    if (not plan or price.get("unit_amount") != plan["monthly_cents"] or price.get("currency") != "usd"
+    if (not plan or price.get("unit_amount") != expected_cents or price.get("currency") != "usd"
             or recurring.get("interval") != "month" or recurring.get("interval_count") != 1):
         raise ValueError("Unexpected subscription price")
     start = item.get("current_period_start") or sub.get("current_period_start")

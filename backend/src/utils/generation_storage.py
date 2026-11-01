@@ -204,11 +204,11 @@ class GenerationStorage:
             if 'BB_BILLING_VERSION' in str(e):
                 raise HTTPException(status_code=503, detail='Building is being updated. Please try again shortly.') from None
             if 'BB_SIGN_IN_REQUIRED' in str(e):
-                raise HTTPException(status_code=403, detail='Sign in for 300 free monthly credits. All parts builds and AI mesh conversions use 15 credits; Basic builds use 1 credit.') from None
+                raise HTTPException(status_code=403, detail='Sign in for 75 free monthly credits. All parts builds and AI mesh conversions use 20 credits; Basic builds use 2 credits.') from None
             if 'BB_CREDITS_EXHAUSTED' in str(e):
                 raise HTTPException(status_code=402, detail='You have used your available credits. Choose a monthly plan to keep building, or wait for your credits to reset.') from None
             if 'BB_GUEST_CREDITS_EXHAUSTED' in str(e):
-                raise HTTPException(status_code=403, detail='Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 5 All parts builds or 75 Basic builds, or a mix. Sign in for 300 free monthly credits.') from None
+                raise HTTPException(status_code=403, detail='Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 3 All parts builds or 37 Basic builds, or a mix. Sign in for 75 free monthly credits.') from None
             if 'BB_GENERATION_GUEST_IP_REQUIRED' in str(e):
                 raise HTTPException(status_code=503, detail='Guest access is temporarily unavailable. Please sign in to keep building.') from None
             if 'BB_GENERATION_GUEST_LIMIT' in str(e):

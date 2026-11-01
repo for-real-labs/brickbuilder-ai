@@ -16,9 +16,9 @@ export interface BillingAccount {
   history: { id: number; kind: string; amount: number; bucket: string; created_at: string }[];
 }
 export const INITIAL_PLANS: CreditPlan[] = [
-  { key: 'free', name: 'Free', monthly_cents: 0, credits: 300 },
-  { key: 'builder', name: 'Builder', monthly_cents: 900, credits: 800 },
-  { key: 'creator', name: 'Creator', monthly_cents: 1900, credits: 1500 },
+  { key: 'free', name: 'Free', monthly_cents: 0, credits: 75 },
+  { key: 'builder', name: 'Builder', monthly_cents: 299, credits: 225 },
+  { key: 'creator', name: 'Creator', monthly_cents: 1999, credits: 1500 },
 ];
 export const LEGACY_MASTER_PLAN: CreditPlan = { key: 'master', name: 'Master Builder', monthly_cents: 3900, credits: 1000 };
 const mode = import.meta.env.VITE_API_MODE || 'local';

@@ -16,7 +16,7 @@ from . import billing
 from .credit_packs import APPLE_PRODUCTS
 
 PRODUCTS = {
-    'ai.brickbuilder.app.builder.monthly': ('builder', 800),
+    'ai.brickbuilder.app.builder.monthly': ('builder', 225),
     'ai.brickbuilder.app.creator.monthly': ('creator', 1500),
 }
 BUNDLE_ID = 'ai.brickbuilder.app'

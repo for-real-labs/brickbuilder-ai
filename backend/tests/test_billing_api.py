@@ -31,7 +31,7 @@ def subscription(identity):
         'metadata':{'integration':billing.BILLING_TAG,'brickbuilder_user_id':identity['user_id']},
         'cancel_at_period_end':False,
         'items':{'data':[{'id':'si_test','quantity':1,'current_period_start':now-60,'current_period_end':now+3600,
-            'price':{'id':'price_test','lookup_key':billing.lookup_key('builder'),'unit_amount':900,'currency':'usd','recurring':{'interval':'month','interval_count':1}}}]},
+            'price':{'id':'price_test','lookup_key':billing.lookup_key('builder'),'unit_amount':299,'currency':'usd','recurring':{'interval':'month','interval_count':1}}}]},
         'latest_invoice':{'id':'in_test','status':'paid','livemode':False,
             'parent':{'subscription_details':{'subscription':'sub_test'}},
             'lines':{'data':[{'pricing':{'price_details':{'price':'price_test'}}}]}}})
@@ -73,7 +73,7 @@ def test_only_verified_paid_matching_invoices_grant_credits(monkeypatch,identity
     else:
         asyncio.run(billing.sync_subscription('sub_test'))
         assert grant.call_args.kwargs['p_invoice']==('in_test' if change is None else None)
-        assert grant.call_args.kwargs['p_allowance']==(800 if change is None else None)
+        assert grant.call_args.kwargs['p_allowance']==(225 if change is None else None)
 
 
 def test_subscription_checkout_never_reaches_physical_order_processing(monkeypatch):
@@ -307,3 +307,14 @@ def test_account_exposes_order_access_independently_of_subscription(monkeypatch,
     assert result['ordered_instruction_models'] == orders.return_value
     assert result['paid_features'] is False
     orders.assert_awaited_once_with(identity['user_id'])
+
+
+@pytest.mark.parametrize('plan,cents', [('builder',900), ('creator',1900)])
+def test_retired_prices_still_reconcile(monkeypatch, subscription, plan, cents):
+    subscription['items'].data[0].price.lookup_key=f'brickbuilder_{plan}_monthly_v3'
+    subscription['items'].data[0].price.unit_amount=cents
+    monkeypatch.setattr(billing.stripe.Subscription,'retrieve',Mock(return_value=subscription))
+    monkeypatch.setattr(billing,'wallet',AsyncMock(return_value={'stripe_customer_id':'cus_test'}))
+    grant=AsyncMock(); monkeypatch.setattr(billing,'rpc',grant)
+    asyncio.run(billing.sync_subscription('sub_test'))
+    assert grant.call_args.kwargs['p_allowance'] == billing.PAID_PLANS[plan]['credits']

@@ -17,15 +17,16 @@ support; Master Builder is no longer offered for a new checkout or plan change.
 
 ## Plans
 
-| Plan | USD / month | Monthly credits | Example use of the shared balance |
+| Plan | USD / month | Monthly credits | Displayed estimate |
 | --- | ---: | ---: | --- |
-| Free | $0 | 300 | 300 Basic or 20 All parts builds |
-| Builder | $9 | 500 | 500 Basic or 33 All parts builds, with 5 credits left |
-| Creator | $19 | 750 | 750 Basic or 50 All parts builds |
+| Free | $0 | 75 | About 5 LEGO® sets per month |
+| Builder | $2.99 | 225 | About 15 LEGO® sets per month |
+| Creator | $19.99 | 1,500 | About 100 LEGO® sets per month |
 
-Basic generation and Basic AI edits cost 1 credit. All parts generation/edits and
-AI text/image-to-mesh conversions cost 15 credits on every plan, including Free. Modes
-share a balance; the example counts are alternatives, not additive allowances.
+Basic generation and Basic AI edits cost 2 credits. All parts generation/edits and
+AI text/image-to-mesh conversions cost 20 credits on every plan, including Free.
+100 credits funds five All parts generations. The requested set captions are
+approximate marketing estimates, not a count of All parts generations.
 Monthly subscriptions only; no annual plans. Non-expiring one-time packs are described in [Credit packs](credit-packs.md). Physical kits are separate.
 
 Free includes model creation, 3D previews, CSV/XML parts lists and instructions for
@@ -66,8 +67,8 @@ for fulfillment. This command does not send emails or change an existing link;
 `--replace` explicitly invalidates an older link, including any printed QR.
 Do not paste keys in public tickets/logs. No historical emails are resent automatically.
 
-Hosted guests get 75 lifetime credits without signing in: 5 All parts builds or
-75 Basic builds, or a mix. Basic AI edits use 1 and All parts/AI mesh work uses 15.
+Hosted guests get 75 lifetime credits without signing in: 3 All parts builds or
+37 Basic builds, or a mix. Basic AI edits use 2 and All parts/AI mesh work uses 20.
 Browser and network balances are reserved atomically and never reset monthly,
 on sign-in, or when a model is deleted. Failed/canceled jobs return guest credits
 exactly once; provider spend is never refunded by that credit return. A rejected
@@ -82,7 +83,7 @@ network allowance. Changing both browser and network can still obtain another
 trial; anonymous usage cannot establish a person's identity.
 
 Guest builds claimed after sign-in count toward that month's Free allowance at
-their 1/15-credit weight, capped by the remaining Free balance. Failed trials and
+their original charged credit weight, capped by the remaining Free balance. Failed trials and
 old-month builds do not deduct new monthly credits. The default daily guest cap
 is bypassed while billing is enabled so the 75-credit allowance is usable; short
 request throttles, one active generation and the global spending guard remain.
@@ -119,7 +120,7 @@ Free credits reset each UTC calendar month. Paid credits reset on a verified pai
 Stripe invoice at the billing anniversary, without rollover. Upgrades grant only
 the positive allowance difference; downgrade/re-upgrade cycling cannot mint more
 credits. Downgrades take effect at renewal. Failed/canceled builds refund their
-full 1- or 15-credit charge once, into its original period. Bonus refunds restore
+full original credit charge once, into its original period. Bonus refunds restore
 the monthly redemption allowance only when returning to the same bonus month.
 
 Billing → Cancel subscription opens Stripe confirmation. Cancellation takes
@@ -234,7 +235,7 @@ and subscription renewals are unchanged.
    with zero credits or cancellation scheduled. Check desktop and mobile layouts.
 5. Validate sandbox Checkout, existing subscription reconciliation and cancellation.
    Verify live catalog prices and portal choices without a live purchase. Check
-   five guest All parts builds / 75 Basic builds, mixed use, refunds, retry pauses,
+   five guest All parts builds / 37 Basic builds, mixed use, refunds, retry pauses,
    the localized retry time, the three signed-in balances and capacity telemetry;
    never reset wallets or
    reapply the previously recorded allowance migration during this rollout.
@@ -257,3 +258,20 @@ and mode nudges, FAQ usage, confirmation and cancellation clicks. Server-side
 `request_limit_hit` events distinguish `generation_retry_cooldown` and
 `generation_retry_pending` without sending network hashes or prompts. Stripe invoices
 are the source of truth for paid revenue; client confirmation events are not.
+
+
+## November 1 pricing rollout
+
+Apply `20261101000000_monthly_plans_v4.sql` once. It changes current Free and
+Builder monthly allowances while preserving credits already spent, never going
+below zero. Purchased/Apple and legacy bonus balances stay intact. Renewals and
+cancellation use the new allowances. Basic costs 2 credits and All parts costs 20;
+legacy bonuses remain Basic-only, capped at five credits per month.
+
+Provision v4 Stripe prices with the existing script in test and live modes.
+Existing v3 subscriptions retain their Stripe price and remain reconcilable;
+new checkout and portal plan changes offer only v4. The Apple Builder allowance
+is 225 for new transactions; historical allowances remain recorded. App Store
+subscription prices are configured separately from this web rollout.
+
+The historical evidence and model above describe earlier allowances and prices.

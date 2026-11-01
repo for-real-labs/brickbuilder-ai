@@ -1,7 +1,7 @@
 export const BUILD_FAILURE_MESSAGE = 'Oops! I couldn’t make your build. Please try again.';
 
 export const GUEST_GENERATION_LIMIT_MESSAGE = 'You have used your 3 free guest generations. Sign in to keep building.';
-export const GUEST_CREDITS_LIMIT_MESSAGE = 'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 5 All parts builds or 75 Basic builds, or a mix. Sign in for 300 free monthly credits.';
+export const GUEST_CREDITS_LIMIT_MESSAGE = 'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 3 All parts builds or 37 Basic builds, or a mix. Sign in for 75 free monthly credits.';
 
 export function isGuestLimitMessage(message: string) {
   return message === GUEST_GENERATION_LIMIT_MESSAGE || message === GUEST_CREDITS_LIMIT_MESSAGE

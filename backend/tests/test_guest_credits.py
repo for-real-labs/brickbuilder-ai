@@ -176,6 +176,6 @@ def test_guest_error_explains_the_shared_lifetime_allowance_without_a_reset_time
     with pytest.raises(HTTPException) as error:
         asyncio.run(storage.create_generation('guest_trial','anonymous','cube',40))
     assert error.value.status_code == 403
-    assert '75 credits: 5 All parts builds or 75 Basic builds, or a mix' in error.value.detail
-    assert 'Sign in for 300 free monthly credits' in error.value.detail
+    assert '75 credits: 3 All parts builds or 37 Basic builds, or a mix' in error.value.detail
+    assert 'Sign in for 75 free monthly credits' in error.value.detail
     assert not error.value.headers

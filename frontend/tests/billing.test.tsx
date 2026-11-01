@@ -161,7 +161,9 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
 it('shows the monthly allowances and simplified features on every plan', async () => {
   await render(<PricingPage />);
   const cards = [...container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')];
-  expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['300', '800', '1,500']);
+  expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['75', '225', '1,500']);
+  expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$2.99', '$19.99']);
+  expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 5 LEGO® sets per month', 'About 15 LEGO® sets per month', 'About 100 LEGO® sets per month']);
   for (const card of cards) {
     expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['LDR model downloads', 'IO model exports', 'Building instructions', '20% off every model purchasePhysical model bricks · promo codes stack']);
   }
@@ -195,10 +197,10 @@ it('links to Pricing from the billing page header', async () => {
 it.each([false,true])('explains guest access without requiring login and offers optional signup (All parts: %s)', async allParts => {
   auth.user = null;
   await render(<GenerationCreditQuote allParts={allParts} />);
-  expect(container.textContent).toContain(allParts ? '15 credits' : '1 credit');
-  expect(container.textContent).toContain('75 lifetime guest credits: 5 All parts builds or 75 Basic builds, or a mix. No login needed.');
+  expect(container.textContent).toContain(allParts ? '20 credits' : '2 credits');
+  expect(container.textContent).toContain('75 lifetime guest credits: 3 All parts builds or 37 Basic builds, or a mix. No login needed.');
   expect(container.textContent).not.toContain('One guest trial');
-  await click('Sign in for 300 free monthly credits');
+  await click('Sign in for 75 free monthly credits');
   expect(container.textContent).toContain('Sign in to build');
   expect(posthog.capture).toHaveBeenCalledWith('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' });
   expect(billingApi.checkout).not.toHaveBeenCalled();

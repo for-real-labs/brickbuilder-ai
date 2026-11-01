@@ -46,6 +46,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
         <p className="billing-renewal">{plan.monthly_cents ? apple ? 'Billed monthly by Apple' : 'USD · billed monthly' : 'No credit card needed'}</p>
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
+        <p className="billing-set-estimate">About {({ free: 5, builder: 15, creator: 100, master: 50 })[plan.key]} LEGO® sets per month</p>
         <ul className="billing-features">
           <li><Check aria-hidden="true" />LDR model downloads</li>
           <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>{plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}IO model exports</li>
@@ -79,7 +80,7 @@ export function CreditNudge() {
   const { account, enabled, openUpgrade } = useBilling();
   const { pet } = usePet();
   const low = Boolean(account && (account.credits_remaining <= Math.max(2, Math.floor(account.monthly_credits * .2))
-    || (account.monthly_remaining + (account.apple_remaining ?? 0)) < 15));
+    || (account.monthly_remaining + (account.apple_remaining ?? 0)) < 20));
   const source = low ? 'low_credits' : 'creation_banner';
   const highest = account?.plan_key === 'creator' || account?.plan_key === 'master';
   useEffect(() => {
@@ -89,7 +90,7 @@ export function CreditNudge() {
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
     <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Buy additional credits to keep building.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
-      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $9.'} Basic builds use 1 credit; All parts uses 15. Paid plans also save 20% on model bricks.</>}</p>
+      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $2.99.'} Basic builds use 2 credits; All parts uses 20. Paid plans also save 20% on model bricks.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing#credit-packs'); } else openUpgrade(source); }}>{low ? highest ? 'Buy more credits' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
     <button type="button" className="credit-nudge-dismiss" aria-label="Dismiss plans banner" onClick={() => { setDismissed(true); posthog.capture('billing_nudge_dismissed', { source, plan_key: account?.plan_key ?? 'guest' }); }}><X size={18} aria-hidden="true" /></button>
   </div>;
@@ -151,10 +152,10 @@ export function GenerationCreditQuote({ allParts, personalSupported = true }: { 
   if (personal && personalSupported) return <p className="billing-generation-quote" role="status">Your AI account · No BrickBuilder credits used</p>;
   if (!enabled) return null;
   return <p className="billing-generation-quote" role="status">
-    {allParts ? '15 credits · All parts / AI mesh conversion' : '1 credit · Basic build or edit'}
+    {allParts ? '20 credits · All parts / AI mesh conversion' : '2 credits · Basic build or edit'}
     {allParts && account && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
-    {!user && <> · 75 lifetime guest credits: 5 All parts builds or 75 Basic builds, or a mix. No login needed.{' '}
-      <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' }); signIn(); }}>Sign in for 300 free monthly credits</button></>}
+    {!user && <> · 75 lifetime guest credits: 3 All parts builds or 37 Basic builds, or a mix. No login needed.{' '}
+      <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' }); signIn(); }}>Sign in for 75 free monthly credits</button></>}
   </p>;
 }
 
@@ -176,6 +177,6 @@ export function CreditPacks({ source }: { source: string }) {
         </article>;
       })}
     </div>
-    <p className="billing-muted">{apple ? 'Priced approximately 20% above the matching monthly plan, using Apple’s available price points.' : 'Priced 20% above the matching monthly plan.'} No subscription or paid-feature access is included.</p>
+    <p className="billing-muted">One-time credits never expire. No subscription or paid-feature access is included.</p>
   </section>;
 }
