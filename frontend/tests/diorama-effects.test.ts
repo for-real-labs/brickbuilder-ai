@@ -9,7 +9,7 @@ import { createDioramaEffects } from '../src/utils/dioramaEffects';
 
 afterEach(() => vi.restoreAllMocks());
 
-it('renders scene color before occlusion, resizes its projection, and releases all passes', () => {
+it.each([false, true])('renders crisp rulers over scene effects and restores their parent (failure=%s)', fail => {
   const calls: string[] = [];
   let occlusion: SSAOPass | undefined;
   const passes = [RenderPass, SSAOPass, UnrealBloomPass, ShaderPass, OutputPass];
@@ -21,14 +21,29 @@ it('renders scene color before occlusion, resizes its projection, and releases a
     });
   }
   const renderer = {
+    autoClear: true,
+    clearDepth: vi.fn(),
+    render: vi.fn((overlay: THREE.Scene) => {
+      expect(overlay.getObjectByName('ruler-grid')).toBe(ruler);
+      if (fail) throw new Error('overlay failed');
+    }),
     getSize: (target: THREE.Vector2) => target.set(800, 600),
     getPixelRatio: () => 2,
     getRenderTarget: () => null,
     setRenderTarget: vi.fn(),
   } as unknown as THREE.WebGLRenderer;
+  const scene = new THREE.Scene();
+  const ruler = new THREE.Group();
+  ruler.name = 'ruler-grid';
+  scene.add(ruler);
   const camera = new THREE.PerspectiveCamera(35, 4 / 3, 1, 10000);
-  const effects = createDioramaEffects(renderer, new THREE.Scene(), camera, 200);
-  effects.render();
+  const effects = createDioramaEffects(renderer, scene, camera, 200);
+  if (fail) expect(() => effects.render()).toThrow('overlay failed');
+  else effects.render();
+  expect(ruler.parent).toBe(scene);
+  expect(ruler.visible).toBe(true);
+  expect(renderer.autoClear).toBe(true);
+  expect(renderer.clearDepth).toHaveBeenCalledTimes(1);
   // Multiplying AO into an empty color buffer would produce a black canvas.
   expect(calls).toEqual(['RenderPass', 'SSAOPass', 'UnrealBloomPass', 'ShaderPass', 'OutputPass']);
   camera.aspect = 0.5;

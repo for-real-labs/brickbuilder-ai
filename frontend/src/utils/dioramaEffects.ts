@@ -28,8 +28,25 @@ export function createDioramaEffects(renderer: THREE.WebGLRenderer, scene: THREE
   composer.addPass(vignette);
   composer.addPass(output);
   composer.setSize(size.x, size.y);
+  const overlayScene = new THREE.Scene();
   return {
-    render: () => composer.render(),
+    render() {
+      const ruler = scene.getObjectByName('ruler-grid');
+      if (!ruler?.visible) { composer.render(); return; }
+      // Keep labels out of the depth/occlusion buffers and draw them crisply on top.
+      const parent = ruler.parent!;
+      const autoClear = renderer.autoClear;
+      overlayScene.add(ruler);
+      try {
+        composer.render();
+        renderer.autoClear = false;
+        renderer.clearDepth();
+        renderer.render(overlayScene, camera);
+      } finally {
+        parent.add(ruler);
+        renderer.autoClear = autoClear;
+      }
+    },
     resize: (width: number, height: number) => composer.setSize(width, height),
     dispose() {
       render.dispose();

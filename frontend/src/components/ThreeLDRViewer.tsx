@@ -2131,7 +2131,7 @@ export function ThreeLDRViewer({
           updateDioramaFog(scene, camera.position.distanceTo(controls.target), dioramaExtent);
           updateRulerLabelScales(scene, camera, renderer);
           
-          if (effects && !scene.getObjectByName('ruler-grid')?.visible) effects.render();
+          if (effects) effects.render();
           else renderer.render(scene, camera);
         };
         animate();
