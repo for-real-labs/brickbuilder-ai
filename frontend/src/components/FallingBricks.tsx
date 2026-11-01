@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from "react";
 
-type ChristmasIcon = 'tree' | 'gift' | 'candy-cane' | 'snowflake';
+type ChristmasIcon = 'tree' | 'gift' | 'snowflake' | 'santa' | 'bell' | 'snowman';
 type ItemKind = 'brick' | ChristmasIcon;
 
 type Brick = {
@@ -37,32 +37,19 @@ const BRICK_SIZES: Array<[number, number]> = [
   [4, 2],
 ];
 
-// Each cell is a small studded brick, so the decorations match the existing bricks.
-const CHRISTMAS_ICONS: Record<ChristmasIcon, string[]> = {
-  tree: ['...Y...', '...G...', '..GGG..', '.GGGGG.', '..GGG..', '.GGGGG.', 'GGGGGGG', '...B...'],
-  gift: ['.Y.Y.', '..Y..', 'RRYRR', 'RRYRR', 'YYYYY', 'RRYRR', 'RRYRR'],
-  'candy-cane': ['.RRW.', 'RW.WR', 'WR.RW', '...WR', '...RW', '...WR', '...RW'],
-  snowflake: ['W..C..W', '.W.C.W.', '..CCC..', 'CCCCCCC', '..CCC..', '.W.C.W.', 'W..C..W'],
+const CHRISTMAS_ICONS: Record<ChristmasIcon, string> = {
+  tree: '🎄', gift: '🎁', snowflake: '❄️', santa: '🎅', bell: '🔔', snowman: '⛄',
 };
-const CHRISTMAS_COLORS: Record<string, string> = { G: '#20874b', R: '#d83838', Y: '#efbc39', W: '#f2f5fa', C: '#70badd', B: '#90613d' };
 const CHRISTMAS_KINDS = Object.keys(CHRISTMAS_ICONS) as ChristmasIcon[];
 
 function drawChristmasIcon(ctx: CanvasRenderingContext2D, item: Brick) {
-  const rows = CHRISTMAS_ICONS[item.kind as ChristmasIcon];
-  const cell = Math.min(item.w / rows[0].length, item.h / rows.length);
   ctx.save();
   ctx.translate(item.x, item.y);
   ctx.rotate(item.rot);
-  rows.forEach((row, y) => [...row].forEach((color, x) => {
-    if (color === '.') return;
-    const left = (x - row.length / 2) * cell, top = (y - rows.length / 2) * cell;
-    ctx.fillStyle = CHRISTMAS_COLORS[color];
-    ctx.fillRect(left, top, cell - .4, cell - .4);
-    ctx.beginPath();
-    ctx.arc(left + cell / 2, top + cell / 2, cell * .23, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(255,255,255,.35)';
-    ctx.fill();
-  }));
+  ctx.font = `${item.h}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(CHRISTMAS_ICONS[item.kind as ChristmasIcon], 0, 0);
   ctx.restore();
 }
 
@@ -146,7 +133,7 @@ export default function FallingBricks({
   opacity = 0.25,
   christmas = false,
 }: {
-  density?: number;   // total falling items; half bricks, half Christmas icons
+  density?: number;   // total falling items; Christmas mode uses 70% bricks and 30% decorations
   zIndex?: number;    // stacking context
   opacity?: number;   // canvas global alpha
   christmas?: boolean;
@@ -185,7 +172,7 @@ export default function FallingBricks({
       const studsX = size[0];
       const studsY = size[1];
       const pxPerStud = rand(12, 20); // scale bricks
-      const w = kind === 'brick' ? studsX * pxPerStud + rand(2, 4) : rand(44, 68);
+      const w = kind === 'brick' ? studsX * pxPerStud + rand(2, 4) : rand(32, 58);
       const h = kind === 'brick' ? studsY * pxPerStud + rand(2, 4) : w;
       const x = rand(-w, canvas.clientWidth + w);
       const y = rand(-canvas.clientHeight, -h * 2);
@@ -205,7 +192,10 @@ export default function FallingBricks({
       } else {
         while (arr.length < want) {
           const index = arr.length;
-          const kind = !christmas || index % 2 === 0 ? 'brick' : CHRISTMAS_KINDS[Math.floor(index / 2) % CHRISTMAS_KINDS.length];
+          // Round cumulative decoration counts for the closest whole-item 70/30 split.
+          const iconCount = Math.round((index + 1) * .3);
+          const kind = christmas && iconCount > Math.round(index * .3)
+            ? CHRISTMAS_KINDS[(iconCount - 1) % CHRISTMAS_KINDS.length] : 'brick';
           const brick = makeBrick(kind);
           // Start throughout the viewport, with one random position per vertical
           // band so the background is populated from its very first frame.

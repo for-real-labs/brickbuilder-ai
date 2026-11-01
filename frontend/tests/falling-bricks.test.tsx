@@ -70,18 +70,29 @@ it('renders studded bricks and keeps them out of the accessibility tree', () => 
   expect(host.firstElementChild?.getAttribute('aria-hidden')).toBe('true');
 });
 
-it.each([false, true])('keeps half the falling items as studded Christmas icons through recycling (mobile: %s)', isMobile => {
+it.each([false, true])('keeps 70% bricks and 30% emoji Christmas decorations through recycling (mobile: %s)', isMobile => {
   mobile = isMobile;
   let currentItem = -1;
   const icons = new Set<number>();
   translate.mockImplementation(() => { currentItem++; });
-  context.fillRect.mockImplementation(() => { icons.add(currentItem); });
+  context.fillText.mockImplementation(() => { icons.add(currentItem); });
   act(() => root.render(<FallingBricks christmas />));
   const count = mobile ? 13 : 22;
   for (let step = 0; step < 150; step++) {
     currentItem = -1; icons.clear();
     tick(50);
-    expect(icons.size).toBe(Math.floor(count / 2));
-    expect([...icons].every(index => index % 2 === 1)).toBe(true);
+    expect(icons.size).toBe(Math.round(count * .3));
+    expect(context.fillRect).not.toHaveBeenCalled();
+    for (const [symbol] of context.fillText.mock.calls) {
+      expect(['🎄', '🎁', '❄️', '🎅', '🔔', '⛄']).toContain(symbol);
+    }
+    context.fillText.mockClear();
   }
+});
+
+it('uses an exact 70/30 split when the item count allows it', () => {
+  act(() => root.render(<FallingBricks density={20} christmas />));
+  tick();
+  expect(context.fillText).toHaveBeenCalledTimes(6);
+  expect(new Set(context.fillText.mock.calls.map(([symbol]) => symbol)).size).toBe(6);
 });

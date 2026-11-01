@@ -181,8 +181,9 @@ regular artwork and v2 loops. Versioned media lives in
 and motion prompts, six provider requests, identical endpoint-image hashes,
 encoding, and decoded loop/alpha measurements.
 
-The landing page opts into a Christmas background: alternating regular studded
-bricks and small studded mosaics depicting trees, presents, candy canes and
-snowflakes. Recycling preserves each slot's kind, so the mix remains half and
-half (within one item for odd mobile counts). Other pages retain regular bricks.
-The existing centered headline and mobile pet bounds are preserved.
+The landing page opts into a Christmas background: 70% regular studded bricks
+and 30% Christmas emoji decorations, matching the earlier Halloween decoration
+style. Trees, presents, snowflakes, Santa faces, bells and snowmen use native color
+emoji. Counts use the nearest whole-item split, and recycling preserves each
+slot's kind. Other pages retain regular bricks. The existing centered headline
+and mobile pet bounds are preserved.
