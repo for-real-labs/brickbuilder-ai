@@ -53,8 +53,6 @@ export default function BillingPage() {
           <p className="billing-big-balance">{account.credits_remaining}<span>ready for your next idea</span></p>
           {!apple && <><div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" /></>}
-          <div className="billing-balance-row"><span>Purchased & earned credits · never expire</span><strong>{account.apple_remaining ?? 0}</strong></div>
-          <div className="billing-balance-row"><span>Legacy bonus balance · never expires</span><strong>{account.bonus_remaining}</strong></div>
           {!apple && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
           <button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button>
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>

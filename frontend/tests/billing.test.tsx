@@ -226,10 +226,12 @@ it('pauses new sales at capacity while keeping cancellation accessible', async (
   expect(billingApi.portal).toHaveBeenCalledWith('cancel');
 });
 
-it('shows the preserved bonus balance without the monthly bonus explanation', async () => {
+it('shows the total and monthly balances without separate purchased or legacy rows', async () => {
   account = { ...account, bonus_remaining: 100, bonus_available: 3, credits_remaining: 5 };
   await render(<BillingPage />);
-  expect(container.textContent).toContain('Legacy bonus balance');
+  expect(container.textContent).not.toContain('Legacy bonus balance');
+  expect(container.querySelector('.billing-big-balance')?.textContent).toContain('5');
+  expect([...container.querySelectorAll('.billing-balance-row')].map(row => row.textContent)).toEqual(['Monthly credits2 / 300']);
   expect(container.textContent).not.toContain('bonus credits available for Basic builds this month');
   expect(container.textContent).not.toContain('Maximum 5 per month.');
 });
@@ -393,7 +395,8 @@ it('shows earned referral credits with their own history label', async () => {
   account = { ...account, apple_remaining: 300, credits_remaining: 302,
     history: [{ id: 1, kind: 'referral', amount: 300, bucket: 'apple', created_at: '2026-10-29T12:00:00Z' }] };
   await render(<BillingPage />);
-  expect(container.textContent).toContain('Purchased & earned credits · never expire');
+  expect(container.textContent).not.toContain('Purchased & earned credits · never expire');
+  expect(container.querySelector('.billing-big-balance')?.textContent).toContain('302');
   const row = container.querySelector('tbody tr')!;
   expect(row.textContent).toContain('Account referral reward');
   expect(row.textContent).toContain('Referral credits');
