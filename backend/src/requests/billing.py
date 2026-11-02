@@ -103,13 +103,13 @@ async def apple_notifications(request: AppleNotificationRequest):
 
 class CreditPackRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    pack_key: Literal['builder', 'creator']
+    amount_cents: int = Field(strict=True, ge=50, le=999999)
 
 
 @router.post('/credits/checkout')
 async def credit_checkout(request: CreditPackRequest, identity: dict = Depends(get_optional_identity)):
     from ..utils import credit_packs
-    return await run(credit_packs.checkout(identity, request.pack_key))
+    return await run(credit_packs.checkout(identity, request.amount_cents))
 
 
 @router.post('/apple/credits/prepare')

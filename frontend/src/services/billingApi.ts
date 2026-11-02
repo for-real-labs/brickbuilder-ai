@@ -36,7 +36,7 @@ async function request<T>(path: string, body?: object): Promise<T> {
 export const billingApi = {
   plans: () => request<{ plans: CreditPlan[]; apple_ready?: boolean; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
   account: () => request<BillingAccount>('account'),
-  creditCheckout: (pack_key: string) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ url: string }>('credits/checkout', { pack_key }),
+  creditCheckout: (amount_cents: number) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ url: string }>('credits/checkout', { amount_cents }),
   appleCreditPrepare: () => request<{ app_account_token: string }>('apple/credits/prepare', {}),
   applePrepare: () => request<{ app_account_token: string }>('apple/prepare', {}),
   appleSync: (transaction_id: string) => request<BillingAccount>('apple/sync', { transaction_id }),

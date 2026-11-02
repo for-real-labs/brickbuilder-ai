@@ -234,3 +234,17 @@
 @media(max-width:360px) { .billing-plan { gap:0 8px; padding-inline:16px; } .billing-price strong { font-size:30px; } .billing-plan-top h2 { font-size:20px; } }
 
 .billing-set-estimate { margin: 0.5rem 0 0; color: #64748b; font-size: 0.875rem; line-height: 1.5; }
+
+.billing-credit-purchase { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px 24px; border-top:1px solid #e2e8f0; margin-top:36px; padding:24px 0; }
+.billing-credit-purchase h2 { margin:0; font-size:17px; font-weight:700; }
+.billing-credit-purchase p { margin:4px 0 0; color:#64748b; font-size:13px; }
+.billing-credit-purchase form { display:flex; align-items:flex-end; flex-wrap:wrap; gap:12px; }
+.billing-credit-purchase label { display:flex; flex-direction:column; gap:5px; color:#475569; font-size:12px; font-weight:600; }
+.billing-credit-purchase input,.billing-credit-purchase select { min-height:44px; width:132px; max-width:100%; border:1px solid #cbd5e1; border-radius:10px; background:white; padding:9px 12px; color:#0f172a; font-size:16px; }
+.billing-credit-purchase select { width:190px; }
+.billing-credit-purchase input:focus-visible,.billing-credit-purchase select:focus-visible { outline:2px solid #f44336; outline-offset:2px; }
+.billing-credit-purchase output { align-self:flex-end; min-height:44px; display:flex; align-items:center; color:#475569; font-size:14px; }
+.billing-credit-purchase button[type=submit] { min-height:44px; white-space:nowrap; }
+.billing-credit-purchase .billing-dialog h2 { font-size:24px; }
+.billing-credit-purchase .billing-dialog p { font-size:15px; line-height:1.6; margin-top:12px; }
+@media(max-width:600px) { .billing-credit-purchase { display:block; } .billing-credit-purchase form { margin-top:16px; } .billing-credit-purchase form output { flex:1; } .billing-credit-purchase button[type=submit] { width:100%; } }

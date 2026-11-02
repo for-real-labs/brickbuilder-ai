@@ -45,6 +45,7 @@ beforeEach(async () => {
   vi.mocked(billingApi.checkout).mockResolvedValue({ url: 'https://checkout.stripe.com/c/pay/test' });
   vi.mocked(billingApi.portal).mockResolvedValue({ url: 'https://billing.stripe.com/p/session/test' });
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value() { this.open = false; } });
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() { this.open = true; } });
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
 });
@@ -95,9 +96,9 @@ it('does not show or report a nudge for a paid account with plenty of credits', 
 it('directs an exhausted highest-tier subscriber to additional credit purchases', async () => {
   account = { ...account, plan_key: 'master', has_subscription: true, subscription_status: 'active', credits_remaining: 0, monthly_remaining: 0, monthly_credits: 1000 };
   await render(<CreditNudge />);
-  expect(container.textContent).toContain('Buy more credits');
+  expect(container.textContent).toContain('Buy credits');
   expect(container.textContent).not.toContain('Get more credits');
-  await click('Buy more credits');
+  await click('Buy credits');
   expect(posthog.capture).toHaveBeenCalledWith('billing_usage_clicked', { source: 'low_credits' });
 });
 
@@ -356,15 +357,33 @@ it.each([0, 2, 12345])('lets the header balance fit %s credits without reserving
 });
 
 
-it('buys a one-time pack without changing the subscription', async () => {
+it.each(['builder', 'creator'] as const)('buys a custom dollar amount at the %s rate', async plan => {
+  account = { ...account, plan_key: plan, has_subscription: true, paid_features: true, subscription_status: 'active' };
   vi.mocked(billingApi.creditCheckout).mockResolvedValue({url:'https://checkout.stripe.com/c/pay/pack'});
   await render(<PricingPage />);
-  expect(container.querySelector('#credit-packs')?.textContent).toContain('$10.80');
-  expect(container.querySelector('#credit-packs')?.textContent).toContain('$22.80');
+  const input = container.querySelector<HTMLInputElement>('#credit-packs input')!;
+  await act(async () => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '10.00');
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  expect(container.querySelector('#credit-packs output')?.textContent).toBe(plan === 'builder' ? '753 credits' : '751 credits');
   await click('Buy credits');
-  expect(billingApi.creditCheckout).toHaveBeenCalledWith('builder');
+  expect(billingApi.creditCheckout).toHaveBeenCalledWith(1000);
   expect(billingApi.checkout).not.toHaveBeenCalled();
   expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/pack');
+});
+
+it.each([true, false])('requires a paid monthly plan before buying credits (signed in: %s)', async signedIn => {
+  if (!signedIn) auth.user = null;
+  await render(<PricingPage />);
+  expect(container.querySelector('#credit-packs h2')?.textContent).toBe('Buy credits');
+  expect(container.querySelector('.billing-faq')?.compareDocumentPosition(container.querySelector('#credit-packs')!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  await click('Buy credits');
+  const dialog = container.querySelector('#credit-packs dialog')!;
+  expect(dialog.textContent).toContain('You must be subscribed to a paid monthly plan to buy credits.');
+  expect(dialog.getAttribute('open')).not.toBeNull();
+  expect(billingApi.creditCheckout).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('billing_credit_subscription_required', { source: 'pricing_page' });
 });
 
 it('shows earned referral credits with their own history label', async () => {

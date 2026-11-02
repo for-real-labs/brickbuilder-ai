@@ -30,3 +30,22 @@ def test_purchases_replay_refund_debt_reversal_and_generation(db):
         with pytest.raises(psycopg.errors.InsufficientPrivilege): grant(db,uid,7)
         with pytest.raises(psycopg.errors.InsufficientPrivilege): db.execute('SELECT * FROM billing_credit_purchases')
     finally: db.execute('RESET ROLE')
+
+
+def test_custom_purchase_limit_replay_and_refund_preserve_the_ledger(db):
+    migrate(db)
+    db.execute((MIGRATION.parent/'20261027010000_credit_packs.sql').read_text())
+    db.execute((MIGRATION.parent/'20261102010000_custom_credit_purchases.sql').read_text())
+    uid=owner(db)
+    def custom(version, amount, transaction='stripe:pi_custom'):
+        db.execute("SELECT billing_apply_credit_pack(%s,true,%s,'custom',%s,%s)",(uid,transaction,version,amount))
+    custom(1,753); custom(1,753)
+    assert wallet(db,uid)['apple_remaining']==753
+    custom(2,376)
+    assert wallet(db,uid)['apple_remaining']==376
+    custom(1,753)
+    assert wallet(db,uid)['apple_remaining']==376
+    custom(3,753)
+    assert wallet(db,uid)['apple_remaining']==753
+    with pytest.raises(psycopg.errors.RaiseException,match='INVALID_CREDIT_PURCHASE'): custom(4,752509)
+    with pytest.raises(psycopg.errors.RaiseException,match='INVALID_CREDIT_PURCHASE'): custom(4,753,'apple:production:123')

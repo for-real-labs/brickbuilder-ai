@@ -68,7 +68,6 @@ export default function BillingPage() {
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}
           <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved models and bonus credits stay with you.'}</p>
         </section></div>
-        <CreditPacks source="billing" />
         <section className="billing-account-card billing-history"><div className="billing-history-heading"><h2>Credit history</h2><button type="button" aria-label="Refresh credit history" onClick={() => { posthog.capture('billing_history_refreshed'); void refresh(); }}><RefreshCw size={17} /></button></div>
           {account.history.length ? <div className="billing-table-wrap"><table><thead><tr><th>Activity</th><th>Date</th><th>Credits</th></tr></thead><tbody>
             {account.history.map(row => <tr key={row.id}><td>{labels[row.kind] ?? 'Credit adjustment'}<span>{row.kind === 'referral' ? 'Referral credits' : row.bucket === 'apple' ? 'Purchased credits' : row.bucket === 'bonus' ? 'Bonus credits' : 'Monthly credits'}</span></td><td>{billingDate(row.created_at)}</td><td className={row.amount > 0 ? 'billing-positive' : ''}>{row.amount > 0 ? '+' : ''}{row.amount}</td></tr>)}
@@ -76,6 +75,7 @@ export default function BillingPage() {
           <p className="billing-muted">Your 30 most recent credit updates.</p></section>
       </>}
     {isAppleApp() && <button className="billing-secondary" disabled={busy} onClick={() => void restore()}>Restore Apple purchases</button>}
+    <CreditPacks source="billing" />
     <Link to="/pricing" className="billing-text-link" onClick={() => posthog.capture('billing_compare_plans_clicked')}>Compare all plans & credit details <ArrowUpRight size={15} /></Link>
   </main></div>;
 }

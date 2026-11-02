@@ -1,13 +1,26 @@
 # One-time credits
 
-Web packs: 800 credits for $10.80 or 1,500 for $22.80 (USD), sold separately
-from monthly subscriptions. Apple uses its nearest price points: $10.90 and $22.90
-in the US, with localized prices returned by StoreKit.
+An active paid monthly plan is required to buy credits. On the web, enter an
+amount from $0.50 to $9,999.99. Builder receives `ceil(cents × 225 / 299)`
+credits; Creator and retired Master use `ceil(cents × 1500 / 1999)`.
+For example, $10 buys 753 Builder credits or 751 Creator credits. Quotes always
+round up to whole credits. The server chooses the rate from the verified paid
+account and stores the amount and rate version on Stripe's payment metadata.
 
-Packs never expire, do not change subscriptions, and do not unlock paid features.
-Free accounts are welcome to purchase packs. The exhausted-credit prompt sends
-Free users to pricing, Builder users to upgrades, and Creator/legacy Master users
-to the credit-pack section. Personal API-key settings remain separately available.
+The compact Buy credits form is at the bottom of pricing and billing. Free and
+guest visitors see a paid-monthly-plan popup before any checkout starts. The
+backend independently rejects unpaid accounts. Purchased credits never expire
+and remain available after a subscription ends. Refunds reconcile the original
+quote without requiring a still-active subscription.
+
+Apple retains the fixed StoreKit consumables and localized prices; arbitrary
+amounts are supported by web checkout. Starting an Apple credit purchase now
+also requires paid access. Previously purchased credits still reconcile.
+
+Apply `20261102010000_custom_credit_purchases.sql` once before deploying the
+backend. It adds the custom Stripe purchase kind, retaining previous pack limits,
+owner binding, idempotency, and refunds. Existing fixed-price purchases continue
+to reconcile using the original prices and amounts.
 
 Apply `20261027010000_credit_packs.sql` before deploying. It adds a private purchase
 ledger and reuses the non-expiring wallet bucket historically named

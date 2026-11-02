@@ -15,15 +15,37 @@ TAG = 'brickbuilder_credit_pack_v1'
 APPLE_PRODUCTS = {f'ai.brickbuilder.app.credits.{p["credits"]}': p for p in PACKS.values()}
 
 
-async def checkout(identity, pack_key):
+MIN_CENTS = 50
+MAX_CENTS = 999999
+CUSTOM_RATES = {'builder': (225, 299), 'creator': (1500, 1999)}
+SUBSCRIPTION_REQUIRED = 'You must be subscribed to a paid monthly plan to buy credits.'
+
+
+def quote(amount_cents, rate_key):
+    if type(amount_cents) is not int or not MIN_CENTS <= amount_cents <= MAX_CENTS or rate_key not in CUSTOM_RATES:
+        raise HTTPException(400, 'Enter an amount between $0.50 and $9,999.99.')
+    credits, cents = CUSTOM_RATES[rate_key]
+    return {'cents': amount_cents, 'credits': (amount_cents * credits + cents - 1) // cents}
+
+
+async def require_subscriber(owner):
+    row = await billing.wallet(owner)
+    if not billing.has_paid_features(row):
+        raise HTTPException(403, SUBSCRIPTION_REQUIRED)
+    return row
+
+
+async def checkout(identity, amount_cents):
     owner = billing.account_id(identity)
     await billing.require_enabled()
-    if pack_key not in PACKS:
-        raise HTTPException(400, 'Choose a credit pack.')
+    row = await require_subscriber(owner)
+    plan = row.get('apple_plan') if billing.apple_active(row) else row['plan_key']
+    rate_key = 'builder' if plan == 'builder' else 'creator'
+    pack = quote(amount_cents, rate_key)
     if not (await billing.capacity())['checkout_available']:
         raise HTTPException(503, 'Credit purchases are temporarily unavailable.')
-    pack = PACKS[pack_key]
-    metadata = {'integration': TAG, 'brickbuilder_user_id': owner, 'pack_key': pack_key}
+    metadata = {'integration': TAG, 'brickbuilder_user_id': owner, 'pack_key': 'custom',
+                'amount_cents': str(amount_cents), 'rate_key': rate_key, 'pricing_version': 'monthly_v4'}
     session = await asyncio.to_thread(stripe.checkout.Session.create,
         mode='payment', client_reference_id=owner, payment_method_types=['card'],
         line_items=[{'price_data': {'currency': 'usd', 'unit_amount': pack['cents'],
@@ -45,6 +67,10 @@ async def reconcile(payment_id, owner=None):
     if owner and user != owner:
         raise HTTPException(403, 'This purchase belongs to another account.')
     pack = PACKS.get(meta.get('pack_key'))
+    if meta.get('pack_key') == 'custom':
+        if meta.get('pricing_version') != 'monthly_v4':
+            raise ValueError('Invalid credit pricing version')
+        pack = quote(int(meta['amount_cents']), meta.get('rate_key'))
     if (not pack or payment.get('livemode') is not billing.live_mode()
             or payment.get('currency') != 'usd' or payment.get('amount') != pack['cents']):
         raise ValueError('Invalid credit payment')

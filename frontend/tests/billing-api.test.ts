@@ -26,3 +26,11 @@ it('preserves useful errors and restricts external payment redirects to Stripe H
   openStripe('https://billing.stripe.com/test');
   expect(assign).toHaveBeenCalledWith('https://billing.stripe.com/test');
 });
+
+it('sends only the chosen cents to checkout, leaving credit and rate selection to the server', async () => {
+  vi.mocked(authenticatedApiFetch).mockResolvedValueOnce(new Response(JSON.stringify({ url: 'https://checkout.stripe.com/test' })));
+  await billingApi.creditCheckout(1000);
+  const [url, args] = vi.mocked(authenticatedApiFetch).mock.calls[0];
+  expect(new URL(url).pathname).toBe('/billing/credits/checkout');
+  expect(JSON.parse(String(args?.body))).toEqual({ amount_cents: 1000 });
+});

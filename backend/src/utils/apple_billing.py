@@ -142,6 +142,9 @@ async def prepare(identity, consumable=False):
     if not ready() or not (await billing.capacity())['checkout_available']:
         raise HTTPException(503, 'New Apple subscriptions are temporarily unavailable. Restore and management remain available.')
     row = await billing.wallet(user_id)
+    if consumable and not billing.has_paid_features(row):
+        from .credit_packs import SUBSCRIPTION_REQUIRED
+        raise HTTPException(403, SUBSCRIPTION_REQUIRED)
     if not consumable and row.get('stripe_subscription_id') and row['subscription_status'] not in ('none', 'canceled', 'incomplete_expired'):
         raise HTTPException(409, 'You already have a web subscription. Manage or cancel it before starting an Apple subscription.')
     return {'app_account_token': user_id}
