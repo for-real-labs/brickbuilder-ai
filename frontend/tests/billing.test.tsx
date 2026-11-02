@@ -36,6 +36,13 @@ const click = async (text: string) => act(async () => {
   expect(button, text).toBeDefined(); button!.click();
 });
 
+const selectPlan = async (name: string) => act(async () => {
+  const button = container.querySelector<HTMLButtonElement>(`[aria-label="${name} plan"] .billing-plan-button`);
+  expect(button).not.toBeNull();
+  expect(button?.textContent).toBe('Select Plan');
+  button!.click();
+});
+
 beforeEach(async () => {
   vi.clearAllMocks();
   delete window.__BRICKBUILDER_NATIVE_APP__;
@@ -66,7 +73,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   expect(container.textContent).toContain('Web monthly credits reset and do not roll over');
   expect(container.querySelector('.billing-dialog .billing-member-intro strong')?.textContent).toBe('20% off LEGO® set purchases!');
   expect(container.querySelector('.billing-dialog .billing-fine-print')?.textContent).not.toContain('Legacy bonuses never expire.');
-  await click('Choose Creator');
+  await selectPlan('Creator');
   expect(billingApi.checkout).toHaveBeenCalledWith('creator');
   expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/test');
   expect(posthog.capture).toHaveBeenCalledWith('billing_checkout_started', { plan_key: 'creator', source: 'credit_balance' });
@@ -79,7 +86,7 @@ it('asks guests to sign in before creating a subscription', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
   expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('LDR downloads for LEGO® sets');
-  await click('Choose Builder');
+  await selectPlan('Builder');
   expect(container.textContent).toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();
   expect(billingApi.account).not.toHaveBeenCalled();
@@ -130,7 +137,7 @@ it('clearly confirms an end-of-period cancellation without offering another canc
 it('keeps a failed checkout in the app with a useful error', async () => {
   vi.mocked(billingApi.checkout).mockRejectedValueOnce(new Error('Please try again in a moment.'));
   await render(<OpenPlansPopup />);
-  await click('Choose Creator');
+  await selectPlan('Creator');
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again in a moment.');
   expect(openStripe).not.toHaveBeenCalled();
   expect(container.textContent).toContain('One-time credits never expire');
@@ -153,7 +160,7 @@ it('keeps unavailable billing presentable and refreshes availability when the vi
   expect(container.querySelector('[role="alert"]')).toBeNull();
   await act(async () => window.dispatchEvent(new Event('focus')));
   expect(container.querySelector('[role="status"]')).toBeNull();
-  expect([...container.querySelectorAll('button')].find(b => b.textContent === 'Choose Builder')?.disabled).toBe(false);
+  expect(container.querySelector<HTMLButtonElement>('[aria-label="Builder plan"] .billing-plan-button')?.disabled).toBe(false);
 });
 
 it('keeps the account page useful while its new API is awaiting deployment', async () => {
@@ -307,7 +314,7 @@ it('uses localized Apple prices and native purchases without Stripe checkout', a
   expect(container.textContent).toContain('Restore purchases');
   expect(container.textContent).toContain('never expire');
   expect(container.textContent).not.toContain('$9');
-  await click('Choose Builder');
+  await selectPlan('Builder');
   expect(sent).toContainEqual(expect.objectContaining({ action: 'buy', product: 'ai.brickbuilder.app.builder.monthly' }));
   expect(billingApi.checkout).not.toHaveBeenCalled();
   expect(openStripe).not.toHaveBeenCalled();
@@ -468,4 +475,6 @@ it('keeps the bold member discount and promo details at the top of the shared po
   expect(container.querySelector('.billing-member-intro')?.textContent).toContain('Applied automatically at checkout, with promo codes on top.');
   expect(container.querySelector('.billing-dialog')?.textContent).not.toContain('Physical model bricks · promo codes stack');
   expect(container.querySelector('.billing-dialog')?.textContent).not.toMatch(/models?/i);
+  expect(container.querySelectorAll('.billing-dialog .billing-plan-description, .billing-dialog .billing-renewal')).toHaveLength(0);
+  expect([...container.querySelectorAll('.billing-dialog .billing-plan-button')].map(button => button.textContent)).toEqual(['Select Plan', 'Select Plan']);
 });

@@ -13,14 +13,10 @@ import { usePet } from '../contexts/PetContext';
 import { PetAvatar } from './PetCompanion';
 import LoginModal from './LoginModal';
 import { PaidFeatureDialog } from './PaidFeatureDialog';
-import type { BillingAccount, PlanKey } from '../services/billingApi';
+import type { BillingAccount } from '../services/billingApi';
 import './billing.css';
 
 export const billingDate = (value: string) => new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-const descriptions: Record<PlanKey, string> = {
-  free: 'Room to try your ideas.', builder: 'For your next weekend project.',
-  creator: 'For builders with a growing idea list.', master: 'For a whole world of possibilities.',
-};
 
 export function CreditBalance() {
   const { user } = useAuth();
@@ -45,9 +41,9 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
       return <article key={plan.key} className={`billing-plan${plan.key === 'free' ? ' billing-plan--free' : ''}${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
         {plan.key === 'creator' && <span className="billing-recommendation">Recommended</span>}
         <div className="billing-plan-top"><h2>{plan.name}</h2><PetAvatar id={petId} still /></div>
-        <p className="billing-plan-description">{descriptions[plan.key]}</p>
+        {plan.key === 'free' && <p className="billing-plan-description">Room to try your ideas.</p>}
         <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
-        <p className="billing-renewal">{plan.monthly_cents ? apple ? 'Billed monthly by Apple' : 'USD · billed monthly' : 'No credit card needed'}</p>
+        {plan.key === 'free' && <p className="billing-renewal">No credit card needed</p>}
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <p className="billing-set-estimate">About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
@@ -62,7 +58,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>
           : <button className="billing-plan-button" onClick={() => void subscribe('free', source)}>Start building free</button>
           : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
-            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : `Choose ${plan.name}`}</button>}
+            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : 'Select Plan'}</button>}
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
       </article>;
     })}

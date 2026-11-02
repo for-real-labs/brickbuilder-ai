@@ -72,7 +72,7 @@ it.each([['io','Download IO']] as const)('locks %s exports, opens the shared not
   await click('Upgrade plan');
   expect(host.querySelector('.billing-feature-dialog')).toBeNull();
   expect(host.querySelectorAll('.billing-plan:not(.billing-credit-pack)')).toHaveLength(2);
-  expect(host.textContent).toContain('Choose Builder'); expect(host.textContent).toContain('Choose Creator');
+  expect([...host.querySelectorAll('.billing-plan-button')].map(button => button.textContent)).toEqual(['Select Plan', 'Select Plan']);
   expect(host.textContent).not.toContain('Master Builder');
 });
 
@@ -161,7 +161,7 @@ it('preserves an existing Master subscription label and cancellation without off
   await render(<BillingPage />);
   expect(host.querySelector('.billing-account-plan')?.textContent).toContain('Master Builder$39 / month');
   expect(button('Cancel subscription')).toBeDefined();
-  await click('Explore plans'); expect(button('Choose Master Builder')).toBeUndefined();
+  await click('Explore plans'); expect(host.querySelector('[aria-label="Master Builder plan"]')).toBeNull();
 });
 
 it.each(['free', 'builder'] as const)('allows purchased model instructions on %s after the credit or subscription period expires', async plan => {
