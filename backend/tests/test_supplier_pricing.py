@@ -53,11 +53,11 @@ def test_saved_bom_quote_includes_verified_member_pricing_for_destination(monkey
     monkeypatch.setattr(getPrice, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value={
         'endpoint': 'novaToBricks', 'parts_list_csv_url': 'https://example.com/parts.csv'})))
     monkeypatch.setattr(getPrice, 'fetch_csv_content', AsyncMock(return_value='LdrawId,LDrawColorId,Qty\n3001.dat,4,1\n'))
-    eligible = AsyncMock(return_value=True)
-    monkeypatch.setattr(getPrice, 'member_discount_eligible', eligible)
+    eligible = AsyncMock(return_value=10)
+    monkeypatch.setattr(getPrice, 'get_member_discount_percent', eligible)
     identity = {'authenticated': True, 'user_id': 'verified-owner'}
     result = asyncio.run(getPrice.get_price(getPrice.GetPriceRequest(generation_id='g', shipping_country='gb'), identity))
     eligible.assert_awaited_once_with(identity)
     assert result.order_pricing.shipping_country == 'GB'
-    assert result.order_pricing.member_discount_percent == 20
+    assert result.order_pricing.member_discount_percent == 10
     assert result.order_pricing.total_cents > result.total_price * 100

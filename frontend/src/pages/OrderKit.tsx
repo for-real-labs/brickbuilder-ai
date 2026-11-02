@@ -277,7 +277,7 @@ function OrderCheckout() {
               }} />
             <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} onPreviewCaptured={setModelImage} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
             <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
-            {pricing && pricing.memberDiscountCents > 0 && <p className="checkout-member-badge">Your paid plan saves 20% on LEGO® set bricks</p>}
+            {pricing && pricing.memberDiscountCents > 0 && <p className="checkout-member-badge">Your paid plan saves {pricing.memberDiscountPercent}% on LEGO® set bricks</p>}
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
               setSummaryExpanded(value => !value); posthog.capture('order_summary_toggled', { generation_id: generationId, expanded: !summaryExpanded });
             }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? <>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</> : '—'}</strong></button>
@@ -285,12 +285,12 @@ function OrderCheckout() {
             {pricing ? <>
               <dl className="checkout-price-list">
                 <div><dt>LEGO® set bricks</dt><dd>{formatOrderPrice(pricing.fullPartSubtotalCents)}</dd></div>
-                {pricing.memberDiscountCents > 0 && <div className="checkout-member-discount"><dt>Paid plan · 20% off LEGO® set bricks</dt><dd>−{formatOrderPrice(pricing.memberDiscountCents)}</dd></div>}
+                {pricing.memberDiscountCents > 0 && <div className="checkout-member-discount"><dt>Paid plan · {pricing.memberDiscountPercent}% off LEGO® set bricks</dt><dd>−{formatOrderPrice(pricing.memberDiscountCents)}</dd></div>}
                 <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.shippingCents)}</dd></div>
                 {discountedTotal !== null && discountedTotal < pricing.totalCents && <div><dt>Promo discount</dt><dd>−{formatOrderPrice(pricing.totalCents - discountedTotal)}</dd></div>}
                 <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</dd></div>
               </dl>
-              <p className="checkout-pricing-note">Shipping estimated for {shippingCountries.find(destination => destination.code === country)?.name}. {pricing.memberDiscountCents > 0 ? "Your member savings are automatic. Promo codes apply on top." : "Paid plans save 20% on LEGO® set bricks."}</p>
+              <p className="checkout-pricing-note">Shipping estimated for {shippingCountries.find(destination => destination.code === country)?.name}. {pricing.memberDiscountCents > 0 ? "Your member savings are automatic. Promo codes apply on top." : "Paid plans save 10–20% on LEGO® set bricks."}</p>
             </> : <p className="checkout-section-note">{quoteLoading ? 'Calculating your kit price…' : 'Kit price unavailable'}</p>}
             </div>
             <div className="checkout-summary-benefits"><p><Truck size={16} />Estimated delivery: 8–12 business days</p></div>

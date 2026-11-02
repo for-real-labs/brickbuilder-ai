@@ -21,7 +21,7 @@ SHIPPING_RATES = {
 DEFAULT_SHIPPING_RATE = (348, 2037)
 COUNTRY_CODES = {row['code'] for row in json.loads(
     (Path(__file__).resolve().parents[1] / 'data/shipping_countries.json').read_text())}
-MEMBER_DISCOUNT_PERCENT = 20
+PLAN_DISCOUNT_PERCENT = {'builder': 10, 'creator': 20, 'master': 20}
 TARGET_BRICK_MARGIN = Decimal('0.20')
 
 
@@ -37,13 +37,17 @@ class OrderPricing(BaseModel):
     shipping_estimated: bool = True
 
 
-async def member_discount_eligible(identity: dict) -> bool:
+async def get_member_discount_percent(identity: dict) -> int:
     # Free-feature rollouts, purchased credits and developer access do not
     # constitute a paid subscription. Read the account owned by the token.
     if (not identity.get('authenticated') or identity.get('is_anonymous')
             or identity.get('is_developer')):
-        return False
-    return billing.has_paid_features(await billing.wallet(billing.account_id(identity)))
+        return 0
+    row = await billing.wallet(billing.account_id(identity))
+    if not billing.has_paid_features(row):
+        return 0
+    plan = row['apple_plan'] if billing.apple_active(row) else row['plan_key']
+    return PLAN_DISCOUNT_PERCENT.get(plan, 0)
 
 
 def _shipping_cents(weight: Decimal, country: str) -> int:
@@ -62,7 +66,9 @@ def _shipping_cents(weight: Decimal, country: str) -> int:
     return int(cents.to_integral_value(rounding=ROUND_HALF_UP))
 
 
-def price_order(cost: float, weight: float, country: str = 'US', *, member: bool = False) -> OrderPricing:
+def price_order(cost: float, weight: float, country: str = 'US', *, member_discount_percent: int = 0) -> OrderPricing:
+    if type(member_discount_percent) is not int or member_discount_percent not in (0, 10, 20):
+        raise HTTPException(400, 'Invalid member discount')
     cost, weight = Decimal(str(cost)), Decimal(str(weight))
     if not cost.is_finite() or cost <= 0 or not weight.is_finite() or weight < 0:
         raise HTTPException(400, 'Kit pricing is unavailable')
@@ -72,8 +78,9 @@ def price_order(cost: float, weight: float, country: str = 'US', *, member: bool
     # coupons are not assumed: fulfillment savings can vary per purchase.
     member_target = (cost * 100 / (1 - TARGET_BRICK_MARGIN)).to_integral_value(rounding=ROUND_CEILING)
     full_parts = int((member_target / Decimal('0.8')).to_integral_value(rounding=ROUND_CEILING))
-    parts = int((Decimal(full_parts) * Decimal('0.8')).to_integral_value(rounding=ROUND_HALF_UP)) if member else full_parts
+    multiplier = Decimal(100 - member_discount_percent) / 100
+    parts = int((Decimal(full_parts) * multiplier).to_integral_value(rounding=ROUND_HALF_UP))
     shipping = _shipping_cents(weight, country)
     return OrderPricing(full_parts_cents=full_parts, parts_cents=parts, shipping_cents=shipping,
-        member_discount_cents=full_parts-parts, member_discount_percent=MEMBER_DISCOUNT_PERCENT if member else 0,
+        member_discount_cents=full_parts-parts, member_discount_percent=member_discount_percent,
         full_total_cents=full_parts+shipping, total_cents=parts+shipping, shipping_country=country)

@@ -102,18 +102,20 @@ physical-order flow. Test-mode coupons must be configured separately.
 
 ## Paid plan savings and pricing
 
-A verified active paid entitlement (Stripe or Apple, including existing Master
-Builder subscriptions) receives 20% off physical model bricks. Credit packs,
+A verified active paid entitlement (Stripe or Apple) receives 10% off physical
+LEGO® set bricks on Builder, or 20% on Creator and existing Master Builder subscriptions. Credit packs,
 guests, Free accounts and developer access do not qualify. Cancellation at period
 end keeps eligibility until the paid period ends; the existing paid-feature grace
 policy applies. An entitlement lookup failure blocks a fresh quote rather than
 silently charging a member full price.
 
-`utils/order_pricing.py` owns the pricing policy. The member brick price targets a
-20% gross margin on catalog cost: `cost / 0.8`. The regular price grosses that up
-by another `/ 0.8`, so the 20% member discount leaves the target margin intact.
-Round the member target and regular price upward to whole cents, then round the
-member charge half up. Supplier coupons are not assumed. Payment fees, postcard
+`utils/order_pricing.py` owns the pricing policy. The regular price remains based
+on the largest (20%) member benefit and a 20% gross margin on catalog cost:
+`cost / 0.8 / 0.8`, rounding each stage upward to whole cents. Builder pays 90%
+of that regular brick price; Creator and existing Master pay 80%. Round the
+discounted charge half up to cents. The discount rate comes from the verified
+account’s active plan, including Apple subscriptions, never browser-supplied
+plan claims. Supplier coupons are not assumed. Payment fees, postcard
 costs and extra promotional discounts are outside this brick margin target.
 
 Shipping is separate, has no added margin, and is excluded from the member discount.

@@ -103,17 +103,19 @@ def test_checkout_refuses_catalog_only_quote():
         checkout.checkout_price_cents(quote)
 
 
-def test_member_price_is_baked_into_line_item_so_promos_stack(setup):
-    checkout.get_price.return_value.order_pricing = price_order(100, 1, 'GB', member=True)
+@pytest.mark.parametrize('percent,parts,discount', [(10,14063,1562),(20,12500,3125)])
+def test_member_price_is_baked_into_line_item_so_promos_stack(setup,percent,parts,discount):
+    checkout.get_price.return_value.order_pricing = price_order(100, 1, 'GB', member_discount_percent=percent)
     _, create, _ = setup
     result = run(uiMode='elements', priceCents=1)
     params = create.call_args.kwargs
-    assert params['line_items'][0]['price_data']['unit_amount'] == 12500
+    assert params['line_items'][0]['price_data']['unit_amount'] == parts
     assert params['allow_promotion_codes'] is True
     assert 'discounts' not in params
     assert params['shipping_options'][0]['shipping_rate_data']['fixed_amount']['amount'] == 1242
-    assert params['metadata']['memberDiscountCents'] == '3125'
-    assert result.price_data.order_pricing.member_discount_percent == 20
+    assert params['metadata']['memberDiscountCents'] == str(discount)
+    assert params['metadata']['memberDiscountPercent'] == str(percent)
+    assert result.price_data.order_pricing.member_discount_percent == percent
 
 
 def test_guest_owner_can_order_without_an_account(setup):

@@ -83,7 +83,7 @@ it('rejects cached catalog-only quotes and inconsistent server totals', () => {
 
 it('uses a text-only brand link in the checkout header', async () => {
   await renderOrder();
-  expect(container.textContent).toContain('Paid plans save 20% on LEGO® set bricks.');
+  expect(container.textContent).toContain('Paid plans save 10–20% on LEGO® set bricks.');
   const brand = container.querySelector('a[aria-label="BrickBuilder home"]')!;
   expect(brand.textContent).toBe('BRICKBUILDER');
   expect(brand.querySelector('svg, img')).toBeNull();
@@ -459,8 +459,8 @@ it('blocks card and wallet confirmation while a promotion is changing', async ()
   await act(async () => finish({ type: 'success', session: { total: { total: { minorUnitsAmount: 2000 } } } }));
 });
 
-it('keeps automatic member savings when a promo is applied and removed', async () => {
-  const memberQuote = { ...quote, order_pricing: orderPricing(4600, 600, 1000) };
+it.each([10,20])('keeps the server-quoted %s percent savings when a promo is applied and removed', async percent => {
+  const memberQuote = { ...quote, order_pricing: orderPricing(4600, 600, 1000, 'US', percent) };
   vi.mocked(GetPriceApiService.getPrice).mockResolvedValue(memberQuote as never);
   vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({
     session_id: 'cs_member', client_secret: 'secret', price_data: memberQuote,
@@ -469,7 +469,8 @@ it('keeps automatic member savings when a promo is applied and removed', async (
   mocks.removePromotionCode.mockResolvedValue({ type: 'success', session: { total: { total: { minorUnitsAmount: 4600 } } } });
   await renderOrder();
   expect(container.querySelector('.checkout-total del')?.textContent).toBe('$56.00');
-  expect(container.querySelector('.checkout-member-badge')?.textContent).toContain('20%');
+  expect(container.querySelector('.checkout-member-badge')?.textContent).toContain(`${percent}%`);
+  expect(container.querySelector('.checkout-member-discount')?.textContent).toContain(`${percent}% off LEGO® set bricks`);
   expect(container.querySelector('#checkout-price-breakdown .checkout-member-badge')).toBeNull();
   expect(container.querySelector('.checkout-member-discount')?.textContent).toContain('−$10.00');
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));

@@ -97,11 +97,12 @@ it('shows the total piece count instead of shipping copy in the compact order ba
   expect(container.querySelector('.model-mobile-order--all-screens')).not.toBeNull();
 });
 
-it('shows the full price crossed out and automatic member savings', () => {
-  const memberQuote = { ...quote, order_pricing: orderPricing(4000, 1000, 750) };
+it.each([10,20])('shows the server-quoted %s percent savings and crossed-out full price', percent => {
+  const memberQuote = { ...quote, order_pricing: orderPricing(4000, 1000, 750, 'US', percent) };
   act(() => root.render(<ModelOrderCard quote={memberQuote} loading={false} updating={false} error={null} onOrder={vi.fn()} />));
   expect(container.querySelector('del.model-order-original')?.textContent).toBe('$47.50');
   expect(container.querySelector('.model-order-total')?.textContent).toBe('$40.00');
-  expect(container.textContent).toContain('Paid plan · 20% off LEGO® set bricks');
+  expect(container.textContent).toContain(`Paid plan · ${percent}% off LEGO® set bricks`);
+  expect(container.querySelector('.model-mobile-member')?.textContent).toContain(`${percent}% member savings`);
   expect(container.querySelector('.model-mobile-original')?.textContent).toBe('$47.50');
 });

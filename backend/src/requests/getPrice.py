@@ -11,7 +11,7 @@ from ..utils.parts_catalog import PartsUnavailable, normalize_part_id, parts_csv
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.supplier_catalog import get_supplier_catalog
 
-from ..utils.order_pricing import COUNTRY_CODES, OrderPricing, member_discount_eligible, price_order
+from ..utils.order_pricing import COUNTRY_CODES, OrderPricing, get_member_discount_percent, price_order
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +100,7 @@ async def get_price(request: GetPriceRequest, auth_info: dict) -> GetPriceRespon
             raise HTTPException(422, str(exc)) from None
         count = sum(inventory.values())
         pricing = price_order(total, weight, request.shipping_country,
-                              member=await member_discount_eligible(auth_info))
+                              member_discount_percent=await get_member_discount_percent(auth_info))
         return GetPriceResponse(generation_id=request.generation_id, total_price=total,
             total_parts=count, total_weight=weight, unique_part_types=len(inventory),
             parts_breakdown=breakdown, price_source=catalog.name, order_pricing=pricing,

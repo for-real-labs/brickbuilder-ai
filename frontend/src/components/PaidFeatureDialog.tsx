@@ -37,7 +37,7 @@ export function PaidFeatureDialog() {
     <h2 id="paid-feature-title">{checking ? 'Checking your access…' : unavailable ? 'Couldn’t check your access' : `${title} is a paid feature`}</h2>
     <p id="paid-feature-description">{checking ? 'One moment while we check your access.' : unavailable
       ? 'Please try again to check access to exports for your LEGO® sets.'
-      : `${title} is not available on the Free plan. Upgrade to Builder or Creator for IO downloads and automatic 20% off every LEGO® set purchase.`}</p>
+      : `${title} is not available on the Free plan. Upgrade for IO downloads and automatic savings on LEGO® sets: 10% with Builder or 20% with Creator.`}</p>
     <div className="billing-feature-actions">
       {!checking && <button type="button" className="billing-primary" onClick={() => {
         if (unavailable) { posthog.capture('billing_feature_retry_clicked', lockedFeature); void retryAccess(); }

@@ -33,7 +33,7 @@ export function MobileModelOrderBar({ quote, loading, updating, error, onOrder, 
       <X size={18} aria-hidden="true" />
     </button>
     <div>{pricing && pricing.memberDiscountCents > 0 && <del className="model-mobile-original">{formatOrderPrice(pricing.fullTotalCents)}</del>}<strong>{loading ? 'Pricing…' : pricing ? formatOrderPrice(pricing.totalCents) : '—'}</strong>
-      {pricing && pricing.memberDiscountCents > 0 && <span className="model-mobile-member">20% member savings on bricks</span>}
+      {pricing && pricing.memberDiscountCents > 0 && <span className="model-mobile-member">{pricing.memberDiscountPercent}% member savings on bricks</span>}
       <span>{error || (!loading && !pricing) ? 'Price unavailable right now' : loading ? 'Counting pieces…' : `${quote?.total_parts.toLocaleString() ?? '—'} pieces`}</span></div>
     <button type="button" aria-label="Order this model" className="model-order-button"
       disabled={loading || updating || !!error || !pricing} onClick={onOrder}>

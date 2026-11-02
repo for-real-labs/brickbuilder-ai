@@ -8,7 +8,7 @@ import { useBilling } from '../contexts/BillingContext';
 import { billingDate, CreditPacks } from '../components/BillingComponents';
 import { PetAvatar } from '../components/PetCompanion';
 import { BillingHeader } from '../components/BillingHeader';
-import { PLAN_GENERATIONS } from '../utils/planDisplay';
+import { PLAN_GENERATIONS, PLAN_DISCOUNTS } from '../utils/planDisplay';
 import { LEGACY_MASTER_PLAN, type BillingAccount } from '../services/billingApi';
 
 const paymentConfirmed = (account: BillingAccount | null) => account?.purchase_confirmed !== undefined
@@ -60,7 +60,7 @@ export default function BillingPage() {
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
           <h2 className="billing-account-plan">{plan?.name ?? 'Free'}<span>{apple ? 'Billed monthly by Apple' : `$${(plan?.monthly_cents ?? 0) / 100} / month`}</span></h2>
           <p className="billing-plan-allowance">{(plan?.credits ?? account.monthly_credits).toLocaleString()} credits each month. About {PLAN_GENERATIONS[plan?.key ?? 'free']} LEGO® generations per month.</p>
-          <p className="billing-plan-benefit">Paid plans include IO exports and automatic 20% off LEGO® sets, with promo codes on top. Shipping is separate.</p>
+          <p className="billing-plan-benefit">{PLAN_DISCOUNTS[plan?.key ?? 'free'] ? 'Your plan includes' : 'Paid plans include'} IO exports and automatic {PLAN_DISCOUNTS[plan?.key ?? 'free'] || '10–20'}% off LEGO® sets, with promo codes on top. Shipping is separate.</p>
           {apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
             : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : null}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}
