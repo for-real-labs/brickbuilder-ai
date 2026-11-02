@@ -36,7 +36,7 @@ import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
 import { BillingProvider } from './contexts/BillingContext';
 import { BillingOverlays } from './components/BillingComponents';
-import PricingPage from './pages/PricingPage';
+import { PlanPopupRedirect } from './components/PlanPopupRedirect';
 import BillingPage from './pages/BillingPage';
 import { PetProvider } from "./contexts/PetContext";
 import { PetCompanion } from "./components/PetCompanion";
@@ -77,7 +77,7 @@ function MainApp() {
           <Route path="/oauth/consent" element={<OAuthConsentPage />} />
 
           {/* App pages */}
-          <Route path="/pricing" element={<PricingPage />} />
+          <Route path="/pricing" element={<PlanPopupRedirect />} />
           <Route path="/billing" element={<BillingPage />} />
           <Route path="/dashboard" element={<UserDashboard />} /> {/* NEW */}
           <Route path="/generated-model" element={<GeneratedModelRedirect />} />

@@ -1,3 +1,4 @@
+import { PLAN_GENERATIONS } from '../utils/planDisplay';
 import { CreditPacks } from './CreditPurchase';
 export { CreditPacks } from './CreditPurchase';
 import { isAppleApp, hasApplePurchases, appleProduct } from '../services/applePurchases';
@@ -48,7 +49,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
         <p className="billing-renewal">{plan.monthly_cents ? apple ? 'Billed monthly by Apple' : 'USD · billed monthly' : 'No credit card needed'}</p>
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
-        <p className="billing-set-estimate">About {({ free: 5, builder: 15, creator: 100, master: 50 })[plan.key]} LEGO® sets per month</p>
+        <p className="billing-set-estimate">About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
           <li><Check aria-hidden="true" />LDR model downloads</li>
           <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>{plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}IO model exports</li>
@@ -121,10 +122,8 @@ export function BillingOverlays() {
     {upgradeSource && <dialog ref={dialog} className="billing-dialog" aria-labelledby="billing-upgrade-title"
       onCancel={e => { e.preventDefault(); closeUpgrade(); }} onClose={closeUpgrade}>
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
-      <div className="billing-dialog-heading"><PetAvatar /><div>
-        <h1 id="billing-upgrade-title">{upgradeSource === 'credits_exhausted' ? 'Let’s make room for your next idea.' : 'Your next big idea starts here.'}</h1>
-        {account && <MonthlyCreditUsage account={account} />}
-      </div></div>
+      <h1 id="billing-upgrade-title" className="sr-only">Plans &amp; credits</h1>
+      {account && <div className="billing-dialog-heading"><PetAvatar /><div><MonthlyCreditUsage account={account} /></div></div>}
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
       <p className="billing-member-intro">Every paid plan includes <strong>20% off model purchases!</strong> Applied automatically at checkout, with promo codes on top.</p>

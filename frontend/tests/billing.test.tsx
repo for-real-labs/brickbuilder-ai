@@ -1,14 +1,14 @@
-import React, { act } from 'react';
+import React, { act, useEffect } from 'react';
 import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
-import { BillingProvider } from '../src/contexts/BillingContext';
+import { BillingProvider, useBilling } from '../src/contexts/BillingContext';
 import { BillingOverlays, MonthlyCreditUsage, CreditBalance, CreditNudge, PlanGrid, GenerationCreditQuote } from '../src/components/BillingComponents';
 import BillingPage from '../src/pages/BillingPage';
-import PricingPage from '../src/pages/PricingPage';
+import { PlanPopupRedirect } from '../src/components/PlanPopupRedirect';
 import { billingApi, openStripe, type BillingAccount } from '../src/services/billingApi';
 
 const auth = vi.hoisted(() => ({ user: { id: 'builder-1' } as { id: string } | null }));
@@ -20,6 +20,12 @@ vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/services/billingApi', async importOriginal => ({ ...await importOriginal<typeof import('../src/services/billingApi')>(),
   billingApi: { creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
 }));
+
+function OpenPlansPopup() {
+  const { openUpgrade } = useBilling();
+  useEffect(() => { openUpgrade('pricing_button'); }, [openUpgrade]);
+  return null;
+}
 
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
@@ -123,7 +129,7 @@ it('clearly confirms an end-of-period cancellation without offering another canc
 
 it('keeps a failed checkout in the app with a useful error', async () => {
   vi.mocked(billingApi.checkout).mockRejectedValueOnce(new Error('Please try again in a moment.'));
-  await render(<PricingPage />);
+  await render(<OpenPlansPopup />);
   await click('Choose Creator');
   expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again in a moment.');
   expect(openStripe).not.toHaveBeenCalled();
@@ -142,8 +148,8 @@ it('disables paid checkout until billing is enabled', async () => {
 it('keeps unavailable billing presentable and refreshes availability when the visitor returns', async () => {
   auth.user = null;
   vi.mocked(billingApi.plans).mockRejectedValueOnce(new Error('Backend rollout pending'));
-  await render(<PricingPage />);
-  expect(container.querySelector('[role="status"]')?.textContent).toContain('Monthly plans are coming soon');
+  await render(<OpenPlansPopup />);
+  expect(container.querySelector('[role="status"]')?.textContent).toContain('Monthly plans are getting ready');
   expect(container.querySelector('[role="alert"]')).toBeNull();
   await act(async () => window.dispatchEvent(new Event('focus')));
   expect(container.querySelector('[role="status"]')).toBeNull();
@@ -161,12 +167,12 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
 });
 
 
-it('shows the monthly allowances and simplified features on every plan', async () => {
-  await render(<PricingPage />);
+it('shows the monthly allowances and generation estimates on every plan', async () => {
+  await render(<PlanGrid source="test" />);
   const cards = [...container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')];
   expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['75', '225', '1,500']);
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$2.99', '$19.99']);
-  expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 5 LEGO® sets per month', 'About 15 LEGO® sets per month', 'About 100 LEGO® sets per month']);
+  expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 5 LEGO® generations per month', 'About 15 LEGO® generations per month', 'About 100 LEGO® generations per month']);
   for (const card of cards) {
     expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['LDR model downloads', 'IO model exports', 'Building instructions', '20% off every model purchasePhysical model bricks · promo codes stack']);
   }
@@ -190,11 +196,46 @@ it('shows monthly usage beneath the popup title without counting bonuses or Appl
   expect(heading.querySelector('progress')?.value).toBe(30);
 });
 
-it('links to Pricing from the billing page header', async () => {
-  await act(async () => root.render(<HelmetProvider><MemoryRouter initialEntries={['/billing']}><BillingProvider><BillingPage /></BillingProvider></MemoryRouter></HelmetProvider>));
-  const nav = container.querySelector('nav[aria-label="Billing navigation"]')!;
-  expect(nav.querySelector('a[href="/pricing"]')?.textContent).toContain('Pricing');
-  expect(nav.querySelector('a[href="/billing"]')).toBeNull();
+it.each(['Pricing', 'Explore plans', 'Compare all plans & credit details'])('opens the shared credits popup from %s', async label => {
+  await render(<BillingPage />);
+  expect(container.querySelector('dialog')).toBeNull();
+  await click(label);
+  expect(container.querySelector('dialog')?.open).toBe(true);
+  expect(container.querySelectorAll('.billing-dialog .billing-plan')).toHaveLength(2);
+  expect(container.querySelector('.billing-dialog .billing-member-intro strong')?.textContent).toBe('20% off model purchases!');
+  expect(container.querySelector('.billing-dialog h1')?.classList.contains('sr-only')).toBe(true);
+  expect(container.textContent).not.toContain('Your next big idea starts here.');
+  expect(container.querySelector('a[href="/pricing"]')).toBeNull();
+});
+
+it('redirects a saved pricing URL to the landing page with the same popup', async () => {
+  await act(async () => root.render(<HelmetProvider><MemoryRouter initialEntries={['/pricing']}><BillingProvider>
+    <Routes><Route path="/pricing" element={<PlanPopupRedirect />} /><Route path="/" element={<p>Landing page</p>} /></Routes>
+    <BillingOverlays /></BillingProvider></MemoryRouter></HelmetProvider>));
+  expect(container.textContent).toContain('Landing page');
+  expect(container.querySelector('dialog')?.open).toBe(true);
+  expect(posthog.capture).toHaveBeenCalledWith('billing_upgrade_opened', expect.objectContaining({ source: 'pricing_link' }));
+});
+
+it.each([
+  ['free', 75, 5, 'Upgrade plan'], ['builder', 225, 15, 'Upgrade plan'],
+  ['creator', 1500, 100, 'Change plan'], ['master', 1000, 50, 'Change plan'],
+] as const)('summarizes %s and opens the right plan action', async (key, credits, generations, label) => {
+  account = { ...account, plan_key: key, monthly_credits: credits, has_subscription: key !== 'free' };
+  await render(<BillingPage />);
+  const section = container.querySelector('.billing-account-plan')!.closest('section')!;
+  expect(section.querySelector('.billing-plan-allowance')?.textContent).toBe(`${credits.toLocaleString()} credits each month. About ${generations} LEGO® generations per month.`);
+  expect(section.textContent).not.toContain('No payment method needed');
+  await click(label);
+  expect(container.querySelector('dialog')?.open).toBe(true);
+  expect(posthog.capture).toHaveBeenCalledWith('billing_plan_action_clicked', { plan_key: key, action: label === 'Change plan' ? 'change' : 'upgrade' });
+});
+
+it('uses the Apple subscription allowance instead of the separate free wallet', async () => {
+  account = { ...account, subscription_provider: 'apple', apple_plan: 'creator', apple_expires_at: '2099-11-01T00:00:00Z', has_subscription: true, monthly_credits: 75 };
+  await render(<BillingPage />);
+  expect(container.querySelector('.billing-plan-allowance')?.textContent).toBe('1,500 credits each month. About 100 LEGO® generations per month.');
+  expect(container.querySelector('.billing-plan-actions')?.textContent).toContain('Change plan');
 });
 
 it.each([false,true])('explains guest access without requiring login and offers optional signup (All parts: %s)', async allParts => {
@@ -310,7 +351,7 @@ it.each([false, true])('only reports restore failure when server verification fa
   } };
   if (syncFails) vi.mocked(billingApi.appleSync).mockRejectedValueOnce(new Error('Server verification failed'));
   else vi.mocked(billingApi.appleSync).mockResolvedValue(account);
-  await render(<PricingPage />);
+  await render(<OpenPlansPopup />);
   const initialRefreshes = vi.mocked(billingApi.account).mock.calls.length;
   await click('Restore purchases');
   expect(container.textContent).not.toContain('Native acknowledgement failed');
@@ -368,7 +409,7 @@ it.each([0, 2, 12345])('lets the header balance fit %s credits without reserving
 it.each(['builder', 'creator'] as const)('buys a custom dollar amount at the %s rate', async plan => {
   account = { ...account, plan_key: plan, has_subscription: true, paid_features: true, subscription_status: 'active' };
   vi.mocked(billingApi.creditCheckout).mockResolvedValue({url:'https://checkout.stripe.com/c/pay/pack'});
-  await render(<PricingPage />);
+  await render(<OpenPlansPopup />);
   const input = container.querySelector<HTMLInputElement>('#credit-packs input')!;
   await act(async () => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '10.00');
@@ -383,15 +424,15 @@ it.each(['builder', 'creator'] as const)('buys a custom dollar amount at the %s 
 
 it.each([true, false])('requires a paid monthly plan before buying credits (signed in: %s)', async signedIn => {
   if (!signedIn) auth.user = null;
-  await render(<PricingPage />);
+  await render(<OpenPlansPopup />);
   expect(container.querySelector('#credit-packs h2')?.textContent).toBe('Buy credits');
-  expect(container.querySelector('.billing-faq')?.compareDocumentPosition(container.querySelector('#credit-packs')!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  expect(container.querySelector('.billing-plan-grid')?.compareDocumentPosition(container.querySelector('#credit-packs')!)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   await click('Buy credits');
   const dialog = container.querySelector('#credit-packs dialog')!;
   expect(dialog.textContent).toContain('You must be subscribed to a paid monthly plan to buy credits.');
   expect(dialog.getAttribute('open')).not.toBeNull();
   expect(billingApi.creditCheckout).not.toHaveBeenCalled();
-  expect(posthog.capture).toHaveBeenCalledWith('billing_credit_subscription_required', { source: 'pricing_page' });
+  expect(posthog.capture).toHaveBeenCalledWith('billing_credit_subscription_required', { source: 'pricing_button' });
 });
 
 it('shows earned referral credits with their own history label', async () => {
@@ -421,9 +462,8 @@ it('includes member savings on paid plans and marks the Free benefit unavailable
   expect(benefit.querySelector('[aria-label="Not included"]')).not.toBeNull();
 });
 
-it('explains automatic savings, promo stacking and shipping exclusions on pricing', async () => {
-  await render(<PricingPage />);
-  expect(container.textContent).toContain('Eligible promo codes apply on top of your member price');
-  expect(container.textContent).toContain('Shipping is charged separately');
-  expect(container.textContent).toContain('Free plans and one-time credit packs do not include the discount');
+it('keeps the bold member discount and promo details at the top of the shared popup', async () => {
+  await render(<OpenPlansPopup />);
+  expect(container.querySelector('.billing-member-intro strong')?.textContent).toBe('20% off model purchases!');
+  expect(container.querySelector('.billing-member-intro')?.textContent).toContain('Applied automatically at checkout, with promo codes on top.');
 });

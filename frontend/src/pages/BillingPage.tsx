@@ -1,13 +1,14 @@
 import { isAppleApp } from '../services/applePurchases';
 import React, { useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { Coins, CreditCard, ArrowUpRight, RefreshCw } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
 import { useBilling } from '../contexts/BillingContext';
 import { billingDate, CreditPacks } from '../components/BillingComponents';
 import { PetAvatar } from '../components/PetCompanion';
-import { BillingHeader } from './PricingPage';
+import { BillingHeader } from '../components/BillingHeader';
+import { PLAN_GENERATIONS } from '../utils/planDisplay';
 import { LEGACY_MASTER_PLAN, type BillingAccount } from '../services/billingApi';
 
 const paymentConfirmed = (account: BillingAccount | null) => account?.purchase_confirmed !== undefined
@@ -39,6 +40,7 @@ export default function BillingPage() {
   }, [user?.id, sessionId]);
   const apple = account?.subscription_provider === 'apple';
   const plan = plans.find(p => p.key === (apple ? account?.apple_plan : account?.plan_key)) ?? (account?.plan_key === 'master' ? LEGACY_MASTER_PLAN : undefined);
+  const maxPlan = plan?.key === 'creator' || plan?.key === 'master';
   const labels: Record<string, string> = { referral: 'Account referral reward', purchase: 'Credits purchased', purchase_refund: 'Purchase refunded', welcome: 'Existing credits preserved', monthly: 'Monthly credits', upgrade: 'Plan upgrade', generation: 'AI build or edit', refund: 'Build credit returned' };
   return <div className="billing-page"><BillingHeader /><main className="billing-account-main">
     <div className="billing-account-title"><div><h1>Credits & billing</h1></div><PetAvatar state={confirmed ? 'celebrating' : 'idle'} /></div>
@@ -54,13 +56,18 @@ export default function BillingPage() {
           {!apple && <><div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" /></>}
           {!apple && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
-          <button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button>
+          <div className="billing-explore-plans"><button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button></div>
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
           <h2 className="billing-account-plan">{plan?.name ?? 'Free'}<span>{apple ? 'Billed monthly by Apple' : `$${(plan?.monthly_cents ?? 0) / 100} / month`}</span></h2>
+          <p className="billing-plan-allowance">{(plan?.credits ?? account.monthly_credits).toLocaleString()} credits each month. About {PLAN_GENERATIONS[plan?.key ?? 'free']} LEGO® generations per month.</p>
           <p className="billing-plan-benefit">Paid plans include IO exports and automatic 20% off model bricks, with promo codes on top. Shipping is separate.</p>
           {apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
-            : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : <p>75 free credits each month for Basic or All parts builds. No payment method needed.</p>}
+            : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : null}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}
+          <div className="billing-plan-actions"><button type="button" className="billing-primary" disabled={busy} onClick={() => {
+            posthog.capture('billing_plan_action_clicked', { plan_key: plan?.key ?? 'free', action: maxPlan ? 'change' : 'upgrade' });
+            openUpgrade(maxPlan ? 'billing_plan_change' : 'billing_plan_upgrade');
+          }}>{maxPlan ? 'Change plan' : 'Upgrade plan'} <ArrowUpRight size={16} /></button></div>
           {account.has_subscription && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>{apple ? 'Manage Apple subscription' : 'Manage billing & receipts'} <ArrowUpRight size={16} /></button>
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}
           <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved models and bonus credits stay with you.'}</p>
@@ -73,6 +80,6 @@ export default function BillingPage() {
       </>}
     {isAppleApp() && <button className="billing-secondary" disabled={busy} onClick={() => void restore()}>Restore Apple purchases</button>}
     <CreditPacks source="billing" />
-    <Link to="/pricing" className="billing-text-link" onClick={() => posthog.capture('billing_compare_plans_clicked')}>Compare all plans & credit details <ArrowUpRight size={15} /></Link>
+    <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_compare_plans_clicked'); openUpgrade('billing_compare_plans'); }}>Compare all plans & credit details <ArrowUpRight size={15} /></button>
   </main></div>;
 }
