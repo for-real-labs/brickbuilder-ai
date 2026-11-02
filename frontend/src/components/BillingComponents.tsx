@@ -47,12 +47,10 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <p className="billing-set-estimate">About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
-          <li><Check aria-hidden="true" />LDR downloads for LEGO® sets</li>
-          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>{plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}IO exports for LEGO® sets</li>
           <li><Check aria-hidden="true" />Building instructions</li>
-          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : 'billing-feature-saving'}>
+          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>
             {plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}
-            <span><strong>20% off every LEGO® set purchase</strong></span>
+            20% off every LEGO® set purchase
           </li>
         </ul>
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>

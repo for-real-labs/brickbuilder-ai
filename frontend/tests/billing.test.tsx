@@ -85,7 +85,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
 it('asks guests to sign in before creating a subscription', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
-  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('LDR downloads for LEGO® sets');
+  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('Building instructions');
   await selectPlan('Builder');
   expect(container.textContent).toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();
@@ -181,7 +181,7 @@ it('shows the monthly allowances and generation estimates on every plan', async 
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$2.99', '$19.99']);
   expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 5 LEGO® generations per month', 'About 15 LEGO® generations per month', 'About 100 LEGO® generations per month']);
   for (const card of cards) {
-    expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['LDR downloads for LEGO® sets', 'IO exports for LEGO® sets', 'Building instructions', '20% off every LEGO® set purchase']);
+    expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['Building instructions', '20% off every LEGO® set purchase']);
   }
 });
 
@@ -459,7 +459,11 @@ it('includes member savings on paid plans and marks the Free benefit unavailable
   await render(<PlanGrid source="pricing_page" />);
   for (const name of ['Builder', 'Creator']) {
     const plan = container.querySelector(`[aria-label="${name} plan"]`)!;
-    const benefit = plan.querySelector('.billing-feature-saving')!;
+    const benefit = [...plan.querySelectorAll('li')].find(item => item.textContent?.includes('20% off'))!;
+    const instructions = plan.querySelector('li')!;
+    expect(benefit.className).toBe(instructions.className);
+    expect(benefit.querySelector('strong')).toBeNull();
+    expect(benefit.classList.contains('billing-feature-saving')).toBe(false);
     expect(benefit.textContent).toContain('20% off every LEGO® set purchase');
     expect(benefit.querySelector('[aria-label="Included"]')).not.toBeNull();
     expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);

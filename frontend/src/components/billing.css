@@ -199,7 +199,6 @@
 .billing-plan .billing-features { flex:1; margin-bottom:0; }
 .billing-features li { font-size:13px; }
 .billing-features .billing-feature-unavailable, .billing-feature-unavailable svg { color:#92969e; }
-.billing-features .billing-feature-saving { color:#237554; background:#eff8f2; border-radius:12px; padding:12px; margin-inline:-8px; }
 .billing-features strong { font-weight:650; }
 .billing-features small { display:block; font-size:11px; line-height:1.6; margin-top:3px; font-weight:400; }
 .billing-plan--free { background:#fafaf7; }
