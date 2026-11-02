@@ -50,7 +50,7 @@ export default function BillingPage() {
       : !enabled && !account ? <p className="billing-launch-notice" role="status">Monthly plans and credit history are coming soon. Your current building access continues.</p>
       : loading || !account ? <p role="status">{error ? 'Your account details will appear when billing reconnects.' : 'Loading your credits…'}</p> : <>
         <div className="billing-account-grid"><section className="billing-account-card"><div className="billing-card-label"><Coins size={18} /><span>AVAILABLE CREDITS</span></div>
-          <p className="billing-big-balance">{account.credits_remaining}<span>ready for your next idea</span></p>
+          <p className="billing-big-balance">{account.credits_remaining}</p>
           {!apple && <><div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" /></>}
           {!apple && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
