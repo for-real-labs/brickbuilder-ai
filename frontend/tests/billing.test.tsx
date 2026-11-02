@@ -226,11 +226,12 @@ it('pauses new sales at capacity while keeping cancellation accessible', async (
   expect(billingApi.portal).toHaveBeenCalledWith('cancel');
 });
 
-it('separates preserved bonus balance from the bonus credits usable this month', async () => {
+it('shows the preserved bonus balance without the monthly bonus explanation', async () => {
   account = { ...account, bonus_remaining: 100, bonus_available: 3, credits_remaining: 5 };
   await render(<BillingPage />);
   expect(container.textContent).toContain('Legacy bonus balance');
-  expect(container.textContent).toContain('3 bonus credits available for Basic builds');
+  expect(container.textContent).not.toContain('bonus credits available for Basic builds this month');
+  expect(container.textContent).not.toContain('Maximum 5 per month.');
 });
 
 

@@ -55,7 +55,6 @@ export default function BillingPage() {
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" /></>}
           <div className="billing-balance-row"><span>Purchased & earned credits · never expire</span><strong>{account.apple_remaining ?? 0}</strong></div>
           <div className="billing-balance-row"><span>Legacy bonus balance · never expires</span><strong>{account.bonus_remaining}</strong></div>
-          <p className="billing-muted">{account.bonus_available ?? 0} bonus credits available for Basic builds this month, used after monthly credits. Maximum 5 per month.</p>
           {!apple && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
           <button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button>
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
