@@ -24,6 +24,8 @@ describe('directory legal pages', () => {
     expect(terms).toContain('Operator: Jake Johnson');
     expect(terms).toContain('at least 13 years old');
     expect(terms).toContain('Free plan includes 75 credits');
+    expect(terms).toContain('20% off the regular price of LEGO® set bricks');
+    expect(terms).toContain('discounted LEGO® set price');
     expect(terms).toContain('renew automatically each month until canceled');
     expect(terms).toContain('My billing → Cancel subscription');
     expect(terms).toContain('Free and web subscription monthly credits reset without rollover');

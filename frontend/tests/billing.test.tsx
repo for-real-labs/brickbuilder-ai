@@ -64,7 +64,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')).toHaveLength(2);
   expect(container.textContent).toContain('Web monthly credits reset and do not roll over');
-  expect(container.querySelector('.billing-dialog .billing-member-intro strong')?.textContent).toBe('20% off model purchases!');
+  expect(container.querySelector('.billing-dialog .billing-member-intro strong')?.textContent).toBe('20% off LEGO® set purchases!');
   expect(container.querySelector('.billing-dialog .billing-fine-print')?.textContent).not.toContain('Legacy bonuses never expire.');
   await click('Choose Creator');
   expect(billingApi.checkout).toHaveBeenCalledWith('creator');
@@ -78,7 +78,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
 it('asks guests to sign in before creating a subscription', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
-  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('LDR model downloads');
+  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('LDR downloads for LEGO® sets');
   await click('Choose Builder');
   expect(container.textContent).toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();
@@ -174,7 +174,7 @@ it('shows the monthly allowances and generation estimates on every plan', async 
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$2.99', '$19.99']);
   expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 5 LEGO® generations per month', 'About 15 LEGO® generations per month', 'About 100 LEGO® generations per month']);
   for (const card of cards) {
-    expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['LDR model downloads', 'IO model exports', 'Building instructions', '20% off every model purchasePhysical model bricks · promo codes stack']);
+    expect([...card.querySelectorAll('li')].map(item => item.textContent)).toEqual(['LDR downloads for LEGO® sets', 'IO exports for LEGO® sets', 'Building instructions', '20% off every LEGO® set purchase']);
   }
 });
 
@@ -202,7 +202,7 @@ it.each(['Pricing', 'Explore plans', 'Compare all plans & credit details'])('ope
   await click(label);
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(container.querySelectorAll('.billing-dialog .billing-plan')).toHaveLength(2);
-  expect(container.querySelector('.billing-dialog .billing-member-intro strong')?.textContent).toBe('20% off model purchases!');
+  expect(container.querySelector('.billing-dialog .billing-member-intro strong')?.textContent).toBe('20% off LEGO® set purchases!');
   expect(container.querySelector('.billing-dialog h1')?.classList.contains('sr-only')).toBe(true);
   expect(container.textContent).not.toContain('Your next big idea starts here.');
   expect(container.querySelector('a[href="/pricing"]')).toBeNull();
@@ -453,7 +453,7 @@ it('includes member savings on paid plans and marks the Free benefit unavailable
   for (const name of ['Builder', 'Creator']) {
     const plan = container.querySelector(`[aria-label="${name} plan"]`)!;
     const benefit = plan.querySelector('.billing-feature-saving')!;
-    expect(benefit.textContent).toContain('20% off every model purchase');
+    expect(benefit.textContent).toContain('20% off every LEGO® set purchase');
     expect(benefit.querySelector('[aria-label="Included"]')).not.toBeNull();
     expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);
   }
@@ -464,6 +464,8 @@ it('includes member savings on paid plans and marks the Free benefit unavailable
 
 it('keeps the bold member discount and promo details at the top of the shared popup', async () => {
   await render(<OpenPlansPopup />);
-  expect(container.querySelector('.billing-member-intro strong')?.textContent).toBe('20% off model purchases!');
+  expect(container.querySelector('.billing-member-intro strong')?.textContent).toBe('20% off LEGO® set purchases!');
   expect(container.querySelector('.billing-member-intro')?.textContent).toContain('Applied automatically at checkout, with promo codes on top.');
+  expect(container.querySelector('.billing-dialog')?.textContent).not.toContain('Physical model bricks · promo codes stack');
+  expect(container.querySelector('.billing-dialog')?.textContent).not.toMatch(/models?/i);
 });

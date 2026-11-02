@@ -102,6 +102,6 @@ it('shows the full price crossed out and automatic member savings', () => {
   act(() => root.render(<ModelOrderCard quote={memberQuote} loading={false} updating={false} error={null} onOrder={vi.fn()} />));
   expect(container.querySelector('del.model-order-original')?.textContent).toBe('$47.50');
   expect(container.querySelector('.model-order-total')?.textContent).toBe('$40.00');
-  expect(container.textContent).toContain('Paid plan · 20% off model bricks');
+  expect(container.textContent).toContain('Paid plan · 20% off LEGO® set bricks');
   expect(container.querySelector('.model-mobile-original')?.textContent).toBe('$47.50');
 });

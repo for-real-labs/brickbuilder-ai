@@ -60,7 +60,7 @@ export default function BillingPage() {
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
           <h2 className="billing-account-plan">{plan?.name ?? 'Free'}<span>{apple ? 'Billed monthly by Apple' : `$${(plan?.monthly_cents ?? 0) / 100} / month`}</span></h2>
           <p className="billing-plan-allowance">{(plan?.credits ?? account.monthly_credits).toLocaleString()} credits each month. About {PLAN_GENERATIONS[plan?.key ?? 'free']} LEGO® generations per month.</p>
-          <p className="billing-plan-benefit">Paid plans include IO exports and automatic 20% off model bricks, with promo codes on top. Shipping is separate.</p>
+          <p className="billing-plan-benefit">Paid plans include IO exports and automatic 20% off LEGO® sets, with promo codes on top. Shipping is separate.</p>
           {apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
             : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : null}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}
@@ -70,7 +70,7 @@ export default function BillingPage() {
           }}>{maxPlan ? 'Change plan' : 'Upgrade plan'} <ArrowUpRight size={16} /></button></div>
           {account.has_subscription && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>{apple ? 'Manage Apple subscription' : 'Manage billing & receipts'} <ArrowUpRight size={16} /></button>
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}
-          <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved models and bonus credits stay with you.'}</p>
+          <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved LEGO® sets and bonus credits stay with you.'}</p>
         </section></div>
         <section className="billing-account-card billing-history"><div className="billing-history-heading"><h2>Credit history</h2><button type="button" aria-label="Refresh credit history" onClick={() => { posthog.capture('billing_history_refreshed'); void refresh(); }}><RefreshCw size={17} /></button></div>
           {account.history.length ? <div className="billing-table-wrap"><table><thead><tr><th>Activity</th><th>Date</th><th>Credits</th></tr></thead><tbody>

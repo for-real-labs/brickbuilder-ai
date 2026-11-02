@@ -83,6 +83,7 @@ it('rejects cached catalog-only quotes and inconsistent server totals', () => {
 
 it('uses a text-only brand link in the checkout header', async () => {
   await renderOrder();
+  expect(container.textContent).toContain('Paid plans save 20% on LEGO® set bricks.');
   const brand = container.querySelector('a[aria-label="BrickBuilder home"]')!;
   expect(brand.textContent).toBe('BRICKBUILDER');
   expect(brand.querySelector('svg, img')).toBeNull();

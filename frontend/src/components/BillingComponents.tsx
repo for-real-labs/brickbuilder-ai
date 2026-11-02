@@ -51,12 +51,12 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <p className="billing-set-estimate">About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
-          <li><Check aria-hidden="true" />LDR model downloads</li>
-          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>{plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}IO model exports</li>
+          <li><Check aria-hidden="true" />LDR downloads for LEGO® sets</li>
+          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>{plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}IO exports for LEGO® sets</li>
           <li><Check aria-hidden="true" />Building instructions</li>
           <li className={plan.key === 'free' ? 'billing-feature-unavailable' : 'billing-feature-saving'}>
             {plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}
-            <span><strong>20% off every model purchase</strong><small>Physical model bricks · promo codes stack</small></span>
+            <span><strong>20% off every LEGO® set purchase</strong></span>
           </li>
         </ul>
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>
@@ -93,7 +93,7 @@ export function CreditNudge() {
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
     <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Buy additional credits to keep building.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
-      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $2.99.'} Basic builds use 2 credits; All parts uses 20. Paid plans also save 20% on model bricks.</>}</p>
+      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $2.99.'} Basic builds use 2 credits; All parts uses 20. Paid plans also save 20% on LEGO® sets.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing#credit-packs'); } else openUpgrade(source); }}>{low ? highest ? 'Buy credits' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
     <button type="button" className="credit-nudge-dismiss" aria-label="Dismiss plans banner" onClick={() => { setDismissed(true); posthog.capture('billing_nudge_dismissed', { source, plan_key: account?.plan_key ?? 'guest' }); }}><X size={18} aria-hidden="true" /></button>
   </div>;
@@ -126,7 +126,7 @@ export function BillingOverlays() {
       {account && <div className="billing-dialog-heading"><PetAvatar /><div><MonthlyCreditUsage account={account} /></div></div>}
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
-      <p className="billing-member-intro">Every paid plan includes <strong>20% off model purchases!</strong> Applied automatically at checkout, with promo codes on top.</p>
+      <p className="billing-member-intro">Every paid plan includes <strong>20% off LEGO® set purchases!</strong> Applied automatically at checkout, with promo codes on top.</p>
       <PlanGrid source={upgradeSource} paidOnly />
       <CreditPacks source={upgradeSource} />
       <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Failed or canceled builds return their credits.</p>
