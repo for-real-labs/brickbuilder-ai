@@ -296,10 +296,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const pendingEditId = pendingEdit && landingModel.targetId !== landingModel.model?.generation.generation_id
     ? landingModel.targetId : null;
   const selectedActiveGeneration = generations.find(row => row.id === landingModel.targetId && isGenerationActive(row.status));
-  const pendingGeneration = !createNewStage && !landingModel.model && (loading || Boolean(selectedActiveGeneration)
+  const pendingGeneration = !createNewStage && !landingModel.model && (loading || landingModel.pending || Boolean(selectedActiveGeneration)
     || Boolean(activeGenerationId && landingModel.busy));
   const pendingGenerationId = pendingEdit ? pendingEditId
-    : pendingGeneration ? selectedActiveGeneration?.id || activeGenerationId : null;
+    : pendingGeneration ? selectedActiveGeneration?.id || activeGenerationId || landingModel.targetId : null;
   const processingBuilds = [...generations.filter(row => isGenerationActive(row.status))];
   for (const row of notificationActive || []) {
     if (!generations.some(generation => generation.id === row.id)) processingBuilds.push({
@@ -307,6 +307,21 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     });
   }
   processingBuilds.sort((left, right) => (right.createdAt || '').localeCompare(left.createdAt || ''));
+  const reloadVisit = useRef(typeof performance !== 'undefined'
+    && typeof performance.getEntriesByType === 'function'
+    && (performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined)?.type === 'reload').current;
+  const restoredPendingOwner = useRef<string | null>(null);
+  const pendingOwner = session?.user.id || 'guest';
+  useEffect(() => {
+    if (requestedModelId) { restoredPendingOwner.current = pendingOwner; return; }
+    if (!reloadVisit || restoredPendingOwner.current === pendingOwner || authLoading || ldrawLanding
+      || createNewStage || hasEnteredChat || loading) return;
+    const pending = processingBuilds[0];
+    if (!pending) return;
+    restoredPendingOwner.current = pendingOwner;
+    openModel(pending.id);
+    posthog.capture('landing_pending_generation_restored', { generation_id: pending.id });
+  }, [reloadVisit, requestedModelId, pendingOwner, authLoading, ldrawLanding, createNewStage, hasEnteredChat, loading, processingBuilds, openModel]);
   const visitGenerationIds = new Set(buddyChat.turns.map(turn => turn.generationId));
   const displayedGenerations = generations.filter(row => ldrawLanding || row.id === landingModel.targetId || visitGenerationIds.has(row.id))
     .map(row => row.id === landingModel.model?.generation.generation_id
@@ -694,7 +709,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }
 
       const completedGeneration = await GetGenerationApiService.pollUntilComplete(
-        generationId, () => {}, 2500, 120, controller.signal
+        generationId, () => {}, 2500, Infinity, controller.signal
       );
 
       console.log('Generation completed:', completedGeneration.generation_id);
@@ -764,6 +779,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   };
 
   const resetWorkspace = () => {
+    restoredPendingOwner.current = pendingOwner;
     landingModel.reset();
     setSearchParams(current => {
       const next = new URLSearchParams(current);

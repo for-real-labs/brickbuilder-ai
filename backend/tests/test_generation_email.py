@@ -240,3 +240,29 @@ def test_database_completion_race_privacy_unlimited_notifications_and_lease_reco
                     with pytest.raises(psycopg.errors.InsufficientPrivilege):db.execute(sql)
                 db.execute('RESET ROLE')
     finally:server.cleanup()
+
+
+def test_automatic_registration_is_atomic_and_queues_each_completed_edit(tmp_path):
+    server = pgserver.get_server(tmp_path / 'automatic-mail', cleanup_mode='delete')
+    try:
+        with psycopg.connect(server.get_uri(), autocommit=True) as db:
+            db.execute('CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid,email text,email_confirmed_at timestamptz)')
+            db.execute('CREATE TABLE public.generations(id uuid PRIMARY KEY,user_id text,user_type text,status text,name text)')
+            for role in ('anon', 'authenticated', 'service_role'):
+                db.execute(f'CREATE ROLE {role}')
+            migrations = Path(__file__).resolve().parents[2] / 'supabase/migrations'
+            db.execute((migrations / '20261005010000_generation_notification_email.sql').read_text())
+            db.execute((migrations / '20261102000000_automatic_generation_emails.sql').read_text())
+            owner = str(uuid4())
+            db.execute("INSERT INTO auth.users VALUES (%s,'owner@example.com',now())", (owner,))
+            for title in ('Original build', 'Edited build'):
+                job = str(uuid4())
+                db.execute("INSERT INTO public.generations(id,user_id,user_type,status,name,notification_origin) VALUES (%s,%s,'authenticated','started',%s,'https://staging.example')", (job, owner, title))
+                assert db.execute('SELECT notification_email FROM public.generations WHERE id=%s', (job,)).fetchone()[0] == 'owner@example.com'
+                db.execute("UPDATE public.generations SET status='completed' WHERE id=%s", (job,))
+                db.execute("UPDATE public.generations SET status='completed' WHERE id=%s", (job,))
+            assert db.execute("SELECT count(*) FROM public.generation_email_outbox WHERE email='owner@example.com' AND origin='https://staging.example'").fetchone()[0] == 2
+            db.execute("INSERT INTO public.generations(id,user_id,user_type,status) VALUES (%s,%s,'anonymous','started')", (str(uuid4()), owner))
+            assert db.execute("SELECT notification_email FROM public.generations WHERE user_type='anonymous'").fetchone()[0] is None
+    finally:
+        server.cleanup()

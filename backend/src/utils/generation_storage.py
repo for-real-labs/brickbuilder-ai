@@ -153,6 +153,9 @@ class GenerationStorage:
                 "billing_policy_version": 2,
                 "billing_livemode": os.getenv("API_MODE", "local") == "production"
             }
+            if user_type == 'authenticated':
+                from .generation_email import notification_origin
+                generation_data['notification_origin'] = notification_origin()
             if personal_billing:
                 if user_type != 'authenticated' or endpoint not in {'novaToBricks', 'llmToBricks'}:
                     raise ValueError('Invalid personal billing generation')

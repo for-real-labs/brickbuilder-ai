@@ -61,7 +61,7 @@ beforeEach(() => {
 it('shows the saved notification recipient inside the landing generation card conversation', async () => {
   vi.mocked(GenerationEmailApi.status).mockResolvedValue({subscribed: true, email: 'landing-builder@example.com'});
   await act(async () => root.render(<GenerationActivityList generations={[job('email-build')]} error={null} onOpen={open} />));
-  expect(container.querySelector('article')!.textContent).toContain('I’ll email landing-builder@example.com');
+  expect(container.querySelector('article')!.textContent).toContain("You will receive an email when it's ready.");
   expect(document.querySelector('[role="dialog"]')).toBeNull();
   expect(open).not.toHaveBeenCalled();
 });
@@ -104,12 +104,10 @@ it('prompts only for the newly started card and keeps all active cards clear abo
     error={null} onOpen={open} notificationPromptId="new-build" onNotificationPromptShown={onNotificationPromptShown} />));
   expect(onNotificationPromptShown).toHaveBeenCalledTimes(1);
   expect(document.querySelectorAll('[role="dialog"]')).toHaveLength(0);
-  expect(container.querySelectorAll('.pet-notification-conversation')).toHaveLength(1);
+  expect(container.querySelectorAll('.pet-notification-conversation')).toHaveLength(2);
   expect(Array.from(container.querySelectorAll('article')).every(card =>
     card.textContent?.includes('This may take up to 30 minutes to generate.'))).toBe(true);
-  expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_prompt_shown', {
-    generation_id: 'new-build', is_authenticated: false, source: 'build_buddy_chat',
-  });
+  expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_notice_shown', { generation_id: 'new-build' });
   expect(open).not.toHaveBeenCalled();
 });
 

@@ -403,19 +403,9 @@ it.each([true, false])('offers the shared email flow on an initial generation, s
   } as never);
   vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=new-build']}><GeneratedModel /></MemoryRouter>));
-  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Yes, email me')!;
-  expect(notify).toBeTruthy();
-  expect(GenerationEmailApi.status).toHaveBeenCalledWith('new-build', expect.any(AbortSignal));
-  await act(async () => notify.click());
-  expect(document.querySelector('[role="dialog"]')).toBeNull();
-  const conversation = container.querySelector('.pet-notification-conversation')!;
-  if (signedIn) {
-    expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('new-build', undefined);
-    expect(conversation.textContent).toContain('builder@example.com');
-  } else {
-    expect(conversation.querySelector('input[type="email"]')).not.toBeNull();
-    expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
-  }
+  expect(container.textContent).toContain("You will receive an email when it's ready. You can safely leave this window");
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
+  expect(container.querySelector('.pet-notification-conversation input')).toBeNull();
 });
 
 it('restores the edit notification and its recipient when returning to the model page', async () => {
@@ -423,10 +413,10 @@ it('restores the edit notification and its recipient when returning to the model
   vi.mocked(GenerationEmailApi.status).mockResolvedValue({subscribed: true, email: 'edit-recipient@example.com'});
   vi.spyOn(GetGenerationApiService, 'pollUntilComplete').mockImplementation(() => new Promise(() => {}));
   await act(async () => root.render(<MemoryRouter initialEntries={['/generated-model?id=g']}><GeneratedModel /></MemoryRouter>));
-  expect(GenerationEmailApi.status).toHaveBeenCalledWith('g', expect.any(AbortSignal));
+  expect(GenerationEmailApi.status).not.toHaveBeenCalled();
   expect(GenerationEmailApi.status).not.toHaveBeenCalledWith('old', expect.anything());
   expect(document.querySelector('[role="dialog"]')).toBeNull();
-  expect(container.querySelector('figure .pet-notification-conversation')?.textContent).toContain('I’ll email edit-recipient@example.com');
+  expect(container.querySelector('figure .pet-notification-conversation')?.textContent).toContain("You will receive an email when it's ready.");
   expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
 });
 
@@ -473,17 +463,8 @@ it('keeps the mounted viewer when submitting an edit and while the edit request 
   expect(container.querySelector('[data-testid="viewer"]')).toBe(viewer);
   expect(container.textContent).toContain('I’m shrinking the Pepsi can…');
   expect(container.textContent).not.toContain('Continue browsing');
-  expect(container.textContent).toContain('Want an email when it’s ready?');
-  const notify = Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Yes, email me')!;
-  act(() => notify.click());
-  act(() => {
-    const input = container.querySelector('.pet-notification-conversation input')!;
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'builder@example.com');
-    input.dispatchEvent(new Event('input', {bubbles: true}));
-  });
-  await act(async () => Array.from(container.querySelectorAll('button')).find(button => button.textContent === 'Notify me')!.click());
-  expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('g', 'builder@example.com');
-  expect(container.querySelector('.pet-notification-conversation')?.textContent).toContain('I’ll email builder@example.com');
+  expect(container.textContent).toContain("You will receive an email when it's ready. You can safely leave this window");
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
   expect(document.querySelector('[role="dialog"]')).toBeNull();
 });
 

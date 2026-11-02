@@ -15,6 +15,7 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
   const [targetId, setTargetId] = useState<string | null>(null);
   const [loadVersion, setLoadVersion] = useState(0);
   const [model, setModel] = useState<LandingModel | null>(null);
+  const [pending, setPending] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const revision = useRef(0);
@@ -25,6 +26,7 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
     revision.current++;
     if (!retainModel) setModel(null);
     setError(null);
+    setPending(false);
     setBusy(true);
     setTargetId(id);
     setLoadVersion(current => current + 1);
@@ -33,6 +35,7 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
     selection.current = { storageKey, id: null };
     try { sessionStorage.removeItem(storageKey); } catch { /* Keep the reset for this visit. */ }
     revision.current++;
+    setPending(false);
     setTargetId(null);
     setModel(null);
     setBusy(false);
@@ -55,6 +58,7 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
     revision.current++;
     setTargetId(id);
     setModel(null);
+    setPending(false);
     setBusy(Boolean(id));
     setError(null);
     setLoadVersion(current => current + 1);
@@ -69,6 +73,7 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
       try {
         const generation = await GetGenerationApiService.getGeneration(targetId, signal);
         if (signal.aborted || revision.current !== currentRevision) return;
+        setPending(['queued', 'started', 'processing', 'ldr_processing', 'resizing'].includes(generation.status));
         if (generation.status === 'failed' || generation.status === 'cancelled') {
           settled = true;
           polling.stop();
@@ -98,12 +103,12 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
         posthog.capture('landing_model_viewed', { generation_id: targetId, endpoint: generation.endpoint });
       } catch (error) {
         if (signal.aborted || revision.current !== currentRevision) return;
-        setError(error instanceof Error ? error.message : 'Unable to load this model. Retrying…');
+        setError(null); // A temporary read failure must not replace an active build with a failure message.
         throw error;
       }
     }, { intervalMs: 5000 });
     return polling.stop;
   }, [targetId, authToken, loadVersion]);
 
-  return { targetId, model, busy, error, open, reset, rename };
+  return { targetId, model, busy, pending, error, open, reset, rename };
 }
