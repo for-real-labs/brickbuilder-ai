@@ -119,7 +119,7 @@ export function BillingOverlays() {
       {account && <div className="billing-dialog-heading"><PetAvatar /><div><MonthlyCreditUsage account={account} /></div></div>}
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
-      <p className="billing-member-intro">Paid plans include <strong>10–20% off LEGO® set purchases!</strong> Applied automatically at checkout, with promo codes on top.</p>
+      <p className="billing-member-intro">Every paid plan includes a discount on LEGO® purchases</p>
       <PlanGrid source={upgradeSource} paidOnly />
       <CreditPacks source={upgradeSource} />
       <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Failed or canceled builds return their credits.</p>
