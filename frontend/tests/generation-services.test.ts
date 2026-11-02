@@ -183,3 +183,13 @@ it('preserves the saved model title when returning a completed polling result', 
   } as GetGenerationResponse);
   expect(await GetGenerationApiService.pollUntilComplete('g')).toMatchObject({name: 'Moon Rover', prompt: 'please make a rover'});
 });
+
+
+it('keeps waiting past the old five-minute cutoff and retries failed status reads', async () => {
+  const read = vi.spyOn(GetGenerationApiService, 'getGeneration');
+  read.mockRejectedValueOnce(new Error('API request failed: 503'));
+  for (let index = 0; index < 125; index++) read.mockResolvedValueOnce({ generation_id: 'g', status: 'processing' } as GetGenerationResponse);
+  read.mockResolvedValueOnce({ generation_id: 'g', status: 'completed', prompt: 'car', ldr_content: 'ldr' } as GetGenerationResponse);
+  await expect(GetGenerationApiService.pollUntilComplete('g', undefined, 0)).resolves.toMatchObject({ generation_id: 'g' });
+  expect(read).toHaveBeenCalledTimes(127);
+});

@@ -694,7 +694,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }
 
       const completedGeneration = await GetGenerationApiService.pollUntilComplete(
-        generationId, () => {}, 2500, 120, controller.signal
+        generationId, () => {}, 2500, Infinity, controller.signal
       );
 
       console.log('Generation completed:', completedGeneration.generation_id);

@@ -120,13 +120,13 @@ export class GetGenerationApiService {
    * @param generationId - The generation ID to poll
    * @param onStatusUpdate - Optional callback for status updates (for showing preview images)
    * @param pollInterval - Time between polls in ms (default: 2500ms)
-   * @param maxAttempts - Maximum number of poll attempts (default: 120 = 5 minutes at 2.5s intervals)
+   * @param maxAttempts - Maximum number of poll attempts (default: unlimited; only server status determines failure)
    */
   static async pollUntilComplete(
     generationId: string,
     onStatusUpdate?: (response: GetGenerationResponse) => void,
     pollInterval: number = 2500,
-    maxAttempts: number = 120,
+    maxAttempts: number = Infinity,
     signal?: AbortSignal
   ): Promise<CompletedGeneration> {
     let attempts = 0;
@@ -135,7 +135,15 @@ export class GetGenerationApiService {
       if (signal?.aborted) {
         throw new DOMException('Polling aborted', 'AbortError');
       }
-      const response = await this.getGeneration(generationId, signal);
+      let response: GetGenerationResponse | undefined;
+      try {
+        response = await this.getGeneration(generationId, signal);
+      } catch (error) {
+        if (signal?.aborted) throw new DOMException('Polling aborted', 'AbortError');
+        // Losing a status request does not mean the background build failed.
+        // Retry through temporary network errors, token refreshes, and tab suspension.
+      }
+      if (response) {
       
       if (signal?.aborted) throw new DOMException('Polling aborted', 'AbortError');
       // Call status update callback if provided
@@ -167,6 +175,7 @@ export class GetGenerationApiService {
         throw new DOMException('Generation cancelled', 'AbortError');
       }
 
+      }
       // Still processing, wait and try again
       await new Promise<void>((resolve, reject) => {
         const onAbort = () => {

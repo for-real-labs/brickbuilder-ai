@@ -98,7 +98,7 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
         posthog.capture('landing_model_viewed', { generation_id: targetId, endpoint: generation.endpoint });
       } catch (error) {
         if (signal.aborted || revision.current !== currentRevision) return;
-        setError(error instanceof Error ? error.message : 'Unable to load this model. Retrying…');
+        setError(null); // A temporary read failure must not replace an active build with a failure message.
         throw error;
       }
     }, { intervalMs: 5000 });
