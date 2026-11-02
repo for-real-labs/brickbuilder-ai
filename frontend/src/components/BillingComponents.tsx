@@ -130,7 +130,7 @@ export function BillingOverlays() {
       <p className="billing-member-intro">Every paid plan includes 20% off model bricks. Applied automatically at checkout, with promo codes on top.</p>
       <PlanGrid source={upgradeSource} paidOnly />
       <CreditPacks source={upgradeSource} />
-      <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Legacy bonuses never expire. Failed or canceled builds return their credits.</p>
+      <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Failed or canceled builds return their credits.</p>
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={closeLogin} redirectTo="/pricing" />

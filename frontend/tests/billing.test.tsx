@@ -58,6 +58,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')).toHaveLength(2);
   expect(container.textContent).toContain('Web monthly credits reset and do not roll over');
+  expect(container.querySelector('.billing-dialog .billing-fine-print')?.textContent).not.toContain('Legacy bonuses never expire.');
   await click('Choose Creator');
   expect(billingApi.checkout).toHaveBeenCalledWith('creator');
   expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/test');
