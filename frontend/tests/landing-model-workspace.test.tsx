@@ -1313,3 +1313,22 @@ it('toggles measurements beside expand and preserves the choice across viewer mo
   expect(rulerVisible()).toBe('true');
   expect(container.querySelector('.landing-ruler-slash')).toBeNull();
 });
+
+
+it('restores a pending build on landing refresh into the URL and loading workspace', async () => {
+  vi.stubGlobal('performance', { now: () => 0, getEntriesByType: () => [{ type: 'reload' }] });
+  activity.rows = [{ id: 'pending-build', prompt: 'A castle', status: 'processing', endpoint: 'novaToBricks' }];
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'pending-build', status: 'processing' } as never);
+  await act(async () => root.render(<LandingPage />));
+  expect(new URLSearchParams(query.value).get('id')).toBe('pending-build');
+  expect(container.querySelector('[aria-label="Build progress workspace"]')).not.toBeNull();
+  expect(posthog.capture).toHaveBeenCalledWith('landing_pending_generation_restored', { generation_id: 'pending-build' });
+});
+
+it('shows the generating state after refreshing an explicit pending link even before history loads', async () => {
+  query.value = 'id=pending-build';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'pending-build', status: 'processing' } as never);
+  await act(async () => root.render(<LandingPage />));
+  expect(container.querySelector('[aria-label="Build progress workspace"]')).not.toBeNull();
+  expect(container.querySelector('#landing-build-prompt')).toBeNull();
+});
