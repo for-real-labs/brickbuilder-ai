@@ -232,6 +232,7 @@ it('shows the total and monthly balances without separate purchased or legacy ro
   expect(container.textContent).not.toContain('Legacy bonus balance');
   expect(container.querySelector('.billing-big-balance')?.textContent).toBe('5');
   expect(container.textContent).not.toContain('ready for your next idea');
+  expect(container.querySelector('.billing-account-title')?.textContent).not.toContain('More ideas ahead. Here’s where you stand.');
   expect([...container.querySelectorAll('.billing-balance-row')].map(row => row.textContent)).toEqual(['Monthly credits2 / 300']);
   expect(container.textContent).not.toContain('bonus credits available for Basic builds this month');
   expect(container.textContent).not.toContain('Maximum 5 per month.');

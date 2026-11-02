@@ -41,7 +41,7 @@ export default function BillingPage() {
   const plan = plans.find(p => p.key === (apple ? account?.apple_plan : account?.plan_key)) ?? (account?.plan_key === 'master' ? LEGACY_MASTER_PLAN : undefined);
   const labels: Record<string, string> = { referral: 'Account referral reward', purchase: 'Credits purchased', purchase_refund: 'Purchase refunded', welcome: 'Existing credits preserved', monthly: 'Monthly credits', upgrade: 'Plan upgrade', generation: 'AI build or edit', refund: 'Build credit returned' };
   return <div className="billing-page"><BillingHeader /><main className="billing-account-main">
-    <div className="billing-account-title"><div><p className="billing-eyebrow">YOUR BUILDING ROOM</p><h1>Credits & billing</h1><p>More ideas ahead. Here’s where you stand.</p></div><PetAvatar state={confirmed ? 'celebrating' : 'idle'} /></div>
+    <div className="billing-account-title"><div><p className="billing-eyebrow">YOUR BUILDING ROOM</p><h1>Credits & billing</h1></div><PetAvatar state={confirmed ? 'celebrating' : 'idle'} /></div>
     {error && (enabled || account) && <div className="billing-error" role="alert">{error} <button onClick={() => { posthog.capture('billing_retry_clicked'); void refresh(); }}>Try again</button></div>}
     {confirmed && <p className="billing-confirmation" role="status">You’re all set. Your payment is confirmed and your credits are ready.</p>}
     {confirming && <p role="status">Confirming your payment and credits…</p>}
