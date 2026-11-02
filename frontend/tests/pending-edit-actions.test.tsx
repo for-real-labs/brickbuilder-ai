@@ -32,27 +32,14 @@ afterEach(() => {
 
 const button = (label: string) => Array.from(container.querySelectorAll('button')).find(element => element.textContent === label)!;
 
-it('keeps edit actions visible while awaiting an ID, then saves a guest email outside the pet dialogue', async () => {
-  await act(async () => root.render(<PendingEditActions generationId={null} onCancelled={vi.fn()} onStartNew={vi.fn()} />));
-  expect(container.textContent).toContain('This can take up to 30 minutes. Do you want an email when it’s ready?');
-  expect(button('Email me').disabled).toBe(true);
+it.each([true, false])('announces automatic email without asking while awaiting a build ID, edit: %s', async isEdit => {
+  await act(async () => root.render(<PendingEditActions generationId={null} isEdit={isEdit} onCancelled={vi.fn()} onStartNew={vi.fn()} />));
+  expect(container.textContent).toContain("You will receive an email when it's ready. You can safely leave this window");
+  expect(button('Email me')).toBeUndefined();
+  expect(container.querySelector('input')).toBeNull();
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
   expect(button('Cancel').disabled).toBe(true);
   expect(button('Start new').disabled).toBe(true);
-
-  await act(async () => root.render(<PendingEditActions key="edit" generationId="edit" onCancelled={vi.fn()} onStartNew={vi.fn()} />));
-  act(() => button('Email me').click());
-  const input = container.querySelector<HTMLInputElement>('input[type="email"]')!;
-  expect(input).not.toBeNull();
-  act(() => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'builder@example.com');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
-  });
-  await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-  expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('edit', 'builder@example.com');
-  expect(button('Email set').disabled).toBe(true);
-  expect(container.textContent).toContain('Email will be sent to builder@example.com when ready.');
-  expect(container.querySelector('input[type="email"]')).toBeNull();
-  expect(posthog.capture).toHaveBeenCalledWith('generation_email_notification_subscribed', expect.objectContaining({ generation_id: 'edit', source: 'landing_edit_actions' }));
 });
 
 it('uses the account email for signed-in users and offers cancel and start new', async () => {
@@ -60,8 +47,7 @@ it('uses the account email for signed-in users and offers cancel and start new',
   const cancelled = vi.fn();
   const startNew = vi.fn();
   await act(async () => root.render(<PendingEditActions generationId="edit" onCancelled={cancelled} onStartNew={startNew} />));
-  await act(async () => button('Email me').click());
-  expect(GenerationEmailApi.subscribe).toHaveBeenCalledWith('edit', undefined);
+  expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();
   expect(container.querySelector('input[type="email"]')).toBeNull();
   await act(async () => button('Cancel').click());
   expect(GetGenerationApiService.cancelGeneration).toHaveBeenCalledExactlyOnceWith('edit');
@@ -75,7 +61,7 @@ it('uses generation actions and analytics for a new build', async () => {
   const startNew = vi.fn();
   await act(async () => root.render(<PendingEditActions generationId="new-build" isEdit={false}
     onCancelled={vi.fn()} onStartNew={startNew} />));
-  expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
+  expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain("You will receive an email when it's ready.");
   act(() => button('Start new').click());
   expect(startNew).toHaveBeenCalledOnce();
   expect(posthog.capture).toHaveBeenCalledWith('landing_generation_start_new_clicked', { generation_id: 'new-build' });
@@ -88,6 +74,6 @@ it('shows the active build duration and saved notification address', async () =>
   await act(async () => root.render(<PendingEditActions generationId="new-build" isEdit={false}
     startedAt="2026-10-19T18:00:00Z" onCancelled={vi.fn()} onStartNew={vi.fn()} />));
   expect(container.textContent).toContain('Building for 1m 0s');
-  expect(container.textContent).toContain('Email will be sent to saved@example.com when ready.');
-  expect(button('Email set').disabled).toBe(true);
+  expect(container.textContent).toContain("You will receive an email when it's ready.");
+  expect(button('Email set')).toBeUndefined();
 });

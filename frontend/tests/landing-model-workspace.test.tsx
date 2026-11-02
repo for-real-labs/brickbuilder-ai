@@ -523,7 +523,7 @@ it.each(['llmToBricks', 'novaToBricks', 'textTo3d'])('shows only falling 3D bric
   expect(conversation.compareDocumentPosition(actions) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(container.querySelector('[aria-label="Build dialogue"]')?.textContent?.match(/Building for/g)).toHaveLength(1);
   expect(actions.textContent).toContain('Building for');
-  expect(actions.textContent).toContain('This can take up to 30 minutes. Do you want an email when it’s ready?');
+  expect(actions.textContent).toContain("You will receive an email when it's ready. You can safely leave this window");
   expect(container.querySelector('button[type="submit"][aria-label="Create"]')).toBeNull();
   await act(async () => Array.from(actions.querySelectorAll<HTMLButtonElement>('button')).find(button => button.textContent === 'Cancel')!.click());
   expect(cancel).toHaveBeenCalledExactlyOnceWith('building');
@@ -772,7 +772,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s with animation
   expect(container.querySelector('[aria-label="Building your edited model"] [data-testid="generation-3d-animation"]')).not.toBeNull();
   expect(container.querySelector('#landing-build-prompt')).toBeNull();
   const editActions = container.querySelector('[aria-label="Generation in progress actions"]')!;
-  expect(editActions.textContent).toContain('Email me');
+  expect(editActions.textContent).toContain("You will receive an email when it's ready.");
   expect(container.querySelector('[aria-label="Build dialogue"]')?.textContent?.match(/Building for/g)).toHaveLength(1);
   expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Cancel');
   expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Start new');

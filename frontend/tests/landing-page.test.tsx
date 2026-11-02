@@ -484,7 +484,7 @@ describe('LandingPage', () => {
       await act(async () => generate().click());
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('#landing-build-prompt')).toBeNull();
-      expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain('Email me');
+      expect(container.querySelector('[aria-label="Generation in progress actions"]')?.textContent).toContain("You will receive an email when it's ready.");
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
       expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
       const nextInput = container.querySelector('input[aria-label="Describe your model"]') as HTMLInputElement;
