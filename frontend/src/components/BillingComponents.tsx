@@ -47,9 +47,9 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <p className="billing-set-estimate">About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
-          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : ''}>
+          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : 'billing-feature-saving'}>
             {plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}
-            {plan.key === 'free' ? 'LEGO® set discounts' : `${PLAN_DISCOUNTS[plan.key]}% off every LEGO® set purchase`}
+            {plan.key === 'free' ? 'LEGO® set discounts' : <strong>{PLAN_DISCOUNTS[plan.key]}% off every LEGO® purchase</strong>}
           </li>
         </ul>
         {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>

@@ -181,7 +181,7 @@ it('shows the monthly allowances and generation estimates on every plan', async 
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$2.99', '$19.99']);
   expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 5 LEGO® generations per month', 'About 15 LEGO® generations per month', 'About 100 LEGO® generations per month']);
   expect(cards.map(card => [...card.querySelectorAll('li')].map(item => item.textContent))).toEqual([
-    ['LEGO® set discounts'], ['10% off every LEGO® set purchase'], ['20% off every LEGO® set purchase'],
+    ['LEGO® set discounts'], ['10% off every LEGO® purchase'], ['20% off every LEGO® purchase'],
   ]);
 });
 
@@ -456,15 +456,15 @@ it('shows earned referral credits with their own history label', async () => {
   expect(row.textContent).not.toContain('Purchased credits');
 });
 
-it('shows the correct plain discount bullet for each tier without instructions or exports', async () => {
+it('highlights each tier discount without restoring instructions or exports', async () => {
   await render(<PlanGrid source="pricing_page" />);
   for (const [name, percent] of [['Builder', 10], ['Creator', 20]]) {
     const plan = container.querySelector(`[aria-label="${name} plan"]`)!;
     const benefit = plan.querySelector('li')!;
     expect(plan.querySelectorAll('li')).toHaveLength(1);
-    expect(benefit.className).toBe('');
-    expect(benefit.querySelector('strong')).toBeNull();
-    expect(benefit.textContent).toBe(`${percent}% off every LEGO® set purchase`);
+    expect(benefit.className).toBe('billing-feature-saving');
+    expect(benefit.querySelector('strong')?.textContent).toBe(`${percent}% off every LEGO® purchase`);
+    expect(benefit.textContent).toBe(`${percent}% off every LEGO® purchase`);
     expect(benefit.querySelector('[aria-label="Included"]')).not.toBeNull();
     expect(plan.textContent).not.toContain('Building instructions');
     expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);
