@@ -1,8 +1,9 @@
 import React, { lazy, Suspense, useEffect, useId, useRef, useState } from 'react';
-import { ArrowLeft, BookOpen, Box, Maximize2, Ruler, Sparkles } from 'lucide-react';
+import { ArrowLeft, BookOpen, Box, Maximize2, Ruler } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
+import { LandingCommunityAction } from './LandingCommunityAction';
 import { ModelShareMenu } from './ModelShareMenu';
 import { GenerationTitle } from './GenerationTitle';
 import { LdrawGenerationAnimation } from './LdrawGenerationAnimation';
@@ -20,15 +21,13 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onCreateNew, createNewDisabled = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
   building?: boolean;
   composerFocused?: boolean;
   requestedInstructionsId?: string | null;
-  onCreateNew?: () => void;
-  createNewDisabled?: boolean;
   onOrderBarHeightChange?: (height: number) => void;
   canRename?: boolean;
   accessToken?: string;
@@ -43,6 +42,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const promptedInstructions = useRef<string | null>(null);
   const [readyId, setReadyId] = useState<string | null>(null);
   const [dismissedOrderId, setDismissedOrderId] = useState<string | null>(null);
+  const preview = useRef<{ id: string; png: string } | null>(null);
   const stage = useRef<HTMLDivElement>(null);
   const stageId = useId();
   const [instructionsId, setInstructionsId] = useState<string | null>(null);
@@ -84,7 +84,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     if (header) observer?.observe(header);
     window.addEventListener('resize', updateTop);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.preventDefault(); collapseRef.current('escape'); }
+      if (event.key === 'Escape' && !document.querySelector('.landing-community-dialog[open]')) { event.preventDefault(); collapseRef.current('escape'); }
     };
     document.addEventListener('keydown', onKeyDown);
     backButton.current?.focus();
@@ -156,6 +156,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}
+              onPreviewCaptured={png => { preview.current = { id: generation.generation_id, png }; }}
               modelName={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
               animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={showRuler} />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
@@ -164,9 +165,6 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           </Suspense>}
         </div>
         {!pendingEdit && <div className="landing-model-toolbar">
-          {onCreateNew && <button type="button" className="landing-create-new landing-action-button" disabled={createNewDisabled} onClick={onCreateNew}>
-            <Sparkles size={16} aria-hidden="true" /><span>Create new</span>
-          </button>}
           <div className="landing-view-controls">
           {!showingInstructions && <button type="button" className="landing-action-button landing-ruler-toggle"
             aria-label={showRuler ? 'Hide ruler' : 'Show ruler'} title={showRuler ? 'Hide ruler' : 'Show ruler'}
@@ -195,7 +193,11 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           </button>
           </div>
         </div>}
-        {!pendingEdit && <div className="landing-model-bottom-toolbar">
+        {!pendingEdit && !busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share landing-model-share-overlay">
+            <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
+          </div>}
+      </section>
+      {!pendingEdit && <div className="landing-model-bottom-toolbar">
           <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
             aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
               if (!showingInstructions && !requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;
@@ -209,11 +211,10 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
             {featureAccess !== 'allowed' && <PaidFeatureLock />}
           </button>
-          {!busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share">
-            <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
-          </div>}
-        </div>}
-      </section>
+          {generation.endpoint !== 'uploadLdraw' && <LandingCommunityAction key={generation.generation_id}
+            id={generation.generation_id} busy={busy} onNameSaved={onNameSaved}
+            preview={() => preview.current?.id === generation.generation_id ? preview.current.png : undefined} />}
+      </div>}
       <div className="landing-expanded-footer" hidden={!expanded}>
         <button ref={backButton} type="button" className="landing-action-button landing-view-back" onClick={() => collapse('back_button')}>
           <ArrowLeft size={20} aria-hidden="true" /><span>Go Back</span>

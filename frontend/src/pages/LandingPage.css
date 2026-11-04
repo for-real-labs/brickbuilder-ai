@@ -146,7 +146,7 @@
   top: 12px;
   left: 12px;
   right: 12px;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin: 0;
   pointer-events: none;
 }

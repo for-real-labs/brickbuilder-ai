@@ -334,7 +334,7 @@ it('keeps a linked pending model selected until its geometry is ready', async ()
   expect(container.querySelector('[aria-label="Loading your model"]')).toBeNull();
 });
 
-it('shows a completed build without suggestions and resets from the viewer top left button', async () => {
+it('shows a completed build without suggestions and resets from the page header', async () => {
   vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'castle', message: 'Started' });
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -344,7 +344,7 @@ it('shows a completed build without suggestions and resets from the viewer top l
   expect(container.querySelector('[aria-label="Upload image"]')).not.toBeNull();
   expect(container.querySelector('[aria-label="Model suggestions"]')).toBeNull();
   expect(container.querySelector('.landing-model-order-trigger')).toBeNull();
-  const createNew = container.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-create-new')!;
+  const createNew = container.querySelector<HTMLButtonElement>('header .landing-create-new')!;
   expect(createNew.textContent).toBe('Create new');
   expect(createNew.querySelector('.lucide-sparkles')).not.toBeNull();
   expect(createNew.querySelector('span')?.className).not.toContain('hidden');
@@ -375,7 +375,7 @@ it('offers recent completed builds after Create new, including viewed ones, with
   });
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
   await act(async () => root.render(<LandingPage />));
-  act(() => container.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-create-new')!.click());
+  act(() => container.querySelector<HTMLButtonElement>('header .landing-create-new')!.click());
   expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
   expect(input()).not.toBeNull();
   act(() => container.querySelector<HTMLButtonElement>('.landing-recent-builds')!.click());
@@ -636,7 +636,7 @@ it('shows the model beside a desktop order pane and keeps the mobile banner for 
   const layout = container.querySelector('.landing-model-layout--orderable')!;
   expect(layout.querySelector('.landing-model-panel')).not.toBeNull();
   expect(layout.querySelector('[aria-label="Order pane"] .model-order-card')).not.toBeNull();
-  expect(layout.querySelector('[aria-label="Order pane"]')?.textContent).toContain('$44.77');
+  expect(layout.querySelector('[aria-label="Order pane"]')?.textContent).toContain('$38.97');
   const banner = container.querySelector('.model-mobile-order')!;
   expect(banner.classList.contains('model-mobile-order--all-screens')).toBe(false);
   expect(banner.textContent).toContain('370 pieces');
@@ -948,13 +948,13 @@ it.each(['failed', 'cancelled'] as const)('preserves the previous model and allo
 });
 
 
-it('puts Create new in the viewer while keeping guest navigation in the header', async () => {
+it('keeps Create new in the header and out of the viewer', async () => {
   auth.isSupabaseConfigured = true;
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
-  expect(container.querySelector('header .landing-create-new')).toBeNull();
-  expect(container.querySelector('.landing-model-toolbar .landing-create-new')?.textContent).toBe('Create new');
+  expect(container.querySelector('.landing-model-toolbar .landing-create-new')).toBeNull();
+  expect(container.querySelector('header .landing-create-new')?.textContent).toBe('Create new');
   expect(container.querySelector('header nav')?.textContent).toContain('Sign up');
 });
 
@@ -1006,7 +1006,7 @@ it('opens an emailed instructions link in a dialog after the model loads and let
   expect(dialog.getAttribute('aria-label')).toBe('Expanded instructions');
   expect(dialog.getAttribute('aria-modal')).toBeNull();
   expect(dialog.dataset.expanded).toBe('true');
-  expect(container.querySelector('.landing-model-toolbar .landing-create-new')).not.toBeNull();
+  expect(container.querySelector('header .landing-create-new')).not.toBeNull();
   expect(container.querySelector('.landing-expanded-footer .landing-view-back')?.textContent).toBe('Go Back');
   expect(container.textContent).toContain('Building instructions');
   expect(document.body.style.overflow).toBe('hidden');
@@ -1042,7 +1042,7 @@ it('does not open instructions without an explicit model ID', async () => {
   expect(container.querySelector('.landing-model-panel')).toBeNull();
 });
 
-it('places the instructions button at the viewer bottom left and switches views without navigating', async () => {
+it('places the instructions button below the viewer and switches views without navigating', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -1054,8 +1054,8 @@ it('places the instructions button at the viewer bottom left and switches views 
   expect(button.classList.contains('landing-action-button')).toBe(true);
   expect(container.querySelector('.landing-create-new')?.classList.contains('landing-action-button')).toBe(true);
   expect(button.parentElement?.classList.contains('landing-model-bottom-toolbar')).toBe(true);
-  expect(container.querySelector('.landing-model-toolbar .landing-create-new')).not.toBeNull();
-  expect(frame.contains(button)).toBe(true);
+  expect(container.querySelector('header .landing-create-new')).not.toBeNull();
+  expect(frame.contains(button)).toBe(false);
   expect(frame.querySelector('.landing-model-stage')?.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(button.closest('.landing-model-conversation')).toBeNull();
   await act(async () => button.click());
@@ -1183,19 +1183,18 @@ it('shows icon only expand control and Share at the bottom right of the model', 
   style.textContent = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
   document.head.append(style);
   try {
-    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false} onCreateNew={vi.fn()} onRenameRequest={vi.fn()}>{null}</LandingModelWorkspace>));
+    await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false} onRenameRequest={vi.fn()}>{null}</LandingModelWorkspace>));
     const controls = container.querySelector('.landing-model-toolbar')!;
-    expect(controls.querySelectorAll('button')).toHaveLength(3);
-    expect(controls.querySelector('button:first-child')?.textContent).toBe('Create new');
+    expect(controls.querySelectorAll('button')).toHaveLength(2);
     expect(controls.querySelector('.landing-view-expand')?.getAttribute('aria-label')).toBe('Expand 3D viewer');
     expect(controls.querySelector('.landing-view-expand')?.textContent).toBe('');
     const instructionsButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-instructions-toggle')!;
-    expect(container.querySelector('.landing-model-workspace')?.contains(instructionsButton)).toBe(true);
+    expect(container.querySelector('.landing-model-workspace')?.contains(instructionsButton)).toBe(false);
     expect(instructionsButton.textContent).toBe('Show instructions');
     expect(container.textContent).not.toContain('Edit in BrickBuilder Studio');
-    const shareButton = container.querySelector<HTMLButtonElement>('.landing-model-bottom-toolbar .landing-model-share button')!;
+    const shareButton = container.querySelector<HTMLButtonElement>('.landing-model-workspace .landing-model-share button')!;
     expect(shareButton.textContent).toContain('Share');
-    expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).justifyContent).toBe('space-between');
+    expect(container.querySelector('.landing-model-bottom-toolbar')?.textContent).toContain('Post to Community');
     expect(getComputedStyle(shareButton).fontWeight).toBe(getComputedStyle(instructionsButton).fontWeight);
     expect(getComputedStyle(shareButton).lineHeight).toBe('20px');
     for (const button of [controls.querySelector('button:first-child')!, container.querySelector('.landing-model-heading-edit')!,
