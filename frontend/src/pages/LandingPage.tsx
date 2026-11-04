@@ -33,7 +33,7 @@ import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, ChevronDown, Sparkles, X } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, ChevronDown, Github, Sparkles, Star, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -1352,6 +1352,22 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
 function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy, toolsRef }: { toolsRef?: React.RefObject<LandingToolsHandle | null>; model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
   const { user, isSupabaseConfigured } = useAuth();
+  const [githubStars, setGithubStars] = useState<number | null>(null);
+  const githubUrl = 'https://github.com/for-real-labs/brickbuilder-ai';
+  useEffect(() => {
+    const controller = new AbortController();
+    void fetch('https://api.github.com/repos/for-real-labs/brickbuilder-ai', {
+      signal: controller.signal, headers: { Accept: 'application/vnd.github+json' },
+    }).then(response => response.ok ? response.json() : null).then(repo => {
+      if (!controller.signal.aborted && Number.isSafeInteger(repo?.stargazers_count) && repo.stargazers_count >= 0) {
+        setGithubStars(repo.stargazers_count);
+      }
+    }).catch(() => { /* Keep the repository link available when the count is unavailable. */ });
+    return () => controller.abort();
+  }, []);
+  const formattedStars = githubStars === null ? null : new Intl.NumberFormat('en', {
+    notation: 'compact', maximumFractionDigits: 1,
+  }).format(githubStars);
   const showProfileMenu = user || !isSupabaseConfigured;
 
   return (
@@ -1380,6 +1396,14 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         <CreditBalance />
         <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
+        <a href={githubUrl} target="_blank" rel="noopener noreferrer" aria-label="View BrickBuilder on GitHub"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-slate-900 px-2.5 text-xs font-semibold tabular-nums text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:px-3 sm:text-sm"
+          onClick={() => posthog.capture('landing_header_github_clicked', { page, navigation_layout: 'header', destination: githubUrl, tool: 'GitHub' })}>
+          <Github size={16} aria-hidden="true" />
+          {formattedStars !== null && <span className="inline-flex items-center gap-1" aria-label={`${githubStars} stars`}>
+            <Star size={12} aria-hidden="true" />{formattedStars}
+          </span>}
+        </a>
         {showProfileMenu ? (
           // Logged in or no Supabase: show the account dropdown
           <>

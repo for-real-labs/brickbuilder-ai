@@ -977,8 +977,10 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     const github = nav.querySelector<HTMLAnchorElement>('ul a[href="https://github.com/for-real-labs/brickbuilder-ai"]')!;
     expect(github.textContent).toBe('GitHub');
     expect(github.getAttribute('target')).toBe('_blank');
-    expect(container.querySelector('[aria-label="View BrickBuilder on GitHub"]')).toBeNull();
-    expect(fetch).not.toHaveBeenCalledWith('https://api.github.com/repos/for-real-labs/brickbuilder-ai', expect.anything());
+    const githubBadge = nav.querySelector('[aria-label="View BrickBuilder on GitHub"]');
+    expect(githubBadge?.previousElementSibling?.contains(trigger)).toBe(true);
+    expect(githubBadge?.querySelector('[aria-label="10 stars"]')?.textContent).toBe('10');
+    expect(fetch).toHaveBeenCalledWith('https://api.github.com/repos/for-real-labs/brickbuilder-ai', expect.anything());
     act(() => github.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
     expect(capture).toHaveBeenCalledWith('landing_header_github_clicked', {
       page: '/', navigation_layout: 'tools_dropdown', destination: github.href, tool: 'GitHub',
