@@ -40,6 +40,7 @@ export const billingApi = {
   applePrepare: () => request<{ app_account_token: string }>('apple/prepare', {}),
   appleSync: (transaction_id: string) => request<BillingAccount>('apple/sync', { transaction_id }),
   checkout: (plan_key: PlanKey) => isAppleApp() ? Promise.reject(new Error('Use Apple subscriptions in the iOS app.')) : request<{ url: string }>('checkout', { plan_key }),
+  planCheckout: (plan_key: PlanKey) => isAppleApp() ? Promise.reject(new Error('Use Apple subscriptions in the iOS app.')) : request<{ session_id: string; client_secret: string }>('checkout', { plan_key, ui_mode: 'elements' }),
   portal: (action: 'manage' | 'cancel') => request<{ url: string }>('portal', { action }),
   sync: (session_id?: string) => request<BillingAccount>('sync', { session_id }),
 };

@@ -34,3 +34,12 @@ it('sends only the chosen cents to checkout, leaving credit and rate selection t
   expect(new URL(url).pathname).toBe('/billing/credits/checkout');
   expect(JSON.parse(String(args?.body))).toEqual({ amount_cents: 1000 });
 });
+
+it('requests embedded plan checkout with no client-controlled price, owner or return URL', async () => {
+  vi.mocked(authenticatedApiFetch).mockResolvedValueOnce(new Response(JSON.stringify({ session_id: 'cs_plan', client_secret: 'test_secret' })));
+  const session = await billingApi.planCheckout('builder');
+  const [url, args] = vi.mocked(authenticatedApiFetch).mock.calls[0];
+  expect(new URL(url).pathname).toBe('/billing/checkout');
+  expect(JSON.parse(String(args?.body))).toEqual({ plan_key: 'builder', ui_mode: 'elements' });
+  expect(session.session_id).toBe('cs_plan');
+});

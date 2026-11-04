@@ -318,3 +318,63 @@ def test_retired_prices_still_reconcile(monkeypatch, subscription, plan, cents):
     grant=AsyncMock(); monkeypatch.setattr(billing,'rpc',grant)
     asyncio.run(billing.sync_subscription('sub_test'))
     assert grant.call_args.kwargs['p_allowance'] == billing.PAID_PLANS[plan]['credits']
+
+@pytest.fixture
+def plan_checkout(monkeypatch):
+    monkeypatch.setattr(billing, 'require_enabled', AsyncMock())
+    monkeypatch.setattr(billing, 'capacity', AsyncMock(return_value={'checkout_available': True}))
+    monkeypatch.setattr(billing, 'rpc', AsyncMock(return_value=True))
+    monkeypatch.setattr(billing, 'wallet', AsyncMock(return_value={'stripe_customer_id': 'cus_owner'}))
+    monkeypatch.setattr(billing.stripe.Subscription, 'list', Mock(return_value=obj({'data': []})))
+    monkeypatch.setattr(billing.stripe.checkout.Session, 'list', Mock(return_value=obj({'data': []})))
+    monkeypatch.setattr(billing, 'price_for', AsyncMock(return_value=obj({'id': 'price_builder'})))
+    create = Mock(return_value=obj({'id': 'cs_new', 'client_secret': 'cs_secret', 'url': 'https://checkout.stripe.com/test'}))
+    monkeypatch.setattr(billing.stripe.checkout.Session, 'create', create)
+    return create
+
+
+def test_custom_subscription_checkout_uses_owned_server_price_without_shipping(plan_checkout, identity):
+    result = asyncio.run(billing.checkout(identity, 'builder', 'elements'))
+    assert result == {'session_id': 'cs_new', 'client_secret': 'cs_secret'}
+    params = plan_checkout.call_args.kwargs
+    assert params['ui_mode'] == 'elements' and params['mode'] == 'subscription'
+    assert params['stripe_version'] == '2026-09-30.endive'
+    assert params['allowed_payment_method_types'] == ['card']
+    assert 'payment_method_types' not in params
+    assert params['customer'] == 'cus_owner' and params['client_reference_id'] == identity['user_id']
+    assert params['line_items'] == [{'price': 'price_builder', 'quantity': 1}]
+    assert params['return_url'].endswith('/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}')
+    assert not {'success_url', 'cancel_url', 'shipping_address_collection', 'customer_update'} & params.keys()
+    billing.rpc.assert_awaited_with('billing_checkout_lock', p_user_id=identity['user_id'], p_live=False, p_acquire=False)
+
+
+@pytest.mark.parametrize('old_mode', ['hosted', 'elements'])
+def test_custom_checkout_reuses_only_matching_mode(plan_checkout, monkeypatch, identity, old_mode):
+    old = obj({'id': 'cs_old', 'client_secret': 'old_secret', 'url': 'https://checkout.stripe.com/old',
+        'mode': 'subscription', 'ui_mode': old_mode, 'metadata': {'integration': billing.BILLING_TAG, 'plan_key': 'builder'}})
+    monkeypatch.setattr(billing.stripe.checkout.Session, 'list', Mock(return_value=obj({'data': [old]})))
+    expire = Mock(); monkeypatch.setattr(billing.stripe.checkout.Session, 'expire', expire)
+    result = asyncio.run(billing.checkout(identity, 'builder', 'elements'))
+    if old_mode == 'elements':
+        assert result == {'session_id': 'cs_old', 'client_secret': 'old_secret'}
+        plan_checkout.assert_not_called(); expire.assert_not_called()
+    else:
+        assert result['session_id'] == 'cs_new'
+        expire.assert_called_once_with('cs_old', api_key='test-only')
+
+
+def test_custom_checkout_does_not_open_portal_or_duplicate_an_existing_subscription(plan_checkout, monkeypatch, identity):
+    monkeypatch.setattr(billing.stripe.Subscription, 'list', Mock(return_value=obj({'data': [{'id': 'sub_existing', 'status': 'active'}]})))
+    monkeypatch.setattr(billing, 'sync_subscription', AsyncMock())
+    portal = AsyncMock(); monkeypatch.setattr(billing, 'portal', portal)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(billing.checkout(identity, 'creator', 'elements'))
+    assert error.value.status_code == 409
+    plan_checkout.assert_not_called(); portal.assert_not_called()
+
+
+def test_subscription_checkout_modes_are_validated_and_hosted_clients_still_work(plan_checkout, identity):
+    assert CheckoutRequest(plan_key='builder').ui_mode == 'hosted'
+    with pytest.raises(ValidationError): CheckoutRequest(plan_key='builder', ui_mode='unknown')
+    assert asyncio.run(billing.checkout(identity, 'builder'))['url'].startswith('https://checkout.stripe.com/')
+    assert 'success_url' in plan_checkout.call_args.kwargs

@@ -1,0 +1,20 @@
+@font-face { font-family: 'Example Manrope'; src: url('/examples/Manrope.ttf') format('truetype'); font-display: swap; }
+.generation-examples { margin-top: 24px; padding-top: 20px; border-top: 1px solid #e9e4dc; }
+.generation-examples > h2 { margin: 0 0 14px; font-size: 16px; font-weight: 750; }
+.generation-examples ul { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; padding: 0; margin: 0; list-style: none; }
+.generation-example-card { display: grid; grid-template-columns: 44% minmax(0,1fr); height: 100%; overflow: hidden; border: 1px solid #e9e4dc; border-radius: 20px; background: #fffefa; color: #17243b; transition: border-color .18s, box-shadow .18s; }
+.generation-example-card:hover { border-color: #e9b5a7; box-shadow: 0 4px 16px #6b392411; }
+.generation-example-preview { position: relative; align-self: stretch; min-width: 0; background: #f3ddd6; overflow: hidden; }
+.generation-example-poster, .generation-example-preview video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; }
+.generation-example-preview .generation-example-pet { position: absolute; width: 42px; height: 42px; bottom: 6px; left: 6px; object-fit: contain; }
+.generation-example-details { min-width: 0; padding: 18px 12px; display: flex; flex-direction: column; justify-content: center; }
+.generation-example-details h3 { font-family: 'Example Manrope', sans-serif; font-size: 19px; font-weight: 400; line-height: 1.3; margin: 0 0 12px; overflow-wrap: anywhere; }
+.generation-example-details p { font-size: 11px; color: #657080; line-height: 1.5; margin: 0 0 4px; }
+.generation-example-details .generation-example-price { color: #17243b; font-size: 14px; font-weight: 650; margin-top: 5px; }
+.generation-example-price span { display: block; color: #657080; font-size: 10px; font-weight: 400; }
+.generation-example-view { display: flex; align-items: center; justify-content: center; align-self: center; min-height: 40px; padding: 8px 14px; margin-top: 12px; border-radius: 999px; background: #f4eee8; color: #17243b; font-size: 12px; font-weight: 650; white-space: nowrap; transition: background .18s,color .18s; }
+.generation-example-view:hover, .generation-example-card:focus-visible .generation-example-view { background: #dc3028; color: white; }
+.generation-examples-note { font-size: 10px; color: #78808b; margin: 12px 0 0; line-height: 1.5; }
+@media (max-width: 900px) { .generation-examples ul { grid-template-columns: 1fr; } .generation-example-card { grid-template-columns: 45% minmax(0,1fr); } .generation-example-details { padding: 22px; } .generation-example-details h3 { font-size: 23px; } .generation-example-details p { font-size: 12px; } .generation-example-preview .generation-example-pet { width: 50px; height: 50px; } }
+@media (max-width: 380px) { .generation-example-details { padding: 16px 12px; } .generation-example-details h3 { font-size: 20px; } }
+@media (prefers-reduced-motion: reduce) { .generation-example-card, .generation-example-view { transition: none; } }

@@ -1,7 +1,7 @@
 import React, { act, useEffect } from 'react';
 import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
@@ -31,7 +31,8 @@ function OpenPlansPopup() {
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 let account: BillingAccount;
-const render = async (children: React.ReactNode) => act(async () => root.render(<HelmetProvider><MemoryRouter><BillingProvider>{children}<BillingOverlays /></BillingProvider></MemoryRouter></HelmetProvider>));
+function CheckoutLocation() { const location = useLocation(); return <output data-checkout-location>{location.pathname}{location.search}</output>; }
+const render = async (children: React.ReactNode) => act(async () => root.render(<HelmetProvider><MemoryRouter><BillingProvider>{children}<BillingOverlays /><CheckoutLocation /></BillingProvider></MemoryRouter></HelmetProvider>));
 const click = async (text: string) => act(async () => {
   const button = [...container.querySelectorAll('button')].find(b => b.textContent?.includes(text));
   expect(button, text).toBeDefined(); button!.click();
@@ -75,20 +76,22 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   expect(container.querySelector('.billing-dialog .billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® purchases');
   expect(container.querySelector('.billing-dialog .billing-fine-print')?.textContent).not.toContain('Legacy bonuses never expire.');
   await selectPlan('Creator');
-  expect(billingApi.checkout).toHaveBeenCalledWith('creator');
-  expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/test');
-  expect(posthog.capture).toHaveBeenCalledWith('billing_checkout_started', { plan_key: 'creator', source: 'credit_balance' });
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=creator');
+  expect(billingApi.checkout).not.toHaveBeenCalled();
+  expect(openStripe).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('billing_plan_selected', { plan_key: 'creator', source: 'credit_balance' });
   await act(async () => container.querySelector('dialog')?.dispatchEvent(new Event('cancel', { cancelable: true })));
   expect(container.querySelector('dialog')).toBeNull();
   expect(document.body.style.overflow).toBe('');
 });
 
-it('asks guests to sign in before creating a subscription', async () => {
+it('takes guests to the chosen plan checkout without a separate login popup', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
   expect(container.querySelector('[aria-label="Free plan"]')).toBeNull();
   await selectPlan('Builder');
-  expect(container.textContent).toContain('Sign in to build');
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=builder');
+  expect(container.textContent).not.toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();
   expect(billingApi.account).not.toHaveBeenCalled();
 });
@@ -133,15 +136,6 @@ it('clearly confirms an end-of-period cancellation without offering another canc
   expect(container.textContent).toContain('You won’t be charged again.');
   expect([...container.querySelectorAll('button')].some(b => b.textContent === 'Cancel subscription')).toBe(false);
   expect(container.textContent).toContain('Manage billing & receipts');
-});
-
-it('keeps a failed checkout in the app with a useful error', async () => {
-  vi.mocked(billingApi.checkout).mockRejectedValueOnce(new Error('Please try again in a moment.'));
-  await render(<OpenPlansPopup />);
-  await selectPlan('Creator');
-  expect(container.querySelector('[role="alert"]')?.textContent).toContain('Please try again in a moment.');
-  expect(openStripe).not.toHaveBeenCalled();
-  expect(container.textContent).toContain('One-time credits never expire');
 });
 
 it('disables paid checkout until billing is enabled', async () => {
@@ -269,7 +263,13 @@ it('opens the existing plans popup with all three model links when generation re
     '/?id=4e5a6629-bdd4-46d0-97cc-d7271691e60c',
     '/?id=126a7995-3bfe-4744-8008-c9eb39d386f5',
   ]);
-  await act(async () => examples[0].click());
+  expect(examples.every(link => link.querySelector('video')?.loop && link.querySelector('video')?.muted && link.querySelector('video')?.playsInline)).toBe(true);
+  expect(examples[0].textContent).toContain('1,581 pieces');
+  expect(examples[0].textContent).toContain('51.2 × 38.4 × 32.6 cm');
+  expect(examples[0].textContent).toContain('$266.30');
+  expect(examples[0].querySelector('button')).toBeNull();
+  expect(examples[0].querySelector('img')?.getAttribute('src')).not.toContain('/share-image/');
+  await act(async () => (examples[0].querySelector('h3') as HTMLElement).click());
   expect(container.querySelector('dialog')).toBeNull();
   expect(posthog.capture).toHaveBeenCalledWith('generation_subscription_example_clicked', { generation_id: '3164643e-974e-452a-8819-a1cc7788a628' });
 });
@@ -496,4 +496,20 @@ it('shows only the simple discount statement at the top of the shared popup', as
   expect(container.querySelector('.billing-dialog')?.textContent).not.toMatch(/models?/i);
   expect(container.querySelectorAll('.billing-dialog .billing-plan-description, .billing-dialog .billing-renewal')).toHaveLength(0);
   expect([...container.querySelectorAll('.billing-dialog .billing-plan-button')].map(button => button.textContent)).toEqual(['Select Plan', 'Select Plan']);
+});
+
+it('uses model posters when reduced motion is preferred or a video fails', async () => {
+  const { GenerationExamples } = await import('../src/components/GenerationExamples');
+  vi.stubGlobal('matchMedia', () => ({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  await render(<GenerationExamples onView={vi.fn()} />);
+  expect(container.querySelectorAll('.generation-example-card video')).toHaveLength(0);
+  expect(container.querySelectorAll('.generation-example-poster')).toHaveLength(3);
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
+  await render(<GenerationExamples onView={vi.fn()} />);
+  const first = container.querySelector('.generation-example-card')!;
+  await act(async () => first.querySelector('video')!.dispatchEvent(new Event('error')));
+  expect(first.querySelector('video')).toBeNull();
+  expect(first.querySelector('.generation-example-poster')).not.toBeNull();
 });

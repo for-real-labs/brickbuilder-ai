@@ -23,13 +23,20 @@ const checkoutAppearance: Appearance = {
   },
 };
 
-export function CheckoutPayment({ session, publishableKey, details, country, totalCents, generationId, onBack, onRetry, onBusyChange, onTotalChange }: {
+type PaymentCustomer = { subscriptionPlan: 'builder' | 'creator'; email: string; details?: never; country?: never }
+  | { subscriptionPlan?: undefined; email?: never; details: DeliveryDetails; country: string };
+
+export function CheckoutPayment({ session, publishableKey, details, country, totalCents, generationId, subscriptionPlan, email, onBack, onRetry, onBusyChange, onTotalChange }: PaymentCustomer & {
   session: CreateCheckoutSessionResponse; publishableKey: string;
-  details: DeliveryDetails; country: string; totalCents: number;
+  totalCents: number;
   generationId?: string; onBack: () => void; onRetry: () => void;
   onBusyChange?: (busy: boolean) => void;
   onTotalChange?: (total: number) => void;
 }) {
+  const track = (event: string, properties: Record<string, unknown> = {}) => posthog.capture(
+    subscriptionPlan ? event.replace(/^order_/, 'plan_') : event,
+    { ...properties, ...(subscriptionPlan ? { plan_key: subscriptionPlan } : {}) },
+  );
   const mountRef = React.useRef<HTMLDivElement>(null);
   const walletMountRef = React.useRef<HTMLDivElement>(null);
   const walletRef = React.useRef<StripeCheckoutExpressCheckoutElement | null>(null);
@@ -59,7 +66,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       if (disposed) return;
       setLoadFailed(true);
       setError('Payment could not load. Please try again.');
-      posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'payment_load' });
+      track('order_checkout_error', { generation_id: generationId, stage: 'payment_load' });
     };
     timeout = setTimeout(fail, 20000);
     void (async () => {
@@ -75,19 +82,20 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         actionsRef.current = result.actions;
         element = checkout.createPaymentElement({
           layout: 'tabs',
+          ...(subscriptionPlan ? { fields: { billingDetails: { address: 'if_required' as const } } } : {}),
           paymentMethodOrder: ['card'],
           wallets: { applePay: 'never', googlePay: 'never', link: 'never' },
         });
         element.on('ready', () => {
           if (disposed) return;
           clearTimeout(timeout); setReady(true); setError(null); setLoadFailed(false);
-          posthog.capture('order_payment_loaded', { generation_id: generationId });
+          track('order_payment_loaded', { generation_id: generationId });
         });
         element.on('loaderror', fail);
         element.on('change', event => {
           if (!disposed && methodRef.current !== event.value.type) {
             methodRef.current = event.value.type;
-            posthog.capture('order_payment_method_selected', { generation_id: generationId, payment_method: event.value.type });
+            track('order_payment_method_selected', { generation_id: generationId, payment_method: event.value.type });
           }
         });
         if (mountRef.current) element.mount(mountRef.current);
@@ -116,29 +124,29 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       } catch { clearTimeout(timeout); fail(); }
     })();
     return () => { disposed = true; clearTimeout(timeout); element?.destroy(); walletRef.current?.destroy(); walletRef.current = null; actionsRef.current = null; };
-  }, [session.client_secret, publishableKey, generationId]);
+  }, [session.client_secret, publishableKey, generationId, subscriptionPlan]);
 
   const confirmPayment = async (walletEvent?: StripeExpressCheckoutElementConfirmEvent) => {
     if (!ready || operationRef.current || !accepted) return;
     operationRef.current = true;
     setLoading(true); onBusyChange?.(true); setError(null);
-    posthog.capture('order_checkout_clicked', { generation_id: generationId, total_cents: paymentTotal, currency: 'USD', checkout_mode: 'elements' });
+    track('order_checkout_clicked', { generation_id: generationId, total_cents: paymentTotal, currency: 'USD', checkout_mode: 'elements' });
     try {
       if (!actionsRef.current) throw new Error('Payment unavailable');
       const result = await actionsRef.current.confirm({
-        email: details.email.trim(),
-        ...(!session.shipping_address_provided ? { shippingAddress: getShippingContact(details, country) } : {}),
+        email: (subscriptionPlan ? email : details.email).trim(),
+        ...(!subscriptionPlan && !session.shipping_address_provided ? { shippingAddress: getShippingContact(details, country) } : {}),
         redirect: 'if_required',
         ...(walletEvent ? { expressCheckoutConfirmEvent: walletEvent } : {}),
       });
-      if (result.type === 'error') { setError(result.error.message); posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'confirm', error_code: result.error.code }); }
+      if (result.type === 'error') { setError(result.error.message); track('order_checkout_error', { generation_id: generationId, stage: 'confirm', error_code: result.error.code }); }
       else {
-        posthog.capture('order_payment_submitted', { generation_id: generationId });
-        window.location.assign(`/success?session_id=${encodeURIComponent(session.session_id)}`);
+        track('order_payment_submitted', { generation_id: generationId });
+        window.location.assign(`${subscriptionPlan ? '/billing?checkout=success&' : '/success?'}session_id=${encodeURIComponent(session.session_id)}`);
       }
     } catch {
       setError('Payment could not be completed. Please try again.');
-      posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'confirm' });
+      track('order_checkout_error', { generation_id: generationId, stage: 'confirm' });
     } finally { operationRef.current = false; setLoading(false); onBusyChange?.(false); }
   };
 
@@ -150,7 +158,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       const result = remove ? await actionsRef.current.removePromotionCode() : await actionsRef.current.applyPromotionCode(promoCode.trim());
       if (result.type === 'error') {
         setPromoError(result.error.message);
-        posthog.capture('order_promo_failed', { generation_id: generationId });
+        track('order_promo_failed', { generation_id: generationId });
       } else {
         const total = result.session.total.total.minorUnitsAmount;
         setPaymentTotal(total); onTotalChange?.(total);
@@ -160,7 +168,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       }
     } catch {
       setPromoError('Could not update the promo code. Please try again.');
-      posthog.capture('order_promo_failed', { generation_id: generationId });
+      track('order_promo_failed', { generation_id: generationId });
     } finally { operationRef.current = false; setPromoBusy(false); onBusyChange?.(false); }
   };
 
@@ -172,11 +180,11 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       applePay: method === 'applePay' ? 'always' : 'never', googlePay: method === 'googlePay' ? 'always' : 'never',
       paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never',
     } });
-    posthog.capture('order_payment_method_selected', { generation_id: generationId, payment_method: method });
+    track('order_payment_method_selected', { generation_id: generationId, payment_method: method });
   };
   return <form onSubmit={event => { event.preventDefault(); if (selectedMethod === 'card') void confirmPayment(); }}>
     {!ready && !loadFailed && <div role="status" className="checkout-payment-loading"><span className="checkout-spinner" />Loading secure payment…</div>}
-    <div className="checkout-promo">
+    {!subscriptionPlan && <div className="checkout-promo">
       <label className="checkout-field" htmlFor="order-promo"><span>Promo code</span>
         <input id="order-promo" value={promoCode} autoComplete="off" maxLength={100} disabled={!ready || loading || promoBusy || !!appliedCode}
           onChange={event => setPromoCode(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void updatePromo(); } }} />
@@ -186,7 +194,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       </button>
       {appliedCode && <p role="status">{appliedCode} applied. Total: {formatOrderPrice(paymentTotal)}</p>}
       {promoError && <p role="alert" className="checkout-error">{promoError}</p>}
-    </div>
+    </div>}
     <div className="checkout-payment-methods" role="radiogroup" aria-label="Payment method">
       <section className={`checkout-payment-option ${selectedMethod === 'card' ? 'is-selected' : ''}`}>
         <button type="button" role="radio" aria-checked={selectedMethod === 'card'} disabled={loading || promoBusy} onClick={() => chooseMethod('card')}><span className="checkout-method-radio" />Card payment<span aria-hidden="true" className="checkout-method-mark">VISA · Mastercard</span></button>
@@ -206,19 +214,20 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       </section>
     </div>
     {error && <div role="alert" className="checkout-error">{error}{loadFailed && <button type="button" onClick={() => {
-      posthog.capture('order_payment_retry_clicked', { generation_id: generationId }); onRetry();
+      track('order_payment_retry_clicked', { generation_id: generationId }); onRetry();
     }}>Try again</button>}</div>}
+    {subscriptionPlan && <p className="checkout-section-note">Renews monthly until canceled. Credits reset monthly and do not roll over. Cancel anytime in Billing; access continues through your paid period.</p>}
     <label className="checkout-consent">
       <input type="checkbox" required checked={accepted} disabled={loading || promoBusy} onChange={event => {
         setAccepted(event.target.checked);
-        posthog.capture('order_terms_changed', { generation_id: generationId, accepted: event.target.checked });
+        track('order_terms_changed', { generation_id: generationId, accepted: event.target.checked });
       }} />
-      <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" onClick={() => posthog.capture('order_terms_opened', { generation_id: generationId })}>Terms of Service</a>.</span>
+      <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" onClick={() => track('order_terms_opened', { generation_id: generationId })}>Terms of Service</a>.</span>
     </label>
     <div className="checkout-actions">
-      <button type="button" className="checkout-back" aria-label="Back to contact and delivery" disabled={loading || promoBusy} onClick={onBack}><ArrowLeft size={22} /></button>
+      <button type="button" className="checkout-back" aria-label={subscriptionPlan ? 'Back to plans' : 'Back to contact and delivery'} disabled={loading || promoBusy} onClick={onBack}><ArrowLeft size={22} /></button>
       <button hidden={selectedMethod !== 'card'} type="submit" className="checkout-primary" disabled={!ready || !accepted || loading || promoBusy || loadFailed}>
-        {loading ? 'Processing…' : `Pay ${formatOrderPrice(paymentTotal)}`}
+        {loading ? 'Processing…' : subscriptionPlan ? `Subscribe · ${formatOrderPrice(paymentTotal)} / month` : `Pay ${formatOrderPrice(paymentTotal)}`}
       </button>
     </div>
     <div className={`checkout-wallet-payment ${selectedMethod === 'card' ? 'is-inactive' : ''}`} aria-hidden={selectedMethod === 'card'}>

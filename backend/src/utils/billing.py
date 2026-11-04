@@ -210,7 +210,13 @@ async def portal(identity, *, cancel=False, plan_key=None):
     return {"url": session.url}
 
 
-async def checkout(identity, plan_key):
+def checkout_response(session, ui_mode):
+    if ui_mode == "elements":
+        return {"session_id": session.id, "client_secret": session.client_secret}
+    return {"url": session.url}
+
+
+async def checkout(identity, plan_key, ui_mode="hosted"):
     user_id = account_id(identity)
     await require_enabled()
     if not (await capacity())["checkout_available"]:
@@ -236,26 +242,34 @@ async def checkout(identity, plan_key):
         active = [s for s in subscriptions.data if s.status not in ("canceled", "incomplete_expired")]
         if active:
             await sync_subscription(active[0].id)
+            if ui_mode == "elements":
+                raise HTTPException(409, "You already have a subscription. Manage your existing plan in Billing.")
             return await portal(identity, plan_key=plan_key)
         # Reuse the existing open checkout. Multiple tabs/plans cannot create
         # multiple payable sessions for the same account.
-        opened = await asyncio.to_thread(stripe.checkout.Session.list, customer=customer, status="open", limit=100, api_key=stripe_key())
+        version = {"stripe_version": "2026-09-30.endive"} if ui_mode == "elements" else {}
+        opened = await asyncio.to_thread(stripe.checkout.Session.list, customer=customer, status="open", limit=100, **version, api_key=stripe_key())
         for old in opened.data:
             if old.get("mode") == "subscription" and old.get("metadata", {}).get("integration") == BILLING_TAG:
-                if old["metadata"].get("plan_key") == plan_key:
-                    return {"url": old.url}
+                if old["metadata"].get("plan_key") == plan_key and old.get("ui_mode", "hosted") == ui_mode:
+                    return checkout_response(old, ui_mode)
                 await asyncio.to_thread(stripe.checkout.Session.expire, old.id, api_key=stripe_key())
         price = await price_for(plan_key)
         metadata = {"brickbuilder_user_id": user_id, "integration": BILLING_TAG, "plan_key": plan_key}
+        redirects = ({"return_url": site_url()+"/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}"}
+            if ui_mode == "elements" else {
+                "success_url": site_url()+"/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+                "cancel_url": site_url()+"/pricing?checkout=canceled"})
         session = await asyncio.to_thread(stripe.checkout.Session.create,
-            customer=customer, client_reference_id=user_id, mode="subscription", payment_method_types=["card"],
+            customer=customer, client_reference_id=user_id, mode="subscription", ui_mode=ui_mode,
+            **({"allowed_payment_method_types": ["card"]} if ui_mode == "elements" else {"payment_method_types": ["card"]}),
+            **version,
             line_items=[{"price": price.id, "quantity": 1}], metadata=metadata,
             subscription_data={"metadata": metadata},
-            success_url=site_url()+"/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=site_url()+"/pricing?checkout=canceled", expires_at=int(time.time())+1800,
+            **redirects, expires_at=int(time.time())+1800,
             custom_text={"submit": {"message": "Renews monthly until canceled. Credits reset each billing month and do not roll over. Cancel anytime in Billing; access continues through your paid period."}},
             api_key=stripe_key())
-        return {"url": session.url}
+        return checkout_response(session, ui_mode)
     finally:
         await rpc("billing_checkout_lock", p_user_id=user_id, p_live=live_mode(), p_acquire=False)
 

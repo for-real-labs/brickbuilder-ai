@@ -2,6 +2,7 @@ import { GENERATION_SUBSCRIPTION_EVENT, GENERATION_SUBSCRIPTION_SOURCE } from '.
 import { APPLE_EVENT, appleRequest, appleProduct, isAppleApp, hasApplePurchases, type AppleProduct } from '../services/applePurchases';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
 import { billingApi, INITIAL_PLANS, openStripe, type BillingAccount, type PlanKey, type PaidFeature, type FeatureAccess } from '../services/billingApi';
 const BillingContext = createContext({
@@ -22,6 +23,7 @@ const BillingContext = createContext({
 });
 
 export function BillingProvider({ children }: { children: React.ReactNode }) {
+  const navigate = useNavigate();
   const { user } = useAuth();
   const identity = useRef(user?.id);
   identity.current = user?.id;
@@ -174,8 +176,9 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   };
   const subscribe = async (key: PlanKey, source: string) => {
     posthog.capture('billing_plan_selected', { plan_key: key, source });
+    if (key === 'free' || key === 'master' || busy) return;
+    if (!isAppleApp()) { setUpgradeSource(''); navigate(`/checkout-plan?plan=${key}`); return; }
     if (!user) { setUpgradeSource(''); setLoginOpen(true); return; }
-    if (key === 'free' || busy) return;
     setBusy(true); setError('');
     try {
       if (isAppleApp()) {
@@ -186,8 +189,6 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
         posthog.capture('billing_checkout_started', { plan_key: key, source, provider: 'apple' });
         return;
       }
-      const { url } = await billingApi.checkout(key);
-      posthog.capture('billing_checkout_started', { plan_key: key, source }); openStripe(url);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not open checkout. Please try again.');
       posthog.capture('billing_checkout_failed', { plan_key: key, source });

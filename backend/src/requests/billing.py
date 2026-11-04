@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 class CheckoutRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
     plan_key: Literal["builder", "creator"]
+    ui_mode: Literal["hosted", "elements"] = "hosted"
 
 
 class PortalRequest(BaseModel):
@@ -60,7 +61,7 @@ async def account(identity: dict = Depends(get_optional_identity)):
 
 @router.post("/checkout")
 async def checkout(request: CheckoutRequest, identity: dict = Depends(get_optional_identity)):
-    return await run(billing.checkout(identity, request.plan_key))
+    return await run(billing.checkout(identity, request.plan_key, request.ui_mode))
 
 
 @router.post("/portal")
