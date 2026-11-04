@@ -72,7 +72,8 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   await click('credits');
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')).toHaveLength(2);
-  expect(container.textContent).toContain('Web monthly credits reset and do not roll over');
+  expect(container.querySelector('.billing-dialog > .billing-fine-print')?.textContent).toBe('Cancel anytime');
+  expect(container.textContent).not.toContain('View credit history & manage subscription');
   expect(container.querySelector('.billing-dialog .billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® purchases');
   expect(container.querySelector('.billing-dialog .billing-fine-print')?.textContent).not.toContain('Legacy bonuses never expire.');
   await selectPlan('Creator');

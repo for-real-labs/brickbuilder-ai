@@ -121,8 +121,7 @@ export function BillingOverlays() {
       <p className="billing-member-intro">Every paid plan includes a discount on LEGO® purchases</p>
       <PlanGrid source={upgradeSource} paidOnly />
       {subscriptionPrompt ? <GenerationExamples onView={closeUpgrade} /> : <CreditPacks source={upgradeSource} />}
-      <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Failed or canceled builds return their credits.</p>
-      <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
+      <p className="billing-fine-print">Cancel anytime</p>
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={() => { closeLogin(); if (loginSource.current === GENERATION_SUBSCRIPTION_SOURCE) openUpgrade(GENERATION_SUBSCRIPTION_SOURCE); }} redirectTo="/pricing" />
     <PaidFeatureDialog />
