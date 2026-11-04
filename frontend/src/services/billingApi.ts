@@ -8,7 +8,7 @@ export type FeatureAccess = 'loading' | 'unavailable' | 'locked' | 'allowed';
 export interface CreditPlan { key: PlanKey; name: string; monthly_cents: number; credits: number }
 export interface BillingAccount {
   purchase_confirmed?: boolean;
-  subscription_provider?: 'apple' | 'stripe' | null; apple_remaining?: number; apple_plan?: PlanKey; apple_expires_at?: string;
+  subscription_provider?: 'apple' | 'stripe' | 'external_tester' | null; apple_remaining?: number; apple_plan?: PlanKey; apple_expires_at?: string;
   plan_key: PlanKey; credits_remaining: number; monthly_credits: number; monthly_remaining: number;
   bonus_remaining: number; bonus_available?: number; available?: boolean; checkout_available?: boolean; period_start: string; period_end: string; subscription_status: string;
   cancel_at_period_end: boolean; has_subscription: boolean; enabled: boolean; paid_features?: boolean;

@@ -38,6 +38,7 @@ export default function BillingPage() {
     });
     return () => { active = false; };
   }, [user?.id, sessionId]);
+  const tester = account?.subscription_provider === 'external_tester';
   const apple = account?.subscription_provider === 'apple';
   const plan = plans.find(p => p.key === (apple ? account?.apple_plan : account?.plan_key)) ?? (account?.plan_key === 'master' ? LEGACY_MASTER_PLAN : undefined);
   const maxPlan = plan?.key === 'creator' || plan?.key === 'master';
@@ -58,20 +59,20 @@ export default function BillingPage() {
           {!apple && account.plan_key !== 'free' && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
           <div className="billing-explore-plans"><button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button></div>
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
-          <h2 className="billing-account-plan">{plan?.name ?? 'No active plan'}{plan && <span>{apple ? 'Billed monthly by Apple' : `$${plan.monthly_cents / 100} / month`}</span>}</h2>
+          <h2 className="billing-account-plan">{plan?.name ?? 'No active plan'}{plan && <span>{tester ? 'Included with tester access' : apple ? 'Billed monthly by Apple' : `$${plan.monthly_cents / 100} / month`}</span>}</h2>
           {plan ? <p className="billing-plan-allowance">{plan.credits.toLocaleString()} credits each month. {PLAN_GENERATIONS[plan.key]} LEGO® generations per month.</p>
             : <p className="billing-plan-allowance">Subscribe to generate models with AI.</p>}
           <p className="billing-plan-benefit">{PLAN_DISCOUNTS[plan?.key ?? 'free'] ? 'Your plan includes' : 'Paid plans include'} IO exports and automatic {PLAN_DISCOUNTS[plan?.key ?? 'free'] || '10–20'}% off LEGO® sets, with promo codes on top. Shipping is separate.</p>
-          {apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
+          {tester ? <p>No payment is required.</p> : apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
             : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : null}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}
-          <div className="billing-plan-actions"><button type="button" className="billing-primary" disabled={busy} onClick={() => {
+          {!tester && <div className="billing-plan-actions"><button type="button" className="billing-primary" disabled={busy} onClick={() => {
             posthog.capture('billing_plan_action_clicked', { plan_key: plan?.key ?? 'free', action: maxPlan ? 'change' : 'upgrade' });
             openUpgrade(maxPlan ? 'billing_plan_change' : 'billing_plan_upgrade');
-          }}>{maxPlan ? 'Change plan' : plan ? 'Upgrade plan' : 'Choose a plan'} <ArrowUpRight size={16} /></button></div>
-          {account.has_subscription && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>{apple ? 'Manage Apple subscription' : 'Manage billing & receipts'} <ArrowUpRight size={16} /></button>
+          }}>{maxPlan ? 'Change plan' : plan ? 'Upgrade plan' : 'Choose a plan'} <ArrowUpRight size={16} /></button></div>}
+          {account.has_subscription && !tester && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>{apple ? 'Manage Apple subscription' : 'Manage billing & receipts'} <ArrowUpRight size={16} /></button>
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}
-          <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved LEGO® sets and bonus credits stay with you.'}</p>
+          {!tester && <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved LEGO® sets and bonus credits stay with you.'}</p>}
         </section></div>
         <section className="billing-account-card billing-history"><div className="billing-history-heading"><h2>Credit history</h2><button type="button" aria-label="Refresh credit history" onClick={() => { posthog.capture('billing_history_refreshed'); void refresh(); }}><RefreshCw size={17} /></button></div>
           {account.history.length ? <div className="billing-table-wrap"><table><thead><tr><th>Activity</th><th>Date</th><th>Credits</th></tr></thead><tbody>

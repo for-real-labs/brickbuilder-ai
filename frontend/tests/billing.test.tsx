@@ -514,3 +514,13 @@ it('uses model posters when reduced motion is preferred or a video fails', async
   expect(first.querySelector('video')).toBeNull();
   expect(first.querySelector('.generation-example-poster')).not.toBeNull();
 });
+
+it('shows comped Builder access without a renewal charge or billing controls', async () => {
+  account = { ...account, subscription_provider: 'external_tester', plan_key: 'builder',
+    monthly_credits: 225, monthly_remaining: 225, has_subscription: true, paid_features: true };
+  await render(<BillingPage />);
+  expect(container.textContent).toContain('Included with tester access');
+  expect(container.textContent).toContain('225 / 225');
+  expect(container.textContent).toContain('No payment is required');
+  expect(container.textContent).not.toMatch(/Next billing date|Manage billing|Cancel subscription/);
+});

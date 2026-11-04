@@ -78,8 +78,14 @@ def apple_active(row):
                 and datetime.fromisoformat(row["apple_expires_at"].replace("Z", "+00:00")) > datetime.now(timezone.utc))
 
 
-def has_paid_features(row):
+def effective_plan(row):
     if apple_active(row):
+        return row["apple_plan"]
+    return "builder" if row.get("external_tester") else row["plan_key"]
+
+
+def has_paid_features(row):
+    if row.get("external_tester") or apple_active(row):
         return True
     return (row["plan_key"] in SUBSCRIPTION_PLANS
             and row["subscription_status"] in ("active", "past_due")
@@ -129,18 +135,19 @@ def public_wallet(row):
     end = datetime.fromisoformat(row["period_end"].replace("Z", "+00:00"))
     remaining = row["monthly_remaining"] if end > datetime.now(timezone.utc) else 0
     bonus_available = min(row["bonus_remaining"], max(0, 5-row.get("bonus_used", 0)))
+    tester = bool(row.get("external_tester"))
     return {
         "bonus_available": bonus_available,
-        "plan_key": row["apple_plan"] if apple_active(row) else row["plan_key"], "monthly_credits": row["monthly_credits"],
+        "plan_key": effective_plan(row), "monthly_credits": row["monthly_credits"],
         "monthly_remaining": remaining, "bonus_remaining": row["bonus_remaining"],
         "credits_remaining": remaining + bonus_available + max(0, row.get("apple_remaining", 0)),
         "apple_remaining": max(0, row.get("apple_remaining", 0)),
-        "subscription_provider": "apple" if apple_active(row) else "stripe" if row.get("stripe_subscription_id") else None,
+        "subscription_provider": "external_tester" if tester else "apple" if apple_active(row) else "stripe" if row.get("stripe_subscription_id") else None,
         "apple_plan": row.get("apple_plan"), "apple_expires_at": row.get("apple_expires_at"),
         "period_start": row["period_start"], "period_end": row["period_end"],
-        "subscription_status": row["subscription_status"],
-        "cancel_at_period_end": row["cancel_at_period_end"],
-        "has_subscription": apple_active(row) or row["subscription_status"] not in ("none", "canceled", "incomplete_expired"),
+        "subscription_status": "none" if tester else row["subscription_status"],
+        "cancel_at_period_end": not tester and row["cancel_at_period_end"],
+        "has_subscription": tester or apple_active(row) or row["subscription_status"] not in ("none", "canceled", "incomplete_expired"),
     }
 
 
@@ -185,7 +192,7 @@ def site_url():
 async def portal(identity, *, cancel=False, plan_key=None):
     user_id = account_id(identity)
     row = await wallet(user_id)
-    if not row.get("stripe_customer_id") or not row.get("stripe_subscription_id"):
+    if row.get("external_tester") or not row.get("stripe_customer_id") or not row.get("stripe_subscription_id"):
         raise HTTPException(409, "You do not have a subscription to manage.")
     config = await settings()
     configuration = config.get("live_portal_id" if live_mode() else "test_portal_id")
@@ -228,6 +235,8 @@ async def checkout(identity, plan_key, ui_mode="hosted"):
         raise HTTPException(409, "Your checkout is already opening. Please try again in a moment.")
     try:
         row = await wallet(user_id)
+        if row.get("external_tester"):
+            raise HTTPException(409, "Builder is already included with your tester access.")
         if apple_active(row):
             raise HTTPException(409, "Manage your Apple subscription in App Store subscription settings.")
         customer = row.get("stripe_customer_id")
@@ -347,7 +356,7 @@ async def sync_checkout(identity, session_id=None):
             await sync_subscription(subscription_id)
     else:
         row = await wallet(user_id)
-        if row.get("stripe_subscription_id"):
+        if not row.get("external_tester") and row.get("stripe_subscription_id"):
             await sync_subscription(row["stripe_subscription_id"])
     return await account(identity)
 

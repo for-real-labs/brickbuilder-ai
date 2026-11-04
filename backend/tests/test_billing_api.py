@@ -378,3 +378,24 @@ def test_subscription_checkout_modes_are_validated_and_hosted_clients_still_work
     with pytest.raises(ValidationError): CheckoutRequest(plan_key='builder', ui_mode='unknown')
     assert asyncio.run(billing.checkout(identity, 'builder'))['url'].startswith('https://checkout.stripe.com/')
     assert 'success_url' in plan_checkout.call_args.kwargs
+
+
+def test_external_tester_gets_builder_without_creating_a_stripe_customer(monkeypatch, identity):
+    row = {'external_tester': True, 'plan_key': 'free', 'subscription_status': 'none',
+           'period_start': '2026-01-01T00:00:00Z', 'period_end': '2099-01-01T00:00:00Z',
+           'monthly_credits': 225, 'monthly_remaining': 0, 'bonus_remaining': 0,
+           'cancel_at_period_end': False}
+    assert billing.has_paid_features(row)
+    public = billing.public_wallet(row)
+    assert (public['plan_key'], public['subscription_provider']) == ('builder', 'external_tester')
+    assert public['has_subscription']
+
+    monkeypatch.setattr(billing, 'require_enabled', AsyncMock())
+    monkeypatch.setattr(billing, 'capacity', AsyncMock(return_value={'checkout_available': True}))
+    monkeypatch.setattr(billing, 'wallet', AsyncMock(return_value=row))
+    monkeypatch.setattr(billing, 'rpc', AsyncMock(return_value=True))
+    create = Mock()
+    monkeypatch.setattr(billing.stripe.Customer, 'create', create)
+    with pytest.raises(HTTPException, match='tester access'):
+        asyncio.run(billing.checkout(identity, 'builder'))
+    create.assert_not_called()

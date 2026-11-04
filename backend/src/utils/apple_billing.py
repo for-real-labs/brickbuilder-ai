@@ -145,6 +145,8 @@ async def prepare(identity, consumable=False):
     if consumable and not billing.has_paid_features(row):
         from .credit_packs import SUBSCRIPTION_REQUIRED
         raise HTTPException(403, SUBSCRIPTION_REQUIRED)
+    if not consumable and row.get('external_tester'):
+        raise HTTPException(409, 'Builder is already included with your tester access.')
     if not consumable and row.get('stripe_subscription_id') and row['subscription_status'] not in ('none', 'canceled', 'incomplete_expired'):
         raise HTTPException(409, 'You already have a web subscription. Manage or cancel it before starting an Apple subscription.')
     return {'app_account_token': user_id}

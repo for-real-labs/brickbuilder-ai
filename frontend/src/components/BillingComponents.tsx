@@ -35,6 +35,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
   const { user } = useAuth();
   const { plans, account, busy, enabled, checkoutAvailable, subscribe, closeUpgrade, appleProducts, restore, retryAccess } = useBilling();
   const apple = isAppleApp();
+  const tester = account?.subscription_provider === 'external_tester';
   return <><div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
     {plans.filter(plan => plan.key !== 'free').map(plan => {
       const current = Boolean(user && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
@@ -49,8 +50,8 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <ul className="billing-features">
           <li className="billing-feature-saving"><Check aria-label="Included" /><strong>{PLAN_DISCOUNTS[plan.key]}% off every LEGO® purchase</strong></li>
         </ul>
-        <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
-          onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : 'Select Plan'}</button>
+        <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || tester || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
+          onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : tester ? 'Unavailable with tester access' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : 'Select Plan'}</button>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
       </article>;
     })}

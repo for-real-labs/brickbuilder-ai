@@ -275,3 +275,29 @@ is 225 for new transactions; historical allowances remain recorded. App Store
 subscription prices are configured separately from this web rollout.
 
 The historical evidence and model above describe earlier allowances and prices.
+
+## External testers
+
+After applying `20261104030000_external_testers.sql` and deploying the matching
+app code, add an email in Supabase Table Editor → `external_testers` (lowercase,
+`livemode=true` for production). The account gets Builder access after verifying
+that email, with 225 credits per UTC calendar month and no payment or renewal.
+Remove the row to revoke access. Existing Stripe or Apple subscriptions keep
+their normal billing; adding someone does not cancel their existing subscription.
+
+For non-expiring top-ups, run this in Supabase SQL Editor after the tester has
+opened Billing at least once. Replace the amount and email as needed:
+
+```sql
+UPDATE public.billing_accounts a
+SET apple_remaining = a.apple_remaining + 100
+FROM auth.users u
+JOIN public.external_testers t ON t.email = lower(u.email) AND t.livemode
+WHERE a.user_id = u.id AND a.livemode AND a.external_tester
+  AND u.email_confirmed_at IS NOT NULL AND NOT coalesce(u.is_anonymous, false)
+  AND t.email = 'tester@example.com'
+RETURNING a.user_id, a.apple_remaining AS non_expiring_credits;
+```
+
+`apple_remaining` is the shared non-expiring credit balance. Add to it rather
+than replacing it, so any existing purchased credits are preserved.

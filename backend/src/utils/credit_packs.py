@@ -39,7 +39,7 @@ async def checkout(identity, amount_cents):
     owner = billing.account_id(identity)
     await billing.require_enabled()
     row = await require_subscriber(owner)
-    plan = row.get('apple_plan') if billing.apple_active(row) else row['plan_key']
+    plan = billing.effective_plan(row)
     rate_key = 'builder' if plan == 'builder' else 'creator'
     pack = quote(amount_cents, rate_key)
     if not (await billing.capacity())['checkout_available']:

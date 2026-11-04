@@ -46,7 +46,7 @@ async def get_member_discount_percent(identity: dict) -> int:
     row = await billing.wallet(billing.account_id(identity))
     if not billing.has_paid_features(row):
         return 0
-    plan = row['apple_plan'] if billing.apple_active(row) else row['plan_key']
+    plan = billing.effective_plan(row)
     return PLAN_DISCOUNT_PERCENT.get(plan, 0)
 
 
