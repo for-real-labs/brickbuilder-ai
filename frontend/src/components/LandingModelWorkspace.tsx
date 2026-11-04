@@ -3,6 +3,7 @@ import { ArrowLeft, BookOpen, Box, Maximize2, Ruler } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
+import { LandingPreviousEdits } from './LandingPreviousEdits';
 import { LandingCommunityAction } from './LandingCommunityAction';
 import { ModelShareMenu } from './ModelShareMenu';
 import { GenerationTitle } from './GenerationTitle';
@@ -21,7 +22,7 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
@@ -33,6 +34,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   accessToken?: string;
   onRenameRequest?: () => void;
   onNameSaved?: (id: string, name: string) => void;
+  onViewPreviousEdit?: (id: string) => void;
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
@@ -84,7 +86,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     if (header) observer?.observe(header);
     window.addEventListener('resize', updateTop);
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !document.querySelector('.landing-community-dialog[open]')) { event.preventDefault(); collapseRef.current('escape'); }
+      if (event.key === 'Escape' && !document.querySelector('.landing-community-dialog[open], .landing-previous-edits-dialog[open]')) { event.preventDefault(); collapseRef.current('escape'); }
     };
     document.addEventListener('keydown', onKeyDown);
     backButton.current?.focus();
@@ -211,6 +213,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
             {featureAccess !== 'allowed' && <PaidFeatureLock />}
           </button>
+          {onViewPreviousEdit && <LandingPreviousEdits key={generation.generation_id} id={generation.generation_id}
+            version={generation.version} token={accessToken} busy={busy} onView={onViewPreviousEdit} />}
           {generation.endpoint !== 'uploadLdraw' && <LandingCommunityAction key={generation.generation_id}
             id={generation.generation_id} busy={busy} onNameSaved={onNameSaved}
             preview={() => preview.current?.id === generation.generation_id ? preview.current.png : undefined} />}

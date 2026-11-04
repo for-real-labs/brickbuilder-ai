@@ -7,6 +7,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
 import LandingPage from '../src/pages/LandingPage';
+import { GetGenerationsByImageApiService, type GenerationIteration } from '../src/services/getGenerationsByImageApi';
 import { GetGenerationApiService, type GetGenerationResponse } from '../src/services/getGenerationApi';
 import { LdrToMpdApiService } from '../src/services/ldrToMpdApi';
 import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
@@ -1306,4 +1307,34 @@ it('shows the generating state after refreshing an explicit pending link even be
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[aria-label="Build progress workspace"]')).not.toBeNull();
   expect(container.querySelector('#landing-build-prompt')).toBeNull();
+});
+
+it('lists earlier completed edits before Community and opens the exact selected revision', async () => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({
+    ...generation(id), version: id === 'castle' ? 4 : 1,
+  }));
+  const row = (id: string, version: number, status = 'completed'): GenerationIteration => ({
+    id, version, status, generation_id: 'family', user_id: 'builder', prompt: id, created_at: '2026-11-04T00:00:00Z',
+  });
+  const versions = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage').mockResolvedValue({
+    generations: [row('original', 1), row('newer', 5), row('failed', 3, 'failed'), row('castle', 4), row('second', 2)],
+    total_count: 5,
+  });
+  try {
+    await act(async () => root.render(<LandingPage />));
+    const toolbar = container.querySelector('.landing-model-bottom-toolbar')!;
+    expect([...toolbar.querySelectorAll(':scope > button')].map(button => button.textContent)).toEqual([
+      'Show instructions', 'Previous edits', 'Post to Community',
+    ]);
+    expect(toolbar.previousElementSibling?.classList.contains('landing-model-workspace')).toBe(true);
+    await act(async () => [...toolbar.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!.click());
+    const dialog = toolbar.querySelector<HTMLDialogElement>('.landing-previous-edits-dialog')!;
+    expect(dialog.open).toBe(true);
+    const rows = [...dialog.querySelectorAll('li button')];
+    expect(rows.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['second', 'original']);
+    await act(async () => rows[1].click());
+    expect(query.value).toBe('id=original&exact=1');
+    expect(container.querySelector('.landing-previous-edits-dialog')).toBeNull();
+  } finally { versions.mockRestore(); }
 });

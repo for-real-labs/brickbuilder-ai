@@ -1103,7 +1103,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 canRename={Boolean(session?.access_token)} accessToken={session?.access_token}
                 onRenameRequest={!session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
-                onOrderBarHeightChange={setOrderBarHeight}>
+                onOrderBarHeightChange={setOrderBarHeight} onViewPreviousEdit={openModel}>
               {!welcomeScreen && <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations} errorMessage={generationError}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id,

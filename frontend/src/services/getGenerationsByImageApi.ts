@@ -25,6 +25,9 @@ export interface GenerationIteration {
   version: number;
   user_id: string;
   prompt: string;
+  name?: string | null;
+  preview_image_url?: string | null;
+  processed_image_url?: string | null;
   created_at: string;
   generation_duration_seconds?: number | null;
   status: string;

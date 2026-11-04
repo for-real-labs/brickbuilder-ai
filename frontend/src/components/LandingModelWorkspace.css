@@ -57,6 +57,10 @@
 .landing-ruler-slash { position: absolute; inset: 0; filter: drop-shadow(0 0 1px white); }
 .landing-ruler-toggle, .landing-view-expand { width: 44px; min-width: 44px; padding: 0; }
 .landing-model-bottom-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 10px; }
+@media (max-width: 639px) {
+  .landing-model-bottom-toolbar { gap: 6px; }
+  .landing-model-bottom-toolbar > .landing-action-button { flex: 1 1 auto; min-width: 0; padding-inline: 8px; font-size: 12px; white-space: normal; }
+}
 .landing-model-share-overlay { position: absolute; right: 12px; bottom: 12px; z-index: 45; }
 .landing-model-share button[aria-haspopup="dialog"] { height: 44px; min-height: 44px; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 20px; }
 .landing-model-panel [hidden] { display: none; }
