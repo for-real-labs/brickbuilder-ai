@@ -99,12 +99,12 @@ def test_upload_read_requires_its_owner_even_when_completed(monkeypatch):
     assert error.value.status_code == 404
 
 
-def test_upload_price_is_blocked_without_fetching_inventory(monkeypatch):
+def test_upload_price_is_private_without_fetching_inventory(monkeypatch):
     monkeypatch.setattr(getPrice, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value={'endpoint': 'uploadLdraw'})))
     fetch = AsyncMock(); monkeypatch.setattr(getPrice, 'fetch_csv_content', fetch)
     with pytest.raises(HTTPException) as error:
         asyncio.run(getPrice.get_price(getPrice.GetPriceRequest(generation_id='g'), {}))
-    assert error.value.status_code == 409
+    assert error.value.status_code == 404
     fetch.assert_not_called()
 
 

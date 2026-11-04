@@ -22,7 +22,7 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, onConvertKit, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
@@ -35,6 +35,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   onRenameRequest?: () => void;
   onNameSaved?: (id: string, name: string) => void;
   onViewPreviousEdit?: (id: string) => void;
+  onConvertKit?: () => void;
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
@@ -126,7 +127,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       element.removeEventListener('wheel', preventPageScroll);
     };
   }, [generation?.generation_id]);
-  const orderable = generation?.orderable !== false && generation?.endpoint !== 'uploadLdraw';
+  const orderable = generation?.endpoint === 'uploadLdraw' ? Boolean(onConvertKit) : generation?.orderable !== false;
   useEffect(() => {
     if (!generation || readyId !== generation.generation_id || busy) return;
     let cancelled = false;
@@ -226,7 +227,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       </div>
     </dialog>
     {orderable && !pendingEdit && <LandingModelOrdering key={generation.generation_id}
-        model={model} busy={busy} showMobileBar={dismissedOrderId !== generation.generation_id && !composerFocused}
+        model={model} busy={busy} onConvert={onConvertKit} showMobileBar={dismissedOrderId !== generation.generation_id && !composerFocused}
         onHeightChange={onOrderBarHeightChange} onDismiss={() => {
           setDismissedOrderId(generation.generation_id);
           posthog.capture('landing_model_order_banner_dismissed', { generation_id: generation.generation_id });

@@ -210,13 +210,28 @@ def test_shipping_address_rejects_invalid_or_unexpected_fields(change):
         checkout.CreateCheckoutSessionRequest(shippingAddress=contact)
 
 
-def test_imported_ldraw_cannot_be_ordered_even_if_a_parts_list_is_attached(setup):
+def test_import_estimate_cannot_be_ordered_even_if_a_parts_list_is_attached(setup):
     storage, create, _ = setup
     storage.return_value['endpoint'] = 'uploadLdraw'
+    checkout.get_price.return_value.conversion_credits = 20
     with pytest.raises(HTTPException) as error:
         run()
     assert error.value.status_code == 409
     create.assert_not_called()
+
+
+def test_exact_imported_kit_pins_the_validated_bom(setup):
+    from src.requests.getPrice import PartPriceDetail
+    storage, create, _ = setup
+    storage.return_value['endpoint'] = 'uploadLdraw'
+    checkout.get_price.return_value.parts_breakdown = [
+        PartPriceDetail(part_id='3001.dat', color_id=4, quantity=2, sku='red',
+                        unit_price=0.10, total_price=0.20)]
+    snapshot = AsyncMock(return_value='https://example.com/verified.csv')
+    checkout.generation_storage.store_order_parts_snapshot = snapshot
+    run()
+    assert snapshot.call_args.args[2].splitlines() == ['LdrawId,LDrawColorId,Qty', '3001.dat,4,2']
+    assert create.call_args.kwargs['metadata']['partsListCsvUrl'] == 'https://example.com/verified.csv'
 
 
 @pytest.mark.parametrize('pet', ['pip', 'nib', 'clik'])

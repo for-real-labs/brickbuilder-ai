@@ -5,3 +5,10 @@
 .model-order-dialog-heading button:hover { background: #f8fafc; color: #0f172a; }
 .model-order-dialog-heading button:focus-visible { outline: 2px solid #f44336; outline-offset: 2px; }
 .model-order-dialog-heading p { min-width: 0; margin: 0; overflow-wrap: anywhere; padding-right: 12px; font-size: 14px; font-weight: 600; color: #475569; }
+.kit-conversion-dialog { padding: 24px; }
+.kit-conversion-dialog h2 { margin: 0 0 8px; font-size: 21px; font-weight: 700; line-height: 1.25; }
+.kit-conversion-dialog p { margin: 0 0 20px; color: #475569; font-size: 14px; line-height: 1.5; }
+.kit-conversion-dialog > div { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.kit-conversion-dialog .model-order-button { width: auto; min-height: 44px; padding: 8px 14px; }
+.kit-conversion-cancel { padding: 8px 14px; min-height: 44px; border-radius: 12px; color: #475569; cursor: pointer; }
+.kit-conversion-cancel:hover { background: #f8fafc; }

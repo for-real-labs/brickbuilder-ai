@@ -6,6 +6,8 @@ import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel, Field, field_validator
 
+from ..utils.authorization import require_generation_access
+from ..utils.imported_kit import estimated_inventory, imported_inventory
 from ..utils.generation_storage import generation_storage
 from ..utils.parts_catalog import PartsUnavailable, normalize_part_id, parts_csv_inventory
 from ..utils.posthog_client import track_api_call, track_error
@@ -14,6 +16,8 @@ from ..utils.supplier_catalog import get_supplier_catalog
 from ..utils.order_pricing import COUNTRY_CODES, OrderPricing, get_member_discount_percent, price_order
 
 logger = logging.getLogger(__name__)
+# Hosted All Parts edits, per billing_reserve_generation (monthly plans v4).
+IMPORT_CONVERSION_CREDITS = 20
 
 
 class GetPriceRequest(BaseModel):
@@ -49,6 +53,7 @@ class GetPriceResponse(BaseModel):
     message: str
     price_source: str = "Brickwith catalog snapshot"
     order_pricing: OrderPricing | None = None
+    conversion_credits: int | None = None
 
 
 async def fetch_csv_content(url: str) -> str:
@@ -71,6 +76,42 @@ def calculate_price(inventory, catalog=None) -> tuple[float, list[PartPriceDetai
     return float(price), details, float(weight)
 
 
+async def load_imported_inventory(storage, generation) -> dict:
+    url = generation.get('ldr_url')
+    if not url or generation.get('status') != 'completed':
+        raise HTTPException(409, 'Your imported model is not ready to price.')
+    try:
+        model = await storage.download_file_from_storage(url)
+    except Exception:
+        raise HTTPException(503, 'The imported model is unavailable right now.') from None
+    return imported_inventory(model.decode('utf-8'))
+
+
+async def price_imported_kit(request, generation, auth_info):
+    require_generation_access(generation, auth_info)
+    catalog = get_supplier_catalog()
+    conversion_credits = None
+    inventory = {}
+    try:
+        inventory = await load_imported_inventory(generation_storage, generation)
+        total, breakdown, weight = calculate_price(inventory, catalog)
+    except (PartsUnavailable, ValueError):
+        conversion_credits = IMPORT_CONVERSION_CREDITS
+        estimate = estimated_inventory(inventory, catalog) if inventory else None
+        if not estimate:
+            return GetPriceResponse(generation_id=request.generation_id, total_price=0,
+                total_parts=sum(inventory.values()), total_weight=0, unique_part_types=len(inventory),
+                message='Convert unavailable parts to get a kit price.', conversion_credits=conversion_credits)
+        total, breakdown, weight = calculate_price(estimate, catalog)
+    pricing = price_order(total, weight, request.shipping_country,
+                          member_discount_percent=await get_member_discount_percent(auth_info))
+    return GetPriceResponse(generation_id=request.generation_id, total_price=total,
+        total_parts=sum(inventory.values()), total_weight=weight, unique_part_types=len(inventory),
+        parts_breakdown=breakdown, price_source=catalog.name, order_pricing=pricing,
+        message='Estimated after conversion' if conversion_credits else 'Exact catalog match',
+        conversion_credits=conversion_credits)
+
+
 async def get_price(request: GetPriceRequest, auth_info: dict) -> GetPriceResponse:
     user_email = auth_info.get("user_email", "anonymous") if isinstance(auth_info, dict) else "anonymous"
     track_api_call(endpoint="/getPrice", user_id=user_email, request_data={"generation_id": request.generation_id})
@@ -79,7 +120,7 @@ async def get_price(request: GetPriceRequest, auth_info: dict) -> GetPriceRespon
         if not generation:
             raise HTTPException(404, "Generation not found")
         if generation.get('endpoint') == 'uploadLdraw':
-            raise HTTPException(409, 'Edit this uploaded model with AI to use Brickwith parts before ordering.')
+            return await price_imported_kit(request, generation, auth_info)
         url = generation.get("parts_list_csv_url")
         if not url:
             raise HTTPException(400, "Parts list CSV not found")

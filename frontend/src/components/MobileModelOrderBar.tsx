@@ -18,6 +18,7 @@ interface Props {
 export function MobileModelOrderBar({ quote, loading, updating, error, onOrder, onDismiss, onHeightChange, showOnDesktop = false }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const pricing = getOrderPricing(quote);
+  const needsConversion = quote?.conversion_credits != null;
   useEffect(() => {
     if (!onHeightChange) return;
     const measure = () => onHeightChange(ref.current?.getBoundingClientRect().height ?? 0);
@@ -34,9 +35,9 @@ export function MobileModelOrderBar({ quote, loading, updating, error, onOrder, 
     </button>
     <div>{pricing && pricing.memberDiscountCents > 0 && <del className="model-mobile-original">{formatOrderPrice(pricing.fullTotalCents)}</del>}<strong>{loading ? 'Pricing…' : pricing ? formatOrderPrice(pricing.totalCents) : '—'}</strong>
       {pricing && pricing.memberDiscountCents > 0 && <span className="model-mobile-member">{pricing.memberDiscountPercent}% member savings on bricks</span>}
-      <span>{error || (!loading && !pricing) ? 'Price unavailable right now' : loading ? 'Counting pieces…' : `${quote?.total_parts.toLocaleString() ?? '—'} pieces`}</span></div>
+      <span>{loading ? 'Checking parts…' : needsConversion ? (pricing ? 'Estimated after conversion' : 'Price after conversion') : error || !pricing ? 'Price unavailable right now' : `${quote?.total_parts.toLocaleString() ?? '—'} pieces`}</span></div>
     <button type="button" aria-label="Order this model" className="model-order-button"
-      disabled={loading || updating || !!error || !pricing} onClick={onOrder}>
+      disabled={loading || updating || !!error || (!pricing && !needsConversion)} onClick={onOrder}>
       Order my kit <ArrowRight size={18} aria-hidden="true" />
     </button>
   </div>;

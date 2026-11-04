@@ -622,6 +622,13 @@ class GenerationStorage:
             # Don't raise - this shouldn't break the main flow
             return None
 
+    async def store_order_parts_snapshot(self, generation_id: str, checksum: str, content: str) -> str:
+        return await self._upload_file_to_storage(
+            file_content=content,
+            file_path=f"generations/{generation_id}/order_parts_{checksum}.csv",
+            content_type="text/csv",
+        )
+
     async def store_parts_list_csv(
         self,
         generation_id: str,

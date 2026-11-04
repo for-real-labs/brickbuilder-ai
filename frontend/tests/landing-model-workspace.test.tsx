@@ -730,15 +730,25 @@ it('keeps a failed landing quote unorderable while allowing the banner to be dis
   expect(navigate).not.toHaveBeenCalled();
 });
 
-it.each([{ orderable: false }, { endpoint: 'uploadLdraw' }])('keeps ordering unavailable for imported or unapproved models: %o', async patch => {
-  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('castle'), ...patch });
+it('keeps ordering unavailable for other unapproved models', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ ...generation('castle'), orderable: false });
   query.value = 'id=castle&exact=1';
-  activity.rows = [{ id: 'castle', status: 'completed', endpoint: patch.endpoint || 'novaToBricks', prompt: 'Castle' }];
+  activity.rows = [{ id: 'castle', status: 'completed', endpoint: 'novaToBricks', prompt: 'Castle' }];
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.model-mobile-order')).toBeNull();
   expect(container.querySelector('.landing-model-order-trigger')).toBeNull();
   expect(container.textContent).not.toContain('order button');
   expect(GetPriceApiService.getPrice).not.toHaveBeenCalled();
+});
+
+it('requests a kit quote for a Studio import even when the generation has no saved parts list', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    ...generation('castle'), endpoint: 'uploadLdraw', orderable: false,
+  });
+  query.value = 'id=castle&exact=1';
+  await act(async () => root.render(<LandingPage />));
+  expect(vi.mocked(GetPriceApiService.getPrice).mock.calls[0]?.[0]).toBe('castle');
+  expect(container.querySelector('.landing-desktop-order')).not.toBeNull();
 });
 
 it('keeps the LDraw upload page intro visible when a previous chat workspace is saved', async () => {

@@ -2,6 +2,7 @@ import os
 import logging
 import asyncio
 import json
+from hashlib import sha256
 from pathlib import Path
 from typing import Literal, Optional
 
@@ -12,6 +13,7 @@ import stripe
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
 from ..utils.authorization import require_generation_access
+from ..utils.imported_kit import fulfillment_csv
 from .getPrice import GetPriceRequest, GetPriceResponse, get_price
 
 logger = logging.getLogger(__name__)
@@ -92,16 +94,27 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         if not generation:
             raise HTTPException(status_code=404, detail="Generation not found")
         require_generation_access(generation, auth_info, allow_community=True)
-        if generation.get("endpoint") == "uploadLdraw":
-            raise HTTPException(409, "Edit this uploaded model with AI to use Brickwith parts before ordering.")
+        imported = generation.get("endpoint") == "uploadLdraw"
         if generation.get("status") != "completed":
             raise HTTPException(status_code=400, detail="Only completed models can be ordered")
         parts_list_csv_url = generation.get("parts_list_csv_url")
-        if not parts_list_csv_url:
+        if not parts_list_csv_url and not imported:
             raise HTTPException(status_code=400, detail="Kit parts list is unavailable")
         quote = await get_price(GetPriceRequest(generation_id=request.generationId,
             shipping_country=request.shippingAddress.address.country if request.shippingAddress else "US"), auth_info)
+        if quote.conversion_credits is not None:
+            raise HTTPException(409, "Convert unavailable parts before ordering this model.")
         amount = checkout_price_cents(quote)
+        if imported:
+            # Pin the exact BOM that was priced, rather than using any existing
+            # artifact attached to the original import.
+            inventory = {(item.part_id.removesuffix('.dat'), item.color_id): item.quantity
+                         for item in quote.parts_breakdown}
+            if not inventory:
+                raise HTTPException(409, "Kit parts list is unavailable.")
+            csv = fulfillment_csv(inventory)
+            checksum = sha256(csv.encode()).hexdigest()
+            parts_list_csv_url = await generation_storage.store_order_parts_snapshot(request.generationId, checksum, csv)
         pricing = quote.order_pricing
         track_api_call(endpoint="/create-checkout-session", user_id=user_email,
                        request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})

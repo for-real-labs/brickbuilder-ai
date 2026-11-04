@@ -19,9 +19,10 @@ interface Props {
 export function ModelOrderCard({ quote, loading, updating, error, onOrder, onResize, onMobileDismiss, showMobileBar = true }: Props) {
   const [mobileDismissed, setMobileDismissed] = useState(false);
   const pricing = getOrderPricing(quote);
-  const unavailable = loading || updating || !!error || !pricing;
-  const price = pricing ? formatOrderPrice(pricing.partSubtotalCents) : '—';
-  const status = loading ? 'Calculating your kit price…' : error || !pricing ? 'Price unavailable right now.' : null;
+  const needsConversion = quote?.conversion_credits != null;
+  const unavailable = loading || updating || !!error || (!pricing && !needsConversion);
+  const price = loading ? 'Pricing…' : pricing ? formatOrderPrice(pricing.partSubtotalCents) : '—';
+  const status = loading ? 'Calculating your kit price…' : needsConversion ? (pricing ? 'Estimated after conversion' : 'Price available after conversion') : error || !pricing ? 'Price unavailable right now.' : null;
 
   return <>
     <section className="model-order-card" aria-label="Your brick kit">
@@ -33,7 +34,7 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
         <span className="model-order-total">{price}</span>
         <div className="model-order-price-details">
           {pricing && pricing.memberDiscountCents > 0 && <del className="model-order-original">{formatOrderPrice(pricing.fullPartSubtotalCents)}</del>}
-          <span>USD + shipping</span>
+          <span>{pricing ? 'USD + shipping' : ''}</span>
         </div>
       </div>
       {pricing && pricing.memberDiscountCents > 0 && <p className="model-member-discount">Paid plan · {pricing.memberDiscountPercent}% off LEGO® set bricks</p>}
@@ -43,7 +44,7 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
         Order my kit <ArrowRight size={19} aria-hidden="true" />
       </button>
       <div className="model-kit-details">
-        {quote && <span><Package size={14} aria-hidden="true" />{quote.total_parts.toLocaleString()} Pieces</span>}
+        {Boolean(quote?.total_parts) && <span><Package size={14} aria-hidden="true" />{quote?.total_parts.toLocaleString()} Pieces</span>}
         <span><Truck size={14} aria-hidden="true" />8–12 business days</span>
       </div>
       {onResize && <button type="button" className="model-resize-link" onClick={onResize} disabled={unavailable}>Adjust size &amp; price</button>}

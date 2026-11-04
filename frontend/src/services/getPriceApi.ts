@@ -32,6 +32,7 @@ export interface GetPriceResponse {
   parts_breakdown: PartBreakdownItem[];
   message: string;
   price_source?: string;
+  conversion_credits?: number | null;
   order_pricing?: OrderPricing;
 }
 
@@ -113,7 +114,7 @@ export class GetPriceApiService {
       const responseData: GetPriceResponse = await response.json();
 
       // Store parts_breakdown in localStorage for future checkout
-      localStorage.setItem('current_parts_list', JSON.stringify(responseData.parts_breakdown));
+      if (responseData.conversion_credits == null) localStorage.setItem('current_parts_list', JSON.stringify(responseData.parts_breakdown));
 
       return responseData;
 

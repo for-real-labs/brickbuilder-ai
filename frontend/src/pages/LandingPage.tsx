@@ -1103,6 +1103,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 canRename={Boolean(session?.access_token)} accessToken={session?.access_token}
                 onRenameRequest={!session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
+                onConvertKit={() => void submitModelEdit(undefined,
+                  'Convert this model to use only available Brickwith parts and colors. Keep every available part unchanged where possible, and preserve the overall shape, size, and colors as closely as possible.', null)}
                 onOrderBarHeightChange={setOrderBarHeight} onViewPreviousEdit={openModel}>
               {!welcomeScreen && <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations} errorMessage={generationError}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
