@@ -15,6 +15,7 @@ function loginRequest(password: string, returnTo = ''): Request {
 
 describe('preview password middleware', () => {
   beforeEach(() => {
+    process.env.BRICKBUILDER_MAINTENANCE = 'off';
     process.env.VERCEL = '1';
     process.env.VERCEL_ENV = 'preview';
     process.env.VERCEL_GIT_COMMIT_REF = 'feature/password-gate';

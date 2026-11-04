@@ -1,3 +1,5 @@
+import { maintenanceResponse } from './maintenance';
+
 const AUTH_PATH = '/__preview-auth';
 const AUTH_COOKIE = 'brickbuilder_preview_auth';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
@@ -274,6 +276,13 @@ function loginPage(error?: string, returnTo = '/'): Response {
 }
 
 export default async function middleware(request: Request): Promise<Response | undefined> {
+  if (process.env.VERCEL_ENV === 'production' && process.env.BRICKBUILDER_MAINTENANCE !== 'off') {
+    const url = new URL(request.url);
+    if (url.hostname === 'brickbuilder.ai' || url.hostname === 'www.brickbuilder.ai') {
+      return maintenanceResponse(request, url);
+    }
+  }
+
   if (!isProtectedDeployment(process.env)) {
     return modelShareResponse(request);
   }
