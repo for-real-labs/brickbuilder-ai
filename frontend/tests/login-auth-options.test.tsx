@@ -135,7 +135,7 @@ describe('login auth options', () => {
       changeInput(container.querySelector('input[type="password"]')!, 'new-password');
       await act(async () => { container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
       expect(container.querySelector('[role="status"]')?.textContent).toContain('check your email');
-      expect(container.textContent).toContain('Can’t log in?');
+      expect(container.textContent).toContain('Forgot password?');
       expect(navigate).not.toHaveBeenCalled(); expect(onSuccess).not.toHaveBeenCalled();
       expect(container.querySelector('input[type="password"]')).toBeNull();
       changeInput(container.querySelector('input[autocomplete="one-time-code"]')!, '123456');

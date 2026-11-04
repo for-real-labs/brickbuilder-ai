@@ -1,3 +1,4 @@
+import { AuthError } from '@supabase/supabase-js';
 import { referralSignupMetadata } from './referrals';
 import { supabase, passwordRecoveryClient } from '../lib/supabase';
 import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
@@ -38,6 +39,9 @@ export async function signInOrCreateAccount(email: string, password: string, red
     ...credentials,
     options: { data: { password_configured: true, ...await referralSignupMetadata() }, emailRedirectTo: confirmationRedirect(redirectPath) },
   });
+  if (!signedUp.error && !signedUp.data.session && signedUp.data.user?.identities?.length === 0) {
+    return { error: new AuthError('Unable to sign in with that password. If you previously signed in another way, such as Google, use “Forgot password?” below to create a password for the same account.', 400, 'password_recovery_required'), confirmationRequired: false };
+  }
   return { error: signedUp.error, confirmationRequired: !signedUp.error && !signedUp.data.session };
 }
 

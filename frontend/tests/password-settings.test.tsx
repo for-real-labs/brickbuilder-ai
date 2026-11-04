@@ -44,10 +44,10 @@ it('rejects mismatched passwords and reports Supabase errors without claiming su
  expect(saved).not.toHaveBeenCalled(); expect(container.textContent).toContain('Session expired');
 });
 it('requires email for recovery and uses a non-enumerating success message', async () => {
- await render(<PasswordRecovery email="" surface="test" />); await click('Can’t log in? Email me a password reset link');
+ await render(<PasswordRecovery email="" surface="test" />); await click('Forgot password? Reset or create a password');
  expect(mocks.reset).not.toHaveBeenCalled();
  await render(<PasswordRecovery email="person@example.test" surface="test" />); mocks.reset.mockResolvedValue(undefined);
- await click('Can’t log in? Email me a password reset link'); expect(container.textContent).toContain('If an account exists');
+ await click('Forgot password? Reset or create a password'); expect(container.textContent).toContain('If an account exists');
 });
 it('expired or missing recovery sessions show a new-link option, not a password form', async () => {
  mocks.session.mockResolvedValue({data:{session:null},error:null});

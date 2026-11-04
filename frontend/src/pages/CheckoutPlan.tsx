@@ -57,7 +57,7 @@ export default function CheckoutPlan() {
     <main className="checkout-main">
       <button className="checkout-model-back" disabled={busy} onClick={back}><ArrowLeft size={16} />Back to plans</button>
       <div className="checkout-intro"><h1>Checkout</h1><nav className="checkout-progress" aria-label="Checkout progress">
-        <span className="is-current" aria-current={!user ? 'step' : undefined}><i>{user ? <Check size={12} /> : 1}</i>Your profile</span>
+        <span className="is-current" aria-current={!user ? 'step' : undefined}><i>{user ? <Check size={12} /> : 1}</i>Create profile *</span>
         <span className={user ? 'is-current' : ''} aria-current={user ? 'step' : undefined}><i>2</i>Payment</span>
       </nav></div>
       {!valid || !plan ? <section className="checkout-empty"><h2>Choose your plan</h2><Link to="/pricing" className="checkout-primary">View plans</Link></section> : isAppleApp() ? <section className="checkout-empty"><h2>Subscribe with Apple</h2><Link to="/pricing" className="checkout-primary">View plans</Link></section> : <div className="checkout-layout">
@@ -74,7 +74,7 @@ export default function CheckoutPlan() {
         </div></aside>
         <div className="checkout-flow">
           {authLoading ? <p role="status">Loading your profile…</p> : <>
-            <CheckoutStep title="Your profile" number={1} active={!user} complete={!!user} disabled={busy || !!user} onEdit={() => {}}>
+            <CheckoutStep title="Create profile *" number={1} active={!user} complete={!!user} disabled={busy || !!user} onEdit={() => {}}>
               <CheckoutAccount redirectPath={`/checkout-plan?plan=${planKey}`} />
             </CheckoutStep>
             {user && <p className="plan-checkout-signed-in">Signed in as {user.email}</p>}

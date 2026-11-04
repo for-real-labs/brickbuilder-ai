@@ -37,6 +37,8 @@ it('keeps guest profile creation inline with the selected plan and requests no s
   expect(container.textContent).toContain('$19.99');
   expect([...container.querySelectorAll('input')].map(input => input.type)).toEqual(['email', 'password']);
   expect(container.querySelector('[role="dialog"]')).toBeNull();
+  expect(container.textContent).not.toContain('Create your profile or sign in');
+  expect(container.querySelector('form')!.compareDocumentPosition(container.querySelector('.plan-checkout-google')!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   expect(mocks.checkout).not.toHaveBeenCalled();
   const inputs = container.querySelectorAll('input');
   await act(async () => {
@@ -89,7 +91,7 @@ it('never attaches a previous account’s checkout after logout', async () => {
   await render();
   await act(async () => finish({ session_id: 'cs_old', client_secret: 'old_secret' }));
   expect(mocks.payment).not.toHaveBeenCalled();
-  expect(container.textContent).toContain('Create your profile');
+  expect(container.textContent).toContain('Create profile *');
 });
 
 it('does not start a second subscription for an existing subscriber', async () => {

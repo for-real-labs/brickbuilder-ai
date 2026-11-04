@@ -22,7 +22,9 @@ it('creates a new account after invalid credentials and waits for confirmation',
 it('never overwrites the password when an existing account is returned as an obfuscated signup', async () => {
   mocks.signIn.mockResolvedValue({ error: { code: 'invalid_credentials' } });
   mocks.signUp.mockResolvedValue({ error: null, data: { session: null, user: { identities: [] } } });
-  expect((await signInOrCreateAccount('existing@example.test', 'wrong-password')).confirmationRequired).toBe(true);
+  const result = await signInOrCreateAccount('existing@example.test', 'wrong-password');
+  expect(result.confirmationRequired).toBe(false);
+  expect(result.error?.message).toContain('create a password for the same account');
   expect(mocks.update).not.toHaveBeenCalled();
 });
 it.each(['over_request_rate_limit', 'request_timeout'])('does not signup on %s', async code => {

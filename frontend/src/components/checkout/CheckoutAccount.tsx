@@ -28,19 +28,18 @@ export function CheckoutAccount({ redirectPath }: { redirectPath: string }) {
     finally { setBusy(false); }
   };
   return <div className="plan-checkout-account">
-    <p className="checkout-section-note">Create your profile or sign in to keep your builds and subscription together.</p>
     {verification ? <SignupCodeVerification email={email} redirectPath={redirectPath} surface="plan_checkout"
       onVerified={() => setVerification(false)} onBack={() => setVerification(false)} /> : <>
-      <button type="button" className="plan-checkout-google" disabled={busy} onClick={() => void authenticate(true)}>Continue with Google</button>
-      <div className="plan-checkout-divider">or use email</div>
       <form onSubmit={event => { event.preventDefault(); void authenticate(); }}>
         <label className="checkout-field"><span>Email address</span><input type="email" autoComplete="email" required value={email} disabled={busy} onChange={event => setEmail(event.target.value)} /></label>
         <label className="checkout-field"><span>Password</span><input type="password" autoComplete="current-password" required minLength={6} value={password} disabled={busy} onChange={event => setPassword(event.target.value)} /></label>
-        <p className="checkout-section-note">New here? We’ll create your account with this email and password.</p>
         {error && <p className="checkout-error" role="alert">{error}</p>}
         <button type="submit" className="checkout-primary" disabled={busy}>{busy ? 'Please wait…' : 'Continue to payment'}</button>
       </form>
+      <PasswordRecovery email={email} surface="plan_checkout" />
+      <div className="plan-checkout-divider">or</div>
+      <button type="button" className="plan-checkout-google" disabled={busy} onClick={() => void authenticate(true)}>Continue with Google</button>
     </>}
-    <PasswordRecovery email={email} surface="plan_checkout" />
+    {verification && <PasswordRecovery email={email} surface="plan_checkout" />}
   </div>;
 }
