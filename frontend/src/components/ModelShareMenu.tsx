@@ -75,7 +75,7 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
     </button>
     {open && <div id={menuId} role="dialog" aria-label="Share model" className={`model-share-popup absolute right-0 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${placement === 'above' ? 'bottom-full mb-4' : 'top-full mt-2'}`}>
       <p className="mb-1 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-slate-700">
-        Earn 300 credits when someone creates an account through your shared link. Sign in before sharing to earn credits.
+        Earn <strong>300 credits</strong> (20 LEGO® generations) when someone creates an account through your shared link. Sign in before sharing to earn credits.
       </p>
       <button type="button" data-share-action className={rowClass} onClick={() => void copy('url')}>
         {copied ? <Check size={18} aria-hidden="true" /> : <Link size={18} aria-hidden="true" />} {copied ? 'Link copied' : 'Copy link'}

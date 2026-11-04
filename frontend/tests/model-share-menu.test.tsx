@@ -140,7 +140,8 @@ it('never adds a referral for guests, including anonymous Auth users', () => {
 it('shows the reward explanation directly in the share popup', () => {
   open();
   const popup = container.querySelector('[role="dialog"]')!;
-  expect(popup.textContent).toContain('Earn 300 credits when someone creates an account through your shared link.');
+  expect(popup.querySelector('strong')?.textContent).toBe('300 credits');
+  expect(popup.textContent).toContain('Earn 300 credits (20 LEGO® generations) when someone creates an account through your shared link.');
   expect(popup.textContent).toContain('Sign in before sharing to earn credits.');
   expect(popup.querySelector('[aria-label="About referral credits"]')).toBeNull();
 });
