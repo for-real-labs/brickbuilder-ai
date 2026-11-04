@@ -30,7 +30,6 @@ import { useRecentCompletedBuilds } from '../hooks/useRecentCompletedBuilds';
 import { useGenerationNotifications } from '../contexts/GenerationNotificationsContext';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { useLandingViewport } from '../hooks/useLandingViewport';
-import { useLandingHelp } from '../hooks/useLandingHelp';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
@@ -977,9 +976,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const conversationStarted = !ldrawLanding
     && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage) || Boolean(randomSuggestion));
   const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
-  const footerEnabled = !ldrawLanding && !conversationStarted && !pendingGeneration;
-  const helpVisible = useLandingHelp(landingViewportRef, footerEnabled);
-  const footerVisible = helpVisible;
+  const footerEnabled = !ldrawLanding && !conversationStarted && !pendingGeneration && !inventoryOpen;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
   const todayProcessingBuilds = processingBuilds.filter(row => isBuildFromToday(row.createdAt));
   const todayCompletedBuilds = completedBuilds.filter(row => isBuildFromToday(row.created_at));
@@ -1004,7 +1001,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   return (
     <div
       ref={landingViewportRef}
-      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${welcomeScreen ? ' landing-page--welcome' : ''}${conversationStarted ? ' landing-page--conversation-started' : ''}${helpVisible ? ' landing-page--help-visible' : ''}`}
+      className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${welcomeScreen ? ' landing-page--welcome' : ''}${conversationStarted ? ' landing-page--conversation-started' : ''}${footerEnabled ? ' landing-page--browse' : ''}`}
       style={{ backgroundColor: "#fbfbfd", '--landing-order-banner-height': `${orderBarHeight}px` } as React.CSSProperties}
       onDragEnter={inventoryOpen ? undefined : handleDragEnter}
       onDragLeave={inventoryOpen ? undefined : handleDragLeave}
@@ -1329,22 +1326,22 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           {ldrawLanding && generationActivity}
           </div>
         </main>}
-        {!inventoryOpen && !ldrawLanding && <div className={`landing-page-stats${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted || helpVisible} aria-label="BrickBuilder generation statistics">
+        {!inventoryOpen && !ldrawLanding && <div className={`landing-page-stats${conversationStarted ? ' landing-page-stats--hidden' : ''}`} aria-hidden={conversationStarted} aria-label="BrickBuilder generation statistics">
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="landing-stat-label">models generated</span></div>
                   <div className="landing-stat-divider" aria-hidden="true" />
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="landing-stat-label">bricks generated</span></div>
                 </div>}
 
 
-        {!inventoryOpen && footerEnabled && <div className="landing-page-help" aria-hidden={!footerVisible}>
-          <div>Need help?{' '}
-          <a href="mailto:support@brickbuilder.ai" tabIndex={footerVisible ? 0 : -1}
-            onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a></div>
-          <LandingSocialLinks visible={footerVisible} />
-          <a href="/blog" tabIndex={footerVisible ? 0 : -1}
-            onClick={() => posthog.capture('landing_blog_clicked')}>Blog</a>
-        </div>}
       </div>
+      {footerEnabled && <footer className="landing-page-help">
+        <div>Need help?{' '}
+          <a href="mailto:support@brickbuilder.ai"
+            onClick={() => posthog.capture('landing_help_email_clicked')}>support@brickbuilder.ai</a>
+        </div>
+        <LandingSocialLinks />
+        <a href="/blog" onClick={() => posthog.capture('landing_blog_clicked')}>Blog</a>
+      </footer>}
     </div>
   );
 }

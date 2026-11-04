@@ -34,7 +34,7 @@ describe('public page indexing', () => {
     expect(document.querySelector('#root')?.textContent?.length).toBeGreaterThan(100);
     expect(document.querySelector('script[src="/src/main.tsx"]')).not.toBeNull();
     if (landingPaths.includes(path)) {
-      expect(document.querySelector('footer')).toBeNull();
+      expect(Boolean(document.querySelector('footer nav[aria-label="Social links"]'))).toBe(path !== '/use-ai-to-edit-ldraw');
       expect(document.querySelector('#how-it-works')).toBeNull();
       expect(document.querySelector('[aria-label="Community models"]')).toBeNull();
     } else {

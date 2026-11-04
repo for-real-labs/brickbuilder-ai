@@ -383,33 +383,27 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage imageLandingPath={path} />));
-      act(() => window.dispatchEvent(new Event('scroll')));
       expect(Boolean(container.textContent?.includes('The Easiest Way to Make LEGO'))).toBe(path !== 'use-ai-to-edit-ldraw');
       expect(Boolean(container.querySelector('[aria-label="BrickBuilder generation statistics"]'))).toBe(path !== 'use-ai-to-edit-ldraw');
       if (path !== 'use-ai-to-edit-ldraw') {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
         expect(container.querySelector('button[type="submit"][aria-label="Create"], button[type="submit"][aria-label="Generate"]')).not.toBeNull();
-        const help = container.querySelector('.landing-page-help')!;
-        expect(help.getAttribute('aria-hidden')).toBe('true');
-        const blog = help.querySelector<HTMLAnchorElement>('a[href="/blog"]')!;
-        expect(blog.textContent).toBe('Blog');
-        expect(blog.tabIndex).toBe(-1);
-        const socialLinks = Array.from(help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a'));
+        const help = container.querySelector('footer.landing-page-help')!;
+        const stats = container.querySelector('.landing-page-stats')!;
+        expect(stats.compareDocumentPosition(help) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+        const links = [...help.querySelectorAll<HTMLAnchorElement>('a')];
+        expect(links.every(link => link.tabIndex === 0)).toBe(true);
+        expect(links[0].getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
+        expect(links.at(-1)?.getAttribute('href')).toBe('/blog');
+        const socialLinks = [...help.querySelectorAll<HTMLAnchorElement>('nav[aria-label="Social links"] a')];
         expect(socialLinks.map(link => link.getAttribute('aria-label'))).toEqual(['GitHub', 'Instagram', 'YouTube', 'TikTok']);
-        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
+        expect(socialLinks.every(link => link.target === '_blank' && link.rel === 'noopener noreferrer')).toBe(true);
         const dialogue = container.querySelector('[aria-label="Build dialogue"]')!;
-        act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: 80 })));
-        expect(help.getAttribute('aria-hidden')).toBe('false');
-        expect(blog.tabIndex).toBe(0);
-        expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('true');
-        expect(help.querySelector('a')?.getAttribute('href')).toBe('mailto:support@brickbuilder.ai');
-        expect(help.querySelector('a')?.tabIndex).toBe(0);
-        expect(socialLinks.every(link => link.tabIndex === 0 && link.target === '_blank' && link.rel === 'noopener noreferrer')).toBe(true);
-        act(() => dialogue.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: -80 })));
-        expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('false');
-        expect(help.getAttribute('aria-hidden')).toBe('true');
-        expect(help.querySelector('a')?.tabIndex).toBe-1;
-        expect(socialLinks.every(link => link.tabIndex === -1)).toBe(true);
+        const gesture = new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: 80 });
+        act(() => dialogue.dispatchEvent(gesture));
+        expect(gesture.defaultPrevented).toBe(false);
+        expect(stats.getAttribute('aria-hidden')).toBe('false');
+        expect(help.hasAttribute('aria-hidden')).toBe(false);
         expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
@@ -417,7 +411,7 @@ describe('LandingPage', () => {
       expect(container.querySelector('#how-it-works')).toBeNull();
       expect(container.textContent).not.toContain('Build It In Real Life');
       expect(container.querySelector('img[src*="brickworld26"]')).toBeNull();
-      expect(container.querySelector('footer')).toBeNull();
+      expect(Boolean(container.querySelector('footer'))).toBe(path !== 'use-ai-to-edit-ldraw');
       expect(community).not.toHaveBeenCalled();
     } finally { act(() => root.unmount()); }
   });
@@ -697,7 +691,7 @@ describe('LandingPage', () => {
 
   it('keeps the welcome spacing, shows stats, and fades the headline first', () => {
     const css = readFileSync('src/pages/LandingPage.css', 'utf8');
-    expect(css).toContain('.landing-page.landing-page--welcome .landing-page-stats { position: relative; bottom: auto; translate: none; flex: 1 0 80px; }');
+    expect(css).toMatch(/\.landing-page--browse \.landing-page-stats\s*\{\s*position: static;/);
     expect(css).not.toContain('@media (max-height: 950px)');
     expect(css).toContain('min-height: 124px; padding: 24px 48px 16px');
     const container = document.createElement('div');
@@ -705,7 +699,7 @@ describe('LandingPage', () => {
     expect(container.querySelector('h1')?.className).toContain('landing-delay-2');
     expect(container.querySelector('.landing-hero-description')?.className).toContain('landing-delay-5');
     expect(container.querySelector('.landing-page-stats')?.getAttribute('aria-hidden')).toBe('false');
-    expect(container.querySelector('.landing-page-help')?.getAttribute('aria-hidden')).toBe('true');
+    expect(container.querySelector('footer.landing-page-help')?.hasAttribute('aria-hidden')).toBe(false);
   });
 
   it('centers the welcome and thinking pets against their bubbles', () => {

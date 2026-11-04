@@ -39,30 +39,21 @@
   translate: 0 0;
   transition: bottom 500ms cubic-bezier(0.22, 1, 0.36, 1), transform 500ms cubic-bezier(0.22, 1, 0.36, 1), translate 350ms cubic-bezier(0.22, 1, 0.36, 1);
 }
-.landing-page--help-visible .landing-model-conversation { translate: 0 -96px; }
 .landing-page-help {
-  position: fixed;
-  z-index: 40;
-  left: 16px;
-  right: 16px;
-  bottom: var(--landing-conversation-bottom);
+  position: relative;
+  z-index: 10;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
   flex-direction: column;
-  min-height: 92px;
+  align-items: center;
+  gap: 4px;
+  padding: 0 16px max(24px, env(safe-area-inset-bottom));
   color: #64748b;
   font-size: 13px;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(8px);
-  transition: opacity 250ms ease, transform 350ms ease, visibility 350ms;
+  text-align: center;
 }
 .landing-page-help a { display: inline-flex; align-items: center; min-height: 44px; color: #475569; text-decoration: underline; text-underline-offset: 3px; }
 .landing-page-help a:hover { color: #f44336; }
 .landing-page-help a:focus-visible { outline: 2px solid #f44336; outline-offset: 3px; border-radius: 4px; }
-.landing-page--help-visible .landing-page-help { opacity: 1; visibility: visible; transform: translateY(0); }
 @media (max-width: 767px) {
   /* Center the welcome dialogue in the available viewport. */
   .landing-page:not(.landing-page--conversation-started) {
@@ -136,7 +127,7 @@
   .landing-page:has(.landing-model-layout) .landing-model-workspace { height: 100%; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .landing-page-intro, .landing-page .landing-model-conversation, .landing-page-help { transition: none; }
+  .landing-page-intro, .landing-page .landing-model-conversation { transition: none; }
   .landing-empty-input-caret { animation: none; }
 }
 /* Keep the viewer and generation animation in the original stage area. */
@@ -238,24 +229,28 @@
 .landing-stat-divider { height: 30px; background: linear-gradient(transparent, #cbd5e1, transparent); }
 @media (min-width: 640px) { .landing-page-stats { gap: 32px; } }
 .landing-page-stats--hidden { display: none; }
-.landing-page--help-visible .landing-page-stats { opacity: 0; visibility: hidden; pointer-events: none; }
 
 .landing-hero-title { max-width: 760px; margin: 0; color: #172033; font-size: clamp(34px, 4.7vw, 56px); line-height: 1.12; font-weight: 750; letter-spacing: -.045em; text-wrap: balance; }
 .landing-hero-title > span { color: #eb443b; background: linear-gradient(110deg, #ff7462, #f0443b 60%, #df293d); background-clip: text; -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .landing-hero-description { max-width: 600px; margin: 0; color: #697386; font-size: clamp(14px, 1.5vw, 17px); line-height: 1.7; text-wrap: pretty; }
-.landing-page--welcome { overflow: hidden; }
-.landing-page.landing-page--welcome .landing-page-shell { min-height: 100%; height: 100%; padding-bottom: 0; }
-.landing-page.landing-page--welcome .landing-page-main { flex: 0 1 auto; min-height: 0; overflow-y: auto; scrollbar-width: none; }
+/* The welcome page scrolls as a document; the model workspace keeps its fixed shell. */
+.landing-page--browse { position: relative; inset: auto; height: auto; overflow: clip; transform: none; }
+.landing-page--browse .landing-page-shell { min-height: var(--landing-viewport-height, 100dvh); height: auto; }
+.landing-page--browse .landing-page-main { flex: none; overflow: visible; }
 .landing-page.landing-page--welcome .landing-page-intro { margin-top: clamp(36px, 6vh, 64px); }
 .landing-page.landing-page--welcome .landing-page-intro-content { gap: 20px; }
-.landing-page.landing-page--welcome .landing-page-content { position: static; padding: 32px 0 0; overflow: visible; flex: none; }
+.landing-page.landing-page--browse .landing-page-content { position: static; padding: 32px 0 0; overflow: visible; flex: none; }
 .landing-page.landing-page--welcome .landing-model-host { max-width: 620px; }
-.landing-page.landing-page--welcome .landing-model-conversation { position: static; width: 100%; max-height: none; padding: 0; overflow: visible; transform: none; translate: none; }
+.landing-page.landing-page--browse .landing-model-conversation { position: static; width: 100%; max-height: none; padding: 0; overflow: visible; transform: none; translate: none; }
 .landing-page.landing-page--welcome .landing-model-conversation > form { order: 0; }
 .landing-page.landing-page--welcome .landing-model-conversation > .pet-dialogue { --buddy-height: 60px; order: 1; flex: none; min-height: 0; max-height: none; margin: 20px 0 0; padding: 0; overflow: visible; }
-/* Equal space above and below the stats in the area beneath Generate. */
-.landing-page.landing-page--welcome .landing-page-stats { position: relative; bottom: auto; translate: none; flex: 1 0 80px; }
-.landing-page.landing-page--welcome .landing-page-help { position: absolute; bottom: max(12px, env(safe-area-inset-bottom)); margin: 0; transform: none; transition: opacity 400ms ease, visibility 400ms; }
+.landing-page--browse .landing-page-stats {
+  position: static;
+  translate: none;
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-block: 24px;
+}
 .landing-upload-prompt { position: relative; overflow: hidden; border: 1px solid #f0d5d2; border-radius: 24px; background: #ffffffed; box-shadow: 0 6px 30px #9b302908, 0 0 0 4px #fff6f3; transition: border-color .2s, box-shadow .2s; }
 .landing-upload-prompt:focus-within { border-color: #ef6b60; box-shadow: 0 0 0 4px #ffe9e4; }
 .landing-upload-target { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; width: 100%; min-height: 124px; padding: 24px 48px 16px; color: #475569; cursor: pointer; }
@@ -291,7 +286,7 @@
 .landing-page .pet-dialogue .pet-chat-message:has(.pet-typing-indicator) > .pet-avatar { top: 50%; bottom: auto; translate: 0 -50%; }
 
 @media (prefers-reduced-motion: reduce) {
-  .landing-page.landing-page--welcome .landing-page-help, .landing-page-stats { transition: none; }
+  .landing-page-stats { transition: none; }
 }
 
 .landing-upload-prompt--text-first { display: flex; flex-direction: column; }
