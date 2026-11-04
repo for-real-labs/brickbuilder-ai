@@ -3,8 +3,8 @@ import { ArrowRight, History, Package, X } from 'lucide-react';
 import posthog from 'posthog-js';
 import { GetGenerationsByImageApiService, type GenerationIteration } from '../services/getGenerationsByImageApi';
 
-export function LandingPreviousEdits({ id, version, token, busy, onView }: {
-  id: string; version?: number; token?: string; busy: boolean; onView: (id: string) => void;
+export function LandingPreviousEdits({ id, token, busy, onView }: {
+  id: string; token?: string; busy: boolean; onView: (id: string) => void;
 }) {
   const [edits, setEdits] = useState<GenerationIteration[]>([]);
   const dialog = useRef<HTMLDialogElement>(null);
@@ -13,18 +13,14 @@ export function LandingPreviousEdits({ id, version, token, busy, onView }: {
   useEffect(() => {
     let active = true;
     setEdits([]);
-    if (version !== undefined && version <= 1) return;
     void GetGenerationsByImageApiService.getGenerationsByImage(token, id).then(({ generations }) => {
       if (!active) return;
-      const currentVersion = version ?? generations.find(edit => edit.id === id)?.version;
-      if (currentVersion === undefined) return;
-      setEdits(generations.filter(edit => edit.id !== id && edit.version < currentVersion && edit.status === 'completed')
-        .sort((a, b) => b.version - a.version));
+      setEdits([...generations].sort((a, b) => b.version - a.version || a.id.localeCompare(b.id)));
     }).catch(() => { /* A private or unavailable history should not affect the viewer. */ });
     return () => { active = false; };
-  }, [id, version, token]);
+  }, [id, token]);
 
-  if (!edits.length) return null;
+  if (edits.length < 2) return null;
 
   return <>
     <button type="button" className="landing-action-button" disabled={busy} aria-haspopup="dialog"
@@ -42,10 +38,12 @@ export function LandingPreviousEdits({ id, version, token, busy, onView }: {
       </div>
       <ul className="space-y-2 p-3 sm:p-5">
         {edits.map(edit => {
+          const current = edit.id === id;
           const image = edit.preview_image_url || edit.external_image_url || edit.thumbnail_url || edit.image_url || edit.processed_image_url;
           return <li key={edit.id}>
             <button type="button" className="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-white p-3 text-left shadow-sm hover:border-red-200 focus-visible:outline-2 focus-visible:outline-red-500"
-              disabled={busy} onClick={() => {
+              aria-current={current ? 'true' : undefined} disabled={busy || edit.status !== 'completed'} onClick={() => {
+                if (current) { dialog.current?.close(); return; }
                 posthog.capture('landing_model_previous_edit_viewed', { generation_id: id, viewed_generation_id: edit.id, version: edit.version });
                 dialog.current?.close();
                 onView(edit.id);
@@ -54,11 +52,11 @@ export function LandingPreviousEdits({ id, version, token, busy, onView }: {
                 {image ? <img src={image} alt="" loading="lazy" className="h-full w-full object-contain" /> : <Package size={20} aria-hidden="true" />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-xs font-medium text-slate-500">Version {edit.version}</span>
+                <span className="block text-xs font-medium text-slate-500">Version {edit.version}{current ? ' · Current' : ''}{edit.status !== 'completed' ? ` · ${edit.status}` : ''}</span>
                 <span className="block truncate text-sm font-semibold text-slate-900">{edit.name?.trim() || edit.prompt || 'Untitled model'}</span>
                 <time dateTime={edit.created_at} className="block text-xs text-slate-600">{new Date(edit.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
               </span>
-              <ArrowRight size={16} aria-hidden="true" className="shrink-0 text-slate-500" />
+              {!current && edit.status === 'completed' && <ArrowRight size={16} aria-hidden="true" className="shrink-0 text-slate-500" />}
             </button>
           </li>;
         })}

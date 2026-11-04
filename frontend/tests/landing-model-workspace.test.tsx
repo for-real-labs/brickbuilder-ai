@@ -1309,7 +1309,7 @@ it('shows the generating state after refreshing an explicit pending link even be
   expect(container.querySelector('#landing-build-prompt')).toBeNull();
 });
 
-it('lists earlier completed edits before Community and opens the exact selected revision', async () => {
+it('keeps all edit versions in order when opening an older revision', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => ({
     ...generation(id), version: id === 'castle' ? 4 : 1,
@@ -1332,9 +1332,15 @@ it('lists earlier completed edits before Community and opens the exact selected 
     const dialog = toolbar.querySelector<HTMLDialogElement>('.landing-previous-edits-dialog')!;
     expect(dialog.open).toBe(true);
     const rows = [...dialog.querySelectorAll('li button')];
-    expect(rows.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['second', 'original']);
-    await act(async () => rows[1].click());
+    expect(rows.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
+    expect(rows[1].getAttribute('aria-current')).toBe('true');
+    expect(rows[2].disabled).toBe(true);
+    await act(async () => rows[4].click());
     expect(query.value).toBe('id=original&exact=1');
-    expect(container.querySelector('.landing-previous-edits-dialog')).toBeNull();
+    const previous = [...container.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!;
+    await act(async () => previous.click());
+    const reopened = [...container.querySelectorAll<HTMLButtonElement>('.landing-previous-edits-dialog li button')];
+    expect(reopened.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
+    expect(reopened[4].getAttribute('aria-current')).toBe('true');
   } finally { versions.mockRestore(); }
 });

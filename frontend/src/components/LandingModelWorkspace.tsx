@@ -214,7 +214,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             {featureAccess !== 'allowed' && <PaidFeatureLock />}
           </button>
           {onViewPreviousEdit && <LandingPreviousEdits key={generation.generation_id} id={generation.generation_id}
-            version={generation.version} token={accessToken} busy={busy} onView={onViewPreviousEdit} />}
+            token={accessToken} busy={busy} onView={onViewPreviousEdit} />}
           {generation.endpoint !== 'uploadLdraw' && <LandingCommunityAction key={generation.generation_id}
             id={generation.generation_id} busy={busy} onNameSaved={onNameSaved}
             preview={() => preview.current?.id === generation.generation_id ? preview.current.png : undefined} />}
