@@ -1341,6 +1341,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         </div>
         <LandingSocialLinks />
         <a href="/blog" onClick={() => posthog.capture('landing_blog_clicked')}>Blog</a>
+        <p className="mx-auto max-w-md px-4 text-center text-xs leading-relaxed text-slate-600">
+          LEGO® is a trademark of the LEGO Group, which does not sponsor, authorize, or endorse this site.
+        </p>
       </footer>}
     </div>
   );
