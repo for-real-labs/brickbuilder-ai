@@ -421,16 +421,15 @@ def handle_auth_and_tracking(
     # Merge endpoint-specific properties with common properties
     full_track_properties = {**common_track_properties, **track_properties}
     
-    # Add rate limit info for anonymous users
-    if is_anonymous and "rate_limit" in auth_info:
-        rate_limit = auth_info["rate_limit"]
+    # Anonymous requests carry short-window limits; lifetime credit admission
+    # is handled by the database and is not part of this request's telemetry.
+    short_window = auth_info.get("rate_limit", {}).get("short_window")
+    if is_anonymous and short_window:
         full_track_properties.update({
-            "anonymous_calls_made": rate_limit["calls_made"],
-            "anonymous_calls_remaining": rate_limit["remaining"],
-            "anonymous_lifetime_limit": rate_limit["limit"],
-            "anonymous_first_call": rate_limit.get("first_call", "unknown")
+            "anonymous_window_calls_remaining": short_window.get("remaining"),
+            "anonymous_window_call_limit": short_window.get("limit"),
         })
-    
+
     # Track API call
     track_api_call(
         endpoint=endpoint,

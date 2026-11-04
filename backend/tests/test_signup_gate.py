@@ -8,7 +8,7 @@ from src import api
 from src.utils import auth
 
 GUEST = {'authenticated': False, 'is_anonymous': True, 'user_id': 'guest_test',
-         'user_email': 'anonymous', 'rate_limit': {'limit': 1000, 'calls_made': 0, 'remaining': 1000}}
+         'user_email': 'anonymous', 'rate_limit': {'short_window': {'limit': 1000, 'remaining': 999, 'window_seconds': 60}}}
 
 
 @pytest.mark.parametrize('path,payload', [
