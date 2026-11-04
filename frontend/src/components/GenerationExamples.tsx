@@ -16,7 +16,6 @@ function ModelLoop({ asset, reducedMotion }: { asset: string; reducedMotion: boo
     <img className="generation-example-poster" src={poster} alt="" loading="lazy" width="640" height="640" />
     {!reducedMotion && !failed && <video src={`/examples/${asset}.mp4`} poster={poster} autoPlay muted loop playsInline
       preload="metadata" disablePictureInPicture onError={() => setFailed(true)} />}
-    <img className="generation-example-pet" src="/pets/pip.webp" alt="" width="64" height="64" loading="lazy" />
   </div>;
 }
 
