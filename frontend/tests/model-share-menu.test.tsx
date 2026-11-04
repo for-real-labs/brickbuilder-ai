@@ -121,7 +121,11 @@ it('adds the signed-in sender ID to copied and social links', async () => {
   open();
   const url = container.querySelector('input')!.value;
   expect(new URL(url).searchParams.get('ref')).toBe(auth.user.id);
-  expect(new URL(container.querySelector<HTMLAnchorElement>('a')!.href).searchParams.get('u')).toBe(url);
+  const [facebook, twitter] = container.querySelectorAll<HTMLAnchorElement>('a');
+  expect(new URL(facebook.href).searchParams.get('u')).toBe(url);
+  expect(new URL(twitter.href).searchParams.get('url')).toBe(url);
+  await act(async () => button('Instagram').click());
+  expect(writeText).toHaveBeenCalledWith(url);
   await act(async () => button('Copy link').click());
   expect(writeText).toHaveBeenCalledWith(url);
 });
@@ -133,19 +137,12 @@ it('never adds a referral for guests, including anonymous Auth users', () => {
   expect(new URL(container.querySelector('input')!.value).searchParams.has('ref')).toBe(false);
 });
 
-it('explains rewards on hover and click with the required account wording', () => {
+it('shows the reward explanation directly in the share popup', () => {
   open();
-  const info = container.querySelector<HTMLButtonElement>('[aria-label="About referral credits"]')!;
-  expect(container.textContent).toContain('+ 300');
-  expect(container.textContent).not.toContain('Anyone who');
-  act(() => info.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
-  expect(container.textContent).toContain('Anyone who creates an account from your shared link will give you + 300 credits! You must have an account to receive credits.');
-  act(() => info.click());
-  act(() => info.dispatchEvent(new MouseEvent('mouseout', { bubbles: true })));
-  expect(container.textContent).toContain('Anyone who');
-  expect(posthog.capture).toHaveBeenCalledWith('generated_model_referral_info_clicked', { authenticated: false });
-  act(() => info.click());
-  expect(container.textContent).not.toContain('Anyone who');
+  const popup = container.querySelector('[role="dialog"]')!;
+  expect(popup.textContent).toContain('Earn 300 credits when someone creates an account through your shared link.');
+  expect(popup.textContent).toContain('Sign in before sharing to earn credits.');
+  expect(popup.querySelector('[aria-label="About referral credits"]')).toBeNull();
 });
 
 

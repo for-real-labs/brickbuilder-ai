@@ -1,4 +1,4 @@
-.landing-model-workspace { position: relative; isolation: isolate; width: 100%; min-width: 0; min-height: 0; height: 460px; display: grid; grid-template-rows: minmax(0, 1fr); overflow: hidden; border: 1px solid #e2e8f0; border-radius: 28px; background: #f8fafc; box-shadow: 0 16px 48px #0f172a0c; }
+.landing-model-workspace { container-type: size; position: relative; isolation: isolate; width: 100%; min-width: 0; min-height: 0; height: 460px; display: grid; grid-template-rows: minmax(0, 1fr); overflow: hidden; border: 1px solid #e2e8f0; border-radius: 28px; background: #f8fafc; box-shadow: 0 16px 48px #0f172a0c; }
 .landing-model-stage { position: relative; min-width: 0; min-height: 0; overflow: hidden; }
 .landing-instructions-view { width: 100%; height: 100%; }
 .landing-model-stage { border-radius: inherit; }
@@ -62,6 +62,7 @@
   .landing-model-bottom-toolbar > .landing-action-button { flex: 1 1 auto; min-width: 0; padding-inline: 8px; font-size: 12px; white-space: normal; }
 }
 .landing-model-share-overlay { position: absolute; right: 12px; bottom: 12px; z-index: 45; }
+.landing-model-share .model-share-popup { max-height: calc(100cqh - 76px); overflow-y: auto; overscroll-behavior: contain; }
 .landing-model-share button[aria-haspopup="dialog"] { height: 44px; min-height: 44px; font-family: inherit; font-size: 14px; font-weight: 500; line-height: 20px; }
 .landing-model-panel [hidden] { display: none; }
 .landing-expanded-footer { display: flex; flex-shrink: 0; justify-content: center; padding-top: 12px; }

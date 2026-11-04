@@ -33,17 +33,17 @@ function setMeta(document: string, attribute: 'name' | 'property', key: string, 
   return expression.test(document) ? document.replace(expression, tag) : document.replace('</head>', `${tag}</head>`);
 }
 
-function modelDocument(shell: string, name: string, image: string, url: string): string {
+function modelDocument(shell: string, name: string, image: string, url: string, socialUrl = url): string {
   const title = `Check out my model: ${name}`;
   const description = `Check out my ${name} brick model on BrickBuilder AI. Explore the 3D model, see the preview, and get inspired to build your own creation.`;
   let document = shell.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeAttribute(title)}</title>`);
   for (const [attribute, key, value] of [
     ['name', 'title', title], ['name', 'description', description],
     ['property', 'og:title', title], ['property', 'og:description', description],
-    ['property', 'og:image', image], ['property', 'og:url', url],
+    ['property', 'og:image', image], ['property', 'og:url', socialUrl],
     ['property', 'og:image:alt', `${name} brick model preview on BrickBuilder AI`],
     ['name', 'twitter:title', title], ['name', 'twitter:description', description],
-    ['name', 'twitter:image', image], ['name', 'twitter:url', url],
+    ['name', 'twitter:image', image], ['name', 'twitter:url', socialUrl],
     ['name', 'twitter:image:alt', `${name} brick model preview on BrickBuilder AI`],
   ] as const) document = setMeta(document, attribute, key, value);
   document = document.replace(/<meta\b[^>]*property="og:image:(?:width|height)"[^>]*>\s*/gi, '');
@@ -122,7 +122,10 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     const image = isHostedPreview
       ? `https://brickbuilder.ai/share-image/${id}.png?card=3&v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
       : imageUrl.href;
-    let document = modelDocument(shell, name, image, canonical);
+    const referrer = url.searchParams.get('ref');
+    const socialUrl = new URL(canonical);
+    if (referrer && MODEL_ID.test(referrer)) socialUrl.searchParams.set('ref', referrer);
+    let document = modelDocument(shell, name, image, canonical, socialUrl.href);
     if (isHostedPreview) {
       document = setMeta(document, 'property', 'og:image:width', '1200');
       document = setMeta(document, 'property', 'og:image:height', '630');

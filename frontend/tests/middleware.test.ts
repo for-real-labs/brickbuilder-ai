@@ -216,14 +216,16 @@ describe('preview password middleware', () => {
     expect(response?.headers.get('cache-control')).toBe('public, s-maxage=30');
   });
 
-  it('gives the refreshed share path its own preview URL', async () => {
+  it('preserves the referral in social previews while keeping the search canonical clean', async () => {
     process.env.VERCEL_ENV = 'production';
     const id = '123e4567-e89b-12d3-a456-426614174000';
+    const referrer = '11111111-1111-4111-8111-111111111111';
     const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ name: 'Cat', preview_image_url: 'https://smzdytfghwslpbqnwdov.supabase.co/storage/cat.png' })))
-      .mockResolvedValueOnce(new Response('<html><head></head><body></body></html>'));
+      .mockResolvedValueOnce(new Response('<html><head><link rel="canonical" href="https://brickbuilder.ai/" /></head><body></body></html>'));
     vi.stubGlobal('fetch', fetcher);
-    const response = await middleware(new Request(`https://brickbuilder.ai/generated-model?id=${id}&exact=1&card=3`));
+    const response = await middleware(new Request(`https://brickbuilder.ai/generated-model?id=${id}&exact=1&card=3&ref=${referrer}`));
     const html = await response?.text();
-    expect(html).toContain(`property="og:url" content="https://brickbuilder.ai/generated-model?id=${id}&amp;exact=1&amp;card=3"`);
+    expect(html).toContain(`property="og:url" content="https://brickbuilder.ai/generated-model?id=${id}&amp;exact=1&amp;card=3&amp;ref=${referrer}"`);
+    expect(html).toContain(`rel="canonical" href="https://brickbuilder.ai/generated-model?id=${id}&amp;exact=1&amp;card=3"`);
   });
 });

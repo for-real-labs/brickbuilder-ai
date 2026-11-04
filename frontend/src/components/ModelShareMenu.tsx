@@ -1,6 +1,6 @@
 import { useAuth } from '../contexts/AuthContext';
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { Check, ChevronDown, Coins, Facebook, Info, Instagram, Link, Share2 } from 'lucide-react';
+import { Check, ChevronDown, Coins, Facebook, Instagram, Link, Share2 } from 'lucide-react';
 import posthog from 'posthog-js';
 import { copyShareLink } from '../utils/copyShareLink';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
@@ -9,8 +9,6 @@ interface Props { generationId: string; modelName: string; placement?: 'above' |
 
 export function ModelShareMenu({ generationId, modelName, placement = 'below' }: Props) {
   const { user } = useAuth();
-  const [referralInfo, setReferralInfo] = useState(false);
-  const [referralHover, setReferralHover] = useState(false);
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [copied, setCopied] = useState(false);
@@ -27,7 +25,7 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
   const rowClass = 'flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500';
   const track = (destination: string) => posthog.capture('generated_model_share_clicked', { generation_id: generationId, destination });
 
-  useEffect(() => { setOpen(false); setMessage(''); setCopied(false); setReferralInfo(false); setReferralHover(false); }, [generationId, user?.id]);
+  useEffect(() => { setOpen(false); setMessage(''); setCopied(false); }, [generationId, user?.id]);
   useEffect(() => {
     if (!open) return;
     container.current?.querySelector<HTMLButtonElement>('[data-share-action]')?.focus();
@@ -66,7 +64,7 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
     <button ref={trigger} type="button" aria-expanded={open} aria-controls={menuId} aria-haspopup="dialog"
       className="relative inline-flex min-h-11 items-center gap-2 rounded-full border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500"
       onClick={() => {
-        if (!open) { setReferralInfo(false); setReferralHover(false); setMessage(''); setCopied(false); posthog.capture('generated_model_share_opened', { generation_id: generationId }); }
+        if (!open) { setMessage(''); setCopied(false); posthog.capture('generated_model_share_opened', { generation_id: generationId }); }
         setOpen(!open);
       }}>
       <Share2 size={16} aria-hidden="true" /> Share <ChevronDown size={14} aria-hidden="true" />
@@ -75,7 +73,10 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
         + 300 <Coins size={12} aria-hidden="true" />
       </span>
     </button>
-    {open && <div id={menuId} role="dialog" aria-label="Share model" className={`absolute right-0 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${placement === 'above' ? 'bottom-full mb-4' : 'top-full mt-2'}`}>
+    {open && <div id={menuId} role="dialog" aria-label="Share model" className={`model-share-popup absolute right-0 z-40 w-72 max-w-[calc(100vw-2rem)] rounded-2xl border border-slate-200 bg-white p-2 shadow-xl ${placement === 'above' ? 'bottom-full mb-4' : 'top-full mt-2'}`}>
+      <p className="mb-1 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-relaxed text-slate-700">
+        Earn 300 credits when someone creates an account through your shared link. Sign in before sharing to earn credits.
+      </p>
       <button type="button" data-share-action className={rowClass} onClick={() => void copy('url')}>
         {copied ? <Check size={18} aria-hidden="true" /> : <Link size={18} aria-hidden="true" />} {copied ? 'Link copied' : 'Copy link'}
       </button>
@@ -87,17 +88,7 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
         <span aria-hidden="true" className="w-[18px] text-center font-bold">𝕏</span> X (Twitter)
       </a>
       <div className="mt-1 border-t border-slate-100 px-2 pt-3 pb-1">
-        <div className="relative mb-1 flex items-center justify-between gap-2">
-          <label htmlFor={`${menuId}-url`} className="block text-xs font-medium text-slate-500">Model link</label>
-          <button type="button" aria-label="About referral credits" aria-expanded={referralInfo || referralHover} aria-controls={`${menuId}-referral`}
-            className="inline-flex min-h-8 min-w-8 items-center justify-center rounded-full hover:bg-amber-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amber-600"
-            onMouseLeave={() => setReferralHover(false)}
-            onMouseEnter={() => { setReferralHover(true); posthog.capture('generated_model_referral_info_opened', { source: 'hover', authenticated: Boolean(user && !user.is_anonymous) }); }}
-            onClick={() => { setReferralHover(false); setReferralInfo(value => !value); posthog.capture('generated_model_referral_info_clicked', { authenticated: Boolean(user && !user.is_anonymous) }); }}>
-            <Info size={16} aria-hidden="true" />
-          </button>
-          {(referralInfo || referralHover) && <p id={`${menuId}-referral`} role="tooltip" className="absolute bottom-full left-0 right-0 z-50 mb-1 rounded-xl border border-amber-200 bg-amber-50 p-3 text-left text-xs leading-relaxed text-slate-700 shadow-lg">Anyone who creates an account from your shared link will give you + 300 credits! You must have an account to receive credits.</p>}
-        </div>
+        <label htmlFor={`${menuId}-url`} className="mb-1 block text-xs font-medium text-slate-500">Model link</label>
         <input ref={input} id={`${menuId}-url`} readOnly value={url} onFocus={event => event.currentTarget.select()} onClick={() => track('select_link')} className="w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-600" />
         {message && <p role="status" className="mt-2 text-xs leading-relaxed text-slate-600">{message}</p>}
       </div>
