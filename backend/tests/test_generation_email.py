@@ -247,7 +247,7 @@ def test_automatic_registration_is_atomic_and_queues_each_completed_edit(tmp_pat
     try:
         with psycopg.connect(server.get_uri(), autocommit=True) as db:
             db.execute('CREATE SCHEMA auth; CREATE TABLE auth.users(id uuid,email text,email_confirmed_at timestamptz)')
-            db.execute('CREATE TABLE public.generations(id uuid PRIMARY KEY,user_id text,user_type text,status text,name text)')
+            db.execute('CREATE TABLE public.generations(id uuid PRIMARY KEY,user_id text,user_type text,status text,name text,endpoint text)')
             for role in ('anon', 'authenticated', 'service_role'):
                 db.execute(f'CREATE ROLE {role}')
             migrations = Path(__file__).resolve().parents[2] / 'supabase/migrations'
@@ -255,9 +255,21 @@ def test_automatic_registration_is_atomic_and_queues_each_completed_edit(tmp_pat
             db.execute((migrations / '20261102000000_automatic_generation_emails.sql').read_text())
             owner = str(uuid4())
             db.execute("INSERT INTO auth.users VALUES (%s,'owner@example.com',now())", (owner,))
-            for title in ('Original build', 'Edited build'):
+            stale = str(uuid4())
+            db.execute("INSERT INTO public.generations(id,user_id,user_type,status,endpoint) VALUES (%s,%s,'authenticated','started','uploadLdraw')", (stale, owner))
+            db.execute("UPDATE public.generations SET status='completed' WHERE id=%s", (stale,))
+            db.execute((migrations / '20261104020000_generation_email_only_for_ai_builds.sql').read_text())
+            assert db.execute("SELECT state FROM public.generation_email_outbox WHERE generation_id=%s", (stale,)).fetchone()[0] == 'failed'
+            for endpoint in ('uploadLdraw', 'updateModel', 'resizeModel', 'glbToBricks'):
                 job = str(uuid4())
-                db.execute("INSERT INTO public.generations(id,user_id,user_type,status,name,notification_origin) VALUES (%s,%s,'authenticated','started',%s,'https://staging.example')", (job, owner, title))
+                db.execute("INSERT INTO public.generations(id,user_id,user_type,status,endpoint) VALUES (%s,%s,'authenticated','started',%s)", (job, owner, endpoint))
+                assert db.execute('SELECT notification_email FROM public.generations WHERE id=%s', (job,)).fetchone()[0] is None
+                assert not db.execute("SELECT subscribe_generation_email(%s,'owner@example.com','https://staging.example')", (job,)).fetchone()[0]
+                db.execute("UPDATE public.generations SET status='completed' WHERE id=%s", (job,))
+                assert db.execute("SELECT state FROM public.generation_email_outbox WHERE generation_id=%s", (job,)).fetchone() is None
+            for title, endpoint in (('Original build', 'textToBricks'), ('Edited build', 'novaToBricks')):
+                job = str(uuid4())
+                db.execute("INSERT INTO public.generations(id,user_id,user_type,status,name,notification_origin,endpoint) VALUES (%s,%s,'authenticated','started',%s,'https://staging.example',%s)", (job, owner, title, endpoint))
                 assert db.execute('SELECT notification_email FROM public.generations WHERE id=%s', (job,)).fetchone()[0] == 'owner@example.com'
                 db.execute("UPDATE public.generations SET status='completed' WHERE id=%s", (job,))
                 db.execute("UPDATE public.generations SET status='completed' WHERE id=%s", (job,))

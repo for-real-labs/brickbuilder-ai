@@ -31,6 +31,8 @@ async def save_notification_email(generation_id, request, auth_info):
     row = await notification_row(generation_id, auth_info)
     if not sender() or not os.getenv('RESEND_API_KEY'):
         raise HTTPException(503, 'Email notifications are not ready yet. Please try again later.')
+    if row.get('endpoint') in ('uploadLdraw', 'updateModel', 'resizeModel', 'glbToBricks', 'objToBricks'):
+        raise HTTPException(409, 'Ready emails are only available for AI builds and edits.')
     if row['status'] in ('failed', 'cancelled'):
         raise HTTPException(409, 'This build has stopped. Start or resume it first.')
     email = row.get('notification_email') or (auth_info.get('user_email') if auth_info.get('authenticated') else request.email)
