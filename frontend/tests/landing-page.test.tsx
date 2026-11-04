@@ -107,10 +107,10 @@ describe('LandingPage', () => {
       container.innerHTML = renderToStaticMarkup(<LandingPage />);
       expect(container.querySelector('h1')?.textContent).toBe(platform === 'ios'
         ? 'The Easiest Way to Make LEGO-compatible Models'
-        : 'The Easiest Way to Make LEGO');
+        : 'The Easiest Way to Make LEGO®');
       expect(container.querySelector('.landing-hero-description')?.textContent).toContain(platform === 'ios'
         ? 'ready-to-build LEGO-compatible models'
-        : 'ready-to-build LEGO models');
+        : 'ready-to-build LEGO® models');
     } finally {
       delete window.__BRICKBUILDER_NATIVE_APP__;
       userAgent.mockRestore();
@@ -383,7 +383,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage imageLandingPath={path} />));
-      expect(Boolean(container.textContent?.includes('The Easiest Way to Make LEGO'))).toBe(path !== 'use-ai-to-edit-ldraw');
+      expect(Boolean(container.textContent?.includes('The Easiest Way to Make LEGO®'))).toBe(path !== 'use-ai-to-edit-ldraw');
       expect(Boolean(container.querySelector('[aria-label="BrickBuilder generation statistics"]'))).toBe(path !== 'use-ai-to-edit-ldraw');
       if (path !== 'use-ai-to-edit-ldraw') {
         expect(container.querySelector('[aria-label="Build dialogue"]')).not.toBeNull();
@@ -404,7 +404,7 @@ describe('LandingPage', () => {
         expect(gesture.defaultPrevented).toBe(false);
         expect(stats.getAttribute('aria-hidden')).toBe('false');
         expect(help.hasAttribute('aria-hidden')).toBe(false);
-        expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
+        expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO®');
         expect(container.querySelector('[aria-label="Build dialogue"]')).toBe(dialogue);
       }
       expect(container.querySelector('[aria-label="Community models"]')).toBeNull();
@@ -761,7 +761,7 @@ describe('LandingPage', () => {
     expect(markup).not.toContain('credit-nudge');
     expect(markup).toContain('landing-header-brand');
     expect(markup).toContain('Try something random');
-    expect(markup).toContain('BrickBuilder is an AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes');
+    expect(markup).toContain('BrickBuilder is an AI LEGO® generator that turns text or images into ready-to-build LEGO® models in under 30 minutes');
     expect(markup).toContain('Upload an image');
     expect(markup).toContain('Describe your idea');
     expect(markup).not.toContain('Show builds');
@@ -775,7 +775,7 @@ describe('LandingPage', () => {
     expect(stats.previousElementSibling?.tagName).toBe('MAIN');
     expect(stats.querySelector('.tabular-nums')?.className).toContain('text-[14px]');
     expect(stats.querySelector('.tabular-nums')?.className).toContain('sm:text-[16.8px]');
-    expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
+    expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO®');
     expect(form.closest('[aria-label="Build dialogue"]')).not.toBeNull();
     expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBeNull();
     expect(container.textContent).not.toContain('brick building buddy');

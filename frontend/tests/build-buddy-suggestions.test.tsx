@@ -128,7 +128,7 @@ it('docks the dialogue after user input while hiding the restored headline and s
   const dialogue = container.querySelector('.landing-model-conversation')!;
   expect(page.classList.contains('landing-page--conversation-started')).toBe(false);
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
-  expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO');
+  expect(container.querySelector('h1')?.textContent).toBe('The Easiest Way to Make LEGO®');
   act(() => input().focus());
   await submit();
   expect(page.classList.contains('landing-page--conversation-started')).toBe(false);

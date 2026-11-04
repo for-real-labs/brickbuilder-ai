@@ -126,7 +126,7 @@ it('keeps the upload-first welcome screen stable while typing and after clearing
 it('keeps the landing headline and stats visible while the prompt is focused', async () => {
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
-  expect(container.textContent).toContain('The Easiest Way to Make LEGO');
+  expect(container.textContent).toContain('The Easiest Way to Make LEGO®');
   act(() => input().focus());
   expect(container.querySelector('[aria-label="BrickBuilder generation statistics"]')).not.toBeNull();
   act(() => input().blur());

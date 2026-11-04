@@ -1074,7 +1074,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   {welcomeScreen && <div className="landing-hero-pet landing-fade-in landing-delay-2"><PetAvatar state={focused ? 'listening' : petState} /></div>}
                   <h1 className={`landing-hero-title landing-fade-in landing-delay-2${partsInventory ? ' landing-inventory-title' : ''}`}>{partsInventory
                     ? <>Using <span>{partsInventory.name}</span> to design a new LEGO</>
-                    : <>The Easiest Way to <span>{nativeIosApp ? 'Make LEGO-compatible Models' : 'Make LEGO'}</span></>}</h1>
+                    : <>The Easiest Way to <span>{nativeIosApp ? 'Make LEGO-compatible Models' : 'Make LEGO®'}</span></>}</h1>
                 </div>
                 {partsInventory ? <div className="existing-parts-summary">
                   <span>{inventoryQuantity(partsInventory).toLocaleString()} pieces · Exact parts and colors · No extra pieces</span>
@@ -1082,7 +1082,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <button type="button" onClick={() => { setPartsInventory(null); posthog.capture('existing_parts_removed'); }}>Remove</button>
                 </div> : <p className="landing-hero-description landing-fade-in landing-delay-5">{nativeIosApp
                   ? 'BrickBuilder is an AI brick model generator that turns text or images into ready-to-build LEGO-compatible models in under 30 minutes'
-                  : 'BrickBuilder is an AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes'}</p>}
+                  : 'BrickBuilder is an AI LEGO® generator that turns text or images into ready-to-build LEGO® models in under 30 minutes'}</p>}
 
               </div>
             </div>}
