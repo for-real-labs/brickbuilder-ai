@@ -102,7 +102,7 @@ it.each([10,20])('shows the server-quoted %s percent savings and crossed-out ful
   act(() => root.render(<ModelOrderCard quote={memberQuote} loading={false} updating={false} error={null} onOrder={vi.fn()} />));
   expect(container.querySelector('del.model-order-original')?.textContent).toBe('$37.50');
   expect(container.querySelector('.model-order-total')?.textContent).toBe('$30.00');
-  expect(container.textContent).toContain(`Paid plan · ${percent}% off LEGO® set bricks`);
+  expect(container.textContent).toContain(`−$7.50 ${percent}% subscriber discount`);
   expect(container.querySelector('.model-mobile-member')?.textContent).toContain(`${percent}% member savings`);
   expect(container.querySelector('.model-mobile-original')?.textContent).toBe('$47.50');
 });

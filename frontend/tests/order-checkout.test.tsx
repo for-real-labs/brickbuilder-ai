@@ -83,7 +83,9 @@ it('rejects cached catalog-only quotes and inconsistent server totals', () => {
 
 it('uses a text-only brand link in the checkout header', async () => {
   await renderOrder();
-  expect(container.textContent).toContain('Paid plans save 10–20% on LEGO® set bricks.');
+  expect(container.querySelector('.checkout-pricing-note')).toBeNull();
+  expect(container.textContent).not.toContain('Shipping estimated for');
+  expect(container.querySelector('[aria-label="About LEGO® compatible bricks"]')).not.toBeNull();
   const brand = container.querySelector('a[aria-label="BrickBuilder home"]')!;
   expect(brand.textContent).toBe('BRICKBUILDER');
   expect(brand.querySelector('svg, img')).toBeNull();
@@ -469,8 +471,10 @@ it.each([10,20])('keeps the server-quoted %s percent savings when a promo is app
   mocks.removePromotionCode.mockResolvedValue({ type: 'success', session: { total: { total: { minorUnitsAmount: 4600 } } } });
   await renderOrder();
   expect(container.querySelector('.checkout-total del')?.textContent).toBe('$56.00');
-  expect(container.querySelector('.checkout-member-badge')?.textContent).toContain(`${percent}%`);
-  expect(container.querySelector('.checkout-member-discount')?.textContent).toContain(`${percent}% off LEGO® set bricks`);
+  expect(container.querySelector('.checkout-member-badge')).toBeNull();
+  expect(container.querySelector('.checkout-member-discount dt')?.textContent).toBe(`${percent}% subscriber discount`);
+  expect(container.querySelector('.checkout-member-discount dd')?.textContent).toBe('−$10.00');
+  expect(container.querySelector('.checkout-member-discount')?.previousElementSibling?.textContent).toContain('LEGO® compatible bricks');
   expect(container.querySelector('#checkout-price-breakdown .checkout-member-badge')).toBeNull();
   expect(container.querySelector('.checkout-member-discount')?.textContent).toContain('−$10.00');
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
@@ -503,7 +507,7 @@ it('refreshes country shipping and ignores an older request that finishes later'
   expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('g', 'auth-token', 'PL');
   await act(async () => finishOlder({ ...quote, order_pricing: orderPricing(4900, 480, 0, 'GB') }));
   expect(container.querySelector('.checkout-total')?.textContent).toContain('$55.00');
-  expect(container.querySelector('.checkout-pricing-note')?.textContent).toContain('Poland');
+  expect(country.value).toBe('PL');
 });
 
 it('uses embedded plan payments with email only and monthly terms, without shipping or a promo form', async () => {

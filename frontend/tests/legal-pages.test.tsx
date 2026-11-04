@@ -24,8 +24,9 @@ describe('directory legal pages', () => {
     expect(terms).toContain('Operator: Jake Johnson');
     expect(terms).toContain('at least 13 years old');
     expect(terms).toContain('An active subscription is required');
-    expect(terms).toContain('Builder subscriptions include 10% off the regular price of LEGO® set bricks');
-    expect(terms).toContain('discounted LEGO® set price');
+    const text = new DOMParser().parseFromString(terms, 'text/html').body.textContent;
+    expect(text).toContain('Builder subscriptions include 10% off the regular price of LEGO® compatible bricks');
+    expect(text).toContain('discounted price of LEGO® compatible bricks');
     expect(terms).toContain('Creator and existing Master Builder subscriptions include 20% off.');
     expect(terms).toContain('renew automatically each month until canceled');
     expect(terms).toContain('My billing → Cancel subscription');

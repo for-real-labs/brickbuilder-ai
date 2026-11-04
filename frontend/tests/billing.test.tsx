@@ -74,7 +74,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
   expect(container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')).toHaveLength(2);
   expect(container.querySelector('.billing-dialog > .billing-fine-print')?.textContent).toBe('Cancel anytime');
   expect(container.textContent).not.toContain('View credit history & manage subscription');
-  expect(container.querySelector('.billing-dialog .billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® purchases');
+  expect(container.querySelector('.billing-dialog .billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® compatible bricks');
   expect(container.querySelector('.billing-dialog .billing-fine-print')?.textContent).not.toContain('Legacy bonuses never expire.');
   await selectPlan('Creator');
   expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=creator');
@@ -177,7 +177,7 @@ it('shows the monthly allowances and generation estimates on every plan', async 
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$2.99', '$19.99']);
   expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['15 LEGO® generations per month', '100 LEGO® generations per month']);
   expect(cards.map(card => [...card.querySelectorAll('li')].map(item => item.textContent))).toEqual([
-    ['10% off every LEGO® purchase'], ['20% off every LEGO® purchase'],
+    ['10% off LEGO® compatible bricks'], ['20% off LEGO® compatible bricks'],
   ]);
 });
 
@@ -205,7 +205,7 @@ it.each(['Pricing', 'Explore plans', 'Compare all plans & credit details'])('ope
   await click(label);
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(container.querySelectorAll('.billing-dialog .billing-plan')).toHaveLength(2);
-  expect(container.querySelector('.billing-dialog .billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® purchases');
+  expect(container.querySelector('.billing-dialog .billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® compatible bricks');
   expect(container.querySelector('.billing-dialog h1')?.classList.contains('sr-only')).toBe(true);
   expect(container.textContent).not.toContain('Your next big idea starts here.');
   expect(container.querySelector('a[href="/pricing"]')).toBeNull();
@@ -229,7 +229,7 @@ it.each([
   const section = container.querySelector('.billing-account-plan')!.closest('section')!;
   expect(section.querySelector('.billing-plan-allowance')?.textContent).toBe(`${credits.toLocaleString()} credits each month. ${generations} LEGO® generations per month.`);
   expect(section.textContent).not.toContain('No payment method needed');
-  expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'builder' ? 10 : 20}% off LEGO® sets`);
+  expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'builder' ? 10 : 20}% off LEGO® compatible bricks`);
   await click(label);
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(posthog.capture).toHaveBeenCalledWith('billing_plan_action_clicked', { plan_key: key, action: label === 'Change plan' ? 'change' : 'upgrade' });
@@ -480,8 +480,8 @@ it('highlights each tier discount without restoring instructions or exports', as
     const benefit = plan.querySelector('li')!;
     expect(plan.querySelectorAll('li')).toHaveLength(1);
     expect(benefit.className).toBe('billing-feature-saving');
-    expect(benefit.querySelector('strong')?.textContent).toBe(`${percent}% off every LEGO® purchase`);
-    expect(benefit.textContent).toBe(`${percent}% off every LEGO® purchase`);
+    expect(benefit.querySelector('strong')?.textContent).toBe(`${percent}% off LEGO® compatible bricks`);
+    expect(benefit.textContent).toBe(`${percent}% off LEGO® compatible bricks`);
     expect(benefit.querySelector('[aria-label="Included"]')).not.toBeNull();
     expect(plan.textContent).not.toContain('Building instructions');
     expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);
@@ -491,7 +491,7 @@ it('highlights each tier discount without restoring instructions or exports', as
 
 it('shows only the simple discount statement at the top of the shared popup', async () => {
   await render(<OpenPlansPopup />);
-  expect(container.querySelector('.billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® purchases');
+  expect(container.querySelector('.billing-member-intro')?.textContent).toBe('Every paid plan includes a discount on LEGO® compatible bricks');
   expect(container.querySelector('.billing-member-intro')?.textContent).not.toContain('Applied automatically at checkout, with promo codes on top.');
   expect(container.querySelector('.billing-dialog')?.textContent).not.toContain('Physical model bricks · promo codes stack');
   expect(container.querySelector('.billing-dialog')?.textContent).not.toMatch(/models?/i);

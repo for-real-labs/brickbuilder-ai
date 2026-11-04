@@ -37,7 +37,7 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
           <span>{pricing ? 'USD + shipping' : ''}</span>
         </div>
       </div>
-      {pricing && pricing.memberDiscountCents > 0 && <p className="model-member-discount">Paid plan · {pricing.memberDiscountPercent}% off LEGO® set bricks</p>}
+      {pricing && pricing.memberDiscountCents > 0 && <p className="model-member-discount">−{formatOrderPrice(pricing.memberDiscountCents)} {pricing.memberDiscountPercent}% subscriber discount</p>}
       {status && <p role="status" className="model-order-status">{status}</p>}
       {updating && <p role="status" className="model-order-status">Your kit will be ready to order when the update finishes.</p>}
       <button type="button" aria-label="Order my kit" className="model-order-button" disabled={unavailable} onClick={() => onOrder('card')}>
