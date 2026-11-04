@@ -45,7 +45,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <div className="billing-plan-top"><h2>{plan.name}</h2><PetAvatar id={petId} still /></div>
         <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
-        <p className="billing-set-estimate">About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
+        <p className="billing-set-estimate">{PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
           <li className="billing-feature-saving"><Check aria-label="Included" /><strong>{PLAN_DISCOUNTS[plan.key]}% off every LEGO® purchase</strong></li>
         </ul>

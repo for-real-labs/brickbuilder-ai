@@ -62,11 +62,11 @@ export default function CheckoutPlan() {
       </nav></div>
       {!valid || !plan ? <section className="checkout-empty"><h2>Choose your plan</h2><Link to="/pricing" className="checkout-primary">View plans</Link></section> : isAppleApp() ? <section className="checkout-empty"><h2>Subscribe with Apple</h2><Link to="/pricing" className="checkout-primary">View plans</Link></section> : <div className="checkout-layout">
         <aside className="checkout-summary" aria-label="Plan summary"><div className="checkout-summary-body">
-          <p className="checkout-kit-eyebrow">YOUR MONTHLY PLAN</p><h2>{plan.name}</h2>
+          <p className="checkout-kit-eyebrow">Subscription</p><h2>{plan.name}</h2>
           <div className="plan-checkout-pet"><PetAvatar id={planKey === 'creator' ? 'nib' : 'pip'} /></div>
           <ul className="plan-checkout-benefits">
             <li><Check size={18} />{plan.credits.toLocaleString()} credits each month</li>
-            <li><Check size={18} />About {PLAN_GENERATIONS[planKey]} LEGO® generations</li>
+            <li><Check size={18} />{PLAN_GENERATIONS[planKey]} LEGO® generations</li>
             <li><Check size={18} />{PLAN_DISCOUNTS[planKey]}% off every LEGO® purchase</li>
           </ul>
           <dl className="checkout-price-list"><div className="checkout-total"><dt>Monthly total</dt><dd>{formatOrderPrice(total ?? plan.monthly_cents)}</dd></div></dl>

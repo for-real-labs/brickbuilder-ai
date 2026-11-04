@@ -59,7 +59,7 @@ export default function BillingPage() {
           <div className="billing-explore-plans"><button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button></div>
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
           <h2 className="billing-account-plan">{plan?.name ?? 'No active plan'}{plan && <span>{apple ? 'Billed monthly by Apple' : `$${plan.monthly_cents / 100} / month`}</span>}</h2>
-          {plan ? <p className="billing-plan-allowance">{plan.credits.toLocaleString()} credits each month. About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month.</p>
+          {plan ? <p className="billing-plan-allowance">{plan.credits.toLocaleString()} credits each month. {PLAN_GENERATIONS[plan.key]} LEGO® generations per month.</p>
             : <p className="billing-plan-allowance">Subscribe to generate models with AI.</p>}
           <p className="billing-plan-benefit">{PLAN_DISCOUNTS[plan?.key ?? 'free'] ? 'Your plan includes' : 'Paid plans include'} IO exports and automatic {PLAN_DISCOUNTS[plan?.key ?? 'free'] || '10–20'}% off LEGO® sets, with promo codes on top. Shipping is separate.</p>
           {apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>

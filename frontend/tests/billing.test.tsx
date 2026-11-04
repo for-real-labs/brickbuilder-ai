@@ -174,7 +174,7 @@ it('shows the monthly allowances and generation estimates on every plan', async 
   const cards = [...container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')];
   expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['225', '1,500']);
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$2.99', '$19.99']);
-  expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 15 LEGO® generations per month', 'About 100 LEGO® generations per month']);
+  expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['15 LEGO® generations per month', '100 LEGO® generations per month']);
   expect(cards.map(card => [...card.querySelectorAll('li')].map(item => item.textContent))).toEqual([
     ['10% off every LEGO® purchase'], ['20% off every LEGO® purchase'],
   ]);
@@ -226,7 +226,7 @@ it.each([
   account = { ...account, plan_key: key, monthly_credits: credits, has_subscription: true };
   await render(<BillingPage />);
   const section = container.querySelector('.billing-account-plan')!.closest('section')!;
-  expect(section.querySelector('.billing-plan-allowance')?.textContent).toBe(`${credits.toLocaleString()} credits each month. About ${generations} LEGO® generations per month.`);
+  expect(section.querySelector('.billing-plan-allowance')?.textContent).toBe(`${credits.toLocaleString()} credits each month. ${generations} LEGO® generations per month.`);
   expect(section.textContent).not.toContain('No payment method needed');
   expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'builder' ? 10 : 20}% off LEGO® sets`);
   await click(label);
@@ -237,7 +237,7 @@ it.each([
 it('uses the Apple subscription allowance instead of the separate free wallet', async () => {
   account = { ...account, subscription_provider: 'apple', apple_plan: 'creator', apple_expires_at: '2099-11-01T00:00:00Z', has_subscription: true, monthly_credits: 75 };
   await render(<BillingPage />);
-  expect(container.querySelector('.billing-plan-allowance')?.textContent).toBe('1,500 credits each month. About 100 LEGO® generations per month.');
+  expect(container.querySelector('.billing-plan-allowance')?.textContent).toBe('1,500 credits each month. 100 LEGO® generations per month.');
   expect(container.querySelector('.billing-plan-actions')?.textContent).toContain('Change plan');
 });
 
