@@ -11,6 +11,8 @@ let root: ReturnType<typeof createRoot>, container: HTMLDivElement;
 const writeText = vi.fn();
 beforeEach(() => {
   auth.user = null;
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() { this.open = true; } });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value() { this.open = false; } });
   writeText.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
@@ -128,6 +130,7 @@ it('adds the signed-in sender ID to copied and social links', async () => {
   expect(writeText).toHaveBeenCalledWith(url);
   await act(async () => button('Copy link').click());
   expect(writeText).toHaveBeenCalledWith(url);
+  expect(container.querySelector('dialog')?.open).toBe(false);
 });
 
 it('never adds a referral for guests, including anonymous Auth users', () => {
@@ -157,4 +160,21 @@ it('shows the referral badge on the closed Share button and opens sharing when c
   expect(container.querySelector('[role="dialog"]')).not.toBeNull();
   expect(container.querySelector('[role="dialog"]')!.textContent).not.toContain('+ 300');
   expect(posthog.capture).toHaveBeenCalledWith('generated_model_referral_badge_clicked', { authenticated: false });
+});
+
+it('warns guests after copying or clicking the Model link and allows either dismiss control', async () => {
+  open();
+  const notice = container.querySelector<HTMLDialogElement>('.share-referral-notice')!;
+  expect(notice.open).toBe(false);
+  await act(async () => button('Copy link').click());
+  expect(writeText).toHaveBeenCalledOnce();
+  expect(notice.open).toBe(true);
+  expect(notice.textContent).toContain('You must be logged in to receive credits from sharing.');
+  act(() => button('Dismiss').click());
+  expect(notice.open).toBe(false);
+  act(() => container.querySelector('input')!.click());
+  expect(notice.open).toBe(true);
+  act(() => notice.querySelector<HTMLButtonElement>('[aria-label="Close sharing credits notice"]')!.click());
+  expect(notice.open).toBe(false);
+  expect(container.querySelector('[aria-label="Share model"]')).not.toBeNull();
 });
