@@ -36,7 +36,6 @@ export function GenerationExamples({ onView }: { onView: () => void }) {
           posthog.capture('generation_subscription_example_clicked', { generation_id: id });
           onView();
         }}>
-          <ModelLoop asset={asset} reducedMotion={reducedMotion} />
           <div className="generation-example-details">
             <h3>{name}</h3>
             <p>{pieces} pieces</p>
@@ -44,9 +43,9 @@ export function GenerationExamples({ onView }: { onView: () => void }) {
             <p className="generation-example-price">{price} <span>before shipping</span></p>
             <span className="generation-example-view">View model</span>
           </div>
+          <ModelLoop asset={asset} reducedMotion={reducedMotion} />
         </Link>
       </li>)}
     </ul>
-    <p className="generation-examples-note">Approximate dimensions (W × D × H). Estimated USD kit prices before shipping, tax, and member discounts.</p>
   </section>;
 }
