@@ -12,7 +12,6 @@ from . import auth
 from .database import execute_query
 
 PLANS = (
-    {"key": "free", "name": "Free", "monthly_cents": 0, "credits": 75},
     {"key": "builder", "name": "Builder", "monthly_cents": 299, "credits": 225},
     {"key": "creator", "name": "Creator", "monthly_cents": 1999, "credits": 1500},
 )
@@ -91,6 +90,15 @@ def local_unmetered():
     return not auth.SUPABASE_ENABLED and os.getenv("API_MODE", "local") == "local"
 
 
+async def require_generation_subscription(identity):
+    if local_unmetered() or identity.get("is_developer"):
+        return
+    if (identity.get("authenticated") and not identity.get("is_anonymous")
+            and has_paid_features(await wallet(account_id(identity)))):
+        return
+    raise auth.subscription_required()
+
+
 async def require_paid_features(identity):
     if local_unmetered():
         return
@@ -101,7 +109,7 @@ async def require_paid_features(identity):
             and not identity.get("is_developer") and has_paid_features(await wallet(account_id(identity)))):
         return
     raise HTTPException(403, detail={"code": "BB_PAID_FEATURE_REQUIRED",
-        "message": "IO exports are not available on the Free plan. Upgrade to Builder or Creator."})
+        "message": "IO exports require a Builder or Creator subscription."})
 
 
 async def ordered_instruction_models(user_id, generation_id=None):

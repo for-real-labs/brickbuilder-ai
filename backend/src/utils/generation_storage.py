@@ -17,7 +17,7 @@ from fastapi import HTTPException
 from .database import execute_query
 from .request_limit_analytics import track_request_limit, daily_limit_value
 from .generation_retry_guard import retry_guard_error
-from .auth import supabase_client
+from .auth import subscription_required, supabase_client
 from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
 from .image_processing import convert_base64_to_png
@@ -208,6 +208,8 @@ class GenerationStorage:
                 raise HTTPException(status_code=503, detail='Building is being updated. Please try again shortly.') from None
             if 'BB_SIGN_IN_REQUIRED' in str(e):
                 raise HTTPException(status_code=403, detail='Sign in for 75 free monthly credits. All parts builds and AI mesh conversions use 20 credits; Basic builds use 2 credits.') from None
+            if 'BB_SUBSCRIPTION_REQUIRED' in str(e):
+                raise subscription_required() from None
             if 'BB_CREDITS_EXHAUSTED' in str(e):
                 raise HTTPException(status_code=402, detail='You have used your available credits. Choose a monthly plan to keep building, or wait for your credits to reset.') from None
             if 'BB_GUEST_CREDITS_EXHAUSTED' in str(e):

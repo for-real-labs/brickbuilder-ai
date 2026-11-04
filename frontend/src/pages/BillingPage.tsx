@@ -49,17 +49,18 @@ export default function BillingPage() {
     {confirming && <p role="status">Confirming your payment and credits…</p>}
     {!confirming && sessionId && !confirmed && !error && <p role="status">Still waiting for payment confirmation. Your credits will appear after Stripe confirms payment. <button className="billing-text-link" onClick={() => { posthog.capture('billing_confirmation_retry_clicked'); void sync(sessionId).then(result => { if (paymentConfirmed(result)) { setConfirmed(true); setParams({}, { replace: true }); } }); }}>Check again</button></p>}
     {!user ? <section className="billing-account-card"><h2>Your credits live with your account.</h2><p>Sign in to see your balance, receipts, and subscription.</p><button className="billing-primary" onClick={signIn}>Sign in</button></section>
-      : !enabled && !account ? <p className="billing-launch-notice" role="status">Monthly plans and credit history are coming soon. Your current building access continues.</p>
+      : !enabled && !account ? <p className="billing-launch-notice" role="status">Subscription checkout is temporarily unavailable.</p>
       : loading || !account ? <p role="status">{error ? 'Your account details will appear when billing reconnects.' : 'Loading your credits…'}</p> : <>
         <div className="billing-account-grid"><section className="billing-account-card"><div className="billing-card-label"><Coins size={18} /><span>AVAILABLE CREDITS</span></div>
           <p className="billing-big-balance">{account.credits_remaining}</p>
-          {!apple && <><div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
+          {!apple && account.plan_key !== 'free' && <><div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" /></>}
-          {!apple && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
+          {!apple && account.plan_key !== 'free' && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
           <div className="billing-explore-plans"><button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button></div>
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
-          <h2 className="billing-account-plan">{plan?.name ?? 'Free'}<span>{apple ? 'Billed monthly by Apple' : `$${(plan?.monthly_cents ?? 0) / 100} / month`}</span></h2>
-          <p className="billing-plan-allowance">{(plan?.credits ?? account.monthly_credits).toLocaleString()} credits each month. About {PLAN_GENERATIONS[plan?.key ?? 'free']} LEGO® generations per month.</p>
+          <h2 className="billing-account-plan">{plan?.name ?? 'No active plan'}{plan && <span>{apple ? 'Billed monthly by Apple' : `$${plan.monthly_cents / 100} / month`}</span>}</h2>
+          {plan ? <p className="billing-plan-allowance">{plan.credits.toLocaleString()} credits each month. About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month.</p>
+            : <p className="billing-plan-allowance">Subscribe to generate models with AI.</p>}
           <p className="billing-plan-benefit">{PLAN_DISCOUNTS[plan?.key ?? 'free'] ? 'Your plan includes' : 'Paid plans include'} IO exports and automatic {PLAN_DISCOUNTS[plan?.key ?? 'free'] || '10–20'}% off LEGO® sets, with promo codes on top. Shipping is separate.</p>
           {apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
             : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : null}
@@ -67,7 +68,7 @@ export default function BillingPage() {
           <div className="billing-plan-actions"><button type="button" className="billing-primary" disabled={busy} onClick={() => {
             posthog.capture('billing_plan_action_clicked', { plan_key: plan?.key ?? 'free', action: maxPlan ? 'change' : 'upgrade' });
             openUpgrade(maxPlan ? 'billing_plan_change' : 'billing_plan_upgrade');
-          }}>{maxPlan ? 'Change plan' : 'Upgrade plan'} <ArrowUpRight size={16} /></button></div>
+          }}>{maxPlan ? 'Change plan' : plan ? 'Upgrade plan' : 'Choose a plan'} <ArrowUpRight size={16} /></button></div>
           {account.has_subscription && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>{apple ? 'Manage Apple subscription' : 'Manage billing & receipts'} <ArrowUpRight size={16} /></button>
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}
           <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved LEGO® sets and bonus credits stay with you.'}</p>

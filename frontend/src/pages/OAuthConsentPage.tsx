@@ -91,7 +91,7 @@ export default function OAuthConsentPage() {
             <ul className="mt-6 space-y-3 text-sm text-slate-700">
               <li>Generate LEGO models from your descriptions and edit your saved models.</li>
               <li>Read your model progress, previews, LDraw files, parts lists, and credit balance.</li>
-              <li>Use one account credit for each successful AI generation or edit. Checking progress is free.</li>
+              <li>Use subscription credits to generate or edit with AI. Checking progress does not use credits.</li>
             </ul>
             <p className="mt-5 break-words text-xs text-slate-500">Requested account information: {details.scope || 'basic account identity'}. You can disconnect this service in your AI app.</p>
             <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row">

@@ -63,7 +63,7 @@ describe('OAuth consent', () => {
     await render();
     expect(container.textContent).toContain('Claude');
     expect(container.textContent).toContain('builder@example.com');
-    expect(container.textContent).toContain('one account credit');
+    expect(container.textContent).toContain('subscription credits');
     expect(container.textContent).toContain('parts lists');
     expect(oauth.approveAuthorization).not.toHaveBeenCalled();
   });

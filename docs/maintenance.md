@@ -1,7 +1,7 @@
 # Website maintenance
 
-Production serves a temporary maintenance page on `brickbuilder.ai` and `www.brickbuilder.ai`. Login, the dashboard (including its profile menu), and billing remain available.
-To reopen the website, set `BRICKBUILDER_MAINTENANCE=off` in the production Vercel environment and redeploy, or revert the maintenance gate.
+When enabled, production serves a temporary maintenance page on `brickbuilder.ai` and `www.brickbuilder.ai`. Login, the dashboard (including its profile menu), and billing remain available.
+The website is open by default. To enable maintenance, set `BRICKBUILDER_MAINTENANCE=on` in the production Vercel environment and redeploy. Remove the variable and redeploy to reopen.
 
 Signups are stored in Supabase's `public.waitlist_emails` with `maintenance_alert = true`.
 Build completion emails are separate. Reopening the website does not automatically send a message.

@@ -65,7 +65,7 @@ it.each([['io','Download IO']] as const)('locks %s exports, opens the shared not
   expect(button(label).querySelector('.paid-feature-lock')).not.toBeNull();
   await click(label);
   expect(download).not.toHaveBeenCalled();
-  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('not available on the Free plan');
+  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('requires a subscription');
   expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('10% with Builder or 20% with Creator.');
   expect(document.body.style.overflow).toBe('hidden');
   expect(posthog.capture).toHaveBeenCalledWith('billing_feature_blocked', { feature, source: 'tools_dropdown', access: 'locked' });
@@ -142,7 +142,7 @@ it('does not unlock while billing loads or fails and supports retry without sugg
   expect(host.textContent).toContain('Checking your access'); expect(button('Upgrade plan')).toBeUndefined();
   await act(async () => resolvePlans({ plans: INITIAL_PLANS, enabled: false, ready: false }));
   expect(host.textContent).toContain('Couldn’t check your access'); expect(button('Upgrade plan')).toBeUndefined();
-  await click('Try again'); expect(host.textContent).toContain('not available on the Free plan');
+  await click('Try again'); expect(host.textContent).toContain('requires a subscription');
   expect(download).not.toHaveBeenCalled();
 });
 

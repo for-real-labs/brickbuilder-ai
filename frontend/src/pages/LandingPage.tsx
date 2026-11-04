@@ -1,3 +1,5 @@
+import { useBilling } from '../contexts/BillingContext';
+import { openGenerationSubscription } from '../utils/generationSubscription';
 import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
 import { ExistingPartsDesigner } from '../components/ExistingPartsDesigner';
 import { inventoryQuantity, type PartsInventory } from '../services/partsInventoryApi';
@@ -208,6 +210,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
   const localDevelopment = isLocalDevelopment();
+  const { account: billingAccount } = useBilling();
   const [providerLogin, setProviderLogin] = useState<NovaLoginProvider | null>(null);
   const [checkingProvider, setCheckingProvider] = useState(false);
   const providerChoices = useRef<Partial<Record<NovaLoginProvider, 'native' | 'api_key'>>>({});
@@ -344,6 +347,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const requireGenerationSignup = (requestedPrompt: string, requestedImage: File | null, edit = false) => {
     if (!isSupabaseConfigured && localDevelopment) return false;
     if (authLoading) return true;
+    if (!localDevelopment && (!session || billingAccount?.paid_features === false)) {
+      openGenerationSubscription();
+      return true;
+    }
     if (session) return false;
     setPrompt(requestedPrompt);
     setImgFile(requestedImage);
@@ -1077,8 +1084,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <button type="button" onClick={() => { setInventoryOpen(true); posthog.capture('existing_parts_change_clicked'); }}>Change parts</button>
                   <button type="button" onClick={() => { setPartsInventory(null); posthog.capture('existing_parts_removed'); }}>Remove</button>
                 </div> : <p className="landing-hero-description landing-fade-in landing-delay-5">{nativeIosApp
-                  ? 'BrickBuilder is a free AI brick model generator that turns text or images into ready-to-build LEGO-compatible models in under 30 minutes'
-                  : 'BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes'}</p>}
+                  ? 'BrickBuilder is an AI brick model generator that turns text or images into ready-to-build LEGO-compatible models in under 30 minutes'
+                  : 'BrickBuilder is an AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes'}</p>}
 
               </div>
             </div>}

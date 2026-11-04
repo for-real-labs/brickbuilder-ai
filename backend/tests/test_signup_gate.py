@@ -20,13 +20,14 @@ GUEST = {'authenticated': False, 'is_anonymous': True, 'user_id': 'guest_test',
     ('/llmToBricks/stream', {'prompt': 'A little castle'}),
     ('/novaToBricks', {'prompt': 'A little castle'}),
 ])
-def test_hosted_generation_requires_signup_even_with_a_guest_session(monkeypatch, path, payload):
+def test_hosted_generation_requires_subscription_even_with_a_guest_session(monkeypatch, path, payload):
     monkeypatch.setattr(auth, 'LOCAL_DB_ENABLED', False)
     api.app.dependency_overrides[auth.get_user_with_optional_auth] = lambda: GUEST
+    api.app.dependency_overrides[api.require_fal_key] = lambda: None
     try:
         response = TestClient(api.app).post(path, json=payload)
-        assert response.status_code == 401, response.text
-        assert 'Sign up to claim your free credits' in response.json()['detail']
+        assert response.status_code == 402, response.text
+        assert response.json()['detail']['code'] == 'BB_SUBSCRIPTION_REQUIRED'
     finally:
         api.app.dependency_overrides.clear()
 
@@ -53,4 +54,4 @@ def test_developer_access_and_anonymous_supabase_identity(monkeypatch):
     assert auth.handle_auth_and_tracking(developer, '/novaToBricks', {}, 1)['is_developer']
     with pytest.raises(HTTPException) as error:
         auth.handle_auth_and_tracking({**GUEST, 'authenticated': True}, '/llmToBricks', {}, 1)
-    assert error.value.status_code == 401
+    assert error.value.status_code == 402

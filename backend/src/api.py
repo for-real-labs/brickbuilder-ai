@@ -503,6 +503,8 @@ async def llm_render_endpoint(
     sends the summary and references to OpenAI, applies the returned semantic
     recoloring rules, and returns updated xyzrgb content.
     """
+    from .utils.billing import require_generation_subscription
+    await require_generation_subscription(auth_info)
     return await llm_render(request, auth_info)
 
 
@@ -512,6 +514,8 @@ async def llm_render_stream_endpoint(
     auth_info: dict = Depends(get_user_with_optional_auth),
 ) -> StreamingResponse:
     """Stream brick-design reasoning summaries and the recolored model."""
+    from .utils.billing import require_generation_subscription
+    await require_generation_subscription(auth_info)
     return StreamingResponse(
         llm_render_stream(request, auth_info),
         media_type="text/event-stream",

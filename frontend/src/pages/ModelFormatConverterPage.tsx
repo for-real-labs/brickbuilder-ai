@@ -14,15 +14,15 @@ export default function ModelFormatConverterPage({ inputFormat }: { inputFormat:
   const output = isObj ? 'GLB' : 'OBJ';
   const path = `/${inputFormat}-to-${output.toLowerCase()}`;
   const reversePath = `/${output.toLowerCase()}-to-${inputFormat}`;
-  const title = `${input} to ${output} Converter — Free Online | BrickBuilder AI`;
+  const title = `${input} to ${output} Converter Online | BrickBuilder AI`;
   const description = isObj
-    ? 'Convert OBJ to GLB online for free. Turn a Wavefront OBJ mesh into a binary glTF 3D file in your browser. No signup or uploads. Download your GLB instantly.'
-    : 'Convert GLB to OBJ online for free. Extract a static Wavefront OBJ mesh from a binary glTF 3D model in your browser. No signup or uploads. Download your OBJ.';
+    ? 'Convert OBJ to GLB online. Turn a Wavefront OBJ mesh into a binary glTF 3D file in your browser. No signup or uploads. Download your GLB instantly.'
+    : 'Convert GLB to OBJ online. Extract a static Wavefront OBJ mesh from a binary glTF 3D model in your browser. No signup or uploads. Download your OBJ.';
   const faqs = [
     { question: `How do I convert ${input} to ${output} online?`,
       answer: `Choose a .${inputFormat} file, click Convert to ${output}, and download the result. The converter runs locally in your browser and accepts files up to 50 MB. No account or software installation is needed.` },
     { question: `Is this ${input} to ${output} converter free?`,
-      answer: 'Yes. File format conversion is free and does not require signup. LEGO model generation is a separate tool with its own usage limits.' },
+      answer: 'File format conversion requires neither credits nor signup. LEGO model generation is a separate tool that requires a subscription.' },
     { question: 'Are my 3D files uploaded to a server?',
       answer: 'No. The converter reads and processes your model on your device. File contents and filenames are not sent to our servers. We record usage events such as conversion success and file size to improve the tool.' },
     { question: isObj ? 'Does OBJ to GLB preserve materials and textures?' : 'Does GLB to OBJ preserve materials and textures?',
@@ -63,7 +63,7 @@ export default function ModelFormatConverterPage({ inputFormat }: { inputFormat:
   ];
 
   return <div className="min-h-screen bg-gradient-to-b from-white via-slate-50 to-white text-slate-900">
-    <SEO title={title} description={description} keywords={`${inputFormat} to ${output.toLowerCase()}, ${inputFormat} to ${output.toLowerCase()} converter, convert ${inputFormat} to ${output.toLowerCase()}, free online 3d file converter`}
+    <SEO title={title} description={description} keywords={`${inputFormat} to ${output.toLowerCase()}, ${inputFormat} to ${output.toLowerCase()} converter, convert ${inputFormat} to ${output.toLowerCase()}, online 3d file converter`}
       url={`https://brickbuilder.ai${path}`} structuredData={structuredData} />
     <div className="mx-auto flex min-h-screen w-full max-w-screen-xl flex-col px-4 pb-10 pt-6 sm:px-6 md:px-8 lg:px-10">
       <header className="flex items-center justify-between gap-4">
@@ -79,8 +79,8 @@ export default function ModelFormatConverterPage({ inputFormat }: { inputFormat:
           <div className="mb-4 flex items-center justify-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#f44336]"><ArrowRightLeft className="h-4 w-4" />One model, another format</div>
           <h1 className="text-4xl font-extrabold leading-tight sm:text-5xl">{input} to {output} Converter</h1>
           <p className="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">{isObj
-            ? 'Turn your Wavefront OBJ mesh into a GLB 3D file, ready for compatible web viewers and apps. Convert for free, right in your browser.'
-            : 'Turn your GLB 3D model into a Wavefront OBJ mesh for compatible modeling and mesh editing tools. Convert for free, right in your browser.'}</p>
+            ? 'Turn your Wavefront OBJ mesh into a GLB 3D file, ready for compatible web viewers and apps. Convert in your browser without using credits.'
+            : 'Turn your GLB 3D model into a Wavefront OBJ mesh for compatible modeling and mesh editing tools. Convert in your browser without using credits.'}</p>
           <div className="flex justify-center"><ModelFormatUploadCard key={inputFormat} inputFormat={inputFormat} /></div>
           <p className="mt-4 text-sm text-slate-500">Need the reverse? <Link to={reversePath} onClick={() => trackLink(reversePath)} className="font-medium text-[#f44336] underline">Convert {output} to {input}</Link></p>
 

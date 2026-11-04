@@ -277,7 +277,7 @@ function loginPage(error?: string, returnTo = '/'): Response {
 }
 
 export default async function middleware(request: Request): Promise<Response | undefined> {
-  if (process.env.VERCEL_ENV === 'production' && process.env.BRICKBUILDER_MAINTENANCE !== 'off') {
+  if (process.env.VERCEL_ENV === 'production' && process.env.BRICKBUILDER_MAINTENANCE === 'on') {
     const url = new URL(request.url);
     if (isMaintenanceHost(url.hostname)) {
       return maintenanceResponse(request, url);

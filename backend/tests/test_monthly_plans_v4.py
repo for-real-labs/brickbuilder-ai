@@ -14,7 +14,7 @@ def migrate(db):
 
 
 def test_catalog():
-    assert [(p['monthly_cents'],p['credits']) for p in billing.PLANS] == [(0,75),(299,225),(1999,1500)]
+    assert [(p['monthly_cents'],p['credits']) for p in billing.PLANS] == [(299,225),(1999,1500)]
 
 
 def test_new_and_existing_allowances_preserve_spent_and_purchased_credits(db):

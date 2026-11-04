@@ -16,7 +16,6 @@ export interface BillingAccount {
   history: { id: number; kind: string; amount: number; bucket: string; created_at: string }[];
 }
 export const INITIAL_PLANS: CreditPlan[] = [
-  { key: 'free', name: 'Free', monthly_cents: 0, credits: 75 },
   { key: 'builder', name: 'Builder', monthly_cents: 299, credits: 225 },
   { key: 'creator', name: 'Creator', monthly_cents: 1999, credits: 1500 },
 ];

@@ -14,7 +14,7 @@ function signup(email: string, from = origin): Request {
 describe('production maintenance gate', () => {
   beforeEach(() => {
     vi.stubEnv('VERCEL_ENV', 'production');
-    vi.stubEnv('BRICKBUILDER_MAINTENANCE', undefined);
+    vi.stubEnv('BRICKBUILDER_MAINTENANCE', 'on');
   });
 
   afterEach(() => {
@@ -40,7 +40,7 @@ describe('production maintenance gate', () => {
       expect(await middleware(new Request(origin + asset))).toBeUndefined();
     }
     expect((await middleware(new Request(origin + '/assets/index.html')))?.status).toBe(503);
-    vi.stubEnv('BRICKBUILDER_MAINTENANCE', 'off');
+    vi.stubEnv('BRICKBUILDER_MAINTENANCE', undefined);
     expect(await middleware(new Request(origin))).toBeUndefined();
   });
 

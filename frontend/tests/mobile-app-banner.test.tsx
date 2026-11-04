@@ -54,7 +54,7 @@ describe('mobile app download prompt', () => {
     const banner = container.querySelector('aside')!;
     expect(banner.hasAttribute('data-app-banner')).toBe(true);
     expect(banner.getAttribute('aria-label')).toBe('Get the BrickBuilder AI app');
-    expect(banner.textContent).toContain('Free on the App Store.');
+    expect(banner.textContent).toContain('Available on the App Store.');
     const link = banner.querySelector('a')!;
     expect(link.href).toBe('https://apps.apple.com/app/brickbuilder-ai/id6815050463');
     expect(posthog.capture).toHaveBeenCalledWith('app_store_banner_shown', { page: '/image-to-lego', platform: 'ios' });

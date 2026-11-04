@@ -767,7 +767,7 @@ describe('LandingPage', () => {
     expect(markup).not.toContain('credit-nudge');
     expect(markup).toContain('landing-header-brand');
     expect(markup).toContain('Try something random');
-    expect(markup).toContain('BrickBuilder is a free AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes');
+    expect(markup).toContain('BrickBuilder is an AI LEGO generator that turns text or images into ready-to-build LEGO models in under 30 minutes');
     expect(markup).toContain('Upload an image');
     expect(markup).toContain('Describe your idea');
     expect(markup).not.toContain('Show builds');

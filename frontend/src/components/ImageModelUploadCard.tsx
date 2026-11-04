@@ -1,3 +1,5 @@
+import { useBilling } from '../contexts/BillingContext';
+import { openGenerationSubscription } from '../utils/generationSubscription';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import React, { useEffect, useRef, useState } from 'react';
 import { Box, Download, Loader2, Upload } from 'lucide-react';
@@ -14,6 +16,7 @@ import type { ImageModelOutput } from '../imageModelPages';
 
 export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
   const { session, loading: authLoading, isSupabaseConfigured } = useAuth();
+  const { account } = useBilling();
   const [signupOpen, setSignupOpen] = useState(false);
   const [pendingSignup, setPendingSignup] = useState(false);
   const draftKey = `signup-image-to-${output}`;
@@ -80,6 +83,10 @@ export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
     if (!file || busy) return;
     if (!generationId && (isSupabaseConfigured || !isLocalDevelopment())) {
       if (authLoading) return;
+      if (!isLocalDevelopment() && (!session || account?.paid_features === false)) {
+        openGenerationSubscription();
+        return;
+      }
       if (!session) {
         setPendingSignup(true); setSignupOpen(true);
         track('generation_signup_gate_shown', { surface: 'image_model' });
@@ -133,7 +140,7 @@ export function ImageModelUploadCard({ output }: { output: ImageModelOutput }) {
       setSignupOpen(false); setPendingSignup(false); sessionStorage.removeItem(draftKey);
     }} onSuccess={() => setSignupOpen(false)} onBeforeOAuthRedirect={() => file ? saveSignupImage(draftKey, file) : undefined} />
     <h2 className="flex items-center gap-2 text-lg font-semibold"><Box className="h-5 w-5 text-[#f44336]" />Create your 3D model</h2>
-    <p className="mt-2 text-sm leading-6 text-slate-500">Start with one clear image. Sign up to claim your free credits. Generation uses account credits and can take several minutes.</p>
+    <p className="mt-2 text-sm leading-6 text-slate-500">Start with one clear image. AI generation requires a subscription, uses account credits, and can take several minutes.</p>
     <input ref={picker} type="file" accept={IMAGE_UPLOAD_ACCEPT} aria-label="Choose source image" disabled={busy || exporting} className="hidden"
       onChange={event => { void selectFile(event.target.files?.[0]); event.target.value = ''; }} />
     {preview && <img src={preview} alt="Your source image for 3D generation" className="mx-auto mt-5 max-h-48 max-w-full rounded-lg object-contain" />}

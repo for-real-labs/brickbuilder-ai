@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import FallingBricks from "../components/FallingBricks";
 
-const INVITATION = "use for free at";
+const INVITATION = "try it at";
 const ADDRESS = "trybrickbuilder.com";
 
 export default function VideoPage() {

@@ -3,8 +3,6 @@ import { SignupCodeVerification } from './SignupCodeVerification';
 import { PasswordRecovery } from './PasswordRecovery';
 import React, { useEffect, useRef, useState, useId, FormEvent } from "react";
 import posthog from "posthog-js";
-import { useBilling } from "../contexts/BillingContext";
-import { INITIAL_PLANS } from "../services/billingApi";
 import { Mail, X } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -36,8 +34,6 @@ export default function LoginModal({
   redirectTo,
   onBeforeOAuthRedirect,
 }: LoginModalProps) {
-  const { plans } = useBilling();
-  const freeCredits = (plans ?? INITIAL_PLANS).find(plan => plan.key === 'free')?.credits;
   const nativeIos = getNativeMobileShellInfo()?.platform === 'ios';
   const { signIn, signInWithGoogle, signInWithOtp, verifyOtp } = useAuth();
   const [email, setEmail] = useState("");
@@ -314,7 +310,7 @@ export default function LoginModal({
         <h2 id={`${id}-title`} className={claimingCredits ? "text-center text-2xl font-bold tracking-tight text-slate-900" : "text-md pr-8"}>
           {claimingCredits ? "One step from your brick model" : "Sign in to save builds and add to community!"}
         </h2>
-        {claimingCredits && <p className="mt-2 text-center text-base text-slate-600">Sign up and claim {freeCredits ? `${freeCredits} free credits` : "your free credits"}.</p>}
+        {claimingCredits && <p className="mt-2 text-center text-base text-slate-600">Sign in or create an account to choose a subscription.</p>}
         <p id={`${id}-description`} className={`mt-2 text-sm text-slate-500 ${claimingCredits ? "text-center" : ""}`}>
           {otpSent
             ? (nativeIos ? "Enter the code we sent to your email." : "Check your email for a magic link or enter the code we sent.")

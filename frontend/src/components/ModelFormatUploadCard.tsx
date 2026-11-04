@@ -68,7 +68,7 @@ export function ModelFormatUploadCard({ inputFormat }: { inputFormat: ModelForma
     <div className="flex items-center gap-3">
       <span className="rounded-xl bg-red-50 p-3 text-[#f44336]"><ArrowRightLeft className="h-5 w-5" /></span>
       <div><h2 className="font-semibold">Convert {inputFormat.toUpperCase()} to {outputFormat.toUpperCase()}</h2>
-        <p className="mt-1 text-sm text-slate-500">Free · No signup · Files stay in your browser</p></div>
+        <p className="mt-1 text-sm text-slate-500">No credits needed · No signup · Files stay in your browser</p></div>
     </div>
     <p className="mt-5 text-sm leading-6 text-slate-600">
       {inputFormat === 'obj'

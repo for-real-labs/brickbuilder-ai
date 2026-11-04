@@ -13,8 +13,8 @@ interface SEOProps {
 }
 
 export function SEO({
-  title = "Free AI LEGO® Model Maker | BrickBuilder AI",
-  description = "Create LEGO® models from text or photos with AI. Start with free monthly credits, preview your model in 3D, and download free building instructions.",
+  title = "AI LEGO® Model Maker | BrickBuilder AI",
+  description = "Create LEGO® models from text or photos with AI. Preview models in 3D and download building instructions. Subscribe to generate your own models.",
   keywords = "use ai to build legos, image to lego, how to convert image to legos, lego ai, brick ai, brickai, brickbuilder, brickbuilder.ai, lego building ai, ai building lego, turn images into lego, AI lego converter, brick model generator, turn images into actual legos, lego building software, lego generator, lego instruction generator, lego ai agent",
   image = "https://brickbuilder.ai/share-card.png",
   url = "https://brickbuilder.ai/",

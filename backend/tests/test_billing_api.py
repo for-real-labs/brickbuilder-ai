@@ -179,7 +179,7 @@ def test_paid_features_follow_paid_period_not_credit_balance(plan,status,remaini
 
 
 def test_retired_master_cannot_be_selected_but_existing_invoices_still_reconcile(monkeypatch,identity,subscription):
-    assert [p['key'] for p in billing.PLANS]==['free','builder','creator']
+    assert [p['key'] for p in billing.PLANS]==['builder','creator']
     with pytest.raises(ValidationError): CheckoutRequest(plan_key='master')
     with pytest.raises(HTTPException) as error: asyncio.run(billing.price_for('master'))
     assert error.value.status_code==400

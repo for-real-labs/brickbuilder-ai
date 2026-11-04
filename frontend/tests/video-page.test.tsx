@@ -15,18 +15,18 @@ it('types once under StrictMode, holds the completed message for three seconds, 
   const lines = () => Array.from(container.querySelectorAll('p')).map(p => p.getAttribute('aria-label'));
   try {
     act(() => root.render(<StrictMode><VideoPage /></StrictMode>));
-    await advance(1500);
-    expect(lines()).toEqual(['use for free at', '']);
+    await advance(900);
+    expect(lines()).toEqual(['try it at', '']);
     await advance(380);
-    expect(lines()).toEqual(['use for free at', 't']);
+    expect(lines()).toEqual(['try it at', 't']);
     await advance(1440);
-    expect(lines()).toEqual(['use for free at', 'trybrickbuilder.com']);
+    expect(lines()).toEqual(['try it at', 'trybrickbuilder.com']);
     await advance(2999);
-    expect(lines()).toEqual(['use for free at', 'trybrickbuilder.com']);
+    expect(lines()).toEqual(['try it at', 'trybrickbuilder.com']);
     await advance(1);
     expect(lines()).toEqual(['', '']);
     await advance(100);
-    expect(lines()).toEqual(['u', '']);
+    expect(lines()).toEqual(['t', '']);
   } finally {
     act(() => root.unmount());
     expect(vi.getTimerCount()).toBe(0);

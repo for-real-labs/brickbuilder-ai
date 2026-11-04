@@ -52,7 +52,7 @@ export function MobileAppBanner() {
       <img src="/brickbuilder-logo.PNG" alt="" width="48" height="48" className="h-12 w-12 shrink-0 rounded-xl" />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-slate-900">BrickBuilder AI</p>
-        <p className="text-xs leading-4 text-slate-600">Build on the go.<br />Free on the App Store.</p>
+        <p className="text-xs leading-4 text-slate-600">Build on the go.<br />Available on the App Store.</p>
       </div>
       <a href={APP_STORE_URL} aria-label="Get BrickBuilder AI on the App Store"
         className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-full bg-[#f44336] px-4 text-sm font-semibold text-white hover:bg-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2"

@@ -373,7 +373,7 @@ it('presents the credits gate with Google first and verifies email signup before
   const savedDraft = vi.fn(); const onSuccess = vi.fn();
   const { container, unmount } = renderIntoBody(<LoginModal open intent="claim_credits" onClose={() => undefined} onSuccess={onSuccess} onBeforeOAuthRedirect={savedDraft} redirectTo="/" />);
   try {
-    expect(container.textContent).toContain('Sign up and claim 300 free credits.');
+    expect(container.textContent).toContain('Sign in or create an account to choose a subscription.');
     expect(container.textContent!.indexOf('Continue with Google')).toBeLessThan(container.textContent!.indexOf('Get code'));
     changeInput(container.querySelector('input[type=email]')!, 'new@example.com');
     await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
@@ -398,9 +398,9 @@ it('does not redirect or lose the draft when persisting an uploaded image fails'
 });
 
 
-it('uses the current free-plan allowance instead of a hard-coded signup amount', () => {
+it('does not advertise an obsolete Free allowance', () => {
   billing.plans = [{ key: 'free', credits: 450 }];
   const { container, unmount } = renderIntoBody(<LoginModal open intent="claim_credits" onClose={() => undefined} />);
-  try { expect(container.textContent).toContain('Sign up and claim 450 free credits.'); }
+  try { expect(container.textContent).not.toContain('450 free credits'); }
   finally { unmount(); billing.plans = [{ key: 'free', credits: 300 }]; }
 });

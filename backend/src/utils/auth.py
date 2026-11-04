@@ -227,6 +227,11 @@ async def verify_and_deduct_credits(user_email: str, credits_needed: int = 1) ->
             detail=f"Credit system error: {str(e)}"
         )
 
+def subscription_required() -> HTTPException:
+    return HTTPException(402, detail={"code": "BB_SUBSCRIPTION_REQUIRED",
+                                     "message": "Subscribe to generate models with BrickBuilder AI."})
+
+
 async def get_authenticated_user(
     auth_info: Dict[str, Any] = Depends(verify_authentication)
 ) -> Dict[str, Any]:
@@ -391,12 +396,12 @@ def handle_auth_and_tracking(
     Raises:
         HTTPException: If user has insufficient credits
     """
-    # Hosted generation requires an account. Guest identities remain valid for
+    # Hosted generation requires a subscription. Guest identities remain valid for
     # reading existing builds and free tools; offline local checkouts keep working.
     if required_credits > 0 and not LOCAL_DB_ENABLED and (
         not auth_info.get("authenticated") or auth_info.get("is_anonymous")
     ):
-        raise HTTPException(status_code=401, detail="Sign up to claim your free credits and start building.")
+        raise subscription_required()
 
     from .posthog_client import track_api_call
     

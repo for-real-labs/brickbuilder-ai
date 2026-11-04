@@ -8,6 +8,7 @@ import posthog from 'posthog-js';
 import { BillingProvider, useBilling } from '../src/contexts/BillingContext';
 import { BillingOverlays, MonthlyCreditUsage, CreditBalance, CreditNudge, PlanGrid, GenerationCreditQuote } from '../src/components/BillingComponents';
 import BillingPage from '../src/pages/BillingPage';
+import { openGenerationSubscription } from '../src/utils/generationSubscription';
 import { PlanPopupRedirect } from '../src/components/PlanPopupRedirect';
 import { billingApi, openStripe, type BillingAccount } from '../src/services/billingApi';
 
@@ -85,7 +86,7 @@ it('opens the balance upgrade flow, displays monthly terms, and starts the selec
 it('asks guests to sign in before creating a subscription', async () => {
   auth.user = null;
   await render(<PlanGrid source="pricing_page" />);
-  expect(container.querySelector('[aria-label="Free plan"]')?.textContent).toContain('LEGO® set discounts');
+  expect(container.querySelector('[aria-label="Free plan"]')).toBeNull();
   await selectPlan('Builder');
   expect(container.textContent).toContain('Sign in to build');
   expect(billingApi.checkout).not.toHaveBeenCalled();
@@ -156,7 +157,7 @@ it('keeps unavailable billing presentable and refreshes availability when the vi
   auth.user = null;
   vi.mocked(billingApi.plans).mockRejectedValueOnce(new Error('Backend rollout pending'));
   await render(<OpenPlansPopup />);
-  expect(container.querySelector('[role="status"]')?.textContent).toContain('Monthly plans are getting ready');
+  expect(container.querySelector('[role="status"]')?.textContent).toContain('Subscription checkout is temporarily unavailable');
   expect(container.querySelector('[role="alert"]')).toBeNull();
   await act(async () => window.dispatchEvent(new Event('focus')));
   expect(container.querySelector('[role="status"]')).toBeNull();
@@ -168,7 +169,7 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
   vi.mocked(billingApi.account).mockRejectedValueOnce(new Error('Not deployed'));
   vi.mocked(billingApi.sync).mockRejectedValueOnce(new Error('Not deployed'));
   await render(<BillingPage />);
-  expect(container.textContent).toContain('Your current building access continues');
+  expect(container.textContent).toContain('Subscription checkout is temporarily unavailable');
   expect(container.querySelector('[role="alert"]')).toBeNull();
   expect(container.querySelector('a[href="/"]')).not.toBeNull();
 });
@@ -177,11 +178,11 @@ it('keeps the account page useful while its new API is awaiting deployment', asy
 it('shows the monthly allowances and generation estimates on every plan', async () => {
   await render(<PlanGrid source="test" />);
   const cards = [...container.querySelectorAll('.billing-plan:not(.billing-credit-pack)')];
-  expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['75', '225', '1,500']);
-  expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$0', '$2.99', '$19.99']);
-  expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 5 LEGO® generations per month', 'About 15 LEGO® generations per month', 'About 100 LEGO® generations per month']);
+  expect(cards.map(card => card.querySelector('.billing-credit-allocation strong')?.textContent)).toEqual(['225', '1,500']);
+  expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$2.99', '$19.99']);
+  expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['About 15 LEGO® generations per month', 'About 100 LEGO® generations per month']);
   expect(cards.map(card => [...card.querySelectorAll('li')].map(item => item.textContent))).toEqual([
-    ['LEGO® set discounts'], ['10% off every LEGO® purchase'], ['20% off every LEGO® purchase'],
+    ['10% off every LEGO® purchase'], ['20% off every LEGO® purchase'],
   ]);
 });
 
@@ -194,7 +195,7 @@ it.each([[300, 270, 30], [800, 0, 800], [800, 1000, 0], [0, 0, 0]])('bounds mont
 });
 
 it('shows monthly usage beneath the popup title without counting bonuses or Apple credits', async () => {
-  account = { ...account, monthly_remaining: 270, bonus_remaining: 5, apple_remaining: 800 };
+  account = { ...account, plan_key: 'builder', monthly_remaining: 270, bonus_remaining: 5, apple_remaining: 800 };
   await render(<CreditBalance />);
   await click('credits');
   const heading = container.querySelector('.billing-dialog-heading')!;
@@ -225,15 +226,15 @@ it('redirects a saved pricing URL to the landing page with the same popup', asyn
 });
 
 it.each([
-  ['free', 75, 5, 'Upgrade plan'], ['builder', 225, 15, 'Upgrade plan'],
+  ['builder', 225, 15, 'Upgrade plan'],
   ['creator', 1500, 100, 'Change plan'], ['master', 1000, 50, 'Change plan'],
 ] as const)('summarizes %s and opens the right plan action', async (key, credits, generations, label) => {
-  account = { ...account, plan_key: key, monthly_credits: credits, has_subscription: key !== 'free' };
+  account = { ...account, plan_key: key, monthly_credits: credits, has_subscription: true };
   await render(<BillingPage />);
   const section = container.querySelector('.billing-account-plan')!.closest('section')!;
   expect(section.querySelector('.billing-plan-allowance')?.textContent).toBe(`${credits.toLocaleString()} credits each month. About ${generations} LEGO® generations per month.`);
   expect(section.textContent).not.toContain('No payment method needed');
-  expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'free' ? '10–20' : key === 'builder' ? 10 : 20}% off LEGO® sets`);
+  expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'builder' ? 10 : 20}% off LEGO® sets`);
   await click(label);
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(posthog.capture).toHaveBeenCalledWith('billing_plan_action_clicked', { plan_key: key, action: label === 'Change plan' ? 'change' : 'upgrade' });
@@ -246,24 +247,39 @@ it('uses the Apple subscription allowance instead of the separate free wallet', 
   expect(container.querySelector('.billing-plan-actions')?.textContent).toContain('Change plan');
 });
 
-it.each([false,true])('explains guest access without requiring login and offers optional signup (All parts: %s)', async allParts => {
+it.each([false, true])('explains that guests need a subscription (All parts: %s)', async allParts => {
   auth.user = null;
   await render(<GenerationCreditQuote allParts={allParts} />);
   expect(container.textContent).toContain(allParts ? '20 credits' : '2 credits');
-  expect(container.textContent).toContain('75 lifetime guest credits: 3 All parts builds or 37 Basic builds, or a mix. No login needed.');
-  expect(container.textContent).not.toContain('One guest trial');
-  await click('Sign in for 75 free monthly credits');
-  expect(container.textContent).toContain('Sign in to build');
-  expect(posthog.capture).toHaveBeenCalledWith('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' });
-  expect(billingApi.checkout).not.toHaveBeenCalled();
+  expect(container.textContent).toContain('Subscription required');
+  expect(container.textContent).not.toContain('guest credits');
 });
 
-it('lets Free accounts use All parts without a paid-plan nudge', async () => {
-  account = { ...account, monthly_remaining: 300, credits_remaining: 300 };
+it('opens the existing plans popup with all three model links when generation requires a subscription', async () => {
+  auth.user = null;
   await render(<GenerationCreditQuote allParts />);
-  expect(container.textContent).toContain('300 monthly credits available');
-  expect(container.querySelector('button')).toBeNull();
-  expect(container.textContent).not.toContain('Choose a monthly plan');
+  await act(async () => openGenerationSubscription());
+  const dialog = container.querySelector('dialog')!;
+  expect(dialog.open).toBe(true);
+  expect(dialog.querySelector('h1')?.textContent).toBe('Subscribe to generate models');
+  expect(dialog.querySelectorAll('.billing-plan')).toHaveLength(2);
+  const examples = [...dialog.querySelectorAll<HTMLAnchorElement>('a[aria-label^="View model:"]')];
+  expect(examples.map(link => link.getAttribute('href'))).toEqual([
+    '/?id=3164643e-974e-452a-8819-a1cc7788a628',
+    '/?id=4e5a6629-bdd4-46d0-97cc-d7271691e60c',
+    '/?id=126a7995-3bfe-4744-8008-c9eb39d386f5',
+  ]);
+  await act(async () => examples[0].click());
+  expect(container.querySelector('dialog')).toBeNull();
+  expect(posthog.capture).toHaveBeenCalledWith('generation_subscription_example_clicked', { generation_id: '3164643e-974e-452a-8819-a1cc7788a628' });
+});
+
+it('shows no active plan instead of a Free plan for an unsubscribed account', async () => {
+  await render(<BillingPage />);
+  expect(container.querySelector('.billing-account-plan')?.textContent).toBe('No active plan');
+  expect(container.querySelector('.billing-plan-allowance')?.textContent).toContain('Subscribe');
+  await click('Choose a plan');
+  expect(container.querySelector('dialog')?.open).toBe(true);
 });
 
 it('pauses new sales at capacity while keeping cancellation accessible', async () => {
@@ -276,7 +292,7 @@ it('pauses new sales at capacity while keeping cancellation accessible', async (
 });
 
 it('shows the total and monthly balances without separate purchased or legacy rows', async () => {
-  account = { ...account, bonus_remaining: 100, bonus_available: 3, credits_remaining: 5 };
+  account = { ...account, plan_key: 'builder', bonus_remaining: 100, bonus_available: 3, credits_remaining: 5 };
   await render(<BillingPage />);
   expect(container.textContent).not.toContain('Legacy bonus balance');
   expect(container.querySelector('.billing-big-balance')?.textContent).toBe('5');
@@ -290,7 +306,7 @@ it('shows the total and monthly balances without separate purchased or legacy ro
 
 
 it('does not imply that legacy bonuses can fund an All parts build', async () => {
-  account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active',
+  account = { ...account, plan_key: 'builder', has_subscription: true, paid_features: true, subscription_status: 'active',
     monthly_credits: 500, monthly_remaining: 10, bonus_remaining: 100, bonus_available: 5, credits_remaining: 15 };
   await render(<><GenerationCreditQuote allParts /><CreditNudge /></>);
   expect(container.textContent).toContain('10 monthly credits available. Legacy bonuses are for Basic only.');
@@ -469,9 +485,7 @@ it('highlights each tier discount without restoring instructions or exports', as
     expect(plan.textContent).not.toContain('Building instructions');
     expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);
   }
-  const free = container.querySelector('[aria-label="Free plan"]')!;
-  expect(free.querySelector('li')?.textContent).toBe('LEGO® set discounts');
-  expect(free.querySelector('[aria-label="Not included"]')).not.toBeNull();
+  expect(container.querySelector('[aria-label="Free plan"]')).toBeNull();
 });
 
 it('shows only the simple discount statement at the top of the shared popup', async () => {

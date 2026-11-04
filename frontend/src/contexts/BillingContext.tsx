@@ -1,3 +1,4 @@
+import { GENERATION_SUBSCRIPTION_EVENT, GENERATION_SUBSCRIPTION_SOURCE } from '../utils/generationSubscription';
 import { APPLE_EVENT, appleRequest, appleProduct, isAppleApp, hasApplePurchases, type AppleProduct } from '../services/applePurchases';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
@@ -51,7 +52,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await billingApi.plans();
       setAppleReady(Boolean(result.apple_ready));
-      setPlans(result.plans.filter(plan => plan.key !== 'master'));
+      setPlans(result.plans.filter(plan => plan.key !== 'master' && plan.key !== 'free'));
       setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled);
       setPlansStatus(result.ready ? 'ready' : 'error');
     } catch { setEnabled(false); setCheckoutAvailable(false); setPlansStatus('error'); }
@@ -151,8 +152,13 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   }, []);
   useEffect(() => {
     const exhausted = () => { void refresh(); };
+    const subscription = () => openUpgrade(GENERATION_SUBSCRIPTION_SOURCE);
     window.addEventListener('brickbuilder:credits-required', exhausted);
-    return () => window.removeEventListener('brickbuilder:credits-required', exhausted);
+    window.addEventListener(GENERATION_SUBSCRIPTION_EVENT, subscription);
+    return () => {
+      window.removeEventListener('brickbuilder:credits-required', exhausted);
+      window.removeEventListener(GENERATION_SUBSCRIPTION_EVENT, subscription);
+    };
   }, [refresh, openUpgrade]);
   const closeUpgrade = () => {
     posthog.capture('billing_upgrade_dismissed', { source: upgradeSource }); setUpgradeSource('');

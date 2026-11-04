@@ -19,17 +19,17 @@ describe('directory legal pages', () => {
     expect(privacy).not.toContain('<div id="root"></div>');
   });
 
-  it('publishes the free allowance, recurring billing, cancellation, and age policy consistently', () => {
+  it('publishes the subscription requirement, recurring billing, cancellation, and age policy consistently', () => {
     const terms = renderLegalDocument(shell, 'terms');
     expect(terms).toContain('Operator: Jake Johnson');
     expect(terms).toContain('at least 13 years old');
-    expect(terms).toContain('Free plan includes 75 credits');
+    expect(terms).toContain('An active subscription is required');
     expect(terms).toContain('Builder subscriptions include 10% off the regular price of LEGO® set bricks');
     expect(terms).toContain('discounted LEGO® set price');
     expect(terms).toContain('Creator and existing Master Builder subscriptions include 20% off.');
     expect(terms).toContain('renew automatically each month until canceled');
     expect(terms).toContain('My billing → Cancel subscription');
-    expect(terms).toContain('Free and web subscription monthly credits reset without rollover');
+    expect(terms).toContain('Web subscription monthly credits reset without rollover');
     expect(terms).toContain('One-time credit packs and credits purchased through Apple subscriptions roll over and never expire');
     expect(terms).toContain('Manage Apple subscription');
     expect(terms).toContain('revoke the connection');

@@ -109,7 +109,7 @@ it('requires signup before image generation and resumes the retained image after
   mount(); await select();
   await act(async () => button('Generate 3D model').click());
   expect(startImageModel).not.toHaveBeenCalled();
-  expect(host.querySelector('[role=dialog]')?.textContent).toContain('claim 75 free credits');
+  expect(host.querySelector('[role=dialog]')?.textContent).toContain('create an account to choose a subscription');
   auth.session = { access_token: 'signup-token' };
   await act(async () => root.render(<MemoryRouter><ImageModelUploadCard output="3d" /></MemoryRouter>));
   expect(startImageModel).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ name: 'photo.png' }), 'signup-token');

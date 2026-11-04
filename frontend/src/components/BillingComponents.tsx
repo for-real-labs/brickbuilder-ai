@@ -1,3 +1,5 @@
+import { GenerationExamples } from './GenerationExamples';
+import { GENERATION_SUBSCRIPTION_SOURCE } from '../utils/generationSubscription';
 import { PLAN_GENERATIONS, PLAN_DISCOUNTS } from '../utils/planDisplay';
 import { CreditPacks } from './CreditPurchase';
 export { CreditPacks } from './CreditPurchase';
@@ -34,28 +36,21 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
   const { plans, account, busy, enabled, checkoutAvailable, subscribe, closeUpgrade, appleProducts, restore, retryAccess } = useBilling();
   const apple = isAppleApp();
   return <><div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
-    {plans.filter(plan => !paidOnly || plan.key !== 'free').map(plan => {
+    {plans.filter(plan => plan.key !== 'free').map(plan => {
       const current = Boolean(user && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
       const applePrice = appleProducts?.find(p => p.id === appleProduct(plan.key))?.displayPrice;
       const petId = plan.key === 'creator' ? 'nib' : 'pip';
-      return <article key={plan.key} className={`billing-plan${plan.key === 'free' ? ' billing-plan--free' : ''}${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
+      return <article key={plan.key} className={`billing-plan${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
         {plan.key === 'creator' && <span className="billing-recommendation">Recommended</span>}
         <div className="billing-plan-top"><h2>{plan.name}</h2><PetAvatar id={petId} still /></div>
-        {plan.key === 'free' && <p className="billing-plan-description">Room to try your ideas.</p>}
         <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
-        {plan.key === 'free' && <p className="billing-renewal">No credit card needed</p>}
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <p className="billing-set-estimate">About {PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
-          <li className={plan.key === 'free' ? 'billing-feature-unavailable' : 'billing-feature-saving'}>
-            {plan.key === 'free' ? <X aria-label="Not included" /> : <Check aria-label="Included" />}
-            {plan.key === 'free' ? 'LEGO® set discounts' : <strong>{PLAN_DISCOUNTS[plan.key]}% off every LEGO® purchase</strong>}
-          </li>
+          <li className="billing-feature-saving"><Check aria-label="Included" /><strong>{PLAN_DISCOUNTS[plan.key]}% off every LEGO® purchase</strong></li>
         </ul>
-        {plan.key === 'free' ? user ? <button className="billing-plan-button" disabled>{current ? 'Current plan' : 'Free after cancellation'}</button>
-          : <button className="billing-plan-button" onClick={() => void subscribe('free', source)}>Start building free</button>
-          : <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
-            onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : 'Select Plan'}</button>}
+        <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
+          onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : 'Select Plan'}</button>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
       </article>;
     })}
@@ -102,7 +97,10 @@ export function MonthlyCreditUsage({ account }: { account: Pick<BillingAccount, 
 }
 
 export function BillingOverlays() {
-  const { upgradeSource, closeUpgrade, account, enabled, error, loginOpen, closeLogin } = useBilling();
+  const { upgradeSource, closeUpgrade, openUpgrade, account, enabled, error, loginOpen, closeLogin } = useBilling();
+  const subscriptionPrompt = upgradeSource === GENERATION_SUBSCRIPTION_SOURCE;
+  const loginSource = useRef('');
+  if (upgradeSource) loginSource.current = upgradeSource;
   const dialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (!upgradeSource) return;
@@ -115,17 +113,18 @@ export function BillingOverlays() {
     {upgradeSource && <dialog ref={dialog} className="billing-dialog" aria-labelledby="billing-upgrade-title"
       onCancel={e => { e.preventDefault(); closeUpgrade(); }} onClose={closeUpgrade}>
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
-      <h1 id="billing-upgrade-title" className="sr-only">Plans &amp; credits</h1>
-      {account && <div className="billing-dialog-heading"><PetAvatar /><div><MonthlyCreditUsage account={account} /></div></div>}
+      <h1 id="billing-upgrade-title" className={subscriptionPrompt ? 'pr-10 text-xl font-bold text-slate-900' : 'sr-only'}>{subscriptionPrompt ? 'Subscribe to generate models' : 'Plans & credits'}</h1>
+      {subscriptionPrompt && <p className="mb-4 mt-2 text-sm text-slate-600">Choose a BrickBuilder AI plan to create or edit models with AI.</p>}
+      {account && account.plan_key !== 'free' && <div className="billing-dialog-heading"><PetAvatar /><div><MonthlyCreditUsage account={account} /></div></div>}
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
-      {!enabled && <p role="status" className="billing-launch-notice">Monthly plans are getting ready. Your current building access continues.</p>}
+      {!enabled && <p role="status" className="billing-launch-notice">Subscription checkout is temporarily unavailable. Please try again shortly.</p>}
       <p className="billing-member-intro">Every paid plan includes a discount on LEGO® purchases</p>
       <PlanGrid source={upgradeSource} paidOnly />
-      <CreditPacks source={upgradeSource} />
+      {subscriptionPrompt ? <GenerationExamples onView={closeUpgrade} /> : <CreditPacks source={upgradeSource} />}
       <p className="billing-fine-print">Plans renew monthly until canceled. {isAppleApp() ? 'Apple credits roll over and never expire.' : 'Web monthly credits reset and do not roll over.'} Failed or canceled builds return their credits.</p>
       <Link to="/billing" className="billing-text-link" onClick={() => { posthog.capture('billing_usage_clicked', { source: upgradeSource }); closeUpgrade(); }}>View credit history & manage subscription</Link>
     </dialog>}
-    <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={closeLogin} redirectTo="/pricing" />
+    <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={() => { closeLogin(); if (loginSource.current === GENERATION_SUBSCRIPTION_SOURCE) openUpgrade(GENERATION_SUBSCRIPTION_SOURCE); }} redirectTo="/pricing" />
     <PaidFeatureDialog />
   </>;
 }
@@ -133,7 +132,7 @@ export function BillingOverlays() {
 
 export function GenerationCreditQuote({ allParts, personalSupported = true }: { allParts: boolean; personalSupported?: boolean }) {
   const { user } = useAuth();
-  const { enabled, account, signIn } = useBilling();
+  const { enabled, account } = useBilling();
   const [personal, setPersonal] = useState(false);
   useEffect(() => {
     let active = true;
@@ -143,12 +142,11 @@ export function GenerationCreditQuote({ allParts, personalSupported = true }: { 
     window.addEventListener('brickbuilder:ai-billing-changed', refresh);
     return () => { active = false; window.removeEventListener('brickbuilder:ai-billing-changed', refresh); };
   }, [user?.id]);
-  if (personal && personalSupported) return <p className="billing-generation-quote" role="status">Your AI account · No BrickBuilder credits used</p>;
+  if (personal && personalSupported && account?.paid_features) return <p className="billing-generation-quote" role="status">Your AI account · No BrickBuilder credits used</p>;
   if (!enabled) return null;
   return <p className="billing-generation-quote" role="status">
     {allParts ? '20 credits · All parts / AI mesh conversion' : '2 credits · Basic build or edit'}
-    {allParts && account && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
-    {!user && <> · 75 lifetime guest credits: 3 All parts builds or 37 Basic builds, or a mix. No login needed.{' '}
-      <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_mode_sign_in_clicked', { mode: allParts ? 'all_parts' : 'basic' }); signIn(); }}>Sign in for 75 free monthly credits</button></>}
+    {allParts && account?.paid_features && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
+    {(!user || account?.paid_features === false) && ' · Subscription required'}
   </p>;
 }

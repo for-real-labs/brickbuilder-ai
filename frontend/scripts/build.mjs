@@ -56,7 +56,7 @@ async function runViteBuild(env) {
     stdio: 'inherit',
     env: {
       ...env,
-      VITE_MAINTENANCE_ACTIVE: String(env.VERCEL_ENV === 'production' && env.BRICKBUILDER_MAINTENANCE !== 'off'),
+      VITE_MAINTENANCE_ACTIVE: String(env.VERCEL_ENV === 'production' && env.BRICKBUILDER_MAINTENANCE === 'on'),
       VITE_CHANGE_REQUEST_BRANCH: process.env.VERCEL_GIT_COMMIT_REF || 'main',
       VITE_CHANGE_REQUEST_SHA: process.env.VERCEL_GIT_COMMIT_SHA || '',
     },
