@@ -26,12 +26,19 @@ describe('production maintenance gate', () => {
     const response = await middleware(new Request(origin + path));
     expect(response?.status).toBe(503);
     expect(response?.headers.get('cache-control')).toBe('no-store');
-    expect(await response?.text()).toContain('BrickBuilder.ai is down for maintenance.');
+    expect(await response?.text()).toContain('BrickBuilder AI is down for maintenance.');
   });
 
   it('allows only the required Pip assets and supports turning the gate off', async () => {
-    expect(await middleware(new Request(origin + '/pets/pip-building.mp4'))).toBeUndefined();
-    expect(await middleware(new Request(origin + '/pets/pip.webp'))).toBeUndefined();
+    const html = await (await middleware(new Request(origin)))?.text();
+    expect(html).toContain('id="maintenance-bricks"');
+    expect(html).toContain('🚧 🛠️');
+    expect(html).not.toContain('Maintenance in progress');
+    for (const asset of ['/assets/maintenance-bricks.js', '/pets/christmas-v1/pip-idle-alpha.mov',
+      '/pets/christmas-v1/pip-idle-alpha.webm', '/pets/christmas-v1/pip.webp']) {
+      expect(html).toContain(asset);
+      expect(await middleware(new Request(origin + asset))).toBeUndefined();
+    }
     expect((await middleware(new Request(origin + '/assets/app.js')))?.status).toBe(503);
     vi.stubEnv('BRICKBUILDER_MAINTENANCE', 'off');
     expect(await middleware(new Request(origin))).toBeUndefined();

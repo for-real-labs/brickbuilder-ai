@@ -1,9 +1,14 @@
+import { petPosterPath, petVideoSources } from './src/pets';
+
 const SIGNUP_PATH = '/__maintenance-alert';
-const PIP_ASSETS = new Set(['/pets/pip-building.mp4', '/pets/pip.webp']);
+const BRICKS_SCRIPT = '/assets/maintenance-bricks.js';
+const PIP_POSTER = petPosterPath('pip');
+const PIP_SOURCES = petVideoSources('pip', 'idle');
+const MAINTENANCE_ASSETS = new Set([BRICKS_SCRIPT, PIP_POSTER, ...PIP_SOURCES.map(({ src }) => src)]);
 const SIGNUP_URL = 'https://smzdytfghwslpbqnwdov.supabase.co/functions/v1/maintenance-alert';
 
 const messages = {
-  saved: 'You’re on the list! We’ll email you when BrickBuilder.ai is back online.',
+  saved: 'You’re on the list! We’ll email you when BrickBuilder AI is back online.',
   invalid: 'Please enter a valid email address.',
   unavailable: 'We couldn’t save your email right now. Please try again.',
 } as const;
@@ -15,49 +20,44 @@ function maintenancePage(method: string, status = 503, result?: keyof typeof mes
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Maintenance · BrickBuilder.ai</title>
+<title>Maintenance · BrickBuilder AI</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100svh; display: grid; place-items: center; padding: 20px;
-    background: radial-gradient(circle at top, #ffedb6, #fff9ec 65%); color: #252330;
-    font: 1rem/1.5 system-ui, sans-serif; }
-  main { width: min(100%, 510px); background: #fff; border: 2px solid #272532; border-radius: 26px;
-    overflow: hidden; text-align: center; box-shadow: 0 8px 0 #272532; }
-  .tape { height: 15px; background: repeating-linear-gradient(135deg,#ffcf43 0 17px,#272532 17px 32px); }
-  .content { padding: clamp(20px, 6vw, 38px); }
-  .stage { position: relative; display: grid; place-items: center; margin: 0 auto 12px; width: 180px; height: 150px;
-    border-radius: 24px; background: #fff4d3; }
-  .stage video, .stage img { width: 138px; height: 138px; object-fit: contain; mix-blend-mode: multiply; }
-  .stage img { display: none; }
-  .prop { position: absolute; font-size: 1.65rem; }
-  .tools { bottom: 7px; left: 7px; } .brick { bottom: 7px; right: 7px; }
-  .tag { display: inline-block; border-radius: 999px; padding: 4px 12px; background: #fff0bd;
-    font-size: .79rem; font-weight: 750; }
-  h1 { font-size: clamp(1.6rem, 6vw, 2.35rem); line-height: 1.12; letter-spacing: -.04em; margin: 12px 0; }
-  p { margin: 0 0 20px; color: #4b4757; }
-  form { display: grid; gap: 8px; text-align: left; }
-  label { font-size: .875rem; font-weight: 700; }
-  input, button { width: 100%; min-height: 48px; border-radius: 12px; padding: 10px 14px; font: inherit; }
-  input { border: 1px solid #787284; }
-  button { border: 0; background: #272532; color: #fff; font-weight: 750; cursor: pointer; }
-  button:hover { background: #434050; }
+  body { margin: 0; min-height: 100svh; display: grid; place-items: center; padding: 16px;
+    background: #fbfbfd; color: #0f172a; font: 1rem/1.5 system-ui, sans-serif; }
+  canvas, .backdrop { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  canvas { opacity: .25; }
+  .backdrop { background: rgb(2 6 23 / 25%); }
+  main { position: relative; width: min(100%, 28rem); background: #fff; border: 1px solid #e2e8f0;
+    border-radius: 24px; padding: clamp(24px, 6vw, 32px); text-align: center;
+    box-shadow: 0 25px 50px -12px rgb(0 0 0 / 25%); }
+  .pet { display: block; margin: 0 auto 12px; width: 136px; height: 136px; object-fit: contain; }
+  img.pet { display: none; }
+  h1 { margin: 0; font-size: 1.5rem; line-height: 1.3; font-weight: 700; letter-spacing: -.025em; }
+  .icons { white-space: nowrap; }
+  p { margin: 8px 0 0; color: #475569; }
+  form { display: grid; gap: 4px; margin-top: 20px; text-align: left; }
+  label { font-size: .875rem; font-weight: 500; color: #334155; }
+  input, button { width: 100%; min-height: 44px; padding: 8px 12px; font: inherit; }
+  input { border-radius: 8px; border: 1px solid #cbd5e1; }
+  button { margin-top: 12px; border: 0; border-radius: 12px; background: #f44336;
+    color: #0f172a; font-weight: 600; cursor: pointer; }
+  button:hover { background: #ff6b6b; }
   :focus-visible { outline: 3px solid #195aa8; outline-offset: 3px; }
-  .feedback { background: #fff4d3; color: #252330; border-radius: 12px; padding: 12px; }
-  .feedback:last-child { margin-bottom: 0; }
-  @media (prefers-reduced-motion: reduce) { .stage video { display: none; } .stage img { display: block; } }
+  .feedback { background: #f1f5f9; border-radius: 12px; padding: 12px; margin-top: 16px; }
+  @media (prefers-reduced-motion: reduce) { video.pet { display: none; } img.pet { display: block; } }
 </style>
+<script type="module" src="${BRICKS_SCRIPT}"></script>
 </head>
 <body>
+<canvas id="maintenance-bricks" aria-hidden="true"></canvas>
+<div class="backdrop" aria-hidden="true"></div>
 <main>
-  <div class="tape" aria-hidden="true"></div>
-  <div class="content">
-    <div class="stage" aria-hidden="true">
-      <video src="/pets/pip-building.mp4" poster="/pets/pip.webp" autoplay muted loop playsinline></video>
-      <img src="/pets/pip.webp" alt="">
-      <span class="prop tools">🛠️</span><span class="prop brick">🧱</span>
-    </div>
-    <span class="tag">🚧 Maintenance in progress</span>
-    <h1>BrickBuilder.ai is down for maintenance.</h1>
+    <video class="pet" aria-hidden="true" poster="${PIP_POSTER}" autoplay muted loop playsinline disablepictureinpicture>
+      ${PIP_SOURCES.map(({ src, type }) => `<source src="${src}" type='${type}'>`).join('')}
+    </video>
+    <img class="pet" src="${PIP_POSTER}" alt="">
+    <h1>BrickBuilder AI is down for maintenance. <span class="icons" aria-hidden="true">🚧 🛠️</span></h1>
     ${result === 'saved' ? feedback : `<p>To be notified when it’s back online, please enter your email.</p>
     ${feedback}
     <form method="post" action="${SIGNUP_PATH}">
@@ -65,7 +65,6 @@ function maintenancePage(method: string, status = 503, result?: keyof typeof mes
       <input id="email" name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required>
       <button type="submit">Notify me</button>
     </form>`}
-  </div>
 </main>
 </body>
 </html>`, {
@@ -73,7 +72,7 @@ function maintenancePage(method: string, status = 503, result?: keyof typeof mes
     headers: {
       'Cache-Control': 'no-store',
       'Content-Type': 'text/html; charset=utf-8',
-      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; media-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
+      'Content-Security-Policy': "default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; img-src 'self'; media-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'",
       'X-Content-Type-Options': 'nosniff',
       ...(status === 503 ? { 'Retry-After': '3600' } : {}),
     },
@@ -106,7 +105,7 @@ async function readFormEmail(request: Request): Promise<string> {
 }
 
 export async function maintenanceResponse(request: Request, url: URL): Promise<Response | undefined> {
-  if (PIP_ASSETS.has(url.pathname) && (request.method === 'GET' || request.method === 'HEAD')) return undefined;
+  if (MAINTENANCE_ASSETS.has(url.pathname) && (request.method === 'GET' || request.method === 'HEAD')) return undefined;
   if (url.pathname !== SIGNUP_PATH || request.method !== 'POST') return maintenancePage(request.method);
   if (request.headers.get('origin') !== url.origin) return maintenancePage(request.method, 403, 'invalid');
 

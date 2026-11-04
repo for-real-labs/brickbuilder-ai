@@ -35,6 +35,8 @@
  *   RAILWAY_PREVIEW_RETRY_DELAY_MS - delay between attempts in ms (default 5000)
  */
 import { spawnSync } from 'node:child_process';
+import { readFile, writeFile } from 'node:fs/promises';
+import { transformWithEsbuild } from 'vite';
 import { prerenderPublicPages } from './public-prerender.mjs';
 import { resolveGitHubPreviewBackend } from './github-preview.mjs';
 import {
@@ -61,8 +63,18 @@ async function runViteBuild(env) {
   if (result.status !== 0) process.exit(result.status ?? 1);
   try {
     await prerenderPublicPages();
+    // The maintenance gate loads only the shared animation, without the app bundle.
+    const renderer = await readFile('src/utils/fallingBricks.ts', 'utf8');
+    const launch = `
+      const canvas = document.querySelector('#maintenance-bricks');
+      if (canvas && !matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        startFallingBricks(canvas, { christmas: true });
+      }
+    `;
+    const { code } = await transformWithEsbuild(renderer + launch, 'maintenance-bricks.ts', { minify: true });
+    await writeFile('dist/assets/maintenance-bricks.js', code);
   } catch (error) {
-    console.error('[build] Public page rendering failed:', error);
+    console.error('[build] Static page build failed:', error);
     process.exit(1);
   }
 }
