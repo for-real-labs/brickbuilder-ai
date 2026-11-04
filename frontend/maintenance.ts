@@ -1,10 +1,13 @@
 import { petPosterPath, petVideoSources } from './src/pets';
+import { isMaintenanceAccountRoute } from './src/maintenanceRoutes';
 
 const SIGNUP_PATH = '/__maintenance-alert';
 const BRICKS_SCRIPT = '/assets/maintenance-bricks.js';
 const PIP_POSTER = petPosterPath('pip');
 const PIP_SOURCES = petVideoSources('pip', 'idle');
-const MAINTENANCE_ASSETS = new Set([BRICKS_SCRIPT, PIP_POSTER, ...PIP_SOURCES.map(({ src }) => src)]);
+const PUBLIC_IMAGES = new Set(['/brickbuilder-logo.PNG', '/favicon.ico', '/logo.svg']);
+const PET_MEDIA = /^\/pets\/[a-z0-9/-]+\.(?:webp|png|mp4|webm|mov)$/i;
+const APP_ASSETS = /^\/assets\/[a-z0-9/_@.-]+\.(?:js|css|svg|png|jpe?g|webp|ico|woff2?|ttf|wasm)$/i;
 const SIGNUP_URL = 'https://smzdytfghwslpbqnwdov.supabase.co/functions/v1/maintenance-alert';
 
 const messages = {
@@ -44,6 +47,10 @@ function maintenancePage(method: string, status = 503, result?: keyof typeof mes
     color: #0f172a; font-weight: 600; cursor: pointer; }
   button:hover { background: #ff6b6b; }
   :focus-visible { outline: 3px solid #195aa8; outline-offset: 3px; }
+  footer { margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; font-size: .875rem; color: #475569; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 16px; justify-content: center; margin-bottom: 8px; }
+  footer a { color: #a92b22; text-underline-offset: 2px; }
+  footer nav a { font-weight: 600; }
   .feedback { background: #f1f5f9; border-radius: 12px; padding: 12px; margin-top: 16px; }
   @media (prefers-reduced-motion: reduce) { video.pet { display: none; } img.pet { display: block; } }
 </style>
@@ -65,6 +72,10 @@ function maintenancePage(method: string, status = 503, result?: keyof typeof mes
       <input id="email" name="email" type="email" maxlength="254" autocomplete="email" placeholder="you@example.com" required>
       <button type="submit">Notify me</button>
     </form>`}
+    <footer>
+      <nav aria-label="Account"><a href="/login">Log in</a><a href="/dashboard">Dashboard</a></nav>
+      <a href="mailto:support@brickbuilder.ai">support@brickbuilder.ai</a>
+    </footer>
 </main>
 </body>
 </html>`, {
@@ -105,7 +116,11 @@ async function readFormEmail(request: Request): Promise<string> {
 }
 
 export async function maintenanceResponse(request: Request, url: URL): Promise<Response | undefined> {
-  if (MAINTENANCE_ASSETS.has(url.pathname) && (request.method === 'GET' || request.method === 'HEAD')) return undefined;
+  const { pathname } = url;
+  if (request.method === 'GET' || request.method === 'HEAD') {
+    if (isMaintenanceAccountRoute(pathname) || APP_ASSETS.test(pathname)
+        || PET_MEDIA.test(pathname) || PUBLIC_IMAGES.has(pathname)) return undefined;
+  }
   if (url.pathname !== SIGNUP_PATH || request.method !== 'POST') return maintenancePage(request.method);
   if (request.headers.get('origin') !== url.origin) return maintenancePage(request.method, 403, 'invalid');
 

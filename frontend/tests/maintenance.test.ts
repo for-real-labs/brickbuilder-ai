@@ -22,14 +22,14 @@ describe('production maintenance gate', () => {
     vi.unstubAllGlobals();
   });
 
-  it.each(['/', '/generated-model', '/dashboard'])('serves a temporary outage at %s', async path => {
+  it.each(['/', '/generated-model', '/community'])('serves a temporary outage at %s', async path => {
     const response = await middleware(new Request(origin + path));
     expect(response?.status).toBe(503);
     expect(response?.headers.get('cache-control')).toBe('no-store');
     expect(await response?.text()).toContain('BrickBuilder AI is down for maintenance.');
   });
 
-  it('allows only the required Pip assets and supports turning the gate off', async () => {
+  it('uses the landing page assets and supports turning the gate off', async () => {
     const html = await (await middleware(new Request(origin)))?.text();
     expect(html).toContain('id="maintenance-bricks"');
     expect(html).toContain('🚧 🛠️');
@@ -39,9 +39,20 @@ describe('production maintenance gate', () => {
       expect(html).toContain(asset);
       expect(await middleware(new Request(origin + asset))).toBeUndefined();
     }
-    expect((await middleware(new Request(origin + '/assets/app.js')))?.status).toBe(503);
+    expect((await middleware(new Request(origin + '/assets/index.html')))?.status).toBe(503);
     vi.stubEnv('BRICKBUILDER_MAINTENANCE', 'off');
     expect(await middleware(new Request(origin))).toBeUndefined();
+  });
+
+  it('keeps account access and its assets available and links to support', async () => {
+    for (const path of ['/login', '/signup', '/dashboard?tab=settings', '/billing',
+      '/oauth/consent', '/reset-password', '/assets/index-abc123.js', '/assets/index-abc123.css']) {
+      expect(await middleware(new Request(origin + path))).toBeUndefined();
+    }
+    const html = await (await middleware(new Request(origin)))?.text();
+    expect(html).toContain('href="/login"');
+    expect(html).toContain('href="/dashboard"');
+    expect(html).toContain('href="mailto:support@brickbuilder.ai"');
   });
 
   it('only confirms the subscription after the storage endpoint accepts it', async () => {

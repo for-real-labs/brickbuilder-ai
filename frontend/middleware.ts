@@ -1,4 +1,5 @@
 import { maintenanceResponse } from './maintenance';
+import { isMaintenanceHost } from './src/maintenanceRoutes';
 
 const AUTH_PATH = '/__preview-auth';
 const AUTH_COOKIE = 'brickbuilder_preview_auth';
@@ -278,7 +279,7 @@ function loginPage(error?: string, returnTo = '/'): Response {
 export default async function middleware(request: Request): Promise<Response | undefined> {
   if (process.env.VERCEL_ENV === 'production' && process.env.BRICKBUILDER_MAINTENANCE !== 'off') {
     const url = new URL(request.url);
-    if (url.hostname === 'brickbuilder.ai' || url.hostname === 'www.brickbuilder.ai') {
+    if (isMaintenanceHost(url.hostname)) {
       return maintenanceResponse(request, url);
     }
   }

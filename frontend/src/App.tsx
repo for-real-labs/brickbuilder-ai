@@ -1,3 +1,4 @@
+import { MaintenanceNavigation } from './components/MaintenanceNavigation';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { AccountDeleted } from './components/DeleteAccount';
 import { StudioTransferGate } from "./components/StudioTransferGate";
@@ -126,10 +127,12 @@ function MainApp() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/video" element={<VideoPage />} />
-        <Route path="*" element={<MainApp />} />
-      </Routes>
+      <MaintenanceNavigation>
+        <Routes>
+          <Route path="/video" element={<VideoPage />} />
+          <Route path="*" element={<MainApp />} />
+        </Routes>
+      </MaintenanceNavigation>
     </BrowserRouter>
   );
 }
