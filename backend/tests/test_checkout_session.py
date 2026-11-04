@@ -40,7 +40,7 @@ def test_custom_checkout_uses_server_price_and_preserves_fulfillment(setup):
     _, create, _ = setup
     result = run(uiMode='custom', priceCents=1, brickowlCartId='cart')
     params = create.call_args.kwargs
-    assert params['line_items'][0]['price_data']['unit_amount'] == 7813
+    assert params['line_items'][0]['price_data']['unit_amount'] == 6250
     assert params['line_items'][0]['price_data']['product_data']['name'] == 'Test Frog'
     assert params['ui_mode'] == 'custom'
     assert params['payment_method_types'] == ['card']
@@ -69,7 +69,7 @@ def test_physical_orders_allow_stripe_validated_promotion_codes(setup, mode):
     _, create, _ = setup
     run(uiMode=mode)
     assert create.call_args.kwargs['allow_promotion_codes'] is True
-    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 7813
+    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 6250
 
 
 def test_private_checkout_cannot_be_started_by_other_user(setup):
@@ -103,7 +103,7 @@ def test_checkout_refuses_catalog_only_quote():
         checkout.checkout_price_cents(quote)
 
 
-@pytest.mark.parametrize('percent,parts,discount', [(10,14063,1562),(20,12500,3125)])
+@pytest.mark.parametrize('percent,parts,discount', [(10,11250,1250),(20,10000,2500)])
 def test_member_price_is_baked_into_line_item_so_promos_stack(setup,percent,parts,discount):
     checkout.get_price.return_value.order_pricing = price_order(100, 1, 'GB', member_discount_percent=percent)
     _, create, _ = setup
@@ -154,7 +154,7 @@ def test_checkout_records_postcard_choice_for_fulfillment(setup, selected):
     _, create, _ = setup
     run(uiMode='elements', shipInstructionsPostcard=selected)
     assert create.call_args.kwargs['metadata']['shipInstructionsPostcard'] == str(selected).lower()
-    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 7813
+    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 6250
 
 
 @pytest.mark.parametrize('value', ['true', 1, None, {'selected': True}])

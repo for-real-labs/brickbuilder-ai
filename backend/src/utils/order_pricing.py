@@ -74,10 +74,9 @@ def price_order(cost: float, weight: float, country: str = 'US', *, member_disco
         raise HTTPException(400, 'Kit pricing is unavailable')
     if country not in COUNTRY_CODES:
         raise HTTPException(400, 'Unsupported shipping country')
-    # cost / (1 - margin), then gross up for the member benefit. Supplier
-    # coupons are not assumed: fulfillment savings can vary per purchase.
-    member_target = (cost * 100 / (1 - TARGET_BRICK_MARGIN)).to_integral_value(rounding=ROUND_CEILING)
-    full_parts = int((member_target / Decimal('0.8')).to_integral_value(rounding=ROUND_CEILING))
+    # Apply the retail margin once; the 20% member discount removes it.
+    # Supplier coupons are not assumed: fulfillment savings vary per purchase.
+    full_parts = int((cost * 100 / (1 - TARGET_BRICK_MARGIN)).to_integral_value(rounding=ROUND_CEILING))
     multiplier = Decimal(100 - member_discount_percent) / 100
     parts = int((Decimal(full_parts) * multiplier).to_integral_value(rounding=ROUND_HALF_UP))
     shipping = _shipping_cents(weight, country)

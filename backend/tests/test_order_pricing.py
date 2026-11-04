@@ -8,16 +8,25 @@ from fastapi import HTTPException
 from src.utils import order_pricing as pricing
 
 
-def test_margin_is_retained_after_member_discount_and_shipping_is_separate():
+def test_member_discount_removes_retail_margin_and_shipping_is_separate():
     regular = pricing.price_order(100, 1)
     member = pricing.price_order(100, 1, member_discount_percent=20)
-    assert regular.full_parts_cents == 15625
-    assert member.parts_cents == 12500
-    assert (member.parts_cents - 10000) / member.parts_cents == .2
-    assert member.member_discount_cents == 3125
+    assert regular.full_parts_cents == 12500
+    assert (regular.parts_cents - 10000) / regular.parts_cents == .2
+    assert member.parts_cents == 10000
+    assert member.member_discount_cents == 2500
     assert member.full_total_cents == regular.total_cents
     assert regular.shipping_cents == member.shipping_cents == 2100
-    assert member.total_cents == 14600
+    assert member.total_cents == 12100
+
+
+def test_parts_quote_does_not_add_a_second_margin_before_member_discount():
+    regular = pricing.price_order(51.54, .723494)
+    member = pricing.price_order(51.54, .723494, member_discount_percent=20)
+    assert regular.parts_cents == 6443
+    assert member.parts_cents == 5154
+    assert regular.shipping_cents == member.shipping_cents == 1635
+    assert member.total_cents == 6789
 
 
 @pytest.mark.parametrize('weight,cents', [
@@ -43,9 +52,10 @@ def test_shipping_depends_on_weight_not_brick_price_or_membership():
 
 
 @pytest.mark.parametrize('cost', [.01, .37, 10, 42.11, 107.02, 172.78])
-def test_fractional_cent_rounding_never_loses_target_margin(cost):
+def test_fractional_cent_rounding_preserves_regular_margin_and_member_cost(cost):
     quote = pricing.price_order(cost, .1, member_discount_percent=20)
-    assert quote.parts_cents >= cost * 100 / .8 - .001
+    assert quote.full_parts_cents >= cost * 100 / .8 - .001
+    assert round(cost * 100) <= quote.parts_cents <= round(cost * 100) + 1
     assert quote.full_parts_cents - quote.member_discount_cents == quote.parts_cents
     assert quote.total_cents == quote.parts_cents + quote.shipping_cents
 
@@ -101,11 +111,11 @@ def test_builder_and_creator_discounts_use_the_same_regular_price_and_shipping()
     regular = pricing.price_order(100, 1)
     builder = pricing.price_order(100, 1, member_discount_percent=10)
     creator = pricing.price_order(100, 1, member_discount_percent=20)
-    assert regular.full_parts_cents == builder.full_parts_cents == creator.full_parts_cents == 15625
-    assert builder.parts_cents == 14063
-    assert builder.member_discount_cents == 1562
+    assert regular.full_parts_cents == builder.full_parts_cents == creator.full_parts_cents == 12500
+    assert builder.parts_cents == 11250
+    assert builder.member_discount_cents == 1250
     assert builder.member_discount_percent == 10
-    assert creator.parts_cents == 12500 and creator.member_discount_percent == 20
+    assert creator.parts_cents == 10000 and creator.member_discount_percent == 20
     assert builder.shipping_cents == creator.shipping_cents == regular.shipping_cents
 
 
