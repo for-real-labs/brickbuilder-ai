@@ -12,15 +12,15 @@ let root: ReturnType<typeof createRoot>;
 beforeEach(() => { container = document.createElement('div'); root = createRoot(container); });
 afterEach(() => act(() => root.unmount()));
 
-it('shows the full checkout price with shipping included', () => {
+it('shows the kit subtotal and labels shipping separately', () => {
   const order = vi.fn();
   act(() => root.render(<ModelOrderCard quote={quote} loading={false} updating={false} error={null} onOrder={order} />));
   expect(container.querySelector('.model-order-heading p')?.textContent).toBe('Your model, delivered to your door.');
-  expect(container.querySelector('.model-order-total')?.textContent).toBe('$44.77');
+  expect(container.querySelector('.model-order-total')?.textContent).toBe('$38.97');
   expect(container.querySelector('.model-order-original')).toBeNull();
   const priceRow = container.querySelector('.model-order-price')!;
   expect(priceRow.children[0]?.classList.contains('model-order-total')).toBe(true);
-  expect(priceRow.children[1]?.textContent).toBe('USD · estimated US shipping included');
+  expect(priceRow.children[1]?.textContent).toBe('USD + shipping');
   expect(container.textContent).not.toContain('BrickBuilder Launch Discount');
   expect(container.querySelector('.model-mobile-order strong')?.textContent).toBe('$44.77');
   expect(container.textContent).toContain('8–12 business days');
@@ -100,8 +100,8 @@ it('shows the total piece count instead of shipping copy in the compact order ba
 it.each([10,20])('shows the server-quoted %s percent savings and crossed-out full price', percent => {
   const memberQuote = { ...quote, order_pricing: orderPricing(4000, 1000, 750, 'US', percent) };
   act(() => root.render(<ModelOrderCard quote={memberQuote} loading={false} updating={false} error={null} onOrder={vi.fn()} />));
-  expect(container.querySelector('del.model-order-original')?.textContent).toBe('$47.50');
-  expect(container.querySelector('.model-order-total')?.textContent).toBe('$40.00');
+  expect(container.querySelector('del.model-order-original')?.textContent).toBe('$37.50');
+  expect(container.querySelector('.model-order-total')?.textContent).toBe('$30.00');
   expect(container.textContent).toContain(`Paid plan · ${percent}% off LEGO® set bricks`);
   expect(container.querySelector('.model-mobile-member')?.textContent).toContain(`${percent}% member savings`);
   expect(container.querySelector('.model-mobile-original')?.textContent).toBe('$47.50');

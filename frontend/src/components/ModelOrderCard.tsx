@@ -20,7 +20,7 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
   const [mobileDismissed, setMobileDismissed] = useState(false);
   const pricing = getOrderPricing(quote);
   const unavailable = loading || updating || !!error || !pricing;
-  const price = pricing ? formatOrderPrice(pricing.totalCents) : '—';
+  const price = pricing ? formatOrderPrice(pricing.partSubtotalCents) : '—';
   const status = loading ? 'Calculating your kit price…' : error || !pricing ? 'Price unavailable right now.' : null;
 
   return <>
@@ -32,8 +32,8 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
       <div className="model-order-price">
         <span className="model-order-total">{price}</span>
         <div className="model-order-price-details">
-          {pricing && pricing.memberDiscountCents > 0 && <del className="model-order-original">{formatOrderPrice(pricing.fullTotalCents)}</del>}
-          <span>USD · estimated US shipping included</span>
+          {pricing && pricing.memberDiscountCents > 0 && <del className="model-order-original">{formatOrderPrice(pricing.fullPartSubtotalCents)}</del>}
+          <span>USD + shipping</span>
         </div>
       </div>
       {pricing && pricing.memberDiscountCents > 0 && <p className="model-member-discount">Paid plan · {pricing.memberDiscountPercent}% off LEGO® set bricks</p>}
