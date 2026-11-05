@@ -510,16 +510,19 @@ it('refreshes country shipping and ignores an older request that finishes later'
   expect(country.value).toBe('PL');
 });
 
-it('uses embedded plan payments with email only and monthly terms, without shipping or a promo form', async () => {
+it.each([['builder', 299, '2.99'], ['creator', 1999, '19.99']] as const)('confirms %s using the session customer email, without shipping or a promo form', async (plan, cents, price) => {
   mocks.confirm.mockResolvedValue({ type: 'error', error: { message: 'Your card was declined.', code: 'paymentFailed' } });
   await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs_plan', client_secret: 'secret' }} publishableKey="pk_test_example"
-    subscriptionPlan="builder" email="builder@example.test" totalCents={299} onBack={vi.fn()} onRetry={vi.fn()} />));
-  expect(container.textContent).toContain('Subscribe · $2.99 / month');
+    subscriptionPlan={plan} email="builder@example.test" totalCents={cents} onBack={vi.fn()} onRetry={vi.fn()} />));
+  expect(container.textContent).toContain(`Subscribe · $${price} / month`);
   expect(container.textContent).toContain('Renews monthly until canceled');
   expect(container.querySelector('#order-promo')).toBeNull();
   await act(async () => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
-  expect(mocks.confirm).toHaveBeenCalledWith({ email: 'builder@example.test', redirect: 'if_required' });
+  expect(mocks.confirm).toHaveBeenCalledWith({ redirect: 'if_required' });
+  const walletEvent = { paymentFailed: vi.fn() };
+  await act(async () => mocks.walletEvents.confirm(walletEvent));
+  expect(mocks.confirm).toHaveBeenLastCalledWith({ redirect: 'if_required', expressCheckoutConfirmEvent: walletEvent });
   expect(container.textContent).toContain('Your card was declined.');
-  expect(posthog.capture).toHaveBeenCalledWith('plan_checkout_clicked', expect.objectContaining({ plan_key: 'builder', total_cents: 299 }));
+  expect(posthog.capture).toHaveBeenCalledWith('plan_checkout_clicked', expect.objectContaining({ plan_key: plan, total_cents: cents }));
 });
