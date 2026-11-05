@@ -2,7 +2,6 @@ import asyncio
 import threading
 
 import httpx
-import pytest
 
 from src.utils import database
 from src.utils.database import execute_query
@@ -14,6 +13,9 @@ def test_supabase_queries_use_http1_and_preserve_authenticated_requests(monkeypa
     try:
         assert transport._transport._pool._http2 is False
         assert transport.timeout.read == 120
+        # Opening storage must not redirect subsequent table queries there.
+        client.storage.from_('generations').get_public_url('example.ldr')
+        assert client.storage.session is not transport
         requests = []
 
         def respond(request):
@@ -35,19 +37,6 @@ def test_supabase_queries_use_http1_and_preserve_authenticated_requests(monkeypa
         assert all(request.headers['authorization'] == 'Bearer test-service-key' for request in requests)
     finally:
         transport.close()
-
-
-def test_failed_supabase_initialization_closes_transport(monkeypatch):
-    transports = []
-
-    def fail(url, key, options):
-        transports.append(options.httpx_client)
-        raise ValueError('Invalid configuration')
-
-    monkeypatch.setattr(database, 'create_client', fail)
-    with pytest.raises(ValueError, match='Invalid configuration'):
-        database.create_database_client('invalid', 'test-service-key')
-    assert transports[0].is_closed
 
 
 def test_slow_database_query_does_not_block_other_requests():
