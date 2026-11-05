@@ -1,6 +1,6 @@
 import React from 'react';
 import { loadStripe } from '@stripe/stripe-js/pure';
-import type { Appearance, StripeCheckoutLoadActionsResult, StripePaymentElement, StripeCheckoutExpressCheckoutElement, StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
+import type { Appearance, StripeCheckoutLoadActionsResult, StripePaymentElement, StripeCheckoutExpressCheckoutElement, StripeExpressCheckoutElement, StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 import { ArrowLeft, LockKeyhole } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { CreateCheckoutSessionResponse } from '../../services/createCheckoutSessionApi';
@@ -42,6 +42,8 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   const walletRef = React.useRef<StripeCheckoutExpressCheckoutElement | null>(null);
   const [selectedMethod, setSelectedMethod] = React.useState<'card' | 'applePay' | 'googlePay'>('card');
   const [wallets, setWallets] = React.useState({ applePay: false, googlePay: false });
+  const [walletStatus, setWalletStatus] = React.useState<'loading' | 'ready' | 'error'>('loading');
+  const selectedMethodRef = React.useRef(selectedMethod);
   const acceptedRef = React.useRef(false);
   const confirmRef = React.useRef<(event: StripeExpressCheckoutElementConfirmEvent) => Promise<void>>(async () => {});
   const actionsRef = React.useRef<CheckoutActions | null>(null);
@@ -99,28 +101,47 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
           }
         });
         if (mountRef.current) element.mount(mountRef.current);
-        const wallet = checkout.createExpressCheckoutElement({
-          buttonHeight: 52, buttonTheme: { applePay: 'black', googlePay: 'black' }, buttonType: { applePay: 'pay', googlePay: 'pay' },
-          layout: { maxColumns: 1, maxRows: 1, overflow: 'never' },
-          paymentMethodOrder: ['apple_pay', 'google_pay'],
-          paymentMethods: { applePay: 'always', googlePay: 'always', paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never' },
-        });
-        walletRef.current = wallet;
-        let checkedAvailability = false;
-        wallet.on('ready', event => {
-          if (disposed || checkedAvailability) return;
-          checkedAvailability = true;
-          setWallets({ applePay: !!event.availablePaymentMethods?.applePay, googlePay: !!event.availablePaymentMethods?.googlePay });
-        });
-        wallet.on('click', event => {
-          if (acceptedRef.current) event.resolve();
-          else setError('Please agree to the Terms of Service before paying.');
-        });
-        wallet.on('confirm', event => { void confirmRef.current(event); });
-        wallet.on('loaderror', () => {
-          if (!disposed) setWallets({ applePay: false, googlePay: false });
-        });
-        if (walletMountRef.current) wallet.mount(walletMountRef.current);
+        try {
+          const wallet = checkout.createExpressCheckoutElement({
+            buttonHeight: 52, buttonTheme: { applePay: 'black', googlePay: 'black' }, buttonType: { applePay: 'pay', googlePay: 'pay' },
+            layout: { maxColumns: 1, maxRows: 0, overflow: 'never' },
+            paymentMethodOrder: ['apple_pay', 'google_pay'],
+            paymentMethods: { applePay: 'always', googlePay: 'always', paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never' },
+          }) as StripeExpressCheckoutElement;
+          walletRef.current = wallet;
+          const updateWallets = (available: { applePay: boolean; googlePay: boolean }) => {
+            if (disposed) return;
+            setWalletStatus('ready');
+            // Selecting one wallet hides the other in Stripe; retain its eligibility.
+            setWallets(previous => ({
+              applePay: selectedMethodRef.current === 'googlePay' ? previous.applePay : available.applePay,
+              googlePay: selectedMethodRef.current === 'applePay' ? previous.googlePay : available.googlePay,
+            }));
+          };
+          let availabilityReported = false;
+          wallet.on('ready', event => {
+            if (availabilityReported) return;
+            updateWallets({ applePay: !!event.availablePaymentMethods?.applePay, googlePay: !!event.availablePaymentMethods?.googlePay });
+          });
+          wallet.on('availablepaymentmethodschange', event => {
+            availabilityReported = true;
+            updateWallets({ applePay: !!event.paymentMethods?.applePay?.available, googlePay: !!event.paymentMethods?.googlePay?.available });
+          });
+          wallet.on('click', event => {
+            if (acceptedRef.current) event.resolve();
+            else setError('Please agree to the Terms of Service before paying.');
+          });
+          wallet.on('confirm', event => { void confirmRef.current(event); });
+          wallet.on('loaderror', () => {
+            if (!disposed) { setWalletStatus('error'); setWallets({ applePay: false, googlePay: false }); }
+          });
+          if (walletMountRef.current) wallet.mount(walletMountRef.current);
+        } catch {
+          if (!disposed) {
+            setWalletStatus('error');
+            track('order_checkout_error', { generation_id: generationId, stage: 'wallet_load' });
+          }
+        }
       } catch { clearTimeout(timeout); fail(); }
     })();
     return () => { disposed = true; clearTimeout(timeout); element?.destroy(); walletRef.current?.destroy(); walletRef.current = null; actionsRef.current = null; };
@@ -175,13 +196,17 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   acceptedRef.current = accepted && !promoBusy;
   confirmRef.current = confirmPayment;
   const chooseMethod = (method: 'card' | 'applePay' | 'googlePay') => {
+    selectedMethodRef.current = method;
     setSelectedMethod(method); setError(null);
-    if (method !== 'card') walletRef.current?.update({ paymentMethods: {
-      applePay: method === 'applePay' ? 'always' : 'never', googlePay: method === 'googlePay' ? 'always' : 'never',
+    walletRef.current?.update({ paymentMethods: {
+      applePay: method !== 'googlePay' ? 'always' : 'never', googlePay: method !== 'applePay' ? 'always' : 'never',
       paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never',
     } });
     track('order_payment_method_selected', { generation_id: generationId, payment_method: method });
   };
+  const walletNote = walletStatus === 'loading' ? 'Checking wallet availability…'
+    : walletStatus === 'error' ? 'Wallet payment could not load. Refresh the page or pay by card.'
+      : window.location.protocol === 'http:' ? 'Available on secure HTTPS checkout.' : 'Not supported by this browser or wallet setup.';
   return <form onSubmit={event => { event.preventDefault(); if (selectedMethod === 'card') void confirmPayment(); }}>
     {!ready && !loadFailed && <div role="status" className="checkout-payment-loading"><span className="checkout-spinner" />Loading secure payment…</div>}
     {!subscriptionPlan && <div className="checkout-promo">
@@ -202,15 +227,11 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       </section>
       <section className={`checkout-payment-option ${selectedMethod === 'applePay' ? 'is-selected' : ''}`}>
         <button type="button" role="radio" aria-checked={selectedMethod === 'applePay'} aria-describedby={!wallets.applePay ? 'apple-pay-unavailable' : undefined} disabled={loading || promoBusy || !wallets.applePay} onClick={() => chooseMethod('applePay')}><span className="checkout-method-radio" />Apple Pay<span aria-hidden="true" className="checkout-method-mark">Apple Pay</span></button>
-        {!wallets.applePay && <p id="apple-pay-unavailable" className="checkout-method-note">{window.location.protocol === 'http:' ? 'Available on secure HTTPS checkout.' : 'Unavailable in this browser or device.'}</p>}
-      </section>
-      <section className="checkout-payment-option">
-        <button type="button" role="radio" aria-checked={false} disabled aria-describedby="paypal-unavailable"><span className="checkout-method-radio" />PayPal<span aria-hidden="true" className="checkout-method-mark">PayPal</span></button>
-        <p id="paypal-unavailable" className="checkout-method-note">PayPal is not available yet.</p>
+        {!wallets.applePay && <p id="apple-pay-unavailable" className="checkout-method-note">{walletNote}</p>}
       </section>
       <section className={`checkout-payment-option ${selectedMethod === 'googlePay' ? 'is-selected' : ''}`}>
         <button type="button" role="radio" aria-checked={selectedMethod === 'googlePay'} aria-describedby={!wallets.googlePay ? 'google-pay-unavailable' : undefined} disabled={loading || promoBusy || !wallets.googlePay} onClick={() => chooseMethod('googlePay')}><span className="checkout-method-radio" />Google Pay<span aria-hidden="true" className="checkout-method-mark">Google Pay</span></button>
-        {!wallets.googlePay && <p id="google-pay-unavailable" className="checkout-method-note">{window.location.protocol === 'http:' ? 'Available on secure HTTPS checkout.' : 'Unavailable in this browser or device.'}</p>}
+        {!wallets.googlePay && <p id="google-pay-unavailable" className="checkout-method-note">{walletNote}</p>}
       </section>
     </div>
     {error && <div role="alert" className="checkout-error">{error}{loadFailed && <button type="button" onClick={() => {
@@ -225,7 +246,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" onClick={() => track('order_terms_opened', { generation_id: generationId })}>Terms of Service</a>.</span>
     </label>
     <div className="checkout-actions">
-      <button type="button" className="checkout-back" aria-label={subscriptionPlan ? 'Back to plans' : 'Back to contact and delivery'} disabled={loading || promoBusy} onClick={onBack}><ArrowLeft size={22} /></button>
+      {!subscriptionPlan && <button type="button" className="checkout-back" aria-label="Back to contact and delivery" disabled={loading || promoBusy} onClick={onBack}><ArrowLeft size={22} /></button>}
       <button hidden={selectedMethod !== 'card'} type="submit" className="checkout-primary" disabled={!ready || !accepted || loading || promoBusy || loadFailed}>
         {loading ? 'Processing…' : subscriptionPlan ? `Subscribe · ${formatOrderPrice(paymentTotal)} / month` : `Pay ${formatOrderPrice(paymentTotal)}`}
       </button>

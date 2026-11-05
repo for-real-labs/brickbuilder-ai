@@ -12,7 +12,7 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
 import shippingCountries from '../src/data/shippingCountries.json';
 
-const mocks = vi.hoisted(() => ({ applyPromotionCode: vi.fn(), removePromotionCode: vi.fn(), confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
+const mocks = vi.hoisted(() => ({ applyPromotionCode: vi.fn(), removePromotionCode: vi.fn(), confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletCreate: vi.fn(), walletMount: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
 vi.mock('@stripe/stripe-js/pure', () => ({ loadStripe: mocks.loadStripe }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ showModelControls }: { showModelControls?: boolean }) => <div data-testid="model-preview" data-controls={String(showModelControls)}>Model preview</div> }));
 vi.mock('../src/services/ldrToMpdApi', () => ({ LdrToMpdApiService: { convertLdrToMpd: async () => ({ mpd_content: '0 Frog' }) } }));
@@ -36,13 +36,18 @@ beforeEach(() => {
   mocks.mount.mockImplementation(() => mocks.paymentEvents.ready?.());
   mocks.loadActions.mockResolvedValue({ type: 'success', actions: { confirm: mocks.confirm, applyPromotionCode: mocks.applyPromotionCode, removePromotionCode: mocks.removePromotionCode } });
   mocks.initCheckoutElementsSdk.mockReset();
+  mocks.walletCreate.mockReset(); mocks.walletMount.mockReset();
+  mocks.walletMount.mockImplementation(() => mocks.walletEvents.ready?.({ availablePaymentMethods: { applePay: true, googlePay: true } }));
+  mocks.walletCreate.mockImplementation((options) => {
+    if (options.layout?.overflow === 'never' && options.layout?.maxRows > 0) throw new Error('Stripe does not allow maxRows with overflow never');
+    return {
+      on: (event: string, callback: (event?: unknown) => void) => { mocks.walletEvents[event] = callback; },
+      mount: mocks.walletMount, update: mocks.walletUpdate, destroy: vi.fn(),
+    };
+  });
   mocks.initCheckoutElementsSdk.mockImplementation(() => ({ loadActions: mocks.loadActions, createPaymentElement: () => ({
     on: (event: string, callback: (event?: unknown) => void) => { mocks.paymentEvents[event] = callback; }, mount: mocks.mount, destroy: mocks.destroy,
-  }), createExpressCheckoutElement: () => ({
-    on: (event: string, callback: (event?: unknown) => void) => { mocks.walletEvents[event] = callback; },
-    mount: () => mocks.walletEvents.ready?.({ availablePaymentMethods: { applePay: true, googlePay: true } }),
-    update: mocks.walletUpdate, destroy: vi.fn(),
-  }) }));
+  }), createExpressCheckoutElement: mocks.walletCreate }));
   mocks.loadStripe.mockResolvedValue({ initCheckoutElementsSdk: mocks.initCheckoutElementsSdk });
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
 });
@@ -302,14 +307,15 @@ it('updates the displayed total from the authoritative checkout quote', async ()
 });
 
 
-it('orders card, Apple Pay, PayPal, Google Pay and marks unconfigured PayPal unavailable', async () => {
+it('offers working wallet choices with a valid Stripe layout and omits unconfigured PayPal', async () => {
   await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
   const options = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
-  ['Card payment', 'Apple Pay', 'PayPal', 'Google Pay'].forEach((name, index) => expect(options[index].textContent).toContain(name));
+  ['Card payment', 'Apple Pay', 'Google Pay'].forEach((name, index) => expect(options[index].textContent).toContain(name));
   expect(container.querySelector('.checkout-wallet-payment')!.hasAttribute('hidden')).toBe(false);
   expect(container.querySelector('.checkout-wallet-payment > div')!.hasAttribute('hidden')).toBe(false);
-  expect(options[2].disabled).toBe(true);
-  expect(container.textContent).toContain('PayPal is not available yet.');
+  expect(options[1].disabled).toBe(false); expect(options[2].disabled).toBe(false);
+  expect(container.textContent).not.toContain('PayPal');
+  expect(container.querySelector('[aria-label="Back to contact and delivery"]')).not.toBeNull();
   await click('Apple Pay');
   expect(options[1].getAttribute('aria-checked')).toBe('true');
   expect(mocks.walletUpdate).toHaveBeenCalledWith(expect.objectContaining({ paymentMethods: expect.objectContaining({ applePay: 'always', googlePay: 'never' }) }));
@@ -321,9 +327,42 @@ it('keeps unavailable wallets disabled without blocking card payment', async () 
   await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
   act(() => mocks.walletEvents.loaderror?.());
   const options = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
-  expect(options[1].disabled).toBe(true); expect(options[3].disabled).toBe(true);
+  expect(options[1].disabled).toBe(true); expect(options[2].disabled).toBe(true);
   act(() => container.querySelector<HTMLInputElement>('.checkout-consent input[type="checkbox"]')!.click());
   expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
+  expect(container.textContent).toContain('Wallet payment could not load.');
+});
+
+it('updates delayed wallet availability and preserves the other wallet when switching methods', async () => {
+  mocks.walletMount.mockImplementation(() => {});
+  await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
+  expect(container.textContent).toContain('Checking wallet availability…');
+  act(() => mocks.walletEvents.ready?.({}));
+  act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: { applePay: { available: true }, googlePay: { available: true } } }));
+  const options = Array.from(container.querySelectorAll<HTMLButtonElement>('[role="radio"]'));
+  expect(options[1].disabled).toBe(false); expect(options[2].disabled).toBe(false);
+  // A late legacy ready event must not overwrite the current eligibility result.
+  act(() => mocks.walletEvents.ready?.({}));
+  expect(options[1].disabled).toBe(false);
+  await click('Apple Pay');
+  act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: { applePay: { available: true }, googlePay: { available: false } } }));
+  expect(options[2].disabled).toBe(false);
+  await click('Google Pay');
+  act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: { applePay: { available: false }, googlePay: { available: true } } }));
+  expect(options[1].disabled).toBe(false);
+  await click('Card payment');
+  expect(mocks.walletUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ paymentMethods: expect.objectContaining({ applePay: 'always', googlePay: 'always' }) }));
+  act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: undefined }));
+  expect(options[1].disabled).toBe(true); expect(options[2].disabled).toBe(true);
+});
+
+it('keeps card checkout usable when wallet initialization throws', async () => {
+  mocks.walletCreate.mockImplementation(() => { throw new Error('Wallet initialization failed'); });
+  await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
+  expect(container.textContent).toContain('Wallet payment could not load.');
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input[type="checkbox"]')!.click());
+  expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(false);
+  expect(posthog.capture).toHaveBeenCalledWith('order_checkout_error', expect.objectContaining({ stage: 'wallet_load' }));
 });
 
 it('confirms a wallet with the same checkout session, shipping and terms gate', async () => {
@@ -517,6 +556,7 @@ it.each([['builder', 299, '2.99'], ['creator', 1999, '19.99']] as const)('confir
   expect(container.textContent).toContain(`Subscribe · $${price} / month`);
   expect(container.textContent).toContain('Renews monthly until canceled');
   expect(container.querySelector('#order-promo')).toBeNull();
+  expect(container.querySelector('.checkout-back')).toBeNull();
   await act(async () => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   expect(mocks.confirm).toHaveBeenCalledWith({ redirect: 'if_required' });
