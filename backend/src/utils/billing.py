@@ -276,7 +276,7 @@ async def checkout(identity, plan_key, ui_mode="hosted"):
             line_items=[{"price": price.id, "quantity": 1}], metadata=metadata,
             subscription_data={"metadata": metadata},
             **redirects, expires_at=int(time.time())+1800,
-            custom_text={"submit": {"message": "Renews monthly until canceled. Credits reset each billing month and do not roll over. Cancel anytime in Billing; access continues through your paid period."}},
+            **({"custom_text": {"submit": {"message": "Renews monthly until canceled. Credits reset each billing month and do not roll over. Cancel anytime in Billing; access continues through your paid period."}}} if ui_mode == "hosted" else {}),
             api_key=stripe_key())
         return checkout_response(session, ui_mode)
     finally:

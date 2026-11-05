@@ -380,6 +380,17 @@ def test_subscription_checkout_modes_are_validated_and_hosted_clients_still_work
     assert 'success_url' in plan_checkout.call_args.kwargs
 
 
+@pytest.mark.parametrize('plan', ['builder', 'creator'])
+@pytest.mark.parametrize('ui_mode', ['hosted', 'elements'])
+def test_subscription_checkout_only_sends_custom_text_to_hosted_stripe(plan_checkout, identity, plan, ui_mode):
+    asyncio.run(billing.checkout(identity, plan, ui_mode))
+    params = plan_checkout.call_args.kwargs
+    if ui_mode == 'elements':
+        assert 'custom_text' not in params
+    else:
+        assert 'Renews monthly until canceled.' in params['custom_text']['submit']['message']
+
+
 def test_external_tester_gets_builder_without_creating_a_stripe_customer(monkeypatch, identity):
     row = {'external_tester': True, 'plan_key': 'free', 'subscription_status': 'none',
            'period_start': '2026-01-01T00:00:00Z', 'period_end': '2099-01-01T00:00:00Z',
