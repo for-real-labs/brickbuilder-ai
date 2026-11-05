@@ -568,7 +568,7 @@ it.each([['builder', 299, '2.99'], ['creator', 1999, '19.99']] as const)('confir
   await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs_plan', client_secret: 'secret' }} publishableKey="pk_test_example"
     subscriptionPlan={plan} email="builder@example.test" totalCents={cents} onBack={vi.fn()} onRetry={vi.fn()} />));
   expect(container.textContent).toContain(`Subscribe · $${price} / month`);
-  expect(container.textContent).toContain('Renews monthly until canceled');
+  expect(container.textContent).not.toContain('Renews monthly until canceled');
   expect(container.querySelector('#order-promo')).toBeNull();
   expect(container.querySelector('.checkout-back')).toBeNull();
   expect(mocks.walletCreate).toHaveBeenCalledWith(expect.objectContaining({ buttonType: { applePay: 'subscribe', googlePay: 'subscribe' } }));

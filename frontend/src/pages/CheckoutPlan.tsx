@@ -70,7 +70,6 @@ export default function CheckoutPlan() {
             <li><Check size={18} /><span>{PLAN_DISCOUNTS[planKey]}% off <strong>all</strong> brick purchases</span></li>
           </ul>
           <dl className="checkout-price-list"><div className="checkout-total"><dt>Monthly total</dt><dd>{formatOrderPrice(total ?? plan.monthly_cents)}</dd></div></dl>
-          <p className="checkout-pricing-note">USD · Renews monthly until canceled. Credits reset monthly and do not roll over. Cancel anytime in Billing.</p>
         </div></aside>
         <div className="checkout-flow">
           {authLoading ? <p role="status">Loading your profile…</p> : <>

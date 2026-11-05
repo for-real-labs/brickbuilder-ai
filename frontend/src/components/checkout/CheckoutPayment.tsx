@@ -240,7 +240,6 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
     {error && <div role="alert" className="checkout-error">{error}{loadFailed && <button type="button" onClick={() => {
       track('order_payment_retry_clicked', { generation_id: generationId }); onRetry();
     }}>Try again</button>}</div>}
-    {subscriptionPlan && <p className="checkout-section-note">Renews monthly until canceled. Credits reset monthly and do not roll over. Cancel anytime in Billing; access continues through your paid period.</p>}
     <label className="checkout-consent">
       <input type="checkbox" required checked={accepted} disabled={loading || promoBusy} onChange={event => {
         setAccepted(event.target.checked);

@@ -191,8 +191,6 @@
 .billing-credit-packs .billing-muted { margin: 16px 0 0; }
 
 /* Give the plan's value and action one clear reading order on every screen. */
-.billing-member-intro { max-width:680px; margin:0 auto 32px; text-align:center; font-size:15px; line-height:1.7; color:#656e77; }
-.billing-member-intro strong { color:#237554; }
 .billing-plan { display:flex; flex-direction:column; }
 .billing-plan .billing-plan-button { margin-top:24px; }
 .billing-plan .billing-credit-allocation { margin-top:0; padding-top:16px; }
@@ -210,7 +208,6 @@
  .billing-hero-pets .pet-avatar { width:64px; height:64px; }
  .billing-hero-pets .pet-avatar:nth-child(2) { width:80px; height:80px; }
  .billing-hero h1 { font-size:34px; letter-spacing:-1.2px; }
- .billing-member-intro { font-size:14px; line-height:1.6; margin-bottom:28px; text-align:left; }
  .billing-plan-grid, .billing-plan-grid--paid { gap:28px; }
  .billing-plan { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:0 12px; padding:22px 20px; border-radius:22px; }
  .billing-plan--recommended { padding:21px 19px; }

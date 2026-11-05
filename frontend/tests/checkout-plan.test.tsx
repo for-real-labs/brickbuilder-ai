@@ -42,6 +42,7 @@ it('keeps guest profile creation inline with the selected plan and requests no s
   await render();
   expect(container.textContent).toContain('Creator');
   expect(container.textContent).toContain('$19.99');
+  expect(container.textContent).not.toContain('Renews monthly until canceled');
   expect([...container.querySelectorAll('input')].map(input => input.type)).toEqual(['email', 'password']);
   expect(container.querySelector('[role="dialog"]')).toBeNull();
   expect(container.textContent).not.toContain('Create your profile or sign in');

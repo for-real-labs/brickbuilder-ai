@@ -120,7 +120,6 @@ export function BillingOverlays() {
       {account && account.plan_key !== 'free' && <div className="billing-dialog-heading"><PetAvatar /><div><MonthlyCreditUsage account={account} /></div></div>}
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Subscription checkout is temporarily unavailable. Please try again shortly.</p>}
-      <p className="billing-member-intro">Every paid plan includes a discount on <CompatibleBricks source="plan_benefit" /></p>
       <PlanGrid source={upgradeSource} paidOnly />
       {subscriptionPrompt ? <GenerationExamples onView={closeUpgrade} /> : <CreditPacks source={upgradeSource} />}
       <p className="billing-fine-print">Cancel anytime</p>
