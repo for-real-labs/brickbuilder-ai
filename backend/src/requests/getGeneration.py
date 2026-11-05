@@ -1,6 +1,5 @@
 import logging
 from typing import Dict, Optional
-from datetime import datetime, timedelta
 
 from pydantic import BaseModel, Field
 from fastapi import HTTPException
@@ -95,35 +94,8 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
         ldr_url = generation.get("ldr_url")
         mpd_url = generation.get("mpd_url")
         
-        # Check for stuck generations (no heartbeat for 30+ seconds)
-        if status in ["processing", "queued", "started", "ldr_processing"]:
-            updated_at_str = generation.get("updated_at")
-            if updated_at_str:
-                try:
-                    # Parse timestamp (handle Z and +00:00 formats)
-                    updated_at_clean = updated_at_str.replace('Z', '+00:00')
-                    updated_at = datetime.fromisoformat(updated_at_clean)
-                    
-                    # Make timezone-aware current time
-                    if updated_at.tzinfo:
-                        now = datetime.now(updated_at.tzinfo)
-                    else:
-                        now = datetime.utcnow()
-                    
-                    # If no update for 30 seconds, mark as failed (server likely crashed)
-                    time_since_update = now - updated_at
-                    if time_since_update > timedelta(seconds=30):
-                        await generation_storage.update_status(
-                            request.generation_id, 
-                            "failed", 
-                            "Generation interrupted - server may have restarted"
-                        )
-                        status = "failed"
-                        error_message = "Generation timed out (no heartbeat detected)"
-                        logger.warning(f"Marked stuck generation {request.generation_id} as failed (no heartbeat for {time_since_update})")
-                        
-                except Exception as e:
-                    logger.warning(f"Failed to check timeout for {request.generation_id}: {e}")
+        # Polling is read-only. A delayed database heartbeat is not evidence
+        # that the generation worker died; durable recovery owns that decision.
 
         previous_id = None
         if generation.get("version", 1) > 1 and status != "completed":

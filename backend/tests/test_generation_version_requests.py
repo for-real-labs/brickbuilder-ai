@@ -173,3 +173,18 @@ def test_model_response_includes_saved_example_and_duration_without_private_usag
     assert response.example_edit_prompt == 'Make the fins blue'
     assert response.generation_duration_seconds == 90
     assert 'ai_usage' not in response.model_dump() and 'tokens_used' not in response.model_dump()
+
+
+@pytest.mark.parametrize("status", ["started", "queued", "processing", "ldr_processing"])
+@pytest.mark.parametrize("endpoint", ["novaToBricks", "llmToBricks"])
+def test_polling_stale_generation_never_changes_its_status(monkeypatch, status, endpoint):
+    row = {"id": "g", "user_id": "owner", "user_type": "authenticated",
+           "status": status, "endpoint": endpoint, "updated_at": "2020-01-01T00:00:00+00:00"}
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value=row), update_status=AsyncMock())
+    monkeypatch.setattr(generation_endpoint, "generation_storage", storage)
+    response = asyncio.run(generation_endpoint.get_generation(
+        generation_endpoint.GetGenerationRequest(generation_id="g"),
+        {"user_id": "owner", "authenticated": True}))
+    assert response.status == status
+    assert response.error_message is None
+    storage.update_status.assert_not_awaited()

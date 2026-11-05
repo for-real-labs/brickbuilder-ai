@@ -136,3 +136,24 @@ def test_crash_recovery_restores_runtime_usage_without_losing_other_calls(storag
     assert row['tokens_used'] == 145
     assert len(row['ai_usage']['calls']) == 2
     service.read_usage.assert_awaited_once_with('chat', job)
+
+
+def test_recovery_preserves_live_worker_despite_stale_database_heartbeat(storage, monkeypatch):
+    from src.utils import generation_tasks
+
+    job = save(storage, {"status": "processing"})
+
+    async def run():
+        task = asyncio.create_task(asyncio.Event().wait())
+        monkeypatch.setitem(generation_tasks._tasks, job, task)
+        try:
+            assert await recover_stale_generations(storage) == 0
+            assert read(storage, job)["status"] == "processing"
+        finally:
+            task.cancel()
+            await asyncio.gather(task, return_exceptions=True)
+        # Once the worker has actually stopped, normal recovery still applies.
+        assert await recover_stale_generations(storage) == 1
+        assert read(storage, job)["status"] == "failed"
+
+    asyncio.run(run())

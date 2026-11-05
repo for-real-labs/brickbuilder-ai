@@ -6,6 +6,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from .database import execute_query
+from .generation_tasks import has_active_generation_task
 from .generation_budget import GenerationUsage
 from .nova_service import NovaService
 
@@ -49,6 +50,10 @@ async def recover_stale_generations(storage) -> int:
     )
     recovered = 0
     for row in result.data:
+        # A database outage can delay heartbeats while local work stays alive.
+        # Never fail a task we can positively identify as still running.
+        if has_active_generation_task(row["id"]):
+            continue
         try:
             bucket = storage.client.storage.from_("generation-output")
             try:

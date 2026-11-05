@@ -11,6 +11,11 @@ ACTIVE_STATUSES = ("queued", "started", "processing", "ldr_processing", "resizin
 _tasks: dict[str, asyncio.Task] = {}
 
 
+def has_active_generation_task(generation_id: str) -> bool:
+    task = _tasks.get(generation_id)
+    return task is not None and not task.done()
+
+
 def cancel_local_task(generation_id: str) -> None:
     task = _tasks.get(generation_id)
     if task is not None:
