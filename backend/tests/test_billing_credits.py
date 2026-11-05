@@ -365,3 +365,16 @@ def test_monthly_spending_no_longer_blocks_purchases_or_generation(db, live):
     db.execute('UPDATE billing_settings SET enabled=false')
     assert db.execute('SELECT billing_capacity(%s) capacity',(live,)).fetchone()['capacity'] == {
         'available': False, 'checkout_available': False}
+
+
+def test_cancel_and_resume_same_invoice_preserves_spent_credits_and_period(db):
+    uid = owner(db)
+    first = paid(db, uid)
+    generate(db, uid)
+    before = wallet(db, uid)
+    paid(db, uid, version=2, cancel=True, start=first['period_start'], end=first['period_end'])
+    resumed = paid(db, uid, version=3, cancel=False, start=first['period_start'], end=first['period_end'])
+    assert not resumed['cancel_at_period_end']
+    assert resumed['monthly_remaining'] == before['monthly_remaining']
+    assert resumed['period_start'] == first['period_start']
+    assert resumed['period_end'] == first['period_end']

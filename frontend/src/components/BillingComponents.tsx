@@ -39,7 +39,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
   const tester = account?.subscription_provider === 'external_tester';
   return <><div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
     {plans.filter(plan => plan.key !== 'free').map(plan => {
-      const current = Boolean(user && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
+      const current = Boolean(user && !(account?.subscription_provider === 'stripe' && account.cancel_at_period_end) && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
       const applePrice = appleProducts?.find(p => p.id === appleProduct(plan.key))?.displayPrice;
       const petId = plan.key === 'creator' ? 'nib' : 'pip';
       return <article key={plan.key} className={`billing-plan${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>

@@ -524,3 +524,14 @@ it('shows comped Builder access without a renewal charge or billing controls', a
   expect(container.textContent).toContain('No payment is required');
   expect(container.textContent).not.toMatch(/Next billing date|Manage billing|Cancel subscription/);
 });
+
+
+it('lets a subscriber select the same plan again after scheduling cancellation', async () => {
+  account = { ...account, plan_key: 'builder', subscription_provider: 'stripe', has_subscription: true,
+    subscription_status: 'active', cancel_at_period_end: true };
+  await render(<PlanGrid source="pricing_page" />);
+  const button = container.querySelector<HTMLButtonElement>('[aria-label="Builder plan"] .billing-plan-button');
+  expect(button?.disabled).toBe(false);
+  await selectPlan('Builder');
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=builder');
+});

@@ -250,7 +250,26 @@ async def checkout(identity, plan_key, ui_mode="hosted"):
         subscriptions = await asyncio.to_thread(stripe.Subscription.list, customer=customer, status="all", limit=100, api_key=stripe_key())
         active = [s for s in subscriptions.data if s.status not in ("canceled", "incomplete_expired")]
         if active:
-            await sync_subscription(active[0].id)
+            sub = active[0]
+            await sync_subscription(sub.id)
+            metadata = sub.get("metadata") or {}
+            items = sub.get("items", {}).get("data", [])
+            if (len(active) == 1 and sub.status == "active"
+                    and sub.get("livemode") is live_mode() and sub.get("customer") == customer
+                    and metadata.get("integration") == BILLING_TAG
+                    and metadata.get("brickbuilder_user_id") == user_id
+                    and len(items) == 1 and items[0].get("quantity") == 1
+                    and items[0].get("price", {}).get("lookup_key") in
+                        (lookup_key(plan_key), f"brickbuilder_{plan_key}_monthly_v3")
+                    and (items[0].get("current_period_end") or sub.get("current_period_end") or 0) > time.time()
+                    and not sub.get("schedule")):
+                # Resume the same subscription without replacing its price, billing
+                # anniversary, invoice, or remaining credit allowance.
+                if sub.get("cancel_at_period_end"):
+                    await asyncio.to_thread(stripe.Subscription.modify, sub.id,
+                        cancel_at_period_end=False, proration_behavior="none", api_key=stripe_key())
+                    await sync_subscription(sub.id)
+                return {"url": site_url() + "/billing"}
             if ui_mode == "elements":
                 raise HTTPException(409, "You already have a subscription. Manage your existing plan in Billing.")
             return await portal(identity, plan_key=plan_key)

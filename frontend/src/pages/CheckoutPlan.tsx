@@ -33,7 +33,7 @@ export default function CheckoutPlan() {
   const [busy, setBusy] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
   const currentSession = session?.owner === user?.id && session?.plan === planKey ? session : null;
-  const canPay = Boolean(user?.email && !authLoading && !billingLoading && enabled && checkoutAvailable && !account?.has_subscription && valid && !isAppleApp());
+  const canPay = Boolean(user?.email && !authLoading && !billingLoading && enabled && checkoutAvailable && (!account?.has_subscription || account.cancel_at_period_end) && valid && !isAppleApp());
   useEffect(() => {
     let active = true;
     setSession(null); setError(''); setTotal(null);
@@ -42,6 +42,7 @@ export default function CheckoutPlan() {
     posthog.capture('plan_checkout_started', { plan_key: planKey });
     void billingApi.planCheckout(planKey).then(value => {
       if (!active) return;
+      if ('url' in value) { window.location.assign(value.url); return; }
       if (!value.client_secret || !value.session_id) throw new Error('Secure payment is unavailable. Please try again.');
       setSession({ ...value, owner, plan: planKey });
     }).catch(cause => { if (active) setError(cause instanceof Error ? cause.message : 'Could not load payment. Please try again.'); });
@@ -78,7 +79,7 @@ export default function CheckoutPlan() {
             </CheckoutStep>
             {user && <p className="plan-checkout-signed-in">Signed in as {user.email}</p>}
             <CheckoutStep title="Payment" number={2} active={!!user} complete={false} disabled={!user || busy} onEdit={() => {}}>
-              {billingLoading ? <p role="status">Loading your plan…</p> : account?.has_subscription ? <p>You already have a subscription. <Link to="/billing">Manage your plan in Billing</Link>.</p> : !enabled || !checkoutAvailable ? <p role="status">New subscriptions are temporarily unavailable. Please try again later.</p> : error ? <div className="checkout-error" role="alert">{error}<button onClick={() => { posthog.capture('plan_checkout_retry_clicked', { plan_key: planKey }); setAttempt(value => value + 1); }}>Try again</button><Link to="/billing">View billing</Link></div> : currentSession && user?.email ? <CheckoutPayment key={currentSession.session_id} session={currentSession}
+              {billingLoading ? <p role="status">Loading your plan…</p> : account?.has_subscription && !account.cancel_at_period_end ? <p>You already have a subscription. <Link to="/billing">Manage your plan in Billing</Link>.</p> : !enabled || !checkoutAvailable ? <p role="status">New subscriptions are temporarily unavailable. Please try again later.</p> : error ? <div className="checkout-error" role="alert">{error}<button onClick={() => { posthog.capture('plan_checkout_retry_clicked', { plan_key: planKey }); setAttempt(value => value + 1); }}>Try again</button><Link to="/billing">View billing</Link></div> : currentSession && user?.email ? <CheckoutPayment key={currentSession.session_id} session={currentSession}
                 publishableKey={import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''} subscriptionPlan={planKey} email={user.email} totalCents={plan.monthly_cents}
                 onBack={back} onRetry={() => setAttempt(value => value + 1)} onBusyChange={setBusy} onTotalChange={setTotal} /> : <p role="status">Loading secure payment…</p>}
             </CheckoutStep>

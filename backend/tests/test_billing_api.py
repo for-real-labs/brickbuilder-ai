@@ -407,3 +407,54 @@ def test_external_tester_gets_builder_without_creating_a_stripe_customer(monkeyp
     with pytest.raises(HTTPException, match='tester access'):
         asyncio.run(billing.checkout(identity, 'builder'))
     create.assert_not_called()
+
+
+@pytest.mark.parametrize('ui_mode', ['hosted', 'elements'])
+@pytest.mark.parametrize('cancelled', [True, False])
+def test_rejoining_same_plan_preserves_subscription_and_billing_date(
+        plan_checkout, monkeypatch, identity, subscription, ui_mode, cancelled):
+    subscription.customer = 'cus_owner'
+    subscription.cancel_at_period_end = cancelled
+    monkeypatch.setattr(billing.stripe.Subscription, 'list', Mock(return_value=obj({'data': [subscription]})))
+    sync = AsyncMock(); monkeypatch.setattr(billing, 'sync_subscription', sync)
+    modify = Mock(); monkeypatch.setattr(billing.stripe.Subscription, 'modify', modify)
+    result = asyncio.run(billing.checkout(identity, 'builder', ui_mode))
+    assert result == {'url': billing.site_url() + '/billing'}
+    if cancelled:
+        modify.assert_called_once_with('sub_test', cancel_at_period_end=False,
+                                       proration_behavior='none', api_key='test-only')
+        assert sync.await_count == 2
+    else:
+        modify.assert_not_called()
+    plan_checkout.assert_not_called()
+    billing.price_for.assert_not_awaited()
+    billing.rpc.assert_awaited_with('billing_checkout_lock', p_user_id=identity['user_id'], p_live=False, p_acquire=False)
+
+
+@pytest.mark.parametrize('change', ['owner', 'mode', 'customer', 'expired', 'past_due', 'schedule', 'different_plan'])
+def test_checkout_does_not_resume_ineligible_subscription(
+        plan_checkout, monkeypatch, identity, subscription, change):
+    subscription.customer = 'cus_owner'
+    subscription.cancel_at_period_end = True
+    if change == 'owner': subscription.metadata.brickbuilder_user_id = str(uuid4())
+    if change == 'mode': subscription.livemode = True
+    if change == 'customer': subscription.customer = 'cus_other'
+    if change == 'expired': subscription['items'].data[0].current_period_end = 1
+    if change == 'past_due': subscription.status = 'past_due'
+    if change == 'schedule': subscription.schedule = 'sub_sched_test'
+    monkeypatch.setattr(billing.stripe.Subscription, 'list', Mock(return_value=obj({'data': [subscription]})))
+    monkeypatch.setattr(billing, 'sync_subscription', AsyncMock())
+    modify = Mock(); monkeypatch.setattr(billing.stripe.Subscription, 'modify', modify)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(billing.checkout(identity, 'creator' if change == 'different_plan' else 'builder', 'elements'))
+    assert error.value.status_code == 409
+    modify.assert_not_called()
+    plan_checkout.assert_not_called()
+
+
+def test_expired_cancelled_subscription_starts_normal_checkout(plan_checkout, monkeypatch, identity):
+    monkeypatch.setattr(billing.stripe.Subscription, 'list', Mock(return_value=obj({
+        'data': [{'id': 'sub_old', 'status': 'canceled'}]})))
+    asyncio.run(billing.checkout(identity, 'builder', 'elements'))
+    assert plan_checkout.call_args.kwargs['subscription_data'] == {'metadata': {
+        'brickbuilder_user_id': identity['user_id'], 'integration': billing.BILLING_TAG, 'plan_key': 'builder'}}

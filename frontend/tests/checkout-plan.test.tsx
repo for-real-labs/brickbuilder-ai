@@ -6,7 +6,7 @@ import CheckoutPlan from '../src/pages/CheckoutPlan';
 import { INITIAL_PLANS } from '../src/services/billingApi';
 
 const mocks = vi.hoisted(() => ({
-  user: null as null | { id: string; email: string }, loading: false, account: null as null | { has_subscription: boolean },
+  user: null as null | { id: string; email: string }, loading: false, account: null as null | { has_subscription: boolean; cancel_at_period_end?: boolean },
   checkout: vi.fn(), signIn: vi.fn(), google: vi.fn(), payment: vi.fn(),
 }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: mocks.user, loading: mocks.loading, signIn: mocks.signIn, signInWithGoogle: mocks.google }) }));
@@ -115,4 +115,17 @@ it('does not accept a plan or price supplied in an unrecognized plan parameter',
   await render('/checkout-plan?plan=free&price=1');
   expect(container.textContent).toContain('Choose your plan');
   expect(mocks.checkout).not.toHaveBeenCalled();
+});
+
+
+it('uses the backend redirect when rejoining a plan scheduled to cancel', async () => {
+  const assign = vi.fn();
+  vi.stubGlobal('location', { ...window.location, assign });
+  mocks.user = { id: 'user-1', email: 'builder@example.test' };
+  mocks.account = { has_subscription: true, cancel_at_period_end: true };
+  mocks.checkout.mockResolvedValue({ url: 'https://brickbuilder.ai/billing' });
+  await render('/checkout-plan?plan=builder');
+  expect(mocks.checkout).toHaveBeenCalledWith('builder');
+  expect(assign).toHaveBeenCalledWith('https://brickbuilder.ai/billing');
+  expect(mocks.payment).not.toHaveBeenCalled();
 });
