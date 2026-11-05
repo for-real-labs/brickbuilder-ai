@@ -178,7 +178,8 @@
 
 /* Keep a measurable wallet mount while checking browser eligibility.
    display:none prevents Express Checkout from laying out its buttons. */
-.checkout-wallet-payment.is-inactive, .checkout-wallet-payment > .is-inactive { position: fixed; left: -10000px; top: 0; width: min(520px, calc(100vw - 40px)); visibility: hidden; pointer-events: none; }
+.checkout-wallet-payment.is-inactive { position: fixed; left: -10000px; top: 0; width: min(520px, calc(100vw - 40px)); visibility: hidden; pointer-events: none; }
+.checkout-wallet-disabled { opacity: 0.5; pointer-events: none; }
 
 .checkout-postcard-option { display: flex; align-items: center; gap: 12px; margin-top: 20px; padding: 12px 14px; border: 1px solid #dce0e5; border-radius: 12px; background: #fff; }
 .checkout-postcard-option.is-selected { border-color: #f44336; background: #fff8f7; }

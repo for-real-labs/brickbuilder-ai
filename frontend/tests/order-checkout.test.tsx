@@ -350,6 +350,8 @@ it('updates delayed wallet availability and preserves the other wallet when swit
   act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: { applePay: { available: true }, googlePay: { available: false } } }));
   expect(options[2].disabled).toBe(false);
   await click('Google Pay');
+  act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: undefined }));
+  expect(options[1].disabled).toBe(false); expect(options[2].disabled).toBe(false);
   act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: { applePay: { available: false }, googlePay: { available: true } } }));
   expect(options[1].disabled).toBe(false);
   await click('Card payment');
@@ -371,12 +373,18 @@ it('confirms a wallet with the same checkout session, shipping and terms gate', 
   mocks.confirm.mockResolvedValue({ type: 'error', error: { message: 'Please retry.', code: 'paymentFailed' } });
   await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="CA" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
   await click('Google Pay');
+  const walletMount = container.querySelector<HTMLElement>('.checkout-wallet-payment > div')!;
+  expect(walletMount.inert).toBe(true);
+  expect(walletMount.classList.contains('is-inactive')).toBe(false);
+  expect(walletMount.classList.contains('checkout-wallet-disabled')).toBe(true);
   const resolve = vi.fn();
   act(() => mocks.walletEvents.click?.({ resolve }));
   expect(resolve).not.toHaveBeenCalled();
   await act(async () => mocks.walletEvents.confirm?.({ expressPaymentType: 'google_pay' }));
   expect(mocks.confirm).not.toHaveBeenCalled();
   act(() => container.querySelector<HTMLInputElement>('.checkout-consent input[type="checkbox"]')!.click());
+  expect(walletMount.inert).toBe(false);
+  expect(walletMount.classList.contains('checkout-wallet-disabled')).toBe(false);
   act(() => mocks.walletEvents.click?.({ resolve })); expect(resolve).toHaveBeenCalledOnce();
   const walletEvent = { expressPaymentType: 'google_pay' };
   await act(async () => mocks.walletEvents.confirm?.(walletEvent));

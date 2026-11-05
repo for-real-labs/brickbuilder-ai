@@ -61,6 +61,10 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   const [loadFailed, setLoadFailed] = React.useState(false);
 
   React.useEffect(() => {
+    if (walletMountRef.current) walletMountRef.current.inert = !accepted || loading || promoBusy;
+  }, [accepted, loading, promoBusy]);
+
+  React.useEffect(() => {
     let disposed = false;
     let element: StripePaymentElement | undefined;
     let timeout: ReturnType<typeof setTimeout>;
@@ -112,11 +116,8 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
           const updateWallets = (available: { applePay: boolean; googlePay: boolean }) => {
             if (disposed) return;
             setWalletStatus('ready');
-            // Selecting one wallet hides the other in Stripe; retain its eligibility.
-            setWallets(previous => ({
-              applePay: selectedMethodRef.current === 'googlePay' ? previous.applePay : available.applePay,
-              googlePay: selectedMethodRef.current === 'applePay' ? previous.googlePay : available.googlePay,
-            }));
+            // Filtered button visibility during a selection is not device eligibility.
+            if (selectedMethodRef.current === 'card') setWallets(available);
           };
           let availabilityReported = false;
           wallet.on('ready', event => {
@@ -253,7 +254,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
     </div>
     <div className={`checkout-wallet-payment ${selectedMethod === 'card' ? 'is-inactive' : ''}`} aria-hidden={selectedMethod === 'card'}>
       {!accepted && <p className="checkout-method-note">Agree to the Terms of Service to continue with your wallet.</p>}
-      <div className={!accepted || loading || promoBusy ? 'is-inactive' : undefined} aria-hidden={!accepted || loading || promoBusy} ref={walletMountRef} />
+      <div className={!accepted || loading || promoBusy ? 'checkout-wallet-disabled' : undefined} aria-hidden={!accepted || loading || promoBusy} ref={walletMountRef} />
       {loading && <p role="status">Processing…</p>}
     </div>
     <p className="checkout-secure-note"><LockKeyhole size={14} />Secure, encrypted payment</p>
