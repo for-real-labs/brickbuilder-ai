@@ -230,8 +230,10 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     expect(colors.getAttribute('aria-pressed')).toBe('false');
     expect(getComputedStyle(colors).top).toBe('64px');
     expect(getComputedStyle(colors).minHeight).toBe('44px');
-    // Keep the model toggle over the canvas, clear of the assembly close-up.
-    expect(getComputedStyle(container.querySelector('.landing-model-bottom-toolbar')!).top).toBe('112px');
+    // Keep the model toggle below the viewer, clear of the assembly close-up.
+    const toolbar = toggle.closest('.landing-model-bottom-toolbar')!;
+    expect(toolbar.previousElementSibling).toBe(container.querySelector('.landing-model-workspace'));
+    expect(['absolute', 'fixed']).not.toContain(getComputedStyle(toolbar).position);
     act(() => button('Next').click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
     act(() => colors.click());
