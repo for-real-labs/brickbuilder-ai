@@ -43,7 +43,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   const [selectedMethod, setSelectedMethod] = React.useState<'card' | 'applePay' | 'googlePay'>('card');
   const [wallets, setWallets] = React.useState({ applePay: false, googlePay: false });
   const [walletStatus, setWalletStatus] = React.useState<'loading' | 'ready' | 'error'>('loading');
-  const selectedMethodRef = React.useRef(selectedMethod);
+  const renderWalletRef = React.useRef<((method: 'card' | 'applePay' | 'googlePay') => void) | null>(null);
   const acceptedRef = React.useRef(false);
   const confirmRef = React.useRef<(event: StripeExpressCheckoutElementConfirmEvent) => Promise<void>>(async () => {});
   const actionsRef = React.useRef<CheckoutActions | null>(null);
@@ -105,47 +105,53 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
           }
         });
         if (mountRef.current) element.mount(mountRef.current);
-        try {
-          const wallet = checkout.createExpressCheckoutElement({
-            buttonHeight: 52, buttonTheme: { applePay: 'black', googlePay: 'black' }, buttonType: { applePay: subscriptionPlan ? 'subscribe' : 'buy', googlePay: subscriptionPlan ? 'subscribe' : 'pay' },
-            layout: { maxColumns: 1, maxRows: 0, overflow: 'never' },
-            paymentMethodOrder: ['apple_pay', 'google_pay'],
-            paymentMethods: { applePay: 'always', googlePay: 'always', paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never' },
-          }) as StripeExpressCheckoutElement;
-          walletRef.current = wallet;
-          const updateWallets = (available: { applePay: boolean; googlePay: boolean }) => {
-            if (disposed) return;
-            setWalletStatus('ready');
-            // Filtered button visibility during a selection is not device eligibility.
-            if (selectedMethodRef.current === 'card') setWallets(available);
-          };
-          let availabilityReported = false;
-          wallet.on('ready', event => {
-            if (availabilityReported) return;
-            updateWallets({ applePay: !!event.availablePaymentMethods?.applePay, googlePay: !!event.availablePaymentMethods?.googlePay });
-          });
-          wallet.on('availablepaymentmethodschange', event => {
-            availabilityReported = true;
-            updateWallets({ applePay: !!event.paymentMethods?.applePay?.available, googlePay: !!event.paymentMethods?.googlePay?.available });
-          });
-          wallet.on('click', event => {
-            if (acceptedRef.current) event.resolve();
-            else setError('Please agree to the Terms of Service before paying.');
-          });
-          wallet.on('confirm', event => { void confirmRef.current(event); });
-          wallet.on('loaderror', () => {
-            if (!disposed) { setWalletStatus('error'); setWallets({ applePay: false, googlePay: false }); }
-          });
-          if (walletMountRef.current) wallet.mount(walletMountRef.current);
-        } catch {
-          if (!disposed) {
-            setWalletStatus('error');
-            track('order_checkout_error', { generation_id: generationId, stage: 'wallet_load' });
+        renderWalletRef.current = method => {
+          walletRef.current?.destroy();
+          walletRef.current = null;
+          try {
+            const wallet = checkout.createExpressCheckoutElement({
+              buttonHeight: 52, buttonTheme: { applePay: 'black', googlePay: 'black' }, buttonType: { applePay: subscriptionPlan ? 'subscribe' : 'buy', googlePay: subscriptionPlan ? 'subscribe' : 'pay' },
+              layout: { maxColumns: 1, maxRows: 0, overflow: 'never' },
+              paymentMethodOrder: ['apple_pay', 'google_pay'],
+              paymentMethods: { applePay: method !== 'googlePay' ? 'always' : 'never', googlePay: method !== 'applePay' ? 'always' : 'never', paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never' },
+            }) as StripeExpressCheckoutElement;
+            walletRef.current = wallet;
+            const updateWallets = (available: { applePay: boolean; googlePay: boolean }) => {
+              if (disposed || walletRef.current !== wallet) return;
+              setWalletStatus('ready');
+              // Filtered button visibility during a selection is not device eligibility.
+              if (method === 'card') setWallets(available);
+            };
+            let availabilityReported = false;
+            wallet.on('ready', event => {
+              if (availabilityReported) return;
+              updateWallets({ applePay: !!event.availablePaymentMethods?.applePay, googlePay: !!event.availablePaymentMethods?.googlePay });
+            });
+            wallet.on('availablepaymentmethodschange', event => {
+              availabilityReported = true;
+              updateWallets({ applePay: !!event.paymentMethods?.applePay?.available, googlePay: !!event.paymentMethods?.googlePay?.available });
+            });
+            wallet.on('click', event => {
+              if (disposed || walletRef.current !== wallet) return;
+              if (acceptedRef.current) event.resolve();
+              else setError('Please agree to the Terms of Service before paying.');
+            });
+            wallet.on('confirm', event => { if (!disposed && walletRef.current === wallet) void confirmRef.current(event); });
+            wallet.on('loaderror', () => {
+              if (!disposed && walletRef.current === wallet) { setWalletStatus('error'); setWallets({ applePay: false, googlePay: false }); }
+            });
+            if (walletMountRef.current) wallet.mount(walletMountRef.current);
+          } catch {
+            if (!disposed) {
+              setWalletStatus('error');
+              track('order_checkout_error', { generation_id: generationId, stage: 'wallet_load' });
+            }
           }
-        }
+        };
+        renderWalletRef.current('card');
       } catch { clearTimeout(timeout); fail(); }
     })();
-    return () => { disposed = true; clearTimeout(timeout); element?.destroy(); walletRef.current?.destroy(); walletRef.current = null; actionsRef.current = null; };
+    return () => { disposed = true; clearTimeout(timeout); element?.destroy(); walletRef.current?.destroy(); walletRef.current = null; renderWalletRef.current = null; actionsRef.current = null; };
   }, [session.client_secret, publishableKey, generationId, subscriptionPlan]);
 
   const confirmPayment = async (walletEvent?: StripeExpressCheckoutElementConfirmEvent) => {
@@ -197,12 +203,8 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
   acceptedRef.current = accepted && !promoBusy;
   confirmRef.current = confirmPayment;
   const chooseMethod = (method: 'card' | 'applePay' | 'googlePay') => {
-    selectedMethodRef.current = method;
     setSelectedMethod(method); setError(null);
-    walletRef.current?.update({ paymentMethods: {
-      applePay: method !== 'googlePay' ? 'always' : 'never', googlePay: method !== 'applePay' ? 'always' : 'never',
-      paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never',
-    } });
+    renderWalletRef.current?.(method);
     track('order_payment_method_selected', { generation_id: generationId, payment_method: method });
   };
   const walletNote = walletStatus === 'loading' ? 'Checking wallet availability…'

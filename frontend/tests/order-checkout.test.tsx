@@ -12,7 +12,7 @@ import { GetGenerationApiService } from '../src/services/getGenerationApi';
 import posthog from 'posthog-js';
 import shippingCountries from '../src/data/shippingCountries.json';
 
-const mocks = vi.hoisted(() => ({ applyPromotionCode: vi.fn(), removePromotionCode: vi.fn(), confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletCreate: vi.fn(), walletMount: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
+const mocks = vi.hoisted(() => ({ applyPromotionCode: vi.fn(), removePromotionCode: vi.fn(), confirm: vi.fn(), mount: vi.fn(), destroy: vi.fn(), loadActions: vi.fn(), loadStripe: vi.fn(), initCheckoutElementsSdk: vi.fn(), walletUpdate: vi.fn(), walletDestroy: vi.fn(), walletCreate: vi.fn(), walletMount: vi.fn(), walletEvents: {} as Record<string, (event?: unknown) => void>, paymentEvents: {} as Record<string, (event?: unknown) => void> }));
 vi.mock('@stripe/stripe-js/pure', () => ({ loadStripe: mocks.loadStripe }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ showModelControls }: { showModelControls?: boolean }) => <div data-testid="model-preview" data-controls={String(showModelControls)}>Model preview</div> }));
 vi.mock('../src/services/ldrToMpdApi', () => ({ LdrToMpdApiService: { convertLdrToMpd: async () => ({ mpd_content: '0 Frog' }) } }));
@@ -32,7 +32,7 @@ beforeEach(() => {
   vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example');
   mocks.applyPromotionCode.mockReset(); mocks.removePromotionCode.mockReset();
   mocks.confirm.mockReset(); mocks.destroy.mockReset(); mocks.mount.mockReset();
-  mocks.paymentEvents = {}; mocks.walletEvents = {}; mocks.walletUpdate.mockReset();
+  mocks.paymentEvents = {}; mocks.walletEvents = {}; mocks.walletUpdate.mockReset(); mocks.walletDestroy.mockReset();
   mocks.mount.mockImplementation(() => mocks.paymentEvents.ready?.());
   mocks.loadActions.mockResolvedValue({ type: 'success', actions: { confirm: mocks.confirm, applyPromotionCode: mocks.applyPromotionCode, removePromotionCode: mocks.removePromotionCode } });
   mocks.initCheckoutElementsSdk.mockReset();
@@ -43,7 +43,7 @@ beforeEach(() => {
     if (options.layout?.overflow === 'never' && options.layout?.maxRows > 0) throw new Error('Stripe does not allow maxRows with overflow never');
     return {
       on: (event: string, callback: (event?: unknown) => void) => { mocks.walletEvents[event] = callback; },
-      mount: mocks.walletMount, update: mocks.walletUpdate, destroy: vi.fn(),
+      mount: mocks.walletMount, update: mocks.walletUpdate, destroy: mocks.walletDestroy,
     };
   });
   mocks.initCheckoutElementsSdk.mockImplementation(() => ({ loadActions: mocks.loadActions, createPaymentElement: () => ({
@@ -320,7 +320,7 @@ it('offers working wallet choices with a valid Stripe layout and omits unconfigu
   expect(container.querySelector('[aria-label="Back to contact and delivery"]')).not.toBeNull();
   await click('Apple Pay');
   expect(options[1].getAttribute('aria-checked')).toBe('true');
-  expect(mocks.walletUpdate).toHaveBeenCalledWith(expect.objectContaining({ paymentMethods: expect.objectContaining({ applePay: 'always', googlePay: 'never' }) }));
+  expect(mocks.walletCreate).toHaveBeenCalledWith(expect.objectContaining({ paymentMethods: expect.objectContaining({ applePay: 'always', googlePay: 'never' }) }));
   expect(container.querySelector<HTMLButtonElement>('button[type="submit"]')!.hidden).toBe(true);
   expect(container.querySelector('.checkout-payment-element')!.hasAttribute('hidden')).toBe(true);
 });
@@ -346,7 +346,11 @@ it('updates delayed wallet availability and preserves the other wallet when swit
   // A late legacy ready event must not overwrite the current eligibility result.
   act(() => mocks.walletEvents.ready?.({}));
   expect(options[1].disabled).toBe(false);
+  const oldAvailability = mocks.walletEvents.availablepaymentmethodschange;
   await click('Apple Pay');
+  expect(mocks.walletDestroy).toHaveBeenCalledOnce();
+  act(() => oldAvailability?.({ paymentMethods: undefined }));
+  expect(options[1].disabled).toBe(false); expect(options[2].disabled).toBe(false);
   act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: { applePay: { available: true }, googlePay: { available: false } } }));
   expect(options[2].disabled).toBe(false);
   await click('Google Pay');
@@ -355,7 +359,7 @@ it('updates delayed wallet availability and preserves the other wallet when swit
   act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: { applePay: { available: false }, googlePay: { available: true } } }));
   expect(options[1].disabled).toBe(false);
   await click('Card payment');
-  expect(mocks.walletUpdate).toHaveBeenLastCalledWith(expect.objectContaining({ paymentMethods: expect.objectContaining({ applePay: 'always', googlePay: 'always' }) }));
+  expect(mocks.walletCreate).toHaveBeenLastCalledWith(expect.objectContaining({ paymentMethods: expect.objectContaining({ applePay: 'always', googlePay: 'always' }) }));
   act(() => mocks.walletEvents.availablepaymentmethodschange?.({ paymentMethods: undefined }));
   expect(options[1].disabled).toBe(true); expect(options[2].disabled).toBe(true);
 });
