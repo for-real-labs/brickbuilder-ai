@@ -1,4 +1,3 @@
-import { CompatibleBricks } from '../components/CompatibleBricks';
 import { isAppleApp } from '../services/applePurchases';
 import React, { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -63,7 +62,7 @@ export default function BillingPage() {
           <h2 className="billing-account-plan">{plan?.name ?? 'No active plan'}{plan && <span>{tester ? 'Included with tester access' : apple ? 'Billed monthly by Apple' : `$${plan.monthly_cents / 100} / month`}</span>}</h2>
           {plan ? <p className="billing-plan-allowance">{plan.credits.toLocaleString()} credits each month. {PLAN_GENERATIONS[plan.key]} LEGO® generations per month.</p>
             : <p className="billing-plan-allowance">Subscribe to generate models with AI.</p>}
-          <p className="billing-plan-benefit">{PLAN_DISCOUNTS[plan?.key ?? 'free'] ? 'Your plan includes' : 'Paid plans include'} IO exports and automatic {PLAN_DISCOUNTS[plan?.key ?? 'free'] || '10–20'}% off <CompatibleBricks source="billing" />, with promo codes on top. Shipping is separate.</p>
+          <p className="billing-plan-benefit">{PLAN_DISCOUNTS[plan?.key ?? 'free'] ? 'Your plan includes' : 'Paid plans include'} IO exports and automatic {PLAN_DISCOUNTS[plan?.key ?? 'free'] || '10–20'}% off <strong>all</strong> brick purchases, with promo codes on top. Shipping is separate.</p>
           {tester ? <p>No payment is required.</p> : apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
             : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : null}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}

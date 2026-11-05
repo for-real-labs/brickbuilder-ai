@@ -177,7 +177,7 @@ it('shows the monthly allowances and generation estimates on every plan', async 
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$2.99', '$19.99']);
   expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['15 LEGO® generations per month', '100 LEGO® generations per month']);
   expect(cards.map(card => [...card.querySelectorAll('li')].map(item => item.textContent))).toEqual([
-    ['10% off LEGO® compatible bricks'], ['20% off LEGO® compatible bricks'],
+    ['10% off all brick purchases'], ['20% off all brick purchases'],
   ]);
 });
 
@@ -229,7 +229,7 @@ it.each([
   const section = container.querySelector('.billing-account-plan')!.closest('section')!;
   expect(section.querySelector('.billing-plan-allowance')?.textContent).toBe(`${credits.toLocaleString()} credits each month. ${generations} LEGO® generations per month.`);
   expect(section.textContent).not.toContain('No payment method needed');
-  expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'builder' ? 10 : 20}% off LEGO® compatible bricks`);
+  expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'builder' ? 10 : 20}% off all brick purchases`);
   await click(label);
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(posthog.capture).toHaveBeenCalledWith('billing_plan_action_clicked', { plan_key: key, action: label === 'Change plan' ? 'change' : 'upgrade' });
@@ -480,8 +480,8 @@ it('highlights each tier discount without restoring instructions or exports', as
     const benefit = plan.querySelector('li')!;
     expect(plan.querySelectorAll('li')).toHaveLength(1);
     expect(benefit.className).toBe('billing-feature-saving');
-    expect(benefit.querySelector('strong')?.textContent).toBe(`${percent}% off LEGO® compatible bricks`);
-    expect(benefit.textContent).toBe(`${percent}% off LEGO® compatible bricks`);
+    expect(benefit.querySelector('strong')?.textContent).toBe('all');
+    expect(benefit.textContent).toBe(`${percent}% off all brick purchases`);
     expect(benefit.querySelector('[aria-label="Included"]')).not.toBeNull();
     expect(plan.textContent).not.toContain('Building instructions');
     expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);

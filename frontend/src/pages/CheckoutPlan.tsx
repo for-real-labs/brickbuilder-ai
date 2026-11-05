@@ -1,4 +1,3 @@
-import { CompatibleBricks } from '../components/CompatibleBricks';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, LockKeyhole } from 'lucide-react';
@@ -68,7 +67,7 @@ export default function CheckoutPlan() {
           <ul className="plan-checkout-benefits">
             <li><Check size={18} />{plan.credits.toLocaleString()} credits each month</li>
             <li><Check size={18} />{PLAN_GENERATIONS[planKey]} LEGO® generations</li>
-            <li><Check size={18} /><span>{PLAN_DISCOUNTS[planKey]}% off <CompatibleBricks source="plan_checkout" /></span></li>
+            <li><Check size={18} /><span>{PLAN_DISCOUNTS[planKey]}% off <strong>all</strong> brick purchases</span></li>
           </ul>
           <dl className="checkout-price-list"><div className="checkout-total"><dt>Monthly total</dt><dd>{formatOrderPrice(total ?? plan.monthly_cents)}</dd></div></dl>
           <p className="checkout-pricing-note">USD · Renews monthly until canceled. Credits reset monthly and do not roll over. Cancel anytime in Billing.</p>

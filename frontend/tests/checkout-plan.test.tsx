@@ -31,6 +31,13 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 
+it.each([['builder', 10], ['creator', 20]] as const)('shows the %s discount on all brick purchases', async (plan, percent) => {
+  await render(`/checkout-plan?plan=${plan}`);
+  const benefit = container.querySelector('.plan-checkout-benefits li:last-child')!;
+  expect(benefit.textContent).toBe(`${percent}% off all brick purchases`);
+  expect(benefit.querySelector('strong')?.textContent).toBe('all');
+});
+
 it('keeps guest profile creation inline with the selected plan and requests no shipping or name', async () => {
   await render();
   expect(container.textContent).toContain('Creator');

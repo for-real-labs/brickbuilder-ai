@@ -49,7 +49,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <p className="billing-set-estimate">{PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
         <ul className="billing-features">
-          <li className="billing-feature-saving"><Check aria-label="Included" /><strong>{PLAN_DISCOUNTS[plan.key]}% off <CompatibleBricks source="plan_benefit" /></strong></li>
+          <li className="billing-feature-saving"><Check aria-label="Included" /><span>{PLAN_DISCOUNTS[plan.key]}% off <strong>all</strong> brick purchases</span></li>
         </ul>
         <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || tester || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
           onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : tester ? 'Unavailable with tester access' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : 'Select Plan'}</button>
