@@ -512,7 +512,7 @@ export default function LoginModal({
 
           {confirmationRequired && <SignupCodeVerification email={email} redirectPath={redirectTo} surface="login_modal"
             onVerified={() => handleLoginSuccess(true)} onBack={() => setConfirmationRequired(false)} />}
-          {(!claimingCredits || authMethod === "password") && <PasswordRecovery email={email} surface="login_modal" />}
+          {authMethod === "password" && <PasswordRecovery email={email} surface="login_modal" />}
 
         {!claimingCredits && googleOption}
         {claimingCredits && <p className="mt-6 text-center text-xs leading-5 text-slate-500">

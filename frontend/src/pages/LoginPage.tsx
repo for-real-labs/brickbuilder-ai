@@ -330,7 +330,7 @@ export default function LoginPage() {
 
           {confirmationRequired && <SignupCodeVerification email={email} redirectPath={redirectTo} surface="login_page"
             onVerified={() => { if (remember) localStorage.setItem("remember_email", email); else localStorage.removeItem("remember_email"); navigate(redirectTo); }} onBack={() => setConfirmationRequired(false)} />}
-          <PasswordRecovery email={email} surface="login_page" />
+          {authMethod === "password" && <PasswordRecovery email={email} surface="login_page" />}
 
           <div data-native-mobile-hidden="true">
             {/* Divider */}

@@ -20,9 +20,8 @@ export function PasswordRecovery({ email, surface }: { email: string; surface: s
     } finally { setBusy(false); }
   };
   return <div className="space-y-2">
-    <p className="text-xs text-slate-500">Previously signed in with Google? Create a password using the reset link to use either sign-in method with the same account.</p>
     <button type="button" disabled={busy} className="min-h-11 w-full text-sm text-[#c83228] underline disabled:opacity-50" onClick={() => void send()}>
-      {busy ? 'Sending reset link…' : 'Forgot password? Reset or create a password'}
+      {busy ? 'Sending reset link…' : 'Forgot password'}
     </button>
     {message && <p role="status" className="rounded-lg bg-green-50 p-3 text-sm text-green-800">{message}</p>}
     {error && <p role="alert" className="text-sm text-red-700">{error}</p>}

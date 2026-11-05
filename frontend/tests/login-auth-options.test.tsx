@@ -135,7 +135,7 @@ describe('login auth options', () => {
       changeInput(container.querySelector('input[type="password"]')!, 'new-password');
       await act(async () => { container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })); });
       expect(container.querySelector('[role="status"]')?.textContent).toContain('check your email');
-      expect(container.textContent).toContain('Forgot password?');
+      expect(container.textContent).toContain('Forgot password');
       expect(navigate).not.toHaveBeenCalled(); expect(onSuccess).not.toHaveBeenCalled();
       expect(container.querySelector('input[type="password"]')).toBeNull();
       changeInput(container.querySelector('input[autocomplete="one-time-code"]')!, '123456');
@@ -189,6 +189,23 @@ describe('login auth options', () => {
     } finally {
       unmount();
     }
+  });
+
+  it.each(['page', 'modal'])('only shows password recovery when password login is selected on %s', surface => {
+    const { container, unmount } = renderIntoBody(surface === 'page' ? <MemoryRouter><LoginPage /></MemoryRouter> : <LoginModal open onClose={() => undefined} />);
+    try {
+      expect(findButton(container, 'Forgot password')).toBeUndefined();
+      expect(container.textContent).not.toContain('Previously signed in with Google?');
+
+      act(() => findButton(container, 'Use password')?.click());
+      expect(findButton(container, 'Forgot password')).toBeDefined();
+      expect(container.textContent).not.toContain('Previously signed in with Google?');
+      expect(container.textContent).not.toContain('Reset or create a password');
+
+      act(() => findButton(container, 'Use magic link instead')?.click());
+      expect(container.querySelector('input[type="password"]')).toBeNull();
+      expect(findButton(container, 'Forgot password')).toBeUndefined();
+    } finally { unmount(); }
   });
 
   it('submits password sign-in from the modal', async () => {
