@@ -103,7 +103,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         if (mountRef.current) element.mount(mountRef.current);
         try {
           const wallet = checkout.createExpressCheckoutElement({
-            buttonHeight: 52, buttonTheme: { applePay: 'black', googlePay: 'black' }, buttonType: { applePay: 'pay', googlePay: 'pay' },
+            buttonHeight: 52, buttonTheme: { applePay: 'black', googlePay: 'black' }, buttonType: { applePay: subscriptionPlan ? 'subscribe' : 'buy', googlePay: subscriptionPlan ? 'subscribe' : 'pay' },
             layout: { maxColumns: 1, maxRows: 0, overflow: 'never' },
             paymentMethodOrder: ['apple_pay', 'google_pay'],
             paymentMethods: { applePay: 'always', googlePay: 'always', paypal: 'never', link: 'never', amazonPay: 'never', klarna: 'never' },

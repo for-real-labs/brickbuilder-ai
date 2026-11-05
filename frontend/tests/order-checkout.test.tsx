@@ -39,6 +39,7 @@ beforeEach(() => {
   mocks.walletCreate.mockReset(); mocks.walletMount.mockReset();
   mocks.walletMount.mockImplementation(() => mocks.walletEvents.ready?.({ availablePaymentMethods: { applePay: true, googlePay: true } }));
   mocks.walletCreate.mockImplementation((options) => {
+    if (!['buy', 'subscribe'].includes(options.buttonType.applePay)) throw new Error('Unsupported Apple Pay button type');
     if (options.layout?.overflow === 'never' && options.layout?.maxRows > 0) throw new Error('Stripe does not allow maxRows with overflow never');
     return {
       on: (event: string, callback: (event?: unknown) => void) => { mocks.walletEvents[event] = callback; },
@@ -314,6 +315,7 @@ it('offers working wallet choices with a valid Stripe layout and omits unconfigu
   expect(container.querySelector('.checkout-wallet-payment')!.hasAttribute('hidden')).toBe(false);
   expect(container.querySelector('.checkout-wallet-payment > div')!.hasAttribute('hidden')).toBe(false);
   expect(options[1].disabled).toBe(false); expect(options[2].disabled).toBe(false);
+  expect(mocks.walletCreate).toHaveBeenCalledWith(expect.objectContaining({ buttonType: { applePay: 'buy', googlePay: 'pay' } }));
   expect(container.textContent).not.toContain('PayPal');
   expect(container.querySelector('[aria-label="Back to contact and delivery"]')).not.toBeNull();
   await click('Apple Pay');
@@ -557,6 +559,7 @@ it.each([['builder', 299, '2.99'], ['creator', 1999, '19.99']] as const)('confir
   expect(container.textContent).toContain('Renews monthly until canceled');
   expect(container.querySelector('#order-promo')).toBeNull();
   expect(container.querySelector('.checkout-back')).toBeNull();
+  expect(mocks.walletCreate).toHaveBeenCalledWith(expect.objectContaining({ buttonType: { applePay: 'subscribe', googlePay: 'subscribe' } }));
   await act(async () => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   expect(mocks.confirm).toHaveBeenCalledWith({ redirect: 'if_required' });
