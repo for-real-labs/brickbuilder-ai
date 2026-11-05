@@ -6,7 +6,8 @@ import asyncio
 import jwt
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, Header, Depends, Request
-from supabase import create_client, Client
+from supabase import Client
+from .database import create_database_client
 import logging
 import hashlib
 import time
@@ -50,7 +51,7 @@ LOCAL_DB_ENABLED = False
 
 if SUPABASE_ENABLED:
     try:
-        supabase_client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+        supabase_client = create_database_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         # Supabase client initialized
     except Exception as e:
         logger.error(f"CRITICAL: Failed to initialize Supabase client: {e}")

@@ -1,7 +1,53 @@
 import asyncio
 import threading
 
+import httpx
+import pytest
+
+from src.utils import database
 from src.utils.database import execute_query
+
+
+def test_supabase_queries_use_http1_and_preserve_authenticated_requests(monkeypatch):
+    client = database.create_database_client('https://project.example.test', 'test-service-key')
+    transport = client.postgrest.session
+    try:
+        assert transport._transport._pool._http2 is False
+        assert transport.timeout.read == 120
+        requests = []
+
+        def respond(request):
+            requests.append(request)
+            return httpx.Response(200, json=[{'enabled': True}])
+
+        monkeypatch.setattr(transport, '_transport', httpx.MockTransport(respond))
+
+        async def run():
+            return await asyncio.gather(*[
+                execute_query(client.table('billing_settings').select('*'))
+                for _ in range(16)
+            ])
+
+        assert all(result.data == [{'enabled': True}] for result in asyncio.run(run()))
+        assert len(requests) == 16
+        assert all(request.url.path == '/rest/v1/billing_settings' for request in requests)
+        assert all(request.headers['apikey'] == 'test-service-key' for request in requests)
+        assert all(request.headers['authorization'] == 'Bearer test-service-key' for request in requests)
+    finally:
+        transport.close()
+
+
+def test_failed_supabase_initialization_closes_transport(monkeypatch):
+    transports = []
+
+    def fail(url, key, options):
+        transports.append(options.httpx_client)
+        raise ValueError('Invalid configuration')
+
+    monkeypatch.setattr(database, 'create_client', fail)
+    with pytest.raises(ValueError, match='Invalid configuration'):
+        database.create_database_client('invalid', 'test-service-key')
+    assert transports[0].is_closed
 
 
 def test_slow_database_query_does_not_block_other_requests():
