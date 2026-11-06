@@ -1,6 +1,6 @@
 import { afterEach, expect, it, vi } from 'vitest';
 import { strFromU8, unzipSync } from 'fflate';
-import { createModelExport, downloadModel, modelParts } from '../src/utils/modelExport';
+import { createModelExport, downloadModel, modelParts, studioCompatibleLDraw } from '../src/utils/modelExport';
 
 const placement = (file: string, color = 4) => `1 ${color} 0 0 0 1 0 0 0 1 0 0 0 1 ${file}`;
 const model = ['0 FILE main.ldr', placement('wing.ldr'), placement('wing.ldr'), placement('3002.dat', 71),
@@ -44,6 +44,47 @@ it('exports complete LDraw and a Studio archive containing the same model', asyn
   expect(io.filename).toBe('Castle.io');
   const archive = unzipSync(new Uint8Array(await read(io.blob)));
   expect(strFromU8(archive['model.ldr'])).toBe(model);
+});
+
+it('removes Nova display packing from LDraw and Studio downloads without changing placements or colors', async () => {
+  const original = [
+    '0 LDraw.org Configuration File',
+    '0 Name: LDConfig.ldr',
+    '0 !COLOUR Black CODE 0 VALUE #1B2A34 EDGE #808080',
+    '0 BrickBuilder display export from LDraw Nova',
+    '0 Name: model.ldr',
+    '1 72 -100 -24 40 1 0 0 0 1 0 0 0 1 parts/3004.dat',
+    '1 3 20 -8 40 0 0 1 0 1 0 -1 0 0 parts/3068b.dat',
+    '0 FILE parts/3004.dat',
+    '0 Brick 1 x 2',
+    '1 16 0 0 0 1 0 0 0 1 0 0 0 1 p/stud.dat',
+    '0 FILE p/stud.dat',
+    '2 24 0 0 0 1 0 0',
+  ].join('\n');
+  const expected = [
+    '0 BrickBuilder display export from LDraw Nova',
+    '0 Name: model.ldr',
+    '1 72 -100 -24 40 1 0 0 0 1 0 0 0 1 3004.dat',
+    '1 3 20 -8 40 0 0 1 0 1 0 -1 0 0 3068b.dat',
+    '',
+  ].join('\n');
+  expect(studioCompatibleLDraw(original)).toBe(expected);
+  expect(await text(createModelExport(original, 'Castle', 'ldraw').blob)).toBe(expected);
+  const io = createModelExport(original, 'Castle', 'io');
+  const archive = unzipSync(new Uint8Array(await read(io.blob)));
+  expect(strFromU8(archive['model.ldr'])).toBe(expected);
+  expect(modelParts(original)).toEqual(modelParts(expected));
+});
+
+it('leaves standard LDraw and intentionally embedded custom MPD submodels unchanged', () => {
+  expect(studioCompatibleLDraw(model)).toBe(model);
+  const custom = [
+    '0 BrickBuilder display export from LDraw Nova',
+    placement('custom.ldr'),
+    '0 FILE parts/3004.dat', placement('p/stud.dat', 16),
+    '0 FILE custom.ldr', placement('3004.dat'),
+  ].join('\n');
+  expect(studioCompatibleLDraw(custom)).toBe(custom);
 });
 
 it('exports CSV quantities and BrickLink XML with translated color IDs', async () => {

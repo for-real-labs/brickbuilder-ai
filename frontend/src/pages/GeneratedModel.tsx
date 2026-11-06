@@ -51,6 +51,7 @@ import { ClaimGenerationApiService } from "../services/claimGenerationApi";
 import { UpdateModelApiService, UpdateModelResponse } from "../services/updateModelApi";
 import { recordAnonymousGeneration } from "../utils/anonGenerations";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
+import { createModelExport } from "../utils/modelExport";
 import { ModelEditControls } from "../components/ModelEditControls";
 import { PetPromptGreeting } from '../components/PetCompanion';
 import { usePetActivity } from '../contexts/PetContext';
@@ -1825,8 +1826,8 @@ export default function GeneratedModel() {
     const handleExportLdr = React.useCallback(() => {
       if (!ldrContent) return;
       setExportMenuOpen(false);
-      const blob = new Blob([ldrContent], { type: 'text/plain;charset=utf-8' });
-      downloadBlob(blob, `${getSafeExportName()}.ldr`);
+      const { blob, filename } = createModelExport(ldrContent, getSafeExportName(), 'ldraw');
+      downloadBlob(blob, filename);
     }, [ldrContent, downloadBlob, getSafeExportName]);
 
     const handleExportPng = React.useCallback(() => {
