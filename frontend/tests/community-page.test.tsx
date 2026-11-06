@@ -161,7 +161,7 @@ describe('CommunityPage', () => {
     }
   });
 
-  it('defaults to sorting by likes and requests the top sort from the API', async () => {
+  it('defaults to newest first and requests the recent sort from the API', async () => {
     const getCommunityGenerations = vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
       generations: [],
       total_count: 0,
@@ -177,8 +177,14 @@ describe('CommunityPage', () => {
         root.render(<CommunityPage />);
       });
 
-      expect(getCommunityGenerations).toHaveBeenCalledWith('tok', 50, 0, undefined, 'top');
-      expect((container.querySelector('[aria-label="Sort community models"]') as HTMLSelectElement).value).toBe('likes');
+      expect(getCommunityGenerations).toHaveBeenCalledWith('tok', 50, 0, undefined, 'recent');
+      const sortSelect = container.querySelector('[aria-label="Sort community models"]') as HTMLSelectElement;
+      expect(sortSelect.value).toBe('date_desc');
+      await act(async () => {
+        Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value')!.set!.call(sortSelect, 'likes');
+        sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(getCommunityGenerations).toHaveBeenLastCalledWith('tok', 50, 0, undefined, 'top');
     } finally {
       act(() => root.unmount());
       container.remove();
