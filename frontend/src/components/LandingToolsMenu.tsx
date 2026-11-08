@@ -10,6 +10,7 @@ import { FeedbackWidget } from './FeedbackWidget';
 import { SupportDialog } from './SupportDialog';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { downloadModel, type ModelExportFormat } from '../utils/modelExport';
+import type { ObjectExportFormat } from '../utils/objectExport';
 import { useBilling } from '../contexts/BillingContext';
 import { PaidFeatureLock } from './PaidFeatureDialog';
 
@@ -38,6 +39,8 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
   const focusChoices = useRef(false);
   const [open, setOpen] = useState(false);
   const [submenu, setSubmenu] = useState<'export' | 'import' | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const exportInProgress = useRef(false);
   const [exportError, setExportError] = useState<string | null>(null);
   const rowClass = 'flex min-h-11 w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336] disabled:cursor-not-allowed disabled:opacity-40';
   const [feedbackOpen, setFeedbackOpen] = useState<boolean | null>(null);
@@ -74,6 +77,25 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
     downloadModel(model.content, model.generation.name || model.generation.prompt || 'model', format);
     setOpen(false);
     return true;
+  };
+
+  const exportObject = async (format: ObjectExportFormat) => {
+    if (!model || busy || exportInProgress.current) return;
+    exportInProgress.current = true;
+    setExporting(true);
+    setExportError(null);
+    posthog.capture('landing_model_export_clicked', { ...attribution(), generation_id: model.generation.generation_id, format, source: 'tools_dropdown' });
+    try {
+      const { downloadObject } = await import('../utils/objectExport');
+      await downloadObject(model.content, model.generation.name || model.generation.prompt || 'model', format);
+      setOpen(false);
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Unable to download this model. Please try again.');
+      posthog.capture('landing_model_export_failed', { ...attribution(), generation_id: model.generation.generation_id, format });
+    } finally {
+      exportInProgress.current = false;
+      setExporting(false);
+    }
   };
 
   useImperativeHandle(ref, () => ({ runTool(action, expectedGenerationId) {
@@ -183,6 +205,10 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
                   }
                 }}>{label}{format === 'io' && featureAccess !== 'allowed' && <PaidFeatureLock />}</button>
               </li>)}
+              {([['obj', 'Download OBJ'], ['glb', 'Download GLB'], ['stl', 'Download STL']] as const).map(([format, label]) => <li key={format} className={format === 'obj' ? 'mt-1 border-t border-slate-200 pt-1' : ''}>
+                <button type="button" className={rowClass} disabled={!model || busy || exporting} onClick={() => void exportObject(format)}>{label}</button>
+              </li>)}
+              {exporting && <li role="status" className="px-3 py-2 text-xs text-slate-500">Preparing 3D download…</li>}
               {(!model || busy) && <li className="px-3 py-2 text-xs text-slate-500">{busy ? 'Downloads will be ready when your model finishes.' : 'Open or generate a model to download it.'}</li>}
               {exportError && <li role="alert" className="px-3 py-2 text-xs text-red-600">{exportError}</li>}
             </> : (['ldraw', 'io'] as const).map(format => <li key={format}>

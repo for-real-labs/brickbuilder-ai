@@ -76,6 +76,10 @@ export function createModelExport(content: string, name: string, format: ModelEx
 
 export function downloadModel(content: string, name: string, format: ModelExportFormat): void {
   const { blob, filename } = createModelExport(content, name, format);
+  downloadExport(blob, filename);
+}
+
+export function downloadExport(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement('a');
   anchor.href = url;

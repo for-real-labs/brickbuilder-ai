@@ -119,3 +119,23 @@ it('opens the selected model in Studio from Tools and disables it during generat
   mount(null);
   expect(button('Edit in BrickBuilder Studio')).toBeUndefined();
 });
+
+vi.mock('../src/utils/objectExport', () => ({ downloadObject: vi.fn() }));
+it.each([['obj', 'Download OBJ'], ['glb', 'Download GLB'], ['stl', 'Download STL']] as const)('exports %s in the 3D objects section', async (format, label) => {
+  const { downloadObject } = await import('../src/utils/objectExport');
+  mount(); act(() => button('Tools').click()); act(() => button('Export').click());
+  expect(host.textContent).not.toContain('3D objects');
+  expect(button('Download OBJ').closest('li')?.className).toContain('border-t');
+  await act(async () => button(label).click());
+  expect(downloadObject).toHaveBeenCalledWith(model.content, 'Castle', format);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_export_clicked', expect.objectContaining({ format }));
+});
+
+it('shows asynchronous 3D export errors and allows retrying', async () => {
+  const { downloadObject } = await import('../src/utils/objectExport');
+  vi.mocked(downloadObject).mockRejectedValueOnce(new Error('Missing geometry'));
+  mount(); act(() => button('Tools').click()); act(() => button('Export').click());
+  await act(async () => button('Download STL').click());
+  expect(host.querySelector('[role="alert"]')?.textContent).toBe('Missing geometry');
+  expect(button('Download STL').disabled).toBe(false);
+});
