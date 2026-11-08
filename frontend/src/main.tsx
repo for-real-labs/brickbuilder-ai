@@ -1,5 +1,6 @@
 import { captureReferralLink } from './services/referrals';
 import { preparePasswordRecoveryPage } from './services/passwordAuth';
+import { captureSignVisit } from './utils/signAnalytics';
   import { createRoot } from "react-dom/client";
   import { PostHogProvider } from "posthog-js/react";
   import { HelmetProvider } from "react-helmet-async";
@@ -23,6 +24,7 @@ import { preparePasswordRecoveryPage } from './services/passwordAuth';
           defaults: "2025-05-24",
           capture_exceptions: true,
           debug: false,
+          loaded: captureSignVisit,
         }}
       >
         <AuthProvider>
