@@ -639,7 +639,7 @@ it.each(['active build', 'suggestion', 'opened model'])('lets the pet speak the 
   expect(container.querySelector('.pet-avatar--building')).toBeNull();
 });
 
-const concurrencyLimitMessage = 'You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.';
+const concurrencyLimitMessage = 'You can have up to 3 generations running at a time. Wait for one to finish or cancel one before starting another.';
 
 it.each([
   'AI builds are paused after 5 failed or canceled attempts within 24 hours. Please wait until October 24, 2026 at 10:00 AM CDT to generate again. Your credits have not been charged for this request. Upgrading does not remove this pause.',
@@ -652,7 +652,7 @@ it.each([
   expect(container.querySelector('.pet-chat-actions')).toBeNull();
 });
 
-it.each([true, false])('shows the one-generation limit in pet speech (currentOnly=%s)', async currentOnly => {
+it.each([true, false])('shows the three-generation limit in pet speech (currentOnly=%s)', async currentOnly => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'Another castle', error: concurrencyLimitMessage }]} generations={[]} /></PetProvider>));
   expect(container.querySelector('[role="status"]')?.textContent).toBe(concurrencyLimitMessage);

@@ -18,7 +18,7 @@ export function buildFailureMessage(error: unknown): string {
     || /^AI builds are paused after 5 failed or canceled attempts within 24 hours\. Please wait until /.test(message)
     || message === 'AI builds are temporarily paused while other builds finish. Please wait for a running build to finish before trying again. Your credits have not been charged for this request.'
     || isGuestLimitMessage(message)
-    || message === 'You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.')
+    || message === 'You can have up to 3 generations running at a time. Wait for one to finish or cancel one before starting another.')
     ? message : BUILD_FAILURE_MESSAGE;
 }
 

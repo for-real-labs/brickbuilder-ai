@@ -31,7 +31,7 @@ def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(se
             _create_schema(conn)
         else:
             conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text)')
-            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261022010000_generation_concurrency_limit_1.sql').read_text())
+            conn.execute((Path(__file__).parents[2] / 'supabase/migrations/20261109000000_generation_concurrency_limit_3.sql').read_text())
 
     def insert(index, owner='owner', status=active_status):
         with psycopg.connect(uri, autocommit=True) as conn:
@@ -49,7 +49,7 @@ def test_concurrent_admission_is_atomic_shared_between_modes_and_owner_scoped(se
                 return False
     with ThreadPoolExecutor(max_workers=12) as workers:
         outcomes = list(workers.map(insert, range(12)))
-    assert sum(outcomes) == 1
+    assert sum(outcomes) == 3
     assert insert(1, 'other-owner')
     assert insert(1, status='completed')
     with psycopg.connect(uri, autocommit=True) as conn:
@@ -70,7 +70,7 @@ def test_storage_returns_actionable_429_for_limit():
     storage.client = SimpleNamespace(table=lambda name: Table())
     with pytest.raises(HTTPException) as exc:
         asyncio.run(storage.create_generation('owner', 'authenticated', 'cube', 40, endpoint='llmToBricks'))
-    assert exc.value.status_code == 429 and 'one generation' in exc.value.detail
+    assert exc.value.status_code == 429 and 'up to 3 generations' in exc.value.detail
 
 
 @pytest.mark.parametrize('local', [False, True])
@@ -441,3 +441,24 @@ def test_account_daily_override_is_atomic_and_preserves_usage(server, tmp_path, 
         assert conn.execute("SELECT attempts FROM generation_daily_usage WHERE user_id='already-used'").fetchone()[0] == 23
         conn.execute("UPDATE generation_daily_usage SET usage_day=usage_day-1")
     assert sum(reserve('restricted') for _ in range(6)) == 5
+
+
+def test_raising_concurrency_limit_admits_two_more_jobs(server):
+    migrations = Path(__file__).parents[2] / 'supabase/migrations'
+    with psycopg.connect(server.get_uri(), autocommit=True) as conn:
+        conn.execute('DROP TABLE IF EXISTS generations CASCADE')
+        conn.execute('CREATE TABLE generations (id uuid primary key, user_id text, user_type text, endpoint text, status text)')
+        conn.execute((migrations / '20261022010000_generation_concurrency_limit_1.sql').read_text())
+
+        def insert():
+            conn.execute("INSERT INTO generations VALUES (%s, 'owner', 'authenticated', 'llmToBricks', 'processing')", (uuid4(),))
+
+        insert()
+        with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_CONCURRENCY_LIMIT'):
+            insert()
+        conn.execute((migrations / '20261109000000_generation_concurrency_limit_3.sql').read_text())
+        insert()
+        insert()
+        assert conn.execute("SELECT count(*) FROM generations WHERE status='processing'").fetchone()[0] == 3
+        with pytest.raises(psycopg.errors.RaiseException, match='BB_GENERATION_CONCURRENCY_LIMIT'):
+            insert()

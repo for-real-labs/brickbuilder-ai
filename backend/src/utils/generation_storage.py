@@ -227,7 +227,7 @@ class GenerationStorage:
                     headers={'Retry-After': format_datetime(reset_at, usegmt=True)},
                 ) from None
             if 'BB_GENERATION_CONCURRENCY_LIMIT' in str(e):
-                raise HTTPException(status_code=429, detail='You can only have one generation running at a time. Wait for it to finish or cancel it before starting another.') from None
+                raise HTTPException(status_code=429, detail='You can have up to 3 generations running at a time. Wait for one to finish or cancel one before starting another.') from None
             logger.error(f"Failed to create generation record")
             raise
     

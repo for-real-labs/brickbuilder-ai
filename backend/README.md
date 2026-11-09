@@ -469,7 +469,7 @@ these controls do not establish a person's identity.
 ### Request limit analytics
 
 `request_limit_hit` is emitted once per rejected generation admission, including
-`guest_lifetime_credits` (75 credits), `daily` (10 by default), `concurrent` (1),
+`guest_lifetime_credits` (75 credits), `daily` (10 by default), `concurrent` (3),
 `generation_retry_cooldown` / `generation_retry_pending` (5 attempts), account
 credit exhaustion and global AI capacity. Older attempt-based guest
 errors retain their `guest_lifetime` event type. It counts blocked attempts, not
