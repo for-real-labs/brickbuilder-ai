@@ -13,6 +13,10 @@ import numpy as np
 
 TOLERANCE = 0.05  # LDU: ignore touching faces and library rounding.
 MAX_REPORTED_PAIRS = 30
+# Six-decimal LDraw rotations can perturb a Gram-matrix entry by up to
+# 2 * sqrt(3) * 0.5e-6 plus quadratic rounding terms. Allow that precision
+# without accepting meaningful scaling or shear.
+TRANSFORM_ROUNDING_TOLERANCE = 4e-6
 
 
 def box(low, high, axes=None):
@@ -71,7 +75,7 @@ def transformed_solids(occurrence, regular):
     position = np.array([getattr(occurrence.position, axis) for axis in ('x', 'y', 'z')], dtype=float)
     if not np.isfinite(matrix).all() or not np.isfinite(position).all():
         raise ValueError('Non-finite part transform')
-    if solids and not np.allclose(matrix.T @ matrix, np.eye(3), atol=1e-6, rtol=0):
+    if solids and not np.allclose(matrix.T @ matrix, np.eye(3), atol=TRANSFORM_ROUNDING_TOLERANCE, rtol=0):
         raise ValueError('Material review requires unscaled orthogonal part transforms')
     return [(matrix @ centre + position, matrix @ axes, half) for centre, axes, half in solids]
 

@@ -79,5 +79,18 @@ def test_nonrigid_supported_parts_fail_closed():
         material.review_material([part('27925', (0, 0, 0), I * 2)], REGULAR)
 
 
+def test_six_decimal_starburst_rotation_keeps_collision_review():
+    rotation = np.array([[.469472, 0, -.882948], [0, 1, 0], [.882948, 0, .469472]])
+    piece = part('3022', (0, 0, 0), rotation)
+    assert not material.review_material([piece], REGULAR)
+    assert material.review_material([piece, piece], REGULAR)[0]['code'] == 'assembly.material_overlap'
+
+
+@pytest.mark.parametrize('matrix', [I * 1.00001, np.array([[1, .00001, 0], [0, 1, 0], [0, 0, 1]])])
+def test_rounding_tolerance_still_rejects_scaling_and_shear(matrix):
+    with pytest.raises(ValueError, match='unscaled'):
+        material.review_material([part('3022', (0, 0, 0), matrix)], REGULAR)
+
+
 def test_11211_side_studs_cannot_enter_a_plate_wall():
     assert material.review_material([part('11211', (0, 0, 0)), part('3022', (0, 8, -30))], REGULAR)
