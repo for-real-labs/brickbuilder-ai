@@ -107,6 +107,9 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       generation_id: generation?.generation_id, view: showingInstructions ? 'instructions' : 'model', source,
     });
     setExpanded(false);
+    if (showingInstructions && source === 'back_button' && window.matchMedia('(min-width: 1024px)').matches) {
+      setView('model');
+    }
   };
   useEffect(() => { collapseRef.current = collapse; });
   useEffect(() => {

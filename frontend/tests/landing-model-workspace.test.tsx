@@ -69,6 +69,7 @@ const historyBuild = (id: string, prompt: string, created_at = '2026-10-19T18:00
   detail_level: 40, endpoint: 'novaToBricks',
 });
 beforeEach(() => {
+  vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: vi.fn(), removeEventListener: vi.fn() }));
   Object.defineProperty(HTMLDialogElement.prototype, 'show', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = true; }) });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: vi.fn(function(this: HTMLDialogElement) { this.open = false; }) });
@@ -1177,6 +1178,17 @@ it('supports Escape and view switching while expanded, then restores scrolling o
   act(() => root.render(null));
   expect(document.body.style.overflow).toBe('clip');
   document.body.style.overflow = '';
+});
+
+it('returns desktop instructions to the model using Go Back without requiring the hidden view toggle', async () => {
+  vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} requestedInstructionsId="castle" busy={false}>{null}</LandingModelWorkspace>));
+  const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  expect(dialog.dataset.view).toBe('instructions');
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-back')!.click());
+  expect(dialog.dataset.view).toBe('model');
+  expect(dialog.dataset.expanded).toBe('false');
+  expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
 });
 
 it('returns to the inline model when the selected build changes while expanded', async () => {
