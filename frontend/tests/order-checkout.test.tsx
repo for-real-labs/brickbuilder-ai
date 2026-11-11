@@ -161,12 +161,12 @@ it('retains country and optional apartment details when editing after payment', 
   vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs_test', client_secret: 'secret' });
   await renderOrder();
   act(() => Object.entries({ ...details, line2: 'Suite 2' }).forEach(([name, value]) => fill(name, value)));
-  const country = container.querySelector('select')!;
+  const country = container.querySelector('select[name="country"]')!;
   await act(async () => { country.value = 'CA'; country.dispatchEvent(new Event('change', { bubbles: true })); });
   expect(container.textContent).toContain('State/Province');
   await submitContact();
   await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
-  expect(container.querySelector('select')!.value).toBe('CA');
+  expect(container.querySelector('select[name="country"]')!.value).toBe('CA');
   expect(container.querySelector<HTMLInputElement>('[name="line2"]')!.value).toBe('Suite 2');
   expect(posthog.capture).toHaveBeenCalledWith('order_shipping_country_changed', expect.objectContaining({ generation_id: 'g', country: 'CA' }));
 });
@@ -180,7 +180,7 @@ it('shows a useful empty checkout when no model is selected', async () => {
 it('recovers a quote when a model is restored without pricing', async () => {
   const fetchPrice = vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue(quote as never);
   await renderOrder({ generation_id: 'g' });
-  expect(fetchPrice).toHaveBeenCalledWith('g', 'auth-token', 'US');
+  expect(fetchPrice).toHaveBeenCalledWith('g', 'auth-token', 'US', 1);
   expect(container.textContent).toContain('$50.00');
 });
 
@@ -557,7 +557,7 @@ it('refreshes country shipping and ignores an older request that finishes later'
   await act(async () => { country.value = 'GB'; country.dispatchEvent(new Event('change', { bubbles: true })); });
   expect(container.querySelector<HTMLButtonElement>('#checkout-step-1 button[type="submit"]')?.disabled).toBe(true);
   await act(async () => { country.value = 'PL'; country.dispatchEvent(new Event('change', { bubbles: true })); });
-  expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('g', 'auth-token', 'PL');
+  expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('g', 'auth-token', 'PL', 1);
   await act(async () => finishOlder({ ...quote, order_pricing: orderPricing(4900, 480, 0, 'GB') }));
   expect(container.querySelector('.checkout-total')?.textContent).toContain('$55.00');
   expect(country.value).toBe('PL');
@@ -580,4 +580,32 @@ it.each([['builder', 299, '2.99'], ['creator', 1999, '19.99']] as const)('confir
   expect(mocks.confirm).toHaveBeenLastCalledWith({ redirect: 'if_required', expressCheckoutConfirmEvent: walletEvent });
   expect(container.textContent).toContain('Your card was declined.');
   expect(posthog.capture).toHaveBeenCalledWith('plan_checkout_clicked', expect.objectContaining({ plan_key: plan, total_cents: cents }));
+});
+
+it('requotes quantities, retains delivery, and sends the selected number to payment', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret' });
+  await renderOrder();
+  await act(async () => fill('firstName', 'Jake'));
+  vi.mocked(GetPriceApiService.getPrice).mockResolvedValue({ ...quote, total_parts: 720, order_pricing: orderPricing(14000) } as never);
+  await act(async () => {
+    const select = container.querySelector('[aria-label="Model quantity"]') as HTMLSelectElement;
+    select.value = '3';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('g', 'auth-token', 'US', 3);
+  expect(container.querySelector<HTMLInputElement>('[name="firstName"]')?.value).toBe('Jake');
+  expect(container.querySelector('.checkout-summary-model')?.textContent).toContain('720 pieces');
+  expect(container.querySelector('.checkout-total')?.textContent).toContain('$140.00');
+  expect(JSON.parse(localStorage.getItem('orderState')!).quantity).toBe(3);
+  expect(posthog.capture).toHaveBeenCalledWith('order_quantity_changed', { generation_id: 'g', quantity: 3 });
+  await submitContact();
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ quantity: 3, priceCents: 14000 }), 'auth-token');
+  expect(container.querySelector<HTMLSelectElement>('[aria-label="Model quantity"]')?.disabled).toBe(true);
+});
+
+it('restores the selected quantity when reloading a model link', async () => {
+  localStorage.setItem('orderState', JSON.stringify({ generation_id: 'saved-model', quantity: 4 }));
+  await act(async () => root.render(<MemoryRouter initialEntries={['/order?id=saved-model']}><OrderKit /></MemoryRouter>));
+  expect(container.querySelector<HTMLSelectElement>('[aria-label="Model quantity"]')?.value).toBe('4');
+  expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('saved-model', 'auth-token', 'US', 4);
 });

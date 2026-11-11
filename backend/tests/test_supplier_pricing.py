@@ -61,3 +61,19 @@ def test_saved_bom_quote_includes_verified_member_pricing_for_destination(monkey
     assert result.order_pricing.shipping_country == 'GB'
     assert result.order_pricing.member_discount_percent == 10
     assert result.order_pricing.total_cents > result.total_price * 100
+
+
+@pytest.mark.parametrize('quantity', [1, 3, 99])
+def test_quantity_scales_parts_cost_and_weight_before_shipping(monkeypatch, quantity):
+    monkeypatch.setattr(getPrice, 'get_supplier_catalog', lambda: PartsCatalog.from_csv(CATALOG))
+    monkeypatch.setattr(getPrice, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value={
+        'endpoint': 'novaToBricks', 'parts_list_csv_url': 'https://example.com/parts.csv'})))
+    monkeypatch.setattr(getPrice, 'fetch_csv_content', AsyncMock(return_value='LdrawId,LDrawColorId,Qty\n3001.dat,36,2\n'))
+    monkeypatch.setattr(getPrice, 'get_member_discount_percent', AsyncMock(return_value=10))
+    single = asyncio.run(getPrice.get_price(getPrice.GetPriceRequest(generation_id='g'), {}))
+    result = asyncio.run(getPrice.get_price(getPrice.GetPriceRequest(generation_id='g', quantity=quantity), {}))
+    assert result.total_parts == 2 * quantity
+    assert result.parts_breakdown[0].quantity == 2 * quantity
+    assert result.total_price == pytest.approx(single.total_price * quantity)
+    assert result.total_weight == pytest.approx(single.total_weight * quantity)
+    assert result.order_pricing == getPrice.price_order(result.total_price, result.total_weight, member_discount_percent=10)

@@ -87,7 +87,7 @@
 .checkout-preview-message { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #7c838b; height: 100%; font-size: 13px; }
 .checkout-summary-model { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0; }
 .checkout-summary-model p { font-size: 12px; color: #686c73; margin: 0; }
-.checkout-quantity { padding: 4px 9px; background: #f4f5f7; border-radius: 6px; color: #686c73; font-size: 11px; white-space: nowrap; }
+.checkout-quantity { display: inline-flex; align-items: center; gap: 8px; padding: 4px 9px; background: #f4f5f7; border-radius: 6px; color: #686c73; font-size: 11px; white-space: nowrap; }
 .checkout-summary-toggle { display: none; }
 .checkout-price-list { border-top: 1px solid #eceef2; margin: 0; padding-top: 14px; }
 .checkout-price-list > div { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; margin-bottom: 10px; }
@@ -234,3 +234,6 @@
 @media(max-width:480px) { .checkout-summary-toggle del { display:block; margin:0 0 2px; } }
 
 .checkout-member-badge { margin:0 0 14px; padding:9px 12px; border-radius:10px; background:#eff8f2; color:#237554; font-size:12px; line-height:1.5; font-weight:650; }
+
+.checkout-quantity select { min-height: 40px; min-width: 64px; padding: 6px; border: 1px solid #d8dbe0; border-radius: 6px; background: white; color: #292d34; font: inherit; font-size: 14px; }
+.checkout-quantity select:focus-visible { outline: 2px solid #355df2; outline-offset: 2px; }

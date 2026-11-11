@@ -55,7 +55,7 @@ class CreateCheckoutSessionRequest(BaseModel):
     name: Optional[str] = Field(default="BrickBuilder Model Kit", max_length=250)
     # Retained for older clients. The charged price is calculated on the server.
     priceCents: Optional[int] = Field(default=None, gt=0)
-    quantity: int = Field(default=1, ge=1, le=1)
+    quantity: int = Field(default=1, ge=1, le=99, strict=True)
     generationId: Optional[str] = Field(default=None, max_length=100)
     brickowlCartId: Optional[str] = Field(default=None, max_length=100)
     uiMode: Literal["hosted", "custom", "embedded", "elements"] = "hosted"
@@ -100,12 +100,12 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         parts_list_csv_url = generation.get("parts_list_csv_url")
         if not parts_list_csv_url and not imported:
             raise HTTPException(status_code=400, detail="Kit parts list is unavailable")
-        quote = await get_price(GetPriceRequest(generation_id=request.generationId,
+        quote = await get_price(GetPriceRequest(generation_id=request.generationId, quantity=request.quantity,
             shipping_country=request.shippingAddress.address.country if request.shippingAddress else "US"), auth_info)
         if quote.conversion_credits is not None:
             raise HTTPException(409, "Convert unavailable parts before ordering this model.")
         amount = checkout_price_cents(quote)
-        if imported:
+        if imported or request.quantity > 1:
             # Pin the exact BOM that was priced, rather than using any existing
             # artifact attached to the original import.
             inventory = {(item.part_id.removesuffix('.dat'), item.color_id): item.quantity
@@ -119,6 +119,7 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         track_api_call(endpoint="/create-checkout-session", user_id=user_email,
                        request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})
         metadata = {"generationId": request.generationId, "partsListCsvUrl": parts_list_csv_url,
+                    "quantity": str(request.quantity),
                     "shipInstructionsPostcard": str(request.shipInstructionsPostcard).lower()}
         if request.petId:
             metadata["petId"] = request.petId
@@ -132,7 +133,8 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         params = {
             "line_items": [{"price_data": {
                 "currency": "usd",
-                "product_data": {"name": generation.get('name') or 'Custom brick model'},
+                "product_data": {"name": (generation.get('name') or 'Custom brick model') +
+                    (f" (×{request.quantity} kits)" if request.quantity > 1 else "")},
                 "unit_amount": pricing.parts_cents,
             }, "quantity": 1}],
             "shipping_options": [{"shipping_rate_data": {

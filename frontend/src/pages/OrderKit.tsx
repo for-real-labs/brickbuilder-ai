@@ -24,6 +24,7 @@ import "./OrderKit.css";
 
 type LocationState = {
   name?: string;
+  quantity?: number;
   parts_list?: { quantity: number }[];
   screenshots?: { angle1: string; angle2?: string };
   generation_id?: string;
@@ -57,10 +58,15 @@ function OrderCheckout() {
   const navigate = useNavigate();
   const state = React.useMemo(() => {
     const linkedId = new URLSearchParams(location.search).get('id');
-    return linkedId ? { generation_id: linkedId } : restoreOrderState(location.state as LocationState | null);
+    if (linkedId) {
+      const saved = restoreOrderState(null);
+      return { generation_id: linkedId, quantity: saved.generation_id === linkedId ? saved.quantity : undefined };
+    }
+    return restoreOrderState(location.state as LocationState | null);
   }, [location.state, location.search]);
   const lastGenerationId = localStorage.getItem('lastGenerationId');
   const generationId = state.generation_id || lastGenerationId || undefined;
+  const [quantity, setQuantity] = React.useState(Number.isInteger(state.quantity) && state.quantity! >= 1 && state.quantity! <= 99 ? state.quantity! : 1);
   const [resolvedName, setResolvedName] = React.useState<string | null>(null);
   const [orderNameOverride, setOrderNameOverride] = React.useState<string | null>(state.orderNameOverride || null);
   const [owner, setOwner] = React.useState<{ generationId: string; userId: string | null } | null>(null);
@@ -91,8 +97,8 @@ function OrderCheckout() {
 
   React.useEffect(() => {
     // Only cache model/order data. Contact details and payment secrets stay in memory.
-    try { localStorage.setItem('orderState', JSON.stringify({ ...state, name, orderNameOverride: orderNameOverride || undefined, priceData: quote || undefined, generation_id: generationId })); } catch { /* Checkout still works without storage. */ }
-  }, [state, quote, generationId, name, orderNameOverride]);
+    try { localStorage.setItem('orderState', JSON.stringify({ ...state, name, quantity, orderNameOverride: orderNameOverride || undefined, priceData: quote || undefined, generation_id: generationId })); } catch { /* Checkout still works without storage. */ }
+  }, [state, quote, generationId, name, orderNameOverride, quantity]);
 
   React.useEffect(() => {
     if (!generationId || !user?.id) { setOwner(null); return; }
@@ -114,7 +120,7 @@ function OrderCheckout() {
     void (async () => {
       try {
         const token = (await supabase.auth.getSession()).data.session?.access_token;
-        const data = await GetPriceApiService.getPrice(generationId, token, country);
+        const data = await GetPriceApiService.getPrice(generationId, token, country, quantity);
         if (!getOrderPricing(data)) throw new Error('No valid quote');
         if (!disposed) setQuote(data);
       } catch {
@@ -122,7 +128,7 @@ function OrderCheckout() {
       } finally { if (!disposed) setQuoteLoading(false); }
     })();
     return () => { disposed = true; };
-  }, [generationId, country, authSession?.access_token, quoteAttempt]);
+  }, [generationId, country, authSession?.access_token, quoteAttempt, quantity]);
 
   React.useEffect(() => {
     if (step > 0) {
@@ -220,7 +226,7 @@ function OrderCheckout() {
       if (!publishableKey) throw new Error('Payment configuration unavailable');
       const token = (await supabase.auth.getSession()).data.session?.access_token;
       const data = await CreateCheckoutSessionApiService.createCheckoutSession({
-        name, priceCents: pricing.totalCents, quantity: 1,
+        name, priceCents: pricing.totalCents, quantity,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
         uiMode: 'elements', shipInstructionsPostcard, petId: pet.id,
         shippingAddress: getShippingContact(delivery, country),
@@ -277,7 +283,13 @@ function OrderCheckout() {
                 else setOrderNameOverride(savedName);
               }} />
             <div className="checkout-preview">{modelLoading ? <div role="status" className="checkout-preview-message"><span className="checkout-spinner" />Loading your model…</div> : mpdContent ? <ThreeLDRViewer modelContent={mpdContent} modelName={name} showModelControls={false} onPreviewCaptured={setModelImage} /> : state.screenshots?.angle1 ? <img src={state.screenshots.angle1} alt={name} /> : <div className="checkout-preview-message"><Package size={40} /><span>Your custom brick kit</span></div>}</div>
-            <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<span className="checkout-quantity">Qty 1</span></div>
+            <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<label className="checkout-quantity">Qty
+              <select aria-label="Model quantity" value={quantity} disabled={loading || step > 0} onChange={event => {
+                const next = Number(event.target.value);
+                setQuote(null); setSession(null); setDiscountedTotal(null); setQuantity(next);
+                posthog.capture('order_quantity_changed', { generation_id: generationId, quantity: next });
+              }}>{Array.from({ length: 99 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select>
+            </label></div>
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
               setSummaryExpanded(value => !value); posthog.capture('order_summary_toggled', { generation_id: generationId, expanded: !summaryExpanded });
             }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? <>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</> : '—'}</strong></button>

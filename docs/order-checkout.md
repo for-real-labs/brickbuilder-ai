@@ -8,7 +8,8 @@ only the price breakdown collapsible. Checkout previews hide ruler/explode contr
 It offers all 249 countries and regions listed in Brickwith’s checkout, verified
 on October 9, 2026, with the standard shipping calculation. Kits are charged at full price without a launch discount.
 The frontend/backend country snapshots are checked for parity by tests.
-Model data survives a reload; contact details and payment client secrets stay in memory.
+The order summary offers quantities from 1–99. Changing quantity refreshes the server quote using the combined parts and weight, including stock checks and one shipping estimate. Quantity is locked during payment; return to Contact & delivery to edit it. Multi-kit orders save a combined fulfillment CSV and record the model quantity in order shipping information.
+Model data and quantity survive a reload; contact details and payment client secrets stay in memory.
 
 ## Stripe configuration
 

@@ -90,7 +90,7 @@ def test_unfinished_model_cannot_be_ordered(setup):
     create.assert_not_called()
 
 
-@pytest.mark.parametrize('kwargs', [{'quantity': 2}, {'priceCents': 0}, {'uiMode': 'invalid'}, {'customerEmail': 'bad'}])
+@pytest.mark.parametrize('kwargs', [{'quantity': 0}, {'quantity': 100}, {'quantity': 1.5}, {'quantity': True}, {'priceCents': 0}, {'uiMode': 'invalid'}, {'customerEmail': 'bad'}])
 def test_validates_checkout_request(kwargs):
     with pytest.raises(ValidationError):
         checkout.CreateCheckoutSessionRequest(**kwargs)
@@ -251,3 +251,22 @@ def test_checkout_requotes_for_the_submitted_destination(setup):
     request, identity = checkout.get_price.call_args.args
     assert request.shipping_country == 'PL'
     assert identity['user_id'] == 'owner'
+
+def test_multiple_kits_pin_combined_parts_and_charge_combined_quote(setup):
+    from src.requests.getPrice import PartPriceDetail
+    _, create, _ = setup
+    quote = checkout.get_price.return_value
+    quote.parts_breakdown = [PartPriceDetail(part_id='3001.dat', color_id=4,
+        quantity=6, sku='red', unit_price=.1, total_price=.6)]
+    quote.order_pricing = price_order(.6, .0132)
+    snapshot = AsyncMock(return_value='https://example.com/combined.csv')
+    checkout.generation_storage.store_order_parts_snapshot = snapshot
+    run(quantity=3, priceCents=1)
+    assert checkout.get_price.call_args.args[0].quantity == 3
+    assert snapshot.call_args.args[2].splitlines() == ['LdrawId,LDrawColorId,Qty', '3001.dat,4,6']
+    params = create.call_args.kwargs
+    assert params['metadata']['quantity'] == '3'
+    assert params['metadata']['partsListCsvUrl'] == 'https://example.com/combined.csv'
+    assert params['line_items'][0]['price_data']['unit_amount'] == quote.order_pricing.parts_cents
+    assert params['line_items'][0]['quantity'] == 1
+    assert params['shipping_options'][0]['shipping_rate_data']['fixed_amount']['amount'] == quote.order_pricing.shipping_cents

@@ -237,6 +237,7 @@ async def handle_checkout_session_completed(session):
         'name': shipping_name,
         'email': customer_details.get('email'),
         'phone': customer_details.get('phone'),
+        'model_quantity': int(metadata.get('quantity', '1')),
         'instructions_postcard': metadata.get('shipInstructionsPostcard') == 'true',
         'address': {
             'line1': shipping_address.get('line1'),
@@ -324,6 +325,7 @@ async def handle_checkout_session_completed(session):
                                         <tr><td style="padding: 8px; font-weight: bold;">Customer:</td><td style="padding: 8px;">{shipping_info.get('name', 'N/A') if shipping_info else 'N/A'}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Email:</td><td style="padding: 8px;">{customer_email}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Ship To:</td><td style="padding: 8px;">{addr_str}</td></tr>
+                                        <tr><td style="padding: 8px; font-weight: bold;">Model quantity:</td><td style="padding: 8px;">{shipping_info.get("model_quantity", 1)}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Instructions Post Card:</td><td style="padding: 8px;">{"Include 6 × 4 inch QR instructions postcard" if shipping_info.get("instructions_postcard") else "Not requested"}</td></tr>
                                         <tr><td style="padding: 8px; font-weight: bold;">Stripe Session:</td><td style="padding: 8px;">{full_session.id}</td></tr>
                                     </table>

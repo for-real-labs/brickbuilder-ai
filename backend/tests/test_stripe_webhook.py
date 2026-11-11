@@ -30,9 +30,12 @@ def stripe_configuration(monkeypatch):
     monkeypatch.setattr(webhook.stripe, 'api_key', None)
 
 
+@pytest.mark.parametrize('quantity', [None, '3'])
 @pytest.mark.parametrize('selected,expected', [('true', True), ('false', False), (None, False)])
-def test_paid_order_saves_postcard_choice_and_instructions_link(monkeypatch, selected, expected):
+def test_paid_order_saves_postcard_choice_and_instructions_link(monkeypatch, selected, expected, quantity):
     metadata = {'generationId': 'g/123', 'partsListCsvUrl': 'https://storage.example/original-parts.csv'}
+    if quantity is not None:
+        metadata['quantity'] = quantity
     if selected is not None:
         metadata['shipInstructionsPostcard'] = selected
     session = stripe.StripeObject.construct_from({
@@ -49,6 +52,7 @@ def test_paid_order_saves_postcard_choice_and_instructions_link(monkeypatch, sel
     asyncio.run(webhook.handle_checkout_session_completed(session))
     info = save.call_args.kwargs['shipping_info']
     assert save.call_args.kwargs['parts_list_csv_url'] == metadata['partsListCsvUrl']
+    assert info['model_quantity'] == (int(quantity) if quantity else 1)
     assert info['instructions_postcard'] is expected
     if expected:
         assert info['instructions_postcard_size'] == '6x4in'

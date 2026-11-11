@@ -23,6 +23,7 @@ IMPORT_CONVERSION_CREDITS = 20
 class GetPriceRequest(BaseModel):
     generation_id: str
     shipping_country: str = "US"
+    quantity: int = Field(default=1, ge=1, le=99, strict=True)
 
     @field_validator("shipping_country")
     @classmethod
@@ -94,6 +95,7 @@ async def price_imported_kit(request, generation, auth_info):
     inventory = {}
     try:
         inventory = await load_imported_inventory(generation_storage, generation)
+        inventory = {part: count * request.quantity for part, count in inventory.items()}
         total, breakdown, weight = calculate_price(inventory, catalog)
     except (PartsUnavailable, ValueError):
         conversion_credits = IMPORT_CONVERSION_CREDITS
@@ -133,7 +135,7 @@ async def get_price(request: GetPriceRequest, auth_info: dict) -> GetPriceRespon
         except (OSError, ValueError):
             raise HTTPException(503, "Supplier parts catalog is unavailable right now") from None
         try:
-            inventory = parts_csv_inventory(content)
+            inventory = {part: count * request.quantity for part, count in parts_csv_inventory(content).items()}
             total, breakdown, weight = calculate_price(inventory, catalog)
         except PartsUnavailable as exc:
             raise HTTPException(422, str(exc)) from None

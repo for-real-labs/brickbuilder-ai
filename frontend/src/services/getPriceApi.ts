@@ -65,7 +65,8 @@ export class GetPriceApiService {
   static async getPrice(
     generationId: string,
     authToken?: string,
-    shippingCountry = 'US'
+    shippingCountry = 'US',
+    quantity = 1
   ): Promise<GetPriceResponse> {
     
     if (!generationId) {
@@ -88,7 +89,7 @@ export class GetPriceApiService {
         method: 'POST',
         headers,
         body: JSON.stringify({
-          generation_id: generationId, shipping_country: shippingCountry
+          generation_id: generationId, shipping_country: shippingCountry, quantity
         }),
       });
 
