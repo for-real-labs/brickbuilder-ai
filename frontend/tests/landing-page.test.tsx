@@ -272,7 +272,9 @@ describe('LandingPage', () => {
       });
       expect(start).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'Anime girl', imageBase64: expect.any(String) }), undefined);
       expect(container.querySelector('[alt="Uploaded preview"]')).toBeTruthy();
-      expect(container.querySelector('[aria-label="Describe your model"]')).toBeNull();
+      expect(container.querySelector('[aria-label="Describe your model"]')).toBe(prompt);
+      expect(prompt.disabled).toBe(true);
+      expect(container.textContent).not.toContain('You can safely leave');
       await act(async () => {
         prompt.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
       });
@@ -1191,7 +1193,7 @@ describe('generation signup gate', () => {
       expect(generate).not.toHaveBeenCalled();
       authSettings.loading = false; authSettings.session = { access_token: 'redirect-token', user: { id: 'returning-builder' } };
       await act(async () => root.render(<LandingPage />));
-      expect(generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: 'Blue robot', model: 'gpt-6-astra', imageBase64: btoa('robot-image') }), 'redirect-token');
+      await act(async () => { await vi.waitFor(() => expect(generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: 'Blue robot', model: 'gpt-6-astra', imageBase64: btoa('robot-image') }), 'redirect-token')); });
       expect(sessionStorage.getItem('pendingLandingState')).toBeNull();
     } finally { act(() => root.unmount()); container.remove(); authSettings.isSupabaseConfigured = false; authSettings.session = null; authSettings.loading = false; sessionStorage.clear(); }
   });
@@ -1216,4 +1218,55 @@ it.each([0, 1])('shows the dashboard shortcut only with processing generations (
       expect(posthog.capture).toHaveBeenCalledWith('landing_processing_generations_clicked', { processing_count: 1 });
     }
   } finally { act(() => root.unmount()); container.remove(); }
+});
+
+it.each(['image', 'text'] as const)('keeps the %s form visible until the server accepts the build', async kind => {
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+  let accept!: (value: { generation_id: string; message: string }) => void;
+  const start = vi.spyOn(NovaToBricksApiService, 'generate').mockImplementation(() => new Promise(resolve => { accept = resolve; }));
+  vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
+  const BrowserURL = URL;
+  class PreviewURL extends BrowserURL {}
+  Object.defineProperties(PreviewURL, { createObjectURL: { value: vi.fn(() => 'blob:dog') }, revokeObjectURL: { value: vi.fn() } });
+  vi.stubGlobal('URL', PreviewURL);
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    const input = container.querySelector<HTMLInputElement>('#landing-build-prompt')!;
+    if (kind === 'image') {
+      const picker = container.querySelector<HTMLInputElement>('input[type=file]')!;
+      await act(async () => {
+        Object.defineProperty(picker, 'files', { configurable: true, value: [new File(['dog'], 'dog.png', { type: 'image/png' })] });
+        picker.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+    } else {
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A dog');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+    }
+    const form = container.querySelector('form[aria-label="Create a brick model"]');
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[type=submit]')!.click();
+      await vi.waitFor(() => expect(start).toHaveBeenCalledOnce());
+    });
+    expect(container.querySelector('form[aria-label="Create a brick model"]')).toBe(form);
+    expect(container.querySelector('#landing-build-prompt')).toBe(input);
+    expect(input.disabled).toBe(true);
+    expect(container.querySelector('button[type=submit]')?.textContent).toBe('Preparing…');
+    expect(container.querySelector('.landing-page-intro--hidden')).toBeNull();
+    expect(container.textContent).toContain(kind === 'image' ? 'Uploading image and starting your build…' : 'Starting your build…');
+    expect(container.textContent).toContain('Keep this page open until your build starts.');
+    expect(container.textContent).not.toContain('You can safely leave');
+    expect(container.querySelector('[aria-label="Build progress workspace"]')).toBeNull();
+    if (kind === 'image') expect(container.querySelector('img[alt="Uploaded preview"]')).not.toBeNull();
+    else expect(input.value).toBe('A dog');
+    await act(async () => accept({ generation_id: 'accepted-dog', message: 'Started' }));
+    expect(container.querySelector('form[aria-label="Create a brick model"]')).toBeNull();
+    expect(container.querySelector('[aria-label="Build progress workspace"]')).not.toBeNull();
+    expect(container.textContent).toContain('You can safely leave this window');
+    expect(container.textContent).not.toContain('Keep this page open');
+  } finally { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); }
 });

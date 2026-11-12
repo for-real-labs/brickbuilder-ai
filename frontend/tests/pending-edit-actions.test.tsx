@@ -32,9 +32,12 @@ afterEach(() => {
 
 const button = (label: string) => Array.from(container.querySelectorAll('button')).find(element => element.textContent === label)!;
 
-it.each([true, false])('announces automatic email without asking while awaiting a build ID, edit: %s', async isEdit => {
+it.each([true, false])('keeps the page open without promising email while awaiting a build ID, edit: %s', async isEdit => {
   await act(async () => root.render(<PendingEditActions generationId={null} isEdit={isEdit} onCancelled={vi.fn()} onStartNew={vi.fn()} />));
-  expect(container.textContent).toContain("You will receive an email when it's ready. You can safely leave this window");
+  expect(container.textContent).toContain('Keep this page open until your build starts.');
+  expect(container.textContent).not.toContain('You can safely leave');
+  expect(container.textContent).not.toContain('You will receive an email');
+  expect(container.textContent).not.toContain('Building for');
   expect(button('Email me')).toBeUndefined();
   expect(container.querySelector('input')).toBeNull();
   expect(GenerationEmailApi.subscribe).not.toHaveBeenCalled();

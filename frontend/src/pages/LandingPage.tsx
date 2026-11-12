@@ -294,13 +294,16 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [editSubmitting, setEditSubmitting] = useState(false);
   const editSubmittingRef = useRef(false);
   const modelBusy = landingModel.busy || editSubmitting;
-  const pendingEdit = Boolean(landingModel.model && (editSubmitting || (landingModel.busy
-    && landingModel.targetId !== landingModel.model.generation.generation_id)));
+  const pendingEdit = Boolean(landingModel.model && !editSubmitting && landingModel.busy
+    && landingModel.targetId !== landingModel.model.generation.generation_id);
   const pendingEditId = pendingEdit && landingModel.targetId !== landingModel.model?.generation.generation_id
     ? landingModel.targetId : null;
   const selectedActiveGeneration = generations.find(row => row.id === landingModel.targetId && isGenerationActive(row.status));
-  const pendingGeneration = !createNewStage && !landingModel.model && (loading || landingModel.pending || Boolean(selectedActiveGeneration)
-    || Boolean(activeGenerationId && landingModel.busy));
+  const acceptedGenerationId = loading ? activeGenerationId
+    : selectedActiveGeneration?.id || activeGenerationId || landingModel.targetId;
+  const awaitingGenerationId = editSubmitting || (loading && !acceptedGenerationId);
+  const pendingGeneration = !createNewStage && !landingModel.model && Boolean(acceptedGenerationId)
+    && (loading || landingModel.pending || Boolean(selectedActiveGeneration) || landingModel.busy);
   const pendingGenerationId = pendingEdit ? pendingEditId
     : pendingGeneration ? selectedActiveGeneration?.id || activeGenerationId || landingModel.targetId : null;
   const processingBuilds = [...generations.filter(row => isGenerationActive(row.status))];
@@ -975,8 +978,16 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     && !buddyChat.turns.some(turn => turn.generationId)
     && !landingModel.model && !pendingGeneration && !pendingEdit && !loading && !buddyChat.routing
     && !createNewStage && !randomSuggestion;
-  const conversationStarted = !ldrawLanding
+  const nextConversationStarted = !ldrawLanding
     && (hasEnteredChat || buddyChat.turns.length > 0 || Boolean(requestedModelId) || Boolean(landingModel.model) || Boolean(createNewStage) || Boolean(randomSuggestion));
+  // Preserve the composer stage while routing or uploading; a loading flag is
+  // not evidence that the server has accepted a background generation.
+  const previousConversationStage = useRef(false);
+  const waitingForSubmission = buddyChat.routing || checkingProvider || awaitingGenerationId;
+  const conversationStarted = waitingForSubmission ? previousConversationStage.current : nextConversationStarted;
+  useEffect(() => {
+    if (!waitingForSubmission) previousConversationStage.current = nextConversationStarted;
+  }, [waitingForSubmission, nextConversationStarted]);
   const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
   const footerEnabled = !ldrawLanding && !conversationStarted && !pendingGeneration && !inventoryOpen;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
@@ -1225,6 +1236,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>
               </div></>}
 
+              {waitingForSubmission && <p role="status" className="mt-3 px-2 text-center text-sm leading-6 text-slate-600">
+                {buddyChat.routing ? 'Preparing your request…' : imgFile ? 'Uploading image and starting your build…' : 'Starting your build…'}
+                {' '}Keep this page open until your build starts.
+              </p>}
               {processingBuilds.length > 0 && <button type="button"
                 className="mx-auto mt-2 flex min-h-11 max-w-full items-center justify-center rounded-full px-4 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                 onClick={() => {

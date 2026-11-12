@@ -13,9 +13,11 @@ export function PendingEditActions({ generationId, startedAt, onCancelled, onSta
 }) {
   const buttonClass = 'min-h-11 min-w-0 rounded-full border border-slate-300 bg-white px-2 text-xs font-medium text-slate-700 shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm';
   return <div className="mb-3 w-full" aria-label="Generation in progress actions">
-    <GenerationElapsedTime startedAt={startedAt} />
+    {generationId && <GenerationElapsedTime startedAt={startedAt} />}
     <p className="mb-3 text-sm leading-6 text-slate-700">
-      You will receive an email when it's ready. You can safely leave this window
+      {generationId
+        ? "You will receive an email when it's ready. You can safely leave this window"
+        : 'Starting your build… Keep this page open until your build starts.'}
     </p>
     <div className="grid grid-cols-2 gap-2">
       {generationId ? <CancelGenerationButton generationId={generationId} onCancelled={onCancelled} isEdit={isEdit} compact />
