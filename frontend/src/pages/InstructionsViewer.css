@@ -17,11 +17,6 @@
 .instructions-embedded .instructions-navigation span { font-size: 12px; white-space: nowrap; }
 .instructions-embedded .instructions-parts { max-height: 94px; overflow: auto; overscroll-behavior: contain; margin: 0 16px; padding: 8px 12px; border: 1px solid #e2e8f0; background: #fff; }
 .instructions-embedded .instructions-parts h5 { margin-bottom: 4px; font-size: 11px; }
-.instructions-embedded .instructions-parts > div { gap: 12px; }
-.instructions-embedded .instructions-parts > div > div:first-child { width: 72px; height: 48px; }
-.instructions-embedded .instructions-parts-list { padding: 0; min-width: 0; }
-.instructions-embedded .instructions-parts-list > div { display: flex; flex-wrap: wrap; gap: 8px 16px; }
-.instructions-embedded .instructions-parts-list > div > div { font-size: 11px; overflow-wrap: anywhere; }
 .instructions-embedded button:focus-visible { outline: 2px solid #f44336; outline-offset: -2px; }
 @media (max-width: 639px) {
   .instructions-embedded { padding: 0 0 8px; }
@@ -40,6 +35,10 @@
 .instructions-parts[data-build-together] h5 { color: #b45309; }
 .instructions-embedded .instructions-parts[data-build-together] { max-height: 160px; border-color: #fde68a; background: #fffbeb; }
 .instructions-embedded .instructions-parts[data-build-together] .instructions-assembly-note { font-size: 12px; }
-.instructions-embedded .instructions-parts[data-build-together] > div > div:first-child { width: 104px; height: 72px; }
 
-.instructions-parts-list { min-width: 0; overflow-wrap: anywhere; }
+.instructions-parts-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.instructions-part-row { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.instructions-part-thumbnail { display: grid; place-items: center; flex: 0 0 auto; width: 56px; height: 44px; border-radius: 8px; background: #deebed; }
+.instructions-part-thumbnail img { display: block; width: 100%; height: 100%; object-fit: contain; }
+.instructions-embedded .instructions-parts-list { grid-template-columns: repeat(auto-fit, minmax(min(168px, 100%), 1fr)); }
+.instructions-embedded .instructions-part-row { font-size: 11px; }

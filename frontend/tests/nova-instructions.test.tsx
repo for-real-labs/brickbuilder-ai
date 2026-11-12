@@ -11,13 +11,21 @@ import { NovaToBricksApiService, NovaInstructionPlanError } from '../src/service
 import { LDrawParser } from '../src/utils/ldrawParser';
 import type { LandingModel } from '../src/hooks/useLandingModel';
 import { readFileSync } from 'node:fs';
+import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js';
+import { LDrawConditionalLineMaterial } from 'three/examples/jsm/materials/LDrawConditionalLineMaterial.js';
+import { buildInstructionThumbnailMpd } from '../src/components/InstructionPartImages';
+import type { Group } from 'three';
 
 const authState = vi.hoisted(() => ({ configured: false }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, isSupabaseConfigured: authState.configured }) }));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ markViewed: vi.fn() }) }));
 vi.mock('../src/components/LandingModelOrdering', () => ({ LandingModelOrdering: () => null }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: (props: { currentStepIndex?: number; highlightNewParts?: boolean; preserveOrientation?: boolean; initialCameraState?: {position: {x: number}}; onCameraChange?: (state: unknown) => void }) => <div data-testid={props.currentStepIndex === undefined ? 'model-viewer' : 'instructions-viewer'} data-highlight={String(props.highlightNewParts)} data-preserve-orientation={String(props.preserveOrientation)} data-camera-x={props.initialCameraState?.position.x}>Step {(props.currentStepIndex ?? 0) + 1}<button aria-label="Rotate test model" onClick={() => props.onCameraChange?.({position: {x: 12, y: 10, z: 10}, target: {x: 0, y: 0, z: 0}})} /></div> }));
-vi.mock('../src/components/MpdImageRenderer', () => ({ MpdImageRenderer: () => null }));
+vi.mock('../src/components/InstructionPartImages', async original => ({
+  ...await original<typeof import('../src/components/InstructionPartImages')>(),
+  useInstructionPartImages: (parts: Array<{filename: string; colorCode: number}>) =>
+    new Map(parts.map(part => [`${part.colorCode}:${part.filename}`, `/preview/${part.colorCode}/${part.filename}.png`])),
+}));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('../src/components/SiteFooter', () => ({ SiteFooter: () => null }));
 vi.mock('../src/components/ProfileMenu', () => ({ ProfileMenu: () => null }));
@@ -68,6 +76,11 @@ it('shows assemble-first guidance and both chimney pieces only on their grouped 
     expect(container.querySelector('.instructions-step-heading')?.textContent).toContain('Add 2 parts');
     expect(container.querySelector('.instructions-assembly-note')?.textContent).toBe('Connect these pieces first, then attach them to the model.');
     const parts = container.querySelector('.instructions-parts[data-build-together="true"]')!;
+    const rows = [...parts.querySelectorAll('li')];
+    expect(rows).toHaveLength(2);
+    expect(rows[0].firstElementChild?.querySelector('img')?.getAttribute('src')).toBe('/preview/15/5152.dat.png');
+    expect(rows[1].firstElementChild?.querySelector('img')?.getAttribute('src')).toBe('/preview/15/2420.dat.png');
+    expect(parts.querySelectorAll('img')).toHaveLength(2);
     expect(parts.textContent).toContain('Brick 1x2 with Groove');
     expect(parts.textContent).toContain('Plate 2x2 Corner');
     expect(parts.textContent).not.toContain('.dat');
@@ -75,6 +88,27 @@ it('shows assemble-first guidance and both chimney pieces only on their grouped 
     expect(container.querySelector('.instructions-assembly-note')).toBeNull();
     expect(container.querySelector('.instructions-step-heading')?.textContent).toContain('Add 1 part');
   } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
+});
+
+it('packs separate colored thumbnail models from the existing part definitions', async () => {
+  const mpd = buildInstructionThumbnailMpd([
+    { filename: 'tile.dat', colorCode: 4 },
+    { filename: 'missing.dat', colorCode: 4 },
+    { filename: 'tile.dat', colorCode: 14 },
+  ], [
+    '0 FILE source.ldr',
+    '0 !COLOUR Red CODE 4 VALUE #C91A09 EDGE #333333',
+    '0 !COLOUR Yellow CODE 14 VALUE #F2CD37 EDGE #333333',
+  ].join('\n'), [
+    '0 FILE parts/tile.dat',
+    '0 !LDRAW_ORG Part',
+    '3 16 0 0 0 10 0 0 0 0 10',
+  ].join('\n'));
+  const loader = new LDrawLoader().setConditionalLineMaterial(LDrawConditionalLineMaterial);
+  const model = await new Promise<Group>((resolve, reject) => loader.parse(mpd, resolve, reject));
+  expect(model.children.map(child => child.name)).toEqual(['__brickbuilder_thumbnail_0.ldr', '__brickbuilder_thumbnail_2.ldr']);
+  expect(model.children.map(child => child.userData.colorCode)).toEqual(['4', '14']);
+  expect(model.children.every(child => child.children.length === 1)).toBe(true);
 });
 
 it('does not show a notification bell in the guest instructions header', async () => {

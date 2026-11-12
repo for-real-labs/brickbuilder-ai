@@ -4,7 +4,7 @@ import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import * as THREE from 'three';
 import { LDrawParser, LDrawModel } from '../utils/ldrawParser';
 import { ThreeLDRViewer } from '../components/ThreeLDRViewer';
-import { MpdImageRenderer } from '../components/MpdImageRenderer';
+import { instructionPartKey, useInstructionPartImages } from '../components/InstructionPartImages';
 import { supabase } from '../lib/supabase';
 import { parseLDrawColors, getColorNameWithFallback, type LDrawColor } from '../utils/colorParser';
 import { LdrToMpdApiService } from '../services/ldrToMpdApi';
@@ -491,6 +491,11 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
     if (!parsedMpd) return null;
     return getSingleStepMpd(parsedMpd, currentStepIndex);
   }, [parsedMpd, currentStepIndex]);
+
+  const currentStep = model?.steps[currentStepIndex];
+  const stepParts = useMemo(() => currentStep ? LDrawParser.getPartsListForStep(currentStep) : [], [currentStep]);
+  const colors = useMemo(() => parseLDrawColors(parsedMpd?.headerJoined ?? ''), [parsedMpd]);
+  const partImages = useInstructionPartImages(stepParts, parsedMpd?.headerJoined ?? '', active ? parsedMpd?.subfileJoined ?? '' : '');
 
   // Camera change handler for preserving orientation
   const handleCameraChange = (newCameraState: {
@@ -1320,42 +1325,24 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                   {model.steps[currentStepIndex].buildTogether && (
                     <p className="instructions-assembly-note">Connect these pieces first, then attach them to the model.</p>
                   )}
-                  <div className="flex gap-4">
-                    <div className="shrink-0 w-[88px] h-[56px] sm:w-44 sm:h-28 rounded-xl border border-slate-200 overflow-hidden" style={{ backgroundColor: '#deebed' }}>
-                      <MpdImageRenderer
-                        mpdContent={currentLastStepMpd}
-                        width={176}
-                        height={112}
-                        className=""
-                      />
-                    </div>
-                    <div className="instructions-parts-list pt-2">
-                    {(() => {
-                      const stepParts = LDrawParser.getPartsListForStep(model.steps[currentStepIndex]).map(part => ({ ...part, count: part.quantity }));
+                  <ul className="instructions-parts-list">
+                    {stepParts.map(part => {
+                      const key = instructionPartKey(part);
+                      const image = partImages?.get(key);
                       return (
-                        <div className="space-y-2">
-                          {stepParts.map((part, index) => {
-                            const partType = getPartName(part.filename, partNames);
-                            const colorName = getColorNameWithFallback(part.colorCode, parseLDrawColors(currentLastStepMpd));
-                            return (
-                              <div key={index} className="text-sm text-slate-600">
-                                <div>
-                                  Type: {partType}
-                                </div>
-                                <div>
-                                  Color: {colorName}
-                                </div>
-                                <div>
-                                  Quantity: {part.count}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
+                        <li key={key} className="instructions-part-row text-slate-600">
+                          <div className="instructions-part-thumbnail" aria-hidden="true">
+                            {image && <img src={image} alt="" />}
+                          </div>
+                          <div>
+                            <div>Type: {getPartName(part.filename, partNames)}</div>
+                            <div>Color: {getColorNameWithFallback(part.colorCode, colors)}</div>
+                            <div>Quantity: {part.quantity}</div>
+                          </div>
+                        </li>
                       );
-                    })()}
-                  </div>
-                  </div>
+                    })}
+                  </ul>
                 </div>
                 )}
               </div>

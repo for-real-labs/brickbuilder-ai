@@ -27,7 +27,6 @@ vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: () => <span data-p
 vi.mock('../src/components/ProfileMenu', () => ({ ProfileMenu: () => null }));
 vi.mock('../src/components/LandingModelOrdering', () => ({ LandingModelOrdering: () => null }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: () => <div data-model-preview /> }));
-vi.mock('../src/components/MpdImageRenderer', () => ({ MpdImageRenderer: () => null }));
 vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div>Sign in to build</div> : null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/services/billingApi', async original => ({ ...await original<typeof import('../src/services/billingApi')>(),
