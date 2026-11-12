@@ -100,7 +100,7 @@
   }
   .landing-model-panel[data-view="instructions"] .instructions-parts h5 { margin-bottom: 16px; font-size: 14px; }
   .landing-model-panel[data-view="instructions"] .instructions-parts-list { grid-template-columns: minmax(0, 1fr); gap: 0; }
-  .landing-model-panel[data-view="instructions"] .instructions-part-row { padding: 10px 0; border-top: 1px solid #e2e8f0; font-size: 13px; }
+  .landing-model-panel[data-view="instructions"] .instructions-part-row { padding: 10px; border-top: 1px solid #e2e8f0; font-size: 13px; }
   .landing-model-panel[data-view="instructions"] .landing-expanded-footer {
     position: absolute; z-index: 6; top: 24px; left: 24px; display: flex; padding: 0;
   }

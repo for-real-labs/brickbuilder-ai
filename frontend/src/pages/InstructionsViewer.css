@@ -37,7 +37,7 @@
 .instructions-embedded .instructions-parts[data-build-together] .instructions-assembly-note { font-size: 12px; }
 
 .instructions-parts-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
-.instructions-part-row { display: flex; align-items: center; gap: 10px; min-width: 0; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
+.instructions-part-row { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 8px; font-size: 13px; line-height: 1.45; overflow-wrap: anywhere; }
 .instructions-part-thumbnail { display: grid; place-items: center; flex: 0 0 auto; width: 56px; height: 44px; border-radius: 8px; background: #deebed; }
 .instructions-part-thumbnail img { display: block; width: 100%; height: 100%; object-fit: contain; }
 .instructions-part-row[data-inspected] { background: #fee2e2; color: #7f1d1d; box-shadow: inset 3px 0 #ef4444; border-radius: 8px; }
@@ -45,7 +45,7 @@
   position: absolute; z-index: 8; pointer-events: none; display: grid; gap: 2px;
   top: calc(var(--part-y) - 10px); left: clamp(min(112px, 50%), var(--part-x), max(calc(100% - 112px), 50%));
   transform: translate(-50%, -100%); max-width: min(208px, calc(100% - 16px)); width: max-content;
-  padding: 7px 10px; border-radius: 8px; background: #0f172a; color: #fff;
+  padding: 7px 10px; border-radius: 8px; background: rgb(255 255 255 / 80%); color: #000;
   font-size: 12px; line-height: 1.4; overflow-wrap: anywhere; box-shadow: 0 3px 12px #0f172a40;
 }
 .instructions-part-tooltip[data-below="true"] { top: calc(var(--part-y) + 14px); transform: translateX(-50%); }

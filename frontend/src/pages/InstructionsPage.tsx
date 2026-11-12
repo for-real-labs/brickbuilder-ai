@@ -1249,10 +1249,10 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                     softenEdges={false}
                     showModelControls={false}
                     />
-                    {hoveredPart && (
+                    {hoveredPart && hoveredRow && (
                       <div className="instructions-part-tooltip" role="tooltip" data-below={hoveredPart.y < 92}
                         style={{ '--part-x': `${hoveredPart.x}px`, '--part-y': `${hoveredPart.y}px` } as React.CSSProperties}>
-                        <strong>Type: {getPartName(hoveredRow?.filename ?? hoveredPart.filename, partNames)}</strong>
+                        <strong>Type: {getPartName(hoveredRow.filename, partNames)}</strong>
                         <span>Color: {getColorNameWithFallback(hoveredPart.colorCode, colors)}</span>
                       </div>
                     )}

@@ -2285,8 +2285,10 @@ export function ThreeLDRViewer({
     const { camera, renderer } = sceneRef.current;
     if (!camera || !renderer || !meshesReady || !interactionEnabled || currentStepIndex === undefined || !onInstructionPartHover) return;
     const canvas = renderer.domElement;
-    const visibleCount = stepBoundariesRef.current[currentStepIndex] ?? meshesRef.current.length;
-    const pick = createInstructionPartPicker(meshesRef.current.slice(0, visibleCount));
+    const boundaries = stepBoundariesRef.current;
+    const visibleCount = boundaries[currentStepIndex] ?? meshesRef.current.length;
+    const firstCurrentPartIndex = currentStepIndex > 0 ? boundaries[currentStepIndex - 1] ?? visibleCount : 0;
+    const pick = createInstructionPartPicker(meshesRef.current.slice(0, visibleCount), firstCurrentPartIndex);
     let frame = 0;
     let hovered = false;
     const clearHover = () => {

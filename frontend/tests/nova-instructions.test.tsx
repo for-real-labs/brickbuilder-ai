@@ -120,7 +120,7 @@ it('packs separate colored thumbnail models from the existing part definitions',
   expect(model.children.every(child => child.children.length === 1)).toBe(true);
 });
 
-it('picks the nearest visible piece and ignores outline geometry', () => {
+it('picks current-step pieces but keeps occlusion from earlier pieces', () => {
   const camera = new PerspectiveCamera(45, 1, 0.1, 100);
   camera.position.z = 10;
   camera.updateMatrixWorld();
@@ -140,9 +140,13 @@ it('picks the nearest visible piece and ignores outline geometry', () => {
   hidden.visible = false;
   const outline = part('parts/3004.dat', '10', 6);
   outline.children[0].userData.instructionOutline = true;
-  const pick = createInstructionPartPicker([back, front, hidden, outline]);
+  const pick = createInstructionPartPicker([back, front, hidden, outline], 1);
   expect(pick(camera, 0, 0)).toEqual({ filename: 'parts/3002.dat', colorCode: 15 });
   expect(pick(camera, 0.9, 0.9)).toBeUndefined();
+  // The nearer copy is from a previous step, even though the same piece is also added now.
+  const previousCopy = part('parts/3002.dat', '15', 4);
+  const pickThroughPrevious = createInstructionPartPicker([previousCopy, front], 1);
+  expect(pickThroughPrevious(camera, 0, 0)).toBeUndefined();
 });
 
 it('does not show a notification bell in the guest instructions header', async () => {

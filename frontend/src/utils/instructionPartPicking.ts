@@ -15,17 +15,18 @@ export function normalizeInstructionPartFilename(filename: string) {
   return filename.toLowerCase().replaceAll('\\', '/').replace(/^(parts|p|models)\//, '');
 }
 
-export function createInstructionPartPicker(groups: THREE.Object3D[]) {
+export function createInstructionPartPicker(groups: THREE.Object3D[], firstCurrentPartIndex: number) {
   const meshes: THREE.Mesh[] = [];
   const parts = new Map<THREE.Object3D, InstructionPart>();
-  for (const group of groups) {
+  for (const [index, group] of groups.entries()) {
     const colorCode = Number(group.userData.colorCode);
     if (!group.visible || !group.name || !Number.isInteger(colorCode)) continue;
     const part = { filename: group.name, colorCode };
     group.traverseVisible(object => {
       if (object instanceof THREE.Mesh && !object.userData.instructionOutline) {
         meshes.push(object);
-        parts.set(object, part);
+        // Earlier pieces still occlude pieces added in this step.
+        if (index >= firstCurrentPartIndex) parts.set(object, part);
       }
     });
   }
