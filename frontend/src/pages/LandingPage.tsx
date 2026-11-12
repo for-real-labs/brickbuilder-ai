@@ -33,7 +33,7 @@ import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, ChevronDown, Github, Sparkles, Star, X } from "lucide-react";
+import { ArrowUp, Image as ImageIcon, ChevronDown, Github, Sparkles, Star, Users, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -1396,8 +1396,15 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         <CreditBalance />
         <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
+        <a href="/community" aria-label="Community Models"
+          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full px-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:px-3 sm:text-sm"
+          onClick={() => posthog.capture('landing_header_community_clicked', { page, navigation_layout: 'header', destination: '/community', tool: 'Community Models' })}>
+          <Users size={16} aria-hidden="true" />
+          <span className="sm:hidden">Models</span>
+          <span className="hidden sm:inline">Community Models</span>
+        </a>
         <a href={githubUrl} target="_blank" rel="noopener noreferrer" aria-label="View BrickBuilder on GitHub"
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-slate-900 px-2.5 text-xs font-semibold tabular-nums text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:px-3 sm:text-sm"
+          className="hidden h-9 shrink-0 items-center gap-1.5 rounded-full bg-slate-900 px-2.5 text-xs font-semibold tabular-nums text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:inline-flex sm:px-3 sm:text-sm"
           onClick={() => posthog.capture('landing_header_github_clicked', { page, navigation_layout: 'header', destination: githubUrl, tool: 'GitHub' })}>
           <Github size={16} aria-hidden="true" />
           {formattedStars !== null && <span className="inline-flex items-center gap-1" aria-label={`${githubStars} stars`}>

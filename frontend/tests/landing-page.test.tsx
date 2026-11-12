@@ -768,6 +768,7 @@ describe('LandingPage', () => {
     expect(markup).not.toContain('Show me community models');
     const container = document.createElement('div');
     container.innerHTML = markup;
+    expect(container.querySelector('header nav a[href="/community"][aria-label="Community Models"]')).not.toBeNull();
     expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
     const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
@@ -947,7 +948,7 @@ describe('LandingPage', () => {
   });
 });
 
-it('groups the header links in Tools and tracks selections for comparison', async () => {
+it('keeps tools in the dropdown and exposes Community Models in the header', async () => {
   vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 10 }) }));
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -960,7 +961,7 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     const nav = container.querySelector('header nav')!;
     const trigger = nav.querySelector<HTMLButtonElement>('button[aria-label="Tools"]')!;
     expect(trigger.textContent).toBe('Tools');
-    expect(nav.querySelector('a[href^="/"]')).toBeNull();
+    expect(nav.querySelector('a[href="/community"][aria-label="Community Models"]')).not.toBeNull();
     expect(container.querySelector('header [aria-label="Dashboard"]')).toBeNull();
     expect(trigger.getAttribute('aria-label')).toBe('Tools');
     expect(trigger.querySelector('span')?.className).toBe('hidden sm:inline');
@@ -970,7 +971,7 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     expect(trigger.getAttribute('aria-expanded')).toBe('true');
     const links = Array.from(nav.querySelectorAll('a[href^="/"]'));
     expect(links.map(link => link.getAttribute('href'))).toEqual([
-      '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/community',
+      '/image-to-lego', '/glb-to-lego', '/obj-to-lego', '/community', '/community',
     ]);
     const capture = (await import('posthog-js')).default.capture;
     expect(capture).toHaveBeenCalledWith('landing_header_tools_opened', expect.objectContaining({ navigation_layout: 'tools_dropdown' }));
@@ -978,7 +979,7 @@ it('groups the header links in Tools and tracks selections for comparison', asyn
     expect(github.textContent).toBe('GitHub');
     expect(github.getAttribute('target')).toBe('_blank');
     const githubBadge = nav.querySelector('[aria-label="View BrickBuilder on GitHub"]');
-    expect(githubBadge?.previousElementSibling?.contains(trigger)).toBe(true);
+    expect(githubBadge?.previousElementSibling?.getAttribute('href')).toBe('/community');
     expect(githubBadge?.querySelector('[aria-label="10 stars"]')?.textContent).toBe('10');
     expect(fetch).toHaveBeenCalledWith('https://api.github.com/repos/for-real-labs/brickbuilder-ai', expect.anything());
     act(() => github.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));

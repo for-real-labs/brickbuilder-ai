@@ -162,11 +162,12 @@ function Header({ onGuardedNavigate }: HeaderProps) {
       {/* Login / Sign Up OR Account Menu */}
       <div className="flex w-auto items-center justify-end gap-2 sm:gap-3">
         <button
-          className="hidden sm:inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
+          aria-label="Community Models"
+          className="inline-flex items-center gap-1.5 bg-transparent text-slate-700 border-none text-sm px-2 sm:px-3 h-9 cursor-pointer transition-all duration-200 hover:text-[#f44336] hover:-translate-y-px"
           onClick={() => onGuardedNavigate("/community")}
         >
           <Users className="h-4 w-4" />
-          Community
+          <span className="hidden sm:inline">Community Models</span>
         </button>
         {githubStarLink}
         {showProfileMenu ? (
