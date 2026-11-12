@@ -363,3 +363,22 @@ it('returns from My Generations to the dashboard overview through the profile me
   await act(async () => generations.click());
   expect(container.querySelector('h1')?.textContent).toBe('My Generations');
 });
+
+it('includes active revisions outside dashboard history and refreshes them to completed', async () => {
+  const job = { id: 'active-revision', generation_id: 'model', version: 2, user_id: 'owner', user_type: 'authenticated', prompt: 'Active castle', status: 'processing', endpoint: 'textToBricks', detail_level: 1, created_at: '2026-11-12T12:00:00Z' };
+  const page = { generations: [], total_count: 0, total_user_generations: 1, all_orders: [], has_more: false };
+  vi.spyOn(GenerationNotificationsApi, 'list').mockResolvedValue({ notifications: [], active: [], unread_count: 0 });
+  const history = vi.spyOn(GetUserGenerationsApiService, 'getUserGenerations').mockResolvedValue(page);
+  const processing = vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([job]);
+  await act(async () => root.render(<MemoryRouter initialEntries={['/dashboard?tab=generations']}>
+    <GenerationNotificationsProvider><UserDashboard /></GenerationNotificationsProvider>
+  </MemoryRouter>));
+  expect(container.textContent).toContain('Active castle');
+  expect(processing).toHaveBeenCalledWith('token', expect.any(AbortSignal));
+  processing.mockResolvedValue([]);
+  history.mockResolvedValue({ ...page, generations: [{ ...job, status: 'completed' }] } as never);
+  await act(async () => { await vi.advanceTimersByTimeAsync(10_000); });
+  expect(container.textContent).toContain('Active castle');
+  expect(container.textContent).not.toContain('Loading generations...');
+  expect(history).toHaveBeenCalledTimes(2);
+});

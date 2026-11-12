@@ -1225,6 +1225,14 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>
               </div></>}
 
+              {processingBuilds.length > 0 && <button type="button"
+                className="mx-auto mt-2 flex min-h-11 max-w-full items-center justify-center rounded-full px-4 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                onClick={() => {
+                  posthog.capture('landing_processing_generations_clicked', { processing_count: processingBuilds.length });
+                  navigate('/dashboard?tab=generations');
+                }}>
+                View generations in process
+              </button>}
               {inputValidationMessage && (
                 <p id="generation-input-help" role="status" className="mt-3 text-center text-sm leading-6 text-slate-600">
                   {inputValidationMessage}

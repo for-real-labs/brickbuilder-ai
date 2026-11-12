@@ -81,6 +81,29 @@ export interface GetUserGenerationsResponse {
 }
 
 export class GetUserGenerationsApiService {
+  static async getDashboardGenerations(
+    authToken?: string, limit = 50, offset = 0, signal?: AbortSignal,
+  ): Promise<GetUserGenerationsResponse> {
+    const loadHistory = async () => {
+      let page = await this.getUserGenerations(authToken, Math.min(limit, 200), offset, undefined, signal);
+      const rows = [...page.generations];
+      while (page.has_more && page.generations.length > 0 && rows.length < limit) {
+        page = await this.getUserGenerations(authToken, Math.min(limit - rows.length, 200), offset + rows.length, undefined, signal);
+        rows.push(...page.generations);
+      }
+      return { ...page, generations: rows };
+    };
+    const [page, active] = await Promise.all([
+      loadHistory(),
+      this.getProcessingGenerations(authToken, signal),
+    ]);
+    // Include every active version, even when it is outside the history page.
+    // Prefer the detailed history row where both requests return the same job.
+    const rows = new Map(active.map(row => [row.id, row]));
+    for (const row of page.generations) rows.set(row.id, row);
+    return { ...page, generations: [...rows.values()] };
+  }
+
   static async getResumableNovaGenerations(authToken?: string, signal?: AbortSignal): Promise<GenerationWithOrder[]> {
     const page = await this.getUserGenerations(authToken, 50, 0, false, signal, false);
     return page.generations.filter(row => row.endpoint === 'novaToBricks'

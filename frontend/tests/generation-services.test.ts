@@ -193,3 +193,33 @@ it('keeps waiting past the old five-minute cutoff and retries failed status read
   await expect(GetGenerationApiService.pollUntilComplete('g', undefined, 0)).resolves.toMatchObject({ generation_id: 'g' });
   expect(read).toHaveBeenCalledTimes(127);
 });
+
+it('merges every active job into dashboard history without duplicating detailed rows or changing pagination', async () => {
+  const { GetUserGenerationsApiService: service } = await import('../src/services/getUserGenerationsApi');
+  const active = { id: 'active', status: 'processing' };
+  const detailed = { ...active, previous_completed_generation_id: 'previous' };
+  const page = { generations: [detailed], has_more: true, total_user_generations: 80, all_orders: [], total_count: 1 };
+  const history = vi.spyOn(service, 'getUserGenerations').mockResolvedValue(page as never);
+  vi.spyOn(service, 'getProcessingGenerations').mockResolvedValue([active, { id: 'other-version', status: 'queued' }] as never);
+  const signal = new AbortController().signal;
+  const result = await service.getDashboardGenerations('token', 1, 50, signal);
+  expect(result.generations).toEqual([detailed, { id: 'other-version', status: 'queued' }]);
+  expect(result.has_more).toBe(true);
+  expect(result.total_user_generations).toBe(80);
+  expect(history).toHaveBeenCalledWith('token', 1, 50, undefined, signal);
+});
+
+it('refreshes loaded dashboard history beyond the API page-size limit', async () => {
+  const { GetUserGenerationsApiService: service } = await import('../src/services/getUserGenerationsApi');
+  const first = Array.from({ length: 200 }, (_, i) => ({ id: `history-${i}` }));
+  const page = { has_more: true, total_user_generations: 300, all_orders: [], total_count: 200 };
+  const history = vi.spyOn(service, 'getUserGenerations')
+    .mockResolvedValueOnce({ ...page, generations: first } as never)
+    .mockResolvedValueOnce({ ...page, generations: [{ id: 'last' }], has_more: false } as never);
+  vi.spyOn(service, 'getProcessingGenerations').mockResolvedValue([]);
+  const result = await service.getDashboardGenerations('token', 250);
+  expect(history).toHaveBeenNthCalledWith(1, 'token', 200, 0, undefined, undefined);
+  expect(history).toHaveBeenNthCalledWith(2, 'token', 50, 200, undefined, undefined);
+  expect(result.generations).toHaveLength(201);
+  expect(result.has_more).toBe(false);
+});

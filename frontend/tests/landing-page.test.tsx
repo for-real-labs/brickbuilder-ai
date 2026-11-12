@@ -18,10 +18,12 @@ vi.mock('react-router-dom', async () => {
 
   return {
     ...actual,
-    useNavigate: () => vi.fn(),
+    useNavigate: () => processingNavigate,
     useSearchParams: () => [new URLSearchParams(), vi.fn()],
   };
 });
+
+const processingNavigate = vi.hoisted(() => vi.fn());
 
 const billingSettings = vi.hoisted(() => ({ enabled: false, account: null, loading: false, getFeatureAccess: () => 'allowed', openUpgrade: vi.fn() }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billingSettings }));
@@ -1193,4 +1195,25 @@ describe('generation signup gate', () => {
       expect(sessionStorage.getItem('pendingLandingState')).toBeNull();
     } finally { act(() => root.unmount()); container.remove(); authSettings.isSupabaseConfigured = false; authSettings.session = null; authSettings.loading = false; sessionStorage.clear(); }
   });
+});
+
+it.each([0, 1])('shows the dashboard shortcut only with processing generations (%s)', async count => {
+  vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue(count ? [{ id: 'processing-link', prompt: 'Castle', status: 'processing', endpoint: 'textToBricks' }] as never : []);
+  vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
+  vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter><PetProvider><LandingPage /></PetProvider></MemoryRouter>));
+    const link = [...container.querySelectorAll('button')].find(el => el.textContent === 'View generations in process');
+    if (!count) expect(link).toBeUndefined();
+    else {
+      expect(container.querySelector('[aria-label="Generate"]')!.compareDocumentPosition(link!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      await act(async () => link!.click());
+      expect(processingNavigate).toHaveBeenCalledWith('/dashboard?tab=generations');
+      const { default: posthog } = await import('posthog-js');
+      expect(posthog.capture).toHaveBeenCalledWith('landing_processing_generations_clicked', { processing_count: 1 });
+    }
+  } finally { act(() => root.unmount()); container.remove(); }
 });

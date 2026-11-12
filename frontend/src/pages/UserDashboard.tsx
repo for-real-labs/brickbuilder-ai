@@ -22,6 +22,7 @@ import { GetUserGenerationsApiService, GenerationWithOrder, OrderInfo } from "..
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
 import { SEO } from "../components/SEO";
 import { SiteFooter } from "../components/SiteFooter";
+import { startPolling } from '../utils/polling';
 import { isGenerationActive } from "../hooks/useGenerationActivity";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import posthog from "posthog-js";
@@ -667,58 +668,58 @@ const UserDashboard: React.FC = () => {
   };
 
   // Fetch generations for the logged-in user using the API
-  const fetchGenerations = async (currentOffset: number, append: boolean = false) => {
+  const fetchGenerations = async (signal: AbortSignal, silent = false) => {
     // When Supabase is configured, require auth token
     // When Supabase is not configured, allow anonymous access
     if (isSupabaseConfigured && !session?.access_token) return;
     
-    if (append) {
-      setLoadingMore(true);
-    } else {
+    if (!silent) {
       setLoadingGenerations(true);
     }
     
     try {
-      const response = await GetUserGenerationsApiService.getUserGenerations(
-        session?.access_token, // Will be undefined when Supabase is not configured
-        PAGE_LIMIT,
-        currentOffset
+      const response = await GetUserGenerationsApiService.getDashboardGenerations(
+        session?.access_token,
+        silent ? offset + PAGE_LIMIT : PAGE_LIMIT,
+        0,
+        signal,
       );
+      if (signal?.aborted) return;
       
       // Sort generations by created_at in descending order (most recent first)
       const sortedGenerations = (response.generations || []).sort((a, b) => {
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return Number(isGenerationActive(b.status)) - Number(isGenerationActive(a.status))
+          || new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
       });
       
-      if (append) {
-        setGenerations(prev => [...prev, ...sortedGenerations]);
-      } else {
-        setGenerations(sortedGenerations);
-      }
-      setAllOrders(prev => append ? [...prev, ...(response.all_orders || [])] : (response.all_orders || []));
+      setGenerations(sortedGenerations);
+      setAllOrders(response.all_orders || []);
       setTotalUserGenerations(response.total_user_generations ?? 0);
       setHasMore(response.has_more);
     } catch (err) {
       console.error('Error fetching generations:', err);
     } finally {
-      setLoadingGenerations(false);
-      setLoadingMore(false);
+      if (!signal.aborted) {
+        setLoadingGenerations(false);
+        setLoadingMore(false);
+      }
     }
   };
 
   useEffect(() => {
-    // Fetch generations when:
-    // - Supabase is configured and we have a session, OR
-    // - Supabase is not configured (anonymous mode)
-    if (!isSupabaseConfigured || session) {
-      fetchGenerations(0);
-    }
-  }, [session, isSupabaseConfigured]);
+    if (isSupabaseConfigured && !session?.access_token) return;
+    let initial = true;
+    const polling = startPolling(async signal => {
+      await fetchGenerations(signal, !initial || offset > 0);
+      initial = false;
+    }, { intervalMs: 10_000 });
+    return polling.stop;
+  }, [session?.access_token, isSupabaseConfigured, offset]);
 
   const handleLoadMore = () => {
     const newOffset = offset + PAGE_LIMIT;
+    setLoadingMore(true);
     setOffset(newOffset);
-    fetchGenerations(newOffset, true);
   };
 
   // Map all_orders to generations with order info
