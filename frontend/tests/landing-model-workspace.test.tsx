@@ -30,7 +30,10 @@ const viewer = vi.hoisted(() => ({ loaded: undefined as undefined | (() => void)
 const inbox = vi.hoisted(() => ({ notifications: [] as import('../src/services/generationNotificationsApi').ModelNotification[] }));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ notifications: inbox.notifications, unread_count: inbox.notifications.length, markViewed: viewer.markViewed }) }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useSearchParams: () => [new URLSearchParams(query.value), query.set] }));
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useSearchParams: () => {
+  const [, rerender] = React.useReducer(value => value + 1, 0);
+  return [new URLSearchParams(query.value), (...args: unknown[]) => { query.set(...args); rerender(); }];
+} }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ session: null, loading: false, ...auth }) }));
 vi.mock('../src/hooks/useGenerationActivity', async () => ({
   ...await vi.importActual('../src/hooks/useGenerationActivity'),
@@ -1054,7 +1057,7 @@ it('does not open instructions without an explicit model ID', async () => {
   expect(container.querySelector('.landing-model-panel')).toBeNull();
 });
 
-it('places the instructions button below the viewer and switches views without navigating', async () => {
+it('places the instructions button below the viewer and updates the URL without adding history', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
@@ -1077,12 +1080,14 @@ it('places the instructions button below the viewer and switches views without n
   expect(button.getAttribute('aria-pressed')).toBe('true');
   expect(document.getElementById(button.getAttribute('aria-controls')!)).not.toBeNull();
   expect(container.querySelector('.landing-model-conversation')).toBe(conversation);
-  expect(query.value).toBe('id=castle&exact=1');
+  expect(query.value).toBe('id=castle&exact=1&instructions=1&step=1');
+  expect(query.set).toHaveBeenLastCalledWith(expect.any(Function), { replace: true });
   expect(navigate).not.toHaveBeenCalled();
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_instructions_clicked', { generation_id: 'castle', source: 'viewer_footer' });
   await act(async () => button.click());
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
   expect(button.getAttribute('aria-pressed')).toBe('false');
+  expect(query.value).toBe('id=castle&exact=1');
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_3d_view_clicked', { generation_id: 'castle', source: 'viewer_footer' });
 });
 
@@ -1182,12 +1187,14 @@ it('supports Escape and view switching while expanded, then restores scrolling o
 
 it('returns desktop instructions to the model using Go Back without requiring the hidden view toggle', async () => {
   vi.stubGlobal('matchMedia', () => ({ matches: true }));
-  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} requestedInstructionsId="castle" busy={false}>{null}</LandingModelWorkspace>));
+  query.value = 'id=castle&instructions=1&step=2';
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
   const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
   expect(dialog.dataset.view).toBe('instructions');
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-back')!.click());
   expect(dialog.dataset.view).toBe('model');
   expect(dialog.dataset.expanded).toBe('false');
+  expect(query.value).toBe('id=castle');
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
 });
 

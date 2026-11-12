@@ -1,4 +1,5 @@
-import React, { lazy, Suspense, useEffect, useId, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, Box, Maximize2, Ruler } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
@@ -22,13 +23,12 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, requestedInstructionsId, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, onConvertKit, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, onConvertKit, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
   building?: boolean;
   composerFocused?: boolean;
-  requestedInstructionsId?: string | null;
   onOrderBarHeightChange?: (height: number) => void;
   canRename?: boolean;
   accessToken?: string;
@@ -39,6 +39,9 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   children: React.ReactNode;
 }) {
   const generation = model?.generation;
+  const generationId = generation?.generation_id;
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedInstructionsId = searchParams.get('instructions') === '1' ? searchParams.get('id') : null;
   const { markViewed } = useGenerationNotifications();
   const { getFeatureAccess, requireFeature } = useBilling();
   const featureAccess = getFeatureAccess('instructions', generation?.generation_id);
@@ -49,23 +52,47 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const stage = useRef<HTMLDivElement>(null);
   const stageId = useId();
   const [instructionsId, setInstructionsId] = useState<string | null>(null);
-  const [view, setView] = useState<'model' | 'instructions'>('model');
+  const lastInstructionStep = useRef<{ id: string; step: number } | null>(null);
   const [showRuler, setShowRuler] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const panel = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
   const collapseRef = useRef<(source: 'back_button' | 'escape') => void>(() => {});
-  const showingInstructions = featureAccess === 'allowed' && !pendingEdit && instructionsId === generation?.generation_id && view === 'instructions';
+  const showingInstructions = featureAccess === 'allowed' && !pendingEdit && generationId === requestedInstructionsId;
   useEffect(() => {
-    const openInstructions = Boolean(featureAccess === 'allowed' && generation && requestedInstructionsId === generation.generation_id);
-    setInstructionsId(openInstructions ? generation!.generation_id : null);
-    setView(openInstructions ? 'instructions' : 'model');
-    setExpanded(openInstructions);
-    if (openInstructions) posthog.capture('landing_model_view_expanded', {
-      generation_id: generation!.generation_id, view: 'instructions', source: 'url',
+    setInstructionsId(id => id === generationId ? id : null);
+    setExpanded(false);
+  }, [generationId]);
+  useEffect(() => {
+    if (!showingInstructions || !generationId || instructionsId === generationId) return;
+    setInstructionsId(generationId);
+    setExpanded(true);
+    posthog.capture('landing_model_view_expanded', {
+      generation_id: generationId, view: 'instructions', source: 'url',
     });
-  }, [generation?.generation_id, requestedInstructionsId, featureAccess]);
+  }, [showingInstructions, generationId, instructionsId]);
+  const setInstructionUrl = useCallback((step: number | null) => {
+    if (!generationId) return;
+    if (step !== null && requestedInstructionsId === generationId && searchParams.get('step') === String(step)) return;
+    setSearchParams(current => {
+      const next = new URLSearchParams(current);
+      if (step === null) {
+        next.delete('instructions');
+        next.delete('step');
+      } else {
+        next.set('id', generationId);
+        next.set('instructions', '1');
+        next.set('step', String(step));
+      }
+      return next;
+    }, { replace: true });
+  }, [generationId, requestedInstructionsId, searchParams, setSearchParams]);
+  const onInstructionStepChange = useCallback((step: number) => {
+    if (!generationId || !showingInstructions) return;
+    lastInstructionStep.current = { id: generationId, step };
+    setInstructionUrl(step);
+  }, [generationId, showingInstructions, setInstructionUrl]);
   useEffect(() => {
     if (generation && requestedInstructionsId === generation.generation_id && featureAccess !== 'allowed'
       && featureAccess !== 'loading' && promptedInstructions.current !== generation.generation_id) {
@@ -108,7 +135,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     });
     setExpanded(false);
     if (showingInstructions && source === 'back_button' && window.matchMedia('(min-width: 1024px)').matches) {
-      setView('model');
+      setInstructionUrl(null);
     }
   };
   useEffect(() => { collapseRef.current = collapse; });
@@ -166,7 +193,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               modelName={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
               animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={showRuler} />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
-              <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id} embedded active={showingInstructions} />
+              <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id}
+                initialStep={Number(searchParams.get('step')) || 1} onStepChange={onInstructionStepChange} embedded active={showingInstructions} />
             </div>}
           </Suspense>}
         </div>
@@ -211,7 +239,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
                 generation_id: generation.generation_id, source: 'viewer_footer',
               });
               setInstructionsId(generation.generation_id);
-              setView(showingInstructions ? 'model' : 'instructions');
+              const lastStep = lastInstructionStep.current;
+              setInstructionUrl(showingInstructions ? null : lastStep?.id === generation.generation_id ? lastStep.step : 1);
             }}>
             {showingInstructions ? <Box size={16} aria-hidden="true" /> : <BookOpen size={16} aria-hidden="true" />}
             <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>

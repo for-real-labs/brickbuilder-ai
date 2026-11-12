@@ -287,6 +287,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       next.set('id', id);
       next.set('exact', '1');
       next.delete('instructions');
+      next.delete('step');
       return next;
     }, { replace: true });
   }, [landingModel.open, setSearchParams]);
@@ -792,6 +793,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       next.delete('id');
       next.delete('exact');
       next.delete('instructions');
+      next.delete('step');
       return next;
     }, { replace: true });
     setGiftPlanning(false);
@@ -1100,7 +1102,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             </div>}
             {!ldrawLanding && <div className="landing-model-host relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
-                requestedInstructionsId={searchParams.get('instructions') === '1' ? requestedModelId : null}
                 canRename={Boolean(session?.access_token)} accessToken={session?.access_token}
                 onRenameRequest={!session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
                 onConvertKit={() => void submitModelEdit(undefined,

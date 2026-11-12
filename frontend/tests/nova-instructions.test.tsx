@@ -236,6 +236,7 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     expect(['absolute', 'fixed']).not.toContain(getComputedStyle(toolbar).position);
     act(() => button('Next').click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1&instructions=1&step=2');
     act(() => colors.click());
     expect(colors.textContent).toBe('Hide colors');
     expect(colors.getAttribute('aria-pressed')).toBe('true');
@@ -243,13 +244,14 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     act(() => toggle.click());
     expect(container.querySelector('[data-testid="model-viewer"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="instructions-viewer"]')).toBeNull();
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1');
     act(() => toggle.click());
     expect(get).toHaveBeenCalledTimes(1);
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.getAttribute('data-highlight')).toBe('false');
     expect(container.querySelector('input[aria-label="Dialogue"]')).toBe(dialogue);
     expect((dialogue as HTMLInputElement).value).toBe('Keep my conversation');
-    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1');
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1&instructions=1&step=2');
     expect(container.querySelector('iframe')).toBeNull();
   } finally { act(() => root.unmount()); container.remove(); styles.remove(); vi.restoreAllMocks(); }
 });
@@ -266,7 +268,7 @@ it('uses left and right arrows only while landing instructions are visible and f
   const step = () => container.querySelector<HTMLInputElement>('input[aria-label="Instruction step"]')!.value;
 
   try {
-    await act(async () => root.render(<MemoryRouter><LandingModelWorkspace model={landingModel('nova')} busy={false}>
+    await act(async () => root.render(<MemoryRouter><LocationProbe /><LandingModelWorkspace model={landingModel('nova')} busy={false}>
       <textarea aria-label="Dialogue" />
     </LandingModelWorkspace></MemoryRouter>));
     const toggle = container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
@@ -276,6 +278,7 @@ it('uses left and right arrows only while landing instructions are visible and f
     expect(step()).toBe('1');
     press('ArrowRight');
     expect(step()).toBe('2');
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toContain('instructions=1&step=2');
     press('ArrowRight');
     expect(step()).toBe('2');
     press('ArrowLeft', container.querySelector('input[aria-label="Instruction step"]')!);
@@ -287,5 +290,22 @@ it('uses left and right arrows only while landing instructions are visible and f
     expect(step()).toBe('2');
     press('ArrowLeft');
     expect(step()).toBe('1');
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toContain('instructions=1&step=1');
+  } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
+});
+
+it.each([[2, 2], [999, 1]])('opens landing instructions directly from step %s and displays step %s', async (linkedStep, expectedStep) => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(landingModel('nova').generation);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(instructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: instructions } as never);
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter initialEntries={[`/?id=nova&exact=1&instructions=1&step=${linkedStep}`]}>
+      <LocationProbe /><LandingModelWorkspace model={landingModel('nova')} busy={false}>{null}</LandingModelWorkspace>
+    </MemoryRouter>));
+    expect(container.querySelector('.landing-model-panel')?.getAttribute('data-expanded')).toBe('true');
+    expect(container.querySelector<HTMLInputElement>('input[aria-label="Instruction step"]')?.value).toBe(String(expectedStep));
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe(`/?id=nova&exact=1&instructions=1&step=${expectedStep}`);
   } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
 });

@@ -103,7 +103,7 @@ it.each(['builder','creator','master'] as const)('allows %s exports even with no
 
 it.each([false, true])('opens free embedded instructions (deep link: %s)', async deepLink => {
   const read = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(() => new Promise(() => {}));
-  await render(<LandingModelWorkspace model={model} busy={false} requestedInstructionsId={deepLink ? 'castle' : null}>Chat</LandingModelWorkspace>);
+  await render(<LandingModelWorkspace model={model} busy={false}>Chat</LandingModelWorkspace>, deepLink ? '/?id=castle&instructions=1' : '/');
   if (!deepLink) {
     expect(button('Show instructions').querySelector('.paid-feature-lock')).toBeNull();
     await click('Show instructions');
@@ -189,7 +189,7 @@ it('keeps instructions available across models, accounts, and logout', async () 
 it.each([false, true])('opens purchased instructions from the model workspace without an upgrade (deep link: %s)', async deepLink => {
   account.ordered_instruction_models = ['castle'];
   const read = vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(() => new Promise(() => {}));
-  await render(<LandingModelWorkspace model={model} busy={false} requestedInstructionsId={deepLink ? 'castle' : null}>Chat</LandingModelWorkspace>);
+  await render(<LandingModelWorkspace model={model} busy={false}>Chat</LandingModelWorkspace>, deepLink ? '/?id=castle&instructions=1' : '/');
   if (!deepLink) {
     expect(button('Show instructions').querySelector('.paid-feature-lock')).toBeNull();
     await click('Show instructions');
