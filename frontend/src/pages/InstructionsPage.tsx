@@ -21,6 +21,7 @@ import { SiteFooter } from '../components/SiteFooter';
 import { ProfileMenu } from '../components/ProfileMenu';
 import './InstructionsViewer.css';
 import { getPartName, parsePartNames } from '../utils/partNames';
+import { normalizeInstructionPartFilename, type InstructionPartHover } from '../utils/instructionPartPicking';
 
 function Header() {
   const navigate = useNavigate();
@@ -276,6 +277,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
   const [error, setError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [partHover, setPartHover] = useState<InstructionPartHover | null>(null);
   const [stepInputValue, setStepInputValue] = useState('1'); // Separate state for input field
   const [parsedMpd, setParsedMpd] = useState<ParsedMpd | null>(null);
   
@@ -496,6 +498,18 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
   const stepParts = useMemo(() => currentStep ? LDrawParser.getPartsListForStep(currentStep) : [], [currentStep]);
   const colors = useMemo(() => parseLDrawColors(parsedMpd?.headerJoined ?? ''), [parsedMpd]);
   const partImages = useInstructionPartImages(stepParts, parsedMpd?.headerJoined ?? '', active ? parsedMpd?.subfileJoined ?? '' : '');
+  const hoveredPart = active && partHover?.stepIndex === currentStepIndex ? partHover : null;
+  const hoveredRow = hoveredPart && stepParts.find(part => part.colorCode === hoveredPart.colorCode
+    && normalizeInstructionPartFilename(part.filename) === normalizeInstructionPartFilename(hoveredPart.filename));
+  const hoveredRowKey = hoveredRow ? instructionPartKey(hoveredRow) : null;
+  const lastInspectedPart = useRef<string | null>(null);
+  useEffect(() => {
+    if (!hoveredRowKey) return;
+    const key = `${currentStepIndex}:${hoveredRowKey}`;
+    if (lastInspectedPart.current === key) return;
+    lastInspectedPart.current = key;
+    posthog.capture('instructions_part_inspected', { generation_id: generationId, step: currentStepIndex + 1, source: embedded ? 'landing' : 'instructions' });
+  }, [hoveredRowKey, currentStepIndex, generationId, embedded]);
 
   // Camera change handler for preserving orientation
   const handleCameraChange = (newCameraState: {
@@ -1229,11 +1243,19 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                     highlightNewParts={!showAllColors}
                     newPartsContent={currentLastStepMpd || undefined}
                     currentStepIndex={currentStepIndex}
+                    onInstructionPartHover={setPartHover}
                     totalSteps={model.steps.length}
                     showBaseplate={true}
                     softenEdges={false}
                     showModelControls={false}
                     />
+                    {hoveredPart && (
+                      <div className="instructions-part-tooltip" role="tooltip" data-below={hoveredPart.y < 92}
+                        style={{ '--part-x': `${hoveredPart.x}px`, '--part-y': `${hoveredPart.y}px` } as React.CSSProperties}>
+                        <strong>Type: {getPartName(hoveredRow?.filename ?? hoveredPart.filename, partNames)}</strong>
+                        <span>Color: {getColorNameWithFallback(hoveredPart.colorCode, colors)}</span>
+                      </div>
+                    )}
                     <button
                       type="button"
                       onClick={() => {
@@ -1330,7 +1352,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                       const key = instructionPartKey(part);
                       const image = partImages?.get(key);
                       return (
-                        <li key={key} className="instructions-part-row text-slate-600">
+                        <li key={key} className="instructions-part-row text-slate-600" data-inspected={hoveredRowKey === key || undefined}>
                           <div className="instructions-part-thumbnail" aria-hidden="true">
                             {image && <img src={image} alt="" />}
                           </div>

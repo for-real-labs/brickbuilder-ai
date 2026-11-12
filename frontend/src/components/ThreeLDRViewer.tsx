@@ -19,6 +19,7 @@ import { disposeLDrawScene, instantiateLDraw, planLDrawInstances } from '../util
 import { createBaseplateStuds } from '../utils/baseplateStuds';
 import { buildDioramaStage, createDioramaLighting, fitDioramaCamera, getDioramaViewDistance, getDioramaViewBounds, updateDioramaFog, prepareDioramaBricks, DIORAMA_BACKGROUND } from '../utils/dioramaPresentation';
 import { createDioramaEffects } from '../utils/dioramaEffects';
+import { createInstructionPartPicker, type InstructionPartHover } from '../utils/instructionPartPicking';
 
 // Build a simple stylized room with a table, sized to fit the model.
 const buildRoom = (
@@ -522,6 +523,7 @@ const addOutlineToNewParts = async (mainModel: THREE.Group, newPartsContent: str
               try {
                 const outlineGeometry = mainMesh.geometry.clone();
                 const outlineMesh = new THREE.Mesh(outlineGeometry, outlineMaterial);
+                outlineMesh.userData.instructionOutline = true;
                 
                 // Copy all transforms from original mesh
                 outlineMesh.position.copy(mainMesh.position);
@@ -1502,6 +1504,7 @@ interface ThreeLDRViewerProps {
   // Step-aware props for instant step navigation
   currentStepIndex?: number;  // 0-indexed, show parts up to and including this step
   totalSteps?: number;        // Total number of steps in model
+  onInstructionPartHover?: (part: InstructionPartHover | null) => void;
   showBaseplate?: boolean;    // Whether to show baseplate with studs
   topLeftOverlay?: React.ReactNode;
   showRuler?: boolean; // Optional controlled measurement visibility
@@ -1557,6 +1560,7 @@ export function ThreeLDRViewer({
   softenEdges = true,
   currentStepIndex,
   totalSteps,
+  onInstructionPartHover,
   showBaseplate = false,
   animateModelBuild = false,
   buildAnimationStyle = 'drop',
@@ -2276,6 +2280,54 @@ export function ThreeLDRViewer({
       });
     });
   }, [currentStepIndex, meshesReady, highlightNewParts, showRulerGrid]);
+
+  useEffect(() => {
+    const { camera, renderer } = sceneRef.current;
+    if (!camera || !renderer || !meshesReady || !interactionEnabled || currentStepIndex === undefined || !onInstructionPartHover) return;
+    const canvas = renderer.domElement;
+    const visibleCount = stepBoundariesRef.current[currentStepIndex] ?? meshesRef.current.length;
+    const pick = createInstructionPartPicker(meshesRef.current.slice(0, visibleCount));
+    let frame = 0;
+    let hovered = false;
+    const clearHover = () => {
+      cancelAnimationFrame(frame);
+      if (hovered) onInstructionPartHover(null);
+      hovered = false;
+    };
+    const inspect = (event: PointerEvent) => {
+      if (event.pointerType !== 'mouse' || event.buttons !== 0) {
+        clearHover();
+        return;
+      }
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => {
+        const bounds = canvas.getBoundingClientRect();
+        if (!bounds.width || !bounds.height) return;
+        const x = event.clientX - bounds.left;
+        const y = event.clientY - bounds.top;
+        const part = pick(camera, x / bounds.width * 2 - 1, 1 - y / bounds.height * 2);
+        if (part) {
+          hovered = true;
+          onInstructionPartHover({ ...part, x, y, stepIndex: currentStepIndex });
+        } else {
+          clearHover();
+        }
+      });
+    };
+    canvas.addEventListener('pointermove', inspect);
+    canvas.addEventListener('pointerup', inspect);
+    canvas.addEventListener('pointerdown', clearHover);
+    canvas.addEventListener('pointerleave', clearHover);
+    canvas.addEventListener('wheel', clearHover);
+    return () => {
+      clearHover();
+      canvas.removeEventListener('pointermove', inspect);
+      canvas.removeEventListener('pointerup', inspect);
+      canvas.removeEventListener('pointerdown', clearHover);
+      canvas.removeEventListener('pointerleave', clearHover);
+      canvas.removeEventListener('wheel', clearHover);
+    };
+  }, [currentStepIndex, meshesReady, interactionEnabled, onInstructionPartHover]);
 
   // Always render without Card wrapper (simplified embedded mode)
   return (

@@ -14,13 +14,14 @@ import { readFileSync } from 'node:fs';
 import { LDrawLoader } from 'three/examples/jsm/loaders/LDrawLoader.js';
 import { LDrawConditionalLineMaterial } from 'three/examples/jsm/materials/LDrawConditionalLineMaterial.js';
 import { buildInstructionThumbnailMpd } from '../src/components/InstructionPartImages';
-import type { Group } from 'three';
+import { BoxGeometry, Group, Mesh, MeshBasicMaterial, PerspectiveCamera } from 'three';
+import { createInstructionPartPicker, type InstructionPartHover } from '../src/utils/instructionPartPicking';
 
 const authState = vi.hoisted(() => ({ configured: false }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null, isSupabaseConfigured: authState.configured }) }));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ markViewed: vi.fn() }) }));
 vi.mock('../src/components/LandingModelOrdering', () => ({ LandingModelOrdering: () => null }));
-vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: (props: { currentStepIndex?: number; highlightNewParts?: boolean; preserveOrientation?: boolean; initialCameraState?: {position: {x: number}}; onCameraChange?: (state: unknown) => void }) => <div data-testid={props.currentStepIndex === undefined ? 'model-viewer' : 'instructions-viewer'} data-highlight={String(props.highlightNewParts)} data-preserve-orientation={String(props.preserveOrientation)} data-camera-x={props.initialCameraState?.position.x}>Step {(props.currentStepIndex ?? 0) + 1}<button aria-label="Rotate test model" onClick={() => props.onCameraChange?.({position: {x: 12, y: 10, z: 10}, target: {x: 0, y: 0, z: 0}})} /></div> }));
+vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: (props: { currentStepIndex?: number; highlightNewParts?: boolean; preserveOrientation?: boolean; initialCameraState?: {position: {x: number}}; onCameraChange?: (state: unknown) => void; onInstructionPartHover?: (part: InstructionPartHover | null) => void }) => <div data-testid={props.currentStepIndex === undefined ? 'model-viewer' : 'instructions-viewer'} data-highlight={String(props.highlightNewParts)} data-preserve-orientation={String(props.preserveOrientation)} data-camera-x={props.initialCameraState?.position.x}>Step {(props.currentStepIndex ?? 0) + 1}<div data-testid="hover-test-piece" onMouseEnter={() => props.onInstructionPartHover?.({ filename: "parts/5152.dat", colorCode: 15, x: 150, y: 180, stepIndex: props.currentStepIndex ?? 0 })} onMouseLeave={() => props.onInstructionPartHover?.(null)} /><button aria-label="Rotate test model" onClick={() => props.onCameraChange?.({position: {x: 12, y: 10, z: 10}, target: {x: 0, y: 0, z: 0}})} /></div> }));
 vi.mock('../src/components/InstructionPartImages', async original => ({
   ...await original<typeof import('../src/components/InstructionPartImages')>(),
   useInstructionPartImages: (parts: Array<{filename: string; colorCode: number}>) =>
@@ -81,6 +82,14 @@ it('shows assemble-first guidance and both chimney pieces only on their grouped 
     expect(rows[0].firstElementChild?.querySelector('img')?.getAttribute('src')).toBe('/preview/15/5152.dat.png');
     expect(rows[1].firstElementChild?.querySelector('img')?.getAttribute('src')).toBe('/preview/15/2420.dat.png');
     expect(parts.querySelectorAll('img')).toHaveLength(2);
+    const testPiece = container.querySelector('[data-testid="hover-test-piece"]')!;
+    act(() => testPiece.dispatchEvent(new MouseEvent('mouseover', { bubbles: true })));
+    expect(container.querySelector('[role="tooltip"]')?.textContent).toBe('Type: Brick 1x2 with GrooveColor: White');
+    expect(rows[0].hasAttribute('data-inspected')).toBe(true);
+    expect(rows[1].hasAttribute('data-inspected')).toBe(false);
+    act(() => testPiece.dispatchEvent(new MouseEvent('mouseout', { bubbles: true })));
+    expect(container.querySelector('[role="tooltip"]')).toBeNull();
+    expect(rows[0].hasAttribute('data-inspected')).toBe(false);
     expect(parts.textContent).toContain('Brick 1x2 with Groove');
     expect(parts.textContent).toContain('Plate 2x2 Corner');
     expect(parts.textContent).not.toContain('.dat');
@@ -109,6 +118,31 @@ it('packs separate colored thumbnail models from the existing part definitions',
   expect(model.children.map(child => child.name)).toEqual(['__brickbuilder_thumbnail_0.ldr', '__brickbuilder_thumbnail_2.ldr']);
   expect(model.children.map(child => child.userData.colorCode)).toEqual(['4', '14']);
   expect(model.children.every(child => child.children.length === 1)).toBe(true);
+});
+
+it('picks the nearest visible piece and ignores outline geometry', () => {
+  const camera = new PerspectiveCamera(45, 1, 0.1, 100);
+  camera.position.z = 10;
+  camera.updateMatrixWorld();
+  const part = (filename: string, colorCode: string, z: number) => {
+    const group = new Group();
+    group.name = filename;
+    group.userData.colorCode = colorCode;
+    const mesh = new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial());
+    group.add(mesh);
+    group.position.z = z;
+    group.updateMatrixWorld(true);
+    return group;
+  };
+  const back = part('parts/3001.dat', '4', 0);
+  const front = part('parts/3002.dat', '15', 2);
+  const hidden = part('parts/3003.dat', '14', 4);
+  hidden.visible = false;
+  const outline = part('parts/3004.dat', '10', 6);
+  outline.children[0].userData.instructionOutline = true;
+  const pick = createInstructionPartPicker([back, front, hidden, outline]);
+  expect(pick(camera, 0, 0)).toEqual({ filename: 'parts/3002.dat', colorCode: 15 });
+  expect(pick(camera, 0.9, 0.9)).toBeUndefined();
 });
 
 it('does not show a notification bell in the guest instructions header', async () => {
