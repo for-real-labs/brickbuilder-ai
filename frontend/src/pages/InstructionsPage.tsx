@@ -500,40 +500,32 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
     setCameraState(newCameraState);
   };
   
-  // Keyboard navigation disabled
-  // useEffect(() => {
-  //   const handleKeyDown = (event: KeyboardEvent) => {
-  //     if (!model || model.steps.length === 0) return;
+  const stepCount = model?.steps.length ?? 0;
+  const moveStep = useCallback((direction: -1 | 1) => {
+    const nextIndex = currentStepIndex + direction;
+    if (nextIndex < 0 || nextIndex >= stepCount) return;
 
-  //     switch (event.key) {
-  //       case 'ArrowLeft':
-  //       case 'ArrowUp':
-  //         event.preventDefault();
-  //         setCurrentStepIndex(prev => Math.max(0, prev - 1));
-  //         break;
-  //       case 'ArrowRight':
-  //       case 'ArrowDown':
-  //         event.preventDefault();
-  //         setCurrentStepIndex(prev => Math.min(model.steps.length - 1, prev + 1));
-  //         break;
-  //       case 'Home':
-  //         event.preventDefault();
-  //         setCurrentStepIndex(0);
-  //         break;
-  //       case 'End':
-  //         event.preventDefault();
-  //         setCurrentStepIndex(model.steps.length - 1);
-  //         break;
-  //       case 'Escape':
-  //         event.preventDefault();
-  //         navigate('/');
-  //         break;
-  //     }
-  //   };
+    posthog.capture('instructions_step_changed', { generation_id: generationId, step: nextIndex + 1, source: embedded ? 'landing' : 'instructions' });
+    setCurrentStepIndex(nextIndex);
+    setStepInputValue(String(nextIndex + 1));
+  }, [currentStepIndex, stepCount, generationId, embedded]);
 
-  //   window.addEventListener('keydown', handleKeyDown);
-  //   return () => window.removeEventListener('keydown', handleKeyDown);
-  // }, [model, navigate]);
+  useEffect(() => {
+    if (!embedded || !active || loading || error || stepCount < 2) return;
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+      if (event.defaultPrevented || event.isComposing || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+      const target = event.target;
+      if (target instanceof HTMLElement && (target.isContentEditable || target.closest('input, textarea, select'))) return;
+
+      event.preventDefault();
+      moveStep(event.key === 'ArrowLeft' ? -1 : 1);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [embedded, active, loading, error, stepCount, moveStep]);
 
   // Helper function to convert LDrawParts back to LDR format
   const convertPartsToLdr = (parts: LDrawModel['parts'], modelName: string = 'temp_model'): string => {
@@ -1264,19 +1256,14 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
               <div className="instructions-navigation bg-slate-50 p-3 sm:p-4 rounded-xl mb-4">
                 <div className="flex items-center justify-center space-x-2 sm:space-x-4">
                 <button
-                  onClick={() => {
-                    const newIndex = Math.max(0, currentStepIndex - 1);
-                    posthog.capture('instructions_step_changed', { generation_id: generationId, step: newIndex + 1, source: embedded ? 'landing' : 'instructions' });
-                    setCurrentStepIndex(newIndex);
-                    setStepInputValue(String(newIndex + 1));
-                  }}
+                  onClick={() => moveStep(-1)}
                   disabled={currentStepIndex === 0 || !model}
                   className="py-2 px-3 sm:px-6 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed touch-manipulation"
                   style={{
                     backgroundColor: (currentStepIndex === 0 || !model) ? '#e2e8f0' : '#1e293b',
                     color: (currentStepIndex === 0 || !model) ? '#94a3b8' : '#FFFFFF',
                   }}
-                  title="Go to previous step"
+                  title={embedded ? "Previous step (←)" : "Go to previous step"}
                 >
                   Previous
                 </button>
@@ -1310,19 +1297,14 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                 </div>
 
                 <button
-                  onClick={() => {
-                    const newIndex = Math.min(model.steps.length - 1, currentStepIndex + 1);
-                    posthog.capture('instructions_step_changed', { generation_id: generationId, step: newIndex + 1, source: embedded ? 'landing' : 'instructions' });
-                    setCurrentStepIndex(newIndex);
-                    setStepInputValue(String(newIndex + 1));
-                  }}
+                  onClick={() => moveStep(1)}
                   disabled={currentStepIndex === model.steps.length - 1}
                   className="py-2 px-3 sm:px-6 rounded-full text-xs sm:text-sm font-medium transition-all duration-200 disabled:cursor-not-allowed touch-manipulation"
                   style={{
                     backgroundColor: currentStepIndex === model.steps.length - 1 ? '#e2e8f0' : '#1e293b',
                     color: currentStepIndex === model.steps.length - 1 ? '#94a3b8' : '#FFFFFF',
                   }}
-                  title="Next step (→ or ↓ arrow keys)"
+                  title={embedded ? "Next step (→)" : "Go to next step"}
                 >
                   Next
                 </button>

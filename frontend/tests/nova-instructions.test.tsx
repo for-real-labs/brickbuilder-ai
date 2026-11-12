@@ -253,3 +253,39 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     expect(container.querySelector('iframe')).toBeNull();
   } finally { act(() => root.unmount()); container.remove(); styles.remove(); vi.restoreAllMocks(); }
 });
+
+it('uses left and right arrows only while landing instructions are visible and focus is outside inputs', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(landingModel('nova').generation);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(instructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: instructions } as never);
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  const press = (key: string, target: EventTarget = document.body) => act(() => {
+    target.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }));
+  });
+  const step = () => container.querySelector<HTMLInputElement>('input[aria-label="Instruction step"]')!.value;
+
+  try {
+    await act(async () => root.render(<MemoryRouter><LandingModelWorkspace model={landingModel('nova')} busy={false}>
+      <textarea aria-label="Dialogue" />
+    </LandingModelWorkspace></MemoryRouter>));
+    const toggle = container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
+    await act(async () => toggle.click());
+    expect(step()).toBe('1');
+    press('ArrowLeft');
+    expect(step()).toBe('1');
+    press('ArrowRight');
+    expect(step()).toBe('2');
+    press('ArrowRight');
+    expect(step()).toBe('2');
+    press('ArrowLeft', container.querySelector('input[aria-label="Instruction step"]')!);
+    press('ArrowLeft', container.querySelector('textarea')!);
+    expect(step()).toBe('2');
+    act(() => toggle.click());
+    press('ArrowLeft');
+    act(() => toggle.click());
+    expect(step()).toBe('2');
+    press('ArrowLeft');
+    expect(step()).toBe('1');
+  } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
+});
