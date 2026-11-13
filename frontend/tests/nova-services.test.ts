@@ -143,3 +143,21 @@ it('uses the selected provider model for personal-key compatible edits', async (
   await NovaToBricksApiService.edit('original', 'Red roof', 'owner-token', undefined, { model: 'gpt-5.5', authMode: 'api_key' });
   expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({ model: 'gpt-5.5', auth_mode: 'api_key' });
 });
+
+it.each([undefined, 50])('sends the optional maximum %s to both generation modes and Nova edits', async maxParts => {
+  const { LlmToBricksApiService } = await import('../src/services/llmToBricksApi');
+  vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'build', message: 'Started' }));
+  await NovaToBricksApiService.generate({ ...DEFAULT_NOVA_OPTIONS, prompt: 'castle', maxParts });
+  await LlmToBricksApiService.generate({ prompt: 'castle', maxParts });
+  await NovaToBricksApiService.edit('original', 'small castle', undefined, undefined, { ...DEFAULT_NOVA_OPTIONS, maxParts });
+  for (const [, init] of vi.mocked(fetch).mock.calls) {
+    expect(JSON.parse(init!.body as string).max_parts).toBe(maxParts);
+  }
+});
+
+it.each([0, -1, 1.5, NaN, 100001])('rejects an invalid parts limit %s before either API request', async maxParts => {
+  const { LlmToBricksApiService } = await import('../src/services/llmToBricksApi');
+  await expect(NovaToBricksApiService.generate({ ...DEFAULT_NOVA_OPTIONS, prompt: 'castle', maxParts })).rejects.toThrow('Maximum parts');
+  await expect(LlmToBricksApiService.generate({ prompt: 'castle', maxParts })).rejects.toThrow('Maximum parts');
+  expect(fetch).not.toHaveBeenCalled();
+});

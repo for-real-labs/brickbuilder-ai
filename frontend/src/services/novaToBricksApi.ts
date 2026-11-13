@@ -1,6 +1,6 @@
 import type { PartsInventory } from './partsInventoryApi';
 import { apiFetch, authenticatedApiFetch } from './apiFetch';
-import { DEFAULT_LLM_MODEL, getLlmModelOption, type LlmToBricksResponse } from './llmToBricksApi';
+import { DEFAULT_LLM_MODEL, getLlmModelOption, validateMaxParts, type LlmToBricksResponse } from './llmToBricksApi';
 import { getInstructionKey } from '../utils/instructionLinks';
 
 export type NovaAuthMode = 'api_key' | 'native';
@@ -8,6 +8,7 @@ export type NovaAuthMode = 'api_key' | 'native';
 export interface NovaBuilderOptions {
   model: string;
   authMode: NovaAuthMode;
+  maxParts?: number;
 }
 
 export const DEFAULT_NOVA_OPTIONS: NovaBuilderOptions = {
@@ -74,6 +75,7 @@ export class NovaToBricksApiService {
   }
 
   static async generate(request: NovaToBricksRequest, authToken?: string): Promise<LlmToBricksResponse> {
+    validateMaxParts(request.maxParts);
     if (!request.prompt?.trim() && !request.imageBase64) throw new Error('A prompt or image is required');
     if (!getLlmModelOption(request.model)) throw new Error('Choose a supported agent model');
     if (!['api_key', 'native'].includes(request.authMode)) throw new Error('Choose a supported provider connection');
@@ -88,6 +90,7 @@ export class NovaToBricksApiService {
         image_base64: request.imageBase64,
         image_media_type: request.imageMediaType || 'image/png',
         detail_level: request.detailLevel ?? 40,
+        max_parts: request.maxParts,
         model: request.model,
         auth_mode: request.authMode,
       }),

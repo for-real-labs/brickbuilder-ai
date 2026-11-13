@@ -37,6 +37,7 @@ install_cost_limits(agent, llm_config, litellm, claude_agent)
 VERSIONS['generation_cost_limit_usd'] = 20
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = CATALOG_VERSION
+VERSIONS['max_parts_version'] = 1
 VERSIONS['instruction_plan_version'] = 4
 install_instruction_policy(tools, settings)
 VERSIONS['instruction_publication_version'] = PUBLICATION_VERSION
@@ -125,6 +126,7 @@ async def import_geometry(body: ImportedModel):
 
 
 class PartsCatalogRequest(BaseModel):
+    max_parts: int | None = Field(default=None, strict=True, ge=1, le=100_000)
     csv: str = Field(min_length=1, max_length=16 * 1024 * 1024)
 
 
@@ -137,9 +139,10 @@ async def configure_parts_catalog(chat_id: str, body: PartsCatalogRequest):
         raise HTTPException(409, 'Nova is working on this session')
     try:
         catalog = parts_policy.configure(store, chat_id, body.csv)
+        parts_policy.set_limit(chat_id, body.max_parts)
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from None
-    return {'parts_catalog_version': 1, 'allowed_combinations': len(catalog.parts)}
+    return {'parts_catalog_version': 1, 'allowed_combinations': len(catalog.parts), 'max_parts': body.max_parts}
 
 
 def export_sources(chat_id: str, model_id: str) -> bytes:

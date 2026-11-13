@@ -260,6 +260,9 @@ class NovaService:
                 chat_id, before = self.session_id(created['id']), {'models': {}}
         from .supplier_catalog import catalog_path
         from .parts_catalog import PartsCatalog
+        maximum = getattr(request, 'max_parts', None)
+        if maximum is not None and versions.get('max_parts_version') != 1:
+            raise ValueError('Nova must be updated before using a maximum parts limit.')
         inventory = getattr(request, 'parts_inventory', None)
         if inventory is not None:
             catalog = inventory.catalog()
@@ -269,10 +272,12 @@ class NovaService:
             catalog = PartsCatalog.from_csv(catalog_csv)
         palette_csv = catalog.to_palette_csv()
         configured = await self.request('PUT', f'integration/chats/{chat_id}/parts-catalog',
-                                        json={'csv': palette_csv})
+                                        json={'csv': palette_csv, 'max_parts': maximum})
         if configured.get('parts_catalog_version') != 1:
             raise ValueError('Nova did not confirm the parts catalog restrictions')
-        session = {'provider_key_id': hashlib.sha256(self.api_key.encode()).hexdigest() if self.api_key else None, 'personal_billing': bool(self.api_key), 'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
+        if configured.get('max_parts') != maximum:
+            raise ValueError('Nova did not confirm the maximum parts limit')
+        session = {'max_parts': maximum, 'provider_key_id': hashlib.sha256(self.api_key.encode()).hexdigest() if self.api_key else None, 'personal_billing': bool(self.api_key), 'chat_id': chat_id, 'tenant': self.tenant, 'versions': versions, 'model': request.model,
                    'auth_mode': request.auth_mode, 'options': {'mode': 'agent', 'permissions': 'full'}}
         if not previous and source:
             session['model_id'] = self.session_id(created['model_id'])
@@ -283,6 +288,8 @@ class NovaService:
             session['parts_inventory'] = inventory.model_dump()
         await save_session(session)
         text = request.prompt or 'Create a model from the reference image.'
+        if maximum is not None:
+            text = f"Use at most {maximum} physical parts in the complete finished model. Simplify the design to fit this mandatory limit.\n\n" + text
         if inventory is not None:
             text = ('Build only from the configured finite inventory. Match exact part IDs and colors, never exceed any max_quantity, and do not add a baseplate or other pieces outside that inventory. You may leave pieces unused. Adapt the requested design to the available pieces.\n\n' + text)
         images = ([f'data:{request.image_media_type};base64,{request.image_base64}'] if request.image_base64 else [])
@@ -318,6 +325,8 @@ class NovaService:
             # even if the agent or runtime bypassed its publication tool.
             reject_custom_parts(result.mpd)
             catalog.validate(flat_model_inventory(result.ldr))
+            from .parts_limit import enforce_parts_limit
+            enforce_parts_limit(result.ldr, maximum)
             # Recheck the imported revision even if the publication tool was
             # bypassed. Nothing is stored or charged until instructions pass.
             instructions = await self.instructions(result.mpd)

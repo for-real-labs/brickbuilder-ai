@@ -36,6 +36,7 @@ export interface LlmToBricksRequest {
   imageBase64?: string;
   imageMediaType?: string;
   detailLevel?: number;
+  maxParts?: number;
   model?: string;
 }
 
@@ -115,12 +116,14 @@ export class LlmToBricksApiService {
       throw new Error(`Unsupported model: ${model}`);
     }
 
+    validateMaxParts(request.maxParts);
     return {
       generation_id: request.sourceGenerationId,
       prompt: prompt || undefined,
       image_base64: request.imageBase64,
       image_media_type: request.imageMediaType || 'image/png',
       detail_level: request.detailLevel ?? 40,
+      max_parts: request.maxParts,
       model,
     };
   }
@@ -223,5 +226,11 @@ export class LlmToBricksApiService {
       throw new Error('LLM brick-design stream ended without a result');
     }
     return result;
+  }
+}
+
+export function validateMaxParts(value: number | undefined): void {
+  if (value !== undefined && (!Number.isInteger(value) || value < 1 || value > 100000)) {
+    throw new Error('Maximum parts must be a whole number from 1 to 100,000, or left blank.');
   }
 }

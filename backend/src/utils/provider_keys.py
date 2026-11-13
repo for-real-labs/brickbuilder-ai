@@ -7,7 +7,7 @@ from uuid import UUID
 from cryptography.fernet import Fernet, InvalidToken
 from fastapi import HTTPException
 
-from . import auth
+from . import auth, billing
 from .database import execute_query
 
 _credentials = ContextVar("generation_provider_credentials", default=None)
@@ -47,8 +47,17 @@ async def status(identity):
     return {**prefs, "providers": [row["provider"] for row in result.data]}
 
 
+async def require_subscription(user_id):
+    row = await billing.wallet(user_id)
+    if not billing.public_wallet(row)["has_subscription"]:
+        raise HTTPException(403, "You must be on a subscription plan to use your own Anthropic key.")
+
+
 async def save(identity, provider, key):
     user_id = owner(identity)
+    if provider != "anthropic":
+        raise HTTPException(400, "Only Anthropic personal API keys are supported.")
+    await require_subscription(user_id)
     # Bind ciphertext to its owner and provider to prevent row substitution.
     encrypted = cipher().encrypt(f"{user_id}:{provider}:{key}".encode()).decode()
     await execute_query(table("user_provider_keys").upsert({"user_id": user_id, "provider": provider, "encrypted_key": encrypted}, on_conflict="user_id,provider"))
@@ -72,12 +81,15 @@ async def resolve(request, identity, provider):
         if request.billing_source == "personal":
             owner(identity)
         return
+    if provider != "anthropic":
+        return
     source = request.billing_source or "brickbuilder"
     if source != "personal":
         return
     if getattr(request, "auth_mode", "api_key") != "api_key":
         raise HTTPException(400, "Select API key authentication to use personal billing.")
     user_id = owner(identity)
+    await require_subscription(user_id)
     result = await execute_query(table("user_provider_keys").select("encrypted_key").eq("user_id", user_id).eq("provider", provider))
     if not result.data:
         raise HTTPException(400, f"Add your {provider} API key in AI billing settings, or select BrickBuilder credits.")
@@ -97,7 +109,7 @@ def personal_billing_active():
 
 def provider_env(name):
     credentials = _credentials.get()
-    if credentials is not None and name in {"OPENAI_API_KEY", "ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"}:
+    if credentials is not None and name in {"ANTHROPIC_API_KEY", "ANTHROPIC_WORKSPACE_ID"}:
         return credentials.get(name)
     return os.getenv(name)
 
@@ -106,7 +118,7 @@ def personal_billing_task(function):
     @functools.wraps(function)
     async def scoped(generation_id, request, *args, **kwargs):
         key = getattr(request, "_provider_api_key", None)
-        credentials = None if not key else {("ANTHROPIC_API_KEY" if request.model.startswith("claude-") else "OPENAI_API_KEY"): key}
+        credentials = {"ANTHROPIC_API_KEY": key} if key and request.model.startswith("claude-") else None
         token = _credentials.set(credentials)
         try:
             return await function(generation_id, request, *args, **kwargs)

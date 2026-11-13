@@ -32,9 +32,9 @@ export async function prepareAiBilling(body: string, signal?: AbortSignal): Prom
   if (payload.auth_mode === 'native') return body;
   const settings = await providerKeysApi.status();
   signal?.throwIfAborted();
-  if (settings.billing_source === 'personal') {
-    const provider = String(payload.model || '').startsWith('claude-') ? 'anthropic' : 'openai';
-    if (!settings.providers.includes(provider)) throw new Error(`Add your ${provider === 'openai' ? 'OpenAI' : 'Claude'} API key in AI billing settings, or choose BrickBuilder credits.`);
+  const billingSource = String(payload.model || '').startsWith('claude-') ? settings.billing_source : 'brickbuilder';
+  if (billingSource === 'personal') {
+    if (!settings.providers.includes('anthropic')) throw new Error('Add your Claude / Anthropic API key under Use your own AI Accounts, or choose BrickBuilder credits.');
     if (!settings.skip_confirmation) {
       const accepted = await new Promise<boolean>(resolve => {
         const abort = () => finish(false);
@@ -46,5 +46,5 @@ export async function prepareAiBilling(body: string, signal?: AbortSignal): Prom
     }
   }
   signal?.throwIfAborted();
-  return JSON.stringify({ ...payload, billing_source: settings.billing_source });
+  return JSON.stringify({ ...payload, billing_source: billingSource });
 }

@@ -7,7 +7,7 @@ const runtime = path.join(__dirname, '.nova');
 // Upgrade both together, then run the adapter contract and real-runtime smoke tests.
 const SOURCES = Object.freeze([
   { name: 'toolkit', url: 'https://github.com/jjohnson5253/ldraw-nova.git', commit: 'ef2d93faed41e83486a624531d3db26d18efadb6' },
-  { name: 'web', url: 'https://github.com/jjohnson5253/ldraw-nova-docker.git', commit: 'b67ee2bf85e8b91f49e1bcbc308deef3e722cc7b' },
+  { name: 'web', url: 'https://github.com/jjohnson5253/ldraw-nova-docker.git', commit: '767a2f08b6d304ce3744f1a81456dbf472b83d32' },
 ]);
 const IMAGE = `brickbuilder-nova:${SOURCES[0].commit.slice(0, 12)}-${SOURCES[1].commit.slice(0, 12)}-parts-v1`;
 const SERVICE_CMD = 'CMD ["sh", "-c", "exec uvicorn brickbuilder_integration.gateway:app --app-dir /app/web/backend --host ${NOVA_BIND_HOST:-0.0.0.0} --port 8000"]\n';

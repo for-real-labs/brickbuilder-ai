@@ -502,3 +502,29 @@ def test_uploaded_inventory_is_enforced_at_runtime_and_independent_import_gate(c
             assert palette == 'part_id,color_id,sku,max_quantity\n3001,4,inventory-1,2\n'
             assert save.call_args.args[0]['parts_inventory'] == inventory.model_dump()
     asyncio.run(run())
+
+
+def test_total_limit_is_sent_and_rechecked_before_instruction_export():
+    from src.utils.parts_catalog import PartsCatalog
+    from unittest.mock import patch
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
+            service.generation_ready = AsyncMock(return_value={**VERSIONS, 'max_parts_version': 1})
+            service.configure_model = AsyncMock(return_value='config')
+            service.request = AsyncMock(return_value={'parts_catalog_version': 1, 'max_parts': 1})
+            service.chat = AsyncMock(side_effect=[{'chat': {'running': False}, 'models': {}},
+                {'chat': {'running': False}, 'models': {'new': {'id': 'new', 'created_at': 1}}}])
+            service.wait_for_turn = AsyncMock()
+            service.cancel = AsyncMock()
+            service.instructions = AsyncMock()
+            part = '1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'
+            service.export = AsyncMock(return_value=read_export(archive({'model.mpd': 'model', 'model.ldr': part + '\n' + part}), {}))
+            request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='build', image_base64=None, max_parts=1)
+            with patch.object(PartsCatalog, 'validate'):
+                with pytest.raises(ValueError, match='2 physical parts; maximum is 1'):
+                    await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
+            assert service.request.call_args_list[0].kwargs['json']['max_parts'] == 1
+            message = next(call for call in service.request.call_args_list if call.args[1].endswith('/messages'))
+            assert 'at most 1 physical parts' in message.kwargs['json']['text']
+            service.instructions.assert_not_awaited()
+    asyncio.run(run())

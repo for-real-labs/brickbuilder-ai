@@ -317,3 +317,5 @@
   .landing-header > nav { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; justify-content: flex-end; }
   .landing-header .landing-create-new { grid-column: 2; grid-row: 1; justify-self: end; }
 }
+
+.generation-mode-cost.credit-balance { min-height: 24px; padding: 2px 7px; gap: 4px; cursor: inherit; }

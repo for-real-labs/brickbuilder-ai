@@ -35,6 +35,7 @@ VERSIONS = json.loads(Path(__file__).with_name('versions.json').read_text())
 VERSIONS['generation_cost_limit_usd'] = 20
 VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = 1
+VERSIONS['max_parts_version'] = 1
 VERSIONS['instruction_plan_version'] = 4
 VERSIONS['instruction_publication_version'] = 2
 # Geometry analysis is CPU/memory intensive; share a bounded runtime budget.

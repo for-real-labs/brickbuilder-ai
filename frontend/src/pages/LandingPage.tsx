@@ -33,7 +33,7 @@ import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Image as ImageIcon, ChevronDown, Github, Sparkles, Star, X } from "lucide-react";
+import { ArrowUp, Coins, Image as ImageIcon, ChevronDown, Github, Sparkles, Star, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -206,6 +206,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const startWithAllParts = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'all_parts';
   const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(startWithAllParts ? 'nova' : DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
+  const [maxPartsInput, setMaxPartsInput] = useState('');
+  const maxParts = maxPartsInput === '' ? undefined : Number(maxPartsInput);
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
   const localDevelopment = isLocalDevelopment();
@@ -387,6 +389,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         generationMethod?: string;
         threeDModel?: string;
         llmModel?: string;
+        maxParts?: number;
         novaOptions?: NovaOptions;
         partsInventory?: PartsInventory;
         resumeGeneration?: boolean;
@@ -394,6 +397,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         image?: { name: string; type: string; base64: string } | null;
       };
       if (typeof payload.prompt === 'string') setPrompt(payload.prompt);
+      if (Number.isInteger(payload.maxParts) && payload.maxParts! >= 1 && payload.maxParts! <= 100000) setMaxPartsInput(String(payload.maxParts));
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
       setGenerationMethod(startWithAllParts ? 'nova' : payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
@@ -535,6 +539,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         generationMethod,
         threeDModel,
         llmModel,
+        maxParts,
         novaOptions: { ...novaOptions, model: llmModel },
         partsInventory,
         image: imageData,
@@ -637,6 +642,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
           partsInventory: partsInventory ?? undefined,
+          maxParts,
           model: llmModel,
           authMode: localDevelopment ? novaAuthMode : 'api_key',
           prompt: requestedPrompt.trim() || undefined,
@@ -653,6 +659,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             imageMediaType: requestedImage?.type || 'image/png',
             detailLevel: getVoxelSize(size),
             model: llmModel,
+            maxParts,
           },
           authToken,
         );
@@ -764,8 +771,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       const image = requestedImage ? { imageBase64: await fileToBase64(requestedImage), imageMediaType: requestedImage.type } : undefined;
       const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
       const response = nova
-        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image, { model: llmModel, authMode: localDevelopment ? novaOptions.authMode : 'api_key' })
-        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt, model: llmModel, ...image }, session?.access_token);
+        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image, { model: llmModel, maxParts, authMode: localDevelopment ? novaOptions.authMode : 'api_key' })
+        : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt, model: llmModel, maxParts, ...image }, session?.access_token);
       const id = response.generation_id;
       localStorage.setItem(STORAGE_KEYS.GENERATION_ID, id);
       if (!session) recordAnonymousGeneration(id);
@@ -1265,8 +1272,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
-                    {([{ value: 'llm', label: 'Basic bricks' }, { value: 'nova', label: 'All parts' }] as const).map(({ value, label }) => (
+                    {([{ value: 'llm', label: 'Basic bricks', credits: 2 }, { value: 'nova', label: 'All parts', credits: 20 }] as const).map(({ value, label, credits }) => (
                       <button key={value} type="button" value={value}
+                        aria-label={label}
                         aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
                         disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d' || Boolean(partsInventory)}
                         onClick={() => {
@@ -1275,21 +1283,20 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                           if (localDevelopment && value === 'nova') void checkNovaConnection(llmModel);
                           posthog.capture('landing_generation_method_selected', { generation_method: value });
                         }}
-                        className={`min-h-9 flex-1 whitespace-nowrap rounded-full px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
-                        {label}
+                        className={`min-h-9 flex flex-1 flex-col items-center gap-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                        <span>{label}</span>
+                        <span className="credit-balance generation-mode-cost"><Coins size={14} aria-hidden="true" /><span>{credits}</span><span>credits</span></span>
                       </button>
                     ))}
                   </div>
-                  <GenerationModelSelector model={generationMethod === '3d' ? threeDModel : llmModel} mode={generationMethod} onChange={model => {
-                    if (model === 'sam3d' || model === 'trellis') {
-                      setThreeDModel(model);
-                      setGenerationMethod('3d');
-                    } else {
-                      setLlmModel(model);
-                      if (generationMethod === '3d') setGenerationMethod('llm');
-                      if (localDevelopment && generationMethod === 'nova') void checkNovaConnection(model);
-                    }
-                  }} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} />
+                  <label className="min-w-0 flex-1 text-sm font-medium text-slate-700" htmlFor="generation-max-parts">
+                    Maximum parts
+                    <input id="generation-max-parts" type="number" inputMode="numeric" min="1" max="100000" step="1" placeholder="No limit"
+                      value={maxPartsInput} onChange={event => setMaxPartsInput(event.target.value)}
+                      onBlur={() => posthog.capture('landing_max_parts_changed', { max_parts: Number.isInteger(maxParts) ? maxParts : null })}
+                      disabled={loading || modelBusy || buddyChat.routing || generationMethod === '3d'}
+                      className="mt-1 min-h-11 w-full min-w-28 rounded-xl border border-slate-300 bg-white px-3 text-sm" />
+                  </label>
                 </div>
                 {settingsOpen && <AiBillingSettings key={session?.user.id || 'guest'} />}
                 {localDevelopment && generationMethod === 'nova' && (

@@ -41,6 +41,8 @@ def store(monkeypatch):
     store = Store()
     monkeypatch.setattr(keys.auth, 'supabase_client', store)
     monkeypatch.setenv('PROVIDER_KEYS_ENCRYPTION_KEY', Fernet.generate_key().decode())
+    monkeypatch.setattr(keys.billing, 'wallet', AsyncMock(return_value={}))
+    monkeypatch.setattr(keys.billing, 'public_wallet', lambda row: {'has_subscription': True})
     return store
 
 
@@ -52,37 +54,37 @@ def test_ciphertext_is_owner_bound_and_never_returned(store):
     async def run():
         alice, bob = identity(), identity()
         secret = 'sk-test-personal-secret'
-        result = await keys.save(alice, 'openai', secret)
-        assert result['providers'] == ['openai'] and secret not in str(result)
+        result = await keys.save(alice, 'anthropic', secret)
+        assert result['providers'] == ['anthropic'] and secret not in str(result)
         row = store.rows['user_provider_keys'][0]
         assert secret not in row['encrypted_key']
         req = request()
-        await keys.resolve(req, alice, 'openai')
+        await keys.resolve(req, alice, 'anthropic')
         assert req._provider_api_key == secret
         with pytest.raises(HTTPException, match='400'):
-            await keys.resolve(request(), bob, 'openai')
+            await keys.resolve(request(), bob, 'anthropic')
         # Even copying a ciphertext to another account does not grant access.
         store.rows['user_provider_keys'].append({**row, 'user_id': bob['user_id']})
         with pytest.raises(HTTPException) as error:
-            await keys.resolve(request(), bob, 'openai')
+            await keys.resolve(request(), bob, 'anthropic')
         assert error.value.status_code == 503
-        await keys.remove(bob, 'openai')
-        assert (await keys.status(alice))['providers'] == ['openai']
-        await keys.remove(alice, 'openai')
-        with pytest.raises(HTTPException): await keys.resolve(request(), alice, 'openai')
+        await keys.remove(bob, 'anthropic')
+        assert (await keys.status(alice))['providers'] == ['anthropic']
+        await keys.remove(alice, 'anthropic')
+        with pytest.raises(HTTPException): await keys.resolve(request(), alice, 'anthropic')
     asyncio.run(run())
 
 
 @pytest.mark.parametrize('who', [{}, {'authenticated': False}, {'authenticated': True, 'is_developer': True}, {'authenticated': True, 'is_anonymous': True}, {'authenticated': True, 'user_id': 'invalid'}])
 def test_anonymous_or_developer_cannot_store_or_read_keys(store, who):
-    with pytest.raises(HTTPException): asyncio.run(keys.save(who, 'openai', 'sk-test-secret'))
+    with pytest.raises(HTTPException): asyncio.run(keys.save(who, 'anthropic', 'sk-test-secret'))
     with pytest.raises(HTTPException): asyncio.run(keys.status(who))
     assert store.rows['user_provider_keys'] == []
 
 
 def test_missing_encryption_key_fails_closed(store, monkeypatch):
     monkeypatch.delenv('PROVIDER_KEYS_ENCRYPTION_KEY')
-    with pytest.raises(HTTPException): asyncio.run(keys.save(identity(), 'openai', 'sk-test-secret'))
+    with pytest.raises(HTTPException): asyncio.run(keys.save(identity(), 'anthropic', 'sk-test-secret'))
     assert store.rows['user_provider_keys'] == []
 
 
@@ -95,8 +97,8 @@ def test_concurrent_jobs_do_not_share_credentials_or_fallback(monkeypatch):
         await asyncio.sleep(0)
         return (keys.provider_env('OPENAI_API_KEY'), keys.provider_env('ANTHROPIC_API_KEY'), keys.provider_env('TYPESAFE_API_KEY'))
     async def run():
-        results = await asyncio.gather(*(run_job('id', SimpleNamespace(model='gpt-test', _provider_api_key=key)) for key in ['alice-key','bob-key',None]))
-        assert results == [('alice-key',None,'shared-jev'),('bob-key',None,'shared-jev'),('server-secret','server-claude','shared-jev')]
+        results = await asyncio.gather(*(run_job('id', SimpleNamespace(model='claude-test', _provider_api_key=key)) for key in ['alice-key','bob-key',None]))
+        assert results == [('server-secret','alice-key','shared-jev'),('server-secret','bob-key','shared-jev'),('server-secret','server-claude','shared-jev')]
         assert keys.provider_env('OPENAI_API_KEY') == 'server-secret'
     asyncio.run(run())
 
@@ -107,7 +109,7 @@ def test_personal_generation_does_not_reserve_platform_ai_budget(monkeypatch):
     @keys.personal_billing_task
     async def run_job(generation_id, req):
         assert await reserve({'model': 'gpt-test'}) is None
-    asyncio.run(run_job('id', SimpleNamespace(model='gpt-test', _provider_api_key='sk-personal')))
+    asyncio.run(run_job('id', SimpleNamespace(model='claude-test', _provider_api_key='sk-personal')))
 
 
 def test_private_key_is_not_serialized_with_generation_request():
@@ -127,15 +129,15 @@ def test_personal_key_routes_never_return_ciphertext_or_accept_owner_from_body(s
     alice = identity()
     app.dependency_overrides[get_optional_identity] = lambda: alice
     client = TestClient(app)
-    response = client.put('/provider-keys/openai', json={'api_key': 'sk-test-secret-123456'})
+    response = client.put('/provider-keys/anthropic', json={'api_key': 'sk-test-secret-123456'})
     assert response.status_code == 200
     assert response.headers['cache-control'] == 'no-store'
-    assert response.json()['providers'] == ['openai']
+    assert response.json()['providers'] == ['anthropic']
     assert 'encrypted_key' not in response.text and 'sk-test' not in response.text
-    assert client.put('/provider-keys/openai',json={'api_key': 'short'}).status_code == 400
+    assert client.put('/provider-keys/anthropic',json={'api_key': 'short'}).status_code == 400
     assert client.put('/provider-keys/preferences',json={'billing_source':'personal','skip_confirmation':True,'user_id':str(uuid4())}).status_code == 422
     assert client.put('/provider-keys/fal',json={'api_key':'sk-test-secret-123456'}).status_code == 422
-    assert client.delete('/provider-keys/openai').json()['providers'] == []
+    assert client.delete('/provider-keys/anthropic').json()['providers'] == []
 
 
 def test_nova_uses_personal_key_and_preserves_shared_search(monkeypatch):
@@ -160,3 +162,22 @@ def test_nova_uses_personal_key_and_preserves_shared_search(monkeypatch):
     assert 'sk-personal' not in model['model_name']
     env = next(c[2]['json'] for c in calls if c[1] == 'api/environment' and c[0] == 'PUT')
     assert env['variables'][0]['value'] == 'shared-jev'
+
+def test_subscription_required_to_save_and_use_key(store, monkeypatch):
+    monkeypatch.setattr(keys.billing, 'public_wallet', lambda row: {'has_subscription': False})
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(keys.save(identity(), 'anthropic', 'sk-private-key'))
+    assert error.value.status_code == 403
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(keys.resolve(request(), identity(), 'anthropic'))
+    assert error.value.status_code == 403
+    assert store.rows['user_provider_keys'] == []
+
+
+def test_openai_personal_keys_are_rejected_and_never_resolved(store):
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(keys.save(identity(), 'openai', 'sk-private-key'))
+    assert error.value.status_code == 400
+    req = request()
+    asyncio.run(keys.resolve(req, identity(), 'openai'))
+    assert req._provider_api_key is None
