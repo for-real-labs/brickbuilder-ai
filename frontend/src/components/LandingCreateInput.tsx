@@ -1,13 +1,16 @@
 import React, { useLayoutEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
-import { ImagePlus, Sparkles, X } from 'lucide-react';
+import { ImagePlus, Settings, Sparkles, X } from 'lucide-react';
+
+import type { GenerationSettingsAction } from './LandingToolsMenu';
 
 /** Upload-first entry point; the parent form owns submission and generation state. */
 export function LandingCreateInput({ prompt, onChange, onFocus, onBlur, inputRef, previewUrl, fileName,
-  onPick, onRemove, onRandom, busy, submitDisabled, random, validationId }: {
+  onPick, onRemove, onRandom, busy, submitDisabled, random, validationId, generationSettings }: {
   prompt: string; onChange: (value: string) => void; onFocus: () => void; onBlur: () => void;
   inputRef: React.RefObject<HTMLInputElement | null>; previewUrl: string | null; fileName?: string;
   onPick: () => void; onRemove: () => void; onRandom: () => void;
+  generationSettings: GenerationSettingsAction;
   busy: boolean; submitDisabled: boolean; random: boolean; validationId?: string;
 }) {
   const [textFirst, setTextFirst] = useState(Boolean(prompt));
@@ -67,8 +70,18 @@ export function LandingCreateInput({ prompt, onChange, onFocus, onBlur, inputRef
         <Sparkles size={15} aria-hidden="true" />Try something random
       </button>
     </>}
-    <button type="submit" aria-label="Generate" className="landing-generate-button" disabled={submitDisabled}>
-      {busy ? 'Preparing…' : 'Generate'}
-    </button>
+    <div className="landing-generate-actions">
+      <button type="submit" aria-label="Generate" className="landing-generate-button" disabled={submitDisabled}>
+        {busy ? 'Preparing…' : 'Generate'}
+      </button>
+      <button type="button" className="landing-generation-settings-button" aria-label="Generation settings" title="Generation settings"
+        aria-expanded={generationSettings.open} aria-controls={generationSettings.controls}
+        onClick={event => {
+          posthog.capture('landing_generation_settings_clicked', { source: 'generate_button' });
+          generationSettings.onOpen(event.currentTarget);
+        }}>
+        <Settings size={22} strokeWidth={1.75} aria-hidden="true" />
+      </button>
+    </div>
   </div>;
 }

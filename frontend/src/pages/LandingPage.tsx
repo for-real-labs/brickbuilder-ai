@@ -211,6 +211,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [llmModel, setLlmModel] = useState<string>(DEFAULT_LLM_MODEL);
   const [novaOptions, setNovaOptions] = useState<NovaOptions>(DEFAULT_NOVA_OPTIONS);
   const localDevelopment = isLocalDevelopment();
+  const generationSettings: GenerationSettingsAction = {
+    open: settingsOpen,
+    controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
+    onOpen: trigger => { settingsReturnFocus.current = trigger; toggleSettings(true); },
+  };
+
   const { account: billingAccount } = useBilling();
   const [providerLogin, setProviderLogin] = useState<NovaLoginProvider | null>(null);
   const [checkingProvider, setCheckingProvider] = useState(false);
@@ -1069,11 +1075,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
         <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={(requestedModelId || landingModel.model) ? { onClick: createNewModel, disabled: editSubmitting || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
-          generationSettings={ldrawLanding ? undefined : {
-            open: settingsOpen,
-            controls: localDevelopment ? 'landing-generation-settings landing-local-provider-settings' : 'landing-generation-settings',
-            onOpen: trigger => { settingsReturnFocus.current = trigger; toggleSettings(true); },
-          }} />
+          generationSettings={ldrawLanding ? undefined : generationSettings} />
 
         {!ldrawLanding && !landingModel.model && <div className="existing-parts-tabs" role="group" aria-label="Design source">
           <button type="button" aria-pressed={!inventoryOpen} onClick={() => {
@@ -1186,7 +1188,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               }} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)} inputRef={promptInputRef}
                 previewUrl={imagePreviewUrl} fileName={imgFile?.name}
                 onPick={() => { setGiftPlanning(false); onPickImage('landing_upload_card'); }} onRemove={clearSelectedImage}
-                onRandom={buildSomethingRandom} random={Boolean(randomSuggestion)}
+                onRandom={buildSomethingRandom} random={Boolean(randomSuggestion)} generationSettings={generationSettings}
                 busy={loading || buddyChat.routing || preparingImage}
                 submitDisabled={loading || buddyChat.routing || preparingImage || Boolean(randomSuggestion && randomSuggestion.status !== 'ready')}
                 validationId={inputValidationMessage ? 'generation-input-help' : undefined} /> : <>

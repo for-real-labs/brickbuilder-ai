@@ -319,3 +319,8 @@
 }
 
 .generation-mode-cost.credit-balance { min-height: 24px; padding: 2px 7px; gap: 4px; cursor: inherit; }
+
+.landing-generate-actions { display: flex; align-items: stretch; gap: 10px; }
+.landing-generate-actions .landing-generate-button { flex: 1; min-width: 0; width: auto; }
+.landing-generation-settings-button { display: grid; place-items: center; flex: 0 0 54px; min-height: 54px; border: 1px solid #f0d5d2; border-radius: 16px; background: #fff9f7; color: #64748b; cursor: pointer; }
+.landing-generation-settings-button:hover, .landing-generation-settings-button[aria-expanded="true"] { background: #ffe9e4; color: #df443c; border-color: #ef6b60; }

@@ -11,7 +11,7 @@ beforeEach(() => {
   vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
   host = document.createElement('div'); document.body.append(host); root = createRoot(host);
   props = { prompt: '', onChange: vi.fn(), onFocus: vi.fn(), onBlur: vi.fn(), inputRef: createRef(), previewUrl: null,
-    onPick: vi.fn(), onRemove: vi.fn(), onRandom: vi.fn(), busy: false, submitDisabled: false, random: false };
+    generationSettings: { open: false, controls: 'settings', onOpen: vi.fn() }, onPick: vi.fn(), onRemove: vi.fn(), onRandom: vi.fn(), busy: false, submitDisabled: false, random: false };
   vi.mocked(posthog.capture).mockClear();
 });
 afterEach(() => { act(() => root.unmount()); host.remove(); vi.unstubAllGlobals(); });
@@ -46,4 +46,17 @@ it('respects reduced motion when expanding', () => {
   act(() => host.querySelector('input')!.focus());
   expect(card.animate).not.toHaveBeenCalled();
   expect(card.classList.contains('landing-upload-prompt--text-first')).toBe(true);
+});
+
+it('opens settings from the gear without submitting, including with a random idea', () => {
+  const submit = vi.fn(event => event.preventDefault());
+  act(() => root.render(<form onSubmit={submit}><LandingCreateInput {...props} random /></form>));
+  const gear = host.querySelector<HTMLButtonElement>('[aria-label="Generation settings"]')!;
+  expect(gear.previousElementSibling?.getAttribute('aria-label')).toBe('Generate');
+  expect(gear.getAttribute('aria-controls')).toBe('settings');
+  expect(gear.getAttribute('aria-expanded')).toBe('false');
+  act(() => gear.click());
+  expect(props.generationSettings.onOpen).toHaveBeenCalledWith(gear);
+  expect(submit).not.toHaveBeenCalled();
+  expect(posthog.capture).toHaveBeenCalledWith('landing_generation_settings_clicked', { source: 'generate_button' });
 });

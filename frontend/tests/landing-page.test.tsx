@@ -815,7 +815,7 @@ describe('LandingPage', () => {
       expect(upload.textContent?.trim()).toBe('Upload an image');
       expect(input.getAttribute('placeholder')).toBe('Describe your idea');
       expect(upload.getAttribute('type')).toBe('button');
-      expect(form.querySelector('[aria-label="Generation settings"]')).toBeNull();
+      expect(form.querySelector('[aria-label="Generation settings"]')).not.toBeNull();
       expect(container.querySelector<HTMLDivElement>('#landing-generation-settings')?.hidden).toBe(true);
       expect(container.querySelector('[aria-label="Upload glb"]')).toBeNull();
       expect(container.querySelector('[aria-label="Builder mode"]')).toBeNull();
@@ -843,7 +843,15 @@ describe('LandingPage', () => {
         act(() => container.querySelector<HTMLButtonElement>('ul[aria-label="Tools"] [aria-label="Generation settings"]')!.click());
       };
       expect(panel.hidden).toBe(true);
-      expect(container.querySelector('form [aria-label="Generation settings"]')).toBeNull();
+      const gear = container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!;
+      expect(gear).not.toBeNull();
+      act(() => gear.click());
+      expect(panel.hidden).toBe(false);
+      expect(gear.getAttribute('aria-expanded')).toBe('true');
+      act(() => panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true })));
+      expect(panel.hidden).toBe(true);
+      expect(document.activeElement).toBe(gear);
+      expect(generate).not.toHaveBeenCalled();
       expect(container.querySelector('[aria-label="Upload image"]')?.closest('[hidden]')).toBeNull();
       openSettings();
       expect(panel.hidden).toBe(false);
@@ -880,7 +888,7 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<MemoryRouter><LandingPage /></MemoryRouter>));
-      expect(container.querySelector('form [aria-label="Generation settings"]')).toBeNull();
+      expect(container.querySelector('form [aria-label="Generation settings"]')).not.toBeNull();
       const tools = container.querySelector<HTMLButtonElement>('[aria-label="Tools"]')!;
       const panel = container.querySelector<HTMLDivElement>('#landing-generation-settings')!;
       const openSettings = () => {
