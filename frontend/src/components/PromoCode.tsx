@@ -3,21 +3,22 @@ import { X } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
 import { useBilling } from '../contexts/BillingContext';
-import { billingApi } from '../services/billingApi';
+import type { BillingAccount } from '../services/billingApi';
+import { PromoConfetti } from './PromoConfetti';
 
 export function PromoCode({ source }: { source: string }) {
   const { user } = useAuth();
-  const { refresh, signIn, closeUpgrade } = useBilling();
+  const { redeemPromo, signIn, closeUpgrade } = useBilling();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState(false);
+  const [success, setSuccess] = useState<BillingAccount | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const owner = useRef(user?.id);
   owner.current = user?.id;
   useEffect(() => { if (open) dialog.current?.showModal(); }, [open]);
-  useEffect(() => { setCode(''); setError(''); setSuccess(false); }, [user?.id]);
+  useEffect(() => { setCode(''); setError(''); setSuccess(null); }, [user?.id]);
   const close = () => { setOpen(false); posthog.capture('billing_promo_closed', { source }); };
   async function redeem(event: React.FormEvent) {
     event.preventDefault();
@@ -26,11 +27,9 @@ export function PromoCode({ source }: { source: string }) {
     setBusy(true); setError('');
     posthog.capture('billing_promo_submitted', { source });
     try {
-      await billingApi.redeemPromo(code.trim());
+      const activated = await redeemPromo(code.trim());
       if (owner.current !== userId) return;
-      await refresh();
-      if (owner.current !== userId) return;
-      setSuccess(true); setCode('');
+      setSuccess(activated); setCode('');
       posthog.capture('billing_promo_redeemed', { source, type: 'builder' });
     } catch (failure) {
       if (owner.current !== userId) return;
@@ -43,8 +42,9 @@ export function PromoCode({ source }: { source: string }) {
     {open && <dialog ref={dialog} className="billing-dialog billing-promo-dialog" aria-labelledby="billing-promo-title"
       onCancel={event => { event.preventDefault(); event.stopPropagation(); close(); }}>
       <button type="button" className="billing-close" aria-label="Close promo" onClick={close}><X size={20} /></button>
-      <h2 id="billing-promo-title">Enter a promo code</h2>
-      {success ? <p role="status">Promo redeemed! You now have free Builder access when you don’t have an active paid subscription.</p>
+      {success ? <><PromoConfetti /><h2 id="billing-promo-title" role="status">{success.subscription_provider !== 'external_tester' ? 'Promo redeemed! Your current paid plan stays active.' : success.trial_expires_at ? "You've activated your free Builder plan trial account!" : "You've activated your free Builder plan account!"}</h2></>
+        : <h2 id="billing-promo-title">Enter a promo code</h2>}
+      {success ? null
         : !user ? <><p>Sign in to apply a promo to your account.</p><button type="button" className="billing-plan-button" onClick={() => { posthog.capture('billing_promo_sign_in_clicked', { source }); close(); closeUpgrade(); signIn(); }}>Sign in</button></>
         : <form onSubmit={event => void redeem(event)}>
           <label htmlFor="billing-promo-code">Promo code</label>

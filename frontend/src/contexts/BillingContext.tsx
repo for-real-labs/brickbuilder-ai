@@ -14,6 +14,7 @@ const BillingContext = createContext({
   lockedFeature: null as { feature: PaidFeature; source: string; generationId?: string | null } | null,
   requireFeature: (feature: PaidFeature, _source: string, _generationId?: string | null): boolean => (feature === 'instructions' || feature === 'ldraw'),
   closeLockedFeature: () => {}, retryAccess: async () => {},
+  redeemPromo: async (_code: string): Promise<BillingAccount> => { throw new Error('Billing unavailable'); },
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
   buyCredits: async (_amount: number | string, _source: string) => {},
@@ -174,6 +175,15 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     } catch (e) { if (identity.current === owner) setError(e instanceof Error ? e.message : 'Could not refresh billing.'); }
     return null;
   };
+  const redeemPromo = async (code: string) => {
+    const owner = user?.id;
+    if (!owner) throw new Error('Sign in to apply a promo.');
+    const result = await billingApi.redeemPromo(code);
+    if (identity.current !== owner) throw new Error('Your account changed. Please try again.');
+    setAccount(result.account); setAccountOwner(owner); setEnabled(result.account.enabled);
+    setCheckoutAvailable(result.account.checkout_available ?? result.account.enabled); setError('');
+    return result.account;
+  };
   const subscribe = async (key: PlanKey, source: string) => {
     posthog.capture('billing_plan_selected', { plan_key: key, source });
     if (key === 'free' || key === 'master' || busy) return;
@@ -207,9 +217,8 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
         if (identity.current !== user.id) return;
         await appleRequest('buy', { product, accountToken: prepared.app_account_token });
       } else {
-        const { url } = await billingApi.creditCheckout(Number(amount));
-        if (identity.current !== user.id) return;
-        openStripe(url);
+        setUpgradeSource('');
+        navigate(`/checkout-credits?amount=${Number(amount)}`);
       }
       posthog.capture('billing_credit_pack_checkout_started', { amount_cents: typeof amount === 'number' ? amount : undefined, source, provider: isAppleApp() ? 'apple' : 'stripe' });
     } catch (e) {
@@ -234,7 +243,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   return <BillingContext.Provider value={{ account, plans, enabled, appleProducts, restore, checkoutAvailable: checkoutAvailable && (!isAppleApp() || (appleReady && hasApplePurchases() && appleProducts.length > 0)), loading, busy, error, upgradeSource, loginOpen,
     featureAccess, getFeatureAccess, lockedFeature, requireFeature, closeLockedFeature,
     retryAccess: async () => { await Promise.all([refreshPlans(), refresh(), refreshProducts()]); },
-    refresh, sync, openUpgrade, closeUpgrade, subscribe, buyCredits, manage,
+    redeemPromo, refresh, sync, openUpgrade, closeUpgrade, subscribe, buyCredits, manage,
     closeLogin: () => setLoginOpen(false), signIn: () => { posthog.capture('billing_sign_in_clicked'); setLoginOpen(true); },
   }}>{children}</BillingContext.Provider>;
 }

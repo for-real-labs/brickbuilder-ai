@@ -16,6 +16,7 @@ import LandingPage from "./pages/LandingPage";
 import VideoPage from "./pages/VideoPage";
 import { GeneratedModelRedirect } from "./components/GeneratedModelRedirect";
 import OrderKit from "./pages/OrderKit";
+import CheckoutCredits from "./pages/CheckoutCredits";
 import CheckoutPlan from "./pages/CheckoutPlan";
 import Success from "./pages/Success";
 import LoginPage from "./pages/LoginPage";
@@ -90,6 +91,7 @@ function MainApp() {
           <Route path="/glb-to-obj" element={<ModelFormatConverterPage inputFormat="glb" />} />
           <Route path="/instructions" element={<GeneratedModelRedirect instructions />} />
           <Route path="/order" element={<OrderKit />} />
+          <Route path="/checkout-credits" element={<CheckoutCredits />} />
           <Route path="/checkout-plan" element={<CheckoutPlan />} />
           <Route path="/success" element={<Success />} />
           <Route path="/community" element={<CommunityPage />} />

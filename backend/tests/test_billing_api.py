@@ -397,6 +397,8 @@ def test_external_tester_gets_builder_without_creating_a_stripe_customer(monkeyp
     public = billing.public_wallet(row)
     assert (public['plan_key'], public['subscription_provider']) == ('builder', 'external_tester')
     assert public['has_subscription']
+    assert public['trial_expires_at'] is None
+    assert billing.public_wallet({**row, 'external_tester_expires_at': '2099-01-01T00:00:00Z'})['trial_expires_at'] == '2099-01-01T00:00:00Z'
 
     monkeypatch.setattr(billing, 'require_enabled', AsyncMock())
     monkeypatch.setattr(billing, 'capacity', AsyncMock(return_value={'checkout_available': True}))
@@ -461,9 +463,10 @@ def test_expired_cancelled_subscription_starts_normal_checkout(plan_checkout, mo
 
 
 def test_promo_uses_authenticated_owner_and_server_mode(monkeypatch, identity):
+    monkeypatch.setattr(billing, 'account', AsyncMock(return_value={'plan_key': 'builder'}))
     redeem = AsyncMock(return_value='builder')
     monkeypatch.setattr(billing, 'rpc', redeem)
-    assert asyncio.run(billing.redeem_promo(identity, ' FRIDAY13 ')) == {'type': 'builder'}
+    assert asyncio.run(billing.redeem_promo(identity, ' FRIDAY13 ')) == {'type': 'builder', 'account': {'plan_key': 'builder'}}
     redeem.assert_awaited_once_with('redeem_promocode', p_user_id=identity['user_id'], p_live=False, p_code='friday13')
     redeem.reset_mock()
     with pytest.raises(HTTPException):
@@ -471,7 +474,7 @@ def test_promo_uses_authenticated_owner_and_server_mode(monkeypatch, identity):
     redeem.assert_not_awaited()
 
 
-@pytest.mark.parametrize('result,status', [('verification_required',403), ('invalid_code',400)])
+@pytest.mark.parametrize('result,status', [('verification_required',403), ('invalid_code',400), ('trial_expired',400)])
 def test_promo_errors(monkeypatch, identity, result, status):
     monkeypatch.setattr(billing, 'rpc', AsyncMock(return_value=result))
     with pytest.raises(HTTPException) as error:
@@ -484,3 +487,11 @@ def test_promo_request_rejects_owner_override_and_oversized_codes():
     for value in ({'code':''}, {'code':'a'*101}, {'code':'friday13','user_id':'someone-else'}):
         with pytest.raises(ValidationError):
             PromoRequest(**value)
+
+
+def test_trial_can_continue_in_paid_checkout(plan_checkout, monkeypatch, identity):
+    monkeypatch.setattr(billing, 'wallet', AsyncMock(return_value={
+        'stripe_customer_id': 'cus_owner', 'external_tester': True,
+        'external_tester_expires_at': '2099-01-01T00:00:00Z'}))
+    assert asyncio.run(billing.checkout(identity, 'builder', 'elements'))['client_secret'] == 'cs_secret'
+    assert plan_checkout.call_args.kwargs['mode'] == 'subscription'

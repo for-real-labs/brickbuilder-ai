@@ -138,6 +138,7 @@ def public_wallet(row):
     tester = bool(row.get("external_tester"))
     return {
         "bonus_available": bonus_available,
+        "trial_expires_at": row.get("external_tester_expires_at") if tester else None,
         "plan_key": effective_plan(row), "monthly_credits": row["monthly_credits"],
         "monthly_remaining": remaining, "bonus_remaining": row["bonus_remaining"],
         "credits_remaining": remaining + bonus_available + max(0, row.get("apple_remaining", 0)),
@@ -235,7 +236,7 @@ async def checkout(identity, plan_key, ui_mode="hosted"):
         raise HTTPException(409, "Your checkout is already opening. Please try again in a moment.")
     try:
         row = await wallet(user_id)
-        if row.get("external_tester"):
+        if row.get("external_tester") and not row.get("external_tester_expires_at"):
             raise HTTPException(409, "Builder is already included with your tester access.")
         if apple_active(row):
             raise HTTPException(409, "Manage your Apple subscription in App Store subscription settings.")
@@ -413,6 +414,8 @@ async def redeem_promo(identity, code):
                        p_live=live_mode(), p_code=code.strip().lower())
     if result == "verification_required":
         raise HTTPException(403, "Verify your email before redeeming a promo code.")
+    if result == "trial_expired":
+        raise HTTPException(400, "Your Builder trial has ended. Explore plans to keep building.")
     if result != "builder":
         raise HTTPException(400, "That promo code is not valid.")
-    return {"type": result}
+    return {"type": result, "account": await account(identity)}

@@ -35,7 +35,7 @@ async def require_subscriber(owner):
     return row
 
 
-async def checkout(identity, amount_cents):
+async def checkout(identity, amount_cents, ui_mode="hosted"):
     owner = billing.account_id(identity)
     await billing.require_enabled()
     row = await require_subscriber(owner)
@@ -46,14 +46,19 @@ async def checkout(identity, amount_cents):
         raise HTTPException(503, 'Credit purchases are temporarily unavailable.')
     metadata = {'integration': TAG, 'brickbuilder_user_id': owner, 'pack_key': 'custom',
                 'amount_cents': str(amount_cents), 'rate_key': rate_key, 'pricing_version': 'monthly_v4'}
+    elements = ui_mode == 'elements'
+    redirects = ({'return_url': billing.site_url()+'/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}'}
+        if elements else {'success_url': billing.site_url()+'/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}',
+                          'cancel_url': billing.site_url()+'/billing'})
     session = await asyncio.to_thread(stripe.checkout.Session.create,
-        mode='payment', client_reference_id=owner, payment_method_types=['card'],
+        mode='payment', ui_mode=ui_mode, client_reference_id=owner,
+        **({'allowed_payment_method_types': ['card'], 'stripe_version': '2026-09-30.endive'} if elements else {'payment_method_types': ['card']}),
+        **({'customer_email': identity['user_email']} if identity.get('user_email') else {}),
         line_items=[{'price_data': {'currency': 'usd', 'unit_amount': pack['cents'],
             'product_data': {'name': f'BrickBuilder {pack["credits"]} credits'}}, 'quantity': 1}],
         metadata=metadata, payment_intent_data={'metadata': metadata},
-        success_url=billing.site_url()+'/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}',
-        cancel_url=billing.site_url()+'/billing', api_key=billing.stripe_key())
-    return {'url': session.url}
+        **redirects, expires_at=int(time.time())+1800, api_key=billing.stripe_key())
+    return billing.checkout_response(session, ui_mode)
 
 
 async def reconcile(payment_id, owner=None):

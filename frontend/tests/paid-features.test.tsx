@@ -160,7 +160,7 @@ it('preserves an existing Master subscription label and cancellation without off
   await render(<BillingPage />);
   expect(host.querySelector('.billing-account-plan')?.textContent).toContain('Master Builder$39 / month');
   expect(button('Cancel subscription')).toBeDefined();
-  await click('Explore plans'); expect(host.querySelector('[aria-label="Master Builder plan"]')).toBeNull();
+  await click('Change plan'); expect(host.querySelector('[aria-label="Master Builder plan"]')).toBeNull();
 });
 
 it.each(['free', 'builder'] as const)('allows purchased model instructions on %s after the credit or subscription period expires', async plan => {

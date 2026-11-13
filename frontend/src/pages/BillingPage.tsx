@@ -8,7 +8,7 @@ import { useBilling } from '../contexts/BillingContext';
 import { billingDate, CreditPacks } from '../components/BillingComponents';
 import { PetAvatar } from '../components/PetCompanion';
 import { BillingHeader } from '../components/BillingHeader';
-import { PLAN_GENERATIONS, PLAN_DISCOUNTS } from '../utils/planDisplay';
+import { PLAN_GENERATIONS } from '../utils/planDisplay';
 import { LEGACY_MASTER_PLAN, type BillingAccount } from '../services/billingApi';
 
 const paymentConfirmed = (account: BillingAccount | null) => account?.purchase_confirmed !== undefined
@@ -56,23 +56,21 @@ export default function BillingPage() {
           <p className="billing-big-balance">{account.credits_remaining}</p>
           {!apple && account.plan_key !== 'free' && <><div className="billing-balance-row"><span>Monthly credits</span><strong>{account.monthly_remaining} / {account.monthly_credits}</strong></div>
           <progress max={Math.max(1, account.monthly_credits)} value={account.monthly_remaining} aria-label="Monthly credits remaining" /></>}
-          {!apple && account.plan_key !== 'free' && <p className="billing-muted">{account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
-          <div className="billing-explore-plans"><button className="billing-primary" onClick={() => openUpgrade('billing_balance')}>Explore plans <ArrowUpRight size={16} /></button></div>
+          {!apple && account.plan_key !== 'free' && <p className="billing-muted">{account.trial_expires_at && account.period_end === account.trial_expires_at ? 'Trial credits expire' : account.cancel_at_period_end ? 'Paid credits expire' : 'Monthly credits reset'} {billingDate(account.period_end)}.</p>}
         </section><section className="billing-account-card"><div className="billing-card-label"><CreditCard size={18} /><span>YOUR PLAN</span></div>
           <h2 className="billing-account-plan">{plan?.name ?? 'No active plan'}{plan && <span>{tester ? 'Included with tester access' : apple ? 'Billed monthly by Apple' : `$${plan.monthly_cents / 100} / month`}</span>}</h2>
           {plan ? <p className="billing-plan-allowance">{plan.credits.toLocaleString()} credits each month. {PLAN_GENERATIONS[plan.key]} LEGO® generations per month.</p>
             : <p className="billing-plan-allowance">Subscribe to generate models with AI.</p>}
-          <p className="billing-plan-benefit">{PLAN_DISCOUNTS[plan?.key ?? 'free'] ? 'Your plan includes' : 'Paid plans include'} IO exports and automatic {PLAN_DISCOUNTS[plan?.key ?? 'free'] || '10–20'}% off <strong>all</strong> brick purchases, with promo codes on top. Shipping is separate.</p>
-          {tester ? <p>No payment is required.</p> : apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
+          {tester ? <p>{account.trial_expires_at ? <>Your trial ends on {billingDate(account.trial_expires_at)}. </> : null}No payment is required.</p> : apple ? <p>Paid features available through {billingDate(account.apple_expires_at!)}. Check renewal or cancellation in Apple subscription settings. Your unused Apple credits never expire.</p> : account.cancel_at_period_end ? <p className="billing-cancel-status">Subscription canceled. Your paid plan continues until {billingDate(account.period_end)}. You won’t be charged again.</p>
             : account.has_subscription ? <p>Renews monthly. Next billing date: {billingDate(account.period_end)}.</p> : null}
           {['past_due', 'unpaid', 'incomplete', 'paused'].includes(account.subscription_status) && <p role="status" className="billing-error">Your payment needs attention. Open billing to update your payment method.</p>}
-          {!tester && <div className="billing-plan-actions"><button type="button" className="billing-primary" disabled={busy} onClick={() => {
+          {(!tester || account.trial_expires_at) && <div className="billing-plan-actions"><button type="button" className="billing-primary" disabled={busy} onClick={() => {
             posthog.capture('billing_plan_action_clicked', { plan_key: plan?.key ?? 'free', action: maxPlan ? 'change' : 'upgrade' });
             openUpgrade(maxPlan ? 'billing_plan_change' : 'billing_plan_upgrade');
-          }}>{maxPlan ? 'Change plan' : plan ? 'Upgrade plan' : 'Choose a plan'} <ArrowUpRight size={16} /></button></div>}
+          }}>{account.trial_expires_at ? 'Continue plan' : maxPlan ? 'Change plan' : plan ? 'Upgrade plan' : 'Explore plans'}</button></div>}
           {account.has_subscription && !tester && <div className="billing-account-actions"><button className="billing-secondary" disabled={busy} onClick={() => void manage('manage')}>{apple ? 'Manage Apple subscription' : 'Manage billing & receipts'} <ArrowUpRight size={16} /></button>
             {!account.cancel_at_period_end && <button className="billing-cancel-button" disabled={busy} onClick={() => void manage('cancel')}>Cancel subscription</button>}</div>}
-          {!tester && <p className="billing-muted">{account.has_subscription ? apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.' : 'Your saved LEGO® sets and bonus credits stay with you.'}</p>}
+          {!tester && account.has_subscription && <p className="billing-muted">{apple ? 'Payments and cancellation are handled by Apple.' : 'Payments and cancellation are handled securely by Stripe.'}</p>}
         </section></div>
         <section className="billing-account-card billing-history"><div className="billing-history-heading"><h2>Credit history</h2><button type="button" aria-label="Refresh credit history" onClick={() => { posthog.capture('billing_history_refreshed'); void refresh(); }}><RefreshCw size={17} /></button></div>
           {account.history.length ? <div className="billing-table-wrap"><table><thead><tr><th>Activity</th><th>Date</th><th>Credits</th></tr></thead><tbody>
@@ -82,6 +80,5 @@ export default function BillingPage() {
       </>}
     {isAppleApp() && <button className="billing-secondary" disabled={busy} onClick={() => void restore()}>Restore Apple purchases</button>}
     <CreditPacks source="billing" />
-    <button type="button" className="billing-text-link" onClick={() => { posthog.capture('billing_compare_plans_clicked'); openUpgrade('billing_compare_plans'); }}>Compare all plans & credit details <ArrowUpRight size={15} /></button>
   </main></div>;
 }

@@ -261,3 +261,11 @@
 .billing-promo-dialog label { display:block; font-size:13px; margin-bottom:8px; }
 .billing-promo-dialog input { width:100%; box-sizing:border-box; border:1px solid #cbd5e1; border-radius:10px; padding:12px; font-size:16px; margin-bottom:16px; }
 .billing-promo-dialog input:focus-visible { outline:2px solid #ea580c; outline-offset:2px; }
+
+.billing-plans-dialog { padding-top:64px; }
+.billing-close { z-index:10; top:10px; right:10px; }
+.billing-dialog.billing-promo-dialog { padding-top:58px; }
+.promo-confetti { position:absolute; inset:0; pointer-events:none; overflow:hidden; border-radius:inherit; }
+.promo-confetti i { position:absolute; top:-12px; width:8px; height:12px; opacity:0; animation:promo-confetti-fall 2.4s ease-out forwards; }
+@keyframes promo-confetti-fall { 0% { opacity:1; transform:translateY(0) rotate(0); } 85% { opacity:1; } 100% { opacity:0; transform:translate(var(--drift), 420px) rotate(620deg); } }
+@media (prefers-reduced-motion:reduce) { .promo-confetti { display:none; } }
