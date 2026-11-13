@@ -61,7 +61,7 @@ async def checkout(identity, amount_cents, ui_mode="hosted"):
     return billing.checkout_response(session, ui_mode)
 
 
-async def reconcile(payment_id, owner=None):
+async def reconcile(payment_id, owner=None, *, confirmation_email=None):
     version = time.time_ns() // 1000000
     payment = await asyncio.to_thread(stripe.PaymentIntent.retrieve, payment_id,
         expand=['latest_charge'], api_key=billing.stripe_key())
@@ -91,6 +91,11 @@ async def reconcile(payment_id, owner=None):
     await billing.rpc('billing_apply_credit_pack', p_user_id=user, p_live=billing.live_mode(),
         p_transaction='stripe:'+payment.id, p_pack=meta['pack_key'], p_version=version,
         p_granted=remaining)
+    if confirmation_email is not None and not refunded and not disputed:
+        from .purchase_email import send_confirmation
+        await send_confirmation(stripe.PaymentIntent, payment, confirmation_email,
+            api_key=billing.stripe_key(), kind='credits', label=f"{pack['credits']:,} credits",
+            credits=pack['credits'], amount_cents=payment['amount'])
     return True
 
 
@@ -99,8 +104,15 @@ async def event(event):
     if event.type.startswith('checkout.session.') and (obj.get('metadata') or {}).get('integration') == TAG:
         if event.get('livemode') is not billing.live_mode():
             raise ValueError('Credit payment mode mismatch')
-        if obj.get('payment_intent'):
-            await reconcile(billing.object_id(obj['payment_intent']))
+        if event.type in ('checkout.session.completed', 'checkout.session.async_payment_succeeded'):
+            session = await asyncio.to_thread(stripe.checkout.Session.retrieve, obj.id, api_key=billing.stripe_key())
+            if (session.get('livemode') is not billing.live_mode() or
+                    (session.get('metadata') or {}).get('integration') != TAG):
+                raise ValueError('Credit checkout identity or mode mismatch')
+            if session.get('payment_intent'):
+                email = (session.get('customer_details') or {}).get('email') or session.get('customer_email') or ''
+                await reconcile(billing.object_id(session['payment_intent']),
+                    session.get('client_reference_id'), confirmation_email=email)
         return True
     if event.type in ('charge.refunded', 'charge.dispute.created', 'charge.dispute.closed'):
         payment = billing.object_id(obj.get('payment_intent'))

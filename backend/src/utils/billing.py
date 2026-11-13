@@ -357,6 +357,7 @@ async def sync_subscription(subscription_id):
         p_version=version, p_plan=plan["key"], p_start=datetime.fromtimestamp(start, timezone.utc).isoformat(),
         p_end=datetime.fromtimestamp(end, timezone.utc).isoformat(), p_invoice=invoice.id if paid else None,
         p_allowance=plan["credits"] if paid else None)
+    return {"invoice": invoice, "plan": plan} if paid and sub.status == "active" else None
 
 
 async def sync_checkout(identity, session_id=None):
@@ -398,12 +399,18 @@ async def handle_billing_event(event):
     if event.type.startswith("invoice."):
         subscription_id = invoice_subscription(obj)
         if subscription_id:
-            await sync_subscription(subscription_id)
+            receipt = await sync_subscription(subscription_id)
+            if isinstance(receipt, dict) and event.type == "invoice.paid" and receipt["invoice"]["id"] == obj.id:
+                from .purchase_email import send_plan_confirmation
+                await send_plan_confirmation(receipt)
         return True
     if event.type in ("checkout.session.completed", "checkout.session.async_payment_succeeded") and obj.get("mode") == "subscription":
         subscription_id = object_id(obj.get("subscription"))
         if subscription_id:
-            await sync_subscription(subscription_id)
+            receipt = await sync_subscription(subscription_id)
+            if isinstance(receipt, dict):
+                from .purchase_email import send_plan_confirmation
+                await send_plan_confirmation(receipt)
         return True
     return False
 
