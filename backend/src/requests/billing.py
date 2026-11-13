@@ -117,3 +117,13 @@ async def credit_checkout(request: CreditPackRequest, identity: dict = Depends(g
 async def apple_credit_prepare(identity: dict = Depends(get_optional_identity)):
     from ..utils import apple_billing
     return await run(apple_billing.prepare(identity, consumable=True))
+
+
+class PromoRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=1, max_length=100)
+
+
+@router.post('/promo')
+async def promo(request: PromoRequest, identity: dict = Depends(get_optional_identity)):
+    return await run(billing.redeem_promo(identity, request.code))

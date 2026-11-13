@@ -458,3 +458,29 @@ def test_expired_cancelled_subscription_starts_normal_checkout(plan_checkout, mo
     asyncio.run(billing.checkout(identity, 'builder', 'elements'))
     assert plan_checkout.call_args.kwargs['subscription_data'] == {'metadata': {
         'brickbuilder_user_id': identity['user_id'], 'integration': billing.BILLING_TAG, 'plan_key': 'builder'}}
+
+
+def test_promo_uses_authenticated_owner_and_server_mode(monkeypatch, identity):
+    redeem = AsyncMock(return_value='builder')
+    monkeypatch.setattr(billing, 'rpc', redeem)
+    assert asyncio.run(billing.redeem_promo(identity, ' FRIDAY13 ')) == {'type': 'builder'}
+    redeem.assert_awaited_once_with('redeem_promocode', p_user_id=identity['user_id'], p_live=False, p_code='friday13')
+    redeem.reset_mock()
+    with pytest.raises(HTTPException):
+        asyncio.run(billing.redeem_promo({}, 'friday13'))
+    redeem.assert_not_awaited()
+
+
+@pytest.mark.parametrize('result,status', [('verification_required',403), ('invalid_code',400)])
+def test_promo_errors(monkeypatch, identity, result, status):
+    monkeypatch.setattr(billing, 'rpc', AsyncMock(return_value=result))
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(billing.redeem_promo(identity, 'code'))
+    assert error.value.status_code == status
+
+
+def test_promo_request_rejects_owner_override_and_oversized_codes():
+    from src.requests.billing import PromoRequest
+    for value in ({'code':''}, {'code':'a'*101}, {'code':'friday13','user_id':'someone-else'}):
+        with pytest.raises(ValidationError):
+            PromoRequest(**value)

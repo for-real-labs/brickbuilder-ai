@@ -405,3 +405,14 @@ async def handle_billing_event(event):
             await sync_subscription(subscription_id)
         return True
     return False
+
+
+async def redeem_promo(identity, code):
+    user_id = account_id(identity)
+    result = await rpc("redeem_promocode", p_user_id=user_id,
+                       p_live=live_mode(), p_code=code.strip().lower())
+    if result == "verification_required":
+        raise HTTPException(403, "Verify your email before redeeming a promo code.")
+    if result != "builder":
+        raise HTTPException(400, "That promo code is not valid.")
+    return {"type": result}

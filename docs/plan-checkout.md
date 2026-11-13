@@ -34,3 +34,14 @@ if these showcased models or the retail catalog change.
 - Workshop: `3164643e-974e-452a-8819-a1cc7788a628`
 - Lighthouse: `4e5a6629-bdd4-46d0-97cc-d7271691e60c`
 - Tiger: `126a7995-3bfe-4744-8008-c9eb39d386f5`
+
+## Promo access
+
+The plans popup has a `promo` link below “Cancel anytime.” Signed-in users enter
+codes through `/billing/promo`; the backend determines the user and billing mode.
+The private `promocodes` table contains `code` and `type` (`builder` currently).
+`friday13` grants the verified account email membership in `external_testers`.
+Redemption is case-insensitive and repeat-safe, preserves spent credits, and
+refreshes the billing display. Existing paid subscriptions keep their current
+plan and billing; tester access applies when those subscriptions end.
+The promo code and email are never included in promo analytics events.

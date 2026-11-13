@@ -33,6 +33,7 @@ async function request<T>(path: string, body?: object): Promise<T> {
   return response.json();
 }
 export const billingApi = {
+  redeemPromo: (code: string) => request<{ type: 'builder' }>('promo', { code }),
   plans: () => request<{ plans: CreditPlan[]; apple_ready?: boolean; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
   account: () => request<BillingAccount>('account'),
   creditCheckout: (amount_cents: number) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ url: string }>('credits/checkout', { amount_cents }),

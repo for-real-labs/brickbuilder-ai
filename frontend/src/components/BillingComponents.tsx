@@ -1,3 +1,4 @@
+import { PromoCode } from './PromoCode';
 import { CompatibleBricks } from './CompatibleBricks';
 import { GenerationExamples } from './GenerationExamples';
 import { GENERATION_SUBSCRIPTION_SOURCE } from '../utils/generationSubscription';
@@ -123,6 +124,7 @@ export function BillingOverlays() {
       <PlanGrid source={upgradeSource} paidOnly />
       {subscriptionPrompt ? <GenerationExamples onView={closeUpgrade} /> : <CreditPacks source={upgradeSource} />}
       <p className="billing-fine-print">Cancel anytime</p>
+      <PromoCode source={upgradeSource} />
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={() => { closeLogin(); if (loginSource.current === GENERATION_SUBSCRIPTION_SOURCE) openUpgrade(GENERATION_SUBSCRIPTION_SOURCE); }} redirectTo="/pricing" />
     <PaidFeatureDialog />

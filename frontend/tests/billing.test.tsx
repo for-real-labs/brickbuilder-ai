@@ -19,7 +19,7 @@ vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: ({ id = 'pip' }) =
 vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div role="dialog">Sign in to build</div> : null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/services/billingApi', async importOriginal => ({ ...await importOriginal<typeof import('../src/services/billingApi')>(),
-  billingApi: { creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
+  billingApi: { redeemPromo: vi.fn(), creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
 }));
 
 function OpenPlansPopup() {
@@ -534,4 +534,50 @@ it('lets a subscriber select the same plan again after scheduling cancellation',
   expect(button?.disabled).toBe(false);
   await selectPlan('Builder');
   expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=builder');
+});
+
+
+async function enterPromo(code: string) {
+  await act(async () => {
+    const input = container.querySelector<HTMLInputElement>('#billing-promo-code')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, code);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => container.querySelector('.billing-promo-dialog form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+}
+
+it('redeems promos below cancel anytime and refreshes Builder access without tracking codes', async () => {
+  vi.mocked(billingApi.redeemPromo).mockResolvedValue({ type: 'builder' });
+  await render(<OpenPlansPopup />);
+  expect(container.querySelector('.billing-fine-print + .billing-promo > button')?.textContent).toBe('promo');
+  await click('promo');
+  expect(container.querySelector<HTMLDialogElement>('.billing-promo-dialog')?.open).toBe(true);
+  const calls = vi.mocked(billingApi.account).mock.calls.length;
+  await enterPromo('friday13');
+  expect(billingApi.redeemPromo).toHaveBeenCalledWith('friday13');
+  expect(vi.mocked(billingApi.account).mock.calls.length).toBeGreaterThan(calls);
+  expect(container.querySelector('.billing-promo-dialog [role="status"]')?.textContent).toContain('free Builder access');
+  expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain('friday13');
+});
+
+it('keeps invalid promos editable and supports closing with Escape', async () => {
+  vi.mocked(billingApi.redeemPromo).mockRejectedValue(new Error('That promo code is not valid.'));
+  await render(<OpenPlansPopup />);
+  await click('promo');
+  await enterPromo('wrong');
+  expect(container.querySelector('.billing-promo-dialog [role="alert"]')?.textContent).toContain('not valid');
+  expect(container.querySelector<HTMLInputElement>('#billing-promo-code')?.disabled).toBe(false);
+  await act(async () => container.querySelector('.billing-promo-dialog')!.dispatchEvent(new Event('cancel', { cancelable: true })));
+  expect(container.querySelector('.billing-promo-dialog')).toBeNull();
+  expect(container.querySelector('dialog')).not.toBeNull();
+});
+
+it('requires sign in before entering a promo', async () => {
+  auth.user = null;
+  await render(<OpenPlansPopup />);
+  await click('promo');
+  expect(container.querySelector('#billing-promo-code')).toBeNull();
+  await click('Sign in');
+  expect(container.textContent).toContain('Sign in to build');
+  expect(billingApi.redeemPromo).not.toHaveBeenCalled();
 });
