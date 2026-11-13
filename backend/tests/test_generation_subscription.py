@@ -108,3 +108,84 @@ def test_external_list_preserves_existing_paid_subscription_and_is_private(teste
         for privilege in ('SELECT', 'INSERT', 'DELETE'):
             assert not conn.execute("SELECT has_table_privilege(%s,'external_testers',%s) AS allowed",
                                     (role, privilege)).fetchone()['allowed']
+
+
+@pytest.fixture
+def promo_db(tester_db):
+    tester_db.execute((MIGRATION.parent / '20261113010000_builder_promocodes.sql').read_text())
+    tester_db.execute((MIGRATION.parent / '20261113020000_promo_trials.sql').read_text())
+    tester_db.execute("UPDATE promocodes SET expires=now()+interval '2 days'")
+    return tester_db
+
+
+def redeem(conn, user, code='friday13', live=True):
+    return conn.execute('SELECT redeem_promocode(%s,%s,%s) AS result', (user, live, code)).fetchone()['result']
+
+
+def test_promo_redeems_verified_email_once_and_preserves_spent_credits(promo_db):
+    conn = promo_db
+    user = owner(conn)
+    conn.execute("UPDATE auth.users SET email='Promo@Example.com' WHERE id=%s", (user,))
+    assert redeem(conn, user) == 'verification_required'
+    conn.execute('UPDATE auth.users SET email_confirmed_at=now() WHERE id=%s', (user,))
+    assert redeem(conn, user, 'wrong') == 'invalid_code'
+    assert conn.execute('SELECT count(*) n FROM external_testers').fetchone()['n'] == 0
+    assert redeem(conn, user, ' FRIDAY13 ') == 'builder'
+    assert wallet(conn, user)['monthly_remaining'] == 225
+    generate(conn, user)
+    assert redeem(conn, user) == 'builder'
+    assert wallet(conn, user)['monthly_remaining'] == 223
+    assert not wallet(conn, user, live=False)['external_tester']
+    assert conn.execute('SELECT email FROM external_testers').fetchone()['email'] == 'promo@example.com'
+
+
+def test_promos_are_private_and_do_not_replace_paid_plans(promo_db):
+    conn = promo_db
+    user = owner(conn)
+    conn.execute("UPDATE auth.users SET email='paid@example.com',email_confirmed_at=now() WHERE id=%s", (user,))
+    paid(conn, user, plan='creator', amount=1500)
+    assert redeem(conn, user) == 'builder'
+    assert wallet(conn, user)['plan_key'] == 'creator'
+    assert wallet(conn, user)['monthly_remaining'] == 1500
+    for role in ('anon', 'authenticated'):
+        assert not conn.execute("SELECT has_table_privilege(%s,'promocodes','SELECT') allowed", (role,)).fetchone()['allowed']
+        assert not conn.execute("SELECT has_function_privilege(%s,'redeem_promocode(uuid,boolean,text)','EXECUTE') allowed", (role,)).fetchone()['allowed']
+
+
+def test_promo_expiry_and_trial_expiry_are_independent(promo_db):
+    conn = promo_db
+    user = owner(conn)
+    conn.execute("UPDATE auth.users SET email='trial@example.com',email_confirmed_at=now() WHERE id=%s", (user,))
+    assert redeem(conn, user) == 'builder'
+    trial = conn.execute("SELECT expires,expires>now()+interval '29 days' AND expires<=now()+interval '30 days' correct FROM external_testers").fetchone()
+    assert trial['correct']
+    assert wallet(conn, user)['external_tester_expires_at'] == trial['expires']
+    assert redeem(conn, user) == 'builder'
+    assert conn.execute('SELECT expires FROM external_testers').fetchone()['expires'] == trial['expires']
+    conn.execute("UPDATE promocodes SET expires=now()-interval '1 second'")
+    assert redeem(conn, user) == 'invalid_code'
+    generate(conn, user)  # Promo expiry does not end existing trials.
+    conn.execute("UPDATE external_testers SET expires=now()-interval '1 second'")
+    with pytest.raises(psycopg.errors.RaiseException, match='BB_SUBSCRIPTION_REQUIRED'):
+        generate(conn, user)
+    assert wallet(conn, user)['monthly_remaining'] == 0
+    conn.execute("UPDATE promocodes SET expires=now()+interval '1 day'")
+    assert redeem(conn, user) == 'trial_expired'
+    assert not wallet(conn, user)['external_tester']
+
+
+def test_permanent_testers_remain_permanent_and_paid_conversion_preserves_access(promo_db):
+    conn = promo_db
+    user = owner(conn)
+    conn.execute("UPDATE auth.users SET email='permanent@example.com',email_confirmed_at=now() WHERE id=%s", (user,))
+    conn.execute("INSERT INTO external_testers(email) VALUES('permanent@example.com')")
+    assert redeem(conn, user) == 'builder'
+    assert wallet(conn, user)['external_tester_expires_at'] is None
+    conn.execute("UPDATE external_testers SET expires=now()+interval '30 days'")
+    assert wallet(conn, user)['external_tester']
+    paid(conn, user, plan='builder', amount=225)
+    conn.execute("UPDATE external_testers SET expires=now()-interval '1 second'")
+    generate(conn, user)
+    row = wallet(conn, user)
+    assert row['plan_key'] == 'builder' and not row['external_tester']
+    assert row['monthly_remaining'] == 448  # Existing credits carry over on purchase.

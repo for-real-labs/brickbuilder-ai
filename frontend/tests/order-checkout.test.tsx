@@ -609,3 +609,19 @@ it('restores the selected quantity when reloading a model link', async () => {
   expect(container.querySelector<HTMLSelectElement>('[aria-label="Model quantity"]')?.value).toBe('4');
   expect(GetPriceApiService.getPrice).toHaveBeenLastCalledWith('saved-model', 'auth-token', 'US', 4);
 });
+
+it('confirms one-time credits inline without subscription, shipping or product promos', async () => {
+  const assign = vi.fn();
+  vi.stubGlobal('location', { ...window.location, assign });
+  mocks.confirm.mockResolvedValue({ type: 'success' });
+  await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs_credit', client_secret: 'secret' }} publishableKey="pk_test_example"
+    creditPurchase email="buyer@example.test" totalCents={1000} onBack={vi.fn()} onRetry={vi.fn()} />));
+  expect(container.textContent).toContain('Pay $10.00');
+  expect(container.querySelector('#order-promo')).toBeNull();
+  expect(container.querySelector('.checkout-back')).toBeNull();
+  expect(mocks.walletCreate).toHaveBeenCalledWith(expect.objectContaining({ buttonType: { applePay: 'buy', googlePay: 'pay' } }));
+  await act(async () => container.querySelector<HTMLInputElement>('input[type="checkbox"]')!.click());
+  await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(mocks.confirm).toHaveBeenCalledWith({ email: 'buyer@example.test', redirect: 'if_required' });
+  expect(assign).toHaveBeenCalledWith('/billing?checkout=success&session_id=cs_credit');
+});

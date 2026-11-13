@@ -146,3 +146,24 @@ async def test_apple_credit_prepare_rejects_free_accounts(monkeypatch):
     with pytest.raises(HTTPException,match='paid monthly plan') as error:
         await apple_billing.prepare({'authenticated':True,'user_id':USER},consumable=True)
     assert error.value.status_code==403
+
+
+@async_test
+async def test_embedded_credit_checkout_keeps_quote_and_return_on_site(monkeypatch):
+    from unittest.mock import Mock
+    monkeypatch.setattr(billing,'require_enabled',AsyncMock())
+    monkeypatch.setattr(billing,'wallet',AsyncMock(return_value={'plan_key':'builder','subscription_status':'active','period_end':'2099-01-01T00:00:00Z'}))
+    monkeypatch.setattr(billing,'capacity',AsyncMock(return_value={'checkout_available':True}))
+    monkeypatch.setattr(billing,'stripe_key',lambda:'test')
+    create=Mock(return_value=SimpleNamespace(id='cs_credits',client_secret='secret'))
+    monkeypatch.setattr(stripe.checkout.Session,'create',create)
+    result = await credit_packs.checkout({'authenticated':True,'user_id':USER,'user_email':'buyer@example.test'},1000,'elements')
+    assert result == {'session_id':'cs_credits','client_secret':'secret'}
+    args=create.call_args.kwargs
+    assert args['mode']=='payment' and args['ui_mode']=='elements'
+    assert args['allowed_payment_method_types']==['card']
+    assert args['stripe_version']=='2026-09-30.endive'
+    assert args['customer_email']=='buyer@example.test'
+    assert args['return_url'].endswith('/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}')
+    assert not {'success_url','cancel_url','shipping_address_collection'} & args.keys()
+    assert args['line_items'][0]['price_data']['unit_amount']==1000

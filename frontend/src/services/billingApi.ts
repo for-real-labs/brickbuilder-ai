@@ -7,6 +7,7 @@ export type PaidFeature = 'ldraw' | 'io' | 'instructions';
 export type FeatureAccess = 'loading' | 'unavailable' | 'locked' | 'allowed';
 export interface CreditPlan { key: PlanKey; name: string; monthly_cents: number; credits: number }
 export interface BillingAccount {
+  trial_expires_at?: string | null;
   purchase_confirmed?: boolean;
   subscription_provider?: 'apple' | 'stripe' | 'external_tester' | null; apple_remaining?: number; apple_plan?: PlanKey; apple_expires_at?: string;
   plan_key: PlanKey; credits_remaining: number; monthly_credits: number; monthly_remaining: number;
@@ -33,9 +34,10 @@ async function request<T>(path: string, body?: object): Promise<T> {
   return response.json();
 }
 export const billingApi = {
+  redeemPromo: (code: string) => request<{ type: 'builder'; account: BillingAccount }>('promo', { code }),
   plans: () => request<{ plans: CreditPlan[]; apple_ready?: boolean; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
   account: () => request<BillingAccount>('account'),
-  creditCheckout: (amount_cents: number) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ url: string }>('credits/checkout', { amount_cents }),
+  creditCheckout: (amount_cents: number) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ session_id: string; client_secret: string }>('credits/checkout', { amount_cents, ui_mode: 'elements' }),
   appleCreditPrepare: () => request<{ app_account_token: string }>('apple/credits/prepare', {}),
   applePrepare: () => request<{ app_account_token: string }>('apple/prepare', {}),
   appleSync: (transaction_id: string) => request<BillingAccount>('apple/sync', { transaction_id }),

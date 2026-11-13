@@ -105,15 +105,26 @@ async def apple_notifications(request: AppleNotificationRequest):
 class CreditPackRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
     amount_cents: int = Field(strict=True, ge=50, le=999999)
+    ui_mode: Literal['hosted', 'elements'] = 'hosted'
 
 
 @router.post('/credits/checkout')
 async def credit_checkout(request: CreditPackRequest, identity: dict = Depends(get_optional_identity)):
     from ..utils import credit_packs
-    return await run(credit_packs.checkout(identity, request.amount_cents))
+    return await run(credit_packs.checkout(identity, request.amount_cents, request.ui_mode))
 
 
 @router.post('/apple/credits/prepare')
 async def apple_credit_prepare(identity: dict = Depends(get_optional_identity)):
     from ..utils import apple_billing
     return await run(apple_billing.prepare(identity, consumable=True))
+
+
+class PromoRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    code: str = Field(min_length=1, max_length=100)
+
+
+@router.post('/promo')
+async def promo(request: PromoRequest, identity: dict = Depends(get_optional_identity)):
+    return await run(billing.redeem_promo(identity, request.code))

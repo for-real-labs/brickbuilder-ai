@@ -19,7 +19,7 @@ vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: ({ id = 'pip' }) =
 vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div role="dialog">Sign in to build</div> : null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/services/billingApi', async importOriginal => ({ ...await importOriginal<typeof import('../src/services/billingApi')>(),
-  billingApi: { creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
+  billingApi: { redeemPromo: vi.fn(), creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
 }));
 
 function OpenPlansPopup() {
@@ -199,7 +199,7 @@ it('shows monthly usage beneath the popup title without counting bonuses or Appl
   expect(heading.querySelector('progress')?.value).toBe(30);
 });
 
-it.each(['Pricing', 'Explore plans', 'Compare all plans & credit details'])('opens the shared credits popup from %s', async label => {
+it.each(['Pricing', 'Explore plans'])('opens the shared credits popup from %s', async label => {
   await render(<BillingPage />);
   expect(container.querySelector('dialog')).toBeNull();
   await click(label);
@@ -229,7 +229,7 @@ it.each([
   const section = container.querySelector('.billing-account-plan')!.closest('section')!;
   expect(section.querySelector('.billing-plan-allowance')?.textContent).toBe(`${credits.toLocaleString()} credits each month. ${generations} LEGO® generations per month.`);
   expect(section.textContent).not.toContain('No payment method needed');
-  expect(section.querySelector('.billing-plan-benefit')?.textContent).toContain(`${key === 'builder' ? 10 : 20}% off all brick purchases`);
+  expect(section.querySelector('.billing-plan-benefit')).toBeNull();
   await click(label);
   expect(container.querySelector('dialog')?.open).toBe(true);
   expect(posthog.capture).toHaveBeenCalledWith('billing_plan_action_clicked', { plan_key: key, action: label === 'Change plan' ? 'change' : 'upgrade' });
@@ -279,7 +279,7 @@ it('shows no active plan instead of a Free plan for an unsubscribed account', as
   await render(<BillingPage />);
   expect(container.querySelector('.billing-account-plan')?.textContent).toBe('No active plan');
   expect(container.querySelector('.billing-plan-allowance')?.textContent).toContain('Subscribe');
-  await click('Choose a plan');
+  await click('Explore plans');
   expect(container.querySelector('dialog')?.open).toBe(true);
 });
 
@@ -433,7 +433,7 @@ it.each([0, 2, 12345])('lets the header balance fit %s credits without reserving
 
 it.each(['builder', 'creator'] as const)('buys a custom dollar amount at the %s rate', async plan => {
   account = { ...account, plan_key: plan, has_subscription: true, paid_features: true, subscription_status: 'active' };
-  vi.mocked(billingApi.creditCheckout).mockResolvedValue({url:'https://checkout.stripe.com/c/pay/pack'});
+  vi.mocked(billingApi.creditCheckout).mockResolvedValue({session_id:'cs_credit',client_secret:'secret'});
   await render(<OpenPlansPopup />);
   const input = container.querySelector<HTMLInputElement>('#credit-packs input')!;
   await act(async () => {
@@ -442,9 +442,10 @@ it.each(['builder', 'creator'] as const)('buys a custom dollar amount at the %s 
   });
   expect(container.querySelector('#credit-packs output')?.textContent).toBe(plan === 'builder' ? '753 credits' : '751 credits');
   await click('Buy credits');
-  expect(billingApi.creditCheckout).toHaveBeenCalledWith(1000);
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-credits?amount=1000');
+  expect(billingApi.creditCheckout).not.toHaveBeenCalled();
   expect(billingApi.checkout).not.toHaveBeenCalled();
-  expect(openStripe).toHaveBeenCalledWith('https://checkout.stripe.com/c/pay/pack');
+  expect(openStripe).not.toHaveBeenCalled();
 });
 
 it.each([true, false])('requires a paid monthly plan before buying credits (signed in: %s)', async signedIn => {
@@ -534,4 +535,81 @@ it('lets a subscriber select the same plan again after scheduling cancellation',
   expect(button?.disabled).toBe(false);
   await selectPlan('Builder');
   expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=builder');
+});
+
+
+async function enterPromo(code: string) {
+  await act(async () => {
+    const input = container.querySelector<HTMLInputElement>('#billing-promo-code')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, code);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await act(async () => container.querySelector('.billing-promo-dialog form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+}
+
+it('redeems promos below cancel anytime and refreshes Builder access without tracking codes', async () => {
+  vi.mocked(billingApi.redeemPromo).mockResolvedValue({ type: 'builder', account: { ...account, plan_key: 'builder', has_subscription: true, paid_features: true, subscription_provider: 'external_tester', trial_expires_at: '2099-12-13T12:00:00Z', monthly_credits: 225, monthly_remaining: 225, credits_remaining: 225 } });
+  await render(<><OpenPlansPopup /><CreditBalance /><FeatureStatus /></>);
+  expect(container.querySelector('.billing-fine-print + .billing-promo > button')?.textContent).toBe('promo');
+  await click('promo');
+  expect(container.querySelector<HTMLDialogElement>('.billing-promo-dialog')?.open).toBe(true);
+  const calls = vi.mocked(billingApi.account).mock.calls.length;
+  await enterPromo('friday13');
+  expect(billingApi.redeemPromo).toHaveBeenCalledWith('friday13');
+  expect(vi.mocked(billingApi.account).mock.calls.length).toBe(calls);
+  expect(container.querySelector('.billing-promo-dialog [role="status"]')?.textContent).toBe("You've activated your free Builder plan trial account!");
+  expect(container.querySelector('#billing-promo-code')).toBeNull();
+  expect(container.querySelector('.promo-confetti')).not.toBeNull();
+  expect(container.querySelector('.credit-count')?.textContent).toBe('225');
+  expect(container.querySelector('[data-feature-status]')?.textContent).toBe('allowed');
+  expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain('friday13');
+});
+
+it('keeps invalid promos editable and supports closing with Escape', async () => {
+  vi.mocked(billingApi.redeemPromo).mockRejectedValue(new Error('That promo code is not valid.'));
+  await render(<OpenPlansPopup />);
+  await click('promo');
+  await enterPromo('wrong');
+  expect(container.querySelector('.billing-promo-dialog [role="alert"]')?.textContent).toContain('not valid');
+  expect(container.querySelector<HTMLInputElement>('#billing-promo-code')?.disabled).toBe(false);
+  await act(async () => container.querySelector('.billing-promo-dialog')!.dispatchEvent(new Event('cancel', { cancelable: true })));
+  expect(container.querySelector('.billing-promo-dialog')).toBeNull();
+  expect(container.querySelector('dialog')).not.toBeNull();
+});
+
+it('requires sign in before entering a promo', async () => {
+  auth.user = null;
+  await render(<OpenPlansPopup />);
+  await click('promo');
+  expect(container.querySelector('#billing-promo-code')).toBeNull();
+  await click('Sign in');
+  expect(container.textContent).toContain('Sign in to build');
+  expect(billingApi.redeemPromo).not.toHaveBeenCalled();
+});
+
+
+function FeatureStatus() { const { featureAccess } = useBilling(); return <output data-feature-status>{featureAccess}</output>; }
+
+it('shows the trial end date and lets trial users continue with Builder', async () => {
+  account = { ...account, plan_key: 'builder', has_subscription: true, paid_features: true, subscription_provider: 'external_tester', trial_expires_at: '2099-12-13T12:00:00Z' };
+  await render(<BillingPage />);
+  expect(container.textContent).toContain('Your trial ends on Dec 13, 2099');
+  expect(container.textContent).not.toContain('Subscription canceled');
+  await click('Continue plan');
+  expect(container.querySelector('.billing-trial-notice')?.textContent).toContain('Your trial ends on Dec 13, 2099');
+  const button = container.querySelector<HTMLButtonElement>('[aria-label="Builder plan"] .billing-plan-button')!;
+  expect(button.disabled).toBe(false);
+  expect(button.textContent).toBe('Continue plan');
+  await act(async () => button.click());
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=builder');
+});
+
+it('keeps billing focused on one Explore plans action without extra promo copy', async () => {
+  await render(<BillingPage />);
+  expect(container.querySelector('.billing-explore-plans')).toBeNull();
+  expect(container.querySelector('.billing-plan-actions button')?.textContent).toBe('Explore plans');
+  expect(container.querySelector('.billing-plan-actions svg')).toBeNull();
+  expect(container.textContent).not.toContain('Your saved LEGO® sets');
+  expect(container.textContent).not.toContain('Compare all plans & credit details');
+  expect(container.querySelector('.billing-plan-benefit')).toBeNull();
 });

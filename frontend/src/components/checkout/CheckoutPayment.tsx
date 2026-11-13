@@ -23,18 +23,20 @@ const checkoutAppearance: Appearance = {
   },
 };
 
-type PaymentCustomer = { subscriptionPlan: 'builder' | 'creator'; email: string; details?: never; country?: never }
-  | { subscriptionPlan?: undefined; email?: never; details: DeliveryDetails; country: string };
+type PaymentCustomer = { creditPurchase?: false; subscriptionPlan: 'builder' | 'creator'; email: string; details?: never; country?: never }
+  | { creditPurchase: true; subscriptionPlan?: undefined; email: string; details?: never; country?: never }
+  | { creditPurchase?: false; subscriptionPlan?: undefined; email?: never; details: DeliveryDetails; country: string };
 
-export function CheckoutPayment({ session, publishableKey, details, country, totalCents, generationId, subscriptionPlan, email, onBack, onRetry, onBusyChange, onTotalChange }: PaymentCustomer & {
+export function CheckoutPayment({ session, publishableKey, details, country, totalCents, generationId, subscriptionPlan, creditPurchase, email, onBack, onRetry, onBusyChange, onTotalChange }: PaymentCustomer & {
   session: CreateCheckoutSessionResponse; publishableKey: string;
   totalCents: number;
   generationId?: string; onBack: () => void; onRetry: () => void;
   onBusyChange?: (busy: boolean) => void;
   onTotalChange?: (total: number) => void;
 }) {
+  const digital = Boolean(subscriptionPlan || creditPurchase);
   const track = (event: string, properties: Record<string, unknown> = {}) => posthog.capture(
-    subscriptionPlan ? event.replace(/^order_/, 'plan_') : event,
+    subscriptionPlan ? event.replace(/^order_/, 'plan_') : creditPurchase ? event.replace(/^order_/, 'credit_') : event,
     { ...properties, ...(subscriptionPlan ? { plan_key: subscriptionPlan } : {}) },
   );
   const mountRef = React.useRef<HTMLDivElement>(null);
@@ -88,7 +90,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         actionsRef.current = result.actions;
         element = checkout.createPaymentElement({
           layout: 'tabs',
-          ...(subscriptionPlan ? { fields: { billingDetails: { address: 'if_required' as const } } } : {}),
+          ...(digital ? { fields: { billingDetails: { address: 'if_required' as const } } } : {}),
           paymentMethodOrder: ['card'],
           wallets: { applePay: 'never', googlePay: 'never', link: 'never' },
         });
@@ -152,7 +154,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       } catch { clearTimeout(timeout); fail(); }
     })();
     return () => { disposed = true; clearTimeout(timeout); element?.destroy(); walletRef.current?.destroy(); walletRef.current = null; renderWalletRef.current = null; actionsRef.current = null; };
-  }, [session.client_secret, publishableKey, generationId, subscriptionPlan]);
+  }, [session.client_secret, publishableKey, generationId, subscriptionPlan, creditPurchase]);
 
   const confirmPayment = async (walletEvent?: StripeExpressCheckoutElementConfirmEvent) => {
     if (!ready || operationRef.current || !accepted) return;
@@ -162,15 +164,15 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
     try {
       if (!actionsRef.current) throw new Error('Payment unavailable');
       const result = await actionsRef.current.confirm({
-        ...(!subscriptionPlan ? { email: details.email.trim() } : {}),
-        ...(!subscriptionPlan && !session.shipping_address_provided ? { shippingAddress: getShippingContact(details, country) } : {}),
+        ...(!subscriptionPlan ? { email: creditPurchase ? email : details!.email.trim() } : {}),
+        ...(!digital && !session.shipping_address_provided ? { shippingAddress: getShippingContact(details!, country!) } : {}),
         redirect: 'if_required',
         ...(walletEvent ? { expressCheckoutConfirmEvent: walletEvent } : {}),
       });
       if (result.type === 'error') { setError(result.error.message); track('order_checkout_error', { generation_id: generationId, stage: 'confirm', error_code: result.error.code }); }
       else {
         track('order_payment_submitted', { generation_id: generationId });
-        window.location.assign(`${subscriptionPlan ? '/billing?checkout=success&' : '/success?'}session_id=${encodeURIComponent(session.session_id)}`);
+        window.location.assign(`${digital ? '/billing?checkout=success&' : '/success?'}session_id=${encodeURIComponent(session.session_id)}`);
       }
     } catch {
       setError('Payment could not be completed. Please try again.');
@@ -212,7 +214,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       : window.location.protocol === 'http:' ? 'Available on secure HTTPS checkout.' : 'Not supported by this browser or wallet setup.';
   return <form onSubmit={event => { event.preventDefault(); if (selectedMethod === 'card') void confirmPayment(); }}>
     {!ready && !loadFailed && <div role="status" className="checkout-payment-loading"><span className="checkout-spinner" />Loading secure payment…</div>}
-    {!subscriptionPlan && <div className="checkout-promo">
+    {!digital && <div className="checkout-promo">
       <label className="checkout-field" htmlFor="order-promo"><span>Promo code</span>
         <input id="order-promo" value={promoCode} autoComplete="off" maxLength={100} disabled={!ready || loading || promoBusy || !!appliedCode}
           onChange={event => setPromoCode(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') { event.preventDefault(); void updatePromo(); } }} />
@@ -248,7 +250,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       <span>I agree to the <a href="/terms" target="_blank" rel="noreferrer" onClick={() => track('order_terms_opened', { generation_id: generationId })}>Terms of Service</a>.</span>
     </label>
     <div className="checkout-actions">
-      {!subscriptionPlan && <button type="button" className="checkout-back" aria-label="Back to contact and delivery" disabled={loading || promoBusy} onClick={onBack}><ArrowLeft size={22} /></button>}
+      {!digital && <button type="button" className="checkout-back" aria-label="Back to contact and delivery" disabled={loading || promoBusy} onClick={onBack}><ArrowLeft size={22} /></button>}
       <button hidden={selectedMethod !== 'card'} type="submit" className="checkout-primary" disabled={!ready || !accepted || loading || promoBusy || loadFailed}>
         {loading ? 'Processing…' : subscriptionPlan ? `Subscribe · ${formatOrderPrice(paymentTotal)} / month` : `Pay ${formatOrderPrice(paymentTotal)}`}
       </button>

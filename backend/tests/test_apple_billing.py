@@ -48,3 +48,17 @@ def test_prepare_blocks_duplicate_web_subscription(monkeypatch):
     with pytest.raises(HTTPException) as e:
         asyncio.run(apple.prepare({'authenticated': True, 'user_id': str(uuid4())}))
     assert e.value.status_code == 409
+
+
+@pytest.mark.parametrize('expires', [None, '2099-01-01T00:00:00Z'])
+def test_only_trial_testers_can_continue_with_apple(monkeypatch, expires):
+    monkeypatch.setattr(apple, 'ready', lambda: True)
+    monkeypatch.setattr(billing, 'require_enabled', AsyncMock())
+    monkeypatch.setattr(billing, 'capacity', AsyncMock(return_value={'checkout_available': True}))
+    monkeypatch.setattr(billing, 'wallet', AsyncMock(return_value={'external_tester': True, 'external_tester_expires_at': expires}))
+    owner = str(uuid4())
+    if expires:
+        assert asyncio.run(apple.prepare({'authenticated': True, 'user_id': owner})) == {'app_account_token': owner}
+    else:
+        with pytest.raises(HTTPException, match='tester access'):
+            asyncio.run(apple.prepare({'authenticated': True, 'user_id': owner}))

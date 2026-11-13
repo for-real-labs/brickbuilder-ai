@@ -1,3 +1,4 @@
+import { PromoCode } from './PromoCode';
 import { CompatibleBricks } from './CompatibleBricks';
 import { GenerationExamples } from './GenerationExamples';
 import { GENERATION_SUBSCRIPTION_SOURCE } from '../utils/generationSubscription';
@@ -36,10 +37,11 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
   const { user } = useAuth();
   const { plans, account, busy, enabled, checkoutAvailable, subscribe, closeUpgrade, appleProducts, restore, retryAccess } = useBilling();
   const apple = isAppleApp();
-  const tester = account?.subscription_provider === 'external_tester';
+  const trial = Boolean(account?.trial_expires_at);
+  const tester = account?.subscription_provider === 'external_tester' && !trial;
   return <><div className={`billing-plan-grid${paidOnly ? ' billing-plan-grid--paid' : ''}`}>
     {plans.filter(plan => plan.key !== 'free').map(plan => {
-      const current = Boolean(user && !(account?.subscription_provider === 'stripe' && account.cancel_at_period_end) && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
+      const current = Boolean(user && !trial && !(account?.subscription_provider === 'stripe' && account.cancel_at_period_end) && (account?.subscription_provider === 'apple' ? account.apple_plan : account?.plan_key) === plan.key);
       const applePrice = appleProducts?.find(p => p.id === appleProduct(plan.key))?.displayPrice;
       const petId = plan.key === 'creator' ? 'nib' : 'pip';
       return <article key={plan.key} className={`billing-plan${plan.key === 'creator' ? ' billing-plan--recommended' : ''}`} aria-label={`${plan.name} plan`}>
@@ -52,7 +54,7 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
           <li className="billing-feature-saving"><Check aria-label="Included" /><span>{PLAN_DISCOUNTS[plan.key]}% off <strong>all</strong> brick purchases</span></li>
         </ul>
         <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || tester || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
-          onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : tester ? 'Unavailable with tester access' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : 'Select Plan'}</button>
+          onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : tester ? 'Unavailable with tester access' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : trial && plan.key === 'builder' ? 'Continue plan' : 'Select Plan'}</button>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
       </article>;
     })}
@@ -112,7 +114,7 @@ export function BillingOverlays() {
     return () => { document.body.style.overflow = previous; };
   }, [upgradeSource]);
   return <>
-    {upgradeSource && <dialog ref={dialog} className="billing-dialog" aria-labelledby="billing-upgrade-title"
+    {upgradeSource && <dialog ref={dialog} className="billing-dialog billing-plans-dialog" aria-labelledby="billing-upgrade-title"
       onCancel={e => { e.preventDefault(); closeUpgrade(); }} onClose={closeUpgrade}>
       <button className="billing-close" type="button" aria-label="Close plans" onClick={closeUpgrade}><X size={20} /></button>
       <h1 id="billing-upgrade-title" className={subscriptionPrompt ? 'pr-10 text-xl font-bold text-slate-900' : 'sr-only'}>{subscriptionPrompt ? 'Subscribe to generate models' : 'Plans & credits'}</h1>
@@ -120,9 +122,11 @@ export function BillingOverlays() {
       {account && account.plan_key !== 'free' && <div className="billing-dialog-heading"><PetAvatar /><div><MonthlyCreditUsage account={account} /></div></div>}
       {error && (enabled || account) && <p role="alert" className="billing-error">{error}</p>}
       {!enabled && <p role="status" className="billing-launch-notice">Subscription checkout is temporarily unavailable. Please try again shortly.</p>}
+      {account?.trial_expires_at && <p className="billing-trial-notice">Your trial ends on {billingDate(account.trial_expires_at)}.</p>}
       <PlanGrid source={upgradeSource} paidOnly />
       {subscriptionPrompt ? <GenerationExamples onView={closeUpgrade} /> : <CreditPacks source={upgradeSource} />}
       <p className="billing-fine-print">Cancel anytime</p>
+      <PromoCode source={upgradeSource} />
     </dialog>}
     <LoginModal open={loginOpen} onClose={closeLogin} onSuccess={() => { closeLogin(); if (loginSource.current === GENERATION_SUBSCRIPTION_SOURCE) openUpgrade(GENERATION_SUBSCRIPTION_SOURCE); }} redirectTo="/pricing" />
     <PaidFeatureDialog />
