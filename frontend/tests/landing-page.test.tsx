@@ -501,8 +501,13 @@ describe('LandingPage', () => {
       expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!).map((row: { id: string }) => row.id)).toEqual(['two', 'one']);
       await act(async () => Array.from(container.querySelectorAll('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Cancel')!.dispatchEvent(new MouseEvent('click', { bubbles: true })));
       expect(cancel).toHaveBeenCalledWith('two');
+      expect(container.querySelector('.landing-page--welcome')).not.toBeNull();
+      expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
+      expect(container.querySelector('[aria-label="Build buddy conversation"]')).toBeNull();
+      expect(container.querySelector<HTMLInputElement>('input[aria-label="Describe your model"]')?.value).toBe('');
+      expect(container.querySelector('.landing-random-idea')).not.toBeNull();
+      expect(container.querySelector('footer')).not.toBeNull();
       expect(container.querySelector('[aria-label="Build progress workspace"]')).toBeNull();
-      expect(container.querySelector('[aria-label="Build buddy conversation"]')?.textContent).not.toContain('Red castle');
     } finally {
       act(() => root.unmount());
       container.remove();

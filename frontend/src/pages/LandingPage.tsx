@@ -818,8 +818,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setInputValidationMessage(null);
     clearSelectedImage();
   };
-  const createNewModel = () => {
-    posthog.capture('landing_model_create_new_clicked', { generation_id: landingModel.model?.generation.generation_id });
+  const resetToWelcome = () => {
     resetWorkspace();
     buddyChat.resetConversation();
     setHasEnteredChat(false);
@@ -828,6 +827,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     randomRequestRef.current?.abort();
     setRandomSuggestion(null);
     setCreateNewStage(null);
+  };
+  const createNewModel = () => {
+    posthog.capture('landing_model_create_new_clicked', { generation_id: landingModel.model?.generation.generation_id });
+    resetToWelcome();
   };
 
   const submitGeneration = (requestedPrompt = prompt, requestedImage = imgFile, existingTurnId?: number, generationSource: 'composer' | 'random_suggestion' = 'composer') => {
@@ -1162,7 +1165,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
                 setNotificationPromptId(null);
                 if (pendingEdit && landingModel.model) openModel(landingModel.model.generation.generation_id, true);
-                else { generationAbortRef.current?.abort(); resetWorkspace(); setLoading(false); setActiveGenerationId(null); setCreateNewStage(null); }
+                else { generationAbortRef.current?.abort(); resetToWelcome(); setLoading(false); setActiveGenerationId(null); }
               }}
               onStartNew={createNewModel} /> : null}
             {!pendingEdit && !pendingGeneration && createNewStage !== 'list' ? <form
