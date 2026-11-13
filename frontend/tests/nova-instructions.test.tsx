@@ -381,3 +381,33 @@ it.each([[2, 2], [999, 1]])('opens landing instructions directly from step %s an
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe(`/?id=nova&exact=1&instructions=1&step=${expectedStep}`);
   } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
 });
+
+
+it('opens the complete parts list from embedded instructions and returns to the same step', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
+  const { InstructionsViewer } = await import('../src/pages/InstructionsPage');
+  const posthog = (await import('posthog-js')).default;
+  const container = document.createElement('div'); document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter><InstructionsViewer generationId="chimney" initialStep={2} embedded /></MemoryRouter>));
+    const toggle = container.querySelector<HTMLButtonElement>('.instructions-parts-toggle')!;
+    expect(toggle.textContent).toBe('Parts list');
+    await act(async () => toggle.click());
+    const parts = container.querySelector('.instructions-parts')!;
+    expect(parts.id).toBe(toggle.getAttribute('aria-controls'));
+    expect(toggle.getAttribute('aria-pressed')).toBe('true');
+    expect(parts.querySelector('h5')?.textContent).toBe('Parts list · 4 pieces');
+    expect(parts.querySelectorAll('li')).toHaveLength(3);
+    expect(parts.textContent).toContain('Quantity: 2');
+    expect(parts.querySelectorAll('img')).toHaveLength(3);
+    expect(container.querySelector('.instructions-assembly-note')).toBeNull();
+    expect(posthog.capture).toHaveBeenCalledWith('instructions_parts_list_toggled', { generation_id: 'chimney', show_all_parts: true, source: 'landing' });
+    await act(async () => toggle.click());
+    expect(parts.querySelectorAll('li')).toHaveLength(2);
+    expect(parts.textContent).toContain('Assemble first');
+    expect(container.querySelector<HTMLInputElement>('[aria-label="Instruction step"]')?.value).toBe('2');
+  } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
+});

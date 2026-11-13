@@ -1,5 +1,5 @@
 import { getGeneratedModelPath } from '../utils/generationRoutes';
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, useId } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import * as THREE from 'three';
 import { LDrawParser, LDrawModel } from '../utils/ldrawParser';
@@ -277,6 +277,8 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
   const [error, setError] = useState<string | null>(null);
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
+  const [showPartsList, setShowPartsList] = useState(false);
+  const partsListId = useId();
   const [partHover, setPartHover] = useState<InstructionPartHover | null>(null);
   const [stepInputValue, setStepInputValue] = useState('1'); // Separate state for input field
   const [parsedMpd, setParsedMpd] = useState<ParsedMpd | null>(null);
@@ -327,6 +329,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
     setMpdContent(null);
     setCameraState(null);
     setShowAllColors(false);
+    setShowPartsList(false);
     const parseModel = async () => {
       // Check for id parameter in URL
       
@@ -496,8 +499,10 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
 
   const currentStep = model?.steps[currentStepIndex];
   const stepParts = useMemo(() => currentStep ? LDrawParser.getPartsListForStep(currentStep) : [], [currentStep]);
+  const allParts = useMemo(() => model ? LDrawParser.getPartsListForStep({ ...model.steps[0], parts: model.parts }) : [], [model]);
+  const displayedParts = showPartsList ? allParts : stepParts;
   const colors = useMemo(() => parseLDrawColors(parsedMpd?.headerJoined ?? ''), [parsedMpd]);
-  const partImages = useInstructionPartImages(stepParts, parsedMpd?.headerJoined ?? '', active ? parsedMpd?.subfileJoined ?? '' : '');
+  const partImages = useInstructionPartImages(displayedParts, parsedMpd?.headerJoined ?? '', active ? parsedMpd?.subfileJoined ?? '' : '');
   const hoveredPart = active && partHover?.stepIndex === currentStepIndex ? partHover : null;
   const hoveredRow = hoveredPart && stepParts.find(part => part.colorCode === hoveredPart.colorCode
     && normalizeInstructionPartFilename(part.filename) === normalizeInstructionPartFilename(hoveredPart.filename));
@@ -1225,6 +1230,13 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                 <h4 className="text-lg font-semibold text-[#f44336]">
                 Step {model.steps[currentStepIndex].stepNumber}
                 </h4>
+                <button type="button" className="instructions-parts-toggle" aria-pressed={showPartsList} aria-controls={partsListId}
+                  onClick={() => {
+                    setShowPartsList(!showPartsList);
+                    posthog.capture('instructions_parts_list_toggled', { generation_id: generationId, show_all_parts: !showPartsList, source: embedded ? 'landing' : 'instructions' });
+                  }}>
+                  {showPartsList ? 'Step parts' : 'Parts list'}
+                </button>
                 <div className="text-sm text-slate-600">
                 Add {model.steps[currentStepIndex].parts.length} {model.steps[currentStepIndex].parts.length === 1 ? 'part' : 'parts'}
                 </div>
@@ -1340,15 +1352,15 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
 
               {/* Parts added in this step - Shows only new parts */}
               {currentLastStepMpd && active && (
-                <div className="instructions-parts bg-slate-50 p-4 rounded-xl" data-build-together={model.steps[currentStepIndex].buildTogether || undefined}>
+                <div id={partsListId} className="instructions-parts bg-slate-50 p-4 rounded-xl" data-all-parts={showPartsList || undefined} data-build-together={(!showPartsList && model.steps[currentStepIndex].buildTogether) || undefined}>
                   <h5 className="font-medium mb-3 text-slate-900">
-                    {model.steps[currentStepIndex].buildTogether ? 'Assemble first' : 'Parts added in this step:'}
+                    {showPartsList ? `Parts list · ${model.parts.length} pieces` : model.steps[currentStepIndex].buildTogether ? 'Assemble first' : 'Parts added in this step:'}
                   </h5>
-                  {model.steps[currentStepIndex].buildTogether && (
+                  {!showPartsList && model.steps[currentStepIndex].buildTogether && (
                     <p className="instructions-assembly-note">Connect these pieces first, then attach them to the model.</p>
                   )}
                   <ul className="instructions-parts-list">
-                    {stepParts.map(part => {
+                    {displayedParts.map(part => {
                       const key = instructionPartKey(part);
                       const image = partImages?.get(key);
                       return (
