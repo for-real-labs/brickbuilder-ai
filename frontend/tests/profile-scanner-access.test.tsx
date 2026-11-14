@@ -17,8 +17,8 @@ function mount(navigate = vi.fn()) { act(() => root.render(<MemoryRouter><Profil
 it('labels local navigation as unsigned local workspace', () => {
  auth.isSupabaseConfigured = false; mount(); expect(host.querySelector('[aria-label="Local workspace"]')).not.toBeNull(); expect(host.textContent).toContain('not signed in'); expect(host.querySelector('a')?.href).toBe('https://brickbuilder.ai/login'); expect(host.textContent).not.toContain('Photo Scanner');
 });
-it('shows the actual email and a scanner shortcut to the allowed account', () => {
- auth.user = { email: 'jake@brickbuilder.ai' }; const navigate = mount(); expect(host.textContent).toContain('jake@brickbuilder.ai');
+it.each(['jake@brickbuilder.ai', 'jakejohnson3700@gmail.com'])('shows the actual email and a scanner shortcut to %s', (email) => {
+ auth.user = { email }; const navigate = mount(); expect(host.textContent).toContain(email);
  act(() => [...host.querySelectorAll('button')].find(button => button.textContent === 'Photo Scanner')!.click()); expect(navigate).toHaveBeenCalledWith('/photo-scanner');
 });
 it('hides the private shortcut from other accounts', () => { auth.user = { email: 'other@example.com' }; mount(); expect(host.textContent).not.toContain('Photo Scanner'); });

@@ -205,3 +205,10 @@ def test_mask_dedup_keeps_touching_pieces_and_removes_partial_tile_observations(
     left = Image.new('L', (100, 100)); ImageDraw.Draw(left).rectangle((0, 0, 45, 99), fill=255)
     right = Image.new('L', (100, 100)); ImageDraw.Draw(right).rectangle((55, 0, 99, 99), fill=255)
     assert not pipeline.same_mask(([0, 0, 100, 100], png(left)), ([0, 0, 100, 100], png(right)))
+
+@pytest.mark.parametrize('email', ['jake@brickbuilder.ai', 'jakejohnson3700@gmail.com', 'JAKEJOHNSON3700@GMAIL.COM'])
+def test_both_owner_accounts_have_access_but_scans_stay_separate(client, email):
+    client.app.dependency_overrides[api.get_optional_identity] = lambda: {'authenticated': True, 'auth_method': 'jwt', 'user_id': 'second-account', 'user_email': email}
+    assert client.get('/photo-scanner/access').status_code == 200
+    scan = make_scan('first-account')
+    assert client.get(f'/photo-scanner/scans/{scan.id}').status_code == 404

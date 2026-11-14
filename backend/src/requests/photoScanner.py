@@ -16,7 +16,7 @@ scanner = Scanner()
 async def require_scanner(auth: dict = Depends(get_optional_identity)) -> str:
     if auth.get('auth_method') != 'jwt' or not auth.get('authenticated') or not auth.get('user_id'):
         raise HTTPException(401, 'Sign in to use this private prototype.')
-    if (auth.get('user_email') or '').lower() != 'jake@brickbuilder.ai':
+    if (auth.get('user_email') or '').lower() not in {'jake@brickbuilder.ai', 'jakejohnson3700@gmail.com'}:
         raise HTTPException(403, 'This prototype is private.')
     return auth['user_id']
 

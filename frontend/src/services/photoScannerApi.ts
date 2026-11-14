@@ -2,7 +2,7 @@ import { authenticatedApiFetch } from "./apiFetch";
 import { NOVA_API_BASE_URL } from "./novaToBricksApi";
 
 export const canUsePhotoScanner = (email?: string | null) =>
-  email?.toLowerCase() === "jake@brickbuilder.ai";
+  ["jake@brickbuilder.ai", "jakejohnson3700@gmail.com"].includes(email?.toLowerCase() ?? "");
 export interface ScanMatch {
   id: string;
   name: string;

@@ -142,10 +142,10 @@ it('shows asynchronous 3D export errors and allows retrying', async () => {
   expect(button('Download STL').disabled).toBe(false);
 });
 
- it('shows Photo Scanner only for the allowed account', () => {
+ it.each(['jake@brickbuilder.ai', 'jakejohnson3700@gmail.com'])('shows Photo Scanner only for allowed account %s', (email) => {
   scannerAuth.user = { email: 'someone@example.com' }; mount(); act(() => button('Tools').click());
   expect(host.querySelector('a[href="/photo-scanner"]')).toBeNull();
-  scannerAuth.user = { email: 'jake@brickbuilder.ai' }; mount();
+  scannerAuth.user = { email }; mount();
   expect(host.querySelector('a[href="/photo-scanner"]')?.textContent).toBe('Photo Scanner');
   expect(host.querySelector('ul[aria-label="Tools"] > li')?.textContent).toBe('Photo Scanner');
   scannerAuth.user = null;
