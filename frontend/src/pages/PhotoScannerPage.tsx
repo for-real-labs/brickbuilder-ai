@@ -655,7 +655,8 @@ function ScannerWorkspace({ owner }: { owner: string }) {
   );
 }
 export default function PhotoScannerPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isSupabaseConfigured, signOut } = useAuth();
+  const [signInError, setSignInError] = useState("");
   return (
     <main className="photo-scanner">
       <Helmet>
@@ -675,8 +676,23 @@ export default function PhotoScannerPage() {
           <div className="scanner-private">
             <LockKeyhole />
             <h1>Private prototype</h1>
-            <p>This tool is available only to the prototype account.</p>
-            <Link to="/login">Sign in</Link>
+            {isSupabaseConfigured === false ? <>
+              <p>This local workspace is not signed in to an account.</p>
+              <p>Open the live scanner and sign in as jake@brickbuilder.ai.</p>
+              <a href="https://brickbuilder.ai/photo-scanner" onClick={() => track('live_site_opened')}>Open Photo Scanner on BrickBuilder.ai</a>
+            </> : user ? <>
+              <p>You’re signed in as {user.email || 'an account without an email'}.</p>
+              <p>Photo Scanner is available only to jake@brickbuilder.ai.</p>
+              <button onClick={async () => {
+                track('switch_account_clicked');
+                try { await signOut(); window.location.assign('/login?next=%2Fphoto-scanner'); }
+                catch { setSignInError('Could not switch accounts. Please try again.'); }
+              }}>Switch account</button>
+            </> : <>
+              <p>Sign in as jake@brickbuilder.ai to open Photo Scanner.</p>
+              <Link to="/login?next=%2Fphoto-scanner" onClick={() => track('sign_in_clicked')}>Sign in to Photo Scanner</Link>
+            </>}
+            {signInError && <p role="alert">{signInError}</p>}
           </div>
         )}
       </div>

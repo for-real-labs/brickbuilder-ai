@@ -1,8 +1,9 @@
+import { canUsePhotoScanner } from '../services/photoScannerApi';
 import { CreditBalance } from './BillingComponents';
 import { NotificationPanel } from "./NotificationMenu";
 import React, { useEffect, useId, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, User, ChevronDown, ChevronRight, CreditCard, Sparkles, Settings, LogOut, LayoutDashboard } from "lucide-react";
+import { Bell, User, ChevronDown, ChevronRight, CreditCard, Sparkles, Settings, LogOut, LayoutDashboard, ScanLine } from "lucide-react";
 import posthog from "posthog-js";
 import { useAuth } from "../contexts/AuthContext";
 import { useGenerationNotifications } from "../contexts/GenerationNotificationsContext";
@@ -76,14 +77,15 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
 
   // Only show username when Supabase is configured and user is logged in
   const showUserIdentity = isSupabaseConfigured && user;
+  const localWorkspace = !isSupabaseConfigured && !user;
 
   return (
     <div className="flex items-center gap-2">{showCredits && <CreditBalance />}<div ref={container} className="relative shrink-0">
       <button
         ref={trigger}
         type="button"
-        aria-label="Profile"
-        title="Profile"
+        aria-label={localWorkspace ? "Local workspace" : "Profile"}
+        title={localWorkspace ? "Local workspace — not signed in" : "Profile"}
         aria-expanded={dropdownOpen}
         aria-controls={panelId}
         aria-describedby={feed.unread_count > 0 ? unreadId : undefined}
@@ -91,7 +93,7 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
         className="relative inline-flex h-11 cursor-pointer items-center justify-center gap-2 rounded-full border border-slate-200 bg-white/90 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-red-200 hover:bg-red-50 hover:text-[#f44336] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2 px-3 sm:h-9"
       >
         <User aria-hidden="true" className="h-4 w-4" />
-        <span>Profile</span>
+        <span>{localWorkspace ? "Local" : "Profile"}</span>
         <ChevronDown
           aria-hidden="true"
           className={`hidden h-3.5 w-3.5 transition-transform sm:block ${
@@ -124,8 +126,21 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
                   <p className="text-sm font-semibold text-slate-900 truncate">
                     {displayName}
                   </p>
+                  {user?.email && displayName !== user.email && <p className="break-all text-xs text-slate-500">{user.email}</p>}
                 </div>
               )}
+
+              {localWorkspace && <div className="border-b border-slate-100 px-4 py-3 text-xs text-slate-600">
+                <p className="font-semibold text-slate-900">Local workspace</p>
+                <p className="mt-1">You are not signed in to an account.</p>
+                <a href="https://brickbuilder.ai/login" className="mt-2 inline-block text-red-600 underline"
+                  onClick={() => posthog.capture('profile_local_sign_in_clicked')}>Sign in on BrickBuilder.ai</a>
+              </div>}
+              {canUsePhotoScanner(user?.email) && <button type="button"
+                onClick={() => { posthog.capture('profile_navigation_clicked', { destination: '/photo-scanner' }); go('/photo-scanner'); }}
+                className="flex min-h-11 w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50">
+                <ScanLine aria-hidden="true" className="h-4 w-4" />Photo Scanner
+              </button>}
 
               <button
                 ref={notificationsButton}

@@ -5,14 +5,14 @@ import { HelmetProvider } from 'react-helmet-async';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import PhotoScannerPage from '../src/pages/PhotoScannerPage';
 import { groupScanRegions, PhotoScannerApi, type ScanRegion, type PhotoScan } from '../src/services/photoScannerApi';
-const auth = vi.hoisted(() => ({ user: null as null | { id: string; email: string }, loading: false }));
+const auth = vi.hoisted(() => ({ user: null as null | { id: string; email: string }, loading: false, isSupabaseConfigured: true, signOut: vi.fn() }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 const match = { id: '3001', name: 'Brick 2 x 4', score: .92, image_url: null };
 const region = (id: string, changes = {}): ScanRegion => ({ id, box: [0, 0, 30, 30], match, candidates: [match, { ...match, id: '3002' }], status: 'identified', excluded: false, reviewed: false, ...changes });
 const snapshot: PhotoScan = { id: 'test', width: 100, height: 100, status: 'complete', regions: [region('1'), region('2'), region('3', { match: null, status: 'failed' })], completed: 3, tiles_done: 1, tiles_total: 1, warnings: [], elapsed_seconds: 12, duplicates_removed: 0, retries: 0 };
 let host: HTMLDivElement, root: ReturnType<typeof createRoot>;
-beforeEach(() => { auth.user = null; sessionStorage.clear(); host = document.createElement('div'); document.body.append(host); root = createRoot(host); vi.spyOn(PhotoScannerApi, 'asset').mockResolvedValue('blob:photo'); URL.revokeObjectURL = vi.fn(); });
+beforeEach(() => { auth.user = null; auth.isSupabaseConfigured = true; sessionStorage.clear(); host = document.createElement('div'); document.body.append(host); root = createRoot(host); vi.spyOn(PhotoScannerApi, 'asset').mockResolvedValue('blob:photo'); URL.revokeObjectURL = vi.fn(); });
 afterEach(() => { act(() => root.unmount()); host.remove(); vi.restoreAllMocks(); });
 const mount = async () => act(async () => { root.render(<HelmetProvider><MemoryRouter><PhotoScannerPage /></MemoryRouter></HelmetProvider>); });
 function allow(status = 'complete') { auth.user = { id: 'jake', email: 'jake@brickbuilder.ai' }; sessionStorage.setItem('photo-scanner:jake', 'test'); vi.spyOn(PhotoScannerApi, 'access').mockResolvedValue({ allowed: true }); vi.spyOn(PhotoScannerApi, 'get').mockResolvedValue({ ...snapshot, status }); }
@@ -36,4 +36,18 @@ it('cancels and retains partial results', async () => {
 });
 it('removes private results on account switch', async () => {
  allow(); await mount(); auth.user = { id: 'other', email: 'other@example.com' }; await mount(); expect(host.textContent).not.toContain('Brick 2 x 4'); expect(host.querySelector('img')).toBeNull();
+});
+
+it('keeps the scanner destination through sign-in', async () => {
+ await mount(); expect(host.querySelector('a[href="/login?next=%2Fphoto-scanner"]')).not.toBeNull();
+ expect(host.textContent).toContain('jake@brickbuilder.ai');
+});
+it('explains local anonymous mode and links to the live scanner', async () => {
+ auth.isSupabaseConfigured = false; await mount();
+ expect(host.textContent).toContain('local workspace is not signed in');
+ expect(host.querySelector('a[href="https://brickbuilder.ai/photo-scanner"]')).not.toBeNull();
+});
+it('identifies the wrong account without running a scan', async () => {
+ auth.user = { id: 'other', email: 'other@example.com' }; const access = vi.spyOn(PhotoScannerApi, 'access'); await mount();
+ expect(host.textContent).toContain('other@example.com'); expect(host.textContent).toContain('Switch account'); expect(access).not.toHaveBeenCalled();
 });

@@ -147,5 +147,6 @@ it('shows asynchronous 3D export errors and allows retrying', async () => {
   expect(host.querySelector('a[href="/photo-scanner"]')).toBeNull();
   scannerAuth.user = { email: 'jake@brickbuilder.ai' }; mount();
   expect(host.querySelector('a[href="/photo-scanner"]')?.textContent).toBe('Photo Scanner');
+  expect(host.querySelector('ul[aria-label="Tools"] > li')?.textContent).toBe('Photo Scanner');
   scannerAuth.user = null;
  });
