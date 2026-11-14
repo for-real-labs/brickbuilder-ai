@@ -33,7 +33,7 @@ import { useLandingViewport } from '../hooks/useLandingViewport';
 import './LandingPage.css';
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowUp, Coins, Image as ImageIcon, ChevronDown, Github, Sparkles, Star, X } from "lucide-react";
+import { ArrowRight, ArrowUp, Coins, Image as ImageIcon, ChevronDown, Github, Sparkles, Star, X } from "lucide-react";
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
@@ -1086,7 +1086,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           }}>Create a design</button>
           <button type="button" aria-pressed={inventoryOpen} disabled={loading || modelBusy || buddyChat.routing} onClick={() => {
             setInventoryOpen(true); setSettingsOpen(false); posthog.capture('existing_parts_tab_selected', { tab: 'existing_set' });
-          }}>Design from existing set</button>
+          }}>Design from existing parts</button>
         </div>}
         {inventoryOpen ? <ExistingPartsDesigner onLogin={() => setShowLoginModal(true)} onSelect={inventory => {
           setPartsInventory(inventory); setGenerationMethod('nova'); setInventoryOpen(false);
@@ -1367,6 +1367,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.generation_count.toLocaleString() : '—'}</span><span className="landing-stat-label">models generated</span></div>
                   <div className="landing-stat-divider" aria-hidden="true" />
                   <div className="landing-stat"><span className="block text-[14px] font-semibold tabular-nums text-slate-900 sm:text-[16.8px]">{displayedGenerationStats ? displayedGenerationStats.brick_count.toLocaleString() : '—'}</span><span className="landing-stat-label">bricks generated</span></div>
+                  <a href="/community" className="landing-community-link"
+                    onClick={() => posthog.capture('landing_view_community_clicked', { surface: 'generation_stats' })}>
+                    View community models<ArrowRight size={16} aria-hidden="true" />
+                  </a>
                 </div>}
 
 
@@ -1378,7 +1382,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         </div>
         <LandingSocialLinks />
         <a href="/blog" onClick={() => posthog.capture('landing_blog_clicked')}>Blog</a>
-        <p className="mx-auto max-w-md px-4 text-center text-xs leading-relaxed text-slate-600">
+        <p className="landing-trademark">
           LEGO® is a trademark of the LEGO Group, which does not sponsor, authorize, or endorse this site.
         </p>
       </footer>}

@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft,
+  ChevronDown,
   Users,
   Loader2,
   Search,
@@ -164,7 +165,7 @@ export default function CommunityPage() {
   const [hasMore, setHasMore] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [likingGenerationId, setLikingGenerationId] = useState<string | null>(null);
-  const [sortMode, setSortMode] = useState<SortMode>('likes');
+  const [sortMode, setSortMode] = useState<SortMode>('date_desc');
   const [searchQuery, setSearchQuery] = useState('');
   const [generationStats, setGenerationStats] = useState<GenerationStats | null>(null);
   const displayedGenerationStats = useAnimatedGenerationStats(generationStats);
@@ -343,16 +344,19 @@ export default function CommunityPage() {
                   className="w-full h-10 rounded-xl border border-slate-300 bg-white pl-9 pr-4 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#f44336]/30"
                 />
               </div>
-              <select
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as SortMode)}
-                aria-label="Sort community models"
-                className="h-10 rounded-xl border border-slate-300 bg-white px-3 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#f44336]/30"
-              >
-                <option value="likes">Most liked</option>
-                <option value="date_desc">Newest first</option>
-                <option value="date_asc">Oldest first</option>
-              </select>
+              <div className="relative shrink-0">
+                <select
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as SortMode)}
+                  aria-label="Sort community models"
+                  className="h-10 rounded-xl border border-slate-300 bg-white appearance-none w-full pl-3 pr-10 text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#f44336]/30"
+                >
+                  <option value="likes">Most liked</option>
+                  <option value="date_desc">Newest first</option>
+                  <option value="date_asc">Oldest first</option>
+                </select>
+                <ChevronDown aria-hidden="true" className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+              </div>
             </div>
             {loading ? (
               <div className="flex items-center justify-center py-20">

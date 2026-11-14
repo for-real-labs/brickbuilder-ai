@@ -768,10 +768,29 @@ describe('LandingPage', () => {
     }
   });
 
+  it('tracks opening community models from the generation stats', async () => {
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      const link = container.querySelector<HTMLAnchorElement>('.landing-community-link')!;
+      link.addEventListener('click', event => event.preventDefault());
+      act(() => link.click());
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith(
+        'landing_view_community_clicked', { surface: 'generation_stats' });
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+    }
+  });
+
   it('shows the upload-first hero, quiet welcome, and statistics', () => {
     const markup = renderToStaticMarkup(<LandingPage />);
 
     expect(markup).toContain('The Easiest Way to ');
+    expect(markup).toContain('Design from existing parts');
+    expect(markup).not.toContain('Design from existing set');
     expect(markup).not.toContain('credit-nudge');
     expect(markup).toContain('landing-header-brand');
     expect(markup).toContain('Try something random');
@@ -786,6 +805,10 @@ describe('LandingPage', () => {
     const form = container.querySelector('form[aria-label="Create a brick model"]')!;
     const stats = container.querySelector('[aria-label="BrickBuilder generation statistics"]')!;
     expect(stats).not.toBeNull();
+    const trademark = container.querySelector('.landing-trademark')!;
+    expect(trademark.textContent).toContain('LEGO® is a trademark of the LEGO Group');
+    expect(trademark.parentElement?.lastElementChild).toBe(trademark);
+    expect(stats.querySelector('a[href="/community"]')?.textContent).toBe('View community models');
     expect(stats.previousElementSibling?.tagName).toBe('MAIN');
     expect(stats.querySelector('.tabular-nums')?.className).toContain('text-[14px]');
     expect(stats.querySelector('.tabular-nums')?.className).toContain('sm:text-[16.8px]');

@@ -161,7 +161,7 @@ describe('CommunityPage', () => {
     }
   });
 
-  it('defaults to sorting by likes and requests the top sort from the API', async () => {
+  it('defaults to newest first and allows switching to most liked', async () => {
     const getCommunityGenerations = vi.spyOn(GetCommunityGenerationsApiService, 'getCommunityGenerations').mockResolvedValue({
       generations: [],
       total_count: 0,
@@ -177,8 +177,17 @@ describe('CommunityPage', () => {
         root.render(<CommunityPage />);
       });
 
-      expect(getCommunityGenerations).toHaveBeenCalledWith('tok', 50, 0, undefined, 'top');
-      expect((container.querySelector('[aria-label="Sort community models"]') as HTMLSelectElement).value).toBe('likes');
+      expect(getCommunityGenerations).toHaveBeenLastCalledWith('tok', 50, 0, undefined, 'recent');
+      const select = container.querySelector<HTMLSelectElement>('[aria-label="Sort community models"]')!;
+      expect(select.value).toBe('date_desc');
+      expect(select.className).toContain('pr-10');
+      expect(select.className).toContain('appearance-none');
+      expect(select.parentElement?.querySelector('svg')?.classList.contains('pointer-events-none')).toBe(true);
+      await act(async () => {
+        select.value = 'likes';
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      expect(getCommunityGenerations).toHaveBeenLastCalledWith('tok', 50, 0, undefined, 'top');
     } finally {
       act(() => root.unmount());
       container.remove();
