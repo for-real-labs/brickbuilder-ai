@@ -1,0 +1,211 @@
+BLItemNo,ElementId,LdrawId,PartName,BLColorId,LDrawColorId,ColorName,ColorCategory,Qty,Weight
+2456,,2456.dat,,11,0,Black,Solid Colors,30,0.003261
+2456,,2456.dat,,7,1,Blue,Solid Colors,30,0.003261
+2456,,2456.dat,,36,10,Bright Green,Solid Colors,30,0.003261
+2456,,2456.dat,,105,212,Bright Light Blue,Solid Colors,30,0.003261
+2456,,2456.dat,,110,191,Bright Light Orange,Solid Colors,30,0.003261
+2456,,2456.dat,,103,226,Bright Light Yellow,Solid Colors,30,0.003261
+2456,,2456.dat,,104,29,Bright Pink,Solid Colors,30,0.003261
+2456,,2456.dat,,153,321,Dark Azure,Solid Colors,30,0.003261
+2456,,2456.dat,,63,272,Dark Blue,Solid Colors,30,0.003261
+2456,,2456.dat,,85,72,Dark Bluish Gray,Solid Colors,30,0.003261
+2456,,2456.dat,,120,308,Dark Brown,Solid Colors,30,0.003261
+2456,,2456.dat,,80,288,Dark Green,Solid Colors,30,0.003261
+2456,,2456.dat,,68,484,Dark Orange,Solid Colors,30,0.003261
+2456,,2456.dat,,47,5,Dark Pink,Solid Colors,30,0.003261
+2456,,2456.dat,,89,85,Dark Purple,Solid Colors,30,0.003261
+2456,,2456.dat,,59,320,Dark Red,Solid Colors,30,0.003261
+2456,,2456.dat,,69,28,Dark Tan,Solid Colors,30,0.003261
+2456,,2456.dat,,6,2,Green,Solid Colors,30,0.003261
+2456,,2456.dat,,152,323,Light Aqua,Solid Colors,30,0.003261
+2456,,2456.dat,,86,71,Light Bluish Gray,Solid Colors,30,0.003261
+2456,,2456.dat,,90,78,Light Nougat,Solid Colors,30,0.003261
+2456,,2456.dat,,34,27,Lime,Solid Colors,30,0.003261
+2456,,2456.dat,,71,26,Magenta,Solid Colors,30,0.003261
+2456,,2456.dat,,156,322,Medium Azure,Solid Colors,30,0.003261
+2456,,2456.dat,,42,73,Medium Blue,Solid Colors,30,0.003261
+2456,,2456.dat,,157,30,Medium Lavender,Solid Colors,30,0.003261
+2456,,2456.dat,,150,84,Medium Nougat,Solid Colors,30,0.003261
+2456,,2456.dat,,155,330,Olive Green,Solid Colors,30,0.003261
+2456,,2456.dat,,4,25,Orange,Solid Colors,30,0.003261
+2456,,2456.dat,,5,4,Red,Solid Colors,30,0.003261
+2456,,2456.dat,,88,70,Reddish Brown,Solid Colors,30,0.003261
+2456,,2456.dat,,48,378,Sand Green,Solid Colors,30,0.003261
+2456,,2456.dat,,2,19,Tan,Solid Colors,30,0.003261
+2456,,2456.dat,,1,15,White,Solid Colors,30,0.003261
+2456,,2456.dat,,3,14,Yellow,Solid Colors,30,0.003261
+3001,,3001.dat,,11,0,Black,Solid Colors,50,0.002226
+3001,,3001.dat,,7,1,Blue,Solid Colors,50,0.002226
+3001,,3001.dat,,36,10,Bright Green,Solid Colors,50,0.002226
+3001,,3001.dat,,105,212,Bright Light Blue,Solid Colors,50,0.002226
+3001,,3001.dat,,110,191,Bright Light Orange,Solid Colors,50,0.002226
+3001,,3001.dat,,103,226,Bright Light Yellow,Solid Colors,50,0.002226
+3001,,3001.dat,,104,29,Bright Pink,Solid Colors,50,0.002226
+3001,,3001.dat,,153,321,Dark Azure,Solid Colors,50,0.002226
+3001,,3001.dat,,63,272,Dark Blue,Solid Colors,50,0.002226
+3001,,3001.dat,,85,72,Dark Bluish Gray,Solid Colors,50,0.002226
+3001,,3001.dat,,120,308,Dark Brown,Solid Colors,50,0.002226
+3001,,3001.dat,,80,288,Dark Green,Solid Colors,50,0.002226
+3001,,3001.dat,,68,484,Dark Orange,Solid Colors,50,0.002226
+3001,,3001.dat,,47,5,Dark Pink,Solid Colors,50,0.002226
+3001,,3001.dat,,89,85,Dark Purple,Solid Colors,50,0.002226
+3001,,3001.dat,,59,320,Dark Red,Solid Colors,50,0.002226
+3001,,3001.dat,,69,28,Dark Tan,Solid Colors,50,0.002226
+3001,,3001.dat,,6,2,Green,Solid Colors,50,0.002226
+3001,,3001.dat,,152,323,Light Aqua,Solid Colors,50,0.002226
+3001,,3001.dat,,86,71,Light Bluish Gray,Solid Colors,50,0.002226
+3001,,3001.dat,,90,78,Light Nougat,Solid Colors,50,0.002226
+3001,,3001.dat,,34,27,Lime,Solid Colors,50,0.002226
+3001,,3001.dat,,71,26,Magenta,Solid Colors,50,0.002226
+3001,,3001.dat,,156,322,Medium Azure,Solid Colors,50,0.002226
+3001,,3001.dat,,42,73,Medium Blue,Solid Colors,50,0.002226
+3001,,3001.dat,,157,30,Medium Lavender,Solid Colors,50,0.002226
+3001,,3001.dat,,150,84,Medium Nougat,Solid Colors,50,0.002226
+3001,,3001.dat,,155,330,Olive Green,Solid Colors,50,0.002226
+3001,,3001.dat,,4,25,Orange,Solid Colors,50,0.002226
+3001,,3001.dat,,5,4,Red,Solid Colors,50,0.002226
+3001,,3001.dat,,88,70,Reddish Brown,Solid Colors,50,0.002226
+3001,,3001.dat,,48,378,Sand Green,Solid Colors,50,0.002226
+3001,,3001.dat,,2,19,Tan,Solid Colors,50,0.002226
+3001,,3001.dat,,1,15,White,Solid Colors,50,0.002226
+3001,,3001.dat,,3,14,Yellow,Solid Colors,50,0.002226
+3003,,3003.dat,,11,0,Black,Solid Colors,50,0.001164
+3003,,3003.dat,,7,1,Blue,Solid Colors,50,0.001164
+3003,,3003.dat,,36,10,Bright Green,Solid Colors,50,0.001164
+3003,,3003.dat,,105,212,Bright Light Blue,Solid Colors,50,0.001164
+3003,,3003.dat,,110,191,Bright Light Orange,Solid Colors,50,0.001164
+3003,,3003.dat,,103,226,Bright Light Yellow,Solid Colors,50,0.001164
+3003,,3003.dat,,104,29,Bright Pink,Solid Colors,50,0.001164
+3003,,3003.dat,,153,321,Dark Azure,Solid Colors,50,0.001164
+3003,,3003.dat,,63,272,Dark Blue,Solid Colors,50,0.001164
+3003,,3003.dat,,85,72,Dark Bluish Gray,Solid Colors,50,0.001164
+3003,,3003.dat,,120,308,Dark Brown,Solid Colors,50,0.001164
+3003,,3003.dat,,80,288,Dark Green,Solid Colors,50,0.001164
+3003,,3003.dat,,68,484,Dark Orange,Solid Colors,50,0.001164
+3003,,3003.dat,,47,5,Dark Pink,Solid Colors,50,0.001164
+3003,,3003.dat,,89,85,Dark Purple,Solid Colors,50,0.001164
+3003,,3003.dat,,59,320,Dark Red,Solid Colors,50,0.001164
+3003,,3003.dat,,69,28,Dark Tan,Solid Colors,50,0.001164
+3003,,3003.dat,,6,2,Green,Solid Colors,50,0.001164
+3003,,3003.dat,,152,323,Light Aqua,Solid Colors,50,0.001164
+3003,,3003.dat,,86,71,Light Bluish Gray,Solid Colors,50,0.001164
+3003,,3003.dat,,90,78,Light Nougat,Solid Colors,50,0.001164
+3003,,3003.dat,,34,27,Lime,Solid Colors,50,0.001164
+3003,,3003.dat,,71,26,Magenta,Solid Colors,50,0.001164
+3003,,3003.dat,,156,322,Medium Azure,Solid Colors,50,0.001164
+3003,,3003.dat,,42,73,Medium Blue,Solid Colors,50,0.001164
+3003,,3003.dat,,157,30,Medium Lavender,Solid Colors,50,0.001164
+3003,,3003.dat,,150,84,Medium Nougat,Solid Colors,50,0.001164
+3003,,3003.dat,,155,330,Olive Green,Solid Colors,50,0.001164
+3003,,3003.dat,,4,25,Orange,Solid Colors,50,0.001164
+3003,,3003.dat,,5,4,Red,Solid Colors,50,0.001164
+3003,,3003.dat,,88,70,Reddish Brown,Solid Colors,50,0.001164
+3003,,3003.dat,,48,378,Sand Green,Solid Colors,50,0.001164
+3003,,3003.dat,,2,19,Tan,Solid Colors,50,0.001164
+3003,,3003.dat,,1,15,White,Solid Colors,50,0.001164
+3003,,3003.dat,,3,14,Yellow,Solid Colors,50,0.001164
+3004,,3004.dat,,11,0,Black,Solid Colors,70,0.000794
+3004,,3004.dat,,7,1,Blue,Solid Colors,70,0.000794
+3004,,3004.dat,,36,10,Bright Green,Solid Colors,70,0.000794
+3004,,3004.dat,,105,212,Bright Light Blue,Solid Colors,70,0.000794
+3004,,3004.dat,,110,191,Bright Light Orange,Solid Colors,70,0.000794
+3004,,3004.dat,,103,226,Bright Light Yellow,Solid Colors,70,0.000794
+3004,,3004.dat,,104,29,Bright Pink,Solid Colors,70,0.000794
+3004,,3004.dat,,153,321,Dark Azure,Solid Colors,70,0.000794
+3004,,3004.dat,,63,272,Dark Blue,Solid Colors,70,0.000794
+3004,,3004.dat,,85,72,Dark Bluish Gray,Solid Colors,70,0.000794
+3004,,3004.dat,,120,308,Dark Brown,Solid Colors,70,0.000794
+3004,,3004.dat,,80,288,Dark Green,Solid Colors,70,0.000794
+3004,,3004.dat,,68,484,Dark Orange,Solid Colors,70,0.000794
+3004,,3004.dat,,47,5,Dark Pink,Solid Colors,70,0.000794
+3004,,3004.dat,,89,85,Dark Purple,Solid Colors,70,0.000794
+3004,,3004.dat,,59,320,Dark Red,Solid Colors,70,0.000794
+3004,,3004.dat,,69,28,Dark Tan,Solid Colors,70,0.000794
+3004,,3004.dat,,6,2,Green,Solid Colors,70,0.000794
+3004,,3004.dat,,152,323,Light Aqua,Solid Colors,70,0.000794
+3004,,3004.dat,,86,71,Light Bluish Gray,Solid Colors,70,0.000794
+3004,,3004.dat,,90,78,Light Nougat,Solid Colors,70,0.000794
+3004,,3004.dat,,34,27,Lime,Solid Colors,70,0.000794
+3004,,3004.dat,,71,26,Magenta,Solid Colors,70,0.000794
+3004,,3004.dat,,156,322,Medium Azure,Solid Colors,70,0.000794
+3004,,3004.dat,,42,73,Medium Blue,Solid Colors,70,0.000794
+3004,,3004.dat,,157,30,Medium Lavender,Solid Colors,70,0.000794
+3004,,3004.dat,,150,84,Medium Nougat,Solid Colors,70,0.000794
+3004,,3004.dat,,155,330,Olive Green,Solid Colors,70,0.000794
+3004,,3004.dat,,4,25,Orange,Solid Colors,70,0.000794
+3004,,3004.dat,,5,4,Red,Solid Colors,70,0.000794
+3004,,3004.dat,,88,70,Reddish Brown,Solid Colors,70,0.000794
+3004,,3004.dat,,48,378,Sand Green,Solid Colors,70,0.000794
+3004,,3004.dat,,2,19,Tan,Solid Colors,70,0.000794
+3004,,3004.dat,,1,15,White,Solid Colors,70,0.000794
+3004,,3004.dat,,3,14,Yellow,Solid Colors,70,0.000794
+3005,,3005.dat,,11,0,Black,Solid Colors,70,0.000427
+3005,,3005.dat,,7,1,Blue,Solid Colors,70,0.000427
+3005,,3005.dat,,36,10,Bright Green,Solid Colors,70,0.000427
+3005,,3005.dat,,105,212,Bright Light Blue,Solid Colors,70,0.000427
+3005,,3005.dat,,110,191,Bright Light Orange,Solid Colors,70,0.000427
+3005,,3005.dat,,103,226,Bright Light Yellow,Solid Colors,70,0.000427
+3005,,3005.dat,,104,29,Bright Pink,Solid Colors,70,0.000427
+3005,,3005.dat,,153,321,Dark Azure,Solid Colors,70,0.000427
+3005,,3005.dat,,63,272,Dark Blue,Solid Colors,70,0.000427
+3005,,3005.dat,,85,72,Dark Bluish Gray,Solid Colors,70,0.000427
+3005,,3005.dat,,120,308,Dark Brown,Solid Colors,70,0.000427
+3005,,3005.dat,,80,288,Dark Green,Solid Colors,70,0.000427
+3005,,3005.dat,,68,484,Dark Orange,Solid Colors,70,0.000427
+3005,,3005.dat,,47,5,Dark Pink,Solid Colors,70,0.000427
+3005,,3005.dat,,89,85,Dark Purple,Solid Colors,70,0.000427
+3005,,3005.dat,,59,320,Dark Red,Solid Colors,70,0.000427
+3005,,3005.dat,,69,28,Dark Tan,Solid Colors,70,0.000427
+3005,,3005.dat,,6,2,Green,Solid Colors,70,0.000427
+3005,,3005.dat,,152,323,Light Aqua,Solid Colors,70,0.000427
+3005,,3005.dat,,86,71,Light Bluish Gray,Solid Colors,70,0.000427
+3005,,3005.dat,,90,78,Light Nougat,Solid Colors,70,0.000427
+3005,,3005.dat,,34,27,Lime,Solid Colors,70,0.000427
+3005,,3005.dat,,71,26,Magenta,Solid Colors,70,0.000427
+3005,,3005.dat,,156,322,Medium Azure,Solid Colors,70,0.000427
+3005,,3005.dat,,42,73,Medium Blue,Solid Colors,70,0.000427
+3005,,3005.dat,,157,30,Medium Lavender,Solid Colors,70,0.000427
+3005,,3005.dat,,150,84,Medium Nougat,Solid Colors,70,0.000427
+3005,,3005.dat,,155,330,Olive Green,Solid Colors,70,0.000427
+3005,,3005.dat,,4,25,Orange,Solid Colors,70,0.000427
+3005,,3005.dat,,5,4,Red,Solid Colors,70,0.000427
+3005,,3005.dat,,88,70,Reddish Brown,Solid Colors,70,0.000427
+3005,,3005.dat,,48,378,Sand Green,Solid Colors,70,0.000427
+3005,,3005.dat,,2,19,Tan,Solid Colors,70,0.000427
+3005,,3005.dat,,1,15,White,Solid Colors,70,0.000427
+3005,,3005.dat,,3,14,Yellow,Solid Colors,70,0.000427
+3010,,3010.dat,,11,0,Black,Solid Colors,50,0.001530
+3010,,3010.dat,,7,1,Blue,Solid Colors,50,0.001530
+3010,,3010.dat,,36,10,Bright Green,Solid Colors,50,0.001530
+3010,,3010.dat,,105,212,Bright Light Blue,Solid Colors,50,0.001530
+3010,,3010.dat,,110,191,Bright Light Orange,Solid Colors,50,0.001530
+3010,,3010.dat,,103,226,Bright Light Yellow,Solid Colors,50,0.001530
+3010,,3010.dat,,104,29,Bright Pink,Solid Colors,50,0.001530
+3010,,3010.dat,,153,321,Dark Azure,Solid Colors,50,0.001530
+3010,,3010.dat,,63,272,Dark Blue,Solid Colors,50,0.001530
+3010,,3010.dat,,85,72,Dark Bluish Gray,Solid Colors,50,0.001530
+3010,,3010.dat,,120,308,Dark Brown,Solid Colors,50,0.001530
+3010,,3010.dat,,80,288,Dark Green,Solid Colors,50,0.001530
+3010,,3010.dat,,68,484,Dark Orange,Solid Colors,50,0.001530
+3010,,3010.dat,,47,5,Dark Pink,Solid Colors,50,0.001530
+3010,,3010.dat,,89,85,Dark Purple,Solid Colors,50,0.001530
+3010,,3010.dat,,59,320,Dark Red,Solid Colors,50,0.001530
+3010,,3010.dat,,69,28,Dark Tan,Solid Colors,50,0.001530
+3010,,3010.dat,,6,2,Green,Solid Colors,50,0.001530
+3010,,3010.dat,,152,323,Light Aqua,Solid Colors,50,0.001530
+3010,,3010.dat,,86,71,Light Bluish Gray,Solid Colors,50,0.001530
+3010,,3010.dat,,90,78,Light Nougat,Solid Colors,50,0.001530
+3010,,3010.dat,,34,27,Lime,Solid Colors,50,0.001530
+3010,,3010.dat,,71,26,Magenta,Solid Colors,50,0.001530
+3010,,3010.dat,,156,322,Medium Azure,Solid Colors,50,0.001530
+3010,,3010.dat,,42,73,Medium Blue,Solid Colors,50,0.001530
+3010,,3010.dat,,157,30,Medium Lavender,Solid Colors,50,0.001530
+3010,,3010.dat,,150,84,Medium Nougat,Solid Colors,50,0.001530
+3010,,3010.dat,,155,330,Olive Green,Solid Colors,50,0.001530
+3010,,3010.dat,,4,25,Orange,Solid Colors,50,0.001530
+3010,,3010.dat,,5,4,Red,Solid Colors,50,0.001530
+3010,,3010.dat,,88,70,Reddish Brown,Solid Colors,50,0.001530
+3010,,3010.dat,,48,378,Sand Green,Solid Colors,50,0.001530
+3010,,3010.dat,,2,19,Tan,Solid Colors,50,0.001530
+3010,,3010.dat,,1,15,White,Solid Colors,50,0.001530
+3010,,3010.dat,,3,14,Yellow,Solid Colors,50,0.001530
