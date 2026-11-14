@@ -80,3 +80,18 @@ unreadable snapshots require the original parts list to be uploaded manually.
 The inventory endpoint checks generation ownership, excludes cancelled orders,
 and reads only that generation's CSV from our storage bucket. It never downloads
 an arbitrary URL or silently substitutes the model's latest inventory.
+
+## Photo identification
+
+**Use image** uploads a photo directly to Brickognize's public
+`POST https://api.brickognize.com/predict/parts/` endpoint using the `query_image`
+multipart field. The existing image preparation utility handles phone formats
+(including HEIC) and enforces upload limits. No BrickBuilder credentials are sent.
+The request times out after 45 seconds and is cancelled when the panel unmounts.
+
+Brickognize identifies one photographed item and returns ranked alternatives,
+not a counted inventory of every brick in a pile. The expandable results grid
+shows every valid returned part match with a thumbnail, part number, and score.
+It does not infer quantities or colors or automatically add alternative matches
+to the finite build palette. Users still supply a parts list or choose a set/order
+to start an inventory-constrained build.

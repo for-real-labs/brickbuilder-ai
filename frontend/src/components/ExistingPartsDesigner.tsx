@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { PartsInventoryApi, inventoryQuantity, type InventoryResult, type LegoSet, type PartsInventory } from '../services/partsInventoryApi';
 import './ExistingPartsDesigner.css';
 import { PreviousOrderParts } from './PreviousOrderParts';
+import { PartsImageRecognition } from './PartsImageRecognition';
 
 export function ExistingPartsDesigner({ onSelect, onLogin }: { onSelect: (inventory: PartsInventory) => void; onLogin?: () => void }) {
   const [query, setQuery] = useState('');
@@ -103,6 +104,8 @@ export function ExistingPartsDesigner({ onSelect, onLogin }: { onSelect: (invent
         <span className="existing-parts-filetypes">LDR · IO · CSV · XML · MPD <span>up to 16 MB</span></span>
       </button>
       <p className="existing-parts-format-help">Studio and LDraw models, CSV parts lists, or BrickLink XML.</p>
+      <div className="existing-parts-divider"><span />or<span /></div>
+      <PartsImageRecognition disabled={busy} />
     </div>
   </main>;
 }
