@@ -185,3 +185,23 @@ def test_input_attribution_distinguishes_inputs_and_preserves_origin_on_edits():
     assert records[-1]['entry_page'] is None
     with pytest.raises(ValueError):
         asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40, input_type='spoof'))
+
+
+def test_maximum_parts_persists_and_cannot_be_relaxed_on_subsequent_revisions():
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    records = []
+    class Table:
+        def insert(self, row):
+            records.append(row)
+            return self
+        def execute(self): return SimpleNamespace(data=[records[-1]])
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = SimpleNamespace(table=lambda _: Table())
+    asyncio.run(storage.create_generation('owner', 'authenticated', 'Model', 40, endpoint='llmToBricks', max_parts=25))
+    assert records[-1]['max_parts'] == 25
+    for requested_limit in (None, 1000):
+        storage.get_generation = AsyncMock(return_value=records[-1])
+        asyncio.run(storage.create_generation('owner', 'authenticated', 'Edit', 40,
+            endpoint='llmToBricks', edit_generation_id=records[-1]['id'], max_parts=requested_limit))
+        assert records[-1]['max_parts'] == 25

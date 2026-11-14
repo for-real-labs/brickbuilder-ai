@@ -694,6 +694,10 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
     generation = await generation_storage.get_generation(request.generation_id)
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
+    if generation.get('endpoint') == 'novaToBricks':
+        raise HTTPException(409, 'This model uses All parts mode. Keep that mode when editing it.')
+    if generation.get('max_parts') is not None:
+        request.max_parts = generation['max_parts']
     # Completed voxel geometry is public and edits save a copy under the caller.
     if generation.get("status") != "completed":
         require_generation_access(generation, auth_info)
@@ -973,6 +977,7 @@ async def llm_to_bricks(
             prompt=request.prompt or "Image reference",
             detail_level=request.detail_level,
             endpoint="llmToBricks",
+            max_parts=request.max_parts,
             entry_page=request.entry_page,
             input_type="image" if request.image_base64 else "text",
             model_3d=request.model,
@@ -1037,6 +1042,7 @@ async def llm_to_bricks_stream(
         prompt=request.prompt or "Image reference",
         detail_level=request.detail_level,
         endpoint="llmToBricks",
+        max_parts=request.max_parts,
         entry_page=request.entry_page,
         input_type="image" if request.image_base64 else "text",
         model_3d=request.model,

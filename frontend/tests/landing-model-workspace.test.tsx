@@ -1373,3 +1373,19 @@ it('keeps all edit versions in order when opening an older revision', async () =
     expect(reopened[4].getAttribute('aria-current')).toBe('true');
   } finally { versions.mockRestore(); }
 });
+
+it.each(['llmToBricks', 'novaToBricks'])('restores and locks the saved mode and maximum when reopening %s', async endpoint => {
+  query.value = 'id=castle';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({
+    ...generation('castle', endpoint), max_parts: 37,
+  });
+  await act(async () => root.render(<LandingPage />));
+  await vi.waitFor(() => expect(container.querySelector<HTMLInputElement>('#generation-max-parts')?.value).toBe('37'));
+  const basic = container.querySelector<HTMLButtonElement>('button[value="llm"]')!;
+  const all = container.querySelector<HTMLButtonElement>('button[value="nova"]')!;
+  expect(basic.disabled).toBe(true);
+  expect(all.disabled).toBe(true);
+  expect(basic.getAttribute('aria-pressed')).toBe(String(endpoint === 'llmToBricks'));
+  expect(all.getAttribute('aria-pressed')).toBe(String(endpoint === 'novaToBricks'));
+  expect(container.querySelector<HTMLInputElement>('#generation-max-parts')!.disabled).toBe(true);
+});

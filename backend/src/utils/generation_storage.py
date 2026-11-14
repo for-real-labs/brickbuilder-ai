@@ -112,6 +112,7 @@ class GenerationStorage:
         entry_page: Optional[str] = None,
         guest_ip_hash: Optional[str] = None,
         personal_billing: bool = False,
+        max_parts: Optional[int] = None,
     ) -> str:
         """
         Create a new generation record and return the generation ID
@@ -145,6 +146,7 @@ class GenerationStorage:
                 "detail_level": detail_level,
                 "endpoint": endpoint,
                 "mode": generation_mode(endpoint),
+                "max_parts": max_parts,
                 "input_type": input_type or infer_input_type(endpoint),
                 "input_format": input_format,
                 "entry_page": normalize_entry_page(entry_page),
@@ -174,6 +176,8 @@ class GenerationStorage:
                 elif not (source.get("status") == "completed" and
                           (source.get("is_community") or endpoint == "llmToBricks")):
                     raise ValueError("Source generation belongs to another owner")
+                if source.get("max_parts") is not None:
+                    generation_data["max_parts"] = source["max_parts"]
                 if endpoint in INHERITED_MODE_ENDPOINTS:
                     generation_data["mode"] = generation_mode(source.get("endpoint"), source.get("mode"))
                 # AI/manual edits keep the original model's input origin.

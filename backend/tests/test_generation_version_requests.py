@@ -166,12 +166,13 @@ def test_cancelled_version_returns_computed_completed_fallback_without_parent_co
 def test_model_response_includes_saved_example_and_duration_without_private_usage(monkeypatch):
     store = SimpleNamespace(get_generation=AsyncMock(return_value={
         'id': 'g', 'status': 'completed', 'name': 'Fish', 'example_edit_prompt': 'Make the fins blue',
-        'generation_duration_seconds': 90, 'tokens_used': 12000, 'ai_usage': {'private': True},
+        'max_parts': 37, 'generation_duration_seconds': 90, 'tokens_used': 12000, 'ai_usage': {'private': True},
     }))
     monkeypatch.setattr(generation_endpoint, 'generation_storage', store)
     response = asyncio.run(generation_endpoint.get_generation(generation_endpoint.GetGenerationRequest(generation_id='g'), {}))
     assert response.example_edit_prompt == 'Make the fins blue'
     assert response.generation_duration_seconds == 90
+    assert response.max_parts == 37
     assert 'ai_usage' not in response.model_dump() and 'tokens_used' not in response.model_dump()
 
 

@@ -829,3 +829,26 @@ def test_basic_inventory_never_falls_back_to_invalid_geometry(monkeypatch):
     monkeypatch.setattr(module, 'DIRECT_FIX_ROUNDS', 1)
     with pytest.raises(ValueError, match='unavailable'):
         asyncio.run(module._generate_ldr(LlmToBricksRequest(prompt='Model', parts_inventory=_owned_bricks(2))))
+
+
+@pytest.mark.parametrize('client_limit', [None, 999])
+def test_basic_edit_inherits_maximum_parts_after_reload(monkeypatch, client_limit):
+    from unittest.mock import AsyncMock
+    storage = AsyncMock()
+    storage.get_generation.return_value = {'status': 'completed', 'endpoint': 'llmToBricks',
+        'max_parts': 15, 'xyzrgb_url': 'voxels'}
+    storage.download_file_from_storage.return_value = b'0 0 0 255 0 0\n'
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    request = LlmToBricksRequest(prompt='Edit', generation_id='source', max_parts=client_limit)
+    asyncio.run(module._load_edit_source(request, {}))
+    assert request.max_parts == 15
+
+
+def test_basic_edit_cannot_switch_all_parts_mode(monkeypatch):
+    from unittest.mock import AsyncMock
+    from fastapi import HTTPException
+    storage = AsyncMock()
+    storage.get_generation.return_value = {'endpoint': 'novaToBricks'}
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    with pytest.raises(HTTPException, match='All parts'):
+        asyncio.run(module._load_edit_source(LlmToBricksRequest(prompt='Edit', generation_id='source'), {}))

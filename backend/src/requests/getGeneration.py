@@ -23,6 +23,7 @@ class GetGenerationResponse(BaseModel):
     endpoint: Optional[str] = None
     orderable: bool = True
     mode: GenerationMode = 'basic_bricks'
+    max_parts: Optional[int] = None
     input_type: Optional[str] = None
     generation_id: str
     status: str  # "started", "queued", "processing", "ldr_processing", "completed", "failed"
@@ -104,6 +105,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
 
         # Build response based on status
         response = GetGenerationResponse(
+            max_parts=generation.get("max_parts"),
             model_generation_id=generation.get("generation_id", request.generation_id),
             version=generation.get("version", 1),
             previous_completed_generation_id=previous_id,

@@ -352,13 +352,14 @@ def test_original_inventory_survives_provider_switch_or_lost_session(monkeypatch
             return inventory.model_dump_json().encode()
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
         get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated', 'status': 'completed',
-            'endpoint': 'novaToBricks', 'ldr_url': 'public', 'has_parts_inventory': True}),
+            'endpoint': 'novaToBricks', 'ldr_url': 'public', 'has_parts_inventory': True, 'max_parts': 17}),
         client=SimpleNamespace(storage=SimpleNamespace(from_=lambda _: Bucket())),
         download_file_from_storage=AsyncMock(return_value=b'geometry')))
     request = module.NovaToBricksRequest(prompt='edit', generation_id='source', model='gpt-6.1-sol',
         parts_inventory={'name': 'attempted replacement', 'parts': [{'part_id': '3002', 'color_id': 0, 'quantity': 100}]})
     asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
     assert request.parts_inventory == inventory and request._nova_session is None
+    assert request.max_parts == 17
 
 
 def test_missing_private_inventory_blocks_edit_instead_of_removing_limits(monkeypatch):
@@ -410,3 +411,29 @@ def test_generation_persists_private_inventory_before_starting_agent(monkeypatch
         asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))
         assert events == ['inventory', 'marker', 'agent']
         query.update.assert_called_once_with({'has_parts_inventory': True})
+
+
+def test_all_parts_inventory_does_not_inherit_basic_palette_filter():
+    parts = [{'part_id': '3020', 'color_id': 4, 'quantity': 5}]
+    request = module.NovaToBricksRequest(prompt='car', parts_inventory={'name': 'Plates', 'parts': parts})
+    assert request.parts_inventory.model_dump()['parts'] == parts
+
+
+@pytest.mark.parametrize('saved_limit,session_limit,expected', [(12, 80, 12), (None, 23, 23)])
+def test_edit_retains_saved_maximum_even_when_client_raises_it(monkeypatch, saved_limit, session_limit, expected):
+    source = {'user_id': 'caller', 'user_type': 'authenticated', 'status': 'completed',
+              'endpoint': 'novaToBricks', 'ldr_url': 'model', 'max_parts': saved_limit}
+    session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'model': 'gpt-5.5', 'auth_mode': 'api_key', 'max_parts': session_limit}
+    monkeypatch.setattr(module, '_owned_session', AsyncMock(return_value=session))
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value=source), download_file_from_storage=AsyncMock(return_value=b'geometry')))
+    request = module.NovaToBricksRequest(prompt='edit', generation_id='source', model='gpt-6.1-sol', max_parts=1000)
+    asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
+    assert request.max_parts == expected
+
+
+def test_all_parts_edit_cannot_change_basic_mode(monkeypatch):
+    monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
+        get_generation=AsyncMock(return_value={'endpoint': 'llmToBricks', 'user_id': 'caller', 'user_type': 'authenticated'})))
+    with pytest.raises(HTTPException, match='Basic bricks'):
+        asyncio.run(module._prepare_edit(module.NovaToBricksRequest(prompt='edit', generation_id='source'), {'user_id': 'caller', 'authenticated': True}))

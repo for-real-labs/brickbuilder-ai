@@ -29,6 +29,7 @@ export interface GetGenerationResponse {
   version?: number;
   endpoint?: string;
   orderable?: boolean;
+  max_parts?: number | null;
   mode?: 'basic_bricks' | 'all_parts';
   input_type?: 'text' | 'image' | 'glb' | 'obj' | 'ldraw' | 'unknown';
   generation_id: string;

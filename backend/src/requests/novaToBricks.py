@@ -13,7 +13,7 @@ from typing import Literal
 
 from fastapi import Depends, HTTPException
 from fastapi.responses import Response
-from pydantic import PrivateAttr
+from pydantic import PrivateAttr, field_validator
 
 from .imageToBricks import ImageToBricksResponse
 from .llmToBricks import LlmToBricksRequest, SUPPORTED_MODELS
@@ -54,6 +54,13 @@ def _generation_timeout() -> float | None:
 class NovaToBricksRequest(LlmToBricksRequest):
     auth_mode: Literal["api_key", "native"] = "api_key"
     parts_inventory: PartsInventory | None = None
+
+    @field_validator('parts_inventory')
+    @classmethod
+    def compatible_inventory(cls, value):
+        # Override the Basic bricks validator inherited from LlmToBricksRequest.
+        return value
+
     _nova_session: dict | None = PrivateAttr(default=None)
     _nova_source_ldr: str | None = PrivateAttr(default=None)
     _nova_uploaded_source: bool = PrivateAttr(default=False)
@@ -65,6 +72,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
     source = await generation_storage.get_generation(request.generation_id)
     if not source:
         raise HTTPException(404, 'Generation not found')
+    if source.get('max_parts') is not None:
+        request.max_parts = source['max_parts']
     try:
         require_generation_access(source, auth_info)
         owned = True
@@ -72,6 +81,10 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         if source.get('endpoint') == 'uploadLdraw':
             raise
         owned = False
+    if source.get('endpoint') == 'llmToBricks':
+        if not owned:
+            raise HTTPException(404, 'Generation not found')
+        raise HTTPException(409, 'This model uses Basic bricks mode. Keep that mode when editing it.')
     if owned and source.get('has_parts_inventory'):
         try:
             bucket = generation_storage.client.storage.from_('generation-output')
@@ -95,6 +108,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             # geometry into a fresh chat. Anthropic thinking signatures belong to
             # the account that created them and cannot follow a credential switch.
             previous = request._nova_session
+            if source.get('max_parts') is None and previous.get('max_parts') is not None:
+                request.max_parts = previous['max_parts']
             # Owned edits/resumes keep their original inventory, including provider switches.
             if previous.get('parts_inventory'):
                 request.parts_inventory = PartsInventory.model_validate(previous['parts_inventory'])
@@ -274,7 +289,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         user_id=auth_info.get("user_id", user_info["user_email"]),
         user_type="anonymous" if user_info["is_anonymous"] else "authenticated",
         prompt=request.prompt or "Image reference", detail_level=request.detail_level,
-        endpoint="novaToBricks", model_3d=request.model,
+        endpoint="novaToBricks", model_3d=request.model, max_parts=request.max_parts,
         input_type=request._nova_input_type or ("image" if request.image_base64 else "text"),
         input_format=request._nova_input_format, entry_page=request.entry_page,
         edit_generation_id=request.generation_id if request._nova_session or request._nova_uploaded_source else None,

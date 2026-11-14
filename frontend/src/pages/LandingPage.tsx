@@ -291,6 +291,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const requestedModelId = searchParams.get('id');
   const [linkedModelId] = useState(requestedModelId);
   const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
+  useEffect(() => {
+    const generation = landingModel.model?.generation;
+    if (!generation) return;
+    setGenerationMethod(generation.mode === 'all_parts' || generation.endpoint === 'novaToBricks' || generation.endpoint === 'uploadLdraw' ? 'nova' : 'llm');
+    setMaxPartsInput(generation.max_parts == null ? '' : String(generation.max_parts));
+  }, [landingModel.model?.generation.generation_id]);
+
   const openModel = useCallback((id: string, retainModel = false) => {
     landingModel.open(id, retainModel);
     setSearchParams(current => {
@@ -1290,7 +1297,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       <button key={value} type="button" value={value}
                         aria-label={label}
                         aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d'}
+                        disabled={Boolean(landingModel.model) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d'}
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);
@@ -1308,7 +1315,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     <input id="generation-max-parts" type="number" inputMode="numeric" min="1" max="100000" step="1" placeholder="No limit"
                       value={maxPartsInput} onChange={event => setMaxPartsInput(event.target.value)}
                       onBlur={() => posthog.capture('landing_max_parts_changed', { max_parts: Number.isInteger(maxParts) ? maxParts : null })}
-                      disabled={loading || modelBusy || buddyChat.routing || generationMethod === '3d'}
+                      disabled={Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing || generationMethod === '3d'}
                       className="mt-1 min-h-11 w-full min-w-28 rounded-xl border border-slate-300 bg-white px-3 text-sm" />
                   </label>
                 </div>
