@@ -102,7 +102,7 @@ export function ExistingPartsDesigner({ onSelect, onLogin }: { onSelect: (invent
         <span>Drop a file here or choose one</span>
         <span className="existing-parts-filetypes">LDR · IO · CSV · XML · MPD <span>up to 16 MB</span></span>
       </button>
-      <p className="existing-parts-format-help">Studio and LDraw models, CSV parts lists, or BrickLink XML. For your own CSV, use <code>part_id,color_id,quantity</code> with LDraw IDs.</p>
+      <p className="existing-parts-format-help">Studio and LDraw models, CSV parts lists, or BrickLink XML.</p>
     </div>
   </main>;
 }
