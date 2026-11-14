@@ -1,3 +1,4 @@
+import PhotoScannerPage from './pages/PhotoScannerPage';
 import { MaintenanceNavigation } from './components/MaintenanceNavigation';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import { AccountDeleted } from './components/DeleteAccount';
@@ -80,6 +81,7 @@ function MainApp() {
           <Route path="/oauth/consent" element={<OAuthConsentPage />} />
 
           {/* App pages */}
+          <Route path="/photo-scanner" element={<PhotoScannerPage />} />
           <Route path="/pricing" element={<PlanPopupRedirect />} />
           <Route path="/billing" element={<BillingPage />} />
           <Route path="/dashboard" element={<UserDashboard />} /> {/* NEW */}

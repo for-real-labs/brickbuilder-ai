@@ -48,6 +48,7 @@ from .requests.billing import router as billing_router
 from .requests.accountDeletion import router as account_deletion_router
 from .requests.providerKeys import router as provider_keys_router
 from .requests.partsInventory import router as parts_inventory_router
+from .requests.photoScanner import router as photo_scanner_router
 from .utils.local_provider_connections import local_provider_connections, require_local_development
 from .requests.createCheckoutSession import create_checkout_session, CreateCheckoutSessionRequest, CreateCheckoutSessionResponse
 from .requests.stripeWebhook import stripe_webhook, StripeWebhookRequest, StripeWebhookResponse
@@ -142,6 +143,7 @@ app.include_router(billing_router)
 app.include_router(account_deletion_router)
 app.include_router(provider_keys_router)
 app.include_router(parts_inventory_router)
+app.include_router(photo_scanner_router)
 
 
 @app.get('/generation/{generation_id}/notification-email')

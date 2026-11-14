@@ -1,3 +1,5 @@
+import { useAuth } from '../contexts/AuthContext';
+import { canUsePhotoScanner } from '../services/photoScannerApi';
 import { StudioEditButton } from "./StudioEditButton";
 import React, { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { Box, ChevronDown, Download, Upload, Github, Image, LifeBuoy, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
@@ -34,6 +36,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
   page: string; generationSettings?: GenerationSettingsAction; model?: LandingModel | null; busy?: boolean;
 }>(function LandingToolsMenu({ page, generationSettings, model, busy = false }, ref) {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { openPicker } = usePet();
   const { featureAccess, requireFeature } = useBilling();
   const focusChoices = useRef(false);
@@ -236,6 +239,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
           </li>
           <li role="separator" className="my-1 border-t border-slate-200" />
         </>}
+        {canUsePhotoScanner(user?.email) && <li><Link to="/photo-scanner" className={rowClass} onClick={() => { posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Photo Scanner' }); setOpen(false); }}><Image aria-hidden="true" className="h-4 w-4" />Photo Scanner</Link></li>}
         {tools.map(({ label, path, icon: Icon, event }) => <li key={path}>
           <Link to={path} className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-700 transition-colors hover:bg-red-50 hover:text-[#f44336] focus-visible:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#f44336]"
             onClick={() => {

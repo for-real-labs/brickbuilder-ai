@@ -50,3 +50,9 @@ describe('image preparation', () => {
     } finally { vi.unstubAllGlobals(); }
   });
 });
+
+it('preserves larger original phone images for scanner crops', async () => {
+  const file = new File(['photo'], 'spread.jpg', { type: 'image/jpeg' });
+  Object.defineProperty(file, 'size', { value: 8 * 1024 * 1024 });
+  expect(await prepareImageUpload(file, { maxBytes: 16 * 1024 * 1024, maxDimension: 6000 })).toBe(file);
+});

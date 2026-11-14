@@ -1,3 +1,4 @@
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: null }) }));
 import React from 'react';
 import { readFileSync } from 'node:fs';
 import { act } from 'react';

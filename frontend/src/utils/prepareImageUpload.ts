@@ -2,7 +2,8 @@ export const IMAGE_UPLOAD_ACCEPT = 'image/*,.heic,.heif,.tif,.tiff';
 const MAX_IMAGE_BYTES = 50 * 1024 * 1024;
 const DIRECT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
 
-export async function prepareImageUpload(file: File): Promise<File> {
+export async function prepareImageUpload(file: File, options: { maxDimension?: number; maxBytes?: number } = {}): Promise<File> {
+  const maxBytes = options.maxBytes ?? 4 * 1024 * 1024;
   if (!file.size) throw new Error('This image is empty. Please choose another file.');
   if (file.size > MAX_IMAGE_BYTES) throw new Error('Please choose an image smaller than 50 MB.');
   const heic = /\.(heic|heif)$/i.test(file.name) || /^image\/hei[cf]/i.test(file.type);
@@ -11,7 +12,7 @@ export async function prepareImageUpload(file: File): Promise<File> {
     throw new Error('Please choose an image file.');
   }
   // Provider-native formats need no conversion; keep GIF animation intact.
-  if (DIRECT_TYPES.has(file.type) && file.size <= 4 * 1024 * 1024) return file;
+  if (DIRECT_TYPES.has(file.type) && file.size <= maxBytes) return file;
   let blob: Blob = file;
   if (heic) {
     const { heicTo } = await import('heic-to/csp');
@@ -41,7 +42,7 @@ export async function prepareImageUpload(file: File): Promise<File> {
       const image = new Image();
       image.src = url;
       await image.decode();
-      const scale = Math.min(1, 2048 / Math.max(image.naturalWidth, image.naturalHeight));
+      const scale = Math.min(1, (options.maxDimension ?? 2048) / Math.max(image.naturalWidth, image.naturalHeight));
       canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
       canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
       context.fillStyle = '#ffffff';
@@ -52,6 +53,6 @@ export async function prepareImageUpload(file: File): Promise<File> {
   const output = await new Promise<Blob>((resolve, reject) => canvas.toBlob(
     result => result ? resolve(result) : reject(new Error('Unable to convert this image.')), 'image/jpeg', 0.9,
   ));
-  if (output.size > 4 * 1024 * 1024) throw new Error('This image is too large to process. Please choose a smaller image.');
+  if (output.size > maxBytes) throw new Error('This image is too large to process. Please choose a smaller image.');
   return new File([output], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
 }

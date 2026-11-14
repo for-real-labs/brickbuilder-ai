@@ -12,3 +12,11 @@ def get_fal_client() -> fal_client.SyncClient:
     if not key:
         raise ValueError("FAL_KEY is not configured")
     return fal_client.SyncClient(key=key)
+
+
+def get_async_fal_client() -> fal_client.AsyncClient:
+    """Use the same server-only credential for cancellable queue operations."""
+    key = os.getenv("FAL_KEY")
+    if not key:
+        raise ValueError("FAL_KEY is not configured")
+    return fal_client.AsyncClient(key=key)

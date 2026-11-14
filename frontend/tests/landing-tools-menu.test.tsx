@@ -1,3 +1,5 @@
+const scannerAuth = vi.hoisted(() => ({ user: null as null | { email: string } }));
+vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => scannerAuth }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ featureAccess: 'allowed', getFeatureAccess: () => 'allowed', requireFeature: () => true, enabled: false, openUpgrade: vi.fn(), retryAccess: vi.fn() }) }));
 import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
@@ -139,3 +141,11 @@ it('shows asynchronous 3D export errors and allows retrying', async () => {
   expect(host.querySelector('[role="alert"]')?.textContent).toBe('Missing geometry');
   expect(button('Download STL').disabled).toBe(false);
 });
+
+ it('shows Photo Scanner only for the allowed account', () => {
+  scannerAuth.user = { email: 'someone@example.com' }; mount(); act(() => button('Tools').click());
+  expect(host.querySelector('a[href="/photo-scanner"]')).toBeNull();
+  scannerAuth.user = { email: 'jake@brickbuilder.ai' }; mount();
+  expect(host.querySelector('a[href="/photo-scanner"]')?.textContent).toBe('Photo Scanner');
+  scannerAuth.user = null;
+ });
