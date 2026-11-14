@@ -1,3 +1,4 @@
+import type { PartsInventory } from './partsInventoryApi';
 import { apiFetch, authenticatedApiFetch } from './apiFetch';
 export type LlmProvider = 'anthropic' | 'openai';
 
@@ -31,6 +32,7 @@ export function getLlmModelOption(id: string): LlmModelOption | undefined {
 }
 
 export interface LlmToBricksRequest {
+  partsInventory?: PartsInventory;
   sourceGenerationId?: string;
   prompt?: string;
   imageBase64?: string;
@@ -119,6 +121,7 @@ export class LlmToBricksApiService {
     validateMaxParts(request.maxParts);
     return {
       generation_id: request.sourceGenerationId,
+      parts_inventory: request.partsInventory,
       prompt: prompt || undefined,
       image_base64: request.imageBase64,
       image_media_type: request.imageMediaType || 'image/png',

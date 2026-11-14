@@ -9,6 +9,12 @@ export interface InventoryResult {
   source_url?: string;
   catalog_updated_at?: string;
 }
+export interface BasicInventoryCompatibility {
+  inventory: PartsInventory | null;
+  available_count: number;
+  unavailable_count: number;
+  unavailable: InventoryPart[];
+}
 export interface LegoSet { set_num: string; name: string; year: number; num_parts: number }
 export const inventoryQuantity = (inventory: PartsInventory) => inventory.parts.reduce((total, part) => total + part.quantity, 0);
 
@@ -19,6 +25,11 @@ async function readResponse<T>(response: Response): Promise<T> {
 }
 
 export const PartsInventoryApi = {
+  async basicCompatibility(inventory: PartsInventory, signal?: AbortSignal): Promise<BasicInventoryCompatibility> {
+    return readResponse(await apiFetch(`${NOVA_API_BASE_URL}/parts-inventory/basic-compatibility`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(inventory), signal,
+    }));
+  },
   async order(orderId: number, signal?: AbortSignal): Promise<InventoryResult> {
     return readResponse(await authenticatedApiFetch(`${NOVA_API_BASE_URL}/parts-inventory/orders/${orderId}`, { signal }));
   },

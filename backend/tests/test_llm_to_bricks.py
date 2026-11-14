@@ -748,3 +748,84 @@ def test_build_format_defaults_to_3d_but_honors_explicit_flat_requests(prompt_bu
     assert "Only create a mosaic" in system
     assert "Explicit user requests for those formats take precedence" in system
     assert request.prompt == prompt
+
+
+def _owned_bricks(quantity=1):
+    return {'name': 'My bricks', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': quantity}]}
+
+
+def test_inventory_basic_generation_uses_exact_parts_and_corrects_excess(monkeypatch):
+    conversation, opened = _scripted(monkeypatch, [
+        _call('submit_ldr_model', {'ldr_content': VALID_PART + '\n' + VALID_PART}, 'd1'),
+        _call('submit_ldr_model', {'ldr_content': VALID_PART}, 'd2'),
+    ])
+    request = LlmToBricksRequest(prompt='A small model', parts_inventory=_owned_bricks())
+    monkeypatch.setattr(module, 'LDR_MODE', 'design')
+    monkeypatch.setattr(module, 'DIRECT_FIX_ROUNDS', 1)
+    build = asyncio.run(module._generate_ldr(request))
+    assert build.ldr.count('3001.dat') == 1
+    assert conversation.sent == 2
+    assert 'available 1' in conversation.tool_results[0][0].text
+    assert 'FINITE BASIC BRICKS INVENTORY' in module._direct_system_prompt(request)
+
+
+@pytest.mark.parametrize('part', [VALID_PART.replace('3001.dat', '3020.dat'), VALID_PART.replace('1 4 ', '1 1 ')])
+def test_basic_inventory_rejects_unowned_parts_and_colors(monkeypatch, part):
+    _scripted(monkeypatch, [_call('submit_ldr_model', {'ldr_content': part}, 'd1')])
+    monkeypatch.setattr(module, 'DIRECT_FIX_ROUNDS', 0)
+    with pytest.raises(ValueError, match='unavailable'):
+        asyncio.run(module._generate_ldr(LlmToBricksRequest(prompt='Model', parts_inventory=_owned_bricks())))
+
+
+def test_basic_request_filters_mixed_inventory_and_rejects_empty_palette():
+    inventory = _owned_bricks()
+    inventory['parts'].append({'part_id': '3020', 'color_id': 4, 'quantity': 5})
+    request = LlmToBricksRequest(prompt='Model', parts_inventory=inventory)
+    assert len(request.parts_inventory.parts) == 1
+    with pytest.raises(ValidationError, match='Choose All parts'):
+        LlmToBricksRequest(prompt='Model', parts_inventory={'name': 'Plates', 'parts': inventory['parts'][1:]})
+
+
+def test_basic_inventory_edits_restore_saved_limits_and_protect_ownership(monkeypatch):
+    from unittest.mock import AsyncMock, Mock
+    from fastapi import HTTPException
+    storage = AsyncMock()
+    storage.client = Mock()
+    original = module.PartsInventory.model_validate(_owned_bricks())
+    storage.client.storage.from_.return_value.download.return_value = original.model_dump_json().encode()
+    storage.get_generation.return_value = {
+        'user_id': 'owner', 'user_type': 'authenticated', 'status': 'completed',
+        'has_parts_inventory': True, 'ldr_url': 'saved-model',
+    }
+    storage.download_file_from_storage.return_value = VALID_PART.encode()
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    request = LlmToBricksRequest(prompt='Change shape', source_generation_id='source', parts_inventory=_owned_bricks(100))
+    asyncio.run(module._load_edit_source(request, {'authenticated': True, 'user_id': 'owner'}))
+    assert request.parts_inventory.parts[0].quantity == 1
+    assert VALID_PART in module._user_input(request).text
+    with pytest.raises(HTTPException):
+        asyncio.run(module._load_edit_source(request, {'authenticated': True, 'user_id': 'other'}))
+
+
+def test_basic_inventory_is_saved_for_future_edits(monkeypatch):
+    from unittest.mock import AsyncMock, Mock
+    storage = AsyncMock()
+    storage.client = Mock()
+    upload = AsyncMock()
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    monkeypatch.setattr(module, 'upload_artifact', upload)
+    request = LlmToBricksRequest(prompt='Model', parts_inventory=_owned_bricks())
+    asyncio.run(module._save_parts_inventory('new-build', request))
+    assert upload.call_args.kwargs['path'] == 'new-build/parts-inventory.json'
+    assert module.PartsInventory.model_validate_json(upload.call_args.kwargs['file']) == request.parts_inventory
+    storage.client.table.return_value.update.assert_called_once_with({'has_parts_inventory': True})
+
+
+def test_basic_inventory_never_falls_back_to_invalid_geometry(monkeypatch):
+    _scripted(monkeypatch, [
+        _call('submit_ldr_model', {'ldr_content': VALID_PART + '\n' + VALID_PART}, 'd1'),
+        _call('submit_ldr_model', {'ldr_content': VALID_PART.replace('3001.dat', '3020.dat')}, 'd2'),
+    ])
+    monkeypatch.setattr(module, 'DIRECT_FIX_ROUNDS', 1)
+    with pytest.raises(ValueError, match='unavailable'):
+        asyncio.run(module._generate_ldr(LlmToBricksRequest(prompt='Model', parts_inventory=_owned_bricks(2))))

@@ -111,3 +111,52 @@ def test_studio_alternate_render_export_is_not_counted_or_used_as_an_override():
         archive.writestr('model.ldr', placement(color=4))
         archive.writestr('model2.ldr', placement(color=5) + '0 FILE 3001.dat\n3 16 0 0 0 1 0 0 0 1 0')
     assert parse_inventory('studio.io', buffer.getvalue()).parts == [InventoryPart(part_id='3001', color_id=4, quantity=1)]
+
+
+def test_basic_palette_counts_exact_parts_colors_and_quantities():
+    from src.utils.basic_parts_inventory import basic_inventory_compatibility, basic_inventory
+    from src.utils.parts_inventory import PartsInventory
+    inventory = PartsInventory(name='Mixed set', parts=[
+        {'part_id': '3001.DAT', 'color_id': 4, 'quantity': 3},
+        {'part_id': '3001', 'color_id': 4, 'quantity': 2},
+        {'part_id': '3020', 'color_id': 4, 'quantity': 7},
+        {'part_id': '3001', 'color_id': 65535, 'quantity': 11},
+    ])
+    result = basic_inventory_compatibility(inventory)
+    assert result['available_count'] == 5
+    assert result['unavailable_count'] == 18
+    assert len(result['unavailable']) == 2
+    assert basic_inventory(inventory).parts[0].quantity == 5
+    assert len(inventory.parts) == 3  # Switching back to All parts keeps the full list.
+
+
+def test_basic_palette_handles_all_compatible_and_none():
+    from src.utils.basic_parts_inventory import basic_inventory_compatibility, basic_inventory
+    from src.utils.parts_inventory import PartsInventory
+    good = PartsInventory(name='Bricks', parts=[{'part_id': '3001', 'color_id': 4, 'quantity': 2}])
+    assert basic_inventory_compatibility(good)['unavailable_count'] == 0
+    bad = PartsInventory(name='Plates', parts=[{'part_id': '3020', 'color_id': 4, 'quantity': 2}])
+    assert basic_inventory_compatibility(bad)['inventory'] is None
+    with pytest.raises(ValueError, match='Choose All parts'):
+        basic_inventory(bad)
+
+
+def test_basic_compatibility_endpoint_validates_input_and_reports_counts():
+    from fastapi import FastAPI
+    from fastapi.testclient import TestClient
+    from src.requests.partsInventory import router
+    app = FastAPI()
+    app.include_router(router)
+    with TestClient(app) as client:
+        response = client.post('/parts-inventory/basic-compatibility', json={
+            'name': 'A set', 'source': 'set', 'parts': [
+                {'part_id': '3001', 'color_id': 4, 'quantity': 8},
+                {'part_id': '3020', 'color_id': 4, 'quantity': 3},
+            ],
+        })
+        assert response.status_code == 200
+        assert response.json()['available_count'] == 8
+        assert response.json()['unavailable_count'] == 3
+        assert client.post('/parts-inventory/basic-compatibility', json={
+            'name': 'Invalid', 'parts': [{'part_id': '../bad', 'color_id': 4, 'quantity': -1}]
+        }).status_code == 422

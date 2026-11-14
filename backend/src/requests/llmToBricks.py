@@ -15,6 +15,9 @@ from fastapi import Depends, HTTPException
 from pydantic import AliasChoices, BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from ..utils.parts_limit import enforce_parts_limit
+from ..utils.parts_inventory import PartsInventory
+from ..utils.basic_parts_inventory import basic_inventory, validate_inventory_model
+from ..utils.storage_upload import upload_artifact
 from ..utils.provider_keys import resolve as resolve_provider_key, personal_billing_task
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.brick_design import (
@@ -109,12 +112,19 @@ class LlmToBricksRequest(BaseModel):
         default=None, validation_alias=AliasChoices("generation_id", "source_generation_id"),
     )  # Input revision ID; the legacy request name remains accepted.
     _source_voxels: Optional[str] = PrivateAttr(default=None)
+    _source_ldr: Optional[str] = PrivateAttr(default=None)
+    parts_inventory: PartsInventory | None = None
     prompt: Optional[str] = None
     image_base64: Optional[str] = None
     image_media_type: str = "image/png"
     max_parts: int | None = Field(default=None, strict=True, ge=1, le=100_000)
     detail_level: float = 40.0
     model: str = DEFAULT_MODEL
+
+    @field_validator("parts_inventory")
+    @classmethod
+    def compatible_inventory(cls, value):
+        return basic_inventory(value) if value is not None else None
 
     @field_validator("model")
     @classmethod
@@ -196,6 +206,8 @@ DEFAULT_IMAGE_PROMPT = (
 def _user_input(request: LlmToBricksRequest) -> UserInput:
     return UserInput(
         text=(request.prompt or DEFAULT_IMAGE_PROMPT) + (
+            "\n\nEdit this existing LDraw model using only the allowed inventory:\n" + request._source_ldr
+            if request._source_ldr else "") + (
             "\n\nEdit this existing voxel model. Preserve all cells except the requested changes. "
             "Coordinates are x, y (horizontal studs), z (vertical brick layers); colors are RGB.\n"
             + request._source_voxels if request._source_voxels else ""),
@@ -446,7 +458,15 @@ def _model_size_guidance(request: LlmToBricksRequest) -> str:
 
 
 def _direct_system_prompt(request: LlmToBricksRequest) -> str:
-    return DIRECT_SYSTEM_PROMPT + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE
+    inventory_guidance = ""
+    if request.parts_inventory:
+        inventory_guidance = (
+            "\n\nFINITE BASIC BRICKS INVENTORY: Use only these exact part IDs and colors, up to each "
+            "max_quantity. No substitutions or extra pieces, including baseplates. You may leave pieces "
+            "unused. Adapt the design to these quantities. Place upright bricks on the stud grid.\n"
+            + request.parts_inventory.catalog().to_palette_csv()
+        )
+    return DIRECT_SYSTEM_PROMPT + inventory_guidance + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE
 
 
 def _reference_image_guidance(request: LlmToBricksRequest) -> str:
@@ -644,15 +664,17 @@ async def _generate_ldr_direct(
                 raise HTTPException(status_code=502, detail=str(exc)) from exc
             try:
                 enforce_parts_limit(ldr, request.max_parts)
+                if request.parts_inventory:
+                    validate_inventory_model(ldr, request.parts_inventory)
             except ValueError as exc:
                 if round_number == DIRECT_FIX_ROUNDS:
                     if best:
                         break
                     raise
-                conversation.add_tool_results([ToolResult(c.id, str(exc) + " Submit a smaller complete model.", is_error=True) for c in turn.tool_calls])
+                conversation.add_tool_results([ToolResult(c.id, str(exc) + " Submit a corrected complete model within the allowed parts and quantities.", is_error=True) for c in turn.tool_calls])
                 continue
-            best = ldr
             audit = audit_ldraw(ldr)
+            best = ldr
             submits = [c for c in turn.tool_calls if c.name == "submit_ldr_model"]
             if audit.ok or round_number == DIRECT_FIX_ROUNDS or not submits:
                 break
@@ -675,6 +697,21 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
     # Completed voxel geometry is public and edits save a copy under the caller.
     if generation.get("status") != "completed":
         require_generation_access(generation, auth_info)
+    if generation.get("has_parts_inventory"):
+        require_generation_access(generation, auth_info)
+        try:
+            bucket = generation_storage.client.storage.from_('generation-output')
+            data = await asyncio.to_thread(bucket.download, f'{request.generation_id}/parts-inventory.json')
+            if len(data) > 2 * 1024 * 1024:
+                raise ValueError('Oversized inventory')
+            request.parts_inventory = basic_inventory(PartsInventory.model_validate_json(data))
+        except Exception:
+            raise HTTPException(409, 'The original parts inventory is unavailable in Basic bricks mode. Upload it again or choose All parts.') from None
+        if generation.get('status') != 'completed' or not generation.get('ldr_url'):
+            raise HTTPException(400, 'This model is not ready to edit.')
+        content = await generation_storage.download_file_from_storage(generation['ldr_url'])
+        request._source_ldr = validate_ldr_content(content.decode('utf-8'))
+        return
     url = generation.get("xyzrgb_url")
     if generation.get("status") != "completed" or not url:
         raise HTTPException(status_code=400, detail="This model has no saved voxels to edit")
@@ -749,6 +786,8 @@ async def _generate_ldr(
     request: LlmToBricksRequest,
     on_thinking: Optional[ThinkingCallback] = None,
 ) -> LlmBuild:
+    if request.parts_inventory:
+        return LlmBuild(ldr=await _generate_ldr_direct(request, on_thinking))
     if request._source_voxels:
         return await _edit_voxels(request, on_thinking)
     if LDR_MODE == "direct":
@@ -786,6 +825,8 @@ async def process_llm_to_bricks_task(
         build = await _generate_ldr(request, on_thinking)
         ldr_content = build.ldr
         enforce_parts_limit(ldr_content, request.max_parts)
+        if request.parts_inventory:
+            validate_inventory_model(ldr_content, request.parts_inventory)
 
         await deduct_credits(
             user_info=user_info,
@@ -880,6 +921,21 @@ async def process_llm_to_bricks_task(
             heartbeat_task.cancel()
 
 
+async def _save_parts_inventory(generation_id: str, request: LlmToBricksRequest) -> None:
+    if request.parts_inventory is None:
+        return
+    try:
+        bucket = generation_storage.client.storage.from_('generation-output')
+        await upload_artifact(bucket, path=f'{generation_id}/parts-inventory.json',
+            file=request.parts_inventory.model_dump_json().encode(), content_type='application/json')
+        await asyncio.to_thread(lambda: generation_storage.client.table('generations').update({
+            'has_parts_inventory': True
+        }).eq('id', generation_id).execute())
+    except Exception:
+        await generation_storage.update_status(generation_id, 'failed', 'Could not save the parts inventory. Please try again.')
+        raise HTTPException(503, 'Could not save the parts inventory. Please try again.') from None
+
+
 async def llm_to_bricks(
     request: LlmToBricksRequest,
     auth_info: dict = Depends(get_user_with_optional_auth),
@@ -922,6 +978,7 @@ async def llm_to_bricks(
             model_3d=request.model,
             edit_generation_id=request.generation_id,
         )
+        await _save_parts_inventory(generation_id, request)
         task = start_generation_task(generation_id,
             run_with_output(generation_id, process_llm_to_bricks_task, request, user_info, auth_info)
         )
@@ -985,6 +1042,8 @@ async def llm_to_bricks_stream(
         model_3d=request.model,
         edit_generation_id=request.generation_id,
     )
+
+    await _save_parts_inventory(generation_id, request)
 
     async def event_stream():
         yield f'data: {json.dumps({"type": "started", "generation_id": generation_id})}\n\n'

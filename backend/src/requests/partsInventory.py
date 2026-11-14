@@ -8,7 +8,8 @@ from pydantic import ValidationError
 from ..utils.auth import get_optional_identity, supabase_client
 from ..utils.order_inventory import inventory_from_order
 from ..utils.lego_sets import CATALOG_TABLE, search_sets, set_inventory
-from ..utils.parts_inventory import MAX_UPLOAD_BYTES, parse_inventory
+from ..utils.parts_inventory import MAX_UPLOAD_BYTES, PartsInventory, parse_inventory
+from ..utils.basic_parts_inventory import basic_inventory_compatibility
 
 router = APIRouter(prefix='/parts-inventory', tags=['Parts inventory'])
 logger = logging.getLogger(__name__)
@@ -66,3 +67,8 @@ async def get_set_inventory(set_num: str):
         return await asyncio.to_thread(set_inventory, rows[0])
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from None
+
+
+@router.post('/basic-compatibility')
+async def check_basic_compatibility(inventory: PartsInventory):
+    return await asyncio.to_thread(basic_inventory_compatibility, inventory)

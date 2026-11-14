@@ -1,3 +1,5 @@
+import { useBasicPartsInventory } from '../hooks/useBasicPartsInventory';
+import { BasicInventorySummary } from '../components/BasicInventorySummary';
 import { useBilling } from '../contexts/BillingContext';
 import { openGenerationSubscription } from '../utils/generationSubscription';
 import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
@@ -166,6 +168,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [prompt, setPrompt] = useState("");
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [partsInventory, setPartsInventory] = useState<PartsInventory | null>(null);
+  const basicInventory = useBasicPartsInventory(partsInventory);
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [giftPlanning, setGiftPlanning] = useState(false);
   const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
@@ -413,10 +416,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }
       if (payload.partsInventory?.parts?.length && typeof payload.partsInventory.name === 'string') {
         setPartsInventory(payload.partsInventory);
-        setGenerationMethod('nova');
       }
       if (payload.resumeGeneration) {
-        if (payload.generationMethod === '3d') setGenerationMethod('3d');
+        if (payload.generationMethod === '3d') setGenerationMethod(payload.partsInventory ? 'llm' : '3d');
         if (payload.threeDModel === 'sam3d' || payload.threeDModel === 'trellis') setThreeDModel(payload.threeDModel);
         if (GENERATION_MODEL_OPTIONS.some(option => option.id === payload.llmModel)) setLlmModel(payload.llmModel!);
       }
@@ -579,10 +581,14 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
 
     setInputValidationMessage(null);
 
+    if (partsInventory && generationMethod === 'llm' && !basicInventory.result?.inventory) {
+      setInputValidationMessage(basicInventory.loading ? 'Checking your pieces. Please wait…' : basicInventory.error || 'No pieces match the Basic bricks palette. Choose All parts in generation settings.');
+      return;
+    }
     if (requireGenerationSignup(requestedPrompt, requestedImage)) return;
 
     let novaAuthMode = novaOptions.authMode;
-    if ((partsInventory || generationMethod === 'nova') && localDevelopment) {
+    if (generationMethod === 'nova' && localDevelopment) {
       const mode = await checkNovaConnection(llmModel);
       if (!mode) return;
       novaAuthMode = mode;
@@ -644,7 +650,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       // Trellis (non-streamed).
       const stream3d = threeDModel === 'sam3d';
 
-      if (partsInventory || generationMethod === 'nova') {
+      if (generationMethod === 'nova') {
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
           partsInventory: partsInventory ?? undefined,
@@ -660,6 +666,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       } else if (generationMethod === 'llm') {
         postResponse = await LlmToBricksApiService.generate(
           {
+            partsInventory: partsInventory ? basicInventory.result?.inventory ?? undefined : undefined,
             prompt: requestedPrompt.trim() || undefined,
             imageBase64,
             imageMediaType: requestedImage?.type || 'image/png',
@@ -975,6 +982,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   // Resume only after AuthContext exposes the new token; never reuse a guest closure.
   useEffect(() => {
     if (!pendingGenerateAfterLogin || !session || authLoading || loading) return;
+    if (partsInventory && generationMethod === 'llm' && basicInventory.loading) return;
     if (pendingGenerateAfterLogin.edit && !landingModel.model) return;
     const pending = pendingGenerateAfterLogin;
     setPendingGenerateAfterLogin(null);
@@ -984,7 +992,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     if (pending.edit) void submitModelEdit(undefined, pending.prompt, pending.image);
     else void onGenerate(pending.prompt, pending.image);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pendingGenerateAfterLogin, session, authLoading, loading, landingModel.model]);
+  }, [pendingGenerateAfterLogin, session, authLoading, loading, landingModel.model, partsInventory, generationMethod, basicInventory.loading]);
 
   const petState = usePetActivity(loading || modelBusy || displayedGenerations.some(row => isGenerationActive(row.status)), Boolean(landingModel.model), Boolean(generationError || landingModel.error));
 
@@ -1089,7 +1097,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           }}>Design from existing parts</button>
         </div>}
         {inventoryOpen ? <ExistingPartsDesigner onLogin={() => setShowLoginModal(true)} onSelect={inventory => {
-          setPartsInventory(inventory); setGenerationMethod('nova'); setInventoryOpen(false);
+          setPartsInventory(inventory); if (generationMethod === '3d') setGenerationMethod('llm'); setInventoryOpen(false);
           setGiftPlanning(false); setCreateNewStage(null); dismissRandomIdea();
         }} /> : <main className={`${partsInventory ? 'landing-inventory-return ' : ''}flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
@@ -1103,6 +1111,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 </div>
                 {partsInventory ? <div className="existing-parts-summary">
                   <span>{inventoryQuantity(partsInventory).toLocaleString()} pieces · Exact parts and colors · No extra pieces</span>
+                  {generationMethod === 'llm' && <BasicInventorySummary {...basicInventory} />}
                   <button type="button" onClick={() => { setInventoryOpen(true); posthog.capture('existing_parts_change_clicked'); }}>Change parts</button>
                   <button type="button" onClick={() => { setPartsInventory(null); posthog.capture('existing_parts_removed'); }}>Remove</button>
                 </div> : <p className="landing-hero-description landing-fade-in landing-delay-5">{nativeIosApp
@@ -1281,7 +1290,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       <button key={value} type="button" value={value}
                         aria-label={label}
                         aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d' || Boolean(partsInventory)}
+                        disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d'}
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);

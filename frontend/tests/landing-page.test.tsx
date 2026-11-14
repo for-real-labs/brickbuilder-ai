@@ -1149,6 +1149,7 @@ it('returns from a parts upload to the existing composer and submits its exact i
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
   const inventory = { name: 'owned.csv', source: 'upload' as const, parts: [{ part_id: '3001', color_id: 4, quantity: 2 }] };
+  vi.spyOn(PartsInventoryApi, 'basicCompatibility').mockResolvedValue({ inventory, available_count: 2, unavailable_count: 0, unavailable: [] });
   vi.spyOn(PartsInventoryApi, 'upload').mockResolvedValue({ inventory, unavailable: [] });
   const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('Stop after submission'));
   const container = document.createElement('div'); document.body.append(container); const root = createRoot(container);
@@ -1160,7 +1161,7 @@ it('returns from a parts upload to the existing composer and submits its exact i
     Object.defineProperty(picker, 'files', { value: [new File(['parts'], 'owned.csv')] });
     await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
     expect(container.querySelector('h1')?.textContent).toContain('Using owned.csv to design a new LEGO');
-    expect(container.querySelector<HTMLButtonElement>('button[value="llm"]')!.disabled).toBe(true);
+    expect(container.querySelector<HTMLButtonElement>('button[value="llm"]')!.disabled).toBe(false);
     const prompt = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'A tiny car');
@@ -1171,7 +1172,7 @@ it('returns from a parts upload to the existing composer and submits its exact i
   } finally { act(() => root.unmount()); container.remove(); }
 });
 
-it('preserves the inventory through a login redirect and forces Nova mode', async () => {
+it('preserves the inventory and selected Basic bricks mode through a login redirect', async () => {
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   const inventory = { name: 'My set', source: 'set', parts: [{ part_id: '3001', color_id: 4, quantity: 2 }] };
   sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Car', generationMethod: 'llm', partsInventory: inventory }));
@@ -1179,7 +1180,7 @@ it('preserves the inventory through a login redirect and forces Nova mode', asyn
   try {
     await act(async () => root.render(<LandingPage />));
     expect(container.querySelector('h1')?.textContent).toContain('Using My set to design a new LEGO');
-    expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
   } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); }
 });
 
@@ -1303,4 +1304,49 @@ it.each(['image', 'text'] as const)('keeps the %s form visible until the server 
     expect(container.textContent).toContain('You can safely leave this window');
     expect(container.textContent).not.toContain('Keep this page open');
   } finally { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); }
+});
+
+it.each([2, 0])('uses only %s compatible pieces in Basic bricks mode and retains the full All parts inventory', async available => {
+  vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
+  vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+  const inventory = { name: 'Mixed set', source: 'set' as const, parts: [
+    ...(available ? [{ part_id: '3001', color_id: 4, quantity: available }] : []),
+    { part_id: '3020', color_id: 4, quantity: 5 },
+  ] };
+  const compatible = available ? { ...inventory, parts: inventory.parts.slice(0, 1) } : null;
+  vi.spyOn(PartsInventoryApi, 'basicCompatibility').mockResolvedValue({
+    inventory: compatible, available_count: available, unavailable_count: 5, unavailable: [inventory.parts.at(-1)!],
+  });
+  vi.spyOn(PartsInventoryApi, 'upload').mockResolvedValue({ inventory, unavailable: [] });
+  const basic = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Stop after submission'));
+  const nova = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('Stop after submission'));
+  const container = document.createElement('div'); document.body.append(container); const root = createRoot(container);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    act(() => container.querySelectorAll<HTMLButtonElement>('.existing-parts-tabs button')[1].click());
+    const picker = container.querySelector<HTMLInputElement>('input[aria-label="Upload parts list"]')!;
+    Object.defineProperty(picker, 'files', { value: [new File(['parts'], 'mixed.csv')] });
+    await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
+    act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+    expect(container.textContent).toContain(available + ' pieces available in Basic bricks mode · 5 outside its palette.');
+    expect(container.textContent).toContain('5 × 3020, LDraw color 4');
+    const prompt = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'A tiny car');
+      prompt.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    await act(async () => container.querySelector<HTMLButtonElement>('button[type=submit]')!.click());
+    if (available) {
+      await vi.waitFor(() => expect(basic).toHaveBeenCalled());
+      expect(basic).toHaveBeenCalledWith(expect.objectContaining({ partsInventory: compatible }), undefined);
+    } else {
+      expect(basic).not.toHaveBeenCalled();
+      expect(container.textContent).toContain('No pieces match the Basic bricks palette');
+    }
+    expect(nova).not.toHaveBeenCalled();
+    await act(async () => container.querySelector<HTMLButtonElement>('button[value="nova"]')!.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('button[type=submit]')!.click());
+    await vi.waitFor(() => expect(nova).toHaveBeenCalled());
+    expect(nova).toHaveBeenCalledWith(expect.objectContaining({ partsInventory: inventory }), undefined);
+  } finally { act(() => root.unmount()); container.remove(); }
 });

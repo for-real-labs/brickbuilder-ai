@@ -42,3 +42,21 @@ it('carries the finite inventory alongside image and text prompts to Nova', asyn
   expect(body.parts_inventory).toEqual(inventory);
   expect(body.prompt).toBe('A car'); expect(body.image_base64).toBe('image');
 });
+
+it('checks Basic bricks compatibility with the complete inventory and cancellation', async () => {
+  const result = { inventory, available_count: 3, unavailable_count: 0, unavailable: [] };
+  vi.mocked(apiFetch).mockResolvedValue(response(result));
+  const signal = new AbortController().signal;
+  expect(await PartsInventoryApi.basicCompatibility(inventory, signal)).toEqual(result);
+  expect(apiFetch).toHaveBeenCalledWith(expect.stringContaining('/parts-inventory/basic-compatibility'),
+    expect.objectContaining({ method: 'POST', body: JSON.stringify(inventory), signal }));
+});
+
+it('sends the finite inventory to the Basic bricks endpoint', async () => {
+  const { LlmToBricksApiService } = await import('../src/services/llmToBricksApi');
+  vi.mocked(apiFetch).mockResolvedValue(response({ generation_id: 'basic' }));
+  await LlmToBricksApiService.generate({ prompt: 'A car', partsInventory: inventory }, 'owner');
+  const [url, options] = vi.mocked(apiFetch).mock.calls.at(-1)!;
+  expect(url).toContain('/llmToBricks');
+  expect(JSON.parse(options?.body as string).parts_inventory).toEqual(inventory);
+});
