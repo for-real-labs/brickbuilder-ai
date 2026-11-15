@@ -8,7 +8,8 @@ _WORDS = {
     'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20, 'thirty': 30,
     'forty': 40, 'fifty': 50, 'sixty': 60, 'seventy': 70, 'eighty': 80, 'ninety': 90,
 }
-_NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+|(?:(?:" + '|'.join(_WORDS) + r"|hundred|thousand)(?:[ -]+and)?[ -]*)+)"
+_NUMBER_WORD = r"(?:" + '|'.join(_WORDS) + r"|hundred|thousand)"
+_NUMBER = r"(?:\d{1,3}(?:,\d{3})+|\d+|" + _NUMBER_WORD + r"(?:[ -]+(?:and[ -]+)?" + _NUMBER_WORD + r")*)"
 _UNIT = r"(?:pieces?|bricks?|parts?)"
 _PREFIX = r"(?:no\s+more\s+than|not\s+more\s+than|at\s+most|up\s+to|limit(?:ed)?(?:\s+(?:it|the model))?\s+(?:to|of)|maximum(?:\s+of)?|max(?:imum)?\s*[:=]?|under|below|less\s+than|fewer\s+than|(?:use|using|with|of|only|exactly)\s+(?:only\s+|exactly\s+)?)"
 _BUDGET = re.compile(r"\b(?P<prefix>" + _PREFIX + r")\s*(?P<number>" + _NUMBER + r")\s*(?:LEGO\s+)?(?:physical\s+)?(?P<unit>" + _UNIT + r")\b", re.I)

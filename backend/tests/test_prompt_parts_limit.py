@@ -45,6 +45,7 @@ def test_explicit_piece_budgets(prompt, maximum):
     'Use 10 pieces per wheel',
     'Use 10 pieces for each leg',
     'Use 2.5 pieces',
+    'Use onehundred pieces',
     'A model weighing 100 grams',
     'More than 100 pieces max',
 ])
