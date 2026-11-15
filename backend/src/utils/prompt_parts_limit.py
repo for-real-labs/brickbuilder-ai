@@ -13,7 +13,7 @@ _UNIT = r"(?:pieces?|bricks?|parts?)"
 _PREFIX = r"(?:no\s+more\s+than|not\s+more\s+than|at\s+most|up\s+to|limit(?:ed)?(?:\s+(?:it|the model))?\s+(?:to|of)|maximum(?:\s+of)?|max(?:imum)?\s*[:=]?|under|below|less\s+than|fewer\s+than|(?:use|using|with|of|only|exactly)\s+(?:only\s+|exactly\s+)?)"
 _BUDGET = re.compile(r"\b(?P<prefix>" + _PREFIX + r")\s*(?P<number>" + _NUMBER + r")\s*(?:LEGO\s+)?(?:physical\s+)?(?P<unit>" + _UNIT + r")\b", re.I)
 _SUFFIX = re.compile(r"(?<![\w.,-])(?P<number>" + _NUMBER + r")\s*(?:LEGO\s+)?(?:physical\s+)?"+_UNIT+r"\s+(?:or\s+(?:fewer|less)|max(?:imum)?|at\s+most)\b", re.I)
-_NEGATION = re.compile(r"(?:don't|do not|not|no|never|avoid|minimum|min|at least|more than|over)\s*$", re.I)
+_NEGATION = re.compile(r"\b(?:don't|do not|not|no|never|avoid|minimum|min|at least|more than|over)\s*$", re.I)
 
 PARTS_BUDGET_GUIDANCE = (
     "TOTAL PIECE BUDGETS: Treat explicit requests to use N pieces/bricks/parts as a total physical-parts "

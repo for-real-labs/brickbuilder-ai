@@ -7,6 +7,8 @@ from src.requests.novaToBricks import NovaToBricksRequest
 
 @pytest.mark.parametrize('prompt,maximum', [
     ('Build a castle using 100 pieces', 100),
+    ('Build a piano using 100 pieces', 100),
+    ('Make a rover with 100 parts', 100),
     ('Use 1,000 LEGO bricks for a castle', 1000),
     ('Make a car under 100 pieces', 99),
     ('Use fewer than 50 parts', 49),
