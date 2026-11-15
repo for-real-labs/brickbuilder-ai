@@ -15,6 +15,7 @@ from fastapi import Depends, HTTPException
 from pydantic import AliasChoices, BaseModel, Field, PrivateAttr, field_validator, model_validator
 
 from ..utils.parts_limit import enforce_parts_limit
+from ..utils.prompt_parts_limit import prompt_parts_limit, tighter_parts_limit, PARTS_BUDGET_GUIDANCE
 from ..utils.parts_inventory import PartsInventory
 from ..utils.basic_parts_inventory import basic_inventory, validate_inventory_model
 from ..utils.storage_upload import upload_artifact
@@ -185,6 +186,7 @@ class LlmToBricksRequest(BaseModel):
     def require_prompt_or_image(self) -> "LlmToBricksRequest":
         if not self.prompt and not self.image_base64:
             raise ValueError("Provide a text prompt, an image, or both")
+        self.max_parts = tighter_parts_limit(self.max_parts, prompt_parts_limit(self.prompt))
         return self
 
 
@@ -466,7 +468,7 @@ def _direct_system_prompt(request: LlmToBricksRequest) -> str:
             "unused. Adapt the design to these quantities. Place upright bricks on the stud grid.\n"
             + request.parts_inventory.catalog().to_palette_csv()
         )
-    return DIRECT_SYSTEM_PROMPT + inventory_guidance + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE
+    return DIRECT_SYSTEM_PROMPT + inventory_guidance + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE + "\n\n" + PARTS_BUDGET_GUIDANCE
 
 
 def _reference_image_guidance(request: LlmToBricksRequest) -> str:
@@ -496,7 +498,7 @@ def _design_system_prompt(request: LlmToBricksRequest) -> str:
     return DESIGN_SYSTEM_PROMPT.format(
         size_hint=_design_size_hint(request.detail_level),
         palette=palette_prompt_text(),
-    ) + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE
+    ) + "\n\n" + _model_size_guidance(request) + _reference_image_guidance(request) + "\n\n" + BUILD_DESIGN_GUIDANCE + "\n\n" + PARTS_BUDGET_GUIDANCE
 
 
 @dataclass(frozen=True)
@@ -697,7 +699,7 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
     if generation.get('endpoint') == 'novaToBricks':
         raise HTTPException(409, 'This model uses All parts mode. Keep that mode when editing it.')
     if generation.get('max_parts') is not None:
-        request.max_parts = generation['max_parts']
+        request.max_parts = tighter_parts_limit(request.max_parts, generation['max_parts'])
     # Completed voxel geometry is public and edits save a copy under the caller.
     if generation.get("status") != "completed":
         require_generation_access(generation, auth_info)

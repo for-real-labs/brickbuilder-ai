@@ -401,7 +401,7 @@ def test_generation_persists_private_inventory_before_starting_agent(monkeypatch
     monkeypatch.setattr(module, 'upload_artifact', upload)
     monkeypatch.setattr(module, 'start_generation_task', start)
     monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **kwargs: {'user_email': 'caller', 'is_anonymous': False})
-    request = module.NovaToBricksRequest(prompt='car', parts_inventory={'name': 'parts.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
+    request = module.NovaToBricksRequest(prompt='car using 10 pieces', parts_inventory={'name': 'parts.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
     if storage_failure:
         with pytest.raises(HTTPException) as error:
             asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))
@@ -410,6 +410,7 @@ def test_generation_persists_private_inventory_before_starting_agent(monkeypatch
     else:
         asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))
         assert events == ['inventory', 'marker', 'agent']
+        assert storage.create_generation.call_args.kwargs['max_parts'] == 10
         query.update.assert_called_once_with({'has_parts_inventory': True})
 
 

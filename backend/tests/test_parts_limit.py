@@ -43,7 +43,7 @@ def test_basic_final_limit_blocks_storage_and_charging(monkeypatch):
     monkeypatch.setattr(basic.generation_storage, "store_model_file", save)
     monkeypatch.setattr(basic, "deduct_credits", charge)
     monkeypatch.setattr(basic, "track_error", lambda **kwargs: None)
-    request = basic.LlmToBricksRequest(prompt="castle", max_parts=1)
+    request = basic.LlmToBricksRequest(prompt="Use 1 piece for a castle")
     asyncio.run(basic.process_llm_to_bricks_task("test", request, {"user_email": "test", "is_developer": False}, {}))
     save.assert_not_awaited()
     charge.assert_not_awaited()

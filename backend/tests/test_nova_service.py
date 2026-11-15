@@ -9,6 +9,7 @@ import pytest
 from unittest.mock import AsyncMock
 
 from src.utils.nova_service import NovaService, read_export
+from src.utils.prompt_parts_limit import PARTS_BUDGET_GUIDANCE
 
 
 VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'parts_catalog_version': 1, 'instruction_plan_version': 4, 'instruction_publication_version': 2}
@@ -118,7 +119,7 @@ def test_runtime_flow_uses_upstream_agent_and_imports_only_new_publications(monk
             chat_reads += 1
             return httpx.Response(200, json=before if chat_reads == 1 else after)
         if req.url.path.endswith('/messages'):
-            assert body == {'text': 'make the roof red', 'images': [], 'llm_model_id': 'model-config', 'options': {'mode': 'agent', 'permissions': 'full'}}
+            assert body == {'text': PARTS_BUDGET_GUIDANCE + '\n\nmake the roof red', 'images': [], 'llm_model_id': 'model-config', 'options': {'mode': 'agent', 'permissions': 'full'}}
             return httpx.Response(202, json={'started': True})
         if req.url.path.endswith('/stream'):
             return httpx.Response(200, text='event: progress\ndata: {"summary":"Rendering"}\n\nevent: text\ndata: {"delta":"Nova reply"}\n\nevent: done\ndata: {}\n\n')
@@ -302,7 +303,7 @@ def test_foreign_model_import_is_saved_before_edit_and_requires_new_publication(
             return httpx.Response(200, json={'chat': {'running': False}, 'models': models})
         if req.url.path.endswith('/messages'):
             assert sessions[0]['model_id'] == 'seed'
-            assert json.loads(req.content)['text'] == 'add a door'
+            assert json.loads(req.content)['text'] == PARTS_BUDGET_GUIDANCE + '\n\nadd a door'
             return httpx.Response(202, json={})
         if req.url.path.endswith('/stream'): return httpx.Response(200, text='event: done\ndata: {}\n\n')
         if req.url.path == '/integration/chats/copy-chat/export/edited':
@@ -519,7 +520,8 @@ def test_total_limit_is_sent_and_rechecked_before_instruction_export():
             service.instructions = AsyncMock()
             part = '1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat'
             service.export = AsyncMock(return_value=read_export(archive({'model.mpd': 'model', 'model.ldr': part + '\n' + part}), {}))
-            request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='build', image_base64=None, max_parts=1)
+            from src.requests.novaToBricks import NovaToBricksRequest
+            request = NovaToBricksRequest(model='gpt-5.5', prompt='Build with 1 piece')
             with patch.object(PartsCatalog, 'validate'):
                 with pytest.raises(ValueError, match='2 physical parts; maximum is 1'):
                     await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})

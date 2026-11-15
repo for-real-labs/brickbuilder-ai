@@ -20,6 +20,7 @@ from urllib.parse import urlsplit
 
 import httpx
 from .generation_budget import current_generation_usage
+from .prompt_parts_limit import PARTS_BUDGET_GUIDANCE
 
 logger = logging.getLogger(__name__)
 
@@ -287,7 +288,7 @@ class NovaService:
         if inventory is not None:
             session['parts_inventory'] = inventory.model_dump()
         await save_session(session)
-        text = request.prompt or 'Create a model from the reference image.'
+        text = PARTS_BUDGET_GUIDANCE + '\n\n' + (request.prompt or 'Create a model from the reference image.')
         if maximum is not None:
             text = f"Use at most {maximum} physical parts in the complete finished model. Simplify the design to fit this mandatory limit.\n\n" + text
         if inventory is not None:

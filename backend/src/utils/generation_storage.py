@@ -15,6 +15,7 @@ from email.utils import format_datetime
 from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
+from .prompt_parts_limit import tighter_parts_limit
 from .request_limit_analytics import track_request_limit, daily_limit_value
 from .generation_retry_guard import retry_guard_error
 from .auth import subscription_required, supabase_client
@@ -177,7 +178,7 @@ class GenerationStorage:
                           (source.get("is_community") or endpoint == "llmToBricks")):
                     raise ValueError("Source generation belongs to another owner")
                 if source.get("max_parts") is not None:
-                    generation_data["max_parts"] = source["max_parts"]
+                    generation_data["max_parts"] = tighter_parts_limit(max_parts, source["max_parts"])
                 if endpoint in INHERITED_MODE_ENDPOINTS:
                     generation_data["mode"] = generation_mode(source.get("endpoint"), source.get("mode"))
                 # AI/manual edits keep the original model's input origin.

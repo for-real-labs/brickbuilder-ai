@@ -200,8 +200,8 @@ def test_maximum_parts_persists_and_cannot_be_relaxed_on_subsequent_revisions():
     storage.client = SimpleNamespace(table=lambda _: Table())
     asyncio.run(storage.create_generation('owner', 'authenticated', 'Model', 40, endpoint='llmToBricks', max_parts=25))
     assert records[-1]['max_parts'] == 25
-    for requested_limit in (None, 1000):
+    for requested_limit in (None, 1000, 12):
         storage.get_generation = AsyncMock(return_value=records[-1])
         asyncio.run(storage.create_generation('owner', 'authenticated', 'Edit', 40,
             endpoint='llmToBricks', edit_generation_id=records[-1]['id'], max_parts=requested_limit))
-        assert records[-1]['max_parts'] == 25
+        assert records[-1]['max_parts'] == (12 if requested_limit == 12 else 25)

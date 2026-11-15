@@ -26,6 +26,7 @@ from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
 from ..utils.nova_service import NovaService, INSTRUCTIONS_FILE
 from ..utils.parts_inventory import PartsInventory
+from ..utils.prompt_parts_limit import tighter_parts_limit
 from ..utils.storage_upload import upload_artifact
 from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.posthog_client import track_error, track_image_conversion
@@ -73,7 +74,7 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
     if not source:
         raise HTTPException(404, 'Generation not found')
     if source.get('max_parts') is not None:
-        request.max_parts = source['max_parts']
+        request.max_parts = tighter_parts_limit(request.max_parts, source['max_parts'])
     try:
         require_generation_access(source, auth_info)
         owned = True
@@ -109,7 +110,7 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             # the account that created them and cannot follow a credential switch.
             previous = request._nova_session
             if source.get('max_parts') is None and previous.get('max_parts') is not None:
-                request.max_parts = previous['max_parts']
+                request.max_parts = tighter_parts_limit(request.max_parts, previous['max_parts'])
             # Owned edits/resumes keep their original inventory, including provider switches.
             if previous.get('parts_inventory'):
                 request.parts_inventory = PartsInventory.model_validate(previous['parts_inventory'])

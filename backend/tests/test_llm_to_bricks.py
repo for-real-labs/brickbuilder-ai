@@ -416,12 +416,15 @@ def test_edit_preserves_scale_and_can_exceed_new_model_budget(monkeypatch, mode,
 
     asyncio.run(generate(request))
 
-    assert "Preserve the existing model's scale" in opened["system"]
-    assert "allow the brick count to grow as needed" in opened["system"]
+    if request.max_parts:
+        assert "at most 600" in opened["system"]
+    else:
+        assert "Preserve the existing model's scale" in opened["system"]
+        assert "allow the brick count to grow as needed" in opened["system"]
     assert "at most 299" not in opened["system"]
     if mode == "design":
         feedback = conversation.tool_results[0][0].text
-        assert "allow the brick count to grow as needed" in feedback
+        assert ("at most 600" if request.max_parts else "allow the brick count to grow as needed") in feedback
         assert "at most 299" not in feedback
 
 
@@ -672,8 +675,9 @@ def test_background_generation_survives_request_cancellation(monkeypatch):
         monkeypatch.setattr(module, "process_llm_to_bricks_task", generate)
 
         async def request():
-            response = await module.llm_to_bricks(LlmToBricksRequest(prompt="castle"), {"user_id": "anon"})
+            response = await module.llm_to_bricks(LlmToBricksRequest(prompt="Use 80 pieces for a castle"), {"user_id": "anon"})
             assert response.generation_id == "background-1"
+            assert storage.create_generation.call_args.kwargs["max_parts"] == 80
             responded.set()
             await asyncio.Future()
 
