@@ -84,7 +84,7 @@ export class CreateCheckoutSessionApiService {
           // If it's not JSON, use the raw text
           errorMessage = errorText || `${response.status} ${response.statusText}`;
         }
-        throw new Error(errorMessage);
+        throw Object.assign(new Error(errorMessage), { status: response.status });
       }
 
       // Get the JSON response from API

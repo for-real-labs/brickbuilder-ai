@@ -276,3 +276,19 @@ def test_multiple_kits_pin_combined_parts_and_charge_combined_quote(setup):
     assert params['line_items'][0]['price_data']['unit_amount'] == quote.order_pricing.parts_cents
     assert params['line_items'][0]['quantity'] == 1
     assert params['shipping_options'][0]['shipping_rate_data']['fixed_amount']['amount'] == quote.order_pricing.shipping_cents
+
+
+def test_checkout_failure_logs_stripe_request_and_reason_without_payment_data(setup, caplog):
+    _, create, _ = setup
+    error = RuntimeError('Private card or customer details must not reach logs')
+    error.code = 'parameter_invalid_empty'
+    error.param = 'line_items'
+    error.request_id = 'req_support123'
+    create.side_effect = error
+    with pytest.raises(HTTPException) as failure:
+        run()
+    assert failure.value.status_code == 500
+    assert 'parameter_invalid_empty' in caplog.text
+    assert 'req_support123' in caplog.text
+    assert 'generation=g' in caplog.text
+    assert 'Private card' not in caplog.text

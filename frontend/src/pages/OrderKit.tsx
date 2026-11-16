@@ -4,6 +4,7 @@ import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, Check, ChevronDown, LockKeyhole, Package, Truck } from "lucide-react";
 import posthog from "posthog-js";
+import { paymentDiagnostics } from "../utils/paymentDiagnostics";
 import { CreateCheckoutSessionApiService, type CreateCheckoutSessionResponse } from "../services/createCheckoutSessionApi";
 import { GetPriceApiService } from "../services/getPriceApi";
 import { ThreeLDRViewer } from "../components/ThreeLDRViewer";
@@ -85,6 +86,8 @@ function OrderCheckout() {
   const [country, setCountry] = React.useState<string>('US');
   const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
   const [session, setSession] = React.useState<CreateCheckoutSessionResponse | null>(null);
+  const sessionInputRef = React.useRef<string | null>(null);
+  const [paymentNotice, setPaymentNotice] = React.useState<string | null>(null);
   const [discountedTotal, setDiscountedTotal] = React.useState<number | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -213,31 +216,43 @@ function OrderCheckout() {
 
   const goToStep = (next: number) => {
     if (loading) return;
-    setError(null); setSession(null); setDiscountedTotal(null); setStep(next);
+    setError(null); setStep(next);
     posthog.capture('order_step_changed', { generation_id: generationId, step: stepNames[next], direction: next > step ? 'forward' : 'back' });
   };
 
-  const startPayment = async (event?: React.FormEvent) => {
+  const startPayment = async (event?: React.FormEvent, forceNew = false) => {
     event?.preventDefault();
     if (loading || !pricing || !generationId) return;
     setLoading(true); setError(null);
     posthog.capture('order_delivery_completed', { generation_id: generationId, country });
     try {
       if (!publishableKey) throw new Error('Payment configuration unavailable');
-      const token = (await supabase.auth.getSession()).data.session?.access_token;
-      const data = await CreateCheckoutSessionApiService.createCheckoutSession({
+      const identity = (await supabase.auth.getSession()).data.session;
+      const token = identity?.access_token;
+      const request = {
         name, priceCents: pricing.totalCents, quantity,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
-        uiMode: 'elements', shipInstructionsPostcard, petId: pet.id,
+        uiMode: 'elements' as const, shipInstructionsPostcard, petId: pet.id,
         shippingAddress: getShippingContact(delivery, country),
-      }, token);
+      };
+      // Keep both the session and its mounted Stripe fields when merely reviewing delivery.
+      // This fingerprint stays in memory and is never logged or persisted.
+      const input = JSON.stringify({ request: { ...request, priceCents: undefined }, email: delivery.email.trim(), account: identity?.user?.id || null });
+      if (!forceNew && session && sessionInputRef.current === input) {
+        setStep(1);
+        posthog.capture('order_step_changed', { generation_id: generationId, step: 'Payment', direction: 'forward', session_reused: true });
+        return;
+      }
+      const data = await CreateCheckoutSessionApiService.createCheckoutSession(request, token);
       if (!data.client_secret) throw new Error('Embedded payment unavailable');
       if (data.price_data) setQuote(data.price_data);
+      setPaymentNotice(session ? (forceNew ? 'Payment has been restarted. Please enter your payment details again.' : 'Your order or delivery details changed, so please enter your payment details again.') : null);
+      sessionInputRef.current = input;
       setSession(data); setDiscountedTotal(null); setStep(1);
       posthog.capture('order_step_changed', { generation_id: generationId, step: 'Payment', direction: 'forward' });
-    } catch {
+    } catch (cause) {
       setError('We couldn’t start payment. Your details are still here — please try again.');
-      posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'session' });
+      posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'session', ...paymentDiagnostics(cause, Object.values(delivery)) });
     } finally { setLoading(false); }
   };
 
@@ -332,7 +347,8 @@ function OrderCheckout() {
             </form>
           </CheckoutStep>
           <CheckoutStep title="Payment" number={2} active={step === 1} complete={false} disabled={loading} onEdit={() => {}}>
-            {session && pricing && <CheckoutPayment key={session.session_id} session={session} publishableKey={publishableKey} details={delivery} country={country} totalCents={pricing.totalCents} generationId={generationId} onBack={() => goToStep(0)} onRetry={() => { goToStep(0); void startPayment(); }} onBusyChange={setLoading} onTotalChange={setDiscountedTotal} />}
+            {paymentNotice && <p role="status">{paymentNotice}</p>}
+            {session && pricing && <CheckoutPayment key={session.session_id} session={session} publishableKey={publishableKey} details={delivery} country={country} totalCents={pricing.totalCents} generationId={generationId} onBack={() => goToStep(0)} onRetry={() => { goToStep(0); void startPayment(undefined, true); }} onBusyChange={setLoading} onTotalChange={setDiscountedTotal} />}
           </CheckoutStep>
         </div>
       </div>}

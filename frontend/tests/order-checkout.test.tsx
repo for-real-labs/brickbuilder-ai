@@ -206,9 +206,16 @@ it('progresses contact → payment, sends auth, retains details when editing, an
   expect(container.querySelector('#checkout-step-2')!.hasAttribute('hidden')).toBe(false);
   const storage = localStorage.getItem('orderState')!;
   expect(storage).not.toContain(details.email); expect(storage).not.toContain(details.line1); expect(storage).not.toContain('secret');
+  const terms = container.querySelector<HTMLInputElement>('.checkout-consent input')!;
+  act(() => terms.click());
   await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
   expect(container.querySelector<HTMLInputElement>('[name="email"]')!.value).toBe(details.email);
-  expect(mocks.destroy).toHaveBeenCalled();
+  expect(mocks.destroy).not.toHaveBeenCalled();
+  await submitContact();
+  expect(create).toHaveBeenCalledTimes(1);
+  expect(mocks.mount).toHaveBeenCalledTimes(1);
+  expect(container.querySelector('.checkout-consent input')).toBe(terms);
+  expect(terms.checked).toBe(true);
   expect(posthog.capture).toHaveBeenCalledWith('order_step_changed', expect.objectContaining({ step: 'Contact & delivery', direction: 'back' }));
 });
 
@@ -624,4 +631,58 @@ it('confirms one-time credits inline without subscription, shipping or product p
   await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
   expect(mocks.confirm).toHaveBeenCalledWith({ email: 'buyer@example.test', redirect: 'if_required' });
   expect(assign).toHaveBeenCalledWith('/billing?checkout=success&session_id=cs_credit');
+});
+
+
+it('replaces the payment session only when delivery changes and explains the reset', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession')
+    .mockResolvedValueOnce({ session_id: 'old', client_secret: 'old-secret' })
+    .mockResolvedValueOnce({ session_id: 'new', client_secret: 'new-secret' });
+  await renderOrder();
+  act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
+  await submitContact();
+  await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
+  act(() => fill('line1', '456 New Street'));
+  await submitContact();
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(create.mock.lastCall![0].shippingAddress?.address.line1).toBe('456 New Street');
+  expect(mocks.destroy).toHaveBeenCalledTimes(1);
+  expect(container.textContent).toContain('Your order or delivery details changed');
+});
+
+it.each(['order', 'plan', 'credit'])('records sanitized %s confirmation exceptions with session context', async (kind) => {
+  mocks.confirm.mockRejectedValueOnce(new Error('Network request failed for test@example.com cs_live_private_secret_123'));
+  const customer = kind === 'plan' ? { subscriptionPlan: 'builder' as const, email: details.email }
+    : kind === 'credit' ? { creditPurchase: true as const, email: details.email } : { details, country: 'US' };
+  await act(async () => root.render(<CheckoutPayment {...customer} session={{ session_id: 'cs_session', client_secret: 'cs_live_private_secret_123' }} publishableKey="pk_test_example" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input')!.click());
+  await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(posthog.capture).toHaveBeenCalledWith(`${kind}_checkout_error`, expect.objectContaining({
+    stage: 'confirm', error_type: 'Error', error_message: 'Network request failed for [redacted] [redacted]',
+    checkout_session_id: 'cs_session', payment_complete: false,
+  }));
+});
+
+it('records Stripe validation errors even when Stripe provides no code', async () => {
+  mocks.confirm.mockResolvedValue({ type: 'error', error: { type: 'validation_error', message: 'Your card number is incomplete.' } });
+  await act(async () => root.render(<CheckoutPayment session={{ session_id: 'cs', client_secret: 'secret' }} publishableKey="pk_test_example" details={details} country="US" totalCents={2500} onBack={vi.fn()} onRetry={vi.fn()} />));
+  act(() => container.querySelector<HTMLInputElement>('.checkout-consent input')!.click());
+  await act(async () => container.querySelector('form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
+  expect(posthog.capture).toHaveBeenCalledWith('order_checkout_error', expect.objectContaining({
+    stage: 'confirm', error_message: 'Your card number is incomplete.', error_type: 'validation_error', checkout_session_id: 'cs',
+  }));
+});
+
+
+it('retries a broken payment session even when delivery is unchanged', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession')
+    .mockResolvedValueOnce({ session_id: 'old', client_secret: 'old-secret' })
+    .mockResolvedValueOnce({ session_id: 'retry', client_secret: 'retry-secret' });
+  mocks.loadStripe.mockRejectedValueOnce(new Error('Offline'));
+  await renderOrder();
+  act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
+  await submitContact();
+  await click('Try again');
+  expect(create).toHaveBeenCalledTimes(2);
+  expect(container.textContent).toContain('Payment has been restarted');
 });

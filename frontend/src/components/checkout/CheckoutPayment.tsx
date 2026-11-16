@@ -3,6 +3,7 @@ import { loadStripe } from '@stripe/stripe-js/pure';
 import type { Appearance, StripeCheckoutLoadActionsResult, StripePaymentElement, StripeCheckoutExpressCheckoutElement, StripeExpressCheckoutElement, StripeExpressCheckoutElementConfirmEvent } from '@stripe/stripe-js';
 import { ArrowLeft, LockKeyhole } from 'lucide-react';
 import posthog from 'posthog-js';
+import { paymentDiagnostics } from '../../utils/paymentDiagnostics';
 import type { CreateCheckoutSessionResponse } from '../../services/createCheckoutSessionApi';
 import { type DeliveryDetails, getShippingContact, formatOrderPrice } from '../../utils/orderCheckout';
 
@@ -39,6 +40,14 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
     subscriptionPlan ? event.replace(/^order_/, 'plan_') : creditPurchase ? event.replace(/^order_/, 'credit_') : event,
     { ...properties, ...(subscriptionPlan ? { plan_key: subscriptionPlan } : {}) },
   );
+  const paymentCompleteRef = React.useRef(false);
+  const privateValuesRef = React.useRef<string[]>([]);
+  privateValuesRef.current = [...Object.values(details || {}), email || '', session.client_secret || ''];
+  const diagnose = (cause: unknown) => ({
+    ...paymentDiagnostics(cause, privateValuesRef.current),
+    checkout_session_id: session.session_id,
+    payment_complete: paymentCompleteRef.current,
+  });
   const mountRef = React.useRef<HTMLDivElement>(null);
   const walletMountRef = React.useRef<HTMLDivElement>(null);
   const walletRef = React.useRef<StripeCheckoutExpressCheckoutElement | null>(null);
@@ -70,13 +79,13 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
     let disposed = false;
     let element: StripePaymentElement | undefined;
     let timeout: ReturnType<typeof setTimeout>;
-    const fail = () => {
+    const fail = (cause: unknown) => {
       if (disposed) return;
       setLoadFailed(true);
       setError('Payment could not load. Please try again.');
-      track('order_checkout_error', { generation_id: generationId, stage: 'payment_load' });
+      track('order_checkout_error', { generation_id: generationId, stage: 'payment_load', ...diagnose(cause) });
     };
-    timeout = setTimeout(fail, 20000);
+    timeout = setTimeout(() => fail(new Error('Payment form loading timed out')), 20000);
     void (async () => {
       try {
         if (!session.client_secret || !publishableKey) throw new Error('Payment configuration unavailable');
@@ -86,7 +95,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         const checkout = stripe.initCheckoutElementsSdk({ clientSecret: session.client_secret, elementsOptions: { appearance: checkoutAppearance } });
         const result = await checkout.loadActions();
         if (disposed) return;
-        if (result.type === 'error') throw new Error(result.error.message);
+        if (result.type === 'error') throw result.error;
         actionsRef.current = result.actions;
         element = checkout.createPaymentElement({
           layout: 'tabs',
@@ -99,8 +108,9 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
           clearTimeout(timeout); setReady(true); setError(null); setLoadFailed(false);
           track('order_payment_loaded', { generation_id: generationId });
         });
-        element.on('loaderror', fail);
+        element.on('loaderror', event => fail(event?.error));
         element.on('change', event => {
+          if (!disposed) paymentCompleteRef.current = event.complete;
           if (!disposed && methodRef.current !== event.value.type) {
             methodRef.current = event.value.type;
             track('order_payment_method_selected', { generation_id: generationId, payment_method: event.value.type });
@@ -139,19 +149,20 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
               else setError('Please agree to the Terms of Service before paying.');
             });
             wallet.on('confirm', event => { if (!disposed && walletRef.current === wallet) void confirmRef.current(event); });
-            wallet.on('loaderror', () => {
+            wallet.on('loaderror', event => {
+              if (!disposed) track('order_checkout_error', { generation_id: generationId, stage: 'wallet_load', ...diagnose(event?.error) });
               if (!disposed && walletRef.current === wallet) { setWalletStatus('error'); setWallets({ applePay: false, googlePay: false }); }
             });
             if (walletMountRef.current) wallet.mount(walletMountRef.current);
-          } catch {
+          } catch (cause) {
             if (!disposed) {
               setWalletStatus('error');
-              track('order_checkout_error', { generation_id: generationId, stage: 'wallet_load' });
+              track('order_checkout_error', { generation_id: generationId, stage: 'wallet_load', ...diagnose(cause) });
             }
           }
         };
         renderWalletRef.current('card');
-      } catch { clearTimeout(timeout); fail(); }
+      } catch (cause) { clearTimeout(timeout); fail(cause); }
     })();
     return () => { disposed = true; clearTimeout(timeout); element?.destroy(); walletRef.current?.destroy(); walletRef.current = null; renderWalletRef.current = null; actionsRef.current = null; };
   }, [session.client_secret, publishableKey, generationId, subscriptionPlan, creditPurchase]);
@@ -169,14 +180,14 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         redirect: 'if_required',
         ...(walletEvent ? { expressCheckoutConfirmEvent: walletEvent } : {}),
       });
-      if (result.type === 'error') { setError(result.error.message); track('order_checkout_error', { generation_id: generationId, stage: 'confirm', error_code: result.error.code }); }
+      if (result.type === 'error') { setError(result.error.message); track('order_checkout_error', { generation_id: generationId, stage: 'confirm', payment_method: selectedMethod, ...diagnose(result.error) }); }
       else {
         track('order_payment_submitted', { generation_id: generationId });
         window.location.assign(`${digital ? '/billing?checkout=success&' : '/success?'}session_id=${encodeURIComponent(session.session_id)}`);
       }
-    } catch {
+    } catch (cause) {
       setError('Payment could not be completed. Please try again.');
-      track('order_checkout_error', { generation_id: generationId, stage: 'confirm' });
+      track('order_checkout_error', { generation_id: generationId, stage: 'confirm', payment_method: selectedMethod, ...diagnose(cause) });
     } finally { operationRef.current = false; setLoading(false); onBusyChange?.(false); }
   };
 
@@ -188,7 +199,7 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
       const result = remove ? await actionsRef.current.removePromotionCode() : await actionsRef.current.applyPromotionCode(promoCode.trim());
       if (result.type === 'error') {
         setPromoError(result.error.message);
-        track('order_promo_failed', { generation_id: generationId });
+        track('order_promo_failed', { generation_id: generationId, ...diagnose(result.error) });
       } else {
         const total = result.session.total.total.minorUnitsAmount;
         setPaymentTotal(total); onTotalChange?.(total);
@@ -196,9 +207,9 @@ export function CheckoutPayment({ session, publishableKey, details, country, tot
         if (remove) setPromoCode('');
         posthog.capture(remove ? 'order_promo_removed' : 'order_promo_applied', { generation_id: generationId, total_cents: total });
       }
-    } catch {
+    } catch (cause) {
       setPromoError('Could not update the promo code. Please try again.');
-      track('order_promo_failed', { generation_id: generationId });
+      track('order_promo_failed', { generation_id: generationId, ...diagnose(cause) });
     } finally { operationRef.current = false; setPromoBusy(false); onBusyChange?.(false); }
   };
 

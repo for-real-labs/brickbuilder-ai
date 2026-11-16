@@ -66,6 +66,12 @@ describe('JSON API service contracts', () => {
     expect(headers.get('X-Guest-Session')).toMatch(/^[0-9a-f]{64}$/);
   });
 
+  it('preserves the HTTP status and reason for checkout diagnostics', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce(fail(404, JSON.stringify({ detail: 'Generation not found' })) as Response);
+    await expect(CreateCheckoutSessionApiService.createCheckoutSession({ generationId: 'g' }))
+      .rejects.toMatchObject({ message: 'Generation not found', status: 404 });
+  });
+
   it('persists pricing results used by checkout', async () => {
     const estimate = { cart_id: 'cart', parts_list: [{ design_id: '1', color_id: '2', quantity: 3 }], unmapped_parts: 0 };
     vi.mocked(fetch).mockResolvedValueOnce(ok(estimate) as unknown as Response);

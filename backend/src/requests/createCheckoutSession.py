@@ -1,5 +1,6 @@
 import os
 import logging
+import re
 import asyncio
 import json
 from hashlib import sha256
@@ -174,7 +175,14 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
     except HTTPException:
         raise
     except Exception as error:
-        logger.error("Failed to create checkout session (%s)", type(error).__name__)
+        # Stripe exceptions may carry customer/payment data; log only diagnostic identifiers.
+        def diagnostic_token(field):
+            value = getattr(error, field, None)
+            return value if isinstance(value, str) and re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,99}", value) else None
+
+        logger.error("Checkout creation failed: generation=%s type=%s code=%s param=%s stripe_request=%s",
+                     request.generationId, type(error).__name__, diagnostic_token('code'),
+                     diagnostic_token('param'), diagnostic_token('request_id'))
         track_error(error_type=type(error).__name__, error_message="Failed to create checkout session",
                     endpoint="/create-checkout-session", user_id=user_email)
         raise HTTPException(status_code=500, detail="Failed to create checkout session") from error
