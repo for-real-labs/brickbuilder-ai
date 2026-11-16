@@ -12,7 +12,6 @@ import stripe
 
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
-from ..utils.authorization import require_generation_access
 from ..utils.imported_kit import fulfillment_csv
 from .getPrice import GetPriceRequest, GetPriceResponse, get_price
 
@@ -93,7 +92,7 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         generation = await generation_storage.get_generation(request.generationId)
         if not generation:
             raise HTTPException(status_code=404, detail="Generation not found")
-        require_generation_access(generation, auth_info, allow_community=True)
+        # Any visitor may buy a completed model; publishing remains owner-only.
         imported = generation.get("endpoint") == "uploadLdraw"
         if generation.get("status") != "completed":
             raise HTTPException(status_code=400, detail="Only completed models can be ordered")

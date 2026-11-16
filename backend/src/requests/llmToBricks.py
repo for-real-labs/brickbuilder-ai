@@ -208,7 +208,7 @@ DEFAULT_IMAGE_PROMPT = (
 def _user_input(request: LlmToBricksRequest) -> UserInput:
     return UserInput(
         text=(request.prompt or DEFAULT_IMAGE_PROMPT) + (
-            "\n\nEdit this existing LDraw model using only the allowed inventory:\n" + request._source_ldr
+            "\n\nEdit this existing LDraw model, preserving everything except the requested changes:\n" + request._source_ldr
             if request._source_ldr else "") + (
             "\n\nEdit this existing voxel model. Preserve all cells except the requested changes. "
             "Coordinates are x, y (horizontal studs), z (vertical brick layers); colors are RGB.\n"
@@ -704,7 +704,15 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
     if generation.get("status") != "completed":
         require_generation_access(generation, auth_info)
     if generation.get("has_parts_inventory"):
-        require_generation_access(generation, auth_info)
+        try:
+            require_generation_access(generation, auth_info)
+        except HTTPException:
+            # Fork the finished geometry without copying the creator's private inventory.
+            if not generation.get('ldr_url'):
+                raise HTTPException(400, 'This model is not ready to edit.') from None
+            content = await generation_storage.download_file_from_storage(generation['ldr_url'])
+            request._source_ldr = validate_ldr_content(content.decode('utf-8'))
+            return
         try:
             bucket = generation_storage.client.storage.from_('generation-output')
             data = await asyncio.to_thread(bucket.download, f'{request.generation_id}/parts-inventory.json')
@@ -719,6 +727,11 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
         request._source_ldr = validate_ldr_content(content.decode('utf-8'))
         return
     url = generation.get("xyzrgb_url")
+    if generation.get('status') == 'completed' and not url and generation.get('ldr_url'):
+        # Direct-geometry forks remain editable on subsequent turns.
+        content = await generation_storage.download_file_from_storage(generation['ldr_url'])
+        request._source_ldr = validate_ldr_content(content.decode('utf-8'))
+        return
     if generation.get("status") != "completed" or not url:
         raise HTTPException(status_code=400, detail="This model has no saved voxels to edit")
     content = await generation_storage.download_file_from_storage(url)
@@ -792,7 +805,7 @@ async def _generate_ldr(
     request: LlmToBricksRequest,
     on_thinking: Optional[ThinkingCallback] = None,
 ) -> LlmBuild:
-    if request.parts_inventory:
+    if request.parts_inventory or request._source_ldr:
         return LlmBuild(ldr=await _generate_ldr_direct(request, on_thinking))
     if request._source_voxels:
         return await _edit_voxels(request, on_thinking)

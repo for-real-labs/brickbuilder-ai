@@ -72,13 +72,19 @@ def test_physical_orders_allow_stripe_validated_promotion_codes(setup, mode):
     assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 6250
 
 
-def test_private_checkout_cannot_be_started_by_other_user(setup):
+@pytest.mark.parametrize('identity', [
+    {}, {'authenticated': False, 'user_id': 'guest'},
+    {'authenticated': True, 'user_id': 'other'},
+])
+def test_unlisted_completed_model_can_be_ordered_by_any_visitor(setup, identity):
     storage, create, _ = setup
-    storage.return_value['user_id'] = 'other'
-    with pytest.raises(HTTPException) as error:
-        run(uiMode='custom')
-    assert error.value.status_code == 404
-    create.assert_not_called()
+    storage.return_value['is_community'] = False
+    result = asyncio.run(checkout.create_checkout_session(
+        checkout.CreateCheckoutSessionRequest(generationId='g', uiMode='elements'), identity))
+    assert result.session_id == 'cs'
+    create.assert_called_once()
+    assert checkout.get_price.call_args.args[1] == identity
+    assert storage.return_value['user_id'] == 'owner'
 
 
 def test_unfinished_model_cannot_be_ordered(setup):

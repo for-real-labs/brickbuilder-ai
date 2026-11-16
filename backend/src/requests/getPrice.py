@@ -6,7 +6,6 @@ import httpx
 from fastapi import HTTPException
 from pydantic import BaseModel, Field, field_validator
 
-from ..utils.authorization import require_generation_access
 from ..utils.imported_kit import estimated_inventory, imported_inventory
 from ..utils.generation_storage import generation_storage
 from ..utils.parts_catalog import PartsUnavailable, normalize_part_id, parts_csv_inventory
@@ -89,7 +88,6 @@ async def load_imported_inventory(storage, generation) -> dict:
 
 
 async def price_imported_kit(request, generation, auth_info):
-    require_generation_access(generation, auth_info)
     catalog = get_supplier_catalog()
     conversion_credits = None
     inventory = {}

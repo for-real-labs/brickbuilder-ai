@@ -91,39 +91,34 @@ def test_invalid_upload_never_creates_a_generation(monkeypatch):
     storage.create_generation.assert_not_called()
 
 
-def test_upload_read_requires_its_owner_even_when_completed(monkeypatch):
+@pytest.mark.parametrize('identity', [{}, {'authenticated': True, 'user_id': 'other'}])
+def test_completed_upload_can_be_viewed_by_other_buyers(monkeypatch, identity):
     monkeypatch.setattr(getGeneration, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value={
         'status': 'completed', 'endpoint': 'uploadLdraw', 'user_type': 'authenticated', 'user_id': 'owner'})))
-    with pytest.raises(HTTPException) as error:
-        asyncio.run(getGeneration.get_generation(getGeneration.GetGenerationRequest(generation_id='g'), {'authenticated': True, 'user_id': 'other'}))
-    assert error.value.status_code == 404
+    result = asyncio.run(getGeneration.get_generation(getGeneration.GetGenerationRequest(generation_id='g'), identity))
+    assert result.status == 'completed'
 
 
-def test_upload_price_is_private_without_fetching_inventory(monkeypatch):
-    monkeypatch.setattr(getPrice, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value={'endpoint': 'uploadLdraw'})))
-    fetch = AsyncMock(); monkeypatch.setattr(getPrice, 'fetch_csv_content', fetch)
+def test_unfinished_upload_cannot_be_priced(monkeypatch):
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value={'endpoint': 'uploadLdraw'}),
+                              download_file_from_storage=AsyncMock())
+    monkeypatch.setattr(getPrice, 'generation_storage', storage)
     with pytest.raises(HTTPException) as error:
         asyncio.run(getPrice.get_price(getPrice.GetPriceRequest(generation_id='g'), {}))
-    assert error.value.status_code == 404
-    fetch.assert_not_called()
+    assert error.value.status_code == 409
+    storage.download_file_from_storage.assert_not_awaited()
 
 
-@pytest.mark.parametrize('owner', [True, False])
-def test_nova_edit_imports_only_owned_uploads(monkeypatch, owner):
+@pytest.mark.parametrize('identity', [{}, {'authenticated': True, 'user_id': 'other'}, {'authenticated': True, 'user_id': 'owner'}])
+def test_nova_edit_imports_completed_upload_as_geometry(monkeypatch, identity):
     storage = SimpleNamespace(get_generation=AsyncMock(return_value={'user_id': 'owner', 'user_type': 'authenticated',
         'status': 'completed', 'endpoint': 'uploadLdraw', 'ldr_url': 'source'}), download_file_from_storage=AsyncMock(return_value=BRICK.encode()))
     monkeypatch.setattr(novaToBricks, 'generation_storage', storage)
     session = AsyncMock(); monkeypatch.setattr(novaToBricks, '_owned_session', session)
     request = novaToBricks.NovaToBricksRequest(prompt='Make it blue', source_generation_id='g')
-    if owner:
-        asyncio.run(novaToBricks._prepare_edit(request, {'authenticated': True, 'user_id': 'owner'}))
-        assert request._nova_source_ldr == BRICK and request._nova_uploaded_source is True
-        session.assert_not_called()
-    else:
-        with pytest.raises(HTTPException) as error:
-            asyncio.run(novaToBricks._prepare_edit(request, {'authenticated': True, 'user_id': 'other'}))
-        assert error.value.status_code == 404
-        storage.download_file_from_storage.assert_not_called()
+    asyncio.run(novaToBricks._prepare_edit(request, identity))
+    assert request._nova_source_ldr == BRICK and request._nova_uploaded_source is True
+    session.assert_not_called()
 
 
 def test_upload_response_marks_geometry_unorderable_and_all_parts(monkeypatch):

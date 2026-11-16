@@ -174,8 +174,7 @@ class GenerationStorage:
                     raise ValueError("Source generation not found")
                 if source.get("user_id") == user_id and source.get("user_type") == user_type:
                     generation_data["generation_id"] = source.get("generation_id") or source["id"]
-                elif not (source.get("status") == "completed" and
-                          (source.get("is_community") or endpoint == "llmToBricks")):
+                elif source.get("status") != "completed":
                     raise ValueError("Source generation belongs to another owner")
                 if source.get("max_parts") is not None:
                     generation_data["max_parts"] = tighter_parts_limit(max_parts, source["max_parts"])

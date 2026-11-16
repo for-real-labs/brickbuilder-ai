@@ -32,8 +32,9 @@ def test_estimate_keeps_exact_parts_and_can_use_a_mold_variant_but_never_a_parti
     assert estimated_inventory({('3001', 4): 5, ('99999', 4): 1}, CATALOG) is None
 
 
+@pytest.mark.parametrize('identity', [{}, {'authenticated': True, 'user_id': 'other'}, {'authenticated': True, 'user_id': 'owner'}])
 @pytest.mark.parametrize('color,credits,price', [(4, None, .20), (25, 20, .20)])
-def test_price_checks_import_source_and_marks_substitutions_as_estimates(monkeypatch, color, credits, price):
+def test_price_checks_import_source_and_marks_substitutions_as_estimates(monkeypatch, color, credits, price, identity):
     source = {'user_type': 'authenticated', 'user_id': 'owner', 'endpoint': 'uploadLdraw',
               'status': 'completed', 'ldr_url': 'saved-source'}
     monkeypatch.setattr(getPrice, 'generation_storage', SimpleNamespace(
@@ -42,6 +43,6 @@ def test_price_checks_import_source_and_marks_substitutions_as_estimates(monkeyp
     monkeypatch.setattr(getPrice, 'get_supplier_catalog', lambda: CATALOG)
     monkeypatch.setattr(getPrice, 'get_member_discount_percent', AsyncMock(return_value=0))
     quote = asyncio.run(getPrice.get_price(getPrice.GetPriceRequest(generation_id='g'),
-        {'authenticated': True, 'user_id': 'owner'}))
+        identity))
     assert quote.conversion_credits == credits
     assert quote.total_price == price

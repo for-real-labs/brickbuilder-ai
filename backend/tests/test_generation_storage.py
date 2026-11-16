@@ -1,4 +1,5 @@
 import asyncio
+import pytest
 import sys
 from pathlib import Path
 
@@ -135,7 +136,9 @@ def test_create_generation_persists_mode_and_inherits_it_for_non_generating_revi
     assert records[-1]['generation_id'] == 'model' and records[-1]['mode'] == 'all_parts'
 
 
-def test_public_voxel_edit_starts_independent_root_for_guest_editor():
+@pytest.mark.parametrize('endpoint', ['llmToBricks', 'novaToBricks', 'updateModel', 'resizeModel', 'promptEditModel'])
+@pytest.mark.parametrize('user_type', ['anonymous', 'authenticated'])
+def test_completed_edit_starts_independent_root_for_editor(endpoint, user_type):
     from types import SimpleNamespace
     from unittest.mock import AsyncMock
     records = []
@@ -147,10 +150,13 @@ def test_public_voxel_edit_starts_independent_root_for_guest_editor():
     storage.get_generation = AsyncMock(return_value={'id': 'source', 'generation_id': 'original-root',
         'user_id': 'owner', 'user_type': 'authenticated', 'status': 'completed', 'is_community': False,
         'name': 'Castle'})
-    result = asyncio.run(storage.create_generation('guest-editor', 'anonymous', 'blue roof', 40,
-        endpoint='llmToBricks', edit_generation_id='source'))
+    result = asyncio.run(storage.create_generation('guest-editor', user_type, 'blue roof', 40,
+        endpoint=endpoint, edit_generation_id='source'))
     assert records[-1]['generation_id'] == result and result != 'original-root'
     assert records[-1]['name'] == 'Castle' and records[-1]['user_id'] == 'guest-editor'
+    assert records[-1]['user_type'] == user_type
+    assert not records[-1].get('is_community')
+    assert storage.get_generation.return_value['user_id'] == 'owner'
 
 
 def test_input_attribution_distinguishes_inputs_and_preserves_origin_on_edits():

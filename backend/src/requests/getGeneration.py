@@ -75,9 +75,9 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
             raise HTTPException(status_code=404, detail=f"Generation {request.generation_id} not found")
 
         # Sharing a finished model must not grant access to its owner's live
-        # output, generation history, or editing/claiming permissions. Keep this
+        # output, generation history, or permissions to modify the original. Keep this
         # exception on the model-read endpoint instead of the shared auth helper.
-        if generation.get("status") != "completed" or generation.get("endpoint") == "uploadLdraw":
+        if generation.get("status") != "completed":
             require_generation_access(generation, auth_info)
 
         # Extract fields

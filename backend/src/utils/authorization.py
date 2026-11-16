@@ -56,5 +56,7 @@ async def get_generation_or_404(generation_id: str, auth_info: dict) -> dict:
     row = await _get_generation_storage().get_generation(generation_id)
     if not row:
         raise HTTPException(status_code=404, detail="Generation not found")
-    require_generation_access(row, auth_info, allow_community=True)
+    # Editing completed geometry creates a new generation owned by the caller.
+    if row.get("status") != "completed":
+        require_generation_access(row, auth_info)
     return row

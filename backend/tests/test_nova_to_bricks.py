@@ -180,7 +180,7 @@ def test_foreign_edit_requires_completed_nova_geometry(monkeypatch, status, endp
     request = module.NovaToBricksRequest(prompt='edit', source_generation_id='source')
     with pytest.raises(HTTPException) as exc:
         asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
-    assert exc.value.status_code == 404
+    assert exc.value.status_code == (409 if endpoint == 'llmToBricks' else 404)
     download.assert_not_awaited()
 
 
@@ -229,7 +229,7 @@ def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
     saved = storage.create_generation.call_args.kwargs
     assert saved['guest_ip_hash'] == 'ip_v1_' + 'a' * 64
     assert saved['user_id'] == 'caller' and saved['user_type'] == 'authenticated'
-    assert saved['edit_generation_id'] is None
+    assert saved['edit_generation_id'] == 'original'
     assert saved['input_type'] == 'image'
 
 
@@ -326,18 +326,22 @@ def test_owned_voxelized_upload_imports_into_full_parts_edit(monkeypatch, endpoi
     session.assert_not_awaited()
 
 
-@pytest.mark.parametrize('endpoint', ['glbToBricks', 'objToBricks'])
-def test_another_users_upload_is_not_importable(monkeypatch, endpoint):
-    download = AsyncMock()
+@pytest.mark.parametrize('endpoint', ['glbToBricks', 'objToBricks', 'uploadLdraw', 'novaToBricks'])
+@pytest.mark.parametrize('identity', [{}, {'user_id': 'caller', 'authenticated': True}])
+def test_another_users_completed_model_forks_geometry_only(monkeypatch, endpoint, identity):
+    session = AsyncMock()
+    monkeypatch.setattr(module, '_owned_session', session)
+    download = AsyncMock(return_value=b'saved geometry')
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
         get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'authenticated',
             'status': 'completed', 'endpoint': endpoint, 'ldr_url': 'private-source'}),
         download_file_from_storage=download))
     request = module.NovaToBricksRequest(prompt='edit', generation_id='mesh')
-    with pytest.raises(HTTPException) as error:
-        asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
-    assert error.value.status_code == 404
-    download.assert_not_awaited()
+    asyncio.run(module._prepare_edit(request, identity))
+    assert request._nova_source_ldr == 'saved geometry'
+    assert request._nova_session is None
+    session.assert_not_awaited()
+    download.assert_awaited_once_with('private-source')
 
 
 @pytest.mark.parametrize('lost_session', [True, False])

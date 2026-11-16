@@ -79,12 +79,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
         require_generation_access(source, auth_info)
         owned = True
     except HTTPException:
-        if source.get('endpoint') == 'uploadLdraw':
-            raise
         owned = False
     if source.get('endpoint') == 'llmToBricks':
-        if not owned:
-            raise HTTPException(404, 'Generation not found')
         raise HTTPException(409, 'This model uses Basic bricks mode. Keep that mode when editing it.')
     if owned and source.get('has_parts_inventory'):
         try:
@@ -97,7 +93,7 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
             raise HTTPException(409, 'The original parts inventory is unavailable. Upload it again to start a new build.') from None
     request._nova_input_type = source.get('input_type') or infer_input_type(source.get('endpoint'))
     request._nova_input_format = source.get('input_format')
-    request._nova_uploaded_source = owned and source.get('endpoint') in {'uploadLdraw', 'glbToBricks', 'objToBricks'}
+    request._nova_uploaded_source = source.get('endpoint') in {'uploadLdraw', 'glbToBricks', 'objToBricks'}
     if owned and not request._nova_uploaded_source:
         try:
             request._nova_session = await _owned_session(request.generation_id, auth_info)
@@ -293,7 +289,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         endpoint="novaToBricks", model_3d=request.model, max_parts=request.max_parts,
         input_type=request._nova_input_type or ("image" if request.image_base64 else "text"),
         input_format=request._nova_input_format, entry_page=request.entry_page,
-        edit_generation_id=request.generation_id if request._nova_session or request._nova_uploaded_source else None,
+        edit_generation_id=request.generation_id,
     )
     if request.parts_inventory is not None:
         try:

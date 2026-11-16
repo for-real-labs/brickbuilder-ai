@@ -20,7 +20,7 @@ from ..utils.posthog_client import track_api_call, track_image_conversion, track
 from ..utils.pack_ldraw_model import LDrawPacker
 from ..utils.generation_tasks import start_generation_task
 from ..utils.generation_storage import generation_storage
-from ..utils.authorization import get_owned_generation_or_403
+from ..utils.authorization import get_generation_or_404
 from ..utils.generate_image import generate_image_from_image
 from ..utils.generate_3d_model_from_image import generate_3d_model_from_image
 
@@ -357,7 +357,7 @@ async def prompt_edit_model(
     try:
         # Step 1: Fetch the original generation record
         logger.info(f"Fetching generation record: {request.generation_id}")
-        generation = await get_owned_generation_or_403(request.generation_id, auth_info)
+        generation = await get_generation_or_404(request.generation_id, auth_info)
         
         # Check if the generation has a processed_image_url
         if not generation.get('processed_image_url'):

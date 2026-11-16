@@ -151,8 +151,9 @@ def test_completed_model_links_are_public_but_reasoning_and_ownership_stay_priva
                 assert response.json()['ldr_content'] == ldr.decode()
                 assert 'user_id' not in response.json()
             assert client.get(f'/generation/{job_id}/output').status_code == 404
+            assert asyncio.run(authorization.get_generation_or_404(job_id, caller)) == row
             with pytest.raises(HTTPException) as denied:
-                asyncio.run(authorization.get_generation_or_404(job_id, caller))
+                authorization.require_generation_access(row, caller)
             assert denied.value.status_code == 404
         finally:
             api.app.dependency_overrides.clear()

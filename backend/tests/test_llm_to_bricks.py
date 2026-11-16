@@ -807,8 +807,12 @@ def test_basic_inventory_edits_restore_saved_limits_and_protect_ownership(monkey
     asyncio.run(module._load_edit_source(request, {'authenticated': True, 'user_id': 'owner'}))
     assert request.parts_inventory.parts[0].quantity == 1
     assert VALID_PART in module._user_input(request).text
-    with pytest.raises(HTTPException):
-        asyncio.run(module._load_edit_source(request, {'authenticated': True, 'user_id': 'other'}))
+    storage.client.storage.from_.reset_mock()
+    fork = LlmToBricksRequest(prompt='Change shape', source_generation_id='source')
+    asyncio.run(module._load_edit_source(fork, {'authenticated': True, 'user_id': 'other'}))
+    assert VALID_PART in fork._source_ldr
+    assert fork.parts_inventory is None
+    storage.client.storage.from_.assert_not_called()
 
 
 def test_basic_inventory_is_saved_for_future_edits(monkeypatch):
@@ -856,3 +860,29 @@ def test_basic_edit_cannot_switch_all_parts_mode(monkeypatch):
     monkeypatch.setattr(module, 'generation_storage', storage)
     with pytest.raises(HTTPException, match='All parts'):
         asyncio.run(module._load_edit_source(LlmToBricksRequest(prompt='Edit', generation_id='source'), {}))
+
+
+def test_forked_inventory_geometry_uses_direct_edit_without_private_inventory(monkeypatch):
+    from unittest.mock import AsyncMock
+    direct = AsyncMock(return_value=VALID_PART)
+    monkeypatch.setattr(module, '_generate_ldr_direct', direct)
+    request = LlmToBricksRequest(prompt='Make it blue', source_generation_id='source')
+    request._source_ldr = VALID_PART
+    result = asyncio.run(module._generate_ldr(request))
+    assert result.ldr == VALID_PART
+    direct.assert_awaited_once_with(request, None)
+
+
+@pytest.mark.parametrize('identity', [{}, {'authenticated': True, 'user_id': 'editor'}])
+def test_direct_geometry_fork_can_be_edited_again(monkeypatch, identity):
+    from types import SimpleNamespace
+    from unittest.mock import AsyncMock
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value={
+        'status': 'completed', 'endpoint': 'llmToBricks', 'user_id': 'editor',
+        'user_type': 'authenticated', 'ldr_url': 'fork-geometry', 'xyzrgb_url': None}),
+        download_file_from_storage=AsyncMock(return_value=VALID_PART.encode()))
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    request = LlmToBricksRequest(prompt='Make it taller', source_generation_id='fork')
+    asyncio.run(module._load_edit_source(request, identity))
+    assert VALID_PART in request._source_ldr
+    assert request._source_voxels is None

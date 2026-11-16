@@ -50,8 +50,7 @@ def test_all_edit_requests_pass_parent_and_actual_owner_id(monkeypatch, module, 
     monkeypatch.setattr(module, "handle_auth_and_tracking", lambda **_: {
         "user_email": "owner@example.com", "is_anonymous": False, "is_developer": True})
     parent = {"processed_image_url": "image", "detail_level": 30}
-    lookup = "_load_edit_source" if module is llm else (
-        "get_owned_generation_or_403" if module is image_edit else "get_generation_or_404")
+    lookup = "_load_edit_source" if module is llm else "get_generation_or_404"
     monkeypatch.setattr(module, lookup, AsyncMock(return_value=parent))
     def start(_id, coro):
         coro.close()
@@ -120,7 +119,7 @@ def test_legacy_llm_request_name_is_only_an_input_alias():
 
 
 @pytest.mark.parametrize("owner,community,expected_model", [
-    ("owner", False, "root"), ("other", True, None),
+    ("owner", False, "root"), ("other", True, None), ("other", False, None),
 ])
 def test_generation_creation_persists_only_model_identity_and_inherits_name(owner, community, expected_model):
     query = Mock()
@@ -189,3 +188,32 @@ def test_polling_stale_generation_never_changes_its_status(monkeypatch, status, 
     assert response.status == status
     assert response.error_message is None
     storage.update_status.assert_not_awaited()
+
+
+@pytest.mark.parametrize('module,function,edit_request', [
+    (manual, 'update_model', manual.UpdateModelRequest(generation_id='source', xyzrgb_content='0 0 0 255 0 0')),
+    (image_edit, 'prompt_edit_model', image_edit.PromptEditModelRequest(generation_id='source', edit_prompt='blue roof')),
+])
+@pytest.mark.parametrize('authenticated', [True, False])
+def test_shared_model_edit_creates_new_record_owned_by_editor(monkeypatch, module, function, edit_request, authenticated):
+    from src.utils import authorization
+    source = {'id': 'source', 'status': 'completed', 'user_id': 'creator', 'user_type': 'authenticated',
+              'processed_image_url': 'saved-image', 'detail_level': 30, 'is_community': False}
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value=source),
+                              create_generation=AsyncMock(return_value='fork'), update_status=AsyncMock(),
+                              store_model_file=AsyncMock())
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    monkeypatch.setattr(authorization, 'generation_storage', storage)
+    monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **_: {
+        'user_email': 'editor@example.com', 'is_anonymous': not authenticated, 'is_developer': False})
+    def start(_id, coro):
+        coro.close()
+        return Mock()
+    monkeypatch.setattr(module, 'start_generation_task', start)
+    result = asyncio.run(getattr(module, function)(edit_request, {'authenticated': authenticated, 'user_id': 'editor'}))
+    assert result.generation_id == 'fork'
+    saved = storage.create_generation.call_args.kwargs
+    assert saved['user_id'] == 'editor'
+    assert saved['user_type'] == ('authenticated' if authenticated else 'anonymous')
+    assert saved['edit_generation_id'] == 'source'
+    assert source['user_id'] == 'creator'
