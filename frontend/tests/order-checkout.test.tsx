@@ -459,6 +459,38 @@ it('uses the restored generation’s name and render in the postcard rather than
 });
 
 
+it('requires the recipient customs ID only for Argentina and links to the official lookup', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({
+    session_id: 'cs-argentina', client_secret: 'secret', shipping_address_provided: true, argentina_tax_id_saved: true,
+  });
+  await renderOrder();
+  const select = container.querySelector<HTMLSelectElement>('[name="country"]')!;
+  const changeCountry = (country: string) => act(async () => {
+    select.value = country;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect(container.querySelector('[name="argentinaTaxId"]')).toBeNull();
+  await changeCountry('AR');
+  const input = container.querySelector<HTMLInputElement>('[name="argentinaTaxId"]')!;
+  expect(input.required).toBe(true);
+  expect(input.classList.contains('ph-no-capture')).toBe(true);
+  const info = container.querySelector<HTMLButtonElement>('[aria-controls="checkout-tax-id-help"]')!;
+  await act(async () => info.click());
+  expect(info.getAttribute('aria-expanded')).toBe('true');
+  expect(container.querySelector('#checkout-tax-id-help a')?.getAttribute('href')).toBe('https://www.argentina.gob.ar/descarga-constancia-cuil');
+  act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
+  await submitContact();
+  expect(create).not.toHaveBeenCalled();
+  act(() => fill('argentinaTaxId', '20-12345678-6'));
+  expect(input.checkValidity()).toBe(true);
+  await submitContact();
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({
+    shippingAddress: getShippingContact(details, 'AR'), argentinaTaxId: '20123456786',
+  }), 'auth-token');
+  expect(localStorage.getItem('orderState')).not.toContain('12345678');
+  expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain('12345678');
+});
+
 it('offers every verified Brickwith country and sends the selected address to checkout', async () => {
   const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret', shipping_address_provided: true });
   await renderOrder();

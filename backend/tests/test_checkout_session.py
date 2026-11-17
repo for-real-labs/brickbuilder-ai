@@ -19,7 +19,7 @@ def setup(monkeypatch):
     row = {'status': 'completed', 'user_type': 'authenticated', 'user_id': 'owner',
            'name': 'Test Frog', 'parts_list_csv_url': 'https://example.com/parts.csv'}
     storage = AsyncMock(return_value=row)
-    monkeypatch.setattr(checkout, 'generation_storage', SimpleNamespace(get_generation=storage))
+    monkeypatch.setattr(checkout, 'generation_storage', SimpleNamespace(get_generation=storage, client=Mock()))
     quote = GetPriceResponse(generation_id='g', total_price=50, total_parts=240,
                             total_weight=0.1, unique_part_types=3, message='quote', order_pricing=price_order(50, .1))
     monkeypatch.setattr(checkout, 'get_price', AsyncMock(return_value=quote))
@@ -176,7 +176,7 @@ SHIPPING_CONTACT = {'name': ' Test Builder ', 'address': {'line1': ' 123 Main ',
 def test_every_brickwith_destination_can_be_provided_to_checkout(setup, country):
     _, create, track = setup
     contact = {**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], 'country': country.lower()}}
-    result = run(uiMode='elements', shippingAddress=contact)
+    result = run(uiMode='elements', shippingAddress=contact, argentinaTaxId='20123456786' if country == 'AR' else None)
     params = create.call_args.kwargs
     assert 'shipping_address_collection' not in params
     shipping = params['payment_intent_data']['shipping']
@@ -190,6 +190,47 @@ def test_every_brickwith_destination_can_be_provided_to_checkout(setup, country)
     assert result.shipping_address_provided is True
     assert '123 Main' not in str(track.call_args)
     assert 'Test Builder' not in str(params['metadata'])
+
+
+@pytest.mark.parametrize('value', [None, '2012345678', '2012345678x', 20123456786])
+def test_argentina_requires_a_valid_customs_id_before_creating_payment(setup, value):
+    _, create, _ = setup
+    contact = {**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], 'country': 'AR'}}
+    with pytest.raises(HTTPException, match='11-digit') as error:
+        run(uiMode='elements', shippingAddress=contact, argentinaTaxId=value)
+    assert error.value.status_code == 400
+    create.assert_not_called()
+
+
+def test_argentina_customs_id_is_saved_privately_before_payment_is_returned(setup):
+    _, create, track = setup
+    table = checkout.generation_storage.client.table
+    contact = {**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], 'country': 'AR'}}
+    result = run(uiMode='elements', shippingAddress=contact, argentinaTaxId='20-12345678-6')
+    table.assert_called_once_with('order_customs_ids')
+    table.return_value.insert.assert_called_once_with(
+        {'stripe_session_id': 'cs', 'argentina_tax_id': '20123456786'},
+    )
+    table.return_value.insert.return_value.execute.assert_called_once()
+    assert result.argentina_tax_id_saved
+    assert '12345678' not in str(create.call_args)
+    assert '12345678' not in str(track.call_args)
+    assert '12345678' not in result.model_dump_json()
+
+
+def test_argentina_payment_cannot_continue_if_customs_id_storage_fails(setup):
+    client = checkout.generation_storage.client
+    client.table.return_value.insert.return_value.execute.side_effect = RuntimeError('Unavailable')
+    contact = {**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], 'country': 'AR'}}
+    with pytest.raises(HTTPException) as error:
+        run(uiMode='elements', shippingAddress=contact, argentinaTaxId='20123456786')
+    assert error.value.status_code == 500
+
+
+def test_other_destinations_do_not_store_a_customs_id(setup):
+    result = run(uiMode='elements', shippingAddress=SHIPPING_CONTACT, argentinaTaxId='20123456786')
+    checkout.generation_storage.client.table.assert_not_called()
+    assert not result.argentina_tax_id_saved
 
 
 def test_legacy_selector_only_contains_supported_stripe_codes(setup):

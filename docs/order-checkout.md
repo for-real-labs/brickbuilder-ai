@@ -11,6 +11,13 @@ The frontend/backend country snapshots are checked for parity by tests.
 The order summary offers quantities from 1–99. Changing quantity refreshes the server quote using the combined parts and weight, including stock checks and one shipping estimate. Quantity is locked during payment; return to Contact & delivery to edit it. Multi-kit orders save a combined fulfillment CSV and record the model quantity in order shipping information.
 Model data and quantity survive a reload; contact details and payment client secrets stay in memory.
 
+Argentina orders require the recipient’s 11-digit CUIT or CUIL. Checkout links
+to the official CUIL lookup. For fulfillment, read
+`order_customs_ids.argentina_tax_id` for the paid order by joining
+`orders.stripe_session_id` to `order_customs_ids.stripe_session_id` with
+authorized database access. The ID stays out of Stripe and customer-facing
+order data. Abandoned checkout IDs are removed after seven days.
+
 ## Stripe configuration
 
 Set `VITE_STRIPE_PUBLISHABLE_KEY` on the frontend to enable payment on `/order`.

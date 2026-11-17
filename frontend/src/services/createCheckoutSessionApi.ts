@@ -14,6 +14,7 @@ export interface CreateCheckoutSessionRequest {
   shipInstructionsPostcard?: boolean;
   petId?: PetId;
   shippingAddress?: ReturnType<typeof getShippingContact>;
+  argentinaTaxId?: string;
 }
 
 export interface CreateCheckoutSessionResponse {
@@ -22,6 +23,7 @@ export interface CreateCheckoutSessionResponse {
   client_secret?: string | null;
   price_data?: OrderQuote;
   shipping_address_provided?: boolean;
+  argentina_tax_id_saved?: boolean;
 }
 
 // API Configuration
