@@ -2,7 +2,7 @@ import { CompatibleBricks } from '../components/CompatibleBricks';
 import { ImportedStudioOrder } from "../components/ImportedStudioOrder";
 import React from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, LockKeyhole, Package, Truck } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Info, LockKeyhole, Package, Truck } from "lucide-react";
 import posthog from "posthog-js";
 import { paymentDiagnostics } from "../utils/paymentDiagnostics";
 import { CreateCheckoutSessionApiService, type CreateCheckoutSessionResponse } from "../services/createCheckoutSessionApi";
@@ -45,6 +45,8 @@ function restoreOrderState(navigationState: LocationState | null): LocationState
 
 const emptyDelivery: DeliveryDetails = { email: '', firstName: '', lastName: '', line1: '', line2: '', city: '', region: '', postalCode: '' };
 const stepNames = ['Contact & delivery', 'Payment'];
+const argentinaTaxIdPattern = '[0-9]{11}|[0-9]{2}-[0-9]{8}-[0-9]';
+const argentinaTaxIdFormat = new RegExp(`^(?:${argentinaTaxIdPattern})$`);
 
 export default function OrderKit() {
   const location = useLocation();
@@ -84,6 +86,8 @@ function OrderCheckout() {
   const pricing = getOrderPricing(quote);
   const [step, setStep] = React.useState(0);
   const [country, setCountry] = React.useState<string>('US');
+  const [argentinaTaxId, setArgentinaTaxId] = React.useState('');
+  const [taxIdHelpOpen, setTaxIdHelpOpen] = React.useState(false);
   const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
   const [session, setSession] = React.useState<CreateCheckoutSessionResponse | null>(null);
   const sessionInputRef = React.useRef<string | null>(null);
@@ -223,6 +227,11 @@ function OrderCheckout() {
   const startPayment = async (event?: React.FormEvent, forceNew = false) => {
     event?.preventDefault();
     if (loading || !pricing || !generationId) return;
+    if (country === 'AR' && !argentinaTaxIdFormat.test(argentinaTaxId)) {
+      setError('Enter the recipient’s 11-digit CUIT or CUIL.');
+      document.getElementById('checkout-argentina-tax-id')?.focus();
+      return;
+    }
     setLoading(true); setError(null);
     posthog.capture('order_delivery_completed', { generation_id: generationId, country });
     try {
@@ -234,6 +243,7 @@ function OrderCheckout() {
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
         uiMode: 'elements' as const, shipInstructionsPostcard, petId: pet.id,
         shippingAddress: getShippingContact(delivery, country),
+        ...(country === 'AR' ? { argentinaTaxId: argentinaTaxId.replaceAll('-', '') } : {}),
       };
       // Keep both the session and its mounted Stripe fields when merely reviewing delivery.
       // This fingerprint stays in memory and is never logged or persisted.
@@ -245,6 +255,7 @@ function OrderCheckout() {
       }
       const data = await CreateCheckoutSessionApiService.createCheckoutSession(request, token);
       if (!data.client_secret) throw new Error('Embedded payment unavailable');
+      if (country === 'AR' && !data.argentina_tax_id_saved) throw new Error('Customs information could not be saved');
       if (data.price_data) setQuote(data.price_data);
       setPaymentNotice(session ? (forceNew ? 'Payment has been restarted. Please enter your payment details again.' : 'Your order or delivery details changed, so please enter your payment details again.') : null);
       sessionInputRef.current = input;
@@ -252,7 +263,8 @@ function OrderCheckout() {
       posthog.capture('order_step_changed', { generation_id: generationId, step: 'Payment', direction: 'forward' });
     } catch (cause) {
       setError('We couldn’t start payment. Your details are still here — please try again.');
-      posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'session', ...paymentDiagnostics(cause, Object.values(delivery)) });
+      posthog.capture('order_checkout_error', { generation_id: generationId, stage: 'session',
+        ...paymentDiagnostics(cause, [...Object.values(delivery), argentinaTaxId, argentinaTaxId.replaceAll('-', '')]) });
     } finally { setLoading(false); }
   };
 
@@ -333,8 +345,35 @@ function OrderCheckout() {
                 {field('lastName', 'Last Name', 'shipping family-name')}
                 <label className="checkout-field checkout-field-full"><span>Country/Region</span><select name="country" value={country} autoComplete="shipping country" required disabled={loading} onChange={event => {
                   setCountry(event.target.value);
+                  setArgentinaTaxId('');
+                  setTaxIdHelpOpen(false);
+                  setError(null);
                   posthog.capture('order_shipping_country_changed', { generation_id: generationId, country: event.target.value });
                 }}>{shippingCountries.map(destination => <option key={destination.code} value={destination.code}>{destination.name}</option>)}</select></label>
+                {country === 'AR' && <div className="checkout-field checkout-field-full">
+                  <div className="checkout-field-label">
+                    <label htmlFor="checkout-argentina-tax-id">Recipient’s CUIT or CUIL</label>
+                    <button type="button" className="checkout-field-info" aria-label="About the CUIT or CUIL requirement"
+                      aria-expanded={taxIdHelpOpen} aria-controls="checkout-tax-id-help" onClick={() => {
+                        setTaxIdHelpOpen(!taxIdHelpOpen);
+                        posthog.capture('order_customs_id_help_toggled', { expanded: !taxIdHelpOpen, country });
+                      }}><Info size={17} aria-hidden="true" /></button>
+                  </div>
+                  <div id="checkout-tax-id-help" className="checkout-field-help" hidden={!taxIdHelpOpen}>
+                    Argentine customs requires the recipient’s 11-digit CUIT or CUIL to clear the shipment.
+                    {' '}<a href="https://www.argentina.gob.ar/descarga-constancia-cuil" target="_blank" rel="noopener noreferrer"
+                      onClick={() => posthog.capture('order_customs_id_lookup_clicked', { country })}>Look up your CUIL</a>.
+                  </div>
+                  <input id="checkout-argentina-tax-id" name="argentinaTaxId" className="ph-no-capture"
+                    type="text" inputMode="numeric" autoComplete="off" spellCheck={false} required
+                    pattern={argentinaTaxIdPattern} title="Enter 11 digits, with or without hyphens." maxLength={13}
+                    aria-describedby={taxIdHelpOpen ? 'checkout-tax-id-help' : undefined}
+                    disabled={loading} value={argentinaTaxId}
+                    onChange={event => setArgentinaTaxId(event.target.value.trim())}
+                    onBlur={() => posthog.capture('order_delivery_field_completed', {
+                      generation_id: generationId, field: 'argentinaTaxId', filled: Boolean(argentinaTaxId),
+                    })} />
+                </div>}
                 {field('line1', 'Address line 1', 'shipping address-line1')}
                 {field('line2', 'Address line 2', 'shipping address-line2', true)}
                 {field('region', 'State/Province', 'shipping address-level1', true)}

@@ -3,9 +3,10 @@ import logging
 import re
 import asyncio
 import json
+import re
 from hashlib import sha256
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator
 from fastapi import HTTPException
@@ -13,6 +14,7 @@ import stripe
 
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
+from ..utils.database import execute_query
 from ..utils.imported_kit import fulfillment_csv
 from .getPrice import GetPriceRequest, GetPriceResponse, get_price
 
@@ -63,6 +65,8 @@ class CreateCheckoutSessionRequest(BaseModel):
     shipInstructionsPostcard: StrictBool = False
     petId: Optional[Literal["pip", "nib", "clik"]] = None
     shippingAddress: Optional[ShippingContact] = None
+    # Validate in the handler so a 422 response cannot echo the submitted ID.
+    argentinaTaxId: Any = Field(default=None, repr=False, exclude=True)
 
 
 class CreateCheckoutSessionResponse(BaseModel):
@@ -71,6 +75,7 @@ class CreateCheckoutSessionResponse(BaseModel):
     client_secret: Optional[str] = None
     price_data: Optional[GetPriceResponse] = None
     shipping_address_provided: bool = False
+    argentina_tax_id_saved: bool = False
 
 
 def checkout_price_cents(quote: GetPriceResponse) -> int:
@@ -78,6 +83,15 @@ def checkout_price_cents(quote: GetPriceResponse) -> int:
     if quote.order_pricing is None or quote.order_pricing.total_cents <= 0:
         raise HTTPException(400, "Kit pricing is unavailable")
     return quote.order_pricing.total_cents
+
+
+def argentina_customs_id(request: CreateCheckoutSessionRequest, country: str) -> str | None:
+    if country != 'AR':
+        return None
+    value = request.argentinaTaxId
+    if not isinstance(value, str) or not re.fullmatch(r'[0-9]{11}|[0-9]{2}-[0-9]{8}-[0-9]', value):
+        raise HTTPException(400, "Enter the recipient's 11-digit CUIT or CUIL.")
+    return value.replace('-', '')
 
 
 async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_info: dict):
@@ -90,6 +104,8 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
             raise HTTPException(status_code=500, detail="Payment configuration is unavailable")
         if not request.generationId:
             raise HTTPException(status_code=400, detail="Generation ID is required")
+        country = request.shippingAddress.address.country if request.shippingAddress else "US"
+        customs_id = argentina_customs_id(request, country)
         generation = await generation_storage.get_generation(request.generationId)
         if not generation:
             raise HTTPException(status_code=404, detail="Generation not found")
@@ -101,7 +117,7 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         if not parts_list_csv_url and not imported:
             raise HTTPException(status_code=400, detail="Kit parts list is unavailable")
         quote = await get_price(GetPriceRequest(generation_id=request.generationId, quantity=request.quantity,
-            shipping_country=request.shippingAddress.address.country if request.shippingAddress else "US"), auth_info)
+            shipping_country=country), auth_info)
         if quote.conversion_credits is not None:
             raise HTTPException(409, "Convert unavailable parts before ordering this model.")
         amount = checkout_price_cents(quote)
@@ -167,10 +183,16 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
             if request.customerEmail:
                 params["customer_email"] = str(request.customerEmail)
         session = await asyncio.to_thread(stripe.checkout.Session.create, **params, api_key=stripe_key)
+        if customs_id:
+            await execute_query(generation_storage.client.table('order_customs_ids').insert({
+                'stripe_session_id': session.id,
+                'argentina_tax_id': customs_id,
+            }))
         return CreateCheckoutSessionResponse(
             session_id=session.id, checkout_url=session.url,
             client_secret=session.client_secret if request.uiMode != "hosted" else None,
             price_data=quote, shipping_address_provided=shipping_address_provided,
+            argentina_tax_id_saved=customs_id is not None,
         )
     except HTTPException:
         raise

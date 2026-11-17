@@ -36,6 +36,7 @@ _TABLES = (
     "generations",
     "lego_set_catalog",
     "orders",
+    "order_customs_ids",
     "user_profiles",
     "anonymous_users",
     "waitlist_emails",

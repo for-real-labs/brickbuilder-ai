@@ -40,6 +40,11 @@
 .checkout-field input:hover, .checkout-field select:hover { border-color: #9299a3; }
 .checkout-field input:focus, .checkout-field select:focus { border-color: #f44336; box-shadow: 0 0 0 1px #f44336; outline: none; }
 .checkout-field input:disabled { opacity: .65; }
+.checkout-field-label { display: flex; align-items: center; gap: 4px; }
+.checkout-field-info { display: inline-grid; place-items: center; width: 28px; height: 28px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: #686c73; }
+.checkout-field-info:hover, .checkout-field-info[aria-expanded="true"] { background: #e8eaee; color: #202124; }
+.checkout-field-help { padding: 9px 12px; border-radius: 9px; background: #eef0f3; color: #40454c; line-height: 1.5; }
+.checkout-field-help a { color: #9e2a23; text-decoration: underline; text-underline-offset: 2px; }
 .checkout-optional { color: #868b94; font-size: 11px; }
 .checkout-actions { display: flex; align-items: stretch; gap: 12px; margin-top: 20px; }
 .checkout-primary { display: flex; justify-content: center; align-items: center; gap: 12px; width: 100%; min-height: 50px; border: 0; border-radius: 12px; background: #f44336; color: #fff; font-size: 15px !important; font-weight: 600 !important; padding: 12px 18px; transition: background .15s; text-decoration: none; text-align: center; }
