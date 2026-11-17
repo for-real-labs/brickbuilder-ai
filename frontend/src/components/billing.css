@@ -192,9 +192,10 @@
 
 /* Give the plan's value and action one clear reading order on every screen. */
 .billing-plan { display:flex; flex-direction:column; }
-.billing-plan .billing-plan-button { margin-top:24px; }
+.billing-plan .billing-plan-button { margin-top:auto; }
+.billing-plan .billing-set-estimate:last-of-type { margin-bottom:24px; }
 .billing-plan .billing-credit-allocation { margin-top:0; padding-top:16px; }
-.billing-plan .billing-features { flex:1; margin-bottom:0; }
+.billing-plan .billing-features { margin-top:0; margin-bottom:24px; }
 .billing-features li { font-size:13px; }
 .billing-features .billing-feature-unavailable, .billing-feature-unavailable svg { color:#92969e; }
 .billing-features .billing-feature-saving { color:#237554; background:#eff8f2; border-radius:12px; padding:12px; margin-inline:-8px; }
@@ -223,7 +224,7 @@
  .billing-features { gap:10px; }
  .billing-features li { font-size:14px; }
  .billing-features small { font-size:12px; }
- .billing-plan .billing-plan-button { margin-top:20px; min-height:48px; }
+ .billing-plan .billing-plan-button { min-height:48px; }
  .billing-credit-pack { display:flex; }
  .billing-credit-pack .billing-price { justify-content:flex-start; flex-wrap:wrap; }
  .billing-footer { flex-wrap:wrap; row-gap:12px; }

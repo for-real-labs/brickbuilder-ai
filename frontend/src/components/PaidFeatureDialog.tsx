@@ -4,6 +4,7 @@ import posthog from 'posthog-js';
 import { useBilling } from '../contexts/BillingContext';
 import { PetAvatar } from './PetCompanion';
 import { CompatibleBricks } from './CompatibleBricks';
+import { CREATOR_BRICK_DISCOUNT_PERCENT } from '../utils/planDisplay';
 
 export function PaidFeatureLock() {
   return <><LockKeyhole size={14} aria-hidden="true" className="paid-feature-lock" /><span className="sr-only"> · Paid plan required</span></>;
@@ -38,7 +39,7 @@ export function PaidFeatureDialog() {
     <h2 id="paid-feature-title">{checking ? 'Checking your access…' : unavailable ? 'Couldn’t check your access' : `${title} is a paid feature`}</h2>
     <p id="paid-feature-description">{checking ? 'One moment while we check your access.' : unavailable
       ? 'Please try again to check access to exports for your LEGO® sets.'
-      : <>{title} requires a subscription. Subscribe for IO downloads and automatic savings on <CompatibleBricks source="paid_feature" />: 10% with Builder or 20% with Creator.</>}</p>
+      : <>{title} requires a subscription. The Creator plan also saves {CREATOR_BRICK_DISCOUNT_PERCENT}% on <CompatibleBricks source="paid_feature" />.</>}</p>
     <div className="billing-feature-actions">
       {!checking && <button type="button" className="billing-primary" onClick={() => {
         if (unavailable) { posthog.capture('billing_feature_retry_clicked', lockedFeature); void retryAccess(); }

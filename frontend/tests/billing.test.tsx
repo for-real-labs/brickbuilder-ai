@@ -106,6 +106,12 @@ it('refreshes an exhausted wallet without competing with the personal-key pet pr
   expect(posthog.capture).not.toHaveBeenCalledWith('billing_upgrade_opened', expect.objectContaining({ source: 'credits_exhausted' }));
 });
 
+it('advertises the brick discount as a Creator benefit in the plans banner', async () => {
+  auth.user = null;
+  await render(<CreditNudge />);
+  expect(container.querySelector('.credit-nudge')?.textContent).toContain('The Creator plan saves 20% on LEGO® compatible bricks.');
+});
+
 it('does not show or report a nudge for a paid account with plenty of credits', async () => {
   account = { ...account, plan_key: 'creator', has_subscription: true, subscription_status: 'active', credits_remaining: 100, monthly_remaining: 100, monthly_credits: 100 };
   await render(<CreditNudge />);
@@ -177,7 +183,7 @@ it('shows the monthly allowances and generation estimates on every plan', async 
   expect(cards.map(card => card.querySelector('.billing-price strong')?.textContent)).toEqual(['$2.99', '$19.99']);
   expect(cards.map(card => card.querySelector('.billing-set-estimate')?.textContent)).toEqual(['15 LEGO® generations per month', '100 LEGO® generations per month']);
   expect(cards.map(card => [...card.querySelectorAll('li')].map(item => item.textContent))).toEqual([
-    ['10% off all brick purchases'], ['20% off all brick purchases'],
+    [], ['20% off all brick purchases'],
   ]);
 });
 
@@ -474,16 +480,17 @@ it('shows earned referral credits with their own history label', async () => {
   expect(row.textContent).not.toContain('Purchased credits');
 });
 
-it('highlights each tier discount without restoring instructions or exports', async () => {
+it('highlights the Creator discount without restoring instructions or exports', async () => {
   await render(<PlanGrid source="pricing_page" />);
-  for (const [name, percent] of [['Builder', 10], ['Creator', 20]]) {
+  for (const name of ['Builder', 'Creator']) {
     const plan = container.querySelector(`[aria-label="${name} plan"]`)!;
-    const benefit = plan.querySelector('li')!;
-    expect(plan.querySelectorAll('li')).toHaveLength(1);
-    expect(benefit.className).toBe('billing-feature-saving');
-    expect(benefit.querySelector('strong')?.textContent).toBe('all');
-    expect(benefit.textContent).toBe(`${percent}% off all brick purchases`);
-    expect(benefit.querySelector('[aria-label="Included"]')).not.toBeNull();
+    if (name === 'Creator') {
+      const benefit = plan.querySelector('.billing-feature-saving');
+      expect(benefit?.textContent).toBe('20% off all brick purchases');
+      expect(benefit?.querySelector('[aria-label="Included"]')).not.toBeNull();
+    } else {
+      expect(plan.querySelector('.billing-features')).toBeNull();
+    }
     expect(plan.textContent).not.toContain('Building instructions');
     expect(plan.lastElementChild?.classList.contains('billing-plan-button')).toBe(true);
   }

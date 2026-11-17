@@ -84,10 +84,10 @@ def test_guests_and_developers_cannot_claim_membership(identity, monkeypatch):
 
 
 @pytest.mark.parametrize('plan,status,days,apple,expected', [
-    ('builder', 'active', 1, False, 10), ('creator', 'active', 1, False, 20),
-    ('master', 'active', 1, False, 20), ('builder', 'active', -1, False, 0),
-    ('builder', 'canceled', 1, False, 0), ('free', 'none', 1, False, 0),
-    ('free', 'none', 1, True, 10), ('free', 'none', -1, True, 0),
+    ('builder', 'active', 1, False, 0), ('creator', 'active', 1, False, 20),
+    ('master', 'active', 1, False, 0), ('creator', 'active', -1, False, 0),
+    ('creator', 'canceled', 1, False, 0), ('free', 'none', 1, False, 0),
+    ('free', 'none', 1, True, 0), ('free', 'none', -1, True, 0),
 ])
 def test_membership_comes_from_verified_stripe_or_apple_period(plan, status, days, apple, expected, monkeypatch):
     end = (datetime.now(timezone.utc) + timedelta(days=days)).isoformat()
@@ -107,24 +107,19 @@ def test_entitlement_failure_blocks_quote_instead_of_silently_overcharging(monke
         asyncio.run(pricing.get_member_discount_percent({'authenticated': True, 'user_id': '11111111-1111-4111-8111-111111111111'}))
 
 
-def test_builder_and_creator_discounts_use_the_same_regular_price_and_shipping():
+def test_regular_pricing_has_no_subscriber_discount():
     regular = pricing.price_order(100, 1)
-    builder = pricing.price_order(100, 1, member_discount_percent=10)
-    creator = pricing.price_order(100, 1, member_discount_percent=20)
-    assert regular.full_parts_cents == builder.full_parts_cents == creator.full_parts_cents == 12500
-    assert builder.parts_cents == 11250
-    assert builder.member_discount_cents == 1250
-    assert builder.member_discount_percent == 10
-    assert creator.parts_cents == 10000 and creator.member_discount_percent == 20
-    assert builder.shipping_cents == creator.shipping_cents == regular.shipping_cents
+    assert regular.parts_cents == regular.full_parts_cents == 12500
+    assert regular.total_cents == regular.full_total_cents
+    assert regular.member_discount_cents == regular.member_discount_percent == 0
 
 
-@pytest.mark.parametrize('percent', [-1, 1, 30, True, 10.5, '20'])
+@pytest.mark.parametrize('percent', [-1, 1, 10, 30, True, 10.5, '20'])
 def test_invalid_discount_cannot_change_the_order_price(percent):
     with pytest.raises(HTTPException): pricing.price_order(100, 1, member_discount_percent=percent)
 
 
-@pytest.mark.parametrize('apple_plan,expected', [('builder',10), ('creator',20)])
+@pytest.mark.parametrize('apple_plan,expected', [('builder', 0), ('creator', 20)])
 def test_active_apple_plan_determines_discount_independently_of_free_wallet(monkeypatch,apple_plan,expected):
     end = (datetime.now(timezone.utc) + timedelta(days=1)).isoformat()
     monkeypatch.setattr(pricing.billing,'wallet',AsyncMock(return_value={

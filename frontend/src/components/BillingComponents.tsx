@@ -2,7 +2,7 @@ import { PromoCode } from './PromoCode';
 import { CompatibleBricks } from './CompatibleBricks';
 import { GenerationExamples } from './GenerationExamples';
 import { GENERATION_SUBSCRIPTION_SOURCE } from '../utils/generationSubscription';
-import { PLAN_GENERATIONS, PLAN_DISCOUNTS } from '../utils/planDisplay';
+import { PLAN_GENERATIONS, CREATOR_BRICK_DISCOUNT_PERCENT } from '../utils/planDisplay';
 import { CreditPacks } from './CreditPurchase';
 export { CreditPacks } from './CreditPurchase';
 import { isAppleApp, hasApplePurchases, appleProduct } from '../services/applePurchases';
@@ -50,9 +50,9 @@ export function PlanGrid({ source, paidOnly = false }: { source: string; paidOnl
         <p className="billing-price"><strong>{apple && plan.monthly_cents ? applePrice ?? '—' : `$${plan.monthly_cents / 100}`}</strong><span>/ month</span></p>
         <div className="billing-credit-allocation"><Coins size={17} aria-hidden="true" /><strong>{plan.credits.toLocaleString()}</strong> credits / month</div>
         <p className="billing-set-estimate">{PLAN_GENERATIONS[plan.key]} LEGO® generations per month</p>
-        <ul className="billing-features">
-          <li className="billing-feature-saving"><Check aria-label="Included" /><span>{PLAN_DISCOUNTS[plan.key]}% off <strong>all</strong> brick purchases</span></li>
-        </ul>
+        {plan.key === 'creator' && <ul className="billing-features">
+          <li className="billing-feature-saving"><Check aria-label="Included" /><span>{CREATOR_BRICK_DISCOUNT_PERCENT}% off <strong>all</strong> brick purchases</span></li>
+        </ul>}
         <button className={`billing-plan-button${plan.key === 'creator' ? ' billing-plan-button--primary' : ''}`} disabled={current || tester || busy || !enabled || !checkoutAvailable || (apple && !applePrice)}
           onClick={() => void subscribe(plan.key, source)}>{current ? 'Current plan' : tester ? 'Unavailable with tester access' : !enabled ? 'Coming soon' : apple && (!hasApplePurchases() || !applePrice) ? 'Unavailable' : !checkoutAvailable ? 'Unavailable' : busy ? 'Opening…' : trial && plan.key === 'builder' ? 'Continue plan' : 'Select Plan'}</button>
         {current && <Link to="/billing" className="billing-current-link" onClick={() => { posthog.capture('billing_usage_clicked', { source }); closeUpgrade(); }}>View usage & billing <ArrowUpRight size={14} /></Link>}
@@ -85,7 +85,7 @@ export function CreditNudge() {
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
     <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Buy additional credits to keep building.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
-      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $2.99.'} Basic builds use 2 credits; All parts uses 20. Paid plans also save 10–20% on <CompatibleBricks source="plan_benefit" />.</>}</p>
+      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $2.99.'} Basic builds use 2 credits; All parts uses 20. The Creator plan saves {CREATOR_BRICK_DISCOUNT_PERCENT}% on <CompatibleBricks source="plan_benefit" />.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing#credit-packs'); } else openUpgrade(source); }}>{low ? highest ? 'Buy credits' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
     <button type="button" className="credit-nudge-dismiss" aria-label="Dismiss plans banner" onClick={() => { setDismissed(true); posthog.capture('billing_nudge_dismissed', { source, plan_key: account?.plan_key ?? 'guest' }); }}><X size={18} aria-hidden="true" /></button>
   </div>;

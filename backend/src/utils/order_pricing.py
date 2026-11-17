@@ -21,7 +21,7 @@ SHIPPING_RATES = {
 DEFAULT_SHIPPING_RATE = (348, 2037)
 COUNTRY_CODES = {row['code'] for row in json.loads(
     (Path(__file__).resolve().parents[1] / 'data/shipping_countries.json').read_text())}
-PLAN_DISCOUNT_PERCENT = {'builder': 10, 'creator': 20, 'master': 20}
+CREATOR_DISCOUNT_PERCENT = 20
 TARGET_BRICK_MARGIN = Decimal('0.20')
 
 
@@ -46,8 +46,7 @@ async def get_member_discount_percent(identity: dict) -> int:
     row = await billing.wallet(billing.account_id(identity))
     if not billing.has_paid_features(row):
         return 0
-    plan = billing.effective_plan(row)
-    return PLAN_DISCOUNT_PERCENT.get(plan, 0)
+    return CREATOR_DISCOUNT_PERCENT if billing.effective_plan(row) == 'creator' else 0
 
 
 def _shipping_cents(weight: Decimal, country: str) -> int:
@@ -67,7 +66,7 @@ def _shipping_cents(weight: Decimal, country: str) -> int:
 
 
 def price_order(cost: float, weight: float, country: str = 'US', *, member_discount_percent: int = 0) -> OrderPricing:
-    if type(member_discount_percent) is not int or member_discount_percent not in (0, 10, 20):
+    if type(member_discount_percent) is not int or member_discount_percent not in (0, CREATOR_DISCOUNT_PERCENT):
         raise HTTPException(400, 'Invalid member discount')
     cost, weight = Decimal(str(cost)), Decimal(str(weight))
     if not cost.is_finite() or cost <= 0 or not weight.is_finite() or weight < 0:

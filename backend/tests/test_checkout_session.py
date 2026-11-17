@@ -109,7 +109,7 @@ def test_checkout_refuses_catalog_only_quote():
         checkout.checkout_price_cents(quote)
 
 
-@pytest.mark.parametrize('percent,parts,discount', [(10,11250,1250),(20,10000,2500)])
+@pytest.mark.parametrize('percent,parts,discount', [(0, 12500, 0), (20, 10000, 2500)])
 def test_member_price_is_baked_into_line_item_so_promos_stack(setup,percent,parts,discount):
     checkout.get_price.return_value.order_pricing = price_order(100, 1, 'GB', member_discount_percent=percent)
     _, create, _ = setup

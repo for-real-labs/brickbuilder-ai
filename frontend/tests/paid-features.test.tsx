@@ -65,7 +65,7 @@ it.each([['io','Download IO']] as const)('locks %s exports, opens the shared not
   await click(label);
   expect(download).not.toHaveBeenCalled();
   expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('requires a subscription');
-  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('10% with Builder or 20% with Creator.');
+  expect(host.querySelector('.billing-feature-dialog')?.textContent).toContain('The Creator plan also saves 20% on LEGO® compatible bricks.');
   expect(document.body.style.overflow).toBe('hidden');
   expect(posthog.capture).toHaveBeenCalledWith('billing_feature_blocked', { feature, source: 'tools_dropdown', access: 'locked' });
   await click('Upgrade plan');

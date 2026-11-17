@@ -11,7 +11,7 @@ import { CheckoutPayment } from '../components/checkout/CheckoutPayment';
 import { CheckoutAccount } from '../components/checkout/CheckoutAccount';
 import { PetAvatar } from '../components/PetCompanion';
 import { SEO } from '../components/SEO';
-import { PLAN_DISCOUNTS, PLAN_GENERATIONS } from '../utils/planDisplay';
+import { CREATOR_BRICK_DISCOUNT_PERCENT, PLAN_GENERATIONS } from '../utils/planDisplay';
 import { formatOrderPrice } from '../utils/orderCheckout';
 import './OrderKit.css';
 import './CheckoutPlan.css';
@@ -68,7 +68,7 @@ export default function CheckoutPlan() {
           <ul className="plan-checkout-benefits">
             <li><Check size={18} />{plan.credits.toLocaleString()} credits each month</li>
             <li><Check size={18} />{PLAN_GENERATIONS[planKey]} LEGO® generations</li>
-            <li><Check size={18} /><span>{PLAN_DISCOUNTS[planKey]}% off <strong>all</strong> brick purchases</span></li>
+            {planKey === 'creator' && <li><Check size={18} /><span>{CREATOR_BRICK_DISCOUNT_PERCENT}% off <strong>all</strong> brick purchases</span></li>}
           </ul>
           <dl className="checkout-price-list"><div className="checkout-total"><dt>Monthly total</dt><dd>{formatOrderPrice(total ?? plan.monthly_cents)}</dd></div></dl>
         </div></aside>

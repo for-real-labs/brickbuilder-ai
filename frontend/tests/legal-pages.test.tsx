@@ -25,9 +25,8 @@ describe('directory legal pages', () => {
     expect(terms).toContain('at least 13 years old');
     expect(terms).toContain('An active subscription is required');
     const text = new DOMParser().parseFromString(terms, 'text/html').body.textContent;
-    expect(text).toContain('Builder subscriptions include 10% off the regular price of LEGO® compatible bricks');
+    expect(text).toContain('Only active Creator subscriptions through Stripe or Apple include 20% off the regular price of LEGO® compatible bricks');
     expect(text).toContain('discounted price of LEGO® compatible bricks');
-    expect(terms).toContain('Creator and existing Master Builder subscriptions include 20% off.');
     expect(terms).toContain('renew automatically each month until canceled');
     expect(terms).toContain('My billing → Cancel subscription');
     expect(terms).toContain('Web subscription monthly credits reset without rollover');
