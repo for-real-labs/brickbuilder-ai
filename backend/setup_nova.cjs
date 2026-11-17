@@ -6,7 +6,7 @@ const path = require('node:path');
 const runtime = path.join(__dirname, '.nova');
 // Upgrade both together, then run the adapter contract and real-runtime smoke tests.
 const SOURCES = Object.freeze([
-  { name: 'toolkit', url: 'https://github.com/jjohnson5253/ldraw-nova.git', commit: 'd20fcdfeceabcf027529299832a06255ff277c2d' },
+  { name: 'toolkit', url: 'https://github.com/jjohnson5253/ldraw-nova.git', commit: '08ef0ced8cafffaa8f232c182270577f7fe9be6d' },
   { name: 'web', url: 'https://github.com/jjohnson5253/ldraw-nova-docker.git', commit: '767a2f08b6d304ce3744f1a81456dbf472b83d32' },
 ]);
 const IMAGE = `brickbuilder-nova:${SOURCES[0].commit.slice(0, 12)}-${SOURCES[1].commit.slice(0, 12)}-parts-v1`;
