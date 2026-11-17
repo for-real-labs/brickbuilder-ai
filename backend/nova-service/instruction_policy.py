@@ -3,6 +3,10 @@ from __future__ import annotations
 
 import asyncio
 import json
+import io
+import csv
+import zipfile
+from collections import Counter
 import os
 import pwd
 import subprocess
@@ -44,6 +48,46 @@ def review_instructions(source: bytes, toolkit: Path, library: Path) -> dict:
         return {'passed': True}
 
 
+def save_draft(ctx, content: bytes, report: dict, library: Path):
+    """Preserve exactly the rejected revision and its expanded inventory."""
+    account = pwd.getpwnam('nobody')
+    with tempfile.TemporaryDirectory(prefix='nova-draft-') as directory:
+        root = Path(directory)
+        os.chown(root, account.pw_uid, account.pw_gid)
+        model, flat = root / 'model.mpd', root / 'model.ldr'
+        model.write_bytes(content)
+        subprocess.run([str(TOOLKIT_ROOT / '.venv/bin/python'),
+                        str(Path(__file__).with_name('flatten.py')), str(model), str(flat), str(library)],
+                       cwd=TOOLKIT_ROOT, user=account.pw_uid, group=account.pw_gid, extra_groups=[],
+                       env={'PATH': '/usr/local/bin:/usr/bin:/bin', 'PYTHONPATH': str(TOOLKIT_ROOT),
+                            'PYTHONDONTWRITEBYTECODE': '1', 'HOME': str(root)},
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=120)
+        if not 0 < flat.stat().st_size <= 32 * 1024 * 1024:
+            raise ValueError('Draft display export exceeds size limit')
+        display = flat.read_text()
+    counts = Counter()
+    for line in display.split('\n0 FILE ', 1)[0].splitlines():
+        tokens = line.split()
+        if len(tokens) == 15 and tokens[0] == '1':
+            counts[tokens[14], tokens[1]] += 1
+    bom = io.StringIO()
+    writer = csv.writer(bom)
+    writer.writerow(['Part', 'Color', 'Quantity'])
+    writer.writerows((part, color, count) for (part, color), count in sorted(counts.items()))
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
+        archive.writestr('model.mpd', content)
+        archive.writestr('model.ldr', display)
+        archive.writestr('parts.csv', bom.getvalue())
+        archive.writestr('verification.json', json.dumps(dict(report, passed=False)))
+        archive.writestr('README.txt', 'Unverified draft. See verification.json for failed checks. '
+                          'Connections, assembly instructions and mechanism motion are not verified. '
+                          'Review and repair the model before building or ordering parts.\n')
+    temporary = ctx.work_dir / ('.brickbuilder-draft-' + uuid.uuid4().hex)
+    temporary.write_bytes(buffer.getvalue())
+    temporary.replace(ctx.work_dir / '.brickbuilder-draft.zip')
+
+
 def install_instruction_policy(tools, settings):
     if getattr(tools, '_brickbuilder_instruction_policy', False):
         return
@@ -66,6 +110,10 @@ def install_instruction_policy(tools, settings):
         except (ValueError, OSError, subprocess.SubprocessError):
             raise tools.ToolError('Instruction review could not finish. Publication is blocked; retry the check.') from None
         if report.get('passed') is not True:
+            try:
+                await asyncio.to_thread(save_draft, ctx, content, report, settings.LDRAW_DIR)
+            except (ValueError, OSError, subprocess.SubprocessError):
+                report = dict(report, draft_error='The draft archive could not be created.')
             return tools.ToolResult(json.dumps({**report, 'reason': report.get('error'), 'error':
                 'Publication blocked: repair invalid, overlapping, disconnected or blocked pieces, then retry publish_model. '
                 'Use the full connector report to verify every remaining piece. A warning about missing '

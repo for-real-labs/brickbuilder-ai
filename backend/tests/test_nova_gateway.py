@@ -302,7 +302,7 @@ def test_worker_configures_native_palette_before_a_turn_and_rejects_invalid_requ
     from types import SimpleNamespace
     from src.utils.parts_catalog import PartsCatalog
     module = worker(tmp_path, monkeypatch)
-    module.get_store = lambda: SimpleNamespace(get_chat=lambda chat: {'id': chat} if chat != 'missing' else None)
+    module.get_store = lambda: SimpleNamespace(get_chat=lambda chat: {'id': chat} if chat != 'missing' else None, work_dir=lambda chat: tmp_path)
     module.agent.is_running = lambda chat: chat == 'busy'
     module.parts_policy = SimpleNamespace(configure=lambda store, chat, content: PartsCatalog.from_csv(content), set_limit=lambda chat, maximum: None)
     with TestClient(module.app) as client:
@@ -421,3 +421,23 @@ def test_instruction_runtime_bounds_concurrent_geometry_exports(tmp_path):
             assert all(result.status_code == 200 for result in results)
     asyncio.run(run())
     assert maximum == 2
+
+
+def test_worker_draft_download_requires_finished_chat_and_rejects_symlinks(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    module = worker(tmp_path, monkeypatch)
+    module.get_store = lambda: SimpleNamespace(get_chat=lambda chat: {'id': chat}, work_dir=lambda chat: tmp_path)
+    module.agent.is_running = lambda chat: False
+    draft = tmp_path / '.brickbuilder-draft.zip'
+    draft.write_bytes(b'draft archive')
+    headers = {'Authorization': 'Bearer worker-secret'}
+    with TestClient(module.app) as client:
+        path = '/integration/chats/chat/draft'
+        assert client.get(path).status_code == 401
+        assert client.get(path, headers=headers).content == b'draft archive'
+        module.agent.is_running = lambda chat: True
+        assert client.get(path, headers=headers).status_code == 409
+        module.agent.is_running = lambda chat: False
+        draft.unlink()
+        draft.symlink_to(tmp_path / 'versions.json')
+        assert client.get(path, headers=headers).status_code == 404

@@ -95,3 +95,23 @@ def test_tool_installation_does_not_wrap_publication_twice(tmp_path):
     original = tools.t_publish_model
     policy.install_instruction_policy(tools, SimpleNamespace())
     assert tools.t_publish_model is original
+
+
+def test_rejected_snapshot_archive_contains_expanded_bom_and_exact_report(tmp_path, monkeypatch):
+    import io
+    import zipfile
+    monkeypatch.setattr(policy.pwd, 'getpwnam', lambda name: SimpleNamespace(pw_uid=65534, pw_gid=65534))
+    monkeypatch.setattr(policy.os, 'chown', lambda *args: None)
+    def flatten(args, **kwargs):
+        assert '--instructions' not in args
+        Path(args[3]).write_text('0 FILE main.ldr\n' +
+            '1 0 0 0 0 1 0 0 0 1 0 0 0 1 44294.dat\n' * 2 +
+            '0 FILE embedded.dat\n1 16 0 0 0 1 0 0 0 1 0 0 0 1 primitive.dat\n')
+    monkeypatch.setattr(policy.subprocess, 'run', flatten)
+    report = {'passed': False, 'remaining_parts': [{'part': '4716', 'occurrence': 232}]}
+    policy.save_draft(SimpleNamespace(work_dir=tmp_path), b'exact rejected MPD', report, tmp_path)
+    with zipfile.ZipFile(io.BytesIO((tmp_path / '.brickbuilder-draft.zip').read_bytes())) as archive:
+        assert archive.read('model.mpd') == b'exact rejected MPD'
+        assert archive.read('parts.csv').decode().splitlines() == ['Part,Color,Quantity', '44294.dat,0,2']
+        assert json.loads(archive.read('verification.json')) == report
+        assert 'Unverified draft' in archive.read('README.txt').decode()

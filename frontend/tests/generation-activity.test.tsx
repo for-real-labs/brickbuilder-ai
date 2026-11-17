@@ -386,3 +386,13 @@ it('does not dismiss a running generation', async () => {
   await act(async () => activity.dismissGeneration('running'));
   expect(activity.generations.some(row => row.id === 'running')).toBe(true);
 });
+
+it('shows recoverable Nova drafts with failed checks and no model link', async () => {
+  await act(async () => root.render(<GenerationActivityList generations={[
+    { ...job('draft'), status: 'failed', endpoint: 'novaToBricks',
+      errorMessage: 'Instruction verification failed. Download the unverified draft and its failed checks.' },
+  ]} error={null} onOpen={open} />));
+  expect(container.textContent).toContain('Download draft and failed checks');
+  expect(container.textContent).toContain('Repair is required before instructions or ordering');
+  expect(container.querySelector('article a')).toBeNull();
+});

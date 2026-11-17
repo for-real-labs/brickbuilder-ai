@@ -408,8 +408,9 @@ async def instruction_export(request: Request):
         source.decode('utf-8')
         async with _instruction_export_slots:
             data = await asyncio.to_thread(export_instruction_placements, bytes(source))
-    except InstructionPlanError:
-        return JSONResponse({'detail': 'Repair disconnected or blocked parts before opening instructions.'}, status_code=422)
+    except InstructionPlanError as exc:
+        return JSONResponse({'detail': 'Repair disconnected or blocked parts before opening instructions.',
+                             **({'report': exc.report} if exc.report else {})}, status_code=422)
     except (UnicodeError, OSError, subprocess.SubprocessError, ValueError):
         return JSONResponse({'detail': 'Nova construction steps could not be exported'}, status_code=502)
     return Response(data, media_type='text/plain')
@@ -417,6 +418,10 @@ async def instruction_export(request: Request):
 
 class InstructionPlanError(ValueError):
     """Complete connected instructions cannot be produced for this model."""
+
+    def __init__(self, message, report=None):
+        super().__init__(message)
+        self.report = report
 
 
 def export_instruction_placements(source: bytes) -> bytes:
@@ -438,7 +443,11 @@ def export_instruction_placements(source: bytes) -> bytes:
                            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, check=True, timeout=1800)
         except subprocess.CalledProcessError:
             if output.with_suffix('.error').is_file():
-                raise InstructionPlanError('Repair disconnected or blocked parts before opening instructions.') from None
+                report_path = output.with_suffix('.review.json')
+                report = None
+                if report_path.is_file() and report_path.stat().st_size <= 64 * 1024:
+                    report = json.loads(report_path.read_text())
+                raise InstructionPlanError('Repair disconnected or blocked parts before opening instructions.', report) from None
             raise
         if output.stat().st_size > 32 * 1024 * 1024:
             raise ValueError('Instruction export is too large')

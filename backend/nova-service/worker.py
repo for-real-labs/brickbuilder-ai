@@ -137,6 +137,7 @@ async def configure_parts_catalog(chat_id: str, body: PartsCatalogRequest):
         raise HTTPException(404, 'Nova session not found')
     if agent.is_running(chat_id):
         raise HTTPException(409, 'Nova is working on this session')
+    (store.work_dir(chat_id) / '.brickbuilder-draft.zip').unlink(missing_ok=True)
     try:
         catalog = parts_policy.configure(store, chat_id, body.csv)
         parts_policy.set_limit(chat_id, body.max_parts)
@@ -210,6 +211,23 @@ def export_sources(chat_id: str, model_id: str) -> bytes:
                 raise HTTPException(413, 'Nova source archive exceeds its size limit')
             archive.writestr(name, data)
     return output.getvalue()
+
+
+@app.get('/integration/chats/{chat_id}/draft')
+async def export_draft(chat_id: str):
+    store = get_store()
+    if not store.get_chat(chat_id):
+        raise HTTPException(404, 'Nova session not found')
+    if agent.is_running(chat_id):
+        raise HTTPException(409, 'Nova is still working on this session')
+    work = store.work_dir(chat_id).resolve()
+    path = work / '.brickbuilder-draft.zip'
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > MAX_EXPORT_BYTES:
+        raise HTTPException(404, 'No rejected draft is available')
+    data = await asyncio.to_thread(path.read_bytes)
+    if len(data) > MAX_EXPORT_BYTES:
+        raise HTTPException(413, 'Draft archive exceeds its size limit')
+    return Response(data, media_type='application/zip', headers={'Cache-Control': 'private, no-store'})
 
 
 @app.get('/integration/chats/{chat_id}/export/{model_id}')

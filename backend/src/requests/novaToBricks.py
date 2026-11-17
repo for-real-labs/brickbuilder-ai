@@ -24,7 +24,7 @@ from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.nova_service import NovaService, INSTRUCTIONS_FILE
+from ..utils.nova_service import NovaService, NovaDraftError, INSTRUCTIONS_FILE
 from ..utils.parts_inventory import PartsInventory
 from ..utils.prompt_parts_limit import tighter_parts_limit
 from ..utils.storage_upload import upload_artifact
@@ -204,6 +204,11 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
                     lambda session: _save_session(generation_id, session), on_thinking, request._nova_session,
                     on_progress=on_progress),
                     timeout=_generation_timeout())
+            except NovaDraftError as exc:
+                bucket = generation_storage.client.storage.from_('generation-output')
+                await upload_artifact(bucket, path=f'{generation_id}/nova-draft.zip',
+                                      file=exc.archive, content_type='application/zip')
+                raise
             except asyncio.TimeoutError:
                 raise ValueError("Nova reached the build time limit. Its session is retained for continuation.") from None
         if on_thinking:
@@ -315,12 +320,14 @@ async def get_nova_source(generation_id: str, auth_info: dict = Depends(get_user
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(generation, auth_info)
-    if generation.get("endpoint") != "novaToBricks" or generation.get("status") != "completed":
+    if generation.get("endpoint") != "novaToBricks" or generation.get("status") not in {"completed", "failed"}:
         raise HTTPException(status_code=404, detail="Nova source is not available for this generation")
+    draft = generation.get("status") == "failed"
+    filename = "nova-draft.zip" if draft else "nova-source.zip"
     try:
         bucket = generation_storage.client.storage.from_("generation-output")
-        data = await asyncio.to_thread(bucket.download, f"{generation_id}/nova-source.zip")
+        data = await asyncio.to_thread(bucket.download, f"{generation_id}/{filename}")
     except Exception as exc:
         raise HTTPException(status_code=404, detail="Nova source archive not found") from exc
-    return Response(data, media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="nova-set-source.zip"',
+    return Response(data, media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="nova-draft.zip"' if draft else 'attachment; filename="nova-set-source.zip"',
                                                                 "Cache-Control": "private, no-store"})

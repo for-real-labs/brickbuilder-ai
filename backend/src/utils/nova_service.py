@@ -36,6 +36,18 @@ INSTRUCTIONS_FILE = 'nova-instructions-reviewed-v5.ldr'
 class NovaInstructionPlanError(ValueError):
     """A model needs connected placements before instructions can be exported."""
 
+    def __init__(self, message, report=None):
+        super().__init__(message)
+        self.report = report or {"error": message}
+
+
+class NovaDraftError(ValueError):
+    """A rejected revision remains downloadable without publishing it."""
+
+    def __init__(self, message: str, archive: bytes):
+        super().__init__(message)
+        self.archive = archive
+
 
 class NovaSessionUnavailableError(ValueError):
     """The selected runtime cannot find a saved session or artifact."""
@@ -204,6 +216,9 @@ class NovaService:
 
     async def export(self, chat_id: str, model_id: str, session: dict) -> NovaResult:
         path = f'integration/chats/{self.session_id(chat_id)}/export/{self.session_id(model_id)}'
+        return await self._export_path(path, session)
+
+    async def _export_path(self, path: str, session: dict) -> NovaResult:
         data = bytearray()
         try:
             async with self.client.stream('GET', path, timeout=180) as response:
@@ -226,7 +241,10 @@ class NovaService:
             response = await self.client.post('integration/instructions', content=mpd.encode('utf-8'),
                 headers={'Content-Type': 'text/plain'}, timeout=1830)
             if response.status_code == 422:
-                raise NovaInstructionPlanError('Repair disconnected or blocked parts before opening instructions.')
+                body = response.json() if len(response.content) <= 128 * 1024 else {}
+                report = body.get('report')
+                raise NovaInstructionPlanError('Repair disconnected or blocked parts before opening instructions.',
+                                               report if isinstance(report, dict) else None)
             response.raise_for_status()
             if not response.headers.get('content-type', '').startswith('text/plain') or not response.text.strip():
                 raise ValueError('Nova instruction adapter is unavailable. Rebuild the private runtime.')
@@ -314,6 +332,12 @@ class NovaService:
                 raise ValueError(BUDGET_ERROR)
             published = [row for key, row in after['models'].items() if key not in before['models']]
             if not published:
+                try:
+                    draft = await self._export_path(f'integration/chats/{chat_id}/draft', session)
+                except ValueError:
+                    pass
+                else:
+                    raise NovaDraftError('Instruction verification failed. Download the unverified draft and its failed checks.', draft.archive)
                 raise ValueError('Nova finished this turn without publishing a model. The session and source files have been retained.')
             if any(m.get('_error') and m.get('id', 0) > max((item.get('id', 0) for item in before.get('messages', [])), default=0) for m in after.get('messages', [])):
                 raise ValueError('Nova reported an error after publication. Its session is retained for continuation.')
@@ -330,7 +354,17 @@ class NovaService:
             enforce_parts_limit(result.ldr, maximum)
             # Recheck the imported revision even if the publication tool was
             # bypassed. Nothing is stored or charged until instructions pass.
-            instructions = await self.instructions(result.mpd)
+            try:
+                instructions = await self.instructions(result.mpd)
+            except NovaInstructionPlanError as exc:
+                from .brickowl_utils import generate_parts_list_csv
+                buffer = io.BytesIO()
+                with zipfile.ZipFile(buffer, 'w', zipfile.ZIP_DEFLATED) as archive:
+                    archive.writestr('model.mpd', result.mpd)
+                    archive.writestr('model.ldr', result.ldr)
+                    archive.writestr('parts.csv', generate_parts_list_csv(result.ldr.split('\n0 FILE ', 1)[0]))
+                    archive.writestr('verification.json', json.dumps(dict(exc.report, passed=False)))
+                raise NovaDraftError('Instruction verification failed. Download the unverified draft and its failed checks.', buffer.getvalue()) from exc
             return replace(result, instructions=instructions)
         except BaseException:
             # Includes timeout and user cancellation. Never cancel someone else's turn

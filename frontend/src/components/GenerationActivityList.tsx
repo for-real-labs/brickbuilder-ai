@@ -1,4 +1,5 @@
 import React from 'react';
+import { NovaDraftDownload } from './NovaDraftDownload';
 import { Box, CheckCircle2, Loader2, AlertCircle, Square, X } from 'lucide-react';
 import { CancelGenerationButton } from './CancelGenerationButton';
 import posthog from 'posthog-js';
@@ -23,7 +24,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
   onNotificationPromptShown?: () => void;
   buddyDialogue?: boolean;
 }) {
-  generations = generations.filter(generation => generation.status !== 'failed');
+  generations = generations.filter(generation => generation.status !== 'failed' || (generation.endpoint === 'novaToBricks' && generation.errorMessage?.includes('Download the unverified draft')));
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
   return (
@@ -90,6 +91,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
                 {previewPending && <p className="mt-2 text-xs text-slate-500">Preparing preview…</p>}
                 {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
+                {failed && generation.endpoint === 'novaToBricks' && generation.errorMessage?.includes('Download the unverified draft') && <NovaDraftDownload generationId={generation.id} />}
                 {active && agentGeneration && !buddyDialogue && <LlmGenerationOutput generationId={generation.id} active />}
                 {generation.status === 'completed' && <GenerationDuration seconds={generation.durationSeconds} />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}

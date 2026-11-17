@@ -8,7 +8,7 @@ import httpx
 import pytest
 from unittest.mock import AsyncMock
 
-from src.utils.nova_service import NovaService, read_export
+from src.utils.nova_service import NovaService, NovaDraftError, read_export
 from src.utils.prompt_parts_limit import PARTS_BUDGET_GUIDANCE
 
 
@@ -437,8 +437,12 @@ def test_final_import_rejects_disconnected_geometry_even_if_publication_was_bypa
             service.export = AsyncMock(return_value=read_export(archive(), {}))
             service.instructions = AsyncMock(side_effect=NovaInstructionPlanError('Repair disconnected or blocked parts'))
             request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='build', image_base64=None)
-            with pytest.raises(NovaInstructionPlanError):
+            with pytest.raises(NovaDraftError) as error:
                 await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
+            with zipfile.ZipFile(io.BytesIO(error.value.archive)) as draft:
+                assert draft.read('model.mpd') == b'original hierarchical MPD'
+                assert json.loads(draft.read('verification.json'))['passed'] is False
+                assert 'parts.csv' in draft.namelist()
             service.instructions.assert_awaited_once_with('original hierarchical MPD')
             service.cancel.assert_awaited_once_with('chat')
     asyncio.run(run())
@@ -528,5 +532,26 @@ def test_total_limit_is_sent_and_rechecked_before_instruction_export():
             assert service.request.call_args_list[0].kwargs['json']['max_parts'] == 1
             message = next(call for call in service.request.call_args_list if call.args[1].endswith('/messages'))
             assert 'at most 1 physical parts' in message.kwargs['json']['text']
+            service.instructions.assert_not_awaited()
+    asyncio.run(run())
+
+
+def test_rejected_publication_recovers_draft_without_running_instruction_export():
+    async def run():
+        async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:
+            service.generation_ready = AsyncMock(return_value=VERSIONS)
+            service.configure_model = AsyncMock(return_value='config')
+            service.request = AsyncMock(return_value={'parts_catalog_version': 1})
+            service.chat = AsyncMock(return_value={'chat': {'running': False}, 'models': {}})
+            service.wait_for_turn = AsyncMock()
+            service.cancel = AsyncMock()
+            draft = read_export(archive(), {})
+            service._export_path = AsyncMock(return_value=draft)
+            service.instructions = AsyncMock()
+            request = SimpleNamespace(model='gpt-5.5', auth_mode='api_key', prompt='caddy', image_base64=None)
+            with pytest.raises(NovaDraftError) as error:
+                await service.run(request, 'openai', AsyncMock(), previous={'chat_id': 'chat'})
+            assert error.value.archive == draft.archive
+            assert service._export_path.await_args.args[0] == 'integration/chats/chat/draft'
             service.instructions.assert_not_awaited()
     asyncio.run(run())

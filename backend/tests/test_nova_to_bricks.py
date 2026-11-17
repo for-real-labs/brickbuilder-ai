@@ -442,3 +442,43 @@ def test_all_parts_edit_cannot_change_basic_mode(monkeypatch):
         get_generation=AsyncMock(return_value={'endpoint': 'llmToBricks', 'user_id': 'caller', 'user_type': 'authenticated'})))
     with pytest.raises(HTTPException, match='Basic bricks'):
         asyncio.run(module._prepare_edit(module.NovaToBricksRequest(prompt='edit', generation_id='source'), {'user_id': 'caller', 'authenticated': True}))
+
+
+def test_rejected_draft_is_saved_before_failure_without_publication_or_charge(monkeypatch):
+    from src.utils.nova_service import NovaDraftError
+    bucket = object()
+    storage = SimpleNamespace(update_status=AsyncMock(),
+        client=SimpleNamespace(storage=SimpleNamespace(from_=lambda name: bucket)))
+    class Service:
+        async def __aenter__(self): return self
+        async def __aexit__(self, *args): pass
+        async def run(self, *args, **kwargs):
+            raise NovaDraftError('Download the unverified draft', b'draft archive')
+    charge, upload = AsyncMock(), AsyncMock()
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
+    monkeypatch.setattr(module, 'deduct_credits', charge)
+    monkeypatch.setattr(module, 'upload_artifact', upload)
+    monkeypatch.setattr(module, 'track_error', lambda **kwargs: None)
+    asyncio.run(module.process_nova_to_bricks_task('generation',
+        module.NovaToBricksRequest(prompt='caddy'), {'user_email': 'test'}, {}))
+    upload.assert_awaited_once_with(bucket, path='generation/nova-draft.zip',
+                                   file=b'draft archive', content_type='application/zip')
+    charge.assert_not_awaited()
+    storage.update_status.assert_awaited_with('generation', 'failed', 'Download the unverified draft')
+
+
+def test_failed_draft_download_checks_owner_and_uses_only_draft_archive(monkeypatch):
+    from unittest.mock import Mock
+    download = Mock(return_value=b'draft')
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value={
+        'user_id': 'owner', 'user_type': 'authenticated', 'endpoint': 'novaToBricks', 'status': 'failed'}),
+        client=SimpleNamespace(storage=SimpleNamespace(from_=lambda name: SimpleNamespace(download=download))))
+    monkeypatch.setattr(module, 'generation_storage', storage)
+    with pytest.raises(HTTPException):
+        asyncio.run(module.get_nova_source('generation', {'user_id': 'other', 'authenticated': True}))
+    download.assert_not_called()
+    response = asyncio.run(module.get_nova_source('generation', {'user_id': 'owner', 'authenticated': True}))
+    assert response.body == b'draft'
+    assert response.headers['cache-control'] == 'private, no-store'
+    download.assert_called_once_with('generation/nova-draft.zip')
