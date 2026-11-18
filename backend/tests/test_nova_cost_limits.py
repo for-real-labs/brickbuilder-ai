@@ -78,6 +78,26 @@ def test_claude_sdk_gets_dollar_cap_and_over_budget_results_fail(monkeypatch):
         module.current_budget.reset(token)
 
 
+def test_claude_billing_error_preserves_usage_and_explains_failed_turn(monkeypatch):
+    module = load_limits(monkeypatch)
+    class Result:
+        is_error = True
+        usage = {'input_tokens': 10, 'output_tokens': 2}
+    async def receive(client):
+        yield SimpleNamespace(error='billing_error')
+        yield Result()
+    sdk = SimpleNamespace(ClaudeAgentOptions=lambda **kwargs: kwargs,
+        ClaudeSDKClient=SimpleNamespace(receive_response=receive), ResultMessage=Result)
+    module.install_cost_limits(SimpleNamespace(start_turn=lambda: None), None, SimpleNamespace(acompletion=lambda: None), sdk)
+    budget = generation_budget.GenerationBudget('claude-opus-5-5')
+    async def run():
+        module.current_budget.set(budget)
+        with pytest.raises(ValueError, match='provider account has a billing issue'):
+            async for event in sdk.ClaudeSDKClient.receive_response(None): pass
+    asyncio.run(run())
+    assert budget.spent > 0
+
+
 def test_nova_settings_connection_test_keeps_non_streaming_with_cost_guard(monkeypatch):
     module = load_limits(monkeypatch)
     calls = []

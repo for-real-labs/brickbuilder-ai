@@ -10,6 +10,9 @@ MAX_GENERATION_COST_USD = Decimal('20')
 BUDGET_ERROR = 'Generation stopped because it would exceed the $20 AI cost limit.'
 
 
+PROVIDER_BILLING_ERROR = 'The AI provider paused generation because the connected provider account has a billing issue.'
+
+
 class GenerationUsage:
     """Provider-reported LLM calls for one job; no prompts or credentials."""
     def __init__(self, generation_id):

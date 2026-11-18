@@ -32,7 +32,7 @@ TOOL_CRITERIA = {
     'support': 'Open the support form to contact support or get account/order help. Never send an email automatically.',
 }
 
-BuddyIntent = Literal['generate', 'upload', 'question', 'chat', 'gift', 'clarify',
+BuddyIntent = Literal['generate', 'continue_build', 'upload', 'question', 'chat', 'gift', 'clarify',
     'export', 'export_ldraw', 'export_io', 'export_csv', 'export_xml',
     'import', 'import_ldraw', 'import_io', 'convert_image', 'convert_glb', 'convert_obj',
     'generation_settings', 'buddy_settings', 'community', 'github', 'feedback', 'support']
@@ -69,6 +69,9 @@ INTENT_QUESTION = {
                     'Includes bare nouns ("cat", "a red castle"), "create a dragon in LEGO", '
                     '"build this image" with an attached image, and "make it red" with a current model. '
                     'An image by itself requests generation. Excludes questions about building and negated requests.',
+        'continue_build': 'The message answers the preceding assistant question about a specific LEGO design '
+                          'or refines that design. For example, after asking which side of an excavator '
+                          'should hold the cab, "Left" continues the excavator. A new subject is generate.',
         'upload': 'The user wants to choose or upload a reference image, such as "upload an image", '
                   '"let me add a photo", or "turn this image into LEGO" when no image is attached. '
                   'Excludes model-file imports and asking how uploads work.',

@@ -18,7 +18,7 @@ export interface BuddyTurn {
 
 export function useBuildBuddyChat(pet: PetId, authToken?: string, owner = authToken ? 'account' : 'guest') {
   const [turns, setTurns] = useState<BuddyTurn[]>([]);
-  const history = useRef<{ id: number; text: string; reply?: string }[]>([]);
+  const history = useRef<{ id: number; text: string; reply?: string; buildPrompt?: string }[]>([]);
   const giftStartId = useRef(0);
   const sequence = useRef(0);
   const requests = useRef(new Set<AbortController>());
@@ -83,7 +83,14 @@ export function useBuildBuddyChat(pet: PetId, authToken?: string, owner = authTo
       const decision = await BuildBuddyApi.classify({ prompt: text, hasImage: !!file, modelName, giftPlanning, history: context }, authToken, controller.signal);
       if (controller.signal.aborted) return;
       posthog.capture('build_buddy_message_routed', { pet_id: pet, intent: decision.intent, confidence: decision.confidence, has_image: !!file });
-      return { ...decision, id };
+      if (decision.intent === 'continue_build') {
+        const previous = history.current.find(turn => turn.id === id - 1);
+        if (!previous?.reply) return { intent: 'clarify' as const, id };
+        const buildPrompt = [previous.buildPrompt || previous.text, previous.reply, text].join('\n\n');
+        history.current = history.current.map(turn => turn.id === id ? { ...turn, buildPrompt } : turn);
+        return { intent: 'generate' as const, id, buildPrompt };
+      }
+      return { intent: decision.intent, confidence: decision.confidence, id, buildPrompt: undefined };
     } catch {
       if (!controller.signal.aborted) {
         updateTurn(id, { reply: 'I missed that. Can you try again?' });

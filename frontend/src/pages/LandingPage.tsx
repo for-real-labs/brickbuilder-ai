@@ -963,8 +963,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       buddyChat.updateTurn(result.id, { reply });
     } else if (result.intent === 'generate') {
       setGiftPlanning(false);
-      if (landingModel.model) void submitModelEdit(result.id, text, image);
-      else submitGeneration(text, image, result.id);
+      if (landingModel.model) void submitModelEdit(result.id, result.buildPrompt ?? text, image);
+      else submitGeneration(result.buildPrompt ?? text, image, result.id);
     } else if (result.intent === 'upload') {
       posthog.capture('build_buddy_suggestion_submitted', { suggestion: 'upload' });
       suggestImageUpload(result.id);
