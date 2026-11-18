@@ -53,6 +53,7 @@ def _owned_query(auth_info: dict, columns: str = NOTIFICATION_COLUMNS):
     return (
         generation_storage.client.table("generations")
         .select(columns)
+        .is_("deleted_at", "null")
             .eq("user_id", user_id)
         .eq(
             "user_type",

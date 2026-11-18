@@ -58,12 +58,12 @@ async def toggle_is_community(
         result = (
             generation_storage.client
             .table("generations")
-            .select("id, is_community, user_id, user_type")
+            .select("id, is_community, user_id, user_type, deleted_at")
             .eq("id", request.generation_id)
             .execute()
         )
 
-        if not result.data:
+        if not result.data or result.data[0].get("deleted_at"):
             raise HTTPException(
                 status_code=404,
                 detail=f"Generation {request.generation_id} not found",

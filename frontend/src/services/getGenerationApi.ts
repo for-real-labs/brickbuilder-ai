@@ -1,4 +1,5 @@
 import { authenticatedApiFetch } from './apiFetch';
+import { getInstructionKey } from '../utils/instructionLinks';
 // API Configuration
 const API_MODE = import.meta.env.VITE_API_MODE || 'local';
 const LOCAL_API_URL = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002';
@@ -64,6 +65,10 @@ export interface CompletedGeneration {
   problematic_xyzrgb_url: string | null;
 }
 
+export class GenerationNotFoundError extends Error {
+  constructor() { super('This model is unavailable.'); }
+}
+
 export class GetGenerationApiService {
   static async cancelGeneration(generationId: string): Promise<void> {
     let response: Response;
@@ -84,17 +89,20 @@ export class GetGenerationApiService {
    */
   static async getGeneration(generationId: string, signal?: AbortSignal): Promise<GetGenerationResponse> {
     const url = `${API_BASE_URL}/generation/${generationId}`;
+    const instructionKey = getInstructionKey(generationId);
 
     try {
       const response = await authenticatedApiFetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          ...(instructionKey ? { 'X-Instruction-Key': instructionKey } : {}),
         },
         signal,
       });
 
       if (!response.ok) {
+        if (response.status === 404) throw new GenerationNotFoundError();
         const errorText = await response.text();
         throw new Error(`API request failed: ${response.status} ${response.statusText}. ${errorText}`);
       }

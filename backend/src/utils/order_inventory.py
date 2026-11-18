@@ -25,7 +25,7 @@ async def inventory_from_order(order_id: int, auth_info: dict) -> dict:
     order = next(iter(result.data or []), None)
     if not order:
         raise HTTPException(404, 'Order not found')
-    generation = await generation_storage.get_generation(order['generation_id'])
+    generation = await generation_storage.get_generation(order['generation_id'], include_deleted=True)
     if not generation:
         raise HTTPException(404, 'Order not found')
     require_generation_access(generation, auth_info)

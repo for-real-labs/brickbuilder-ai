@@ -8,6 +8,7 @@ import pytest
 
 from src.utils.local_db import LocalSupabaseClient, _create_schema
 from src.utils.generation_storage import GenerationStorage
+from src.requests import restoreGeneration as restore
 
 
 @pytest.fixture(scope="module")
@@ -54,6 +55,28 @@ def test_embedded_generations_share_versions_and_latest_dashboard_queries(local_
             .eq('generation_id', root['id']).gt('version', 9).order('version', desc=True).execute().data] == [12, 11, 10]
     with pytest.raises(psycopg.errors.RaiseException):
         save(client, model_id=root['id'], owner='other')
+
+
+def test_local_guest_can_restore_after_using_build_allowance(local_db, monkeypatch):
+    _conn, client = local_db
+    model_id = str(uuid4())
+    for index in range(3):
+        client.table('generations').insert({
+            'id': model_id if index == 0 else str(uuid4()), 'generation_id': model_id,
+            'user_id': 'guest_test', 'user_type': 'anonymous', 'guest_ip_hash': 'ip_v1_' + 'a' * 64,
+            'status': 'completed', 'endpoint': 'llmToBricks', 'ldr_url': f'artifact-{index}',
+        }).execute()
+
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = client
+    monkeypatch.setattr(restore, 'generation_storage', storage)
+    request = restore.RestoreGenerationRequest(request_id=uuid4())
+    result = asyncio.run(restore.restore_generation(model_id, request, {'user_id': 'guest_test'}))
+    restored = asyncio.run(storage.get_generation(result.generation_id))
+    assert (restored['version'], restored['endpoint'], restored['ldr_url']) == (4, 'llmToBricks', 'artifact-0')
+    assert restored['restored_from_id'] == model_id
+    assert asyncio.run(restore.restore_generation(model_id, request, {'user_id': 'guest_test'})) == result
+    assert len(asyncio.run(storage.get_generation_versions(model_id, 'guest_test', 'anonymous'))) == 4
 
 
 def test_embedded_schema_backfills_explicit_parent_prompt_and_image_free_edits(local_db):

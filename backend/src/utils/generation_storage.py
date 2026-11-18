@@ -948,7 +948,7 @@ class GenerationStorage:
             logger.error(f"Failed to create order for generation {generation_id}: {e}")
             raise
     
-    async def get_generation(self, generation_id: str) -> Optional[Dict[str, Any]]:
+    async def get_generation(self, generation_id: str, *, include_deleted: bool = False) -> Optional[Dict[str, Any]]:
         """
         Retrieve a generation record by ID
         
@@ -962,7 +962,7 @@ class GenerationStorage:
             result = await execute_query(
                 self.client.table("generations").select("*").eq("id", generation_id)
             )
-            if result.data:
+            if result.data and (include_deleted or not result.data[0].get("deleted_at")):
                 return result.data[0]
             return None
             
@@ -1008,7 +1008,7 @@ class GenerationStorage:
             
             # Apply status filter if provided
             if status_filter:
-                query = query.in_("status", status_filter)
+                query = query.in_("status", status_filter).is_("deleted_at", "null")
             
             result = await execute_query(
                 query.order("created_at", desc=True)
@@ -1046,7 +1046,7 @@ class GenerationStorage:
                      .eq("user_type", user_type))
 
             if status_filter:
-                query = query.in_("status", status_filter)
+                query = query.in_("status", status_filter).is_("deleted_at", "null")
 
             result = await execute_query(query)
             return result.count or 0
@@ -1129,6 +1129,7 @@ class GenerationStorage:
                 .eq("user_id", generation["user_id"])
                 .eq("user_type", generation["user_type"])
                 .eq("status", "completed")
+                .is_("deleted_at", "null")
                 .lt("version", generation["version"])
                 .order("version", desc=True)
                 .limit(1)
@@ -1151,6 +1152,7 @@ class GenerationStorage:
                      .eq("generation_id", generation_id)
                     .eq("user_id", user_id)
                     .eq("user_type", user_type)
+                    .is_("deleted_at", "null")
                     .order("version", desc=True)
                     .range(offset, offset + 499)
                 )

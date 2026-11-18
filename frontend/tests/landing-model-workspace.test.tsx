@@ -1364,6 +1364,7 @@ it('keeps all edit versions in order when opening an older revision', async () =
     expect(rows.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
     expect(rows[1].getAttribute('aria-current')).toBe('true');
     expect(rows[2].disabled).toBe(true);
+    expect(toolbar.textContent).not.toMatch(/Restore this version|Delete model|Delete version/);
     await act(async () => rows[4].click());
     expect(query.value).toBe('id=original&exact=1');
     const previous = [...container.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!;

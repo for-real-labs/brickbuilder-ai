@@ -715,7 +715,8 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
             return
         try:
             bucket = generation_storage.client.storage.from_('generation-output')
-            data = await asyncio.to_thread(bucket.download, f'{request.generation_id}/parts-inventory.json')
+            inventory_id = generation.get('restored_from_id') or request.generation_id
+            data = await asyncio.to_thread(bucket.download, f'{inventory_id}/parts-inventory.json')
             if len(data) > 2 * 1024 * 1024:
                 raise ValueError('Oversized inventory')
             request.parts_inventory = basic_inventory(PartsInventory.model_validate_json(data))

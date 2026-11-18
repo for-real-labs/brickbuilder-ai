@@ -45,7 +45,7 @@ class GetGenerationResponse(BaseModel):
     error_message: Optional[str] = None  # Only when failed
 
 
-async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetGenerationResponse:
+async def get_generation(request: GetGenerationRequest, auth_info: dict, *, instruction_access: bool = False) -> GetGenerationResponse:
     """
     Get generation status and data by generation ID.
     
@@ -70,7 +70,8 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict) -> GetG
     try:
 
         # Get the generation record
-        generation = await generation_storage.get_generation(request.generation_id)
+        generation = await (generation_storage.get_generation(request.generation_id, include_deleted=True)
+                            if instruction_access else generation_storage.get_generation(request.generation_id))
         if not generation:
             raise HTTPException(status_code=404, detail=f"Generation {request.generation_id} not found")
 

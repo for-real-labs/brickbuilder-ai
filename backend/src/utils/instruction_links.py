@@ -3,6 +3,7 @@ import hashlib
 import re
 import secrets
 from urllib.parse import urlencode
+from uuid import UUID
 from fastapi import HTTPException
 
 from . import auth
@@ -29,6 +30,10 @@ async def has_instruction_key(generation_id, key):
     if not key or not re.fullmatch(r'[A-Za-z0-9_-]{43}', key):
         return False
     if not auth.supabase_client:
+        return False
+    try:
+        UUID(generation_id)
+    except ValueError:
         return False
     result = await execute_query(auth.supabase_client.table('orders').select('id')
                                  .eq('generation_id', generation_id)

@@ -21,6 +21,7 @@ class Query:
         return self
 
     def eq(self, field, value): self.filters.append(lambda row: row.get(field) == value); return self
+    def is_(self, field, value): self.filters.append(lambda row: row.get(field) is None); return self
     def gt(self, field, value): self.filters.append(lambda row: row.get(field, 0) > value); return self
     def in_(self, field, values): self.filters.append(lambda row: row.get(field) in values); return self
     def order(self, field, desc=False): self.sort = (field, desc); return self
@@ -52,7 +53,8 @@ def model(id, owner='one', status='completed', **extra):
 
 
 def test_notifications_are_owner_scoped_and_do_not_deduplicate_edits(storage):
-    storage.extend([model('a'), model('b', generation_id='a', version=2), model('pending', status='queued'), model('private', owner='two')])
+    storage.extend([model('a'), model('b', generation_id='a', version=2), model('pending', status='queued'),
+                    model('private', owner='two'), model('deleted', deleted_at='2026-11-18T00:00:00Z')])
     feed = asyncio.run(module.list_generation_notifications({'user_id': 'one', 'authenticated': True}))
     assert feed['unread_count'] == 2
     assert {row['id'] for row in feed['notifications']} == {'a', 'b'}

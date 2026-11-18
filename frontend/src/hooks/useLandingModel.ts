@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
-import { GetGenerationApiService, type GetGenerationResponse } from '../services/getGenerationApi';
+import { GenerationNotFoundError, GetGenerationApiService, type GetGenerationResponse } from '../services/getGenerationApi';
 import { LdrToMpdApiService } from '../services/ldrToMpdApi';
 import { startPolling } from '../utils/polling';
 
@@ -103,6 +103,14 @@ export function useLandingModel(owner: string, authToken?: string, requestedId?:
         posthog.capture('landing_model_viewed', { generation_id: targetId, endpoint: generation.endpoint });
       } catch (error) {
         if (signal.aborted || revision.current !== currentRevision) return;
+        if (error instanceof GenerationNotFoundError) {
+          settled = true;
+          polling.stop();
+          setBusy(false);
+          setPending(false);
+          setError(error.message);
+          return;
+        }
         setError(null); // A temporary read failure must not replace an active build with a failure message.
         throw error;
       }

@@ -12,19 +12,21 @@ _instruction_exports: dict[str, asyncio.Task[bytes]] = {}
 _instruction_load_slots = asyncio.Semaphore(2)
 
 
-async def get_nova_instructions(generation_id: str) -> Response:
+async def get_nova_instructions(generation_id: str, *, instruction_access: bool = False) -> Response:
     if generation_storage is None:
         raise HTTPException(503, 'Generation storage is unavailable')
-    row = await generation_storage.get_generation(generation_id)
+    row = await (generation_storage.get_generation(generation_id, include_deleted=True)
+                 if instruction_access else generation_storage.get_generation(generation_id))
     if not row or row.get('status') != 'completed' or row.get('endpoint') != 'novaToBricks':
         raise HTTPException(404, 'Nova instructions are unavailable')
     if row.get('nova_build_mode') == 'preview':
         raise HTTPException(409, 'Instructions are unavailable for this earlier unchecked preview. Create a new build.')
-    task = _instruction_exports.get(generation_id)
+    artifact_id = row.get('restored_from_id') or generation_id
+    task = _instruction_exports.get(artifact_id)
     if task is None:
-        task = asyncio.create_task(_load_instructions(generation_id))
-        _instruction_exports[generation_id] = task
-        task.add_done_callback(lambda completed: _instruction_exports.pop(generation_id, None))
+        task = asyncio.create_task(_load_instructions(artifact_id))
+        _instruction_exports[artifact_id] = task
+        task.add_done_callback(lambda completed: _instruction_exports.pop(artifact_id, None))
     # A visitor leaving must not cancel the shared export for other visitors.
     data = await asyncio.shield(task)
     return Response(data, media_type='text/plain', headers={'Cache-Control': 'private, no-store',
