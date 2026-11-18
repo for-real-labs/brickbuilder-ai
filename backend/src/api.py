@@ -70,6 +70,7 @@ from .requests.updateUsername import update_username, UpdateUsernameRequest, Upd
 
 from .requests.generationNotifications import list_generation_notifications, mark_generation_viewed, latest_generation_edit, MarkNotificationsReadRequest, mark_notifications_read
 from .requests.cancelGeneration import cancel_generation
+from .requests.restoreGeneration import RestoreGenerationRequest, RestoreGenerationResponse, restore_generation
 
 # Import utilities
 from .utils.pack_ldraw_model import LDrawPacker
@@ -831,6 +832,13 @@ async def generation_viewed_endpoint(generation_id: UUID, auth_info: dict = Depe
 @app.get("/generation/{generation_id}/latest-edit")
 async def generation_latest_edit_endpoint(generation_id: UUID, auth_info: dict = Depends(get_optional_identity)):
     return await latest_generation_edit(str(generation_id), auth_info)
+
+
+@app.post("/generation/{generation_id}/restore", response_model=RestoreGenerationResponse)
+async def restore_generation_endpoint(
+    generation_id: UUID, request: RestoreGenerationRequest, auth_info: dict = Depends(get_optional_identity),
+) -> RestoreGenerationResponse:
+    return await restore_generation(str(generation_id), request, auth_info)
 
 
 if mcp_app is not None:

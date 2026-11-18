@@ -345,24 +345,29 @@ def test_another_users_completed_model_forks_geometry_only(monkeypatch, endpoint
 
 
 @pytest.mark.parametrize('lost_session', [True, False])
-def test_original_inventory_survives_provider_switch_or_lost_session(monkeypatch, lost_session):
+@pytest.mark.parametrize('restored_from_id', [None, 'original'])
+def test_original_inventory_survives_provider_switch_or_lost_session(monkeypatch, lost_session, restored_from_id):
     from src.utils.parts_inventory import PartsInventory
     inventory = PartsInventory.model_validate({'name': 'original.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
     session = {'chat_id': 'chat', 'tenant': 'a' * 64, 'model': 'gpt-5.5', 'auth_mode': 'api_key', 'parts_inventory': inventory.model_dump()}
-    monkeypatch.setattr(module, '_owned_session', AsyncMock(side_effect=HTTPException(409) if lost_session else None, return_value=session))
+    lookup_session = AsyncMock(side_effect=HTTPException(409) if lost_session else None, return_value=session)
+    monkeypatch.setattr(module, '_owned_session', lookup_session)
     class Bucket:
         def download(self, path):
-            assert path == 'source/parts-inventory.json'
+            assert path == f'{restored_from_id or "source"}/parts-inventory.json'
             return inventory.model_dump_json().encode()
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(
         get_generation=AsyncMock(return_value={'user_id': 'caller', 'user_type': 'authenticated', 'status': 'completed',
-            'endpoint': 'novaToBricks', 'ldr_url': 'public', 'has_parts_inventory': True, 'max_parts': 17}),
+            'endpoint': 'novaToBricks', 'ldr_url': 'public', 'has_parts_inventory': True, 'max_parts': 17,
+            'restored_from_id': restored_from_id}),
         client=SimpleNamespace(storage=SimpleNamespace(from_=lambda _: Bucket())),
         download_file_from_storage=AsyncMock(return_value=b'geometry')))
     request = module.NovaToBricksRequest(prompt='edit', generation_id='source', model='gpt-6.1-sol',
         parts_inventory={'name': 'attempted replacement', 'parts': [{'part_id': '3002', 'color_id': 0, 'quantity': 100}]})
     asyncio.run(module._prepare_edit(request, {'user_id': 'caller', 'authenticated': True}))
     assert request.parts_inventory == inventory and request._nova_session is None
+    assert request._nova_source_ldr == 'geometry'
+    assert lookup_session.await_count == (0 if restored_from_id else 1)
     assert request.max_parts == 17
 
 

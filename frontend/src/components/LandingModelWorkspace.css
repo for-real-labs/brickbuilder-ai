@@ -61,6 +61,7 @@
 @media (max-width: 639px) {
   .landing-model-bottom-toolbar { gap: 6px; }
   .landing-model-bottom-toolbar > .landing-action-button { flex: 1 1 auto; min-width: 0; padding-inline: 8px; font-size: 12px; white-space: normal; }
+  .landing-model-bottom-toolbar:has(> .landing-restore-version) > .landing-action-button { flex-basis: calc((100% - 6px) / 2); }
 }
 .landing-model-share-overlay { position: absolute; right: 12px; bottom: 12px; z-index: 45; }
 .landing-model-share .model-share-popup { max-height: calc(100cqh - 76px); overflow-y: auto; overscroll-behavior: contain; }

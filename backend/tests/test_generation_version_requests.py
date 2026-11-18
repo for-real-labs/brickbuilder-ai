@@ -1,6 +1,7 @@
 import asyncio
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
+from uuid import uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -10,7 +11,59 @@ from src.requests import updateModel as manual
 from src.requests import promptEditModel as image_edit
 from src.requests import llmToBricks as llm
 from src.requests import getGeneration as generation_endpoint
+from src.requests import restoreGeneration as restore
 from src.utils.generation_storage import GenerationStorage
+
+
+@pytest.mark.parametrize("owner_type", ["anonymous", "authenticated"])
+def test_restore_only_copies_snapshot_data_and_retries_the_same_insert(monkeypatch, owner_type):
+    source_id = str(uuid4())
+    source = {"id": source_id, "generation_id": "model", "user_id": "owner", "user_type": owner_type,
+              "status": "completed", "endpoint": "novaToBricks", "ldr_url": "geometry", "parts_list_csv_url": "parts",
+              "restored_from_id": "original-artifacts", "has_parts_inventory": True,
+              "is_community": True, "ordered": True, "notification_email": "owner@example.com", "ai_usage": {}}
+    rows = {source_id: source}
+    lookup = AsyncMock(side_effect=rows.get)
+    storage = SimpleNamespace(get_generation=lookup, client=Mock())
+    insert = storage.client.table.return_value.insert
+
+    async def commit_then_lose_response(_):
+        revision = insert.call_args.args[0]
+        rows[revision["id"]] = {**revision, "endpoint": source["endpoint"], "restored_from_id": source["restored_from_id"]}
+        raise ConnectionError("response lost")
+
+    monkeypatch.setattr(restore, "generation_storage", storage)
+    monkeypatch.setattr(restore, "execute_query", commit_then_lose_response)
+    request = restore.RestoreGenerationRequest(request_id=uuid4())
+    auth = {"user_id": "owner", "authenticated": owner_type == "authenticated"}
+    restored = asyncio.run(restore.restore_generation(source_id, request, auth))
+    assert asyncio.run(restore.restore_generation(source_id, request, auth)) == restored
+    insert.assert_called_once()
+    snapshot = insert.call_args.args[0]
+    assert snapshot["id"] == restored.generation_id
+    assert snapshot["generation_id"] == "model" and snapshot["restored_from_id"] == source_id
+    assert snapshot["endpoint"] == "updateModel" and snapshot["status"] == "completed"
+    assert snapshot["ldr_url"] == "geometry" and snapshot["parts_list_csv_url"] == "parts"
+    assert snapshot["has_parts_inventory"] and snapshot["notification_seen"]
+    assert not snapshot["is_community"]
+    assert {"ordered", "notification_email", "ai_usage"}.isdisjoint(snapshot)
+
+
+@pytest.mark.parametrize("user,status,has_geometry,expected", [
+    (None, "completed", True, 401), ("other", "completed", True, 404),
+    ("owner", "failed", True, 409), ("owner", "completed", False, 409),
+])
+def test_restore_rejects_unowned_or_unusable_versions(monkeypatch, user, status, has_geometry, expected):
+    storage = SimpleNamespace(client=Mock(), get_generation=AsyncMock(return_value={
+        "user_id": "owner", "user_type": "authenticated", "status": status,
+        "ldr_url": "geometry" if has_geometry else None,
+    }))
+    monkeypatch.setattr(restore, "generation_storage", storage)
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(restore.restore_generation(str(uuid4()), restore.RestoreGenerationRequest(request_id=uuid4()),
+                                               {"user_id": user, "authenticated": True}))
+    assert error.value.status_code == expected
+    storage.client.table.assert_not_called()
 
 
 @pytest.mark.parametrize("owner_type", ["anonymous", "authenticated"])

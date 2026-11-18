@@ -24,17 +24,20 @@ def test_only_completed_nova_model_geometry_is_available(monkeypatch, row):
     assert exc.value.status_code == 404
 
 
-def test_finished_model_reads_cached_steps_without_reading_private_source(monkeypatch):
+@pytest.mark.parametrize('restored_from_id', [None, 'source'])
+def test_finished_model_reads_cached_steps_without_reading_private_source(monkeypatch, restored_from_id):
     reads = []
     class Bucket:
         def download(self, path):
             reads.append(path)
             return b'0 FILE model.ldr\n0 STEP\n0 STEP'
-    monkeypatch.setattr(module, 'generation_storage', storage({'status': 'completed', 'endpoint': 'novaToBricks'}, Bucket()))
+    monkeypatch.setattr(module, 'generation_storage', storage({
+        'status': 'completed', 'endpoint': 'novaToBricks', 'restored_from_id': restored_from_id,
+    }, Bucket()))
     response = asyncio.run(module.get_nova_instructions('generation'))
     assert response.body.count(b'0 STEP') == 2
     assert response.headers['cache-control'] == 'private, no-store'
-    assert reads == ['generation/nova-instructions-reviewed-v5.ldr']
+    assert reads == [f'{restored_from_id or "generation"}/nova-instructions-reviewed-v5.ldr']
 
 
 def test_historical_unchecked_preview_cannot_read_or_create_instructions(monkeypatch):

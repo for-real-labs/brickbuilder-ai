@@ -85,7 +85,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
     if owned and source.get('has_parts_inventory'):
         try:
             bucket = generation_storage.client.storage.from_('generation-output')
-            data = await asyncio.to_thread(bucket.download, f'{request.generation_id}/parts-inventory.json')
+            inventory_id = source.get('restored_from_id') or request.generation_id
+            data = await asyncio.to_thread(bucket.download, f'{inventory_id}/parts-inventory.json')
             if len(data) > 2 * 1024 * 1024:
                 raise ValueError('Oversized inventory')
             request.parts_inventory = PartsInventory.model_validate_json(data)
@@ -94,7 +95,9 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
     request._nova_input_type = source.get('input_type') or infer_input_type(source.get('endpoint'))
     request._nova_input_format = source.get('input_format')
     request._nova_uploaded_source = source.get('endpoint') in {'uploadLdraw', 'glbToBricks', 'objToBricks'}
-    if owned and not request._nova_uploaded_source:
+    # Restored geometry starts a fresh chat. The original chat may have since
+    # advanced past the restored snapshot.
+    if owned and not request._nova_uploaded_source and not source.get('restored_from_id'):
         try:
             request._nova_session = await _owned_session(request.generation_id, auth_info)
         except HTTPException as exc:
@@ -326,7 +329,8 @@ async def get_nova_source(generation_id: str, auth_info: dict = Depends(get_user
     filename = "nova-draft.zip" if draft else "nova-source.zip"
     try:
         bucket = generation_storage.client.storage.from_("generation-output")
-        data = await asyncio.to_thread(bucket.download, f"{generation_id}/{filename}")
+        artifact_id = generation.get('restored_from_id') or generation_id
+        data = await asyncio.to_thread(bucket.download, f"{artifact_id}/{filename}")
     except Exception as exc:
         raise HTTPException(status_code=404, detail="Nova source archive not found") from exc
     return Response(data, media_type="application/zip", headers={"Content-Disposition": 'attachment; filename="nova-draft.zip"' if draft else 'attachment; filename="nova-set-source.zip"',

@@ -10,6 +10,7 @@ import pytest
 DURATION_MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000001_generation_duration.sql").read_text()
 MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000002_generation_versions.sql").read_text()
 REMOVE_SOURCE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000003_remove_generation_source.sql").read_text()
+RESTORE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261118010000_restore_generation_revision.sql").read_text()
 
 
 @pytest.fixture(scope="module")
@@ -25,6 +26,7 @@ def db(server):
         conn.execute("drop view if exists public.latest_generations")
         conn.execute("drop table if exists public.generations cascade")
         conn.execute("drop function if exists public.assign_generation_version()")
+        conn.execute("drop function if exists public.finalize_generation_restore()")
         for role in ["anon", "authenticated", "service_role"]:
             if not conn.execute("select 1 from pg_roles where rolname = %s", (role,)).fetchone():
                 conn.execute(f"create role {role}")
@@ -55,6 +57,46 @@ def migrate(db):
 def versions(db):
     return {id: (group, version) for id, group, version in db.execute(
         "select id, generation_id, version from public.generations")}
+
+
+def test_restore_validates_owner_and_keeps_geometry_type_and_version_order(db):
+    root = insert(db, endpoint="novaToBricks", date="2026-09-01")
+    latest = insert(db, parent=root, endpoint="novaToBricks", date="2026-09-02")
+    migrate(db)
+    db.execute(REMOVE_SOURCE)
+    db.execute("alter table generations add column ldr_url text default 'geometry', add column mode text default 'all_parts'")
+    db.execute(RESTORE)
+    db.execute("""create function check_restore_admission() returns trigger language plpgsql as $$
+        begin
+          if new.restored_from_id is not null and new.endpoint <> 'updateModel' then
+            raise exception 'restore would use credits';
+          end if;
+          return new;
+        end; $$""")
+    db.execute("create trigger check_restore_admission before insert on generations for each row execute function check_restore_admission()")
+
+    def restore(source, model=root):
+        return db.execute("""insert into generations (id, generation_id, user_id, endpoint, restored_from_id)
+            values (%s, %s, 'owner', 'updateModel', %s) returning id, version, endpoint, mode, restored_from_id""",
+            (uuid4(), model, source)).fetchone()
+
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_RESTORE_NOT_OLDER"):
+        restore(latest)
+    other = db.execute("insert into generations (id,user_id) values (%s,'other') returning id", (uuid4(),)).fetchone()[0]
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_RESTORE_SOURCE_CHANGED"):
+        restore(other)
+    db.execute("grant select, insert on generations to authenticated")
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_RESTORE_FORBIDDEN"), db.transaction():
+        db.execute("set local role authenticated")
+        restore(root)
+
+    restored = restore(root)
+    assert restored[1:] == (3, "novaToBricks", "all_parts", root)
+    assert restore(latest)[1] == 4
+    assert restore(restored[0])[1:] == (5, "novaToBricks", "all_parts", root)
+    assert versions(db)[root] == (root, 1) and versions(db)[latest] == (root, 2)
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_RESTORE_FORBIDDEN"):
+        db.execute("update generations set restored_from_id = %s where id = %s", (other, restored[0]))
 
 
 def test_backfill_mixed_edits_and_independent_models_with_identical_images(db):

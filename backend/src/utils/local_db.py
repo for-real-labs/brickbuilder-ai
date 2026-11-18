@@ -487,7 +487,7 @@ def _create_local_generation_versions(conn) -> None:
         conn.execute("""
             CREATE OR REPLACE FUNCTION assign_local_generation_version() RETURNS trigger
             LANGUAGE plpgsql AS $$
-            DECLARE model_id text; next_version integer := 1;
+            DECLARE model_id text; next_version integer := 1; source jsonb;
             BEGIN
                 model_id := coalesce(new.doc->>'generation_id', new.doc->>'id');
                 IF model_id <> new.doc->>'id' THEN
@@ -500,6 +500,20 @@ def _create_local_generation_versions(conn) -> None:
                     SELECT coalesce(max((doc->>'version')::integer), 0) + 1
                     INTO next_version FROM generations WHERE doc->>'generation_id' = model_id;
                 END IF;
+                IF new.doc->>'restored_from_id' IS NOT NULL THEN
+                    SELECT doc INTO source FROM generations
+                    WHERE id = new.doc->>'restored_from_id' AND doc->>'generation_id' = model_id
+                      AND doc->>'user_id' = new.doc->>'user_id' AND doc->>'user_type' = new.doc->>'user_type'
+                      AND doc->>'status' = 'completed' AND coalesce(doc->>'ldr_url', doc->>'mpd_url') IS NOT NULL;
+                    IF NOT FOUND THEN RAISE EXCEPTION 'BB_RESTORE_SOURCE_CHANGED'; END IF;
+                    IF NOT EXISTS (
+                        SELECT 1 FROM generations WHERE doc->>'generation_id' = model_id
+                          AND doc->>'user_id' = new.doc->>'user_id' AND doc->>'user_type' = new.doc->>'user_type'
+                          AND doc->>'status' = 'completed' AND (doc->>'version')::integer > (source->>'version')::integer
+                    ) THEN RAISE EXCEPTION 'BB_RESTORE_NOT_OLDER'; END IF;
+                    new.doc := new.doc || jsonb_build_object('endpoint', source->'endpoint',
+                        'restored_from_id', coalesce(source->>'restored_from_id', source->>'id'));
+                END IF;
                 new.doc := new.doc - 'source_generation_id';
                 new.doc := new.doc || jsonb_build_object('generation_id', model_id, 'version', next_version);
                 RETURN new;
@@ -509,6 +523,8 @@ def _create_local_generation_versions(conn) -> None:
             FOR EACH ROW EXECUTE FUNCTION assign_local_generation_version();
             CREATE UNIQUE INDEX IF NOT EXISTS generations_model_version_idx
               ON generations ((doc->>'generation_id'), ((doc->>'version')::integer));
+            CREATE UNIQUE INDEX IF NOT EXISTS generations_restore_id_idx
+              ON generations (id) WHERE doc->>'restored_from_id' IS NOT NULL;
             CREATE OR REPLACE VIEW latest_generations AS
               SELECT DISTINCT ON (doc->>'user_id', doc->>'user_type', doc->>'generation_id') pk, id, doc
               FROM generations ORDER BY doc->>'user_id', doc->>'user_type', doc->>'generation_id',
@@ -698,7 +714,7 @@ def _create_local_guest_ip_limit(conn) -> None:
         CREATE OR REPLACE FUNCTION public.enforce_generation_guest_limit()
         RETURNS trigger LANGUAGE plpgsql AS $$
         BEGIN
-            IF NEW.doc->>'user_type' = 'anonymous' THEN
+            IF NEW.doc->>'user_type' = 'anonymous' AND NEW.doc->>'restored_from_id' IS NULL THEN
                 PERFORM public.reserve_guest_generation(NEW.doc->>'user_id', NEW.doc->>'user_type');
                 PERFORM public.reserve_guest_ip_generation(NEW.doc->>'guest_ip_hash');
             END IF;
