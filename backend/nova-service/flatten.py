@@ -32,6 +32,32 @@ def connection_neighbors(count, contacts):
     return neighbors
 
 
+def connection_groups(occurrences, contacts):
+    """Sample each disconnected assembly so the agent can isolate and retest its mounts."""
+    neighbors = connection_neighbors(len(occurrences), contacts)
+    seen, groups = set(), []
+    for index in range(len(occurrences)):
+        if index in seen:
+            continue
+        stack = [index]
+        seen.add(index)
+        size = 0
+        while stack:
+            size += 1
+            adjacent = neighbors[stack.pop()] - seen
+            seen.update(adjacent)
+            stack.extend(adjacent)
+        groups.append((size, index))
+    groups.sort(key=lambda group: (-group[0], group[1]))
+    samples = []
+    for size, index in groups[:50]:
+        part = occurrences[index]
+        samples.append({'size': size, 'occurrence': index, 'part': part.part_code[:80],
+                        'section': part.path[-1].model.name[:120],
+                        'position': [float(getattr(part.position, axis)) for axis in ('x', 'y', 'z')]})
+    return {'group_count': len(groups), 'groups': samples}
+
+
 def contact_axes(occurrences, contacts, parts):
     """Carry the matched connector axes into the construction evidence.
 
@@ -43,10 +69,13 @@ def contact_axes(occurrences, contacts, parts):
 
     features, result = {}, []
     for contact in contacts:
-        if set(contact.get('kinds', [])) != {'stud', 'stud_receptacle'}:
+        kinds = contact.get('kinds', [])
+        axle = ('axle' in kinds and ('pin_hole' in kinds or 'axle_hole' in kinds)
+                and all(fid and fid.startswith('technic:') for fid in contact.get('feature_ids', [])))
+        if not axle and set(kinds) != {'stud', 'stud_receptacle'}:
             result.append(contact)
             continue
-        axes = []
+        axes, centres = [], []
         for index, feature_id in zip(contact['instances'], contact['feature_ids']):
             occurrence = occurrences[index]
             code = occurrence.part_code.casefold()
@@ -56,12 +85,20 @@ def contact_axes(occurrences, contacts, parts):
                 entry = definition(local)
                 if entry is not None:
                     ports.extend(local_features(canonical(code), entry))
-                features[code] = {feature.feature_id: feature.axis for feature in ports}
+                features[code] = {feature.feature_id: feature for feature in ports}
             if feature_id not in features[code]:
                 raise DisconnectedInstructions('Matched connector axis evidence is unavailable')
-            axis = occurrence.matrix * features[code][feature_id]
+            feature = features[code][feature_id]
+            axis = occurrence.matrix * feature.axis
+            if axle:
+                centres.append(occurrence.position + occurrence.matrix * feature.position)
             axes.append([float(axis.x), float(axis.y), float(axis.z)])
-        result.append(dict(contact, axes=axes))
+        enriched = dict(contact, axes=axes)
+        if axle:
+            male = kinds.index('axle')
+            hole = centres[1 - male]
+            enriched['shaft_station'] = sum(a * b for a, b in zip(axes[male], (hole.x, hole.y, hole.z)))
+        result.append(enriched)
     return result
 
 
@@ -125,6 +162,37 @@ def trapped_parts(index, placed, above, below):
                     frontier.append(parent)
         return found
     return enclosed(above) | enclosed(below)
+
+
+def shaft_stacks(contacts):
+    """Index the measured positions of receivers along each reviewed axle."""
+    shafts = {}
+    for contact in contacts:
+        if 'shaft_station' in contact:
+            male = contact['kinds'].index('axle')
+            shaft, receiver = contact['instances'][male], contact['instances'][1 - male]
+            shafts.setdefault(shaft, []).append((contact['shaft_station'], receiver))
+    by_receiver = {}
+    for shaft, stack in shafts.items():
+        by_receiver.setdefault(shaft, []).append((shaft, None, stack))
+        for at, receiver in stack:
+            by_receiver.setdefault(receiver, []).append((shaft, at, stack))
+    return by_receiver
+
+
+def trapped_on_shaft(index, placed, stacks):
+    blocked = set()
+    for shaft, at, stack in stacks.get(index, ()):
+        if shaft != index and shaft not in placed:
+            continue
+        seated = [other for other, receiver in stack if receiver in placed]
+        if at is not None:
+            seated.append(at)
+        if len(seated) > 1:
+            low, high = min(seated), max(seated)
+            blocked.update(receiver for other, receiver in stack
+                           if low + 1e-6 < other < high - 1e-6 and receiver not in placed and receiver != index)
+    return blocked
 
 
 def baseplate_foundation(occurrences, geometry, parts):
@@ -195,6 +263,7 @@ def connected_instruction_order(occurrences, contacts, foundation=()):
     if not occurrences:
         raise DisconnectedInstructions('Missing physical placements')
     above, below = stud_neighbors(occurrences, contacts)
+    stacks = shaft_stacks(contacts)
     foundation = validate_foundation(neighbors, foundation)
     seed = max(range(len(occurrences)), key=lambda i: (occurrences[i].position.y, -i))
     def priority(index):
@@ -208,7 +277,7 @@ def connected_instruction_order(occurrences, contacts, foundation=()):
     while frontier:
         _, _, index = heapq.heappop(frontier)
         scheduled.remove(index)
-        blockers = trapped_parts(index, placed, above, below)
+        blockers = trapped_parts(index, placed, above, below) | trapped_on_shaft(index, placed, stacks)
         if blockers:
             for middle in blockers:
                 waiting[middle].add(index)
@@ -237,6 +306,7 @@ def verify_instruction_order(order, contacts, occurrences, foundation=()):
         raise ValueError('Instruction order must contain every physical placement exactly once')
     foundation = validate_foundation(neighbors, foundation)
     above, below = stud_neighbors(occurrences, contacts)
+    stacks = shaft_stacks(contacts)
     placed = set()
     for index in order:
         if index not in foundation and foundation - placed:
@@ -245,7 +315,7 @@ def verify_instruction_order(order, contacts, occurrences, foundation=()):
             raise DisconnectedInstructions('Placement requires a later connection; repair the model')
         # Deliberately validate the prefix directly rather than trust the
         # planner's incremental blocked-candidate queue.
-        if trapped_parts(index, placed, above, below):
+        if trapped_parts(index, placed, above, below) or trapped_on_shaft(index, placed, stacks):
             raise DisconnectedInstructions('Placement closes over an unplaced supported part; repair the sequence')
         placed.add(index)
 
@@ -412,6 +482,7 @@ def main():
             # failures still use the fixed message in the .error sidecar.
             output.with_suffix('.review.json').write_text(json.dumps({
                 'error': str(exc), 'remaining_count': len(exc.remaining),
+                **connection_groups(occurrences, contacts),
                 'remaining_parts': [{'occurrence': index, 'part': occurrences[index].part_code,
                                      'position': [float(getattr(occurrences[index].position, axis))
                                                   for axis in ('x', 'y', 'z')]}

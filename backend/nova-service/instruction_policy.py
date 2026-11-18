@@ -93,7 +93,7 @@ def install_instruction_policy(tools, settings):
         return
     schema, publish = tools.TOOLS['publish_model']
 
-    async def checked_publish(ctx, path: str, name: str | None = None):
+    async def check_source(ctx, path):
         source = tools.resolve_path(ctx, path, write=True)
         if not source.is_file() or source.suffix.lower() not in {'.mpd', '.ldr'}:
             raise tools.ToolError('Publish a self-contained .mpd or .ldr from the output folder')
@@ -109,6 +109,32 @@ def install_instruction_policy(tools, settings):
             report = await asyncio.to_thread(review_instructions, content, TOOLKIT_ROOT, settings.LDRAW_DIR)
         except (ValueError, OSError, subprocess.SubprocessError):
             raise tools.ToolError('Instruction review could not finish. Publication is blocked; retry the check.') from None
+        return source, content, report
+
+    async def check_assembly(ctx, path: str):
+        _, _, report = await check_source(ctx, path)
+        return tools.ToolResult(json.dumps(report))
+
+    check_schema = {
+        'type': 'function',
+        'function': {
+            'name': 'check_assembly',
+            'description': (
+                'Run the independent publication geometry and instruction checks on a self-contained '
+                'output MPD or LDR without publishing it. For mechanical builds, test a small working '
+                'assembly first (track, sprocket, axle and frame, or boom pivot). If it fails, inspect '
+                'the reported parts and redesign their mounts using supported connectors or a reference '
+                'mechanism. Test the joined assemblies before adding bodywork. A pass checks the static '
+                'assembly sequence; verify the requested mechanism travel separately.'
+            ),
+            'parameters': {'type': 'object', 'properties': {'path': {'type': 'string'}}, 'required': ['path']},
+        },
+    }
+    tools.TOOLS['check_assembly'] = (check_schema, check_assembly)
+    tools.TOOL_SCHEMAS.append(check_schema)
+
+    async def checked_publish(ctx, path: str, name: str | None = None):
+        source, content, report = await check_source(ctx, path)
         if report.get('passed') is not True:
             try:
                 await asyncio.to_thread(save_draft, ctx, content, report, settings.LDRAW_DIR)
@@ -129,7 +155,7 @@ def install_instruction_policy(tools, settings):
 
     schema['function']['description'] += (
         ' Publication requires complete connector evidence and a connected instruction insertion sequence. '
-        'Repair reported collisions and invalid or remaining pieces before retrying. '
+        'Use check_assembly on the mechanical core before detailing it. Repair and recheck each joint. '
         'Curved tiles and side studs need clearance: an attached part can still intersect solid plastic. '
         'Validation errors cannot be waived by visual review.')
     tools.TOOLS['publish_model'] = (schema, checked_publish)

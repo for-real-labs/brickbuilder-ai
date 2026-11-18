@@ -21,7 +21,7 @@ def publishing(tmp_path):
     source = tmp_path / 'draft.mpd'
     source.write_text('captured model')
     publisher = AsyncMock(side_effect=lambda ctx, path, name: Path(path).read_text())
-    tools = SimpleNamespace(TOOLS={'publish_model': ({'function': {'description': 'Publish'}}, publisher)},
+    tools = SimpleNamespace(TOOL_SCHEMAS=[], TOOLS={'publish_model': ({'function': {'description': 'Publish'}}, publisher)},
         resolve_path=lambda ctx, path, **kwargs: Path(path), ToolError=ToolError,
         ToolResult=lambda content: SimpleNamespace(content=content))
     ctx = SimpleNamespace(work_dir=tmp_path, emit=lambda *args: None)
@@ -115,3 +115,14 @@ def test_rejected_snapshot_archive_contains_expanded_bom_and_exact_report(tmp_pa
         assert archive.read('parts.csv').decode().splitlines() == ['Part,Color,Quantity', '44294.dat,0,2']
         assert json.loads(archive.read('verification.json')) == report
         assert 'Unverified draft' in archive.read('README.txt').decode()
+
+@pytest.mark.parametrize('passed', [False, True])
+def test_agent_can_review_before_publishing_without_saving_a_partial_model(tmp_path, monkeypatch, passed):
+    source, publisher, tools, ctx = publishing(tmp_path)
+    report = {'passed': passed}
+    monkeypatch.setattr(policy, 'review_instructions', lambda *args: report)
+    schema, check = tools.TOOLS['check_assembly']
+    assert schema in tools.TOOL_SCHEMAS
+    assert json.loads(asyncio.run(check(ctx, str(source))).content) == report
+    assert not (tmp_path / '.brickbuilder-draft.zip').exists()
+    publisher.assert_not_awaited()

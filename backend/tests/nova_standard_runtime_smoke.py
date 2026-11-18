@@ -34,7 +34,9 @@ async def offline(*args, **kwargs):
 model_discovery._fetch_json = offline
 calls = []
 responses = [
+    ('check_assembly', {'path': 'output/disconnected.mpd'}),
     ('run_toolkit', {'arguments': ['build', 'output/plan.json', '--output', 'output/model.mpd', '--report', 'output/build.json']}),
+    ('check_assembly', {'path': 'output/model.mpd'}),
     ('publish_model', {'path': 'output/model.mpd'}),
     ('view_image', {}),
     (None, 'Visual review complete. Done.'),
@@ -72,6 +74,9 @@ async def run():
         [{'id': 'base', 'purpose': 'Foundation', 'ref': '3001.dat', 'colour': 4, 'at': [0, 0, 0]}],
         [{'id': 'top', 'purpose': 'Upper brick', 'ref': '3001.dat', 'colour': 4, 'on': 'base'}],
     ]}]}
+    (work / 'disconnected.mpd').write_text('0 FILE model.ldr\n0 Repair regression\n'
+        '1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n'
+        '1 4 400 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n')
     (work / 'plan.json').write_text(json.dumps(plan))
     parts_policy.policy.configure(store, chat['id'], 'part_id,color_id,max_quantity\n3001,4,2\n')
     generation = uuid.uuid4()
@@ -84,8 +89,11 @@ async def run():
     await agent._runs[chat['id']].task
     messages = store.messages(chat['id'])
     assert not any(m.get('_error') for m in messages), messages
-    assert messages[-1]['content'] == 'Visual review complete. Done.' and len(calls) == 4
+    assert messages[-1]['content'] == 'Visual review complete. Done.' and len(calls) == len(responses)
     assert 'PREVIEW WORKFLOW OVERRIDE' not in calls[0]['messages'][0]['content']
+    failed, repaired = [json.loads(m['content']) for m in messages if m.get('name') == 'check_assembly']
+    assert failed['passed'] is False and failed['group_count'] == 2
+    assert repaired['passed'] is True
     publication = json.loads(next(m['content'] for m in messages if m.get('name') == 'publish_model'))
     assert publication['checks_passed'] and publication['validation'] and publication['preview'] and publication['bom']
     assert json.loads((work / 'build.json').read_text())['geometry']['complete']
@@ -163,7 +171,15 @@ async def run():
         feedback = await asyncio.to_thread(review_instructions, (header + placements).encode(), TOOLKIT_ROOT, settings.LDRAW_DIR)
         assert feedback['passed'] is False, feedback
         assert any(d['code'] == 'assembly.material_overlap' for d in feedback['diagnostics']), feedback
-    assert len(worker.generation_usage(chat['id'], generation)['calls']) == 4
+    shaft = '1 0 0 0 0 1 0 0 0 1 0 0 0 1 44294.dat\n'
+    def sprocket(y):
+        return f'1 0 0 {y} 0 0 0 1 0 1 0 -1 0 0 57519.dat\n'
+    bearing = '1 14 30 -10 0 0 0 1 0 1 0 -1 0 0 3703.dat\n'
+    for offset, expected in [(0, True), (12, False)]:
+        source = (header + shaft + sprocket(offset) + bearing).encode()
+        feedback = await asyncio.to_thread(review_instructions, source, TOOLKIT_ROOT, settings.LDRAW_DIR)
+        assert feedback['passed'] is expected, feedback
+    assert len(worker.generation_usage(chat['id'], generation)['calls']) == len(responses)
     # Historical preview metadata survives the rollback, but cannot be
     # exported through the restored complete-generation contract.
     legacy = {**model, 'id': 'legacy-preview', 'validation_status': 'preview'}
