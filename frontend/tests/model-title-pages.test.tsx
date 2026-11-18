@@ -208,7 +208,7 @@ it('shows image-free history on dashboard cards and opens the selected revision 
   expect(container.querySelector('output')?.textContent).toBe('/?id=old&exact=1');
 });
 
-it('manages dashboard versions with confirmation for both delete scopes', async () => {
+it('confirms dashboard restore and both delete scopes', async () => {
   const history = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage')
     .mockResolvedValue({ generations: revisionHistory, total_count: 2 });
   const remove = vi.spyOn(GetGenerationsByImageApiService, 'deleteGeneration')
@@ -232,7 +232,13 @@ it('manages dashboard versions with confirmation for both delete scopes', async 
     });
     await act(async () => getButton('View Edits').click());
     expect([...container.querySelectorAll('button')].filter(button => button.textContent?.includes('Restore this version'))).toHaveLength(1);
-    await act(async () => getButton('Restore this version').click());
+    act(() => getButton('Restore this version').click());
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('h2')?.textContent).toBe('Restore version 3?');
+    act(() => getButton('Cancel', dialog).click());
+    expect(restore).not.toHaveBeenCalled();
+    act(() => getButton('Restore this version').click());
+    await act(async () => getButton('Restore version', dialog).click());
     expect(restore).toHaveBeenCalledWith('old', expect.any(String), 'token');
     expect(modelsChanged).toHaveBeenCalledTimes(1);
 

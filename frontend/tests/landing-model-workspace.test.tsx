@@ -1346,10 +1346,20 @@ it('keeps all edit versions in order when opening an older revision', async () =
   const row = (id: string, version: number, status = 'completed'): GenerationIteration => ({
     id, version, status, generation_id: 'family', user_id: 'builder', prompt: id, created_at: '2026-11-04T00:00:00Z',
   });
-  const versions = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage').mockResolvedValue({
-    generations: [row('original', 1), row('newer', 5), row('failed', 3, 'failed'), row('castle', 4), row('second', 2)],
-    total_count: 5,
+  const revisions = [row('original', 1), row('newer', 5), row('failed', 3, 'failed'), row('castle', 4), row('second', 2)];
+  const versions = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage')
+    .mockImplementation(async () => ({ generations: [...revisions], total_count: revisions.length }));
+  const restore = vi.spyOn(GetGenerationsByImageApiService, 'restoreVersion').mockImplementation(async () => {
+    revisions.push(row('restored', 6));
+    return 'restored';
   });
+  const remove = vi.spyOn(GetGenerationsByImageApiService, 'deleteGeneration').mockImplementation(async () => {
+    revisions.pop();
+    return 'newer';
+  });
+  const button = (label: string) => container.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!;
+  const confirmation = () => container.querySelector<HTMLDialogElement>('dialog[aria-describedby][open]')!;
+  const confirmButton = (label: string) => [...confirmation().querySelectorAll('button')].find(button => button.textContent === label)!;
   try {
     await act(async () => root.render(<LandingPage />));
     const toolbar = container.querySelector('.landing-model-bottom-toolbar')!;
@@ -1360,19 +1370,40 @@ it('keeps all edit versions in order when opening an older revision', async () =
     await act(async () => [...toolbar.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!.click());
     const dialog = toolbar.querySelector<HTMLDialogElement>('.landing-previous-edits-dialog')!;
     expect(dialog.open).toBe(true);
-    const rows = [...dialog.querySelectorAll('li button')];
-    expect(rows.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
+    const rows = [...dialog.querySelectorAll('li')];
+    const titles = (items: HTMLLIElement[]) => items.map(item => item.querySelector('div > span:nth-child(2) > span:nth-child(2)')?.textContent);
+    expect(titles(rows)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
     expect(rows[1].getAttribute('aria-current')).toBe('true');
-    expect(rows[2].disabled).toBe(true);
-    expect(toolbar.textContent).not.toMatch(/Restore this version|Delete model|Delete version/);
-    await act(async () => rows[4].click());
+    expect(button('View version 3').disabled).toBe(true);
+    expect(button('Restore version 5').disabled).toBe(true);
+    expect(button('Delete version 5').disabled).toBe(false);
+    expect(toolbar.textContent).not.toContain('Delete model');
+    await act(async () => button('View version 1').click());
     expect(query.value).toBe('id=original&exact=1');
     const previous = [...container.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!;
     await act(async () => previous.click());
-    const reopened = [...container.querySelectorAll<HTMLButtonElement>('.landing-previous-edits-dialog li button')];
-    expect(reopened.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
+    const reopened = [...container.querySelectorAll<HTMLLIElement>('.landing-previous-edits-dialog li')];
+    expect(titles(reopened)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
     expect(reopened[4].getAttribute('aria-current')).toBe('true');
-  } finally { versions.mockRestore(); }
+    act(() => button('Restore version 1').click());
+    expect(confirmation().querySelector('h2')?.textContent).toBe('Restore version 1?');
+    act(() => confirmButton('Cancel').click());
+    expect(restore).not.toHaveBeenCalled();
+    act(() => button('Restore version 1').click());
+    await act(async () => confirmButton('Restore version').click());
+    expect(restore).toHaveBeenCalledWith('original', expect.any(String), undefined);
+    expect(query.value).toBe('id=restored&exact=1');
+
+    await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!.click());
+    act(() => button('Delete version 6').click());
+    expect(confirmation().querySelector('h2')?.textContent).toBe('Delete version 6?');
+    act(() => confirmButton('Cancel').click());
+    expect(remove).not.toHaveBeenCalled();
+    act(() => button('Delete version 6').click());
+    await act(async () => confirmButton('Delete version').click());
+    expect(remove).toHaveBeenCalledWith('restored', 'version', undefined);
+    expect(query.value).toBe('id=newer&exact=1');
+  } finally { versions.mockRestore(); restore.mockRestore(); remove.mockRestore(); }
 });
 
 it.each(['llmToBricks', 'novaToBricks'])('restores and locks the saved mode and maximum when reopening %s', async endpoint => {
