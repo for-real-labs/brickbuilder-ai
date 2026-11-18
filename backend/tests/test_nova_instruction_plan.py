@@ -344,3 +344,22 @@ def test_validation_errors_cannot_be_published_as_warnings(tmp_path, code):
 
 def test_coverage_warnings_do_not_claim_or_require_full_material_proof(tmp_path):
     flatten.require_valid_geometry([{'code': 'coverage.collision_review', 'severity': 'warning'}], tmp_path / 'instructions.ldr')
+
+def test_repair_summary_distinguishes_connected_subassemblies_from_loose_parts():
+    parts = placements(5)
+    for index, part in enumerate(parts):
+        part.part_code = str(index)
+        part.path[-1].model.name = 'crawler.ldr'
+        part.position.x = part.position.z = 0
+    report = flatten.connection_groups(parts, edges((0, 3), (1, 2)))
+    assert report['group_count'] == 3
+    assert [(g['size'], g['occurrence']) for g in report['groups']] == [(2, 0), (2, 1), (1, 4)]
+    assert report['groups'][-1]['section'] == 'crawler.ldr'
+
+def test_axle_receivers_remain_insertable_between_retaining_bushes():
+    parts = placements(4)
+    contacts = [dict(instances=[0, index], status='confirmed', kinds=['axle', 'axle_hole'],
+                     shaft_station=station) for index, station in [(1, -50), (2, 50), (3, 30)]]
+    assert flatten.connected_instruction_order(parts, contacts) == [0, 1, 3, 2]
+    with pytest.raises(flatten.DisconnectedInstructions):
+        flatten.verify_instruction_order([0, 1, 2, 3], contacts, parts)
