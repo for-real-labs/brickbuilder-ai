@@ -40,7 +40,7 @@ async def get_generation_like_status(
             result = (
                 generation_storage.client
                 .table("generations")
-                .select("id, is_community, like_count")
+                .select("id, is_community, like_count, deleted_at")
                 .eq("id", request.generation_id)
                 .execute()
             )
@@ -51,12 +51,12 @@ async def get_generation_like_status(
             result = (
                 generation_storage.client
                 .table("generations")
-                .select("id, is_community")
+                .select("id, is_community, deleted_at")
                 .eq("id", request.generation_id)
                 .execute()
             )
 
-        if not result.data:
+        if not result.data or result.data[0].get("deleted_at"):
             raise HTTPException(
                 status_code=404,
                 detail=f"Generation {request.generation_id} not found",

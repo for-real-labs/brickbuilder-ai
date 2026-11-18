@@ -53,6 +53,20 @@ export interface GetGenerationsByImageResponse {
 }
 
 export class GetGenerationsByImageApiService {
+  static async deleteGeneration(generationId: string, scope: 'version' | 'model', authToken: string | undefined): Promise<string | null> {
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (authToken) headers.Authorization = `Bearer ${authToken}`;
+    const response = await apiFetch(`${API_BASE_URL}/generation/${encodeURIComponent(generationId)}/delete`, {
+      method: 'POST', headers, body: JSON.stringify({ scope }),
+    });
+    if (!response.ok) throw new Error(await readApiError(response));
+    const { next_generation_id } = await response.json();
+    if (next_generation_id !== null && typeof next_generation_id !== 'string') {
+      throw new Error('Could not confirm the deletion. Please try again.');
+    }
+    return next_generation_id;
+  }
+
   static async restoreVersion(generationId: string, requestId: string, authToken: string | undefined): Promise<string> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = `Bearer ${authToken}`;

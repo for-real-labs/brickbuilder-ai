@@ -154,7 +154,8 @@
 .landing-page:has(.landing-model-workspace, .landing-generation-workspace) .pet-dialogue { max-height: min(540px, 60dvh); }
 .landing-page .pet-dialogue:has(.pet-completed-builds) { max-height: min(480px, 58dvh); }
 @media (max-width: 639px) {
-  .landing-model-panel:not([data-expanded="true"]):has(> .landing-model-bottom-toolbar > .landing-restore-version) { --landing-extra-toolbar-height: 52px; }
+  .landing-model-panel:not([data-expanded="true"]):has(> .landing-model-bottom-toolbar > :is(.landing-restore-version, .landing-delete-model)) { --landing-extra-toolbar-height: 52px; }
+  .landing-model-panel:not([data-expanded="true"]):has(.landing-restore-version):has(.landing-delete-model) { --landing-extra-toolbar-height: 102px; }
   .landing-page .landing-model-workspace,
   .landing-page .landing-generation-workspace { max-height: calc(380px - var(--landing-extra-toolbar-height, 0px)); }
 }

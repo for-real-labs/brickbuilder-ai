@@ -118,7 +118,7 @@ def test_all_edit_requests_pass_parent_and_actual_owner_id(monkeypatch, module, 
 @pytest.mark.parametrize("status_filter, table", [(None, "latest_generations"), (["processing"], "generations")])
 def test_storage_selects_latest_models_but_each_active_job(status_filter, table):
     query = Mock()
-    for method in ["select", "eq", "in_", "order", "range"]:
+    for method in ["select", "eq", "in_", "is_", "order", "range"]:
         getattr(query, method).return_value = query
     query.execute.return_value = SimpleNamespace(data=[{"id": "latest"}], count=1)
     storage = GenerationStorage.__new__(GenerationStorage)
@@ -133,7 +133,7 @@ def test_storage_selects_latest_models_but_each_active_job(status_filter, table)
 
 def test_history_storage_keeps_versions_beyond_postgrest_page_limit():
     query = Mock()
-    for method in ["select", "eq", "order", "range"]:
+    for method in ["select", "eq", "is_", "order", "range"]:
         getattr(query, method).return_value = query
     query.execute.side_effect = [SimpleNamespace(data=[{"version": v} for v in range(501, 1, -1)]),
                                  SimpleNamespace(data=[{"version": 1}])]

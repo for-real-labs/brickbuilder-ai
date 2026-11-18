@@ -21,14 +21,15 @@ begin
   select * into source from public.generations g
   where g.id = new.restored_from_id and g.generation_id = new.generation_id
     and g.user_id = new.user_id and g.user_type = new.user_type
-    and g.status = 'completed' and (g.ldr_url is not null or to_jsonb(g)->>'mpd_url' is not null);
+    and g.status = 'completed' and to_jsonb(g)->>'deleted_at' is null
+    and (g.ldr_url is not null or to_jsonb(g)->>'mpd_url' is not null);
   if not found then raise exception 'BB_RESTORE_SOURCE_CHANGED'; end if;
 
   -- assign_generation_version already holds the model's advisory lock.
   if not exists (
     select 1 from public.generations g where g.generation_id = new.generation_id
       and g.user_id = new.user_id and g.user_type = new.user_type
-      and g.status = 'completed' and g.version > source.version
+      and g.status = 'completed' and to_jsonb(g)->>'deleted_at' is null and g.version > source.version
   ) then raise exception 'BB_RESTORE_NOT_OLDER'; end if;
 
   new.endpoint := source.endpoint;

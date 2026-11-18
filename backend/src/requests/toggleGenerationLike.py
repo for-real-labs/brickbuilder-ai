@@ -61,12 +61,12 @@ async def toggle_generation_like(
         generation_result = (
             generation_storage.client
             .table("generations")
-            .select("id, is_community")
+            .select("id, is_community, deleted_at")
             .eq("id", request.generation_id)
             .execute()
         )
 
-        if not generation_result.data:
+        if not generation_result.data or generation_result.data[0].get("deleted_at"):
             raise HTTPException(
                 status_code=404,
                 detail=f"Generation {request.generation_id} not found",

@@ -294,7 +294,7 @@ async def handle_checkout_session_completed(session):
                         
                         model_url = 'https://brickbuilder.ai/?' + urlencode({'id': generation_id, 'exact': '1'})
                         try:
-                            generation = await generation_storage.get_generation(generation_id) or {}
+                            generation = await generation_storage.get_generation(generation_id, include_deleted=True) or {}
                         except Exception:
                             logger.warning("Order preview unavailable; sending confirmation without it")
                             generation = {}

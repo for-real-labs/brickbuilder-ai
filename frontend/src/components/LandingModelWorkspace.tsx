@@ -23,7 +23,7 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, onConvertKit, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, onDeleteModel, onConvertKit, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
@@ -35,6 +35,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   onRenameRequest?: () => void;
   onNameSaved?: (id: string, name: string) => void;
   onViewPreviousEdit?: (id: string) => void;
+  onDeleteModel?: () => void;
   onConvertKit?: () => void;
   children: React.ReactNode;
 }) {
@@ -247,7 +248,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             {featureAccess !== 'allowed' && <PaidFeatureLock />}
           </button>
           {onViewPreviousEdit && <LandingPreviousEdits key={generation.generation_id} id={generation.generation_id}
-            token={accessToken} busy={busy} onView={onViewPreviousEdit} />}
+            token={accessToken} busy={busy} onView={onViewPreviousEdit} onDeleteModel={onDeleteModel} />}
           {generation.endpoint !== 'uploadLdraw' && <LandingCommunityAction key={generation.generation_id}
             id={generation.generation_id} busy={busy} onNameSaved={onNameSaved}
             preview={() => preview.current?.id === generation.generation_id ? preview.current.png : undefined} />}

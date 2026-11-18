@@ -1358,13 +1358,13 @@ it('keeps all edit versions in order when opening an older revision', async () =
     await act(async () => root.render(<LandingPage />));
     const toolbar = container.querySelector('.landing-model-bottom-toolbar')!;
     expect([...toolbar.querySelectorAll(':scope > button')].map(button => button.textContent)).toEqual([
-      'Show instructions', 'Previous edits', 'Post to Community',
+      'Show instructions', 'Previous edits', 'Delete model', 'Post to Community',
     ]);
     expect(toolbar.previousElementSibling?.classList.contains('landing-model-workspace')).toBe(true);
     await act(async () => [...toolbar.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!.click());
     const dialog = toolbar.querySelector<HTMLDialogElement>('.landing-previous-edits-dialog')!;
     expect(dialog.open).toBe(true);
-    const rows = [...dialog.querySelectorAll('li button')];
+    const rows = [...dialog.querySelectorAll<HTMLButtonElement>('.landing-version-view')];
     expect(rows.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
     expect(rows[1].getAttribute('aria-current')).toBe('true');
     expect(rows[2].disabled).toBe(true);
@@ -1372,13 +1372,13 @@ it('keeps all edit versions in order when opening an older revision', async () =
     expect(query.value).toBe('id=original&exact=1');
     const olderToolbar = container.querySelector('.landing-model-bottom-toolbar')!;
     expect([...olderToolbar.querySelectorAll(':scope > button')].map(button => button.textContent)).toEqual([
-      'Show instructions', 'Previous edits', 'Restore this version', 'Post to Community',
+      'Show instructions', 'Previous edits', 'Restore this version', 'Delete model', 'Post to Community',
     ]);
     const restore = olderToolbar.querySelector<HTMLButtonElement>('.landing-restore-version')!;
     expect(restore.disabled).toBe(false);
     const previous = [...container.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!;
     await act(async () => previous.click());
-    const reopened = [...container.querySelectorAll<HTMLButtonElement>('.landing-previous-edits-dialog li button')];
+    const reopened = [...container.querySelectorAll<HTMLButtonElement>('.landing-previous-edits-dialog .landing-version-view')];
     expect(reopened.map(button => button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['newer', 'castle', 'failed', 'second', 'original']);
     expect(reopened[4].getAttribute('aria-current')).toBe('true');
     expect(reopened[4].textContent).toContain('Version 1 · Viewing');
@@ -1393,9 +1393,48 @@ it('keeps all edit versions in order when opening an older revision', async () =
     expect(query.value).toBe('id=restored&exact=1');
     expect(container.querySelector('.landing-restore-version')).toBeNull();
     await act(async () => [...container.querySelectorAll('button')].find(button => button.textContent === 'Previous edits')!.click());
-    expect([...container.querySelectorAll('.landing-previous-edits-dialog li button')].map(button =>
+    expect([...container.querySelectorAll('.landing-previous-edits-dialog .landing-version-view')].map(button =>
       button.querySelector('span span:nth-child(2)')?.textContent)).toEqual(['restored', 'newer', 'castle', 'failed', 'second', 'original']);
   } finally { versions.mockRestore(); restoreVersion.mockRestore(); }
+});
+
+it('confirms version deletion, opens the newest remaining version and can delete the full model', async () => {
+  query.value = 'id=latest&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
+  const row = (id: string, version: number): GenerationIteration => ({
+    id, version, generation_id: 'family', user_id: 'builder', prompt: id, status: 'completed', created_at: '2026-11-04T00:00:00Z',
+  });
+  const revisions = [row('latest', 2), row('original', 1)];
+  const history = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage')
+    .mockImplementation(async () => ({ generations: [...revisions], total_count: revisions.length }));
+  const remove = vi.spyOn(GetGenerationsByImageApiService, 'deleteGeneration')
+    .mockRejectedValueOnce(new Error('Try again.'))
+    .mockImplementationOnce(async () => { revisions.shift(); return 'original'; })
+    .mockResolvedValueOnce(null);
+  const getButton = (name: string, scope: ParentNode = container) =>
+    Array.from(scope.querySelectorAll('button')).find(button => button.textContent?.trim() === name)!;
+  const dialog = () => container.querySelector('.landing-delete-confirmation[open]')!;
+  try {
+    await act(async () => root.render(<LandingPage />));
+    act(() => getButton('Previous edits').click());
+    const removeVersion = container.querySelector<HTMLButtonElement>('[aria-label="Delete version 2"]')!;
+    act(() => removeVersion.click());
+    expect(dialog().querySelector('h2')?.textContent).toBe('Delete version 2?');
+    act(() => getButton('Cancel', dialog()).click());
+    expect(remove).not.toHaveBeenCalled();
+    act(() => removeVersion.click());
+    await act(async () => getButton('Delete version', dialog()).click());
+    expect(dialog().querySelector('[role="alert"]')?.textContent).toBe('Try again.');
+    await act(async () => getButton('Delete version', dialog()).click());
+    expect(remove).toHaveBeenLastCalledWith('latest', 'version', undefined);
+    expect(query.value).toBe('id=original&exact=1');
+    expect(getButton('Previous edits')).toBeUndefined();
+    act(() => container.querySelector<HTMLButtonElement>('.landing-delete-model')!.click());
+    await act(async () => getButton('Delete model', dialog()).click());
+    expect(remove).toHaveBeenLastCalledWith('original', 'model', undefined);
+    expect(query.value).toBe('');
+    expect(container.querySelector('.landing-model-workspace')).toBeNull();
+  } finally { history.mockRestore(); remove.mockRestore(); }
 });
 
 it.each(['llmToBricks', 'novaToBricks'])('restores and locks the saved mode and maximum when reopening %s', async endpoint => {

@@ -12,10 +12,11 @@ _instruction_exports: dict[str, asyncio.Task[bytes]] = {}
 _instruction_load_slots = asyncio.Semaphore(2)
 
 
-async def get_nova_instructions(generation_id: str) -> Response:
+async def get_nova_instructions(generation_id: str, *, instruction_access: bool = False) -> Response:
     if generation_storage is None:
         raise HTTPException(503, 'Generation storage is unavailable')
-    row = await generation_storage.get_generation(generation_id)
+    row = await (generation_storage.get_generation(generation_id, include_deleted=True)
+                 if instruction_access else generation_storage.get_generation(generation_id))
     if not row or row.get('status') != 'completed' or row.get('endpoint') != 'novaToBricks':
         raise HTTPException(404, 'Nova instructions are unavailable')
     if row.get('nova_build_mode') == 'preview':

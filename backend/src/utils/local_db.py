@@ -364,6 +364,29 @@ class LocalSupabaseClient:
     def table(self, name: str) -> _QueryBuilder:
         return _QueryBuilder(self._conn, self._lock, name)
 
+    def delete_generation_revision(self, generation_id: str, owner: str, owner_type: str, whole_model: bool) -> dict:
+        with self._lock, self._conn.transaction():
+            owned = "doc->>'user_id' = %s and doc->>'user_type' = %s"
+            row = self._conn.execute(
+                f"select doc->>'generation_id' from generations where id = %s and {owned}",
+                (generation_id, owner, owner_type),
+            ).fetchone()
+            if not row:
+                raise ValueError('BB_DELETE_NOT_FOUND')
+            self._conn.execute('select pg_advisory_xact_lock(hashtextextended(%s, 0))', row)
+            family = f"doc->>'generation_id' = %s and {owned} and doc->>'deleted_at' is null"
+            scope = (row[0], owner, owner_type)
+            target = family if whole_model else f'{family} and id = %s'
+            target_args = scope if whole_model else (*scope, generation_id)
+            versions = self._conn.execute(f"select doc->>'status' from generations where {target} for update", target_args)
+            if any(status not in ('completed', 'failed', 'cancelled') for status, in versions):
+                raise ValueError('BB_DELETE_ACTIVE')
+            self._conn.execute(f"""update generations set doc = doc || jsonb_build_object(
+                'deleted_at', now(), 'is_community', false, 'notification_seen', true) where {target}""", target_args)
+            remaining = self._conn.execute(f"""select id from generations where {family} and doc->>'status' = 'completed'
+                order by (doc->>'version')::integer desc limit 1""", scope).fetchone()
+            return {'next_generation_id': remaining[0] if remaining else None}
+
 
 def _create_schema(conn) -> None:
     with conn.cursor() as cur:
@@ -495,7 +518,7 @@ def _create_local_generation_versions(conn) -> None:
                     IF NOT EXISTS (
                         SELECT 1 FROM generations WHERE doc->>'generation_id' = model_id
                           AND doc->>'user_id' = new.doc->>'user_id'
-                          AND doc->>'user_type' = new.doc->>'user_type'
+                          AND doc->>'user_type' = new.doc->>'user_type' AND doc->>'deleted_at' IS NULL
                     ) THEN RAISE EXCEPTION 'Model not found for this owner'; END IF;
                     SELECT coalesce(max((doc->>'version')::integer), 0) + 1
                     INTO next_version FROM generations WHERE doc->>'generation_id' = model_id;
@@ -504,12 +527,14 @@ def _create_local_generation_versions(conn) -> None:
                     SELECT doc INTO source FROM generations
                     WHERE id = new.doc->>'restored_from_id' AND doc->>'generation_id' = model_id
                       AND doc->>'user_id' = new.doc->>'user_id' AND doc->>'user_type' = new.doc->>'user_type'
-                      AND doc->>'status' = 'completed' AND coalesce(doc->>'ldr_url', doc->>'mpd_url') IS NOT NULL;
+                      AND doc->>'status' = 'completed' AND doc->>'deleted_at' IS NULL
+                      AND coalesce(doc->>'ldr_url', doc->>'mpd_url') IS NOT NULL;
                     IF NOT FOUND THEN RAISE EXCEPTION 'BB_RESTORE_SOURCE_CHANGED'; END IF;
                     IF NOT EXISTS (
                         SELECT 1 FROM generations WHERE doc->>'generation_id' = model_id
                           AND doc->>'user_id' = new.doc->>'user_id' AND doc->>'user_type' = new.doc->>'user_type'
-                          AND doc->>'status' = 'completed' AND (doc->>'version')::integer > (source->>'version')::integer
+                          AND doc->>'status' = 'completed' AND doc->>'deleted_at' IS NULL
+                          AND (doc->>'version')::integer > (source->>'version')::integer
                     ) THEN RAISE EXCEPTION 'BB_RESTORE_NOT_OLDER'; END IF;
                     new.doc := new.doc || jsonb_build_object('endpoint', source->'endpoint',
                         'restored_from_id', coalesce(source->>'restored_from_id', source->>'id'));
@@ -527,7 +552,8 @@ def _create_local_generation_versions(conn) -> None:
               ON generations (id) WHERE doc->>'restored_from_id' IS NOT NULL;
             CREATE OR REPLACE VIEW latest_generations AS
               SELECT DISTINCT ON (doc->>'user_id', doc->>'user_type', doc->>'generation_id') pk, id, doc
-              FROM generations ORDER BY doc->>'user_id', doc->>'user_type', doc->>'generation_id',
+              FROM generations WHERE doc->>'deleted_at' IS NULL
+              ORDER BY doc->>'user_id', doc->>'user_type', doc->>'generation_id',
                 (doc->>'version')::integer DESC;
         """)
 

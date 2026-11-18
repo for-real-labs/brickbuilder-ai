@@ -2,6 +2,7 @@ import asyncio
 import os
 import re
 import logging
+from typing import Annotated
 from urllib.parse import urlparse
 
 import httpx
@@ -70,6 +71,7 @@ from .requests.updateUsername import update_username, UpdateUsernameRequest, Upd
 
 from .requests.generationNotifications import list_generation_notifications, mark_generation_viewed, latest_generation_edit, MarkNotificationsReadRequest, mark_notifications_read
 from .requests.cancelGeneration import cancel_generation
+from .requests.deleteGeneration import DeleteGenerationRequest, DeleteGenerationResponse, delete_generation
 from .requests.restoreGeneration import RestoreGenerationRequest, RestoreGenerationResponse, restore_generation
 
 # Import utilities
@@ -81,6 +83,7 @@ from .utils.anthropic_reconciliation import start_anthropic_reconciliation
 from .utils.llm_output import output_events
 from .utils.generation_storage import generation_storage
 from .utils.share_card import render_share_card
+from .utils.instruction_links import has_instruction_key
 from .utils.auth import get_user_with_optional_auth, require_paid_auth
 
 # Load environment variables
@@ -180,14 +183,16 @@ async def nova_source_endpoint(generation_id: UUID, auth_info: dict = Depends(ge
 
 
 @app.get("/generation/{generation_id}/nova-instructions.ldr")
-async def nova_instructions_endpoint(generation_id: UUID):
-    return await get_nova_instructions(str(generation_id))
+async def nova_instructions_endpoint(generation_id: UUID, x_instruction_key: Annotated[str | None, Header(max_length=128)] = None):
+    revision_id = str(generation_id)
+    if x_instruction_key and await has_instruction_key(revision_id, x_instruction_key):
+        return await get_nova_instructions(revision_id, instruction_access=True)
+    return await get_nova_instructions(revision_id)
 
 
 @app.get('/generation/{generation_id}/instruction-access')
 async def instruction_link_access(generation_id: UUID, response: Response,
                                   x_instruction_key: str | None = Header(default=None, max_length=128)):
-    from .utils.instruction_links import has_instruction_key
     response.headers['Cache-Control'] = 'private, no-store'
     return {'allowed': await has_instruction_key(str(generation_id), x_instruction_key)}
 
@@ -564,12 +569,15 @@ async def get_generation_endpoint(
 
 @app.get("/generation/{generation_id}", response_model=GetGenerationResponse)
 async def get_generation_by_id_endpoint(
-    generation_id: str, auth_info: dict = Depends(get_optional_identity), response: Response = None
+    generation_id: str, auth_info: dict = Depends(get_optional_identity), response: Response = None,
+    x_instruction_key: Annotated[str | None, Header(max_length=128)] = None,
 ) -> GetGenerationResponse:
     """Get generation status and data by generation ID (GET version for polling)"""
     if response is not None:
         response.headers["Cache-Control"] = "private, no-store"
     request = GetGenerationRequest(generation_id=generation_id)
+    if x_instruction_key and await has_instruction_key(generation_id, x_instruction_key):
+        return await get_generation(request, auth_info, instruction_access=True)
     return await get_generation(request, auth_info)
 
 
@@ -839,6 +847,13 @@ async def restore_generation_endpoint(
     generation_id: UUID, request: RestoreGenerationRequest, auth_info: dict = Depends(get_optional_identity),
 ) -> RestoreGenerationResponse:
     return await restore_generation(str(generation_id), request, auth_info)
+
+
+@app.post("/generation/{generation_id}/delete", response_model=DeleteGenerationResponse)
+async def delete_generation_endpoint(
+    generation_id: UUID, request: DeleteGenerationRequest, auth_info: dict = Depends(get_optional_identity),
+) -> DeleteGenerationResponse:
+    return await delete_generation(str(generation_id), request, auth_info)
 
 
 if mcp_app is not None:

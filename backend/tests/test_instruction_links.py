@@ -100,7 +100,7 @@ def test_legacy_key_validation_does_not_restrict_free_instructions(db, monkeypat
         assert access.headers['cache-control'] == 'private, no-store'
         response = client.get(f'/generation/{generation_id}/nova-instructions.ldr', headers=headers)
         assert response.status_code == 200
-        steps.assert_awaited_once_with(generation_id)
+        steps.assert_awaited_once_with(generation_id, **({'instruction_access': True} if allowed else {}))
         assert key not in response.text
     finally:
         api.app.dependency_overrides.clear()
@@ -129,6 +129,26 @@ def test_migration_does_not_replace_order_history_or_existing_keys(db):
     db.execute('INSERT INTO orders VALUES (1,%s,false,%s)', (uuid4(), 'existing-hash'))
     db.execute(MIGRATION)
     assert db.execute('SELECT instructions_key_hash FROM orders').fetchone()['instructions_key_hash'] == 'existing-hash'
+
+
+def test_deleted_model_is_only_readable_through_its_purchased_instruction_link(db, monkeypatch):
+    from src import api
+    from src.requests import getGeneration
+
+    generation_id, key = str(uuid4()), links.new_instruction_key()
+    db.execute('INSERT INTO orders VALUES (1,%s,false,%s)', (generation_id, links.instruction_key_hash(key)))
+    row = {'id': generation_id, 'status': 'completed', 'prompt': 'Purchased model', 'deleted_at': '2026-11-18'}
+    lookup = AsyncMock(side_effect=lambda id, include_deleted=False: row if include_deleted else None)
+    monkeypatch.setattr(getGeneration, 'generation_storage', SimpleNamespace(get_generation=lookup))
+
+    client = TestClient(api.app)
+    url = f'/generation/{generation_id}'
+    assert client.get(url).status_code == 404
+    assert client.get(url, headers={'X-Instruction-Key': links.new_instruction_key()}).status_code == 404
+    response = client.get(url, headers={'X-Instruction-Key': key})
+    assert response.status_code == 200
+    assert response.json()['prompt'] == 'Purchased model'
+    assert response.headers['cache-control'] == 'private, no-store'
 
 
 def test_order_links_open_exact_landing_instructions_but_postcard_links_open_preview():

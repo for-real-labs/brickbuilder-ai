@@ -11,6 +11,7 @@ DURATION_MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations
 MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000002_generation_versions.sql").read_text()
 REMOVE_SOURCE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000003_remove_generation_source.sql").read_text()
 RESTORE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261118010000_restore_generation_revision.sql").read_text()
+DELETE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261118020000_delete_generation_revision.sql").read_text()
 
 
 @pytest.fixture(scope="module")
@@ -24,9 +25,11 @@ def server(tmp_path_factory):
 def db(server):
     with psycopg.connect(server.get_uri(), autocommit=True) as conn:
         conn.execute("drop view if exists public.latest_generations")
+        conn.execute("drop table if exists public.test_order")
         conn.execute("drop table if exists public.generations cascade")
         conn.execute("drop function if exists public.assign_generation_version()")
         conn.execute("drop function if exists public.finalize_generation_restore()")
+        conn.execute("drop function if exists public.delete_generation_revision(uuid, text, text, boolean)")
         for role in ["anon", "authenticated", "service_role"]:
             if not conn.execute("select 1 from pg_roles where rolname = %s", (role,)).fetchone():
                 conn.execute(f"create role {role}")
@@ -97,6 +100,43 @@ def test_restore_validates_owner_and_keeps_geometry_type_and_version_order(db):
     assert versions(db)[root] == (root, 1) and versions(db)[latest] == (root, 2)
     with pytest.raises(psycopg.errors.RaiseException, match="BB_RESTORE_FORBIDDEN"):
         db.execute("update generations set restored_from_id = %s where id = %s", (other, restored[0]))
+
+
+def test_model_deletion_is_private_atomic_and_preserves_versions_and_orders(db):
+    root = insert(db, date="2026-09-01", community=True)
+    latest = insert(db, parent=root, date="2026-09-02", community=True)
+    pending = insert(db, parent=root, date="2026-09-03", status="processing")
+    migrate(db)
+    db.execute(REMOVE_SOURCE)
+    db.execute("alter table generations add column notification_seen boolean not null default false")
+    db.execute(DELETE)
+    db.execute("create table test_order (generation_id uuid references generations(id))")
+    db.execute("insert into test_order values (%s)", (latest,))
+    db.execute("alter table generations enable row level security")
+    db.execute("create policy allow_read on generations for select using (true)")
+    db.execute("grant select on generations to authenticated")
+
+    def delete(id, whole_model=False, owner="owner"):
+        return db.execute("select public.delete_generation_revision(%s, %s, 'authenticated', %s)",
+                          (id, owner, whole_model)).fetchone()[0]
+
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_DELETE_NOT_FOUND"):
+        delete(latest, owner="other")
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_DELETE_ACTIVE"):
+        delete(root, whole_model=True)
+    assert db.execute("select count(*) from generations where deleted_at is not null").fetchone() == (0,)
+    assert delete(latest) == {"next_generation_id": str(root)}
+    assert delete(latest) == {"next_generation_id": str(root)}
+    assert db.execute("select generation_id from test_order").fetchone() == (latest,)
+    with db.transaction():
+        db.execute("set local role authenticated")
+        assert db.execute("select id from generations where id = %s", (latest,)).fetchone() is None
+    db.execute("update generations set status = 'cancelled' where id = %s", (pending,))
+    assert delete(root, whole_model=True) == {"next_generation_id": None}
+    assert db.execute("select id from latest_generations").fetchall() == []
+    assert db.execute("select count(*) from generations where deleted_at is not null and not is_community").fetchone() == (3,)
+    with pytest.raises(psycopg.errors.RaiseException, match="Model not found for this owner"):
+        db.execute("insert into generations (id, generation_id, user_id) values (%s, %s, 'owner')", (uuid4(), root))
 
 
 def test_backfill_mixed_edits_and_independent_models_with_identical_images(db):
