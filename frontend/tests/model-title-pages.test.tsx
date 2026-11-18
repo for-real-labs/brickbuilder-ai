@@ -208,6 +208,57 @@ it('shows image-free history on dashboard cards and opens the selected revision 
   expect(container.querySelector('output')?.textContent).toBe('/?id=old&exact=1');
 });
 
+it('manages dashboard versions with confirmation for both delete scopes', async () => {
+  const history = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage')
+    .mockResolvedValue({ generations: revisionHistory, total_count: 2 });
+  const remove = vi.spyOn(GetGenerationsByImageApiService, 'deleteGeneration')
+    .mockRejectedValueOnce(new Error('Try again.'))
+    .mockResolvedValueOnce('old')
+    .mockResolvedValueOnce(null);
+  const restore = vi.spyOn(GetGenerationsByImageApiService, 'restoreVersion').mockResolvedValue('restored');
+  const modelsChanged = vi.fn();
+  const getButton = (name: string, parent: ParentNode = container) =>
+    [...parent.querySelectorAll('button')].find(button => button.textContent?.trim() === name)!;
+  try {
+    await act(async () => root.render(<MemoryRouter><GenerationCard
+      g={{ id: 'g', generation_id: 'root', version: 7, prompt: 'Rover', user_id: 'owner', user_type: 'authenticated',
+        status: 'completed', endpoint: 'llmToBricks', created_at: '2026-09-30', detail_level: 30 }}
+      onView={vi.fn()} onModelsChanged={modelsChanged} authToken="token"
+    /></MemoryRouter>));
+    const dialog = container.querySelector('dialog')!;
+    Object.defineProperties(dialog, {
+      showModal: { value: () => { dialog.open = true; } },
+      close: { value: () => { dialog.open = false; } },
+    });
+    await act(async () => getButton('View Edits').click());
+    expect([...container.querySelectorAll('button')].filter(button => button.textContent?.includes('Restore this version'))).toHaveLength(1);
+    await act(async () => getButton('Restore this version').click());
+    expect(restore).toHaveBeenCalledWith('old', expect.any(String), 'token');
+    expect(modelsChanged).toHaveBeenCalledTimes(1);
+
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Delete version 7"]')!.click());
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('h2')?.textContent).toBe('Delete version 7?');
+    act(() => getButton('Cancel', dialog).click());
+    expect(dialog.open).toBe(false);
+    expect(remove).not.toHaveBeenCalled();
+    act(() => container.querySelector<HTMLButtonElement>('[aria-label="Delete version 7"]')!.click());
+    await act(async () => getButton('Delete version', dialog).click());
+    expect(dialog.querySelector('[role="alert"]')?.textContent).toBe('Try again.');
+    await act(async () => getButton('Delete version', dialog).click());
+    expect(remove).toHaveBeenLastCalledWith('g', 'version', 'token');
+    expect(modelsChanged).toHaveBeenCalledTimes(2);
+    expect(container.querySelector('[aria-label="Delete version 7"]')).toBeNull();
+
+    act(() => getButton('Delete model').click());
+    expect(dialog.open).toBe(true);
+    expect(dialog.querySelector('h2')?.textContent).toBe('Delete model?');
+    await act(async () => getButton('Delete model', dialog).click());
+    expect(remove).toHaveBeenLastCalledWith('g', 'model', 'token');
+    expect(modelsChanged).toHaveBeenCalledTimes(3);
+  } finally { history.mockRestore(); remove.mockRestore(); restore.mockRestore(); }
+});
+
 it('opens the earlier completed version after cancellation without a stored source link', async () => {
   vi.mocked(GetGenerationApiService.getGeneration).mockImplementation(async id => (
     id === 'g' ? {generation_id: 'g', model_generation_id: 'root', version: 4,

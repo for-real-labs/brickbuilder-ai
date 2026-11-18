@@ -9,13 +9,13 @@ import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
 import { ProfileMenu } from "../components/ProfileMenu";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useId, useRef } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Package, Box, User as UserIcon, ChevronRight,
   Clock, Calendar, Coins, ExternalLink,
   Sparkles, TrendingUp, LogOut, Eye, Menu, X, ChevronDown, ChevronUp, History,
-  Settings as SettingsIcon, Loader2, Pencil, Users
+  Settings as SettingsIcon, Loader2, Pencil, RotateCcw, Trash2, Users
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { GetUserGenerationsApiService, GenerationWithOrder, OrderInfo } from "../services/getUserGenerationsApi";
@@ -144,25 +144,31 @@ const StatsCard: React.FC<{icon:any; label:string; value:string|number; onClick?
   </div>
 );
 
-// Simple card that just displays an image
-export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generationId: string, exact: boolean) => void; authToken?: string}> = ({g, onView, authToken}) => {
+type DeleteTarget = { id: string; scope: 'model' } | { id: string; scope: 'version'; version: number };
+const versionActionClass = 'inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50';
+
+export const GenerationCard: React.FC<{
+  g: GenerationWithOrder;
+  onView: (generationId: string, exact: boolean) => void;
+  authToken?: string;
+  onModelsChanged?: () => void;
+}> = ({ g, onView, authToken, onModelsChanged }) => {
   const navigate = useNavigate();
   const [showEdits, setShowEdits] = useState(false);
   const [edits, setEdits] = useState<GenerationIteration[]>([]);
   const [loadingEdits, setLoadingEdits] = useState(false);
   const [editsError, setEditsError] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [mutation, setMutation] = useState<'delete' | 'restore' | null>(null);
+  const [restoreError, setRestoreError] = useState<string | null>(null);
+  const mutationPending = useRef(false);
+  const restoreRequest = useRef<{ generationId: string; id: string } | null>(null);
+  const confirmation = useRef<HTMLDialogElement>(null);
+  const deleteTitle = useId();
   
   // Truncate prompt for display
   const displayPrompt = g.prompt.length > 60 ? g.prompt.slice(0, 60) + "..." : g.prompt;
-  
-  // Debug: log what image fields are available
-  console.log('Generation image fields:', { 
-    id: g.id, 
-    external_image_url: g.external_image_url, 
-    image_url: g.image_url, 
-    thumbnail_url: g.thumbnail_url,
-    preview_image_url: g.preview_image_url,
-  });
   
   const isProcessing = isGenerationActive(g.status);
   const completedGenerationId = isProcessing ? g.previous_completed_generation_id : null;
@@ -183,7 +189,8 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
   const showOverlay = Boolean(previewImage && sourceImage);
   
   const handleViewEdits = async () => {
-    if (!showEdits && edits.length === 0 && g.id) {
+    setShowEdits(!showEdits);
+    if (!showEdits && g.id) {
       setLoadingEdits(true);
       setEditsError(null);
       
@@ -193,9 +200,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
           g.id
         );
         // Sort by saved version rather than image or timestamp
-        const sortedEdits = response.generations.sort((a, b) => {
-          return b.version - a.version;
-        });
+        const sortedEdits = [...response.generations].sort((a, b) => b.version - a.version);
         setEdits(sortedEdits);
       } catch (error) {
         console.error('Error fetching edits:', error);
@@ -204,9 +209,56 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
         setLoadingEdits(false);
       }
     }
-    setShowEdits(!showEdits);
   };
-  
+
+  const askToDelete = (target: DeleteTarget) => {
+    setDeleteTarget(target);
+    setDeleteError(null);
+    confirmation.current?.showModal();
+    posthog.capture('dashboard_model_delete_prompt_opened', { generation_id: target.id, scope: target.scope });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget || mutationPending.current) return;
+    mutationPending.current = true;
+    setMutation('delete');
+    setDeleteError(null);
+    posthog.capture('dashboard_model_delete_confirmed', { generation_id: deleteTarget.id, scope: deleteTarget.scope });
+    try {
+      await GetGenerationsByImageApiService.deleteGeneration(deleteTarget.id, deleteTarget.scope, authToken);
+      setEdits(current => current.filter(edit => edit.id !== deleteTarget.id));
+      confirmation.current?.close();
+      onModelsChanged?.();
+    } catch (error) {
+      setDeleteError(error instanceof Error ? error.message : 'Could not delete this model. Please try again.');
+    } finally {
+      mutationPending.current = false;
+      setMutation(null);
+    }
+  };
+
+  const restoreVersion = async (edit: GenerationIteration) => {
+    if (mutationPending.current) return;
+    const request = restoreRequest.current?.generationId === edit.id
+      ? restoreRequest.current : { generationId: edit.id, id: crypto.randomUUID() };
+    restoreRequest.current = request;
+    mutationPending.current = true;
+    setMutation('restore');
+    setRestoreError(null);
+    posthog.capture('dashboard_model_restore_version_clicked', { generation_id: edit.id, version: edit.version });
+    try {
+      await GetGenerationsByImageApiService.restoreVersion(edit.id, request.id, authToken);
+      onModelsChanged?.();
+    } catch (error) {
+      setRestoreError(error instanceof Error ? error.message : 'Could not restore this version. Please try again.');
+    } finally {
+      mutationPending.current = false;
+      setMutation(null);
+    }
+  };
+
+  const newestCompleted = edits.find(edit => edit.status === 'completed');
+
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow transition-shadow">
       <div className="p-3 sm:p-4 flex gap-3 sm:gap-4">
@@ -281,28 +333,25 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
               </div>
             ) : null}
             {canView && (
-              <>
-                <button 
-                  onClick={handleView}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 h-9 text-xs hover:bg-slate-50 cursor-pointer"
-                >
-                  <Eye className="w-4 h-4"/> View Model
-                </button>
-                <button 
-                  onClick={handleViewEdits}
-                  disabled={!g.id}
-                  className={`inline-flex items-center gap-2 rounded-lg border px-3 h-9 text-xs ${
-                    g.id
-                      ? 'border-slate-300 bg-white hover:bg-slate-50 cursor-pointer' 
-                      : 'border-slate-200 bg-slate-50 text-slate-400 cursor-not-allowed'
-                  }`}
-                  title={!g.id ? 'No edit history available' : 'View edit history'}
-                >
-                  <History className="w-4 h-4"/> 
-                  View Edits
-                  {g.id && (showEdits ? <ChevronUp className="w-3 h-3"/> : <ChevronDown className="w-3 h-3"/>)}
-                </button>
-              </>
+              <button type="button" onClick={handleView}
+                className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs hover:bg-slate-50">
+                <Eye className="h-4 w-4" /> View Model
+              </button>
+            )}
+            {(canView || onModelsChanged) && (
+              <button type="button" onClick={handleViewEdits} disabled={!g.id || loadingEdits || Boolean(mutation)}
+                aria-expanded={showEdits} title={!g.id ? 'No edit history available' : 'View edit history'}
+                className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs hover:bg-slate-50 disabled:opacity-50">
+                <History className="h-4 w-4" /> View Edits
+                {g.id && (showEdits ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />)}
+              </button>
+            )}
+            {onModelsChanged && g.id && !isProcessing && (
+              <button type="button" aria-haspopup="dialog" disabled={Boolean(mutation)}
+                className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-700 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+                onClick={() => askToDelete({ id: g.id, scope: 'model' })}>
+                <Trash2 className="h-4 w-4" aria-hidden="true" /> Delete model
+              </button>
             )}
           </div>
         </div>
@@ -312,6 +361,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
       {showEdits && (
         <div className="border-t border-slate-200 bg-slate-50 p-3 sm:p-4">
           <h4 className="text-sm font-semibold text-slate-900 mb-3">Edit History ({edits.length})</h4>
+          {restoreError && <p role="alert" className="mb-3 text-sm text-red-700">{restoreError}</p>}
           
           {loadingEdits ? (
             <div className="flex items-center justify-center py-4 text-xs text-slate-500">
@@ -333,7 +383,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
                       isCurrentGeneration ? 'border-[#f44336] bg-red-50' : 'border-slate-200'
                     }`}
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start sm:justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] font-medium text-slate-500">
@@ -345,7 +395,7 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-slate-900 font-mono mb-1.5">{edit.id}</p>
+                        <p className="mb-1.5 break-all font-mono text-xs text-slate-900">{edit.id}</p>
                         {edit.status === 'completed' && <GenerationDuration seconds={edit.generation_duration_seconds} />}
                         <div className="flex items-center gap-2 text-[10px] text-slate-500">
                           <span className="flex items-center gap-1">
@@ -358,22 +408,33 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
                           </span>
                         </div>
                       </div>
-                      {edit.status === 'completed' ? (
-                        <button 
-                          onClick={() => navigate(getGeneratedModelPath(edit.id, true))}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] hover:bg-slate-50 cursor-pointer flex-shrink-0"
-                        >
-                          <Eye className="w-3.5 h-3.5"/> View Model
-                        </button>
-                      ) : (
-                        <span className={`inline-flex items-center px-2 py-1 rounded text-[10px] font-medium flex-shrink-0 ${
-                          edit.status === 'failed'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {edit.status}
-                        </span>
-                      )}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {edit.status === 'completed' ? (
+                          <button type="button" onClick={() => navigate(getGeneratedModelPath(edit.id, true))}
+                            className={versionActionClass}>
+                            <Eye className="h-3.5 w-3.5" /> View Model
+                          </button>
+                        ) : (
+                          <span className={`shrink-0 rounded px-2 py-1 text-[10px] font-medium ${
+                            edit.status === 'failed' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
+                          }`}>
+                            {edit.status}
+                          </span>
+                        )}
+                        {onModelsChanged && edit.status === 'completed' && newestCompleted && edit.version < newestCompleted.version && (
+                          <button type="button" className={versionActionClass} disabled={Boolean(mutation) || isProcessing}
+                            onClick={() => void restoreVersion(edit)}>
+                            <RotateCcw size={14} aria-hidden="true" /> Restore this version
+                          </button>
+                        )}
+                        {onModelsChanged && ['completed', 'failed', 'cancelled'].includes(edit.status) && (
+                          <button type="button" aria-haspopup="dialog" aria-label={`Delete version ${edit.version}`}
+                            className={`${versionActionClass} hover:bg-red-50 hover:text-red-700`} disabled={Boolean(mutation)}
+                            onClick={() => askToDelete({ id: edit.id, version: edit.version, scope: 'version' })}>
+                            <Trash2 size={14} aria-hidden="true" /> Delete version
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -382,6 +443,30 @@ export const GenerationCard: React.FC<{g: GenerationWithOrder; onView: (generati
           )}
         </div>
       )}
+      {onModelsChanged && <dialog ref={confirmation} aria-labelledby={deleteTitle}
+        className="m-auto w-[min(26rem,calc(100%-1.5rem))] rounded-2xl bg-white p-5 shadow-xl backdrop:bg-slate-900/40 sm:p-6"
+        onCancel={event => { if (mutation === 'delete') event.preventDefault(); }}>
+        {deleteTarget && <>
+          <h2 id={deleteTitle} className="text-lg font-semibold text-slate-900">
+            {deleteTarget.scope === 'model' ? 'Delete model?' : `Delete version ${deleteTarget.version}?`}
+          </h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-600">
+            {deleteTarget.scope === 'model'
+              ? 'This removes the model, its edit history, and its public links from BrickBuilder.'
+              : 'This removes this version and its public link. The newest remaining version becomes current if you delete the current version.'}
+          </p>
+          <p className="mt-2 text-sm text-slate-600">You can’t undo this. Existing orders and purchased instructions stay available.</p>
+          {deleteError && <p role="alert" className="mt-3 text-sm text-red-700">{deleteError}</p>}
+          <div className="mt-5 flex flex-wrap justify-end gap-2">
+            <button type="button" autoFocus className={versionActionClass} disabled={mutation === 'delete'}
+              onClick={() => confirmation.current?.close()}>Cancel</button>
+            <button type="button" disabled={mutation === 'delete'} onClick={() => void confirmDelete()}
+              className="min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:opacity-50">
+              {mutation === 'delete' ? 'Deleting…' : deleteTarget.scope === 'model' ? 'Delete model' : 'Delete version'}
+            </button>
+          </div>
+        </>}
+      </dialog>}
     </div>
   );
 };
@@ -654,6 +739,7 @@ const UserDashboard: React.FC = () => {
   const [offset, setOffset] = useState(0);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [modelsRevision, setModelsRevision] = useState(0);
   const PAGE_LIMIT = 50;
 
   // Keep the active tab in sync with the URL (?tab=...), e.g. when navigating
@@ -708,13 +794,13 @@ const UserDashboard: React.FC = () => {
 
   useEffect(() => {
     if (isSupabaseConfigured && !session?.access_token) return;
-    let initial = true;
+    let initial = modelsRevision === 0;
     const polling = startPolling(async signal => {
       await fetchGenerations(signal, !initial || offset > 0);
       initial = false;
     }, { intervalMs: 10_000 });
     return polling.stop;
-  }, [session?.access_token, isSupabaseConfigured, offset]);
+  }, [session?.access_token, isSupabaseConfigured, offset, modelsRevision]);
 
   const handleLoadMore = () => {
     const newOffset = offset + PAGE_LIMIT;
@@ -895,7 +981,8 @@ const UserDashboard: React.FC = () => {
                     <>
                       <div className="grid gap-3">
                         {generations.map(g => (
-                          <GenerationCard key={g.id} g={g} onView={handleViewGeneration} authToken={session?.access_token} />
+                          <GenerationCard key={g.id} g={g} onView={handleViewGeneration} authToken={session?.access_token}
+                            onModelsChanged={() => setModelsRevision(revision => revision + 1)} />
                         ))}
                       </div>
                       {hasMore && (
