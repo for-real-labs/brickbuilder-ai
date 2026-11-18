@@ -85,8 +85,8 @@ The choice is sent as the boolean `shipInstructionsPostcard` in checkout creatio
 Stripe metadata carries it through payment to the webhook, which saves
 `instructions_postcard` and, when selected, `instructions_url` in the order’s
 `shipping_info`. The owner notification includes whether to pack the card.
-Older clients and existing Stripe sessions default to no postcard. Selecting it
-does not change the kit’s price. Selection and preview analytics omit names,
+Requests without a selection default to no postcard. Selecting it
+adds a $3.99 USD line item once per order. Selection and preview analytics omit names,
 contact details, and model images.
 
 Postcard checks: `npm --prefix frontend test` and

@@ -156,11 +156,19 @@ def test_previous_checkout_clients_survive_the_deployment(setup, mode):
 
 
 @pytest.mark.parametrize('selected', [True, False])
-def test_checkout_records_postcard_choice_for_fulfillment(setup, selected):
-    _, create, _ = setup
-    run(uiMode='elements', shipInstructionsPostcard=selected)
-    assert create.call_args.kwargs['metadata']['shipInstructionsPostcard'] == str(selected).lower()
-    assert create.call_args.kwargs['line_items'][0]['price_data']['unit_amount'] == 6250
+def test_checkout_charges_for_postcard_only_when_selected(setup, selected):
+    _, create, track = setup
+    result = run(uiMode='elements', shipInstructionsPostcard=selected, priceCents=1)
+    params = create.call_args.kwargs
+    assert params['metadata']['shipInstructionsPostcard'] == str(selected).lower()
+    kit, *add_ons = params['line_items']
+    assert kit['price_data']['unit_amount'] == 6250
+    assert add_ons == ([{'price_data': {'currency': 'usd',
+                                       'product_data': {'name': 'Instructions postcard'},
+                                       'unit_amount': 399}, 'quantity': 1}] if selected else [])
+    shipping_cents = params['shipping_options'][0]['shipping_rate_data']['fixed_amount']['amount']
+    assert shipping_cents == result.price_data.order_pricing.shipping_cents
+    assert track.call_args.kwargs['request_data']['priceCents'] == 6250 + shipping_cents + (399 if selected else 0)
 
 
 @pytest.mark.parametrize('value', ['true', 1, None, {'selected': True}])
@@ -299,7 +307,8 @@ def test_checkout_requotes_for_the_submitted_destination(setup):
     assert request.shipping_country == 'PL'
     assert identity['user_id'] == 'owner'
 
-def test_multiple_kits_pin_combined_parts_and_charge_combined_quote(setup):
+@pytest.mark.parametrize('selected', [True, False])
+def test_multiple_kits_pin_combined_parts_and_charge_combined_quote(setup, selected):
     from src.requests.getPrice import PartPriceDetail
     _, create, _ = setup
     quote = checkout.get_price.return_value
@@ -308,7 +317,7 @@ def test_multiple_kits_pin_combined_parts_and_charge_combined_quote(setup):
     quote.order_pricing = price_order(.6, .0132)
     snapshot = AsyncMock(return_value='https://example.com/combined.csv')
     checkout.generation_storage.store_order_parts_snapshot = snapshot
-    run(quantity=3, priceCents=1)
+    run(quantity=3, priceCents=1, shipInstructionsPostcard=selected)
     assert checkout.get_price.call_args.args[0].quantity == 3
     assert snapshot.call_args.args[2].splitlines() == ['LdrawId,LDrawColorId,Qty', '3001.dat,4,6']
     params = create.call_args.kwargs
@@ -316,6 +325,8 @@ def test_multiple_kits_pin_combined_parts_and_charge_combined_quote(setup):
     assert params['metadata']['partsListCsvUrl'] == 'https://example.com/combined.csv'
     assert params['line_items'][0]['price_data']['unit_amount'] == quote.order_pricing.parts_cents
     assert params['line_items'][0]['quantity'] == 1
+    assert sum(item['price_data']['unit_amount'] * item['quantity'] for item in params['line_items']) == (
+        quote.order_pricing.parts_cents + (399 if selected else 0))
     assert params['shipping_options'][0]['shipping_rate_data']['fixed_amount']['amount'] == quote.order_pricing.shipping_cents
 
 

@@ -19,7 +19,7 @@ import { supabase } from "../lib/supabase";
 import { usePet } from "../contexts/PetContext";
 import { useAuth } from "../contexts/AuthContext";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
-import { getOrderPricing, formatOrderPrice, getShippingContact, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
+import { getOrderPricing, formatOrderPrice, getShippingContact, INSTRUCTIONS_POSTCARD_CENTS, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
 import shippingCountries from "../data/shippingCountries.json";
 import "./OrderKit.css";
 
@@ -84,6 +84,9 @@ function OrderCheckout() {
   const [quoteError, setQuoteError] = React.useState(false);
   const [quoteAttempt, setQuoteAttempt] = React.useState(0);
   const pricing = getOrderPricing(quote);
+  const postcardCents = shipInstructionsPostcard ? INSTRUCTIONS_POSTCARD_CENTS : 0;
+  const totalCents = (pricing?.totalCents ?? 0) + postcardCents;
+  const fullTotalCents = (pricing?.fullTotalCents ?? 0) + postcardCents;
   const [step, setStep] = React.useState(0);
   const [country, setCountry] = React.useState<string>('US');
   const [argentinaTaxId, setArgentinaTaxId] = React.useState('');
@@ -92,7 +95,8 @@ function OrderCheckout() {
   const [session, setSession] = React.useState<CreateCheckoutSessionResponse | null>(null);
   const sessionInputRef = React.useRef<string | null>(null);
   const [paymentNotice, setPaymentNotice] = React.useState<string | null>(null);
-  const [discountedTotal, setDiscountedTotal] = React.useState<number | null>(null);
+  const [promotion, setPromotion] = React.useState<{ totalCents: number; shipInstructionsPostcard: boolean } | null>(null);
+  const discountedTotal = promotion?.shipInstructionsPostcard === shipInstructionsPostcard ? promotion.totalCents : null;
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [summaryExpanded, setSummaryExpanded] = React.useState(false);
@@ -122,7 +126,7 @@ function OrderCheckout() {
   React.useEffect(() => {
     if (!generationId) return;
     let disposed = false;
-    setQuote(null); setSession(null); setDiscountedTotal(null); setStep(0);
+    setQuote(null); setSession(null); setPromotion(null); setStep(0);
     setQuoteLoading(true); setQuoteError(false);
     void (async () => {
       try {
@@ -239,7 +243,7 @@ function OrderCheckout() {
       const identity = (await supabase.auth.getSession()).data.session;
       const token = identity?.access_token;
       const request = {
-        name, priceCents: pricing.totalCents, quantity,
+        name, priceCents: totalCents, quantity,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
         uiMode: 'elements' as const, shipInstructionsPostcard, petId: pet.id,
         shippingAddress: getShippingContact(delivery, country),
@@ -259,7 +263,7 @@ function OrderCheckout() {
       if (data.price_data) setQuote(data.price_data);
       setPaymentNotice(session ? (forceNew ? 'Payment has been restarted. Please enter your payment details again.' : 'Your order or delivery details changed, so please enter your payment details again.') : null);
       sessionInputRef.current = input;
-      setSession(data); setDiscountedTotal(null); setStep(1);
+      setSession(data); setPromotion(null); setStep(1);
       posthog.capture('order_step_changed', { generation_id: generationId, step: 'Payment', direction: 'forward' });
     } catch (cause) {
       setError('We couldn’t start payment. Your details are still here — please try again.');
@@ -313,21 +317,22 @@ function OrderCheckout() {
             <div className="checkout-summary-model">{partsCount ? <p>{partsCount.toLocaleString()} pieces</p> : null}<label className="checkout-quantity">Qty
               <select aria-label="Model quantity" value={quantity} disabled={loading || step > 0} onChange={event => {
                 const next = Number(event.target.value);
-                setQuote(null); setSession(null); setDiscountedTotal(null); setQuantity(next);
+                setQuote(null); setSession(null); setPromotion(null); setQuantity(next);
                 posthog.capture('order_quantity_changed', { generation_id: generationId, quantity: next });
               }}>{Array.from({ length: 99 }, (_, index) => <option key={index + 1} value={index + 1}>{index + 1}</option>)}</select>
             </label></div>
             <button type="button" className="checkout-summary-toggle" aria-expanded={summaryExpanded} aria-controls="checkout-price-breakdown" onClick={() => {
               setSummaryExpanded(value => !value); posthog.capture('order_summary_toggled', { generation_id: generationId, expanded: !summaryExpanded });
-            }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? <>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</> : '—'}</strong></button>
+            }}><span>Order summary<ChevronDown size={16} /></span><strong>{pricing ? <>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? totalCents)}</> : '—'}</strong></button>
             <div id="checkout-price-breakdown" className={`checkout-price-breakdown ${summaryExpanded ? 'is-expanded' : ''}`}>
             {pricing ? <>
               <dl className="checkout-price-list">
                 <div><dt><CompatibleBricks source="order_summary" /></dt><dd>{formatOrderPrice(pricing.fullPartSubtotalCents)}</dd></div>
                 {pricing.memberDiscountCents > 0 && <div className="checkout-member-discount"><dt>{pricing.memberDiscountPercent}% subscriber discount</dt><dd>−{formatOrderPrice(pricing.memberDiscountCents)}</dd></div>}
                 <div><dt>Standard shipping</dt><dd>{formatOrderPrice(pricing.shippingCents)}</dd></div>
-                {discountedTotal !== null && discountedTotal < pricing.totalCents && <div><dt>Promo discount</dt><dd>−{formatOrderPrice(pricing.totalCents - discountedTotal)}</dd></div>}
-                <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(pricing.fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? pricing.totalCents)}</dd></div>
+                {shipInstructionsPostcard && <div><dt>Instructions postcard</dt><dd>{formatOrderPrice(postcardCents)}</dd></div>}
+                {discountedTotal !== null && discountedTotal < totalCents && <div><dt>Promo discount</dt><dd>−{formatOrderPrice(totalCents - discountedTotal)}</dd></div>}
+                <div className="checkout-total"><dt>Total</dt><dd><span>USD</span>{pricing.memberDiscountCents > 0 && <del>{formatOrderPrice(fullTotalCents)}</del>}{formatOrderPrice(discountedTotal ?? totalCents)}</dd></div>
               </dl>
             </> : <p className="checkout-section-note">{quoteLoading ? 'Calculating your kit price…' : 'Kit price unavailable'}</p>}
             </div>
@@ -387,7 +392,7 @@ function OrderCheckout() {
           </CheckoutStep>
           <CheckoutStep title="Payment" number={2} active={step === 1} complete={false} disabled={loading} onEdit={() => {}}>
             {paymentNotice && <p role="status">{paymentNotice}</p>}
-            {session && pricing && <CheckoutPayment key={session.session_id} session={session} publishableKey={publishableKey} details={delivery} country={country} totalCents={pricing.totalCents} generationId={generationId} onBack={() => goToStep(0)} onRetry={() => { goToStep(0); void startPayment(undefined, true); }} onBusyChange={setLoading} onTotalChange={setDiscountedTotal} />}
+            {session && pricing && <CheckoutPayment key={session.session_id} session={session} publishableKey={publishableKey} details={delivery} country={country} totalCents={totalCents} generationId={generationId} onBack={() => goToStep(0)} onRetry={() => { goToStep(0); void startPayment(undefined, true); }} onBusyChange={setLoading} onTotalChange={total => setPromotion({ totalCents: total, shipInstructionsPostcard })} />}
           </CheckoutStep>
         </div>
       </div>}
