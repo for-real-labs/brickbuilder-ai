@@ -16,7 +16,7 @@ def isolate_provider_keys(monkeypatch):
     monkeypatch.delenv('OPENAI_API_KEY', raising=False)
 
 
-@pytest.mark.parametrize('intent', ['generate', 'upload', 'question', 'chat', 'gift', 'clarify'])
+@pytest.mark.parametrize('intent', ['generate', 'continue_build', 'upload', 'question', 'chat', 'gift', 'clarify'])
 def test_jev_returns_only_a_routing_decision_with_bounded_context(monkeypatch, intent):
     monkeypatch.setenv('TYPESAFE_API_KEY', 'server-test-key')
     post = AsyncMock(return_value={'answers': {'intent': {'choice': intent, 'confidence': 0.95}}})
@@ -32,7 +32,7 @@ def test_jev_returns_only_a_routing_decision_with_bounded_context(monkeypatch, i
     assert payload['state'] == {'message': 'castle', 'has_image': False, 'current_model': 'My model',
                                 'gift_planning': True, 'recent_messages': history[-4:]}
     assert payload['questions']['intent']['type'] == 'choice'
-    assert set(payload['questions']['intent']['criteria']) == {'generate', 'upload', 'question', 'chat', 'gift', 'clarify', *routing.TOOL_CRITERIA}
+    assert set(payload['questions']['intent']['criteria']) == {'generate', 'continue_build', 'upload', 'question', 'chat', 'gift', 'clarify', *routing.TOOL_CRITERIA}
 
 
 def test_ambiguous_decisions_request_clarification_instead_of_starting_a_build(monkeypatch):

@@ -6,7 +6,7 @@ import json
 import os
 import uuid
 
-from .generation_budget import GenerationBudget, GenerationBudgetExceeded, MAX_GENERATION_COST_USD, input_token_bound
+from .generation_budget import GenerationBudget, GenerationBudgetExceeded, MAX_GENERATION_COST_USD, PROVIDER_BILLING_ERROR, input_token_bound
 
 current_budget = ContextVar('brickbuilder_generation_budget', default=None)
 current_usage_id = ContextVar('brickbuilder_usage_id', default=None)
@@ -145,7 +145,10 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
 
     async def receive(client):
         reported = False
+        billing_error = False
         async for event in original_receive(client):
+            if getattr(event, 'error', None) == 'billing_error':
+                billing_error = True
             if isinstance(event, claude_agent.ResultMessage):
                 reported = True
                 budget = current_budget.get()
@@ -155,6 +158,8 @@ def install_cost_limits(agent, llm_config, litellm, claude_agent):
                 cost = getattr(event, 'total_cost_usd', None)
                 if getattr(event, 'subtype', '') == 'error_max_budget_usd':
                     raise GenerationBudgetExceeded()
+                if billing_error and getattr(event, 'is_error', False):
+                    raise ValueError(PROVIDER_BILLING_ERROR)
                 if cost is None:
                     raise ValueError('Claude did not report AI cost usage; generation stopped.')
                 amount = Decimal(str(cost))

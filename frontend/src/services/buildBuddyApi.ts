@@ -12,7 +12,7 @@ export interface BuddyReplyRequest {
 }
 
 export interface GiftReply { reply: string; buildPrompt?: string }
-export type BuddyIntent = BuddyToolIntent | 'generate' | 'upload' | 'question' | 'chat' | 'gift' | 'clarify';
+export type BuddyIntent = BuddyToolIntent | 'continue_build' | 'generate' | 'upload' | 'question' | 'chat' | 'gift' | 'clarify';
 export interface BuddyIntentDecision { intent: BuddyIntent; confidence: number }
 
 const mode = import.meta.env.VITE_API_MODE || 'local';
@@ -90,7 +90,7 @@ export const BuildBuddyApi = {
     });
     if (!response.ok) throw new Error('Message routing is unavailable.');
     const data = await response.json();
-    const intents: BuddyIntent[] = ['generate', 'upload', 'question', 'chat', 'gift', 'clarify', ...BUDDY_TOOL_INTENTS];
+    const intents: BuddyIntent[] = ['generate', 'continue_build', 'upload', 'question', 'chat', 'gift', 'clarify', ...BUDDY_TOOL_INTENTS];
     if (!intents.includes(data.intent) || typeof data.confidence !== 'number' || !Number.isFinite(data.confidence)
       || data.confidence < 0 || data.confidence > 1) throw new Error('Invalid message routing response.');
     return { intent: data.confidence < (isBuddyToolIntent(data.intent) ? 0.75 : 0.5) ? 'clarify' : data.intent, confidence: data.confidence };

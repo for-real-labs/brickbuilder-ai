@@ -19,7 +19,7 @@ from pathlib import Path, PurePosixPath
 from urllib.parse import urlsplit
 
 import httpx
-from .generation_budget import current_generation_usage
+from .generation_budget import BUDGET_ERROR, PROVIDER_BILLING_ERROR, current_generation_usage
 from .prompt_parts_limit import PARTS_BUDGET_GUIDANCE
 
 logger = logging.getLogger(__name__)
@@ -325,11 +325,11 @@ class NovaService:
                 usage_poller = asyncio.create_task(self.poll_usage(chat_id, usage))
             await self.wait_for_turn(chat_id, on_output, on_progress)
             after = await self.chat(chat_id)
-            from .generation_budget import BUDGET_ERROR
             previous_message_id = max((item.get('id', 0) for item in before.get('messages', [])), default=0)
-            if any(message.get('_error') and message.get('id', 0) > previous_message_id
-                   and message.get('content') == BUDGET_ERROR for message in after.get('messages', [])):
-                raise ValueError(BUDGET_ERROR)
+            for message in after.get('messages', []):
+                if (message.get('_error') and message.get('id', 0) > previous_message_id
+                        and message.get('content') in (BUDGET_ERROR, PROVIDER_BILLING_ERROR)):
+                    raise ValueError(message['content'])
             published = [row for key, row in after['models'].items() if key not in before['models']]
             if not published:
                 try:
@@ -426,9 +426,8 @@ class NovaService:
                             payload = json.loads('\n'.join(data))
                             data = []
                             if event == 'turn_error':
-                                from .generation_budget import BUDGET_ERROR
-                                if payload.get('message') == BUDGET_ERROR:
-                                    raise ValueError(BUDGET_ERROR)
+                                if payload.get('message') in (BUDGET_ERROR, PROVIDER_BILLING_ERROR):
+                                    raise ValueError(payload['message'])
                                 raise ValueError('Nova could not complete this turn. Check the runtime provider connection; the session is retained.')
                             if event == 'approval':
                                 raise ValueError('Nova requires an approval. Use automatic agent permissions for BrickBuilder generations.')

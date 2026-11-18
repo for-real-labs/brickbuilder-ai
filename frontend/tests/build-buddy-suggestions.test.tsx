@@ -68,6 +68,19 @@ it.each([
   expect(Array.from(container.querySelectorAll<HTMLButtonElement>('.pet-dialogue button')).some(button => button.textContent === 'Go back')).toBe(true);
 });
 
+it('submits the excavator brief and cab answer to Nova together', async () => {
+  vi.mocked(BuildBuddyApi.classify)
+    .mockResolvedValueOnce({ intent: 'clarify', confidence: 1 })
+    .mockResolvedValueOnce({ intent: 'continue_build', confidence: 1 });
+  vi.mocked(BuildBuddyApi.reply).mockResolvedValueOnce('Which side should the cab be on?');
+  await act(async () => root.render(<LandingPage />));
+  type('A yellow tracked excavator'); await submit();
+  type('Left'); await submit();
+  expect(NovaToBricksApiService.generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({
+    prompt: 'A yellow tracked excavator\n\nWhich side should the cab be on?\n\nLeft',
+  }), undefined);
+});
+
 it('returns a casual chat to the welcome dialogue without starting a build', async () => {
   vi.mocked(BuildBuddyApi.classify).mockResolvedValue({ intent: 'chat', confidence: 1 });
   await act(async () => root.render(<LandingPage />));

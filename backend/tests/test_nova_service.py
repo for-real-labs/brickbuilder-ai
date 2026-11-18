@@ -9,6 +9,7 @@ import pytest
 from unittest.mock import AsyncMock
 
 from src.utils.nova_service import NovaService, NovaDraftError, read_export
+from src.utils.generation_budget import BUDGET_ERROR, PROVIDER_BILLING_ERROR
 from src.utils.prompt_parts_limit import PARTS_BUDGET_GUIDANCE
 
 
@@ -28,14 +29,15 @@ def test_older_nova_runtime_is_rejected_before_provider_calls(versions, error):
     asyncio.run(run())
 
 
-def test_budget_stream_error_is_visible_and_stops_the_turn():
-    from src.utils.generation_budget import BUDGET_ERROR
+@pytest.mark.parametrize('message', [BUDGET_ERROR, PROVIDER_BILLING_ERROR])
+def test_known_stream_error_is_visible_and_stops_the_turn(message):
     async def run():
-        data = 'event: turn_error\ndata: ' + json.dumps({'message': BUDGET_ERROR}) + '\n\n'
+        data = 'event: turn_error\ndata: ' + json.dumps({'message': message}) + '\n\n'
         async with NovaService(httpx.AsyncClient(base_url='http://nova', transport=httpx.MockTransport(
                 lambda req: httpx.Response(200, text=data)))) as service:
-            with pytest.raises(ValueError, match=r'\$20'):
+            with pytest.raises(ValueError) as caught:
                 await service.wait_for_turn('chat', None)
+            assert str(caught.value) == message
     asyncio.run(run())
 
 
