@@ -8,7 +8,7 @@ from hashlib import sha256
 from pathlib import Path
 from typing import Any, Literal, Optional
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, StrictBool, ValidationInfo, field_validator
 from fastapi import HTTPException
 import stripe
 
@@ -23,6 +23,9 @@ logger = logging.getLogger(__name__)
 # Verified against Brickwith's checkout dropdown on 2026-10-09.
 SHIPPING_COUNTRIES = json.loads((Path(__file__).resolve().parents[1] / 'data' / 'shipping_countries.json').read_text())
 SHIPPING_COUNTRY_CODES = {row['code'] for row in SHIPPING_COUNTRIES}
+# Required administrative areas from Google libaddressinput, CC BY 4.0.
+# https://github.com/google/libaddressinput/blob/81eb9628382b07d371d8ea0b11badf7de3857fd5/cpp/src/region_metadata_constants.cc
+SHIPPING_COUNTRIES_REQUIRING_REGION = {row['code'] for row in SHIPPING_COUNTRIES if row.get('requiresRegion')}
 # Stripe's address selector enum omits these ISO regions. New on-page orders
 # supply their address via payment_intent_data.shipping instead of that selector.
 STRIPE_SELECTOR_UNSUPPORTED = {'AS', 'CC', 'CU', 'CX', 'FM', 'HM', 'IR', 'KP', 'MH', 'MP', 'NF', 'PW', 'SY', 'UM', 'VI'}
@@ -34,9 +37,9 @@ class ShippingAddress(BaseModel):
     line1: str = Field(min_length=1, max_length=200)
     line2: Optional[str] = Field(default=None, max_length=200)
     city: str = Field(min_length=1, max_length=200)
-    state: Optional[str] = Field(default=None, max_length=200)
     postal_code: str = Field(min_length=1, max_length=200)
     country: str = Field(min_length=2, max_length=2)
+    state: Optional[str] = Field(default=None, max_length=200, validate_default=True)
 
     @field_validator('country')
     @classmethod
@@ -44,6 +47,14 @@ class ShippingAddress(BaseModel):
         value = value.upper()
         if value not in SHIPPING_COUNTRY_CODES:
             raise ValueError('Unsupported shipping country')
+        return value
+
+
+    @field_validator('state')
+    @classmethod
+    def require_state_for_destination(cls, value: str | None, info: ValidationInfo) -> str | None:
+        if info.data.get('country') in SHIPPING_COUNTRIES_REQUIRING_REGION and not value:
+            raise ValueError('Enter a state or province for this shipping country')
         return value
 
 

@@ -175,7 +175,8 @@ SHIPPING_CONTACT = {'name': ' Test Builder ', 'address': {'line1': ' 123 Main ',
 @pytest.mark.parametrize('country', sorted(checkout.SHIPPING_COUNTRY_CODES))
 def test_every_brickwith_destination_can_be_provided_to_checkout(setup, country):
     _, create, track = setup
-    contact = {**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], 'country': country.lower()}}
+    region = 'Test Region' if country in checkout.SHIPPING_COUNTRIES_REQUIRING_REGION else ''
+    contact = {**SHIPPING_CONTACT, 'address': {**SHIPPING_CONTACT['address'], 'country': country.lower(), 'state': region}}
     result = run(uiMode='elements', shippingAddress=contact, argentinaTaxId='20123456786' if country == 'AR' else None)
     params = create.call_args.kwargs
     assert 'shipping_address_collection' not in params
@@ -183,7 +184,7 @@ def test_every_brickwith_destination_can_be_provided_to_checkout(setup, country)
     assert shipping['address']['country'] == country
     assert shipping['name'] == 'Test Builder'
     assert shipping['address']['line1'] == '123 Main'
-    assert shipping['address']['state'] == ''
+    assert shipping['address']['state'] == region
     assert 'phone' not in shipping
     assert params['phone_number_collection'] == {'enabled': False}
     assert params['metadata']['shippingAddressProvided'] == 'true'
@@ -246,6 +247,23 @@ def test_frontend_and_backend_share_the_verified_brickwith_country_snapshot():
     frontend_rows = json.loads((Path(__file__).resolve().parents[2] / 'frontend/src/data/shippingCountries.json').read_text())
     assert frontend_rows == checkout.SHIPPING_COUNTRIES
     assert len(checkout.SHIPPING_COUNTRY_CODES) == 249
+
+
+@pytest.mark.parametrize('country', ['US', 'ca', 'AU', 'JP', 'BR'])
+@pytest.mark.parametrize('state', [{}, {'state': None}, {'state': ''}, {'state': '  '}])
+def test_checkout_rejects_missing_required_shipping_region_before_creating_payment(setup, country, state):
+    _, create, _ = setup
+    address = {key: value for key, value in SHIPPING_CONTACT['address'].items() if key != 'state'}
+    contact = {**SHIPPING_CONTACT, 'address': {**address, 'country': country, **state}}
+    with pytest.raises(ValidationError, match='Enter a state or province'):
+        run(uiMode='elements', shippingAddress=contact)
+    create.assert_not_called()
+
+
+@pytest.mark.parametrize('country', ['GB', 'DE'])
+def test_shipping_region_can_be_omitted_when_not_used(country):
+    address = {key: value for key, value in SHIPPING_CONTACT['address'].items() if key != 'state'}
+    assert checkout.ShippingAddress(**{**address, 'country': country}).state is None
 
 
 @pytest.mark.parametrize('change', [

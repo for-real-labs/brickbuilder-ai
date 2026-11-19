@@ -157,6 +157,38 @@ it('starts with contact details, keeps the preview visible, and has no shipping 
   expect(container.querySelector('[data-testid="model-preview"]')).toBe(preview);
 });
 
+it('requires a state or province only for destinations that require it', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession')
+    .mockResolvedValue({ session_id: 'cs', client_secret: 'secret' });
+  await renderOrder();
+  const country = container.querySelector<HTMLSelectElement>('select[name="country"]')!;
+  const region = container.querySelector<HTMLInputElement>('input[name="region"]')!;
+  const chooseCountry = (code: string) => act(async () => {
+    country.value = code;
+    country.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect(country.value).toBe('US');
+  for (const code of ['US', 'CA', 'AU', 'JP']) {
+    await chooseCountry(code);
+    expect(region.required, code).toBe(true);
+    expect(region.validity.valueMissing).toBe(true);
+    expect(region.closest('label')?.textContent).toBe('State/Province');
+  }
+  act(() => Object.entries({ ...details, region: '   ' }).forEach(([name, value]) => fill(name, value)));
+  await submitContact();
+  expect(create).not.toHaveBeenCalled();
+  expect(container.querySelector('.checkout-error')?.textContent).toBe('Enter your state or province.');
+  expect(document.activeElement).toBe(region);
+
+  await chooseCountry('GB');
+  expect(region.required).toBe(false);
+  expect(region.closest('label')?.textContent).toBe('State/Province (optional)');
+  await submitContact();
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({
+    shippingAddress: getShippingContact({ ...details, region: '' }, 'GB'),
+  }), 'auth-token');
+});
+
 it('retains country and optional apartment details when editing after payment', async () => {
   vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs_test', client_secret: 'secret' });
   await renderOrder();
@@ -411,7 +443,7 @@ it('matches Brickwith address order and optional fields without collecting a pho
     'email', 'firstName', 'lastName', 'country', 'line1', 'line2', 'region', 'city', 'postalCode', 'shipInstructionsPostcard',
   ]);
   expect(container.querySelector<HTMLInputElement>('[name="line2"]')!.required).toBe(false);
-  expect(container.querySelector<HTMLInputElement>('[name="region"]')!.required).toBe(false);
+  expect(container.querySelector<HTMLInputElement>('[name="region"]')!.required).toBe(true);
   expect(container.querySelector('input[type="tel"], input[name="phone"]')).toBeNull();
   expect(form.textContent).not.toMatch(/phone/i);
 });
@@ -495,7 +527,8 @@ it('offers every verified Brickwith country and sends the selected address to ch
   const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret', shipping_address_provided: true });
   await renderOrder();
   const select = container.querySelector<HTMLSelectElement>('[name="country"]')!;
-  expect(Array.from(select.options).map(option => ({ code: option.value, name: option.textContent }))).toEqual(shippingCountries);
+  expect(Array.from(select.options).map(option => ({ code: option.value, name: option.textContent })))
+    .toEqual(shippingCountries.map(({ code, name }) => ({ code, name })));
   expect(select.options).toHaveLength(249);
   await act(async () => { select.value = 'CX'; select.dispatchEvent(new Event('change', { bubbles: true })); });
   act(() => Object.entries(details).forEach(([name, value]) => fill(name, value)));
@@ -624,7 +657,7 @@ it.each([['builder', 299, '2.99'], ['creator', 1999, '19.99']] as const)('confir
 it('requotes quantities, retains delivery, and sends the selected number to payment', async () => {
   const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret' });
   await renderOrder();
-  await act(async () => fill('firstName', 'Jake'));
+  act(() => Object.entries({ ...details, firstName: 'Jake' }).forEach(([name, value]) => fill(name, value)));
   vi.mocked(GetPriceApiService.getPrice).mockResolvedValue({ ...quote, total_parts: 720, order_pricing: orderPricing(14000) } as never);
   await act(async () => {
     const select = container.querySelector('[aria-label="Model quantity"]') as HTMLSelectElement;
