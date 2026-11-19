@@ -1,3 +1,4 @@
+import { DeviceSignIn } from './DeviceSignIn';
 import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
 import { SignupCodeVerification } from './SignupCodeVerification';
 import { PasswordRecovery } from './PasswordRecovery';
@@ -242,7 +243,7 @@ export default function LoginModal({
     if (e.target === e.currentTarget) close();
   };
 
-  const googleOption = (
+  const googleOption = !nativeIos && (
     <div data-native-mobile-hidden="true">
       {!claimingCredits && <div className="mt-5 flex items-center gap-3"><div className="h-px flex-1 bg-slate-200" /><span className="text-xs text-slate-400">or</span><div className="h-px flex-1 bg-slate-200" /></div>}
           <button
@@ -515,6 +516,8 @@ export default function LoginModal({
           {authMethod === "password" && <PasswordRecovery email={email} surface="login_modal" />}
 
         {!claimingCredits && googleOption}
+        {!confirmationRequired && !otpSent && <DeviceSignIn surface="login_modal" busy={loading}
+          onBusyChange={setLoading} onSuccess={() => (onSuccess ?? onClose)()} />}
         {claimingCredits && <p className="mt-6 text-center text-xs leading-5 text-slate-500">
           By continuing, you agree to our <a href="/terms" target="_blank" rel="noreferrer" onClick={() => track("terms_opened")} className="underline hover:text-slate-800">Terms of Service</a> and <a href="/privacy" target="_blank" rel="noreferrer" onClick={() => track("privacy_opened")} className="underline hover:text-slate-800">Privacy Policy</a>.
         </p>}

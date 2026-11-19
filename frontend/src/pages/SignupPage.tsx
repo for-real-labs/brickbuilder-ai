@@ -1,3 +1,5 @@
+import { DeviceSignIn } from '../components/DeviceSignIn';
+import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
 import posthog from 'posthog-js';
 import { PasswordRecovery } from '../components/PasswordRecovery';
 import { loginRedirect } from '../utils/loginRedirect';
@@ -15,6 +17,7 @@ function SignupPage() {
   const fromState = (location.state as { from?: string } | null)?.from;
   const redirectTo = loginRedirect(location.search, fromState);
   const [searchParams] = useSearchParams();
+  const nativeIos = getNativeMobileShellInfo()?.platform === 'ios';
   const { signInWithOtp, verifyOtp, signInWithGoogle } = useAuth();
 
   const [email, setEmail] = useState("");
@@ -153,7 +156,7 @@ function SignupPage() {
                 <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>
               )}
 
-              <div data-native-mobile-hidden="true">
+              {!nativeIos && <div data-native-mobile-hidden="true">
                 {/* Divider */}
                 <div className="flex items-center gap-3 pt-1">
                   <div className="h-px flex-1 bg-slate-200" />
@@ -165,7 +168,7 @@ function SignupPage() {
                 <button
                   type="button"
                   className="h-11 w-full rounded-lg border border-slate-300 bg-white text-slate-800 transition-colors flex items-center justify-center gap-2 hover:bg-slate-50 hover:border-slate-400 mt-4"
-                  onClick={handleGoogleSignIn}
+                  disabled={loading} onClick={handleGoogleSignIn}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="18" height="18" aria-hidden="true" focusable="false">
                     <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.3 9.1 3.4l6.8-6.8C35.4 2.3 30 0 24 0 14.7 0 6.7 5.4 2.7 13.2l7.9 6.1C12.3 13.1 17.6 9.5 24 9.5z"/>
@@ -175,7 +178,9 @@ function SignupPage() {
                   </svg>
                   Sign up with Google
                 </button>
-              </div>
+              </div>}
+              <DeviceSignIn surface="signup_page" busy={loading} onBusyChange={setLoading}
+                onSuccess={() => navigate(redirectTo)} />
 
               <p className="text-xs text-slate-500 text-center">
                 Already have an account? <Link to="/login" state={{ from: redirectTo }} className="text-[#f44336] hover:underline">Log in</Link>.

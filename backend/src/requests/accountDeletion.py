@@ -7,9 +7,9 @@ from typing import Literal
 
 import stripe
 from fastapi import APIRouter, Depends, HTTPException, Header
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-from ..utils import auth, billing
+from ..utils import apple_sign_in, auth, billing
 from ..utils.database import execute_query
 
 router = APIRouter(prefix="/account", tags=["account"])
@@ -38,6 +38,7 @@ async def delete_account(identity, token):
         if "ACCOUNT_HAS_ACTIVE_BUILDS" in str(error):
             raise HTTPException(409, "Cancel or finish your active builds, then delete your account.") from None
         raise
+    await apple_sign_in.revoke_before_deletion(db, result.user)
     rows = (await execute_query(db.table("billing_accounts").select("stripe_customer_id,livemode")
                                 .eq("user_id", user_id))).data
     for row in rows:
@@ -85,3 +86,32 @@ async def remove_account(body: DeletionRequest, identity: dict = Depends(auth.ge
     except Exception:
         logger.exception("Account deletion could not complete")
         raise HTTPException(503, "Account deletion could not complete. Please retry; your request is safe to repeat.") from None
+
+
+class AppleAuthorizationRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    authorization_code: str = Field(min_length=1, max_length=2048)
+
+
+@router.post("/apple-authorization")
+async def save_apple_authorization(body: AppleAuthorizationRequest,
+                                   authorization: str | None = Header(None)):
+    # The native one-time Apple code is exchanged before the authenticator
+    # challenge. This endpoint only writes a grant that matches the Apple user.
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(401, "Sign in to save your Apple authorization.")
+    db = billing.client()
+    try:
+        result = await asyncio.to_thread(db.auth.get_user, authorization[7:])
+    except Exception:
+        raise HTTPException(401, "Please sign in again.") from None
+    if not result.user or result.user.is_anonymous:
+        raise HTTPException(401, "Please sign in again.")
+    try:
+        await apple_sign_in.save_for_deletion(db, result.user, body.authorization_code)
+    except HTTPException:
+        raise
+    except Exception:
+        logger.warning("Apple authorization could not be saved")
+        raise HTTPException(503, "Apple sign-in could not finish. Please try again.") from None
+    return {"saved": True}

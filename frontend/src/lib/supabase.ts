@@ -52,7 +52,8 @@ function createStubClient(): SupabaseClient {
 export const supabase: SupabaseClient = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey, {
       auth: {
-        persistSession: true,
+        experimental: { passkey: import.meta.env.VITE_PASSKEYS_ENABLED === 'true' },
+      persistSession: true,
         detectSessionInUrl: true,
         // Auto-refresh tokens before they expire
         autoRefreshToken: true,

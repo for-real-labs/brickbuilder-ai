@@ -34,6 +34,8 @@ export function createNativeBootstrapScript(
     platform,
     version: '0.2.0',
     applePurchases: platform === 'ios',
+    appleSignIn: platform === 'ios',
+    passkeys: platform === 'ios',
     changeRequest,
   });
 

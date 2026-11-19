@@ -17,6 +17,8 @@ export type NativeMobileShellInfo = Readonly<{
   platform: 'ios' | 'android';
   version: string;
   applePurchases?: boolean;
+  appleSignIn?: boolean;
+  passkeys?: boolean;
   changeRequest?: NativeMobileChangeRequestContext;
 }>;
 
