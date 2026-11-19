@@ -1150,7 +1150,7 @@ it.each(['model', 'instructions'] as const)('expands %s and returns with the sam
   expect(back.closest('.landing-expanded-footer')).not.toBeNull();
   expect(document.body.style.overflow).toBe('hidden');
   expect(dialog.contains(content)).toBe(true);
-  expect(expand.hidden).toBe(true);
+  expect(expand.hidden).toBe(view === 'model');
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_expanded', { generation_id: 'castle', view, source: 'viewer_footer' });
   await act(async () => back.click());
   expect(dialog.dataset.expanded).toBe('false');
@@ -1201,6 +1201,26 @@ it('keeps the instructions sidebar and Go Back behavior at a zoomed desktop widt
   expect(dialog.dataset.expanded).toBe('false');
   expect(query.value).toBe('id=castle');
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+});
+
+it('toggles expanded instructions from the top-right control without changing the linked step', async () => {
+  vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  query.value = 'id=castle&instructions=1&step=4';
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
+  const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  const toggle = dialog.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-view-expand')!;
+  expect(toggle.hidden).toBe(false);
+  expect(toggle.getAttribute('aria-label')).toBe('Exit expanded instructions');
+  await act(async () => toggle.click());
+  expect(dialog.dataset.expanded).toBe('false');
+  expect(dialog.dataset.view).toBe('instructions');
+  expect(toggle.getAttribute('aria-label')).toBe('Expand instructions');
+  expect(document.activeElement).toBe(toggle);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_collapsed', { generation_id: 'castle', view: 'instructions', source: 'viewer_toolbar' });
+  await act(async () => toggle.click());
+  expect(dialog.dataset.expanded).toBe('true');
+  expect(toggle.getAttribute('aria-label')).toBe('Exit expanded instructions');
+  expect(query.value).toBe('id=castle&instructions=1&step=4');
 });
 
 it('returns to the inline model when the selected build changes while expanded', async () => {

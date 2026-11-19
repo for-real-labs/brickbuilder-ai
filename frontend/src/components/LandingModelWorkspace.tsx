@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Box, Maximize2, Ruler } from 'lucide-react';
+import { ArrowLeft, BookOpen, Box, Maximize2, Minimize2, Ruler } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
@@ -16,6 +16,8 @@ import './LandingModelWorkspace.css';
 
 const InstructionsViewer = lazy(() => import('../pages/InstructionsPage').then(module => ({ default: module.InstructionsViewer })));
 const ThreeLDRViewer = lazy(() => import('./ThreeLDRViewer').then(module => ({ default: module.ThreeLDRViewer })));
+
+type ViewerCollapseSource = 'back_button' | 'escape' | 'viewer_toolbar';
 
 export function modelEditSuggestion(model: LandingModel): string {
   const name = model.generation.name?.trim() || model.generation.prompt?.trim() || 'model';
@@ -59,8 +61,9 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const panel = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
-  const collapseRef = useRef<(source: 'back_button' | 'escape') => void>(() => {});
+  const collapseRef = useRef<(source: ViewerCollapseSource) => void>(() => {});
   const showingInstructions = featureAccess === 'allowed' && !pendingEdit && generationId === requestedInstructionsId;
+  const expandLabel = showingInstructions ? (expanded ? 'Exit expanded instructions' : 'Expand instructions') : 'Expand 3D viewer';
   useEffect(() => {
     setInstructionsId(id => id === generationId ? id : null);
     setExpanded(false);
@@ -130,7 +133,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       expandButton.current?.focus();
     };
   }, [expanded, generation?.generation_id]);
-  const collapse = (source: 'back_button' | 'escape') => {
+  const collapse = (source: ViewerCollapseSource) => {
     posthog.capture('landing_model_view_collapsed', {
       generation_id: generation?.generation_id, view: showingInstructions ? 'instructions' : 'model', source,
     });
@@ -215,16 +218,19 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               </svg>}
             </span>
           </button>}
-          <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded}
-            aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'}
-            title={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'} aria-haspopup="dialog"
+          <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded && !showingInstructions}
+            aria-label={expandLabel} title={expandLabel} aria-expanded={expanded} aria-haspopup={expanded ? undefined : 'dialog'}
             onClick={() => {
+              if (expanded) {
+                collapse('viewer_toolbar');
+                return;
+              }
               posthog.capture('landing_model_view_expanded', {
                 generation_id: generation.generation_id, view: showingInstructions ? 'instructions' : 'model', source: 'viewer_footer',
               });
               setExpanded(true);
             }}>
-            <Maximize2 size={18} aria-hidden="true" />
+            {expanded ? <Minimize2 size={18} aria-hidden="true" /> : <Maximize2 size={18} aria-hidden="true" />}
           </button>
           </div>
         </div>}

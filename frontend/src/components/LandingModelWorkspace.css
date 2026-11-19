@@ -70,6 +70,7 @@
 .landing-view-back { border-color: #fecaca; background: #fff; color: #b91c1c; }
 .landing-model-panel[data-expanded="true"] { position: fixed; z-index: 50; inset: var(--landing-expanded-top, 80px) 0 0; display: flex; flex-direction: column; width: 100%; height: auto; padding: 12px max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); overflow: hidden; background: #f8fafc; }
 .landing-model-panel[data-expanded="true"] > .landing-model-workspace { flex: 1; height: auto; max-height: none; min-height: 0; }
+.landing-model-panel[data-expanded="true"] .instructions-step-heading { padding-right: 64px; }
 @media (max-width: 639px) {
   .landing-model-panel[data-expanded="true"] { padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
 }
@@ -78,7 +79,7 @@
   .landing-model-panel[data-expanded="true"] .instructions-step-heading { grid-column: 1; grid-row: 1; }
   .landing-model-panel[data-expanded="true"] .instructions-canvas { grid-column: 1; grid-row: 2; }
   .landing-model-panel[data-expanded="true"] .instructions-navigation { grid-column: 1; grid-row: 3; }
-  .landing-model-panel[data-expanded="true"] .instructions-parts { grid-column: 2; grid-row: 1 / 4; max-height: none; margin-left: 0; }
+  .landing-model-panel[data-expanded="true"] .instructions-parts { grid-column: 2; grid-row: 1 / 4; max-height: none; margin-top: 64px; margin-left: 0; }
 }
 
 @media (min-width: 900px) {
@@ -91,7 +92,7 @@
     grid-template-rows: auto minmax(0, 1fr) auto;
     gap: 12px;
   }
-  .landing-model-panel[data-view="instructions"] .instructions-step-heading { grid-column: 2; grid-row: 1; padding: 0 8px; }
+  .landing-model-panel[data-view="instructions"] .instructions-step-heading { grid-column: 2; grid-row: 1; padding: 0 60px 0 8px; }
   .landing-model-panel[data-view="instructions"] .instructions-canvas { grid-column: 2; grid-row: 2; border: 1px solid #e2e8f0; border-radius: 16px; }
   .landing-model-panel[data-view="instructions"] .instructions-navigation { grid-column: 2; grid-row: 3; margin: 0; }
   .landing-model-panel[data-view="instructions"] .instructions-parts {
