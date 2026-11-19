@@ -63,7 +63,7 @@ async def run():
         runtime = (await client.get('/integration/runtime')).json()
         assert runtime == worker.runtime()
         assert 'preview_build_version' not in runtime and 'build_review_version' not in runtime
-        assert runtime['instruction_plan_version'] == 4 and runtime['instruction_publication_version'] == 2
+        assert runtime['instruction_plan_version'] == 4 and runtime['instruction_publication_version'] == 3
         assert runtime['generation_cost_limit_usd'] == 20 and runtime['parts_catalog_version'] == 1
     store = get_store()
     entry = llm_config.create({'litellm_params': {'model': 'openai/gpt-5.5', 'api_key': 'smoke-fake-key'},
@@ -156,8 +156,7 @@ async def run():
         disconnected = '0 FILE main.ldr\n' + placement(0, 0, 0, '3001.dat') + placement(400, 0, 0, '3001.dat')
         response = await client.post('/integration/instructions', content=disconnected.encode())
         assert response.status_code == 422 and 'Repair disconnected' in response.text
-    # Publication's immutable review must reject both real Peacock failure modes.
-    # Keep these independent of catalog checks and the provider's self-review.
+    # Check the publication gate with the actual parts library.
     from brickbuilder_integration.instruction_policy import review_instructions, TOOLKIT_ROOT
     import settings
     header = '0 FILE main.ldr\n0 Collision regression\n0 Name: main.ldr\n0 Author: Runtime test\n0 !LDRAW_ORG Model\n'
@@ -166,11 +165,20 @@ async def run():
         '1 85 -10 -96 30 0 0 1 0 1 0 -1 0 0 27925.dat\n',
         '1 323 -40 -120 50 1 0 0 0 1 0 0 0 1 22885.dat\n'
         '1 322 -30 -88 20 1 0 0 0 1 0 0 0 1 3021.dat\n',
+        '1 0 -60 -416 40 0 0 1 0 1 0 -1 0 0 4079.dat\n'
+        '1 0 -40 -416 80 -1 0 0 0 1 0 0 0 -1 4079.dat\n',
+        '1 226 -50 -526 -96 1 0 0 0 0 -1 0 1 0 3960.dat\n'
+        '1 78 0 -512 -100 1 0 0 0 1 0 0 0 1 4740.dat\n',
+        placement(0, 0, 0, '4079.dat') + placement(0, -30, 27, '3062b.dat'),
     ]
     for placements in regressions:
         feedback = await asyncio.to_thread(review_instructions, (header + placements).encode(), TOOLKIT_ROOT, settings.LDRAW_DIR)
         assert feedback['passed'] is False, feedback
         assert any(d['code'] == 'assembly.material_overlap' for d in feedback['diagnostics']), feedback
+    row = (header + placement(0, 0, 0, '3020.dat') + placement(-20, -8, 0, '4079.dat')
+           + placement(20, -8, 0, '4079.dat'))
+    feedback = await asyncio.to_thread(review_instructions, row.encode(), TOOLKIT_ROOT, settings.LDRAW_DIR)
+    assert feedback['passed'] is True, feedback
     shaft = '1 0 0 0 0 1 0 0 0 1 0 0 0 1 44294.dat\n'
     def sprocket(y):
         return f'1 0 0 {y} 0 0 0 1 0 1 0 -1 0 0 57519.dat\n'
