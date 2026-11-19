@@ -81,7 +81,7 @@
   .landing-model-panel[data-expanded="true"] .instructions-parts { grid-column: 2; grid-row: 1 / 4; max-height: none; margin-left: 0; }
 }
 
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .landing-model-panel[data-view="instructions"]:not([data-expanded="true"]) { position: relative; }
   .landing-model-panel[data-view="instructions"] .landing-model-bottom-toolbar { display: none; }
   .landing-model-panel[data-view="instructions"] .instructions-embedded { padding: 12px; }

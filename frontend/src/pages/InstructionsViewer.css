@@ -58,6 +58,6 @@
 .instructions-parts-toggle:focus-visible { outline: 2px solid #f44336; outline-offset: 2px; }
 .instructions-embedded .instructions-parts[data-all-parts] { max-height: 110px; }
 .landing-model-panel[data-expanded="true"] .instructions-parts[data-all-parts] { max-height: 180px; }
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .landing-model-panel[data-view="instructions"] .instructions-parts[data-all-parts] { max-height: none; }
 }

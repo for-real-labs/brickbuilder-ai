@@ -1185,8 +1185,13 @@ it('supports Escape and view switching while expanded, then restores scrolling o
   document.body.style.overflow = '';
 });
 
-it('returns desktop instructions to the model using Go Back without requiring the hidden view toggle', async () => {
-  vi.stubGlobal('matchMedia', () => ({ matches: true }));
+it('keeps the instructions sidebar and Go Back behavior at a zoomed desktop width', async () => {
+  const sidebarQuery = '(min-width: 900px)';
+  const workspaceCss = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  const viewerCss = readFileSync('src/pages/InstructionsViewer.css', 'utf8');
+  expect(workspaceCss.split(`@media ${sidebarQuery} {`)[1]).toMatch(/\.instructions-parts\s*\{\s*grid-column: 1/);
+  expect(viewerCss.split(`@media ${sidebarQuery} {`)[1]).toMatch(/\.instructions-parts\[data-all-parts\]\s*\{\s*max-height: none/);
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === sidebarQuery }));
   query.value = 'id=castle&instructions=1&step=2';
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
   const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
