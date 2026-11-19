@@ -1,26 +1,34 @@
 # One-time credits
 
-An active paid monthly plan is required to buy credits. On the web, enter an
-amount from $0.50 to $9,999.99. Builder receives `ceil(cents × 225 / 299)`
-credits; Creator and retired Master use `ceil(cents × 1500 / 1999)`.
-For example, $10 buys 753 Builder credits or 751 Creator credits. Quotes always
-round up to whole credits. The server chooses the rate from the verified paid
-account and stores the amount and rate version on Stripe's payment metadata.
+An active paid monthly plan is required to buy credits. The web and current iOS
+catalogs offer the same one-time pack sizes. Prices below are for the U.S.
 
-The compact Buy credits form is at the bottom of pricing and billing. Free and
-guest visitors see a paid-monthly-plan popup before any checkout starts. The
-backend independently rejects unpaid accounts. Purchased credits never expire
-and remain available after a subscription ends. Refunds reconcile the original
-quote without requiring a still-active subscription.
+| Credits | Price | Premium over the Builder subscription rate | Savings per credit vs. the smallest pack |
+| ---: | ---: | ---: | ---: |
+| 115 | $1.99 | 30% | |
+| 626 | $9.99 | 20% | 8% |
+| 1,367 | $19.99 | 10% | 15% |
 
-Apple retains the fixed StoreKit consumables and localized prices; arbitrary
-amounts are supported by web checkout. Starting an Apple credit purchase now
-also requires paid access. Previously purchased credits still reconcile.
+The picker shows StoreKit’s localized price and calculates savings from local
+prices on iOS. On the web, Stripe checkout accepts a pack key and the server
+sets the price and credit count. Pricing and Billing both use the same picker.
+Purchased credits never expire and remain available after a subscription ends.
 
-Apply `20261102010000_custom_credit_purchases.sql` once before deploying the
-backend. It adds the custom Stripe purchase kind, retaining previous pack limits,
-owner binding, idempotency, and refunds. Existing fixed-price purchases continue
-to reconcile using the original prices and amounts.
+Apply `20261119010000_tiered_credit_packs.sql` before deploying the backend,
+then deploy the updated frontend. In-flight custom Stripe purchases and
+historical receipts and refunds still reconcile using the original catalog or
+the versioned quote from `20261102010000_custom_credit_purchases.sql`.
+
+For iOS, create and submit the three consumables below, using the U.S. prices
+above and the appropriate localized prices. Release a native build with the
+updated purchase bridge. Test product loading and each grant in TestFlight
+before releasing. Older binaries continue to work with the legacy Apple
+products while those are available. Keep the old IDs in the server and native
+transaction allowlists for unfinished purchases and refunds.
+
+- `ai.brickbuilder.app.credits.115`
+- `ai.brickbuilder.app.credits.626`
+- `ai.brickbuilder.app.credits.1367`
 
 Apply `20261027010000_credit_packs.sql` before deploying. It adds a private purchase
 ledger and reuses the non-expiring wallet bucket historically named
@@ -35,7 +43,7 @@ metadata tag. Add `charge.refunded`, `charge.dispute.created`, and
 `charge.dispute.closed` to the existing billing webhook. Existing checkout success
 events deliver purchases even if the customer never returns to the app.
 
-Apple products (consumable, no Family Sharing):
+Legacy Apple products (consumable, no Family Sharing):
 - `ai.brickbuilder.app.credits.800`, Apple ID `6827673740`
 - `ai.brickbuilder.app.credits.1500`, Apple ID `6827673911`
 

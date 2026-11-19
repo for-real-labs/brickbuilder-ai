@@ -3,21 +3,34 @@ import { X } from 'lucide-react';
 import posthog from 'posthog-js';
 import { useBilling } from '../contexts/BillingContext';
 import { isAppleApp } from '../services/applePurchases';
-import { creditPurchaseCents, purchasedCredits } from '../utils/creditPurchase';
+import { CREDIT_PACKS, appleCreditProduct, creditPackSavings, type AppleCreditPackKey } from '../utils/creditPurchase';
+import { formatOrderPrice } from '../utils/orderCheckout';
+
+const LEGACY_APPLE_PACKS = [{ key: '800', credits: 800 }, { key: '1500', credits: 1500 }] as const;
 
 export function CreditPacks({ source }: { source: string }) {
   const { account, loading, busy, enabled, checkoutAvailable, buyCredits, appleProducts, openUpgrade } = useBilling();
-  const [amount, setAmount] = useState('5.00');
-  const [applePack, setApplePack] = useState('builder');
+  const [packKey, setPackKey] = useState<AppleCreditPackKey>(CREDIT_PACKS[0].key);
   const [notice, setNotice] = useState(false);
   const dialog = useRef<HTMLDialogElement>(null);
   const id = useId();
   const apple = isAppleApp();
-  const cents = creditPurchaseCents(amount);
-  const credits = cents === null ? null : purchasedCredits(cents, account?.plan_key);
   const paid = Boolean(account?.has_subscription && account.paid_features && account.plan_key !== 'free');
-  const appleCredits = applePack === 'builder' ? 800 : 1500;
-  const appleProduct = appleProducts.find(product => product.id === `ai.brickbuilder.app.credits.${appleCredits}`);
+  const appleOptions = (packs: readonly { key: AppleCreditPackKey; credits: number }[]) => packs.flatMap(pack => {
+    const product = appleProducts.find(item => item.id === appleCreditProduct(pack.key));
+    return product?.displayPrice ? [{ ...pack, displayPrice: product.displayPrice, price: product.price ?? 0 }] : [];
+  });
+  const newAppleOptions = apple ? appleOptions(CREDIT_PACKS) : [];
+  const options = apple
+    ? newAppleOptions.length ? newAppleOptions : appleOptions(LEGACY_APPLE_PACKS)
+    : CREDIT_PACKS.map(pack => ({ ...pack, displayPrice: formatOrderPrice(pack.cents), price: pack.cents }));
+  const base = options.find(option => option.key === CREDIT_PACKS[0].key);
+  const choices = options.map(option => ({
+    ...option,
+    savings: base ? creditPackSavings(option.credits, option.price, base.credits, base.price) : 0,
+  }));
+  const selected = choices.find(pack => pack.key === packKey) ?? choices[0];
+
   useEffect(() => {
     if (!notice) return;
     const trigger = document.activeElement instanceof HTMLElement ? document.activeElement : null;
@@ -40,27 +53,26 @@ export function CreditPacks({ source }: { source: string }) {
         setNotice(true);
         return;
       }
-      if (apple && appleProduct) void buyCredits(applePack, source);
-      else if (!apple && cents !== null) void buyCredits(cents, source);
+      if (selected) void buyCredits(selected.key, source);
     }}>
-      {apple ? <label htmlFor={`${id}-amount`}>Credits
-        <select id={`${id}-amount`} value={applePack} onChange={event => {
-          setApplePack(event.target.value);
-          posthog.capture('billing_credit_amount_changed', { source, provider: 'apple', pack_key: event.target.value });
-        }}>
-          {['builder', 'creator'].map(key => {
-            const count = key === 'builder' ? 800 : 1500;
-            const product = appleProducts.find(item => item.id === `ai.brickbuilder.app.credits.${count}`);
-            return <option key={key} value={key}>{count.toLocaleString()} · {product?.displayPrice ?? 'Unavailable'}</option>;
-          })}
+      <label htmlFor={`${id}-pack`}>Credit pack
+        <select id={`${id}-pack`} value={selected?.key ?? ''} disabled={!selected || busy}
+          aria-describedby={selected?.savings ? `${id}-savings` : undefined} onChange={event => {
+            const next = choices.find(pack => pack.key === event.target.value);
+            if (!next) return;
+            setPackKey(next.key);
+            posthog.capture('billing_credit_amount_changed', { source, provider: apple ? 'apple' : 'stripe', pack_key: next.key });
+          }}>
+          {!selected && <option value="">Unavailable</option>}
+          {choices.map(pack => <option key={pack.key} value={pack.key}>
+            {`${pack.credits.toLocaleString()} credits · ${pack.displayPrice}${pack.savings ? ` · ${pack.savings}% off` : ''}`}
+          </option>)}
         </select>
-      </label> : <label htmlFor={`${id}-amount`}>Amount (USD)
-        <input id={`${id}-amount`} type="number" inputMode="decimal" min="0.50" max="9999.99" step="0.01" required value={amount}
-          aria-describedby={`${id}-quote`} onChange={event => setAmount(event.target.value)}
-          onBlur={() => posthog.capture('billing_credit_amount_changed', { source, amount_cents: cents })} />
-      </label>}
-      <output id={`${id}-quote`} htmlFor={`${id}-amount`} aria-live="polite">{apple ? 'Apple sets available amounts.' : credits === null ? 'Enter $0.50–$9,999.99' : `${credits.toLocaleString()} credits`}</output>
-      <button type="submit" className="billing-secondary" disabled={busy || loading || !enabled || !checkoutAvailable || (paid && apple && !appleProduct)}>{busy ? 'Opening…' : 'Buy credits'}</button>
+      </label>
+      {selected?.savings ? <output id={`${id}-savings`} htmlFor={`${id}-pack`} aria-live="polite">
+        {selected.savings}% less per credit than the 115-credit pack
+      </output> : null}
+      <button type="submit" className="billing-secondary" disabled={busy || loading || !enabled || !checkoutAvailable || (paid && !selected)}>{busy ? 'Opening…' : 'Buy credits'}</button>
     </form>
     {notice && <dialog ref={dialog} className="billing-dialog billing-feature-dialog" aria-labelledby={`${id}-notice-title`}
       aria-describedby={`${id}-notice-description`} onCancel={event => { event.preventDefault(); closeNotice('cancel'); }}>

@@ -1,18 +1,17 @@
-import { describe, expect, it } from 'vitest';
-import { creditPurchaseCents, purchasedCredits } from '../src/utils/creditPurchase';
+import { expect, it } from 'vitest';
+import { CREDIT_PACKS, creditPackSavings, findCreditPack } from '../src/utils/creditPurchase';
 
-describe('custom credit purchase quotes', () => {
-  it.each([['0.50',50],['2.99',299],['19.99',1999],['10',1000],['0.5',50],['9999.99',999999]])('parses %s without fractional cents', (amount, cents) => {
-    expect(creditPurchaseCents(String(amount))).toBe(cents);
-  });
-  it.each(['', '-1', '0.49', '10000', '1.999', 'NaN', 'Infinity', '1e3'])('rejects invalid dollar amount %s', amount => {
-    expect(creditPurchaseCents(amount)).toBeNull();
-  });
-  it('matches the monthly prices and rounds up only fractional credits', () => {
-    expect(purchasedCredits(299,'builder')).toBe(225);
-    expect(purchasedCredits(1999,'creator')).toBe(1500);
-    expect(purchasedCredits(1000,'builder')).toBe(753);
-    expect(purchasedCredits(1000,'creator')).toBe(751);
-    expect(purchasedCredits(50,'builder')).toBe(38);
-  });
+it('uses fixed packs with prices about 30%, 20%, and 10% above the Builder rate', () => {
+  const premiums = CREDIT_PACKS.map(pack => Math.round(100 * (pack.cents / pack.credits / (299 / 225) - 1)));
+  expect(premiums).toEqual([30, 20, 10]);
+  expect(findCreditPack('626')).toEqual({ key: '626', cents: 999, credits: 626 });
+  expect(findCreditPack('800')).toBeUndefined();
+});
+
+it('compares each pack to the smallest pack at the actual prices', () => {
+  const base = CREDIT_PACKS[0];
+  expect(CREDIT_PACKS.map(pack => creditPackSavings(pack.credits, pack.cents, base.credits, base.cents))).toEqual([0, 8, 15]);
+  expect(creditPackSavings(626, 7.99, 115, 1.99)).toBe(26);
+  expect(creditPackSavings(626, 7.99, 115, 0)).toBe(0);
+  expect(creditPackSavings(626, 99.99, 115, 1.99)).toBe(0);
 });

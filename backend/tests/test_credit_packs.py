@@ -89,7 +89,7 @@ def test_custom_quotes_reject_invalid_amounts(amount):
 
 
 @async_test
-async def test_custom_checkout_requires_paid_subscription_and_owns_the_quote(monkeypatch):
+async def test_pack_checkout_requires_paid_subscription_and_owns_price_and_credits(monkeypatch):
     from unittest.mock import Mock
     monkeypatch.setattr(billing,'require_enabled',AsyncMock())
     monkeypatch.setattr(billing,'wallet',AsyncMock(return_value={'plan_key':'free','subscription_status':'none'}))
@@ -97,18 +97,19 @@ async def test_custom_checkout_requires_paid_subscription_and_owns_the_quote(mon
     monkeypatch.setattr(stripe.checkout.Session,'create',create)
     identity={'authenticated':True,'user_id':USER}
     with pytest.raises(HTTPException,match='paid monthly plan') as error:
-        await credit_packs.checkout(identity,1000)
+        await credit_packs.checkout(identity,'626')
     assert error.value.status_code==403
     create.assert_not_called()
     monkeypatch.setattr(billing,'wallet',AsyncMock(return_value={'plan_key':'builder','subscription_status':'active','period_end':'2099-01-01T00:00:00Z'}))
     monkeypatch.setattr(billing,'capacity',AsyncMock(return_value={'checkout_available':True}))
     monkeypatch.setattr(billing,'stripe_key',lambda:'test')
-    await credit_packs.checkout(identity,1000)
+    await credit_packs.checkout(identity,'626')
     args=create.call_args.kwargs
-    assert args['line_items'][0]['price_data']['unit_amount']==1000
-    assert args['line_items'][0]['price_data']['product_data']['name']=='BrickBuilder 753 credits'
+    assert args['line_items'][0]['price_data']['unit_amount']==999
+    assert args['line_items'][0]['price_data']['product_data']['name']=='BrickBuilder 626 credits'
     assert args['metadata']==args['payment_intent_data']['metadata']
-    assert args['metadata']['rate_key']=='builder'
+    assert args['metadata']['pack_key']=='626'
+    assert not {'rate_key', 'amount_cents'} & args['metadata'].keys()
 
 
 @async_test
@@ -128,13 +129,16 @@ async def test_custom_payment_refund_reconciles_the_original_quote_after_subscri
     with pytest.raises(ValueError): await credit_packs.reconcile('pi_custom')
 
 
-def test_checkout_request_accepts_only_integer_cents():
+def test_checkout_request_accepts_only_catalog_packs():
     from pydantic import ValidationError
     from src.requests.billing import CreditPackRequest
-    assert CreditPackRequest(amount_cents=1000).amount_cents==1000
-    for amount in [True,49,1000000,100.5,'1000']:
-        with pytest.raises(ValidationError): CreditPackRequest(amount_cents=amount)
-    with pytest.raises(ValidationError): CreditPackRequest(amount_cents=1000,rate_key='creator',credits=5000)
+    for pack_key in ['115', '626', '1367']:
+        assert CreditPackRequest(pack_key=pack_key).pack_key == pack_key
+    for pack_key in [True, 626, '800', 'unknown']:
+        with pytest.raises(ValidationError):
+            CreditPackRequest(pack_key=pack_key)
+    with pytest.raises(ValidationError):
+        CreditPackRequest(pack_key='626', amount_cents=1, credits=5000)
 
 
 @async_test
@@ -157,7 +161,7 @@ async def test_embedded_credit_checkout_keeps_quote_and_return_on_site(monkeypat
     monkeypatch.setattr(billing,'stripe_key',lambda:'test')
     create=Mock(return_value=SimpleNamespace(id='cs_credits',client_secret='secret'))
     monkeypatch.setattr(stripe.checkout.Session,'create',create)
-    result = await credit_packs.checkout({'authenticated':True,'user_id':USER,'user_email':'buyer@example.test'},1000,'elements')
+    result = await credit_packs.checkout({'authenticated':True,'user_id':USER,'user_email':'buyer@example.test'},'626','elements')
     assert result == {'session_id':'cs_credits','client_secret':'secret'}
     args=create.call_args.kwargs
     assert args['mode']=='payment' and args['ui_mode']=='elements'
@@ -166,4 +170,30 @@ async def test_embedded_credit_checkout_keeps_quote_and_return_on_site(monkeypat
     assert args['customer_email']=='buyer@example.test'
     assert args['return_url'].endswith('/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}')
     assert not {'success_url','cancel_url','shipping_address_collection'} & args.keys()
-    assert args['line_items'][0]['price_data']['unit_amount']==1000
+    assert args['line_items'][0]['price_data']['unit_amount']==999
+
+
+@pytest.mark.parametrize('key,price,credits', [('115', 199, 115), ('626', 999, 626), ('1367', 1999, 1367)])
+@async_test
+async def test_new_packs_reconcile_on_stripe_and_apple(monkeypatch, key, price, credits):
+    monkeypatch.setattr(billing, 'stripe_key', lambda: 'test')
+    monkeypatch.setattr(billing, 'live_mode', lambda: False)
+    rpc = AsyncMock()
+    monkeypatch.setattr(billing, 'rpc', rpc)
+    payment = stripe.PaymentIntent.construct_from(dict(
+        id='pi_pack', metadata={'integration': credit_packs.TAG, 'brickbuilder_user_id': USER, 'pack_key': key},
+        livemode=False, currency='usd', amount=price, status='succeeded', latest_charge={'paid': True}), 'test')
+    monkeypatch.setattr(stripe.PaymentIntent, 'retrieve', lambda *args, **kwargs: payment)
+    assert await credit_packs.reconcile('pi_pack', USER)
+    assert rpc.call_args.kwargs['p_pack'] == key
+    assert rpc.call_args.kwargs['p_granted'] == credits
+
+    transaction = SimpleNamespace(
+        bundleId=apple_billing.BUNDLE_ID, environment=apple_billing.Environment.SANDBOX,
+        productId=f'ai.brickbuilder.app.credits.{key}', type='Consumable', inAppOwnershipType='PURCHASED',
+        transactionId='123', originalTransactionId='123', purchaseDate=1, signedDate=2, expiresDate=None,
+        appAccountToken=USER, quantity=1, revocationDate=None)
+    assert apple_billing.validate_transaction(transaction, USER) == USER
+    await apple_billing.apply_transaction(transaction, USER)
+    assert rpc.call_args.kwargs['p_pack'] == key
+    assert rpc.call_args.kwargs['p_granted'] == credits
