@@ -16,6 +16,7 @@ def test_account_mfa_policies_keep_existing_access_and_require_verified_sessions
                 CREATE ROLE anon;
                 CREATE ROLE authenticated;
                 CREATE ROLE service_role BYPASSRLS;
+                CREATE ROLE storage_admin;
                 CREATE SCHEMA auth;
                 CREATE SCHEMA storage;
                 CREATE TABLE auth.mfa_factors (user_id uuid, status text);
@@ -25,6 +26,9 @@ def test_account_mfa_policies_keep_existing_access_and_require_verified_sessions
                   $$ SELECT (auth.jwt()->>'sub')::uuid $$;
                 CREATE TABLE public.profiles (label text);
                 CREATE TABLE storage.objects (label text);
+                CREATE TABLE storage.internal_metadata (label text);
+                ALTER TABLE storage.internal_metadata OWNER TO storage_admin;
+                ALTER TABLE storage.internal_metadata ENABLE ROW LEVEL SECURITY;
                 INSERT INTO public.profiles VALUES ('profile');
                 INSERT INTO storage.objects VALUES ('file');
                 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -44,6 +48,10 @@ def test_account_mfa_policies_keep_existing_access_and_require_verified_sessions
             """)
             migration = Path(__file__).parents[2] / 'supabase/migrations/20261119040000_account_mfa_enforcement.sql'
             db.execute(migration.read_text())
+            assert db.execute("""
+                SELECT count(*) FROM pg_policies
+                WHERE schemaname = 'storage' AND tablename = 'internal_metadata'
+            """).fetchone()[0] == 0
 
             for status, aal, visible in [('unverified', 'aal1', True),
                                          ('verified', 'aal1', False), ('verified', 'aal2', True)]:

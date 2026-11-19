@@ -25,7 +25,7 @@ BEGIN
   FOR target IN
     SELECT n.nspname, c.relname FROM pg_class c
     JOIN pg_namespace n ON n.oid = c.relnamespace
-    WHERE n.nspname IN ('public', 'storage')
+    WHERE n.nspname = 'public'
       AND c.relkind IN ('r', 'p') AND c.relrowsecurity
   LOOP
     EXECUTE format(
@@ -37,6 +37,12 @@ BEGIN
   END LOOP;
 END;
 $$;
+
+-- Supabase permits object policies without granting access to internal Storage tables.
+CREATE POLICY account_mfa_assurance ON storage.objects
+  AS RESTRICTIVE FOR ALL TO authenticated
+  USING ((SELECT public.account_has_mfa_assurance()))
+  WITH CHECK ((SELECT public.account_has_mfa_assurance()));
 
 CREATE OR REPLACE FUNCTION public.claim_account_referral(p_visit uuid) RETURNS boolean
 LANGUAGE sql SECURITY DEFINER SET search_path = '' AS $$
