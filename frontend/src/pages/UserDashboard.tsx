@@ -5,11 +5,12 @@ import { AiBillingSettings } from '../components/AiBillingSettings';
 import { useBilling } from '../contexts/BillingContext';
 import { PaidFeatureLock } from '../components/PaidFeatureDialog';
 import { GenerationDuration } from '../components/GenerationDuration';
+import { ModelVersionConfirmation, type ModelVersionAction } from '../components/ModelVersionConfirmation';
 import { OrderStatusBadge } from '../components/OrderStatusBadge';
 import { GenerationElapsedTime } from '../components/GenerationElapsedTime';
 import { ProfileMenu } from "../components/ProfileMenu";
 
-import React, { useState, useEffect, useId, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Package, Box, User as UserIcon, ChevronRight,
@@ -144,7 +145,6 @@ const StatsCard: React.FC<{icon:any; label:string; value:string|number; onClick?
   </div>
 );
 
-type DeleteTarget = { id: string; scope: 'model' } | { id: string; scope: 'version'; version: number };
 const versionActionClass = 'inline-flex min-h-11 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-xs text-slate-700 hover:bg-slate-50 disabled:opacity-50';
 
 export const GenerationCard: React.FC<{
@@ -158,15 +158,8 @@ export const GenerationCard: React.FC<{
   const [edits, setEdits] = useState<GenerationIteration[]>([]);
   const [loadingEdits, setLoadingEdits] = useState(false);
   const [editsError, setEditsError] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [mutation, setMutation] = useState<'delete' | 'restore' | null>(null);
-  const [restoreError, setRestoreError] = useState<string | null>(null);
-  const mutationPending = useRef(false);
-  const restoreRequest = useRef<{ generationId: string; id: string } | null>(null);
-  const confirmation = useRef<HTMLDialogElement>(null);
-  const deleteTitle = useId();
-  
+  const [versionAction, setVersionAction] = useState<ModelVersionAction | null>(null);
+
   // Truncate prompt for display
   const displayPrompt = g.prompt.length > 60 ? g.prompt.slice(0, 60) + "..." : g.prompt;
   
@@ -208,52 +201,6 @@ export const GenerationCard: React.FC<{
       } finally {
         setLoadingEdits(false);
       }
-    }
-  };
-
-  const askToDelete = (target: DeleteTarget) => {
-    setDeleteTarget(target);
-    setDeleteError(null);
-    confirmation.current?.showModal();
-    posthog.capture('dashboard_model_delete_prompt_opened', { generation_id: target.id, scope: target.scope });
-  };
-
-  const confirmDelete = async () => {
-    if (!deleteTarget || mutationPending.current) return;
-    mutationPending.current = true;
-    setMutation('delete');
-    setDeleteError(null);
-    posthog.capture('dashboard_model_delete_confirmed', { generation_id: deleteTarget.id, scope: deleteTarget.scope });
-    try {
-      await GetGenerationsByImageApiService.deleteGeneration(deleteTarget.id, deleteTarget.scope, authToken);
-      setEdits(current => current.filter(edit => edit.id !== deleteTarget.id));
-      confirmation.current?.close();
-      onModelsChanged?.();
-    } catch (error) {
-      setDeleteError(error instanceof Error ? error.message : 'Could not delete this model. Please try again.');
-    } finally {
-      mutationPending.current = false;
-      setMutation(null);
-    }
-  };
-
-  const restoreVersion = async (edit: GenerationIteration) => {
-    if (mutationPending.current) return;
-    const request = restoreRequest.current?.generationId === edit.id
-      ? restoreRequest.current : { generationId: edit.id, id: crypto.randomUUID() };
-    restoreRequest.current = request;
-    mutationPending.current = true;
-    setMutation('restore');
-    setRestoreError(null);
-    posthog.capture('dashboard_model_restore_version_clicked', { generation_id: edit.id, version: edit.version });
-    try {
-      await GetGenerationsByImageApiService.restoreVersion(edit.id, request.id, authToken);
-      onModelsChanged?.();
-    } catch (error) {
-      setRestoreError(error instanceof Error ? error.message : 'Could not restore this version. Please try again.');
-    } finally {
-      mutationPending.current = false;
-      setMutation(null);
     }
   };
 
@@ -339,7 +286,7 @@ export const GenerationCard: React.FC<{
               </button>
             )}
             {(canView || onModelsChanged) && (
-              <button type="button" onClick={handleViewEdits} disabled={!g.id || loadingEdits || Boolean(mutation)}
+              <button type="button" onClick={handleViewEdits} disabled={!g.id || loadingEdits || Boolean(versionAction)}
                 aria-expanded={showEdits} title={!g.id ? 'No edit history available' : 'View edit history'}
                 className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs hover:bg-slate-50 disabled:opacity-50">
                 <History className="h-4 w-4" /> View Edits
@@ -347,9 +294,9 @@ export const GenerationCard: React.FC<{
               </button>
             )}
             {onModelsChanged && g.id && !isProcessing && (
-              <button type="button" aria-haspopup="dialog" disabled={Boolean(mutation)}
+              <button type="button" aria-haspopup="dialog" disabled={Boolean(versionAction)}
                 className="inline-flex h-9 items-center gap-2 rounded-lg border border-slate-300 bg-white px-3 text-xs text-slate-700 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
-                onClick={() => askToDelete({ id: g.id, scope: 'model' })}>
+                onClick={() => setVersionAction({ id: g.id, kind: 'delete-model' })}>
                 <Trash2 className="h-4 w-4" aria-hidden="true" /> Delete model
               </button>
             )}
@@ -361,7 +308,6 @@ export const GenerationCard: React.FC<{
       {showEdits && (
         <div className="border-t border-slate-200 bg-slate-50 p-3 sm:p-4">
           <h4 className="text-sm font-semibold text-slate-900 mb-3">Edit History ({edits.length})</h4>
-          {restoreError && <p role="alert" className="mb-3 text-sm text-red-700">{restoreError}</p>}
           
           {loadingEdits ? (
             <div className="flex items-center justify-center py-4 text-xs text-slate-500">
@@ -422,15 +368,15 @@ export const GenerationCard: React.FC<{
                           </span>
                         )}
                         {onModelsChanged && edit.status === 'completed' && newestCompleted && edit.version < newestCompleted.version && (
-                          <button type="button" className={versionActionClass} disabled={Boolean(mutation) || isProcessing}
-                            onClick={() => void restoreVersion(edit)}>
+                          <button type="button" className={versionActionClass} disabled={Boolean(versionAction) || isProcessing}
+                            aria-haspopup="dialog" onClick={() => setVersionAction({ id: edit.id, kind: 'restore', version: edit.version })}>
                             <RotateCcw size={14} aria-hidden="true" /> Restore this version
                           </button>
                         )}
                         {onModelsChanged && ['completed', 'failed', 'cancelled'].includes(edit.status) && (
                           <button type="button" aria-haspopup="dialog" aria-label={`Delete version ${edit.version}`}
-                            className={`${versionActionClass} hover:bg-red-50 hover:text-red-700`} disabled={Boolean(mutation)}
-                            onClick={() => askToDelete({ id: edit.id, version: edit.version, scope: 'version' })}>
+                            className={`${versionActionClass} hover:bg-red-50 hover:text-red-700`} disabled={Boolean(versionAction)}
+                            onClick={() => setVersionAction({ id: edit.id, version: edit.version, kind: 'delete-version' })}>
                             <Trash2 size={14} aria-hidden="true" /> Delete version
                           </button>
                         )}
@@ -443,30 +389,11 @@ export const GenerationCard: React.FC<{
           )}
         </div>
       )}
-      {onModelsChanged && <dialog ref={confirmation} aria-labelledby={deleteTitle}
-        className="m-auto w-[min(26rem,calc(100%-1.5rem))] rounded-2xl bg-white p-5 shadow-xl backdrop:bg-slate-900/40 sm:p-6"
-        onCancel={event => { if (mutation === 'delete') event.preventDefault(); }}>
-        {deleteTarget && <>
-          <h2 id={deleteTitle} className="text-lg font-semibold text-slate-900">
-            {deleteTarget.scope === 'model' ? 'Delete model?' : `Delete version ${deleteTarget.version}?`}
-          </h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-600">
-            {deleteTarget.scope === 'model'
-              ? 'This removes the model, its edit history, and its public links from BrickBuilder.'
-              : 'This removes this version and its public link. The newest remaining version becomes current if you delete the current version.'}
-          </p>
-          <p className="mt-2 text-sm text-slate-600">You can’t undo this. Existing orders and purchased instructions stay available.</p>
-          {deleteError && <p role="alert" className="mt-3 text-sm text-red-700">{deleteError}</p>}
-          <div className="mt-5 flex flex-wrap justify-end gap-2">
-            <button type="button" autoFocus className={versionActionClass} disabled={mutation === 'delete'}
-              onClick={() => confirmation.current?.close()}>Cancel</button>
-            <button type="button" disabled={mutation === 'delete'} onClick={() => void confirmDelete()}
-              className="min-h-11 rounded-lg bg-red-700 px-4 text-sm font-semibold text-white hover:bg-red-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-700 disabled:opacity-50">
-              {mutation === 'delete' ? 'Deleting…' : deleteTarget.scope === 'model' ? 'Delete model' : 'Delete version'}
-            </button>
-          </div>
-        </>}
-      </dialog>}
+      {onModelsChanged && <ModelVersionConfirmation action={versionAction} token={authToken} source="dashboard"
+        onClose={() => setVersionAction(null)} onComplete={action => {
+          if (action.kind === 'delete-version') setEdits(current => current.filter(edit => edit.id !== action.id));
+          onModelsChanged();
+        }} />}
     </div>
   );
 };
