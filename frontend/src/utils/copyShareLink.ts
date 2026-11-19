@@ -1,19 +1,38 @@
-/** Keep the legacy selection inside the menu so mobile focus does not dismiss it. */
+export function selectShareLink(input: HTMLInputElement) {
+  input.focus({ preventScroll: true });
+  input.setSelectionRange(0, input.value.length);
+}
+
 export async function copyShareLink(url: string, input: HTMLInputElement | null): Promise<void> {
-  try {
-    if (navigator.clipboard?.writeText) {
+  if (navigator.clipboard?.writeText) {
+    try {
       await navigator.clipboard.writeText(url);
       return;
+    } catch {
+      // Embedded browsers may deny the Clipboard API.
     }
-  } catch {
-    // Safari and embedded browsers may deny the modern clipboard API.
   }
 
-  if (input) {
-    input.focus({ preventScroll: true });
-    input.select();
-    input.setSelectionRange(0, input.value.length);
-    if (document.execCommand?.('copy')) return;
+  if (input && typeof document.execCommand === 'function') {
+    const previous = document.activeElement;
+    let wroteClipboard = false;
+    const writeSelectedLink = (event: ClipboardEvent) => {
+      if (!event.clipboardData) return;
+      event.clipboardData.setData('text/plain', url);
+      event.preventDefault();
+      wroteClipboard = true;
+    };
+    try {
+      selectShareLink(input);
+      document.addEventListener('copy', writeSelectedLink);
+      if (document.execCommand('copy') && wroteClipboard) return;
+    } catch {
+      // Some browsers expose the command but disallow it.
+    } finally {
+      document.removeEventListener('copy', writeSelectedLink);
+      if (previous instanceof HTMLElement) previous.focus({ preventScroll: true });
+    }
   }
+
   throw new Error('Automatic copying is unavailable');
 }
