@@ -104,7 +104,7 @@ async def apple_notifications(request: AppleNotificationRequest):
 
 class CreditPackRequest(BaseModel):
     model_config = ConfigDict(extra='forbid')
-    pack_key: Literal['100', '600', '1400']
+    pack_key: Literal['100', '500', '1200']
     ui_mode: Literal['hosted', 'elements'] = 'hosted'
 
 

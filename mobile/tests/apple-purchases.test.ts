@@ -106,7 +106,7 @@ it('retains an unfinished transaction when acknowledgement fails so it can retry
 });
 
 
-it.each([100, 600, 1400, 800, 1500])('recovers unfinished %s-credit consumables and finishes only after delivery', async credits => {
+it.each([100, 500, 1200, 800, 1500])('recovers unfinished %s-credit consumables and finishes only after delivery', async credits => {
   const purchase = {id:'990',productId:`ai.brickbuilder.app.credits.${credits}`} as IAP.PurchaseIOS;
   const emit=vi.fn(); const bridge=new ApplePurchases(emit,origin);
   await bridge.handle(message('buy', {product:purchase.productId,accountToken:'00000000-0000-4000-8000-000000000001'}),origin);

@@ -13,8 +13,8 @@ LEGACY_PACKS = {
 }
 PACKS = {
     '100': {'key': '100', 'credits': 100, 'cents': 199},
-    '600': {'key': '600', 'credits': 600, 'cents': 999},
-    '1400': {'key': '1400', 'credits': 1400, 'cents': 1999},
+    '500': {'key': '500', 'credits': 500, 'cents': 999},
+    '1200': {'key': '1200', 'credits': 1200, 'cents': 1999},
 }
 PURCHASE_PACKS = {**LEGACY_PACKS, **PACKS}
 TAG = 'brickbuilder_credit_pack_v1'

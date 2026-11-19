@@ -443,16 +443,16 @@ it.each(['builder', 'creator'] as const)('shows the same three fixed credit pack
   const select = container.querySelector<HTMLSelectElement>('#credit-packs select')!;
   expect(Array.from(select.options).map(option => option.textContent)).toEqual([
     '100 credits · $1.99',
-    '600 credits · $9.99 · 16% off',
-    '1,400 credits · $19.99 · 28% off',
+    '500 credits · $9.99',
+    '1,200 credits · $19.99 · 16% off',
   ]);
   await act(async () => {
-    select.value = '1400';
+    select.value = '1200';
     select.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  expect(container.querySelector('#credit-packs output')?.textContent).toBe('28% less per credit than the 100-credit pack');
+  expect(container.querySelector('#credit-packs output')?.textContent).toBe('16% less per credit than the 100-credit pack');
   await click('Buy credits');
-  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-credits?pack=1400');
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-credits?pack=1200');
   expect(billingApi.creditCheckout).not.toHaveBeenCalled();
   expect(billingApi.checkout).not.toHaveBeenCalled();
   expect(openStripe).not.toHaveBeenCalled();
@@ -460,7 +460,7 @@ it.each(['builder', 'creator'] as const)('shows the same three fixed credit pack
 
 it.each([
   { version: '1.0.6', packs: [{ credits: 100, displayPrice: '€1.99', price: 1.99 },
-    { credits: 600, displayPrice: '€7.99', price: 7.99 }], selected: '600', label: '600 credits · €7.99 · 33% off' },
+    { credits: 500, displayPrice: '€7.99', price: 7.99 }], selected: '500', label: '500 credits · €7.99 · 20% off' },
   { version: '1.0.5', packs: [{ credits: 800, displayPrice: '€10.99' }], selected: '800', label: '800 credits · €10.99' },
 ])('uses available StoreKit packs and prices on iOS $version', async ({ version, packs, selected, label }) => {
   window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version, applePurchases: true };

@@ -97,18 +97,18 @@ async def test_pack_checkout_requires_paid_subscription_and_owns_price_and_credi
     monkeypatch.setattr(stripe.checkout.Session,'create',create)
     identity={'authenticated':True,'user_id':USER}
     with pytest.raises(HTTPException,match='paid monthly plan') as error:
-        await credit_packs.checkout(identity,'600')
+        await credit_packs.checkout(identity,'500')
     assert error.value.status_code==403
     create.assert_not_called()
     monkeypatch.setattr(billing,'wallet',AsyncMock(return_value={'plan_key':'builder','subscription_status':'active','period_end':'2099-01-01T00:00:00Z'}))
     monkeypatch.setattr(billing,'capacity',AsyncMock(return_value={'checkout_available':True}))
     monkeypatch.setattr(billing,'stripe_key',lambda:'test')
-    await credit_packs.checkout(identity,'600')
+    await credit_packs.checkout(identity,'500')
     args=create.call_args.kwargs
     assert args['line_items'][0]['price_data']['unit_amount']==999
-    assert args['line_items'][0]['price_data']['product_data']['name']=='BrickBuilder 600 credits'
+    assert args['line_items'][0]['price_data']['product_data']['name']=='BrickBuilder 500 credits'
     assert args['metadata']==args['payment_intent_data']['metadata']
-    assert args['metadata']['pack_key']=='600'
+    assert args['metadata']['pack_key']=='500'
     assert not {'rate_key', 'amount_cents'} & args['metadata'].keys()
 
 
@@ -132,13 +132,13 @@ async def test_custom_payment_refund_reconciles_the_original_quote_after_subscri
 def test_checkout_request_accepts_only_catalog_packs():
     from pydantic import ValidationError
     from src.requests.billing import CreditPackRequest
-    for pack_key in ['100', '600', '1400']:
+    for pack_key in ['100', '500', '1200']:
         assert CreditPackRequest(pack_key=pack_key).pack_key == pack_key
-    for pack_key in [True, 600, '800', 'unknown']:
+    for pack_key in [True, 500, '600', '1400', '800', 'unknown']:
         with pytest.raises(ValidationError):
             CreditPackRequest(pack_key=pack_key)
     with pytest.raises(ValidationError):
-        CreditPackRequest(pack_key='600', amount_cents=1, credits=5000)
+        CreditPackRequest(pack_key='500', amount_cents=1, credits=5000)
 
 
 @async_test
@@ -161,7 +161,7 @@ async def test_embedded_credit_checkout_keeps_quote_and_return_on_site(monkeypat
     monkeypatch.setattr(billing,'stripe_key',lambda:'test')
     create=Mock(return_value=SimpleNamespace(id='cs_credits',client_secret='secret'))
     monkeypatch.setattr(stripe.checkout.Session,'create',create)
-    result = await credit_packs.checkout({'authenticated':True,'user_id':USER,'user_email':'buyer@example.test'},'600','elements')
+    result = await credit_packs.checkout({'authenticated':True,'user_id':USER,'user_email':'buyer@example.test'},'500','elements')
     assert result == {'session_id':'cs_credits','client_secret':'secret'}
     args=create.call_args.kwargs
     assert args['mode']=='payment' and args['ui_mode']=='elements'
@@ -173,7 +173,7 @@ async def test_embedded_credit_checkout_keeps_quote_and_return_on_site(monkeypat
     assert args['line_items'][0]['price_data']['unit_amount']==999
 
 
-@pytest.mark.parametrize('key,price,credits', [('100', 199, 100), ('600', 999, 600), ('1400', 1999, 1400)])
+@pytest.mark.parametrize('key,price,credits', [('100', 199, 100), ('500', 999, 500), ('1200', 1999, 1200)])
 @async_test
 async def test_new_packs_reconcile_on_stripe_and_apple(monkeypatch, key, price, credits):
     monkeypatch.setattr(billing, 'stripe_key', lambda: 'test')

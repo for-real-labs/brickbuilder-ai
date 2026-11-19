@@ -6,8 +6,8 @@ catalogs offer the same one-time pack sizes. Prices below are for the U.S.
 | Credits | Price | Premium over the Builder subscription rate | Savings per credit vs. the smallest pack |
 | ---: | ---: | ---: | ---: |
 | 100 | $1.99 | 50% | |
-| 600 | $9.99 | 25% | 16% |
-| 1,400 | $19.99 | 7% | 28% |
+| 500 | $9.99 | 50% | |
+| 1,200 | $19.99 | 25% | 16% |
 
 The picker rounds per-credit savings to the nearest whole percent. On iOS it
 uses StoreKit’s localized prices. On the web, Stripe checkout accepts a pack key and the server
@@ -27,8 +27,8 @@ products while those are available. Keep the old IDs in the server and native
 transaction allowlists for unfinished purchases and refunds.
 
 - `ai.brickbuilder.app.credits.100`
-- `ai.brickbuilder.app.credits.600`
-- `ai.brickbuilder.app.credits.1400`
+- `ai.brickbuilder.app.credits.500`
+- `ai.brickbuilder.app.credits.1200`
 
 Apply `20261027010000_credit_packs.sql` before deploying. It adds a private purchase
 ledger and reuses the non-expiring wallet bucket historically named
