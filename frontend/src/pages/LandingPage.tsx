@@ -39,7 +39,7 @@ import { ArrowRight, ArrowUp, Coins, Image as ImageIcon, ChevronDown, Github, Sp
 import { SEO } from "../components/SEO";
 import FallingBricks from "../components/FallingBricks";
 import LoginModal from "../components/LoginModal";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { TextToBricksApiService } from "../services/textToBricksApi";
 import { ImageToBricksApiService, StreamEvent, PipelineEvent } from "../services/imageToBricksApi";
 import { GetGenerationApiService } from "../services/getGenerationApi";
@@ -289,6 +289,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   // Generated model state
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedModelId = searchParams.get('id');
+  const { state: locationState } = useLocation();
+  const historyId = typeof locationState?.forkHistoryId === 'string' ? locationState.forkHistoryId : undefined;
   const [linkedModelId] = useState(requestedModelId);
   const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
   useEffect(() => {
@@ -298,7 +300,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     setMaxPartsInput(generation.max_parts == null ? '' : String(generation.max_parts));
   }, [landingModel.model?.generation.generation_id]);
 
-  const openModel = useCallback((id: string, retainModel = false) => {
+  const openModel = useCallback((id: string, retainModel = false, editHistoryId?: string) => {
     landingModel.open(id, retainModel);
     setSearchParams(current => {
       const next = new URLSearchParams(current);
@@ -307,7 +309,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       next.delete('instructions');
       next.delete('step');
       return next;
-    }, { replace: true });
+    }, { replace: true, ...(editHistoryId && { state: { forkHistoryId: editHistoryId } }) });
   }, [landingModel.open, setSearchParams]);
   const [editSubmitting, setEditSubmitting] = useState(false);
   const editSubmittingRef = useRef(false);
@@ -1141,11 +1143,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             </div>}
             {!ldrawLanding && <div className="landing-model-host relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
-                canRename={Boolean(session?.access_token)} accessToken={session?.access_token}
-                onRenameRequest={!session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
+                canRename={!historyId && Boolean(session?.access_token)} accessToken={session?.access_token}
+                onRenameRequest={!historyId && !session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
                 onConvertKit={() => void submitModelEdit(undefined,
                   'Convert this model to use only available Brickwith parts and colors. Keep every available part unchanged where possible, and preserve the overall shape, size, and colors as closely as possible.', null)}
-                onOrderBarHeightChange={setOrderBarHeight} onViewPreviousEdit={openModel} onNoVersion={resetToWelcome}>
+                onOrderBarHeightChange={setOrderBarHeight} historyId={historyId}
+                onViewPreviousEdit={(id, anchor) => openModel(id, false, anchor)} onNoVersion={resetToWelcome}>
               {!welcomeScreen && <BuildBuddyDialogue turns={buddyChat.turns} generations={displayedGenerations} errorMessage={generationError}
                 selectedGenerationId={requestedModelId || landingModel.targetId}
                 model={landingModel.model ? { id: landingModel.model.generation.generation_id,

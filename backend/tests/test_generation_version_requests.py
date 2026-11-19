@@ -174,7 +174,7 @@ def test_legacy_llm_request_name_is_only_an_input_alias():
 @pytest.mark.parametrize("owner,community,expected_model", [
     ("owner", False, "root"), ("other", True, None), ("other", False, None),
 ])
-def test_generation_creation_persists_only_model_identity_and_inherits_name(owner, community, expected_model):
+def test_generation_creation_retains_model_identity_and_records_only_cross_owner_source(owner, community, expected_model):
     query = Mock()
     query.insert.return_value = query
     storage = GenerationStorage.__new__(GenerationStorage)
@@ -187,6 +187,7 @@ def test_generation_creation_persists_only_model_identity_and_inherits_name(owne
     payload = query.insert.call_args.args[0]
     assert payload["generation_id"] == (expected_model or id)
     assert payload["name"] == "Moon Rover"
+    assert payload.get("forked_from_id") == (None if expected_model else "old")
     assert "source_generation_id" not in payload
 
 
@@ -270,3 +271,33 @@ def test_shared_model_edit_creates_new_record_owned_by_editor(monkeypatch, modul
     assert saved['user_type'] == ('authenticated' if authenticated else 'anonymous')
     assert saved['edit_generation_id'] == 'source'
     assert source['user_id'] == 'creator'
+
+
+@pytest.mark.parametrize("original_available", [True, False])
+def test_fork_history_includes_only_its_exact_public_source_after_root_deletion(monkeypatch, original_available):
+    owned = dict(id="edit2", generation_id="edit1", version=2, user_id="editor", user_type="authenticated",
+                 status="completed", endpoint="novaToBricks", detail_level=30, prompt="blue roof",
+                 created_at="2026-11-19", preview_image_url="edit.png")
+    root = {**owned, "id": "edit1", "deleted_at": "2026-11-19", "forked_from_id": "shared-v3"}
+    original = {**owned, "id": "shared-v3", "generation_id": "private-family", "version": 3,
+                "user_id": "creator", "preview_image_url": "public.png", "ldr_url": "geometry"}
+    lookup = AsyncMock(side_effect=lambda id, **_: {"edit2": owned, "edit1": root,
+                       "shared-v3": original if original_available else None}.get(id))
+    storage = SimpleNamespace(get_generation=lookup, get_generation_versions=AsyncMock(return_value=[owned]))
+    monkeypatch.setattr(history, "generation_storage", storage)
+    result = asyncio.run(history.get_generations_by_image(
+        history.GetGenerationsByImageRequest(generation_id="edit2"), {"user_id": "editor", "authenticated": True}))
+    assert [row.id for row in result.generations] == (["edit2", "shared-v3"] if original_available else ["edit2"])
+    lookup.assert_any_await("edit1", include_deleted=True)
+    storage.get_generation_versions.assert_awaited_once_with(
+        generation_id="edit1", user_id="editor", user_type="authenticated")
+    if original_available:
+        source = result.generations[-1]
+        assert source.is_fork_source and source.generation_id == "shared-v3"
+        assert source.user_id is None and source.user_type is None and source.ldr_url is None
+        assert source.preview_image_url == "public.png"
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(history.get_generations_by_image(
+            history.GetGenerationsByImageRequest(generation_id="edit2"), {"user_id": "stranger", "authenticated": True}))
+    assert error.value.status_code == 404
+    assert storage.get_generation_versions.await_count == 1

@@ -166,15 +166,17 @@ class GenerationStorage:
             if user_type == 'anonymous':
                 # Admission-only field: the database consumes and clears it.
                 generation_data['guest_ip_hash'] = guest_ip_hash
-            # The input revision is needed to inherit model identity and title,
-            # but is not stored as a parent link on the new revision.
+            # Edits stay in the owner's model. A cross-owner edit starts a new
+            # model and records the exact source on that fork's first revision.
             if edit_generation_id:
                 source = await self.get_generation(edit_generation_id)
                 if not source:
                     raise ValueError("Source generation not found")
                 if source.get("user_id") == user_id and source.get("user_type") == user_type:
                     generation_data["generation_id"] = source.get("generation_id") or source["id"]
-                elif source.get("status") != "completed":
+                elif source.get("status") == "completed":
+                    generation_data["forked_from_id"] = source["id"]
+                else:
                     raise ValueError("Source generation belongs to another owner")
                 if source.get("max_parts") is not None:
                     generation_data["max_parts"] = tighter_parts_limit(max_parts, source["max_parts"])

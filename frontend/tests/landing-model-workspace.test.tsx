@@ -24,13 +24,13 @@ import { LandingModelWorkspace, modelEditSuggestion } from '../src/components/La
 const auth = vi.hoisted(() => ({ isSupabaseConfigured: false }));
 const activity = vi.hoisted(() => ({ rows: [] as GenerationActivity[], track: vi.fn() }));
 const navigate = vi.hoisted(() => vi.fn());
-const query = vi.hoisted(() => ({ value: '', set: vi.fn() }));
+const query = vi.hoisted(() => ({ value: '', state: undefined as { forkHistoryId: string } | undefined, set: vi.fn() }));
 const buddy = vi.hoisted(() => ({ updateTurn: vi.fn() }));
 const viewer = vi.hoisted(() => ({ loaded: undefined as undefined | (() => void), markViewed: vi.fn() }));
 const inbox = vi.hoisted(() => ({ notifications: [] as import('../src/services/generationNotificationsApi').ModelNotification[] }));
 vi.mock('../src/contexts/GenerationNotificationsContext', () => ({ useGenerationNotifications: () => ({ notifications: inbox.notifications, unread_count: inbox.notifications.length, markViewed: viewer.markViewed }) }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useSearchParams: () => {
+vi.mock('react-router-dom', () => ({ useNavigate: () => navigate, useLocation: () => ({ state: query.state }), useSearchParams: () => {
   const [, rerender] = React.useReducer(value => value + 1, 0);
   return [new URLSearchParams(query.value), (...args: unknown[]) => { query.set(...args); rerender(); }];
 } }));
@@ -84,8 +84,12 @@ beforeEach(() => {
   window.history.replaceState(null, '', '/');
   navigate.mockClear();
   query.value = '';
+  query.state = undefined;
   query.set.mockReset();
-  query.set.mockImplementation(next => { query.value = next(new URLSearchParams(query.value)).toString(); });
+  query.set.mockImplementation((next, options) => {
+    query.value = next(new URLSearchParams(query.value)).toString();
+    query.state = options?.state;
+  });
   vi.spyOn(GetPriceApiService, 'getPrice').mockResolvedValue({ generation_id: 'castle', total_price: 44.77, order_pricing: orderPricing(4477), total_weight: .5263, total_parts: 370, currency: 'USD', parts_breakdown: [] } as never);
   vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
   vi.spyOn(LlmToBricksApiService, 'watchOutput').mockResolvedValue(true);
@@ -1420,4 +1424,39 @@ it.each(['llmToBricks', 'novaToBricks'])('restores and locks the saved mode and 
   expect(basic.getAttribute('aria-pressed')).toBe(String(endpoint === 'llmToBricks'));
   expect(all.getAttribute('aria-pressed')).toBe(String(endpoint === 'novaToBricks'));
   expect(container.querySelector<HTMLInputElement>('#generation-max-parts')!.disabled).toBe(true);
+});
+
+it('lets fork owners view the original and return to their edits without managing the original', async () => {
+  query.value = 'id=my-edit&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => generation(id));
+  const row = (id: string, version: number, is_fork_source = false): GenerationIteration => ({
+    id, version, status: 'completed', generation_id: is_fork_source ? id : 'my-fork',
+    is_fork_source, prompt: id, created_at: '2026-11-19T00:00:00Z',
+  });
+  const revisions = [row('my-edit', 2), row('first-edit', 1), row('shared-original', 0, true)];
+  const history = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage')
+    .mockResolvedValue({ generations: revisions, total_count: revisions.length });
+  const button = (name: string) => [...container.querySelectorAll('button')]
+    .find(element => element.getAttribute('aria-label') === name || element.textContent === name)!;
+  try {
+    await act(async () => root.render(<LandingPage />));
+    await act(async () => button('Previous edits').click());
+    const originalRow = button('View original model').closest('li')!;
+    expect(originalRow.textContent).toContain('Original model');
+    expect(originalRow.querySelectorAll('button')).toHaveLength(1);
+    expect(button('Restore version 1').disabled).toBe(false);
+    await act(async () => button('View original model').click());
+
+    expect(query.value).toBe('id=shared-original&exact=1');
+    expect(query.state).toEqual({ forkHistoryId: 'my-edit' });
+    expect(container.querySelector('.landing-model-bottom-toolbar')?.textContent).not.toContain('Post to Community');
+    expect(history).toHaveBeenLastCalledWith(undefined, 'my-edit');
+
+    await act(async () => button('Previous edits').click());
+    expect(button('View original model').closest('li')?.getAttribute('aria-current')).toBe('true');
+    expect(button('Delete version 2').disabled).toBe(false);
+    await act(async () => button('View version 2').click());
+    expect(query.value).toBe('id=my-edit&exact=1');
+    expect(query.state).toBeUndefined();
+  } finally { history.mockRestore(); }
 });

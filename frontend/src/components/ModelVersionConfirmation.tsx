@@ -89,7 +89,7 @@ export function ModelVersionConfirmation({ action, token, source, onClose, onCom
       <h2 id={titleId} className="text-lg font-semibold text-slate-900">{title}</h2>
       <p id={descriptionId} className="mt-2 text-sm leading-relaxed text-slate-600">
         {restoring ? 'This makes a copy of this version your current model. Your edit history stays available, and no credits are used.'
-          : action.kind === 'delete-model' ? 'This removes the model, its edit history, and its public links from BrickBuilder.'
+          : action.kind === 'delete-model' ? 'This removes your model and its edits from your dashboard and turns off their public links.'
           : 'This removes this version and its public link. If you delete the current version, BrickBuilder opens the newest remaining version.'}
       </p>
       {!restoring && <p className="mt-2 text-sm text-slate-600">You can’t undo this. Existing orders and purchased instructions stay available.</p>}
