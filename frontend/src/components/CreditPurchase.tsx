@@ -70,7 +70,7 @@ export function CreditPacks({ source }: { source: string }) {
         </select>
       </label>
       {selected?.savings ? <output id={`${id}-savings`} htmlFor={`${id}-pack`} aria-live="polite">
-        {selected.savings}% less per credit than the 115-credit pack
+        {selected.savings}% less per credit than the {CREDIT_PACKS[0].credits.toLocaleString()}-credit pack
       </output> : null}
       <button type="submit" className="billing-secondary" disabled={busy || loading || !enabled || !checkoutAvailable || (paid && !selected)}>{busy ? 'Opening…' : 'Buy credits'}</button>
     </form>

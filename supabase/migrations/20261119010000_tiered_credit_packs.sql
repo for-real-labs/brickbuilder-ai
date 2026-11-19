@@ -1,12 +1,12 @@
 -- Add fixed credit packs, retaining the bounds for historical Stripe and Apple purchases.
 ALTER TABLE public.billing_credit_purchases DROP CONSTRAINT billing_credit_purchases_pack_check;
-ALTER TABLE public.billing_credit_purchases ADD CHECK(pack IN ('builder','creator','custom','115','626','1367'));
+ALTER TABLE public.billing_credit_purchases ADD CHECK(pack IN ('builder','creator','custom','100','600','1400'));
 CREATE OR REPLACE FUNCTION public.billing_apply_credit_pack(p_user_id uuid,p_live boolean,p_transaction text,p_pack text,p_version bigint,p_granted integer)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path=public AS $$
 DECLARE old public.billing_credit_purchases; delta integer; a public.billing_accounts;
 BEGIN
- IF p_pack NOT IN ('builder','creator','custom','115','626','1367') OR p_granted<0 OR p_granted>(CASE p_pack WHEN 'builder' THEN 800 WHEN 'creator' THEN 1500
-    WHEN '115' THEN 115 WHEN '626' THEN 626 WHEN '1367' THEN 1367 ELSE 752508 END)
+ IF p_pack NOT IN ('builder','creator','custom','100','600','1400') OR p_granted<0 OR p_granted>(CASE p_pack WHEN 'builder' THEN 800 WHEN 'creator' THEN 1500
+    WHEN '100' THEN 100 WHEN '600' THEN 600 WHEN '1400' THEN 1400 ELSE 752508 END)
  OR (p_pack='custom' AND p_transaction !~ '^stripe:pi_')
  OR p_transaction !~ '^(stripe:pi_|apple:(sandbox|production):)[A-Za-z0-9_]+$' THEN RAISE EXCEPTION 'INVALID_CREDIT_PURCHASE'; END IF;
  PERFORM pg_advisory_xact_lock(hashtextextended('credit-pack:'||p_live||':'||p_transaction,0));
