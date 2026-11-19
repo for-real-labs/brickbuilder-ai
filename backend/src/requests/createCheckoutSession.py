@@ -19,6 +19,7 @@ from ..utils.imported_kit import fulfillment_csv
 from .getPrice import GetPriceRequest, GetPriceResponse, get_price
 
 logger = logging.getLogger(__name__)
+INSTRUCTIONS_POSTCARD_CENTS = 399
 
 # Verified against Brickwith's checkout dropdown on 2026-10-09.
 SHIPPING_COUNTRIES = json.loads((Path(__file__).resolve().parents[1] / 'data' / 'shipping_countries.json').read_text())
@@ -120,7 +121,8 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
             shipping_country=country), auth_info)
         if quote.conversion_credits is not None:
             raise HTTPException(409, "Convert unavailable parts before ordering this model.")
-        amount = checkout_price_cents(quote)
+        postcard_cents = INSTRUCTIONS_POSTCARD_CENTS if request.shipInstructionsPostcard else 0
+        amount = checkout_price_cents(quote) + postcard_cents
         if imported or request.quantity > 1:
             # Pin the exact BOM that was priced, rather than using any existing
             # artifact attached to the original import.
@@ -163,6 +165,12 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
             "metadata": metadata,
             "phone_number_collection": {"enabled": False},
         }
+        if postcard_cents:
+            params["line_items"].append({"price_data": {
+                "currency": "usd",
+                "product_data": {"name": "Instructions postcard"},
+                "unit_amount": postcard_cents,
+            }, "quantity": 1})
         shipping_address_provided = request.shippingAddress is not None
         if shipping_address_provided:
             params.pop('shipping_address_collection')

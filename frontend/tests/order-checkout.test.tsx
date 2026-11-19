@@ -432,19 +432,31 @@ it('tracks address field interactions without contact values', async () => {
 });
 
 
-it('sends the postcard choice to payment and retains it when editing contact details', async () => {
-  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession').mockResolvedValue({ session_id: 'cs', client_secret: 'secret' });
+it('labels the postcard price and updates the summary and payment when the selection changes', async () => {
+  const create = vi.spyOn(CreateCheckoutSessionApiService, 'createCheckoutSession')
+    .mockResolvedValueOnce({ session_id: 'with-postcard', client_secret: 'secret' })
+    .mockResolvedValueOnce({ session_id: 'without-postcard', client_secret: 'secret' });
   await renderOrder();
   const postcard = container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!;
+  const summary = container.querySelector('[aria-label="Order summary"]')!;
+  const summaryTotal = summary.querySelector('.checkout-total dd')!;
+  expect(postcard.labels?.[0].textContent).toContain('+ $3.99');
   expect(postcard.checked).toBe(false);
+  expect(summaryTotal.textContent).toBe('USD$50.00');
   act(() => { postcard.click(); Object.entries(details).forEach(([name, value]) => fill(name, value)); });
+  expect(summary.textContent).toContain('Instructions postcard$3.99');
+  expect(summaryTotal.textContent).toBe('USD$53.99');
   await submitContact();
-  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shipInstructionsPostcard: true, petId: 'clik' }), 'auth-token');
+  expect(create).toHaveBeenCalledWith(expect.objectContaining({ shipInstructionsPostcard: true, priceCents: 5399, petId: 'clik' }), 'auth-token');
+  expect(container.querySelector('#checkout-step-2 button[type="submit"]')?.textContent).toBe('Pay $53.99');
   await act(async () => container.querySelector<HTMLButtonElement>('[aria-label="Back to contact and delivery"]')!.click());
   expect(container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.checked).toBe(true);
   act(() => container.querySelector<HTMLInputElement>('[name="shipInstructionsPostcard"]')!.click());
+  expect(summary.textContent).not.toContain('Instructions postcard');
+  expect(summaryTotal.textContent).toBe('USD$50.00');
   await submitContact();
-  expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ shipInstructionsPostcard: false }), 'auth-token');
+  expect(create).toHaveBeenLastCalledWith(expect.objectContaining({ shipInstructionsPostcard: false, priceCents: 5000 }), 'auth-token');
+  expect(container.querySelector('#checkout-step-2 button[type="submit"]')?.textContent).toBe('Pay $50.00');
 });
 
 

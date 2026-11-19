@@ -190,6 +190,7 @@
 .checkout-postcard-option.is-selected { border-color: #f44336; background: #fff8f7; }
 .checkout-postcard-option > label { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; font-size: 13px; cursor: pointer; }
 .checkout-postcard-option input { accent-color: #f44336; width: 18px; height: 18px; flex-shrink: 0; }
+.checkout-postcard-price { white-space: nowrap; }
 .checkout-postcard-info, .checkout-postcard-close { display: flex; align-items: center; justify-content: center; flex-shrink: 0; width: 40px; height: 40px; border: 0; border-radius: 50%; background: transparent; color: #686c73; }
 .checkout-postcard-info:hover, .checkout-postcard-close:hover { background: #f0f2f5; color: #202124; }
 .checkout-postcard-dialog { padding: 0; border: 0; border-radius: 22px; width: min(660px, calc(100vw - 32px)); max-width: none; max-height: calc(100dvh - 32px); background: #fff; color: #202124; margin: auto; box-shadow: 0 24px 100px #0003; font-family: Arial, sans-serif; }

@@ -5,6 +5,7 @@ import posthog from 'posthog-js';
 import { ThreeLDRViewer, type CameraState, type ExportCaptureApi } from '../ThreeLDRViewer';
 import { useBilling } from '../../contexts/BillingContext';
 import { instructionsUrl as getInstructionsUrl } from '../../utils/instructionLinks';
+import { formatOrderPrice, INSTRUCTIONS_POSTCARD_CENTS } from '../../utils/orderCheckout';
 
 export function getPostcardTheme(name: string) {
   if (/\b(space|galaxy|cosmic|star|rocket|planet|moon)\b/i.test(name)) return 'space';
@@ -81,7 +82,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
     <label><input type="checkbox" name="shipInstructionsPostcard" checked={selected} disabled={disabled} onChange={event => {
       onChange(event.target.checked);
       posthog.capture('order_instructions_postcard_changed', { generation_id: generationId, selected: event.target.checked });
-    }} /><span>ship instructions post card</span></label>
+    }} /><span>Ship an instructions postcard <strong className="checkout-postcard-price">+ {formatOrderPrice(INSTRUCTIONS_POSTCARD_CENTS)}</strong></span></label>
     <button ref={infoButton} type="button" disabled={disabled} className="checkout-postcard-info" aria-label="About the instructions post card" aria-haspopup="dialog" aria-expanded={open} onClick={() => {
       setOpen(true);
       posthog.capture('order_instructions_postcard_preview_opened', { generation_id: generationId });

@@ -1,5 +1,7 @@
 import type { GetPriceResponse } from '../services/getPriceApi';
 
+export const INSTRUCTIONS_POSTCARD_CENTS = 399;
+
 export type OrderQuote = Pick<GetPriceResponse, 'total_price' | 'total_weight'> &
   Partial<Pick<GetPriceResponse, 'total_parts' | 'unique_part_types' | 'order_pricing'>>;
 
