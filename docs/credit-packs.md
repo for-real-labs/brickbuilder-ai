@@ -6,8 +6,7 @@ catalogs offer the same one-time pack sizes. Prices below are for the U.S.
 | Credits | Price | Premium over the Builder subscription rate | Savings per credit vs. the smallest pack |
 | ---: | ---: | ---: | ---: |
 | 100 | $1.99 | 50% | |
-| 500 | $9.99 | 50% | |
-| 1,200 | $19.99 | 25% | 16% |
+| 600 | $9.99 | 25% | 16% |
 
 The picker rounds per-credit savings to the nearest whole percent. On iOS it
 uses StoreKit’s localized prices. On the web, Stripe checkout accepts a pack key and the server
@@ -19,7 +18,7 @@ then deploy the updated frontend. In-flight custom Stripe purchases and
 historical receipts and refunds still reconcile using the original catalog or
 the versioned quote from `20261102010000_custom_credit_purchases.sql`.
 
-For iOS, create and submit the three consumables below, using the U.S. prices
+For iOS, create and submit the two consumables below, using the U.S. prices
 above and the appropriate localized prices. Release a native build with the
 updated purchase bridge. Test product loading and each grant in TestFlight
 before releasing. Older binaries continue to work with the legacy Apple
@@ -27,8 +26,7 @@ products while those are available. Keep the old IDs in the server and native
 transaction allowlists for unfinished purchases and refunds.
 
 - `ai.brickbuilder.app.credits.100`
-- `ai.brickbuilder.app.credits.500`
-- `ai.brickbuilder.app.credits.1200`
+- `ai.brickbuilder.app.credits.600`
 
 Apply `20261027010000_credit_packs.sql` before deploying. It adds a private purchase
 ledger and reuses the non-expiring wallet bucket historically named

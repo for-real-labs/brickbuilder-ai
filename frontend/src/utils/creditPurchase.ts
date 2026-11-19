@@ -1,7 +1,6 @@
 export const CREDIT_PACKS = [
   { key: '100', credits: 100, cents: 199 },
-  { key: '500', credits: 500, cents: 999 },
-  { key: '1200', credits: 1200, cents: 1999 },
+  { key: '600', credits: 600, cents: 999 },
 ] as const;
 
 export type CreditPackKey = typeof CREDIT_PACKS[number]['key'];

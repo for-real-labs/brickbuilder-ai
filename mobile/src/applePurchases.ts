@@ -1,6 +1,6 @@
 import * as IAP from 'expo-iap';
 
-export const CREDIT_PRODUCTS = [100, 500, 1200, 800, 1500].map(count => `ai.brickbuilder.app.credits.${count}`);
+export const CREDIT_PRODUCTS = [100, 600, 800, 1500].map(count => `ai.brickbuilder.app.credits.${count}`);
 export const APPLE_PRODUCTS = ['ai.brickbuilder.app.builder.monthly', 'ai.brickbuilder.app.creator.monthly', ...CREDIT_PRODUCTS];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const APPLE_EVENT = 'brickbuilder:apple-purchases';

@@ -51,7 +51,7 @@ def test_custom_purchase_limit_replay_and_refund_preserve_the_ledger(db):
     with pytest.raises(psycopg.errors.RaiseException,match='INVALID_CREDIT_PURCHASE'): custom(4,753,'apple:production:123')
 
 
-@pytest.mark.parametrize('key,credits', [('100', 100), ('500', 500), ('1200', 1200)])
+@pytest.mark.parametrize('key,credits', [('100', 100), ('600', 600)])
 def test_tiered_purchase_limits_for_both_providers(db, key, credits):
     migrate(db)
     for migration in ('20261027010000_credit_packs.sql', '20261102010000_custom_credit_purchases.sql',

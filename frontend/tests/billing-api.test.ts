@@ -29,10 +29,10 @@ it('preserves useful errors and restricts external payment redirects to Stripe H
 
 it('sends only the pack key to checkout, leaving the price and grant to the server', async () => {
   vi.mocked(authenticatedApiFetch).mockResolvedValueOnce(new Response(JSON.stringify({ url: 'https://checkout.stripe.com/test' })));
-  await billingApi.creditCheckout('500');
+  await billingApi.creditCheckout('600');
   const [url, args] = vi.mocked(authenticatedApiFetch).mock.calls[0];
   expect(new URL(url).pathname).toBe('/billing/credits/checkout');
-  expect(JSON.parse(String(args?.body))).toEqual({ pack_key: '500', ui_mode: 'elements' });
+  expect(JSON.parse(String(args?.body))).toEqual({ pack_key: '600', ui_mode: 'elements' });
 });
 
 it('requests embedded plan checkout with no client-controlled price, owner or return URL', async () => {
