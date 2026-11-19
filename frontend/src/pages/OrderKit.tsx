@@ -20,6 +20,7 @@ import { usePet } from "../contexts/PetContext";
 import { useAuth } from "../contexts/AuthContext";
 import { getOrderReturnModelPath } from "../utils/generationRoutes";
 import { getOrderPricing, formatOrderPrice, getShippingContact, type DeliveryDetails, type OrderQuote } from "../utils/orderCheckout";
+import { getEstimatedArrival } from "../utils/orderDelivery";
 import shippingCountries from "../data/shippingCountries.json";
 import "./OrderKit.css";
 
@@ -86,6 +87,7 @@ function OrderCheckout() {
   const pricing = getOrderPricing(quote);
   const [step, setStep] = React.useState(0);
   const [country, setCountry] = React.useState<string>('US');
+  const estimatedArrival = getEstimatedArrival(country);
   const [argentinaTaxId, setArgentinaTaxId] = React.useState('');
   const [taxIdHelpOpen, setTaxIdHelpOpen] = React.useState(false);
   const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
@@ -331,7 +333,11 @@ function OrderCheckout() {
               </dl>
             </> : <p className="checkout-section-note">{quoteLoading ? 'Calculating your kit price…' : 'Kit price unavailable'}</p>}
             </div>
-            <div className="checkout-summary-benefits"><p><Truck size={16} />Estimated delivery: 8–12 business days</p></div>
+            <div className="checkout-summary-benefits">
+              <p aria-live="polite"><Truck size={16} aria-hidden="true" />
+                {estimatedArrival ? `Estimated arrival ${estimatedArrival}` : 'Delivery estimate unavailable'}
+              </p>
+            </div>
           </div>
         </aside>
         <div className="checkout-flow" ref={stepFocusRef} tabIndex={-1}>
