@@ -94,3 +94,41 @@ def test_rounding_tolerance_still_rejects_scaling_and_shear(matrix):
 
 def test_11211_side_studs_cannot_enter_a_plate_wall():
     assert material.review_material([part('11211', (0, 0, 0)), part('3022', (0, 8, -30))], REGULAR)
+
+
+@pytest.mark.parametrize('rotation', [I, RY90])
+def test_griffin_seats_walls_and_dishes_report_every_conflicting_pair(rotation):
+    back = RY90 @ RY90
+    dish = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+    placements = [
+        ('4079', (-20, -408, 0), I), ('4079', (20, -408, 0), I),
+        ('4079', (0, -416, 40), I),
+        ('4079', (-80, -416, 80), back), ('4079', (-40, -416, 80), back),
+        ('4079', (40, -416, 80), back), ('4079', (80, -416, 80), back),
+        ('4079', (-60, -416, 40), RY90), ('4079', (60, -416, 40), RY90.T),
+        ('3004', (-90, -432, 40), RY90), ('3004', (90, -432, 40), RY90),
+        ('3023b', (-90, -440, 40), RY90), ('3023b', (90, -440, 40), RY90),
+        ('98138', (-90, -448, 50), I), ('98138', (90, -448, 50), I),
+        ('3960', (50, -526, -96), dish), ('4740', (0, -512, -100), I),
+        ('3960', (-50, -526, -96), dish),
+    ]
+    profiles = {**REGULAR, '3004': {'x_studs': 2, 'z_studs': 1, 'height': 24},
+                '3023b': {'x_studs': 2, 'z_studs': 1, 'height': 8}}
+    pieces = [part(code, rotation @ pos, rotation @ matrix) for code, pos, matrix in placements]
+    report = material.review_material(pieces, profiles)
+    assert {tuple(sorted(hit['instances'])) for hit in report} == {
+        (0, 2), (1, 2), (0, 7), (4, 7), (1, 8), (5, 8),
+        (3, 9), (6, 10), (3, 11), (6, 12), (3, 13), (6, 14), (15, 16), (16, 17),
+    }
+
+
+def test_seats_side_by_side_on_a_plate_have_clearance():
+    pieces = [part('3022', (0, 0, 0)), part('4079', (0, -8, 0)),
+              part('4079', (40, -8, 0))]
+    assert not material.review_material(pieces, REGULAR)
+
+
+def test_perpendicular_dishes_with_rim_clearance_pass():
+    side = np.array([[1, 0, 0], [0, 0, -1], [0, 1, 0]])
+    pieces = [part('3960', (-50, -526, -96), side), part('4740', (0, -512, -104))]
+    assert not material.review_material(pieces, REGULAR)

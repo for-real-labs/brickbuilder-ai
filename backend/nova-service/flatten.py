@@ -456,21 +456,24 @@ def main():
     if instructions:
         from ldraw_tools.geometry import analyze_geometry, profiles
         from material_collision import review_material
-        collisions = review_material(occurrences, profiles())
-        if collisions:
-            output.with_suffix('.review.json').write_text(json.dumps({
-                'error': 'Solid parts overlap; repair the reported placements.',
-                'diagnostics': collisions,
-            }), encoding='utf-8')
-            raise DisconnectedInstructions('Solid parts overlap')
+        from material_surfaces import exposed_overlaps, triangle_loader
         geometry = analyze_geometry(original, parts, contacts='all', detail='full',
                                     output_limit=MAX_INSTANCES, pair_limit=20, instance_limit=MAX_INSTANCES)
         require_valid_geometry(geometry['diagnostics'], output)
         if (geometry['complete'] is not True or geometry['contacts_checked'] is not True
                 or geometry['contacts_truncated'] or geometry['instances_truncated']
                 or geometry['occurrence_count'] != len(occurrences)
+                or len(geometry['instances']) != len(occurrences)
                 or geometry['contact_count'] != len(geometry['contacts'])):
             raise DisconnectedInstructions('Complete connector evidence is required to order instructions')
+        collisions = review_material(occurrences, profiles())
+        exposed_overlaps(occurrences, geometry['instances'], triangle_loader(physical_parts), collisions)
+        if collisions:
+            output.with_suffix('.review.json').write_text(json.dumps({
+                'error': 'Solid parts overlap; repair the reported placements.',
+                'diagnostics': collisions,
+            }), encoding='utf-8')
+            raise DisconnectedInstructions('Solid parts overlap')
         contacts = contact_axes(occurrences, geometry['contacts'], physical_parts)
         try:
             foundation = baseplate_foundation(occurrences, geometry, physical_parts)
