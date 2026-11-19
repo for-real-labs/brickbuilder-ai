@@ -1,3 +1,4 @@
+import type { CreditPackKey } from '../utils/creditPurchase';
 import { isAppleApp } from './applePurchases';
 import { authenticatedApiFetch } from './apiFetch';
 import { readApiError } from './apiError';
@@ -37,7 +38,7 @@ export const billingApi = {
   redeemPromo: (code: string) => request<{ type: 'builder'; account: BillingAccount }>('promo', { code }),
   plans: () => request<{ plans: CreditPlan[]; apple_ready?: boolean; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
   account: () => request<BillingAccount>('account'),
-  creditCheckout: (amount_cents: number) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ session_id: string; client_secret: string }>('credits/checkout', { amount_cents, ui_mode: 'elements' }),
+  creditCheckout: (pack_key: CreditPackKey) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ session_id: string; client_secret: string }>('credits/checkout', { pack_key, ui_mode: 'elements' }),
   appleCreditPrepare: () => request<{ app_account_token: string }>('apple/credits/prepare', {}),
   applePrepare: () => request<{ app_account_token: string }>('apple/prepare', {}),
   appleSync: (transaction_id: string) => request<BillingAccount>('apple/sync', { transaction_id }),
