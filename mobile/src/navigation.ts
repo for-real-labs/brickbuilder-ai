@@ -31,6 +31,7 @@ export function buildAppUrl(baseUrl: string, path: string): string {
 export function classifyNavigation(
   rawUrl: string,
   baseUrl: string,
+  isTopFrame = true,
 ): NavigationDisposition {
   let destination: URL;
 
@@ -38,6 +39,14 @@ export function classifyNavigation(
     destination = new URL(rawUrl);
   } catch {
     return 'blocked';
+  }
+
+  // Stripe.js loads this separately from its stripe.com payment frames.
+  // It belongs inside checkout and has no standalone browser page.
+  if (destination.hostname === 'm.stripe.network') {
+    return isTopFrame === false && destination.origin === 'https://m.stripe.network'
+      ? 'webview'
+      : 'blocked';
   }
 
   if (WEBVIEW_PROTOCOLS.has(destination.protocol)) {

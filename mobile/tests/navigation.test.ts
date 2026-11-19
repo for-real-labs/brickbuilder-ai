@@ -27,6 +27,15 @@ describe('mobile navigation policy', () => {
     ).toBe('webview');
   });
 
+  it('allows the Stripe network frame only as embedded HTTPS content', () => {
+    const frame = 'https://m.stripe.network/inner.html#url=https%3A%2F%2Fbrickbuilder.ai%2Forder';
+    expect(classifyNavigation(frame, APP_URL, false)).toBe('webview');
+    expect(classifyNavigation(frame, APP_URL, true)).toBe('blocked');
+    expect(classifyNavigation(frame, APP_URL)).toBe('blocked');
+    expect(classifyNavigation('http://m.stripe.network/inner.html', APP_URL, false)).toBe('blocked');
+    expect(classifyNavigation('https://m.stripe.network.example.com/inner.html', APP_URL, false)).toBe('external');
+  });
+
   it('opens ordinary HTTPS and mail links outside the app', () => {
     expect(classifyNavigation('https://github.com/openai', APP_URL)).toBe(
       'external',

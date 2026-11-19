@@ -236,7 +236,7 @@ export function BrickBuilderWebView() {
               if (enabled !== null) setCanRequestChanges(enabled);
             }}
             onShouldStartLoadWithRequest={(request) => {
-              const disposition = classifyNavigation(request.url, WEB_APP_URL);
+              const disposition = classifyNavigation(request.url, WEB_APP_URL, request.isTopFrame);
               if (disposition === 'webview') return true;
               if (disposition === 'external') openExternalUrl(request.url);
               return false;
