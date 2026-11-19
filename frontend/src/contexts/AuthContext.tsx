@@ -1,3 +1,7 @@
+import { MfaChallenge } from '../components/MfaChallenge'
+import { PasskeyPrompt } from '../components/PasskeyPrompt'
+import { accountMfaEnabled } from '../services/accountMfa'
+import { deviceAuthOptions } from '../services/deviceAuth'
 import { claimPendingReferral, referralSignupMetadata } from '../services/referrals'
 import { signInOrCreateAccount, confirmationRedirect } from '../services/passwordAuth'
 import React, { createContext, useContext, useEffect, useState } from 'react'
@@ -60,9 +64,15 @@ async function claimPendingAnonymousGenerations(accessToken: string) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [session, setSession] = useState<Session | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [rawSession, setSession] = useState<Session | null>(null)
+  const [initializing, setLoading] = useState(true)
+  const [mfa, setMfa] = useState<{ token: string; status: 'ready' | 'challenge' | 'unavailable' } | null>(null)
+  const [mfaAttempt, setMfaAttempt] = useState(0)
+  const mfaToken = accountMfaEnabled() ? rawSession?.access_token : undefined
+  const mfaStatus = mfaToken ? mfa?.token === mfaToken ? mfa.status : 'checking' : 'ready'
+  const session = mfaStatus === 'ready' ? rawSession : null
+  const user = session?.user ?? null
+  const loading = initializing || mfaStatus !== 'ready'
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
 
   const fetchUserProfile = async (userEmail: string) => {
@@ -137,13 +147,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession()
       if (!active) return
       setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user?.email) {
-        fetchUserProfile(session.user.email)
-      }
-      if (session?.access_token) {
-        void claimPendingAnonymousGenerations(session.access_token)
-      }
       setLoading(false)
     }
     void initialize()
@@ -153,20 +156,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session)
-      setUser(session?.user ?? null)
-      if (session?.user?.email) {
-        fetchUserProfile(session.user.email)
-      } else {
-        setUserProfile(null)
-      }
-      if (session?.access_token) {
-        void claimPendingAnonymousGenerations(session.access_token)
-      }
       setLoading(false)
     })
 
     return () => { active = false; subscription.unsubscribe() }
   }, [])
+
+  useEffect(() => {
+    if (!mfaToken) { setMfa(null); return }
+    let active = true
+    void supabase.auth.mfa.getAuthenticatorAssuranceLevel(mfaToken).then(({ data, error }) => {
+      if (!active) return
+      setMfa({ token: mfaToken, status: error || !data ? 'unavailable'
+        : data.nextLevel === 'aal2' && data.currentLevel !== 'aal2' ? 'challenge' : 'ready' })
+    }).catch(() => { if (active) setMfa({ token: mfaToken, status: 'unavailable' }) })
+    return () => { active = false }
+  }, [mfaToken, mfaAttempt])
+
+  useEffect(() => {
+    if (session?.user.email) void fetchUserProfile(session.user.email)
+    else setUserProfile(null)
+    if (session?.access_token) void claimPendingAnonymousGenerations(session.access_token)
+  }, [session?.access_token, session?.user.email])
 
   useEffect(() => {
     if (user?.email_confirmed_at && !user.is_anonymous) void claimPendingReferral()
@@ -190,7 +201,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Clear client state immediately so the UI reflects a logged-out state
     // regardless of what the server does.
     setSession(null)
-    setUser(null)
     setUserProfile(null)
 
     try {
@@ -268,7 +278,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateUsername,
   }
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={value}>
+    {mfaStatus === 'checking' && <p role="status" className="p-6 text-center text-sm text-slate-600">Checking your sign-in…</p>}
+    {(mfaStatus === 'challenge' || mfaStatus === 'unavailable') && <MfaChallenge
+      unavailable={mfaStatus === 'unavailable'} onRetry={() => setMfaAttempt(value => value + 1)}
+      onSignOut={() => void signOut()} />}
+    <div hidden={mfaStatus !== 'ready'}>{children}</div>
+    {user && !user.is_anonymous && deviceAuthOptions().passkey && <PasskeyPrompt key={user.id} userId={user.id} />}
+  </AuthContext.Provider>
 }
 
 export function useAuth() {

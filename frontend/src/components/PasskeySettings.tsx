@@ -1,8 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import posthog from 'posthog-js';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
-import { deviceAuthOptions } from '../services/deviceAuth';
+import { addAccountPasskey, deviceAuthOptions } from '../services/deviceAuth';
 
 export function PasskeySettings() {
   const { user } = useAuth();
@@ -18,8 +17,8 @@ export function PasskeySettings() {
     setStatus('saving');
     posthog.capture('account_add_passkey_clicked');
     try {
-      const { data, error } = await supabase.auth.registerPasskey({ options: { signal: controller.signal } });
-      if (!controller.signal.aborted) setStatus(data && !error ? 'saved' : 'error');
+      await addAccountPasskey(controller.signal);
+      if (!controller.signal.aborted) setStatus('saved');
     } catch {
       if (!controller.signal.aborted) setStatus('error');
     } finally {

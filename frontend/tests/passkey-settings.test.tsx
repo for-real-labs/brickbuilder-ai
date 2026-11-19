@@ -5,7 +5,10 @@ import { PasskeySettings } from '../src/components/PasskeySettings';
 
 const mocked = vi.hoisted(() => ({ register: vi.fn(), user: { is_anonymous: false } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: mocked.user }) }));
-vi.mock('../src/services/deviceAuth', () => ({ deviceAuthOptions: () => ({ passkey: true }) }));
+vi.mock('../src/services/deviceAuth', async importOriginal => ({
+  ...await importOriginal<typeof import('../src/services/deviceAuth')>(),
+  deviceAuthOptions: () => ({ passkey: true }),
+}));
 vi.mock('../src/lib/supabase', () => ({ supabase: { auth: { registerPasskey: mocked.register } } }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 

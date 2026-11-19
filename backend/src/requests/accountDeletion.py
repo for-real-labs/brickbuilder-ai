@@ -94,9 +94,10 @@ class AppleAuthorizationRequest(BaseModel):
 
 
 @router.post("/apple-authorization")
-async def save_apple_authorization(body: AppleAuthorizationRequest, identity: dict = Depends(auth.get_optional_identity),
+async def save_apple_authorization(body: AppleAuthorizationRequest,
                                    authorization: str | None = Header(None)):
-    user_id = billing.account_id(identity)
+    # The native one-time Apple code is exchanged before the authenticator
+    # challenge. This endpoint only writes a grant that matches the Apple user.
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "Sign in to save your Apple authorization.")
     db = billing.client()
@@ -104,7 +105,7 @@ async def save_apple_authorization(body: AppleAuthorizationRequest, identity: di
         result = await asyncio.to_thread(db.auth.get_user, authorization[7:])
     except Exception:
         raise HTTPException(401, "Please sign in again.") from None
-    if not result.user or str(result.user.id) != user_id:
+    if not result.user or result.user.is_anonymous:
         raise HTTPException(401, "Please sign in again.")
     try:
         await apple_sign_in.save_for_deletion(db, result.user, body.authorization_code)

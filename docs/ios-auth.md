@@ -33,3 +33,27 @@ Settings after signing in to an existing account.
   cancellation, account deletion and revocation, adding a passkey in Settings,
   and signing out and back in with the passkey. Check that an existing web Google
   account can still sign in with its email or a registered passkey.
+
+After sign-in on a supported browser or iPhone, accounts without a passkey see
+an optional setup prompt. Dismissing it suppresses the prompt in the current
+browser or app installation. Dashboard → Settings still offers setup. Test
+web registration and sign-in on the production RP origin and on any separately
+configured test origin.
+
+## Authenticator MFA
+
+Dashboard → Settings lets users turn on MFA with an authenticator app. They
+scan a QR code or enter the setup key, then confirm with a six-digit code. Users
+can add a second authenticator in Settings. First-factor sessions require an
+authenticator code before account access.
+
+- Apply `20261119040000_account_mfa_enforcement.sql` to the Auth project and deploy
+  the updated `change-request` function. The migration adds restrictive MFA
+  policies to existing public and Storage tables that have RLS. Apply the same
+  assurance policy when adding future tables with account data.
+- Enable TOTP enrollment and verification in Supabase Auth. Deploy the backend
+  with `AUTH_MFA_ENFORCEMENT_ENABLED=true`, then deploy the frontend with
+  `VITE_MFA_ENABLED=true`.
+- Test initial enrollment, sign-out, signing in with and without a verified
+  factor, and removing the last authenticator. Check that the API and Supabase
+  reject an enrolled user's first-factor session.

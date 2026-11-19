@@ -85,3 +85,8 @@ export async function signInWithPasskey(signal: AbortSignal): Promise<boolean> {
   if (error || !data.session) throw new Error('Passkey sign-in could not finish. Use email if you haven’t added a passkey yet.');
   return true;
 }
+
+export async function addAccountPasskey(signal: AbortSignal) {
+  const { data, error } = await supabase.auth.registerPasskey({ options: { signal } });
+  if (error || !data) throw new Error('Could not add a passkey.');
+}

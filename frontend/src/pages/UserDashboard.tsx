@@ -1,3 +1,4 @@
+import { MfaSettings } from '../components/MfaSettings';
 import { PasskeySettings } from '../components/PasskeySettings';
 import { PasswordSettings } from '../components/PasswordSettings';
 import { ManagePlanLink } from '../components/ManagePlanLink';
@@ -555,6 +556,7 @@ const SettingsPanel: React.FC = () => {
       <AiBillingSettings />
       <PasswordSettings />
       <PasskeySettings />
+      <MfaSettings />
       <DeleteAccount />
 
       <div className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 max-w-2xl">
