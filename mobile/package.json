@@ -14,6 +14,7 @@
   "dependencies": {
     "@react-native-community/netinfo": "12.0.1",
     "expo": "~57.0.24",
+    "expo-apple-authentication": "~57.0.2",
     "expo-dev-client": "~57.0.19",
     "expo-iap": "^6.1.1",
     "expo-status-bar": "~57.0.1",

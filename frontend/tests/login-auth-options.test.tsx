@@ -5,6 +5,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter } from 'react-router-dom';
 import posthog from 'posthog-js';
 
+const device = vi.hoisted(() => ({ apple: false, passkey: false, signInWithApple: vi.fn(), signInWithPasskey: vi.fn() }));
+vi.mock('../src/services/deviceAuth', () => ({
+  deviceAuthOptions: () => ({ apple: device.apple, passkey: device.passkey }),
+  signInWithApple: device.signInWithApple, signInWithPasskey: device.signInWithPasskey,
+}));
 const signup = vi.hoisted(() => ({ verify: vi.fn(), resend: vi.fn() }));
 vi.mock('../src/services/passwordAuth', async () => ({
   ...await vi.importActual('../src/services/passwordAuth'), verifySignupCode: signup.verify, resendSignupCode: signup.resend,
@@ -420,4 +425,35 @@ it('does not advertise an obsolete Free allowance', () => {
   const { container, unmount } = renderIntoBody(<LoginModal open intent="claim_credits" onClose={() => undefined} />);
   try { expect(container.textContent).not.toContain('450 free credits'); }
   finally { unmount(); billing.plans = [{ key: 'free', credits: 300 }]; }
+});
+
+
+it('offers Apple and passkey sign-in in iOS and completes modal sign-in in place', async () => {
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version: '1.0.6', appleSignIn: true, passkeys: true };
+  device.apple = true; device.passkey = true;
+  device.signInWithApple.mockResolvedValue(true);
+  const success = vi.fn();
+  const { container, unmount } = renderIntoBody(<LoginModal open onClose={vi.fn()} onSuccess={success} />);
+  try {
+    expect(findButton(container, 'Continue with Google')).toBeUndefined();
+    expect(findButton(container, 'Sign in with a passkey')).toBeDefined();
+    await act(async () => container.querySelector<HTMLImageElement>('img[alt="Sign in with Apple"]')!.closest('button')!.click());
+    expect(device.signInWithApple).toHaveBeenCalledWith(expect.any(AbortSignal));
+    expect(success).toHaveBeenCalledOnce();
+  } finally {
+    unmount(); device.apple = false; device.passkey = false;
+    delete window.__BRICKBUILDER_NATIVE_APP__;
+  }
+});
+
+it('takes passkey sign-in back to the requested page', async () => {
+  device.passkey = true;
+  device.signInWithPasskey.mockResolvedValue(true);
+  loginLocation.search = '?next=%2Fbilling';
+  const { container, unmount } = renderIntoBody(<MemoryRouter><LoginPage /></MemoryRouter>);
+  try {
+    await act(async () => findButton(container, 'Sign in with a passkey')!.click());
+    expect(device.signInWithPasskey).toHaveBeenCalledWith(expect.any(AbortSignal));
+    expect(navigate).toHaveBeenLastCalledWith('/billing');
+  } finally { unmount(); device.passkey = false; loginLocation.search = ''; }
 });

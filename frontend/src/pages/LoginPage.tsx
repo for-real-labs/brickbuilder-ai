@@ -1,3 +1,4 @@
+import { DeviceSignIn } from '../components/DeviceSignIn';
 import { getNativeMobileShellInfo } from '../utils/mobileShellAnalytics';
 import { SignupCodeVerification } from '../components/SignupCodeVerification';
 import { PasswordRecovery } from '../components/PasswordRecovery';
@@ -332,7 +333,7 @@ export default function LoginPage() {
             onVerified={() => { if (remember) localStorage.setItem("remember_email", email); else localStorage.removeItem("remember_email"); navigate(redirectTo); }} onBack={() => setConfirmationRequired(false)} />}
           {authMethod === "password" && <PasswordRecovery email={email} surface="login_page" />}
 
-          <div data-native-mobile-hidden="true">
+          {!nativeIos && <div data-native-mobile-hidden="true">
             {/* Divider */}
             <div className="flex items-center gap-3 pt-4 mt-2">
               <div className="h-px flex-1 bg-slate-200" />
@@ -344,7 +345,7 @@ export default function LoginPage() {
             <button
               type="button"
               className="h-11 w-full rounded-lg border border-slate-300 bg-white text-slate-800 transition-colors flex items-center justify-center gap-3 px-4 hover:bg-slate-50 hover:border-slate-400 mt-4"
-              onClick={handleGoogleSignIn}
+              disabled={loading} onClick={handleGoogleSignIn}
             >
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="20" height="20" aria-hidden="true" focusable="false">
                 <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.3 9.1 3.4l6.8-6.8C35.4 2.3 30 0 24 0 14.7 0 6.7 5.4 2.7 13.2l7.9 6.1C12.3 13.1 17.6 9.5 24 9.5z"/>
@@ -354,7 +355,9 @@ export default function LoginPage() {
               </svg>
               <span>Continue with Google</span>
             </button>
-          </div>
+          </div>}
+          {!confirmationRequired && !otpSent && <DeviceSignIn surface="login_page" busy={loading}
+            onBusyChange={setLoading} onSuccess={() => navigate(redirectTo)} />}
 
           <p className="text-xs text-slate-500 text-center mt-2">
             Need an account? <Link to="/signup" state={{ from: redirectTo }} className="text-[#f44336] hover:underline">Sign up</Link>

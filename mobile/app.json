@@ -12,6 +12,8 @@
       "bundleIdentifier": "ai.brickbuilder.app",
       "buildNumber": "20",
       "supportsTablet": true,
+      "usesAppleSignIn": true,
+      "associatedDomains": ["webcredentials:brickbuilder.ai"],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "BrickBuilder uses the camera only when you choose to photograph a model for a new generation.",
@@ -32,7 +34,8 @@
     },
     "owner": "jjohnson5253",
     "plugins": [
-      "expo-iap"
+      "expo-iap",
+      "expo-apple-authentication"
     ]
   }
 }
