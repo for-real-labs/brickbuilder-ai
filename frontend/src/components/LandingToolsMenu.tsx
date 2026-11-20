@@ -77,7 +77,10 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
     if (!model) throw new Error('Open or create a model first, then ask me to download it.');
     if (busy) throw new Error('Your model is still updating. Try the download when it finishes.');
     posthog.capture('landing_model_export_clicked', { ...attribution(), generation_id: model.generation.generation_id, format, source });
-    downloadModel(model.content, model.generation.name || model.generation.prompt || 'model', format);
+    const sourceLDraw = model.generation.ldr_content;
+    const content = (format === 'ldraw' || format === 'io') && sourceLDraw?.trim()
+      ? sourceLDraw : model.content;
+    downloadModel(content, model.generation.name || model.generation.prompt || 'model', format);
     setOpen(false);
     return true;
   };

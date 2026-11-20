@@ -46,6 +46,29 @@ it('exports complete LDraw and a Studio archive containing the same model', asyn
   expect(strFromU8(archive['model.ldr'])).toBe(model);
 });
 
+it('puts the build in the first MPD section for both legacy packed exports', async () => {
+  const packed = [
+    '0 Name: Studio test',
+    placement('parts/3001.dat'),
+    placement('main.ldr'),
+    '0 FILE parts/3001.dat',
+    placement('stud.dat', 16),
+    '0 FILE main.ldr',
+    placement('parts/3001.dat'),
+  ].join('\n');
+  const expected = `0 FILE main-2.ldr\r\n${packed}`;
+  expect(await text(createModelExport(packed, 'Castle', 'ldraw').blob)).toBe(expected);
+  const io = createModelExport(packed, 'Castle', 'io');
+  const archive = unzipSync(new Uint8Array(await read(io.blob)));
+  expect(strFromU8(archive['model.ldr'])).toBe(expected);
+  expect(modelParts(expected)).toEqual(modelParts(packed));
+});
+
+it('preserves an ordinary single-file LDraw model', async () => {
+  const source = placement('3001.dat');
+  expect(await text(createModelExport(source, 'Castle', 'ldraw').blob)).toBe(source);
+});
+
 it('exports CSV quantities and BrickLink XML with translated color IDs', async () => {
   expect(await text(createModelExport(model, 'Castle', 'csv').blob)).toBe('LdrawId,LDrawColorId,Qty\r\n3001.dat,4,2\r\n3002.dat,71,1\r\n');
   const xml = await text(createModelExport(model, 'Castle', 'xml').blob);
