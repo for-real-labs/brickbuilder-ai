@@ -1,3 +1,4 @@
+import { AppleSignIn, appleSignInDispatch } from './appleSignIn';
 import { ApplePurchases, appleDispatchScript } from './applePurchases';
 import NetInfo from '@react-native-community/netinfo';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -75,11 +76,15 @@ function ToolbarButton({
 export function BrickBuilderWebView() {
   const webViewRef = useRef<WebView>(null);
   const purchases = useRef<ApplePurchases | null>(null);
+  const appleSignIn = useRef<AppleSignIn | null>(null);
   useEffect(() => {
     if (Platform.OS !== 'ios') return;
     const bridge = new ApplePurchases(detail => webViewRef.current?.injectJavaScript(appleDispatchScript(detail, WEB_APP_URL)), WEB_APP_URL);
     purchases.current = bridge;
-    return () => { bridge.dispose(); purchases.current = null; };
+    appleSignIn.current = new AppleSignIn(WEB_APP_URL, result => {
+      webViewRef.current?.injectJavaScript(appleSignInDispatch(result, WEB_APP_URL));
+    });
+    return () => { bridge.dispose(); purchases.current = null; appleSignIn.current = null; };
   }, []);
   const [canGoBack, setCanGoBack] = useState(false);
   const [currentUrl, setCurrentUrl] = useState(WEB_APP_URL);
@@ -226,6 +231,7 @@ export function BrickBuilderWebView() {
             }}
             onMessage={({ nativeEvent }) => {
               void purchases.current?.handle(nativeEvent.data, nativeEvent.url);
+              void appleSignIn.current?.handle(nativeEvent.data, nativeEvent.url);
               const enabled = parseChangeRequestAccessMessage(nativeEvent.data);
               if (enabled !== null) setCanRequestChanges(enabled);
             }}

@@ -1,3 +1,5 @@
+import { DeviceSignIn } from '../DeviceSignIn';
+import { getNativeMobileShellInfo } from '../../utils/mobileShellAnalytics';
 import React, { useState } from 'react';
 import posthog from 'posthog-js';
 import { useAuth } from '../../contexts/AuthContext';
@@ -6,6 +8,7 @@ import { PasswordRecovery } from '../PasswordRecovery';
 
 export function CheckoutAccount({ redirectPath }: { redirectPath: string }) {
   const { signIn, signInWithGoogle } = useAuth();
+  const nativeIos = getNativeMobileShellInfo()?.platform === 'ios';
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -37,8 +40,11 @@ export function CheckoutAccount({ redirectPath }: { redirectPath: string }) {
         <button type="submit" className="checkout-primary" disabled={busy}>{busy ? 'Please wait…' : 'Continue to payment'}</button>
       </form>
       <PasswordRecovery email={email} surface="plan_checkout" />
-      <div className="plan-checkout-divider">or</div>
-      <button type="button" className="plan-checkout-google" disabled={busy} onClick={() => void authenticate(true)}>Continue with Google</button>
+      {!nativeIos && <div data-native-mobile-hidden="true">
+        <div className="plan-checkout-divider">or</div>
+        <button type="button" className="plan-checkout-google" disabled={busy} onClick={() => void authenticate(true)}>Continue with Google</button>
+      </div>}
+      <DeviceSignIn surface="plan_checkout" busy={busy} onBusyChange={setBusy} onSuccess={() => setVerification(false)} />
     </>}
     {verification && <PasswordRecovery email={email} surface="plan_checkout" />}
   </div>;

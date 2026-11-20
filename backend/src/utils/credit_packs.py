@@ -7,12 +7,17 @@ import stripe
 from fastapi import HTTPException
 from . import billing
 
-PACKS = {
+LEGACY_PACKS = {
     'builder': {'key': 'builder', 'credits': 800, 'cents': 1080},
     'creator': {'key': 'creator', 'credits': 1500, 'cents': 2280},
 }
+PACKS = {
+    '100': {'key': '100', 'credits': 100, 'cents': 199},
+    '600': {'key': '600', 'credits': 600, 'cents': 999},
+}
+PURCHASE_PACKS = {**LEGACY_PACKS, **PACKS}
 TAG = 'brickbuilder_credit_pack_v1'
-APPLE_PRODUCTS = {f'ai.brickbuilder.app.credits.{p["credits"]}': p for p in PACKS.values()}
+APPLE_PRODUCTS = {f'ai.brickbuilder.app.credits.{p["credits"]}': p for p in PURCHASE_PACKS.values()}
 
 
 MIN_CENTS = 50
@@ -35,17 +40,16 @@ async def require_subscriber(owner):
     return row
 
 
-async def checkout(identity, amount_cents, ui_mode="hosted"):
+async def checkout(identity, pack_key, ui_mode="hosted"):
     owner = billing.account_id(identity)
     await billing.require_enabled()
-    row = await require_subscriber(owner)
-    plan = billing.effective_plan(row)
-    rate_key = 'builder' if plan == 'builder' else 'creator'
-    pack = quote(amount_cents, rate_key)
+    await require_subscriber(owner)
+    pack = PACKS.get(pack_key)
+    if not pack:
+        raise HTTPException(400, 'Choose a credit pack.')
     if not (await billing.capacity())['checkout_available']:
         raise HTTPException(503, 'Credit purchases are temporarily unavailable.')
-    metadata = {'integration': TAG, 'brickbuilder_user_id': owner, 'pack_key': 'custom',
-                'amount_cents': str(amount_cents), 'rate_key': rate_key, 'pricing_version': 'monthly_v4'}
+    metadata = {'integration': TAG, 'brickbuilder_user_id': owner, 'pack_key': pack_key}
     elements = ui_mode == 'elements'
     redirects = ({'return_url': billing.site_url()+'/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}'}
         if elements else {'success_url': billing.site_url()+'/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}',
@@ -71,7 +75,7 @@ async def reconcile(payment_id, owner=None, *, confirmation_email=None):
     user = str(UUID(meta['brickbuilder_user_id']))
     if owner and user != owner:
         raise HTTPException(403, 'This purchase belongs to another account.')
-    pack = PACKS.get(meta.get('pack_key'))
+    pack = PURCHASE_PACKS.get(meta.get('pack_key'))
     if meta.get('pack_key') == 'custom':
         if meta.get('pricing_version') != 'monthly_v4':
             raise ValueError('Invalid credit pricing version')

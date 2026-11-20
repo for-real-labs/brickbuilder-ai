@@ -49,3 +49,24 @@ def test_custom_purchase_limit_replay_and_refund_preserve_the_ledger(db):
     assert wallet(db,uid)['apple_remaining']==753
     with pytest.raises(psycopg.errors.RaiseException,match='INVALID_CREDIT_PURCHASE'): custom(4,752509)
     with pytest.raises(psycopg.errors.RaiseException,match='INVALID_CREDIT_PURCHASE'): custom(4,753,'apple:production:123')
+
+
+@pytest.mark.parametrize('key,credits', [('100', 100), ('600', 600)])
+def test_tiered_purchase_limits_for_both_providers(db, key, credits):
+    migrate(db)
+    for migration in ('20261027010000_credit_packs.sql', '20261102010000_custom_credit_purchases.sql',
+                      '20261119010000_tiered_credit_packs.sql'):
+        db.execute((MIGRATION.parent / migration).read_text())
+    uid = owner(db)
+    for transaction in ('stripe:pi_pack', 'apple:production:123'):
+        def apply(version, amount):
+            db.execute('SELECT billing_apply_credit_pack(%s,true,%s,%s,%s,%s)',
+                       (uid, transaction, key, version, amount))
+
+        apply(1, credits)
+        apply(1, credits)
+        assert wallet(db, uid)['apple_remaining'] == credits
+        with pytest.raises(psycopg.errors.RaiseException, match='INVALID_CREDIT_PURCHASE'):
+            apply(2, credits + 1)
+        apply(3, 0)
+        assert wallet(db, uid)['apple_remaining'] == 0

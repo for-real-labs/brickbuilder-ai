@@ -343,7 +343,7 @@ Long or uncapped pin holes retain their original interpretation.
 
 Deploy the rebuilt Nova runtime with the API. Instruction export requires
 `instruction_plan_version: 4`, and generation requires
-`instruction_publication_version: 1`; older instruction caches are not reused. The
+`instruction_publication_version: 3`. The
 `nova-instructions-reviewed-v5.ldr` cache is regenerated from the saved source
 on first request.
 
@@ -357,20 +357,21 @@ settings. See [Anthropic fast mode](https://platform.claude.com/docs/en/build-wi
 
 ## Physical collision publication checks
 
-Publication policy v2 independently validates the captured MPD with the immutable
-Nova toolkit. Any validation error blocks publication and returns repair evidence
-to the agent; the upstream publisher's warning-only failure behavior cannot waive
-this check. The backend requires policy v2 before starting new All parts builds.
+Publication policy v3 independently validates the captured MPD with the immutable
+Nova toolkit. Validation errors block publication and return repair evidence to
+the agent. The API requires policy v3 for new builds and edits.
 
-Before connection and insertion-order review, supplemental solid-material checks
-cover the top skin of curved tile 27925, hollow side studs on 11211 and 22885, and
-top skins/exterior walls of Nova's curated rectangular parts. Checks use inscribed
-material volumes with transformed orientations and a small contact tolerance;
-sockets and hollow stud centres stay empty. Collision feedback identifies both
-placements and asks the agent to move or replace them before retrying publication.
-Regression cases reproduce the Peacock Car's overlapping seat tiles and backrest
-studs, and preserve legal stacked and side-stud/socket connections.
+The material review checks the curved tile 27925, hollow side studs on 11211 and
+22885, and the skins and walls of curated rectangular parts. It also checks the
+pan and flared back of minifig seat 4079, the cap of round tile 98138, and the
+faceted rims of dishes 3960 and 4740. For the seat and dish volumes it tests
+nearby parts' LDraw faces even when the neighbor has no material profile.
+Inscribed volumes and a contact tolerance preserve the space inside sockets,
+hollow studs and dishes. The agent receives both part IDs and world positions
+for each reported intersection and must repair the model before publication.
 
-These checks expand coverage; they do not certify every LEGO shape, clutch, or
-structural property. Unsupported geometry retains Nova's coverage warnings.
-Existing saved generations are not rewritten by this change.
+Regression cases cover the Peacock Car's seat tiles and backrest studs, and
+the Bearded Griffin's six chair-to-chair, six chair-to-trim and two dish-rim
+intersections. Review includes inherited geometry during color-only edits.
+Coverage depends on the modeled features. Existing saved revisions keep their
+published instructions.

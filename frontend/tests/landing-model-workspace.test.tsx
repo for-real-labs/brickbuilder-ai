@@ -45,7 +45,7 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
   requestReply: vi.fn(), updateTurn: buddy.updateTurn, resetConversation: vi.fn() }) }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
-vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: () => <div>Building instructions<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
+vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: ({ backToModelButton }: { backToModelButton: React.ReactNode }) => <div>Building instructions{backToModelButton}<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, modelPath, onModelLoaded, showRuler, showModelControls }: { showRuler?: boolean; showModelControls?: boolean; modelContent?: string; modelName?: string; modelPath?: string; onModelLoaded?: () => void }) => {
   if (modelPath) return <div data-testid="generation-3d-animation" data-scene={modelPath} />;
   viewer.loaded = onModelLoaded;
@@ -105,6 +105,7 @@ beforeEach(() => {
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); window.history.replaceState(null, '', '/'); vi.useRealTimers(); vi.unstubAllGlobals(); });
 const input = () => container.querySelector<HTMLInputElement>('#landing-build-prompt')!;
+const backToModel = () => [...container.querySelectorAll('button')].find(button => button.textContent === 'Back to model')!;
 function type(text: string) {
   act(() => {
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input(), text);
@@ -1030,7 +1031,7 @@ it('opens an emailed instructions link in a dialog after the model loads and let
   await act(async () => root.render(<LandingPage />));
   expect(dialog.dataset.expanded).toBe('false');
   expect(document.body.style.overflow).toBe('');
-  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  await act(async () => backToModel().click());
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-create-new')!.click());
   expect(query.value).toBe('');
@@ -1076,19 +1077,19 @@ it('places the instructions button below the viewer and updates the URL without 
   await act(async () => button.click());
   expect(container.querySelector('[aria-label="Instructions viewer"]')).not.toBeNull();
   expect(container.textContent).toContain('Building instructions');
-  expect(button.textContent).toBe('Show model');
-  expect(button.getAttribute('aria-pressed')).toBe('true');
-  expect(document.getElementById(button.getAttribute('aria-controls')!)).not.toBeNull();
+  expect(button.isConnected).toBe(false);
+  expect(frame.contains(backToModel())).toBe(true);
+  expect(document.getElementById(backToModel().getAttribute('aria-controls')!)).not.toBeNull();
   expect(container.querySelector('.landing-model-conversation')).toBe(conversation);
   expect(query.value).toBe('id=castle&exact=1&instructions=1&step=1');
   expect(query.set).toHaveBeenLastCalledWith(expect.any(Function), { replace: true });
   expect(navigate).not.toHaveBeenCalled();
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_instructions_clicked', { generation_id: 'castle', source: 'viewer_footer' });
-  await act(async () => button.click());
+  await act(async () => backToModel().click());
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
-  expect(button.getAttribute('aria-pressed')).toBe('false');
+  expect(container.querySelector('.landing-instructions-toggle')?.textContent).toBe('Show instructions');
   expect(query.value).toBe('id=castle&exact=1');
-  expect(posthog.capture).toHaveBeenCalledWith('landing_model_3d_view_clicked', { generation_id: 'castle', source: 'viewer_footer' });
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_3d_view_clicked', { generation_id: 'castle', source: 'instructions_header' });
 });
 
 it('blocks scroll gestures on the model and instruction canvas, while allowing chat and parts scrolling', async () => {
@@ -1125,10 +1126,10 @@ it('disables instruction toggling while editing and resets to the model when the
   expect(container.querySelector('[aria-label="Instructions viewer"]')).toBeNull();
   await render('castle');
   await act(async () => button.click());
-  expect(button.getAttribute('aria-pressed')).toBe('true');
+  expect(backToModel()).toBeDefined();
   await render('rover');
-  expect(button.getAttribute('aria-pressed')).toBe('false');
-  expect(button.textContent).toBe('Show instructions');
+  expect(backToModel()).toBeUndefined();
+  expect(container.querySelector('.landing-instructions-toggle')?.textContent).toBe('Show instructions');
   expect(container.querySelector('[data-testid="viewer"]')?.textContent).toBe('rover');
 });
 
@@ -1150,7 +1151,7 @@ it.each(['model', 'instructions'] as const)('expands %s and returns with the sam
   expect(back.closest('.landing-expanded-footer')).not.toBeNull();
   expect(document.body.style.overflow).toBe('hidden');
   expect(dialog.contains(content)).toBe(true);
-  expect(expand.hidden).toBe(true);
+  expect(expand.hidden).toBe(view === 'model');
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_expanded', { generation_id: 'castle', view, source: 'viewer_footer' });
   await act(async () => back.click());
   expect(dialog.dataset.expanded).toBe('false');
@@ -1163,12 +1164,36 @@ it.each(['model', 'instructions'] as const)('expands %s and returns with the sam
   expect(navigate).not.toHaveBeenCalled();
 });
 
-it('supports Escape and view switching while expanded, then restores scrolling on unmount', async () => {
+it('hides the model actions in both expanded views and restores them after collapsing', async () => {
+  query.value = 'id=castle&exact=1&instructions=1&step=4';
+  vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage').mockResolvedValueOnce({
+    generations: [{ ...historyBuild('castle', 'A castle'), generation_id: 'castle', version: 1 }], total_count: 1,
+  });
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }}
+    busy={false} onViewPreviousEdit={vi.fn()}>{null}</LandingModelWorkspace>));
+  const toolbar = container.querySelector<HTMLElement>('.landing-model-bottom-toolbar')!;
+  const panel = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  expect(toolbar.hidden).toBe(true);
+  expect(toolbar.textContent).toContain('Previous edits');
+  expect(toolbar.textContent).toContain('Post to Community');
+  expect(backToModel().closest('[hidden]')).toBeNull();
+  await act(async () => backToModel().click());
+  expect(panel.dataset.view).toBe('model');
+  expect(panel.dataset.expanded).toBe('true');
+  expect(toolbar.hidden).toBe(true);
+  expect(query.value).toBe('id=castle&exact=1');
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-back')!.click());
+  expect(toolbar.hidden).toBe(false);
+  expect([...toolbar.querySelectorAll(':scope > button')].map(button => button.textContent)).toEqual([
+    'Show instructions', 'Previous edits', 'Post to Community',
+  ]);
+});
+
+it('supports Escape in expanded instructions, then restores scrolling on unmount', async () => {
+  query.value = 'id=castle&instructions=1';
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
   const expand = container.querySelector<HTMLButtonElement>('.landing-view-expand')!;
   const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
-  await act(async () => expand.click());
-  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
   expect(dialog.dataset.expanded).toBe('true');
   expect(dialog.getAttribute('aria-label')).toBe('Expanded instructions');
   const escape = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true });
@@ -1185,8 +1210,13 @@ it('supports Escape and view switching while expanded, then restores scrolling o
   document.body.style.overflow = '';
 });
 
-it('returns desktop instructions to the model using Go Back without requiring the hidden view toggle', async () => {
-  vi.stubGlobal('matchMedia', () => ({ matches: true }));
+it('keeps the instructions sidebar and Go Back behavior at a zoomed desktop width', async () => {
+  const sidebarQuery = '(min-width: 900px)';
+  const workspaceCss = readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  const viewerCss = readFileSync('src/pages/InstructionsViewer.css', 'utf8');
+  expect(workspaceCss.split(`@media ${sidebarQuery} {`)[1]).toMatch(/\.instructions-parts\s*\{\s*grid-column: 1/);
+  expect(viewerCss.split(`@media ${sidebarQuery} {`)[1]).toMatch(/\.instructions-parts\[data-all-parts\]\s*\{\s*max-height: none/);
+  vi.stubGlobal('matchMedia', (query: string) => ({ matches: query === sidebarQuery }));
   query.value = 'id=castle&instructions=1&step=2';
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
   const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
@@ -1196,6 +1226,26 @@ it('returns desktop instructions to the model using Go Back without requiring th
   expect(dialog.dataset.expanded).toBe('false');
   expect(query.value).toBe('id=castle');
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
+});
+
+it('toggles expanded instructions from the top-right control without changing the linked step', async () => {
+  vi.stubGlobal('matchMedia', () => ({ matches: true }));
+  query.value = 'id=castle&instructions=1&step=4';
+  await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
+  const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  const toggle = dialog.querySelector<HTMLButtonElement>('.landing-model-toolbar .landing-view-expand')!;
+  expect(toggle.hidden).toBe(false);
+  expect(toggle.getAttribute('aria-label')).toBe('Exit expanded instructions');
+  await act(async () => toggle.click());
+  expect(dialog.dataset.expanded).toBe('false');
+  expect(dialog.dataset.view).toBe('instructions');
+  expect(toggle.getAttribute('aria-label')).toBe('Expand instructions');
+  expect(document.activeElement).toBe(toggle);
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_collapsed', { generation_id: 'castle', view: 'instructions', source: 'viewer_toolbar' });
+  await act(async () => toggle.click());
+  expect(dialog.dataset.expanded).toBe('true');
+  expect(toggle.getAttribute('aria-label')).toBe('Exit expanded instructions');
+  expect(query.value).toBe('id=castle&instructions=1&step=4');
 });
 
 it('returns to the inline model when the selected build changes while expanded', async () => {
@@ -1310,9 +1360,10 @@ it('toggles measurements beside expand and preserves the choice across viewer mo
   });
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
   expect(rulerVisible()).toBe('false');
+  await act(async () => container.querySelector<HTMLButtonElement>('.landing-view-back')!.click());
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
   expect(container.querySelector('.landing-ruler-toggle')).toBeNull();
-  await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+  await act(async () => backToModel().click());
   expect(rulerVisible()).toBe('false');
   await act(async () => container.querySelector<HTMLButtonElement>('.landing-ruler-toggle')!.click());
   expect(rulerVisible()).toBe('true');

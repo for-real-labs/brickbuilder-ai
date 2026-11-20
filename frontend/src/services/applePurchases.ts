@@ -3,7 +3,7 @@ export const APPLE_EVENT = 'brickbuilder:apple-purchases';
 export const isAppleApp = () => getNativeMobileShellInfo()?.platform === 'ios';
 export const hasApplePurchases = () => isAppleApp() && getNativeMobileShellInfo()?.applePurchases === true;
 export const appleProduct = (key: string) => `ai.brickbuilder.app.${key}.monthly`;
-export type AppleProduct = { id: string; displayPrice: string };
+export type AppleProduct = { id: string; displayPrice: string; price?: number | null };
 
 export function appleRequest<T>(action: string, values: Record<string, string> = {}): Promise<T> {
   if (!hasApplePurchases()) return Promise.reject(new Error('Update BrickBuilder from the App Store to purchase or restore Apple subscriptions.'));

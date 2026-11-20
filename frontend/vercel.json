@@ -2,6 +2,9 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
   "trailingSlash": false,
+  "headers": [
+    {"source": "/.well-known/apple-app-site-association", "headers": [{"key": "Content-Type", "value": "application/json"}]}
+  ],
   "redirects": [
     {"source": "/image-to-3d.html", "destination": "/image-to-3d", "permanent": true},
     {"source": "/image-to-glb.html", "destination": "/image-to-glb", "permanent": true},
@@ -56,6 +59,6 @@
     {"source": "/obj-to-xyzrgb", "destination": "/obj-to-xyzrgb.html"},
     {"source": "/obj-to-glb", "destination": "/obj-to-glb.html"},
     {"source": "/glb-to-obj", "destination": "/glb-to-obj.html"},
-    {"source": "/((?!sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|use-ai-to-edit-ldraw\\.html|image-to-lego\\.html|photo-to-lego\\.html|glb-to-lego\\.html|obj-to-lego\\.html|obj-to-glb\\.html|glb-to-obj\\.html|login\\.html|signup\\.html|blog(?:/[^/]+)?\\.html|glb-to-vox\\.html|glb-to-qb\\.html|glb-to-binvox\\.html|glb-to-xyzrgb\\.html|obj-to-vox\\.html|obj-to-qb\\.html|obj-to-binvox\\.html|obj-to-xyzrgb\\.html|image-to-3d\\.html|image-to-glb\\.html|image-to-obj\\.html|assets/).*)", "destination": "/index.html"}
+    {"source": "/((?!\\.well-known/apple-app-site-association|sitemap\\.xml|substack-imports\\.json|robots\\.txt|og-preview\\.html|privacy\\.html|terms\\.html|use-ai-to-edit-ldraw\\.html|image-to-lego\\.html|photo-to-lego\\.html|glb-to-lego\\.html|obj-to-lego\\.html|obj-to-glb\\.html|glb-to-obj\\.html|login\\.html|signup\\.html|blog(?:/[^/]+)?\\.html|glb-to-vox\\.html|glb-to-qb\\.html|glb-to-binvox\\.html|glb-to-xyzrgb\\.html|obj-to-vox\\.html|obj-to-qb\\.html|obj-to-binvox\\.html|obj-to-xyzrgb\\.html|image-to-3d\\.html|image-to-glb\\.html|image-to-obj\\.html|assets/).*)", "destination": "/index.html"}
   ]
 }

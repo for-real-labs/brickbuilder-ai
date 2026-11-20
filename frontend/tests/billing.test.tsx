@@ -437,21 +437,54 @@ it.each([0, 2, 12345])('lets the header balance fit %s credits without reserving
 });
 
 
-it.each(['builder', 'creator'] as const)('buys a custom dollar amount at the %s rate', async plan => {
+it.each(['builder', 'creator'] as const)('shows the same two fixed credit packs for %s', async plan => {
   account = { ...account, plan_key: plan, has_subscription: true, paid_features: true, subscription_status: 'active' };
-  vi.mocked(billingApi.creditCheckout).mockResolvedValue({session_id:'cs_credit',client_secret:'secret'});
   await render(<OpenPlansPopup />);
-  const input = container.querySelector<HTMLInputElement>('#credit-packs input')!;
+  const select = container.querySelector<HTMLSelectElement>('#credit-packs select')!;
+  expect(Array.from(select.options).map(option => option.textContent)).toEqual([
+    '100 credits · $1.99',
+    '600 credits · $9.99 · 16% off',
+  ]);
   await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, '10.00');
-    input.dispatchEvent(new Event('input', { bubbles: true }));
+    select.value = '600';
+    select.dispatchEvent(new Event('change', { bubbles: true }));
   });
-  expect(container.querySelector('#credit-packs output')?.textContent).toBe(plan === 'builder' ? '753 credits' : '751 credits');
+  expect(container.querySelector('#credit-packs output')?.textContent).toBe('16% less per credit than the 100-credit pack');
   await click('Buy credits');
-  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-credits?amount=1000');
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-credits?pack=600');
   expect(billingApi.creditCheckout).not.toHaveBeenCalled();
   expect(billingApi.checkout).not.toHaveBeenCalled();
   expect(openStripe).not.toHaveBeenCalled();
+});
+
+it.each([
+  { version: '1.0.6', packs: [{ credits: 100, displayPrice: '€1.99', price: 1.99 },
+    { credits: 600, displayPrice: '€7.99', price: 7.99 }], selected: '600', label: '600 credits · €7.99 · 33% off' },
+  { version: '1.0.5', packs: [{ credits: 800, displayPrice: '€10.99' }], selected: '800', label: '800 credits · €10.99' },
+])('uses available StoreKit packs and prices on iOS $version', async ({ version, packs, selected, label }) => {
+  window.__BRICKBUILDER_NATIVE_APP__ = { platform: 'ios', version, applePurchases: true };
+  account = { ...account, plan_key: 'builder', has_subscription: true, paid_features: true };
+  const sent: Record<string, string>[] = [];
+  window.ReactNativeWebView = { postMessage: raw => {
+    const message = JSON.parse(raw);
+    sent.push(message);
+    const result = message.action === 'products'
+      ? packs.map(pack => ({ ...pack, id: `ai.brickbuilder.app.credits.${pack.credits}` })) : [];
+    queueMicrotask(() => window.dispatchEvent(new CustomEvent('brickbuilder:apple-purchases', { detail: { id: message.id, result } })));
+  } };
+  const { INITIAL_PLANS } = await import('../src/services/billingApi');
+  vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, ready: true, apple_ready: true, plans: INITIAL_PLANS });
+  vi.mocked(billingApi.appleCreditPrepare).mockResolvedValue({ app_account_token: '00000000-0000-4000-8000-000000000001' });
+  await render(<OpenPlansPopup />);
+  const select = container.querySelector<HTMLSelectElement>('#credit-packs select')!;
+  expect(select.querySelector(`[value="${selected}"]`)?.textContent).toBe(label);
+  await act(async () => {
+    select.value = selected;
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await click('Buy credits');
+  expect(sent).toContainEqual(expect.objectContaining({ action: 'buy', product: `ai.brickbuilder.app.credits.${selected}` }));
+  expect(billingApi.creditCheckout).not.toHaveBeenCalled();
 });
 
 it.each([true, false])('requires a paid monthly plan before buying credits (signed in: %s)', async signedIn => {

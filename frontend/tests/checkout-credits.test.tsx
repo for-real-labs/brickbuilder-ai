@@ -14,7 +14,7 @@ vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
-const render = async (path = '/checkout-credits?amount=1000') => act(async () => root.render(<MemoryRouter initialEntries={[path]}><CheckoutCredits /></MemoryRouter>));
+const render = async (path = '/checkout-credits?pack=600') => act(async () => root.render(<MemoryRouter initialEntries={[path]}><CheckoutCredits /></MemoryRouter>));
 beforeEach(() => {
   vi.clearAllMocks(); mocks.user = { id: 'one', email: 'buyer@example.test' }; mocks.account.has_subscription = true;
   mocks.checkout.mockResolvedValue({ session_id: 'cs_credit', client_secret: 'secret' });
@@ -24,17 +24,17 @@ beforeEach(() => {
 afterEach(() => { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); });
 it('uses shared embedded payment with a one-time quote and no delivery', async () => {
   await render();
-  expect(mocks.checkout).toHaveBeenCalledWith(1000);
-  expect(container.textContent).toContain('753 credits');
-  expect(container.textContent).toContain('$10.00');
+  expect(mocks.checkout).toHaveBeenCalledWith('600');
+  expect(container.textContent).toContain('600 credits');
+  expect(container.textContent).toContain('$9.99');
   const props = mocks.payment.mock.lastCall![0];
   expect(props.creditPurchase).toBe(true);
   expect(props.email).toBe('buyer@example.test');
   expect(props).not.toHaveProperty('details');
   expect(props).not.toHaveProperty('subscriptionPlan');
 });
-it.each(['0','NaN','1000.5','1000000'])('rejects invalid amount %s without opening payment', async amount => {
-  await render(`/checkout-credits?amount=${amount}`);
+it.each(['pack=0','pack=800','pack=1200','pack=600.0','amount=999'])('rejects invalid pack %s without opening payment', async query => {
+  await render(`/checkout-credits?${query}`);
   expect(mocks.checkout).not.toHaveBeenCalled();
   expect(container.querySelector('[role="alert"]')).not.toBeNull();
 });

@@ -1,7 +1,7 @@
 import asyncio
 import time
 from types import SimpleNamespace
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import jwt
 import pytest
@@ -111,3 +111,33 @@ def test_modern_token_resolves_the_same_account_for_reads_and_required_auth(sign
     assert read['user_id'] == required['user_id'] == 'account-owner'
     assert read['authenticated'] and not read['is_anonymous']
     assert read['guest_user_id'].startswith('guest_')
+
+
+@pytest.mark.parametrize(
+    ('aal', 'enrolled', 'status'),
+    [('aal1', True, 403), ('aal1', False, None), ('aal2', True, None), ('aal1', None, 503)],
+)
+def test_account_assurance_applies_to_required_and_optional_auth(signing, monkeypatch, aal, enrolled, status):
+    db = Mock()
+    query = AsyncMock(return_value=SimpleNamespace(data=enrolled))
+    monkeypatch.setattr(auth, 'supabase_client', db)
+    monkeypatch.setattr(auth, 'SUPABASE_ENABLED', True)
+    monkeypatch.setattr(auth, 'execute_query', query)
+    monkeypatch.setenv('AUTH_MFA_ENFORCEMENT_ENABLED', 'true')
+    bearer = 'Bearer ' + jwt.encode(claims(aal=aal), SECRET, algorithm='HS256')
+    request = Request({'type': 'http', 'headers': []})
+    for resolve in (
+        lambda: auth.verify_authentication(bearer, None),
+        lambda: auth.get_optional_identity(request, bearer, None),
+    ):
+        if status:
+            with pytest.raises(HTTPException) as error:
+                asyncio.run(resolve())
+            assert error.value.status_code == status
+        else:
+            assert asyncio.run(resolve())['user_id'] == 'account-owner'
+    if aal == 'aal2':
+        db.rpc.assert_not_called()
+    else:
+        assert db.rpc.call_count == 2
+        db.rpc.assert_called_with('account_requires_mfa', {'p_user_id': 'account-owner'})

@@ -2,7 +2,7 @@
 
 These are inscribed solids, not bounding boxes of hollow parts. A hit proves
 interference; no hit is not a proof for parts/features outside this coverage.
-Dimensions follow official LDraw 27925/s27925s01, 22885, 11211 and stud2(a).
+Dimensions follow the official LDraw parts and primitives named below.
 Keep cavities empty so legal stud/socket connections are not rejected.
 """
 from functools import lru_cache
@@ -49,7 +49,60 @@ def side_studs(height):
     return result
 
 
+@lru_cache(maxsize=1)
+def minifig_seat():
+    # 4079's 2x2 pan has rounded front corners and an open underside. The
+    # backrest is 40 LDU tall and flares from z=20 at the pan to z=25.
+    solids = [
+        box((-15.9, .1, -19.9), (15.9, 3.9, 19.9)),
+        box((-19.9, .1, -15.9), (19.9, 3.9, 19.9)),
+        box((-19.9, -1, 17.1), (19.9, 0, 19.9)),
+        box((-19.9, -3.1, 19.9), (19.9, -1, 20.5)),
+        box((-19.9, -8, 20.1), (19.9, -3.1, 21.9)),
+    ]
+    # Above the bend, the back moves out one LDU per 16 LDU of height.
+    # Use the narrower end of each slice, including the rounded top corners.
+    for y in range(-40, -8, 4):
+        width = 15.9 if y == -40 else 19.9
+        outer = 23 + (-8 - (y + 4)) / 16
+        solids.append(box((-width, y + .01, 20.05), (width, y + 4, outer - .05)))
+    return solids
+
+
+@lru_cache(maxsize=2)
+def dish_rim(code):
+    # The official rims are faceted, not circles. 3960s00 has a vertical
+    # skirt between radii 36 and 40. 4740s01 has a cone underneath its lip:
+    # its underside rises from y=8 at radius 20 to y=5.8 at radius 16.
+    large = code == '3960'
+    sides, outer, top = (48, 40, 8) if large else (16, 20, 5.6)
+    half_angle = math.pi / sides
+    solids = []
+    for side in range(sides):
+        angle = (2 * side + 1) * half_angle
+        c, s = math.cos(angle), math.sin(angle)
+        axes = np.array([[c, 0, -s], [0, 1, 0], [s, 0, c]])
+        for radius in range(outer - 4, outer):
+            bottom = 16 if large else 5.8 + .55 * (radius - 16)
+            # Local x follows the facet normal. Use the inner edge's width
+            # at both ends so each box stays within its annular sector.
+            width = radius * math.sin(half_angle) - .005
+            inner = radius * math.cos(half_angle) + .005
+            edge = (radius + 1) * math.cos(half_angle) - .005
+            centre, _, half = box((inner, top + .005, -width), (edge, bottom - .005, width))
+            solids.append((axes @ centre, axes, half))
+    return solids
+
+
 def local_solids(code, regular):
+    if code == '4079':
+        return minifig_seat()
+    if code == '98138':
+        # Round tile: material above the recess, inside the faceted perimeter.
+        return [box((-4, .1, -8.9), (4, 3.9, 8.9)),
+                box((-8.9, .1, -4), (8.9, 3.9, 4))]
+    if code in {'3960', '4740'}:
+        return dish_rim(code)
     if code == '27925':
         return curved_tile_skin()
     if code in {'11211', '22885'}:
@@ -100,6 +153,13 @@ def intersects(a, b):
     return True
 
 
+def overlap_diagnostic(occurrences, i, j):
+    return {'code': 'assembly.material_overlap', 'severity': 'error',
+            'message': 'Solid plastic intersects; move or replace these parts. Connections do not waive collisions.',
+            'instances': [i, j], 'parts': [occurrences[k].part_code for k in (i, j)],
+            'positions': [[float(getattr(occurrences[k].position, axis)) for axis in ('x', 'y', 'z')] for k in (i, j)]}
+
+
 def review_material(occurrences, regular):
     entries = []
     for index, occurrence in enumerate(occurrences):
@@ -118,10 +178,7 @@ def review_material(occurrences, regular):
                 continue
             candidates = np.all(np.minimum(ah[:, None], bh) - np.maximum(al[:, None], bl) > TOLERANCE, axis=2)
             if any(intersects(a[u], b[v]) for u, v in zip(*np.nonzero(candidates))):
-                collisions.append({'code': 'assembly.material_overlap', 'severity': 'error',
-                    'message': 'Solid plastic intersects; move or replace these parts. Connections do not waive collisions.',
-                    'instances': [i, j], 'parts': [occurrences[k].part_code for k in (i, j)],
-                    'positions': [[float(getattr(occurrences[k].position, axis)) for axis in ('x', 'y', 'z')] for k in (i, j)]})
+                collisions.append(overlap_diagnostic(occurrences, i, j))
                 if len(collisions) >= MAX_REPORTED_PAIRS:
                     return collisions
     return collisions
