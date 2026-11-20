@@ -16,6 +16,16 @@ const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
 const sitemap = new JSDOM(readFileSync('public/sitemap.xml', 'utf8'), { contentType: 'text/xml' }).window.document;
 
 describe('public page indexing', () => {
+  it.each(['app shell', ...publicPagePaths])('loads Google Tag Manager once in the head for %s', (path) => {
+    const html = path === 'app shell' ? shell : renderPublicDocument(shell, path);
+    const { document } = new JSDOM(html).window;
+    const tags = document.querySelectorAll('script[src="https://www.googletagmanager.com/gtm.js?id=GTM-PMZ82LRQ"]');
+    expect(tags).toHaveLength(1);
+    expect(tags[0].parentElement).toBe(document.head);
+    expect(tags[0].hasAttribute('async')).toBe(true);
+    expect(tags[0].nextElementSibling?.textContent).toContain("gtag('js', new Date());");
+  });
+
   it.each(publicPagePaths)('serves unique content and one self canonical before JavaScript at %s', (path) => {
     const document = new JSDOM(renderPublicDocument(shell, path)).window.document;
     const url = `https://brickbuilder.ai${path}`;
