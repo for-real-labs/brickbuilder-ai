@@ -206,7 +206,7 @@ export const GenerationCard: React.FC<{
     }
   };
 
-  const newestCompleted = edits.find(edit => edit.status === 'completed');
+  const newestCompleted = edits.find(edit => !edit.is_fork_source && edit.status === 'completed');
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow transition-shadow">
@@ -335,7 +335,7 @@ export const GenerationCard: React.FC<{
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
                           <span className="text-[10px] font-medium text-slate-500">
-                            VERSION {edit.version}
+                            {edit.is_fork_source ? 'Original model' : `VERSION ${edit.version}`}
                           </span>
                           {isCurrentGeneration && (
                             <span className="text-[10px] font-medium text-[#f44336] bg-red-100 px-2 py-0.5 rounded">
@@ -358,7 +358,7 @@ export const GenerationCard: React.FC<{
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {edit.status === 'completed' ? (
-                          <button type="button" onClick={() => navigate(getGeneratedModelPath(edit.id, true))}
+                          <button type="button" onClick={() => navigate(getGeneratedModelPath(edit.id, true), edit.is_fork_source ? { state: { forkHistoryId: g.id } } : undefined)}
                             className={versionActionClass}>
                             <Eye className="h-3.5 w-3.5" /> View Model
                           </button>
@@ -369,13 +369,13 @@ export const GenerationCard: React.FC<{
                             {edit.status}
                           </span>
                         )}
-                        {onModelsChanged && edit.status === 'completed' && newestCompleted && edit.version < newestCompleted.version && (
+                        {onModelsChanged && !edit.is_fork_source && edit.status === 'completed' && newestCompleted && edit.version < newestCompleted.version && (
                           <button type="button" className={versionActionClass} disabled={Boolean(versionAction) || isProcessing}
                             aria-haspopup="dialog" onClick={() => setVersionAction({ id: edit.id, kind: 'restore', version: edit.version })}>
                             <RotateCcw size={14} aria-hidden="true" /> Restore this version
                           </button>
                         )}
-                        {onModelsChanged && ['completed', 'failed', 'cancelled'].includes(edit.status) && (
+                        {onModelsChanged && !edit.is_fork_source && ['completed', 'failed', 'cancelled'].includes(edit.status) && (
                           <button type="button" aria-haspopup="dialog" aria-label={`Delete version ${edit.version}`}
                             className={`${versionActionClass} hover:bg-red-50 hover:text-red-700`} disabled={Boolean(versionAction)}
                             onClick={() => setVersionAction({ id: edit.id, version: edit.version, kind: 'delete-version' })}>

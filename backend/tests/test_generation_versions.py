@@ -11,6 +11,7 @@ DURATION_MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations
 MIGRATION = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000002_generation_versions.sql").read_text()
 REMOVE_SOURCE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261001000003_remove_generation_source.sql").read_text()
 RESTORE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261118010000_restore_generation_revision.sql").read_text()
+FORK_HISTORY = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261119020000_fork_generation_history.sql").read_text()
 DELETE = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261118020000_delete_generation_revision.sql").read_text()
 
 
@@ -29,6 +30,7 @@ def db(server):
         conn.execute("drop table if exists public.generations cascade")
         conn.execute("drop function if exists public.assign_generation_version()")
         conn.execute("drop function if exists public.finalize_generation_restore()")
+        conn.execute("drop function if exists public.guard_generation_fork_source()")
         conn.execute("drop function if exists public.delete_generation_revision(uuid, text, text, boolean)")
         for role in ["anon", "authenticated", "service_role"]:
             if not conn.execute("select 1 from pg_roles where rolname = %s", (role,)).fetchone():
@@ -286,3 +288,28 @@ def test_input_attribution_backfill_and_revision_inheritance(db):
         db.execute("update generations set input_type='invalid' where id=%s", (glb,))
     with pytest.raises(psycopg.errors.CheckViolation):
         db.execute("update generations set entry_page='/image-to-lego?secret=1' where id=%s", (glb,))
+
+
+def test_deleting_fork_removes_it_from_dashboard_and_preserves_the_original(db):
+    original = insert(db, owner="creator", community=True)
+    legacy_fork = insert(db, owner="legacy-editor", endpoint="updateModel", prompt=f"Updated model from {original}")
+    migrate(db)
+    db.execute(REMOVE_SOURCE)
+    db.execute("alter table generations add column notification_seen boolean not null default false")
+    db.execute(DELETE)
+    db.execute(FORK_HISTORY)
+    assert db.execute("select forked_from_id from generations where id=%s", (legacy_fork,)).fetchone() == (original,)
+
+    fork, next_edit = uuid4(), uuid4()
+    db.execute("insert into generations (id, user_id, forked_from_id) values (%s, 'editor', %s)", (fork, original))
+    db.execute("insert into generations (id, generation_id, user_id) values (%s, %s, 'editor')", (next_edit, fork))
+    assert versions(db)[fork] == (fork, 1) and versions(db)[next_edit] == (fork, 2)
+    assert db.execute("select id from latest_generations where user_id='editor'").fetchone() == (next_edit,)
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_FORK_SOURCE_FORBIDDEN"):
+        db.execute("update generations set forked_from_id=null where id=%s", (fork,))
+    with pytest.raises(psycopg.errors.RaiseException, match="BB_DELETE_NOT_FOUND"):
+        db.execute("select delete_generation_revision(%s, 'editor', 'authenticated', true)", (original,))
+    assert db.execute("select delete_generation_revision(%s, 'editor', 'authenticated', true)",
+                      (next_edit,)).fetchone()[0] == {"next_generation_id": None}
+    assert db.execute("select id from latest_generations where user_id='editor'").fetchone() is None
+    assert db.execute("select is_community, deleted_at from generations where id=%s", (original,)).fetchone() == (True, None)

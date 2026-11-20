@@ -21,8 +21,9 @@ class GenerationInfo(BaseModel):
     id: str
     generation_id: str
     version: int
-    user_id: str
-    user_type: str
+    user_id: Optional[str] = None
+    user_type: Optional[str] = None
+    is_fork_source: bool = False
     prompt: str
     name: Optional[str] = None
     generation_duration_seconds: Optional[float] = None
@@ -98,13 +99,23 @@ async def get_generations_by_image(
             user_type=user_type
         )
         
-        logger.info(
-            f"Retrieved {len(generations)} versions for user {user_email}"
-        )
-        
-        # Convert to response model
         generation_infos = [GenerationInfo(**gen) for gen in generations]
-        
+        if generations:
+            root = source if source["id"] == source["generation_id"] else await generation_storage.get_generation(
+                source["generation_id"], include_deleted=True)
+            if root and root.get("forked_from_id"):
+                original = await generation_storage.get_generation(root["forked_from_id"])
+                if original and original.get("status") == "completed":
+                    # Only the exact public revision is visible here. Leave the
+                    # creator's identity, job metadata and other history private.
+                    generation_infos.append(GenerationInfo(
+                        id=original["id"], generation_id=original["id"], version=0,
+                        is_fork_source=True, status="completed", prompt=original.get("prompt") or "",
+                        name=original.get("name"), detail_level=original.get("detail_level") or 0,
+                        endpoint=original.get("endpoint") or "", created_at=original["created_at"],
+                        preview_image_url=original.get("preview_image_url"),
+                    ))
+
         return GetGenerationsByImageResponse(
             generations=generation_infos,
             total_count=len(generation_infos)

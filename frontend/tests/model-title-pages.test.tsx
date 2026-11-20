@@ -209,8 +209,10 @@ it('shows image-free history on dashboard cards and opens the selected revision 
 });
 
 it('confirms dashboard restore and both delete scopes', async () => {
+  const original = { ...revisionHistory[0], id: 'shared-original', generation_id: 'shared-original',
+    version: 0, is_fork_source: true };
   const history = vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage')
-    .mockResolvedValue({ generations: revisionHistory, total_count: 2 });
+    .mockResolvedValue({ generations: [...revisionHistory, original], total_count: 3 });
   const remove = vi.spyOn(GetGenerationsByImageApiService, 'deleteGeneration')
     .mockRejectedValueOnce(new Error('Try again.'))
     .mockResolvedValueOnce('old')
@@ -219,18 +221,25 @@ it('confirms dashboard restore and both delete scopes', async () => {
   const modelsChanged = vi.fn();
   const getButton = (name: string, parent: ParentNode = container) =>
     [...parent.querySelectorAll('button')].find(button => button.textContent?.trim() === name)!;
+  const Location = () => { const location = useLocation(); return <output data-fork-id={location.state?.forkHistoryId}>{location.pathname}{location.search}</output>; };
   try {
     await act(async () => root.render(<MemoryRouter><GenerationCard
       g={{ id: 'g', generation_id: 'root', version: 7, prompt: 'Rover', user_id: 'owner', user_type: 'authenticated',
         status: 'completed', endpoint: 'llmToBricks', created_at: '2026-09-30', detail_level: 30 }}
       onView={vi.fn()} onModelsChanged={modelsChanged} authToken="token"
-    /></MemoryRouter>));
+    /><Location /></MemoryRouter>));
     const dialog = container.querySelector('dialog')!;
     Object.defineProperties(dialog, {
       showModal: { value: () => { dialog.open = true; } },
       close: { value: () => { dialog.open = false; } },
     });
     await act(async () => getButton('View Edits').click());
+    const originalLabel = [...container.querySelectorAll('span')].find(span => span.textContent === 'Original model')!;
+    const originalRow = originalLabel.closest('.rounded-lg.border.p-3')!;
+    expect(originalRow.querySelectorAll('button')).toHaveLength(1);
+    await act(async () => getButton('View Model', originalRow).click());
+    expect(container.querySelector('output')?.textContent).toBe('/?id=shared-original&exact=1');
+    expect(container.querySelector('output')?.getAttribute('data-fork-id')).toBe('g');
     expect([...container.querySelectorAll('button')].filter(button => button.textContent?.includes('Restore this version'))).toHaveLength(1);
     act(() => getButton('Restore this version').click());
     expect(dialog.open).toBe(true);

@@ -6,25 +6,26 @@ import { ModelVersionConfirmation, type ModelVersionAction } from './ModelVersio
 
 const rowAction = 'inline-flex h-11 shrink-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-2.5 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-2 focus-visible:outline-offset-2 disabled:opacity-45';
 
-export function LandingPreviousEdits({ id, token, busy, onView, onNoVersion }: {
-  id: string; token?: string; busy: boolean; onView: (id: string) => void; onNoVersion?: () => void;
+export function LandingPreviousEdits({ id, historyId, token, busy, onView, onNoVersion }: {
+  id: string; historyId?: string; token?: string; busy: boolean; onView: (id: string, historyId?: string) => void; onNoVersion?: () => void;
 }) {
   const [edits, setEdits] = useState<GenerationIteration[]>([]);
   const [action, setAction] = useState<ModelVersionAction | null>(null);
   const dialog = useRef<HTMLDialogElement>(null);
   const title = useId();
 
+  const anchor = historyId || id;
   useEffect(() => {
     let active = true;
     setEdits([]);
-    void GetGenerationsByImageApiService.getGenerationsByImage(token, id).then(({ generations }) => {
+    void GetGenerationsByImageApiService.getGenerationsByImage(token, anchor).then(({ generations }) => {
       if (!active) return;
       setEdits([...generations].sort((a, b) => b.version - a.version || a.id.localeCompare(b.id)));
     }).catch(() => { /* A private or unavailable history should not affect the viewer. */ });
     return () => { active = false; };
-  }, [id, token]);
+  }, [anchor, token]);
 
-  const current = edits.find(edit => edit.status === 'completed');
+  const current = edits.find(edit => !edit.is_fork_source && edit.status === 'completed');
   if (!edits.some(edit => edit.id === id)) return null;
 
   const finishAction = (confirmed: ModelVersionAction, nextId: string | null) => {
@@ -57,8 +58,9 @@ export function LandingPreviousEdits({ id, token, busy, onView, onNoVersion }: {
           const viewing = edit.id === id;
           const completed = edit.status === 'completed';
           const isCurrent = edit.id === current?.id;
-          const canRestore = completed && current !== undefined && edit.version < current.version;
+          const canRestore = !edit.is_fork_source && completed && current !== undefined && edit.version < current.version;
           const canDelete = completed || edit.status === 'failed' || edit.status === 'cancelled';
+          const label = edit.is_fork_source ? 'Original model' : `Version ${edit.version}`;
           const image = edit.preview_image_url || edit.external_image_url || edit.thumbnail_url || edit.image_url || edit.processed_image_url;
           return <li key={edit.id} aria-current={viewing ? 'true' : undefined}
             className="flex flex-col gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:flex-row sm:items-center sm:gap-3">
@@ -67,29 +69,32 @@ export function LandingPreviousEdits({ id, token, busy, onView, onNoVersion }: {
                 {image ? <img src={image} alt="" loading="lazy" className="h-full w-full object-contain" /> : <Package size={20} aria-hidden="true" />}
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block text-xs font-medium text-slate-500">Version {edit.version}{isCurrent ? ' · Current' : viewing ? ' · Viewing' : ''}{!completed ? ` · ${edit.status}` : ''}</span>
+                <span className="block text-xs font-medium text-slate-500">{label}{isCurrent ? ' · Current' : viewing ? ' · Viewing' : ''}{!completed ? ` · ${edit.status}` : ''}</span>
                 <span className="block truncate text-sm font-semibold text-slate-900">{edit.name?.trim() || edit.prompt || 'Untitled model'}</span>
                 <time dateTime={edit.created_at} className="block text-xs text-slate-600">{new Date(edit.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</time>
               </span>
             </div>
             <div className="flex flex-wrap justify-end gap-1.5">
-              <button type="button" className={rowAction} aria-label={`View version ${edit.version}`} disabled={busy || !completed}
+              <button type="button" className={rowAction} aria-label={edit.is_fork_source ? 'View original model' : `View version ${edit.version}`} disabled={busy || !completed}
                 onClick={() => {
                   dialog.current?.close();
                   if (viewing) return;
-                  posthog.capture('landing_model_previous_edit_viewed', { generation_id: id, viewed_generation_id: edit.id, version: edit.version });
-                  onView(edit.id);
+                  posthog.capture('landing_model_previous_edit_viewed', { generation_id: id, viewed_generation_id: edit.id, version: edit.is_fork_source ? undefined : edit.version, is_fork_source: Boolean(edit.is_fork_source) });
+                  if (edit.is_fork_source) onView(edit.id, current?.id);
+                  else onView(edit.id);
                 }}><Eye size={15} aria-hidden="true" />View</button>
-              <button type="button" className={rowAction} aria-label={`Restore version ${edit.version}`} aria-haspopup="dialog"
-                title={isCurrent ? 'This is the current version' : undefined}
-                disabled={busy || !canRestore} onClick={() => setAction({ kind: 'restore', id: edit.id, version: edit.version })}>
-                <RotateCcw size={14} aria-hidden="true" />Restore
-              </button>
-              <button type="button" className={`${rowAction} w-11 px-0 hover:bg-red-50 hover:text-red-700`}
-                aria-label={`Delete version ${edit.version}`} title={`Delete version ${edit.version}`} aria-haspopup="dialog"
-                disabled={busy || !canDelete} onClick={() => setAction({ kind: 'delete-version', id: edit.id, version: edit.version })}>
-                <Trash2 size={16} aria-hidden="true" />
-              </button>
+              {!edit.is_fork_source && <>
+                <button type="button" className={rowAction} aria-label={`Restore version ${edit.version}`} aria-haspopup="dialog"
+                  title={isCurrent ? 'This is the current version' : undefined}
+                  disabled={busy || !canRestore} onClick={() => setAction({ kind: 'restore', id: edit.id, version: edit.version })}>
+                  <RotateCcw size={14} aria-hidden="true" />Restore
+                </button>
+                <button type="button" className={`${rowAction} w-11 px-0 hover:bg-red-50 hover:text-red-700`}
+                  aria-label={`Delete version ${edit.version}`} title={`Delete version ${edit.version}`} aria-haspopup="dialog"
+                  disabled={busy || !canDelete} onClick={() => setAction({ kind: 'delete-version', id: edit.id, version: edit.version })}>
+                  <Trash2 size={16} aria-hidden="true" />
+                </button>
+              </>}
             </div>
           </li>;
         })}

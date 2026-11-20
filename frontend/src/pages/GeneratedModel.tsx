@@ -12,7 +12,7 @@ import React, { useState } from "react";
 import { SEO } from "../components/SEO";
 import { SiteFooter } from "../components/SiteFooter";
 import { ProfileMenu } from "../components/ProfileMenu";
-import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { ThreeLDRViewer } from "../components/ThreeLDRViewer";
 import type { ExportCaptureApi } from "../components/ThreeLDRViewer";
 import { VoxelViewer } from "../components/VoxelViewer";
@@ -2179,7 +2179,7 @@ export default function GeneratedModel() {
                               <div className="min-w-0 flex-1">
                                 <div className="mb-1 flex flex-wrap items-center gap-1.5">
                                   <span className="text-[10px] font-semibold uppercase tracking-wide text-slate-500">
-                                    Version {edit.version}
+                                    {edit.is_fork_source ? 'Original model' : `Version ${edit.version}`}
                                   </span>
                                   {isCurrentGeneration && (
                                     <span className="rounded-full bg-[#f44336] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-white">
@@ -2203,13 +2203,14 @@ export default function GeneratedModel() {
                               </div>
 
                               {isCompleted && !isCurrentGeneration ? (
-                                <a
-                                  href={`${getGeneratedModelPath(edit.id)}&exact=1`}
+                                <Link
+                                  to={getGeneratedModelPath(edit.id, true)}
+                                  state={edit.is_fork_source ? { forkHistoryId: currentGenerationId } : undefined}
                                   className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 text-[11px] font-medium text-slate-700 transition-colors hover:border-[#f44336]/60 hover:text-[#f44336]"
                                 >
                                   <Eye size={13} />
                                   View
-                                </a>
+                                </Link>
                               ) : isCompleted ? (
                                 <button
                                   type="button"

@@ -24,7 +24,8 @@ export interface GenerationIteration {
   id: string;
   generation_id: string;
   version: number;
-  user_id: string;
+  user_id?: string | null;
+  is_fork_source?: boolean;
   prompt: string;
   name?: string | null;
   preview_image_url?: string | null;
