@@ -157,36 +157,8 @@
   .landing-page .landing-model-workspace,
   .landing-page .landing-generation-workspace { max-height: 380px; }
 }
-.landing-header--model { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); column-gap: 12px; }
-.landing-header--model > nav { justify-self: end; }
-@media (max-width: 639px) {
-  .landing-header--model { column-gap: 6px; }
-  .landing-header--model > .landing-header-brand > a > span { font-size: 14px; }
-  .landing-header--model .landing-create-new { padding-inline: 10px; font-size: 12px; }
-}
-@media (max-width: 359px) { .landing-header--model > .landing-header-brand > a > span { font-size: 11px; } }
-
-@media (max-width: 639px) {
-  .landing-header--guest-model { grid-template-columns: minmax(0, 1fr) auto; }
-  .landing-header--guest-model > .landing-header-brand { grid-column: 1; grid-row: 1; }
-  .landing-header--guest-model > nav { grid-column: 2; grid-row: 1; }
-  .landing-header--guest-model .landing-create-new { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
-}
-
 @media (max-height: 740px) {
   .landing-page:has(.landing-model-panel[data-view="instructions"]) .pet-dialogue { display: none; }
-}
-
-/* Reserve one row for the brand and navigation at narrow phone widths. */
-@media (max-width: 639px) {
-  .landing-header-brand > a { flex-shrink: 1; }
-  .landing-header-brand > a > img { display: none; }
-  .landing-header-brand > a > span { font-size: 14px; }
-  .landing-header > nav, .landing-header > nav > div { gap: 6px; }
-  .landing-header--model { grid-template-columns: minmax(0, 1fr) auto; }
-  .landing-header--model > .landing-header-brand { grid-column: 1; grid-row: 1; }
-  .landing-header--model > nav { grid-column: 2; grid-row: 1; }
-  .landing-header--model .landing-create-new { grid-column: 1 / -1; grid-row: 2; justify-self: center; }
 }
 
 /* Opacity only: keep the fixed conversation anchored to the viewport. */
@@ -194,10 +166,7 @@
 .landing-page .landing-model-conversation { animation: landingConversationIn .6s ease .9s backwards; }
 .landing-header-brand { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .landing-header-brand > a { min-width: 0; }
-.landing-header-brand .credit-balance { flex-shrink: 0; }
-@media (max-width: 639px) {
-  .landing-header-brand { gap: 6px; }
-}
+.landing-header-brand > .landing-create-new { flex-shrink: 0; }
 @media (prefers-reduced-motion: reduce) {
   .landing-page .landing-model-conversation { animation: none; }
 }
@@ -331,12 +300,15 @@
 
 .landing-hero-pet > .pet-avatar > img, .landing-hero-pet > .pet-avatar > video { scale: 1.6; transform-origin: center; }
 
-/* Keep labeled account navigation reachable without squeezing the brand on phones. */
-@media (max-width: 639px) {
-  .landing-header { display: grid; grid-template-columns: minmax(0, 1fr) auto; row-gap: 8px; }
-  .landing-header > .landing-header-brand { grid-column: 1; grid-row: 1; }
-  .landing-header > nav { grid-column: 1 / -1; grid-row: 2; justify-self: stretch; justify-content: flex-end; }
-  .landing-header .landing-create-new { grid-column: 2; grid-row: 1; justify-self: end; }
+/* Give the brand and Create new their own row above account controls on narrow screens. */
+@media (max-width: 767px) {
+  .landing-header { display: grid; grid-template-columns: minmax(0, 1fr); row-gap: 8px; }
+  .landing-header-brand { gap: 10px; }
+  .landing-header-brand > a > img { display: none; }
+  .landing-header-brand > a > span { font-size: 14px; }
+  .landing-header-brand > .landing-create-new { padding-inline: 10px; font-size: 12px; }
+  .landing-header > nav { justify-content: flex-end; gap: 6px; }
+  .landing-header > nav > div { gap: 6px; }
 }
 
 .generation-mode-cost.credit-balance { min-height: 24px; padding: 2px 7px; gap: 4px; cursor: inherit; }

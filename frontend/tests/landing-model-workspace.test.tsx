@@ -968,13 +968,16 @@ it.each(['failed', 'cancelled'] as const)('preserves the previous model and allo
 });
 
 
-it('keeps Create new in the header and out of the viewer', async () => {
+it('puts Create new next to the brand and keeps it outside the account controls and viewer', async () => {
   auth.isSupabaseConfigured = true;
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('.landing-model-toolbar .landing-create-new')).toBeNull();
-  expect(container.querySelector('header .landing-create-new')?.textContent).toBe('Create new');
+  const brand = container.querySelector('header > .landing-header-brand')!;
+  expect(brand.querySelector('button.landing-create-new')?.textContent).toBe('Create new');
+  expect(container.querySelector('header > nav .landing-create-new')).toBeNull();
+  expect(brand.nextElementSibling?.tagName).toBe('NAV');
   expect(container.querySelector('header nav')?.textContent).toContain('Sign up');
 });
 

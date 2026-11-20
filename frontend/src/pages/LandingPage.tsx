@@ -1430,7 +1430,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
   const showProfileMenu = user || !isSupabaseConfigured;
 
   return (
-    <header className={`landing-header flex w-full flex-nowrap items-center justify-between gap-2 relative landing-fade-in landing-delay-1${createNew ? ` landing-header--model${showProfileMenu ? '' : ' landing-header--guest-model'}` : ''}`} style={{ zIndex: 50 }}>
+    <header className="landing-header relative flex w-full items-center justify-between gap-2 landing-fade-in landing-delay-1" style={{ zIndex: 50 }}>
       <div className="landing-header-brand"><a href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
         <img
           src="/logo.svg"
@@ -1445,12 +1445,13 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
           <span className="text-[#ff4b4b]">BRICK</span>
           <span className="text-slate-900">BUILDER</span>
         </span>
-      </a></div>
+      </a>
+        {createNew && <button type="button" className="landing-create-new landing-action-button"
+          disabled={createNew.disabled} onClick={createNew.onClick}>
+          <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" /><span>Create new</span>
+        </button>}
+      </div>
 
-      {createNew && <button type="button" className="landing-create-new landing-action-button"
-        disabled={createNew.disabled} onClick={createNew.onClick}>
-        <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" /><span>Create new</span>
-      </button>}
       {/* Login / Sign Up OR Account Menu */}
       <nav aria-label="Main navigation" className="flex shrink-0 items-center gap-2 sm:gap-3">
         <CreditBalance />
@@ -1459,7 +1460,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
           className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-slate-900 px-2.5 text-xs font-semibold tabular-nums text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:px-3 sm:text-sm"
           onClick={() => posthog.capture('landing_header_github_clicked', { page, navigation_layout: 'header', destination: githubUrl, tool: 'GitHub' })}>
           <Github size={16} aria-hidden="true" />
-          {formattedStars !== null && <span className="inline-flex items-center gap-1" aria-label={`${githubStars} stars`}>
+          {formattedStars !== null && <span className="inline-flex items-center gap-1 max-[359px]:hidden" aria-label={`${githubStars} stars`}>
             <Star size={12} aria-hidden="true" />{formattedStars}
           </span>}
         </a>
