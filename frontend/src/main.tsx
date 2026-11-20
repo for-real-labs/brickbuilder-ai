@@ -7,12 +7,9 @@ import { captureSignVisit } from './utils/signAnalytics';
   import { AuthProvider } from "./contexts/AuthContext";
   import { registerMobileShellAnalytics } from "./utils/mobileShellAnalytics";
   import App from "./App.tsx";
+  import StripeSandbox from './pages/StripeSandbox';
   import "./index.css";
   import { captureInstructionLink } from './utils/instructionLinks';
-
-  captureInstructionLink();
-  void captureReferralLink();
-  registerMobileShellAnalytics();
 
   const renderApp = () => createRoot(document.getElementById("root")!).render(
     <HelmetProvider>
@@ -34,8 +31,15 @@ import { captureSignVisit } from './utils/signAnalytics';
     </HelmetProvider>
   );
 
-  if (window.location.pathname === '/reset-password') {
-    void preparePasswordRecoveryPage().then(renderApp);
+  if (window.location.pathname === '/stripe-sandbox' || window.location.pathname.startsWith('/stripe-sandbox/')) {
+    createRoot(document.getElementById('root')!).render(<HelmetProvider><StripeSandbox /></HelmetProvider>);
   } else {
-    renderApp();
+    captureInstructionLink();
+    void captureReferralLink();
+    registerMobileShellAnalytics();
+    if (window.location.pathname === '/reset-password') {
+      void preparePasswordRecoveryPage().then(renderApp);
+    } else {
+      renderApp();
+    }
   }
