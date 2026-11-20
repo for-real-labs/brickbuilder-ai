@@ -212,7 +212,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
                   }
                 }}>{label}{format === 'io' && featureAccess !== 'allowed' && <PaidFeatureLock />}</button>
               </li>)}
-              {([['obj', 'Download OBJ'], ['glb', 'Download GLB'], ['stl', 'Download STL']] as const).map(([format, label]) => <li key={format} className={format === 'obj' ? 'mt-1 border-t border-slate-200 pt-1' : ''}>
+              {([['obj', 'Download OBJ'], ['glb', 'Download GLB'], ['stl', 'Download STL'], ['stl-parts', 'Download separate STL parts (ZIP)']] as const).map(([format, label]) => <li key={format} className={format === 'obj' ? 'mt-1 border-t border-slate-200 pt-1' : ''}>
                 <button type="button" className={rowClass} disabled={!model || busy || exporting} onClick={() => void exportObject(format)}>{label}</button>
               </li>)}
               {exporting && <li role="status" className="px-3 py-2 text-xs text-slate-500">Preparing 3D download…</li>}
