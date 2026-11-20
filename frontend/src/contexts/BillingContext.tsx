@@ -1,3 +1,4 @@
+import { appleCreditProduct, findCreditPack, type AppleCreditPackKey } from '../utils/creditPurchase';
 import { GENERATION_SUBSCRIPTION_EVENT, GENERATION_SUBSCRIPTION_SOURCE } from '../utils/generationSubscription';
 import { APPLE_EVENT, appleRequest, appleProduct, isAppleApp, hasApplePurchases, type AppleProduct } from '../services/applePurchases';
 import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
@@ -17,7 +18,7 @@ const BillingContext = createContext({
   redeemPromo: async (_code: string): Promise<BillingAccount> => { throw new Error('Billing unavailable'); },
   refresh: async () => {}, sync: async (_sessionId?: string) => null as BillingAccount | null,
   openUpgrade: (_source: string) => {}, closeUpgrade: () => {},
-  buyCredits: async (_amount: number | string, _source: string) => {},
+  buyCredits: async (_packKey: AppleCreditPackKey, _source: string) => {},
   subscribe: async (_key: PlanKey, _source: string) => {},
   manage: async (_action: 'manage' | 'cancel') => {},
   closeLogin: () => {}, signIn: () => {},
@@ -204,26 +205,27 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
       posthog.capture('billing_checkout_failed', { plan_key: key, source });
     } finally { setBusy(false); }
   };
-  const buyCredits = async (amount: number | string, source: string) => {
-    posthog.capture('billing_credit_pack_selected', { amount_cents: typeof amount === 'number' ? amount : undefined, source });
+  const buyCredits = async (packKey: AppleCreditPackKey, source: string) => {
+    posthog.capture('billing_credit_pack_selected', { pack_key: packKey, source });
     if (!user) { setUpgradeSource(''); setLoginOpen(true); return; }
     if (busy) return;
     setBusy(true); setError('');
     try {
       if (isAppleApp()) {
-        const product = `ai.brickbuilder.app.credits.${amount === 'builder' ? 800 : 1500}`;
+        const product = appleCreditProduct(packKey);
         if (!appleProducts.some(p => p.id === product)) throw new Error('Update BrickBuilder from the App Store to buy additional credits.');
         const prepared = await billingApi.appleCreditPrepare();
         if (identity.current !== user.id) return;
         await appleRequest('buy', { product, accountToken: prepared.app_account_token });
       } else {
+        if (!findCreditPack(packKey)) throw new Error('Choose a credit pack.');
         setUpgradeSource('');
-        navigate(`/checkout-credits?amount=${Number(amount)}`);
+        navigate(`/checkout-credits?pack=${packKey}`);
       }
-      posthog.capture('billing_credit_pack_checkout_started', { amount_cents: typeof amount === 'number' ? amount : undefined, source, provider: isAppleApp() ? 'apple' : 'stripe' });
+      posthog.capture('billing_credit_pack_checkout_started', { pack_key: packKey, source, provider: isAppleApp() ? 'apple' : 'stripe' });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not purchase credits. Please try again.');
-      posthog.capture('billing_credit_pack_checkout_failed', { amount_cents: typeof amount === 'number' ? amount : undefined, source });
+      posthog.capture('billing_credit_pack_checkout_failed', { pack_key: packKey, source });
     } finally { setBusy(false); }
   };
   const manage = async (action: 'manage' | 'cancel') => {

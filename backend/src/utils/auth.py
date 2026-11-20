@@ -7,7 +7,7 @@ import jwt
 from typing import Optional, Dict, Any
 from fastapi import HTTPException, Header, Depends, Request
 from supabase import Client
-from .database import create_database_client
+from .database import create_database_client, execute_query
 import logging
 import hashlib
 import time
@@ -114,12 +114,30 @@ def extract_user_from_token(token: str) -> Dict[str, Any]:
             "user_id": decoded_token.get("sub"),
             "email": decoded_token.get("email"),
             "role": decoded_token.get("role", "authenticated"),
-            "exp": decoded_token.get("exp")
+            "exp": decoded_token.get("exp"),
+            "aal": decoded_token.get("aal")
         }
     except jwt.ExpiredSignatureError:
         raise AuthError("Token has expired", 401)
     except (jwt.PyJWTError, ValueError, TypeError) as e:
         raise AuthError("Invalid authentication token", 401) from e
+
+async def require_account_mfa(user_info: Dict[str, Any]) -> None:
+    if (user_info.get("aal") == "aal2"
+            or os.getenv("AUTH_MFA_ENFORCEMENT_ENABLED") != "true"):
+        return
+    try:
+        result = await execute_query(supabase_client.rpc(
+            "account_requires_mfa", {"p_user_id": user_info["user_id"]}
+        ))
+        if not isinstance(result.data, bool):
+            raise ValueError("Unexpected MFA status")
+    except Exception:
+        logger.exception("Account MFA status could not be checked")
+        raise HTTPException(503, "Could not verify your sign-in. Try again.") from None
+    if result.data:
+        raise HTTPException(403, "Verify your sign-in with your authenticator app.")
+
 
 async def verify_authentication(
     authorization: Optional[str] = Header(None),
@@ -160,6 +178,7 @@ async def verify_authentication(
     
     try:
         user_info = await asyncio.to_thread(extract_user_from_token, token)
+        await require_account_mfa(user_info)
         logger.info(f"Request authenticated for user: {user_info['email']}")
         
         return {
@@ -326,6 +345,7 @@ async def get_optional_identity(
         try:
             if supabase_client:
                 user_info = await asyncio.to_thread(extract_user_from_token, token)
+                await require_account_mfa(user_info)
                 logger.info(f"Request authenticated for user: {user_info['email']}")
                 
                 return {

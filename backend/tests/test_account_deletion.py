@@ -79,3 +79,18 @@ def test_confirmation_does_not_accept_target_user():
     from pydantic import ValidationError
     with pytest.raises(ValidationError): deletion.DeletionRequest(confirmation='DELETE',user_id=str(uuid4()))
     with pytest.raises(ValidationError): deletion.DeletionRequest(confirmation='yes')
+
+
+def test_apple_revocation_runs_before_removing_the_auth_user(setup, monkeypatch):
+    uid, db, rpc, _ = setup
+
+    async def revoke(client, user):
+        assert client is db and user.id == uid
+        db.auth.admin.delete_user.assert_not_called()
+        assert rpc.call_args.args[0] == 'account_deletion_prepare'
+
+    revoke_apple = AsyncMock(side_effect=revoke)
+    monkeypatch.setattr(deletion.apple_sign_in, 'revoke_before_deletion', revoke_apple)
+    assert asyncio.run(deletion.delete_account({'user_id': uid, 'authenticated': True}, 'token')) == {'deleted': True}
+    revoke_apple.assert_awaited_once()
+    db.auth.admin.delete_user.assert_called_once_with(uid)

@@ -37,7 +37,7 @@ VERSIONS['generation_usage_version'] = 1
 VERSIONS['parts_catalog_version'] = 1
 VERSIONS['max_parts_version'] = 1
 VERSIONS['instruction_plan_version'] = 4
-VERSIONS['instruction_publication_version'] = 2
+VERSIONS['instruction_publication_version'] = 3
 # Geometry analysis is CPU/memory intensive; share a bounded runtime budget.
 _instruction_export_slots = asyncio.Semaphore(2)
 _workers = {}

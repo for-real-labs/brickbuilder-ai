@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Box, Maximize2, Ruler } from 'lucide-react';
+import { ArrowLeft, BookOpen, Maximize2, Minimize2, Ruler } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
@@ -16,6 +16,8 @@ import './LandingModelWorkspace.css';
 
 const InstructionsViewer = lazy(() => import('../pages/InstructionsPage').then(module => ({ default: module.InstructionsViewer })));
 const ThreeLDRViewer = lazy(() => import('./ThreeLDRViewer').then(module => ({ default: module.ThreeLDRViewer })));
+
+type ViewerCollapseSource = 'back_button' | 'escape' | 'viewer_toolbar';
 
 export function modelEditSuggestion(model: LandingModel): string {
   const name = model.generation.name?.trim() || model.generation.prompt?.trim() || 'model';
@@ -60,8 +62,9 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const panel = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
-  const collapseRef = useRef<(source: 'back_button' | 'escape') => void>(() => {});
+  const collapseRef = useRef<(source: ViewerCollapseSource) => void>(() => {});
   const showingInstructions = featureAccess === 'allowed' && !pendingEdit && generationId === requestedInstructionsId;
+  const expandLabel = showingInstructions ? (expanded ? 'Exit expanded instructions' : 'Expand instructions') : 'Expand 3D viewer';
   useEffect(() => {
     setInstructionsId(id => id === generationId ? id : null);
     setExpanded(false);
@@ -131,12 +134,12 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       expandButton.current?.focus();
     };
   }, [expanded, generation?.generation_id]);
-  const collapse = (source: 'back_button' | 'escape') => {
+  const collapse = (source: ViewerCollapseSource) => {
     posthog.capture('landing_model_view_collapsed', {
       generation_id: generation?.generation_id, view: showingInstructions ? 'instructions' : 'model', source,
     });
     setExpanded(false);
-    if (showingInstructions && source === 'back_button' && window.matchMedia('(min-width: 1024px)').matches) {
+    if (showingInstructions && source === 'back_button' && window.matchMedia('(min-width: 900px)').matches) {
       setInstructionUrl(null);
     }
   };
@@ -171,6 +174,12 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     void acknowledge();
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
+  const backToModelButton = showingInstructions && <button type="button" className="instructions-heading-button" disabled={busy}
+    aria-controls={stageId} onClick={() => {
+      posthog.capture('landing_model_3d_view_clicked', { generation_id: generationId, source: 'instructions_header' });
+      setInstructionUrl(null);
+      (expanded ? backButton : expandButton).current?.focus();
+    }}>Back to model</button>;
   return <>
     {!model && building && <section className="landing-generation-workspace" aria-label="Build progress workspace">
       <LdrawGenerationAnimation />
@@ -188,7 +197,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       <section className="landing-model-workspace" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label={pendingEdit ? 'Building your edited model' : showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
           {pendingEdit ? <LdrawGenerationAnimation /> :
-          <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
+          <Suspense fallback={<div className="instructions-inline-message"><p role="status">Loading viewer…</p>{backToModelButton}</div>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}
               onPreviewCaptured={png => { preview.current = { id: generation.generation_id, png }; }}
@@ -196,7 +205,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={showRuler} />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id}
-                initialStep={Number(searchParams.get('step')) || 1} onStepChange={onInstructionStepChange} embedded active={showingInstructions} />
+                initialStep={Number(searchParams.get('step')) || 1} onStepChange={onInstructionStepChange} embedded active={showingInstructions}
+                backToModelButton={backToModelButton} />
             </div>}
           </Suspense>}
         </div>
@@ -216,16 +226,19 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               </svg>}
             </span>
           </button>}
-          <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded}
-            aria-label={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'}
-            title={showingInstructions ? 'Expand instructions' : 'Expand 3D viewer'} aria-haspopup="dialog"
+          <button ref={expandButton} type="button" className="landing-action-button landing-view-expand" hidden={expanded && !showingInstructions}
+            aria-label={expandLabel} title={expandLabel} aria-expanded={expanded} aria-haspopup={expanded ? undefined : 'dialog'}
             onClick={() => {
+              if (expanded) {
+                collapse('viewer_toolbar');
+                return;
+              }
               posthog.capture('landing_model_view_expanded', {
                 generation_id: generation.generation_id, view: showingInstructions ? 'instructions' : 'model', source: 'viewer_footer',
               });
               setExpanded(true);
             }}>
-            <Maximize2 size={18} aria-hidden="true" />
+            {expanded ? <Minimize2 size={18} aria-hidden="true" /> : <Maximize2 size={18} aria-hidden="true" />}
           </button>
           </div>
         </div>}
@@ -233,21 +246,21 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
           </div>}
       </section>
-      {!pendingEdit && <div className="landing-model-bottom-toolbar">
-          <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
-            aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
-              if (!showingInstructions && !requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;
-              posthog.capture(showingInstructions ? 'landing_model_3d_view_clicked' : 'landing_model_instructions_clicked', {
+      {!pendingEdit && <div key={`actions-${generation.generation_id}`} className="landing-model-bottom-toolbar" hidden={expanded}>
+          {!showingInstructions && <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
+            aria-controls={stageId} onClick={() => {
+              if (!requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;
+              posthog.capture('landing_model_instructions_clicked', {
                 generation_id: generation.generation_id, source: 'viewer_footer',
               });
               setInstructionsId(generation.generation_id);
               const lastStep = lastInstructionStep.current;
-              setInstructionUrl(showingInstructions ? null : lastStep?.id === generation.generation_id ? lastStep.step : 1);
+              setInstructionUrl(lastStep?.id === generation.generation_id ? lastStep.step : 1);
             }}>
-            {showingInstructions ? <Box size={16} aria-hidden="true" /> : <BookOpen size={16} aria-hidden="true" />}
-            <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
+            <BookOpen size={16} aria-hidden="true" />
+            <span>Show instructions</span>
             {featureAccess !== 'allowed' && <PaidFeatureLock />}
-          </button>
+          </button>}
           {onViewPreviousEdit && <LandingPreviousEdits key={generation.generation_id} id={generation.generation_id}
             historyId={historyId} token={accessToken} busy={busy} onView={onViewPreviousEdit} onNoVersion={onNoVersion} />}
           {!historyId && generation.endpoint !== 'uploadLdraw' && <LandingCommunityAction key={generation.generation_id}

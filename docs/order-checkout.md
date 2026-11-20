@@ -8,6 +8,31 @@ only the price breakdown collapsible. Checkout previews hide ruler/explode contr
 It offers all 249 countries and regions listed in Brickwith’s checkout, verified
 on October 9, 2026, with the standard shipping calculation. Kits are charged at full price without a launch discount.
 The frontend/backend country snapshots are checked for parity by tests.
+
+The truck row shows an estimated arrival window based on the selected
+destination. `frontend/src/data/brickwithTransitDays.json` contains the
+English transit ranges returned by Brickwith's checkout quote service on
+November 19, 2026. The sample was one 478-piece kit with 782.257 g of parts.
+All 249 checkout destinations were queried by country with the same kit weight.
+Brickwith returned at least one method for 152 destinations. The remaining 97
+use the “Estimated delivery: 8–12 business days” fallback. The same quote was verified against
+the supplier checkout for the sample's US shipment. Other addresses or parcel
+weights may still receive a quote.
+
+The estimate uses Standard when available and Fast for destinations where
+Brickwith returned Fast only. It models dispatch at the end of Brickwith's
+published 12-business-day fulfillment window for 1–99 copies, adds announced
+busy-period extensions, and treats the carrier's quoted days as calendar days.
+The warehouse date uses China Standard Time, with published China holidays
+through 2027 excluded from fulfillment days. Dates roll forward as orders are
+placed. These are country-level estimates based on the sample shipment.
+Actual postal codes, parcel weights, and carrier availability can change them.
+Refresh the snapshot and holiday schedule when Brickwith changes its guidance.
+
+Sources: [Brickwith shipping policy](https://www.brickwith.com/en/about/help/article/shipping-and-delivery),
+[Brickwith busy periods](https://www.brickwith.com/en/about/help/article/busy-periods-and-holidays-processing-updates),
+and [China's 2027 public holidays](https://english.www.gov.cn/policies/latestreleases/202611/06/content_WS6aed74dcc6d00ca5f9a0e22e.html).
+
 The order summary offers quantities from 1–99. Changing quantity refreshes the server quote using the combined parts and weight, including stock checks and one shipping estimate. Quantity is locked during payment; return to Contact & delivery to edit it. Multi-kit orders save a combined fulfillment CSV and record the model quantity in order shipping information.
 Model data and quantity survive a reload; contact details and payment client secrets stay in memory.
 

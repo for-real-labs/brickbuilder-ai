@@ -1,3 +1,4 @@
+vi.mock('../src/appleSignIn', () => ({ AppleSignIn: class {}, appleSignInDispatch: () => '' }));
 vi.mock('../src/applePurchases', () => ({ ApplePurchases: class { dispose() {} }, appleDispatchScript: () => '' }));
 import { Children, isValidElement, type ReactElement, type ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';

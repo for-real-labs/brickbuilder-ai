@@ -25,7 +25,7 @@ from .requests.llmToBricks import DEFAULT_MODEL, SUPPORTED_MODELS, LlmToBricksRe
 from .utils.authorization import require_generation_access
 from .utils.generation_storage import generation_storage
 from .utils.posthog_client import track_api_call
-from .utils import billing
+from .utils import auth, billing
 
 logger = logging.getLogger(__name__)
 Model = Enum("Model", {key.replace("-", "_"): key for key in SUPPORTED_MODELS}, type=str)
@@ -129,12 +129,13 @@ class SupabaseMcpTokenVerifier(TokenVerifier):
             scopes = claims.get("scope", "").split()
             if "email" not in scopes:
                 return None
+            await auth.require_account_mfa({"user_id": claims["sub"], "aal": claims.get("aal")})
             return AccessToken(
                 token=token, client_id=claims["client_id"], scopes=scopes,
                 expires_at=claims["exp"], resource=self.settings.public_url,
                 subject=claims["sub"], claims=claims,
             )
-        except (jwt.PyJWTError, ValueError, TypeError, AttributeError):
+        except (jwt.PyJWTError, ValueError, TypeError, AttributeError, HTTPException):
             return None
 
 

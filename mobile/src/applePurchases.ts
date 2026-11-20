@@ -1,6 +1,6 @@
 import * as IAP from 'expo-iap';
 
-export const CREDIT_PRODUCTS = ['ai.brickbuilder.app.credits.800', 'ai.brickbuilder.app.credits.1500'];
+export const CREDIT_PRODUCTS = [100, 600, 800, 1500].map(count => `ai.brickbuilder.app.credits.${count}`);
 export const APPLE_PRODUCTS = ['ai.brickbuilder.app.builder.monthly', 'ai.brickbuilder.app.creator.monthly', ...CREDIT_PRODUCTS];
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export const APPLE_EVENT = 'brickbuilder:apple-purchases';
@@ -46,7 +46,7 @@ export class ApplePurchases {
       let result: unknown = null;
       if (action === 'products') {
         const products = await IAP.fetchProducts({ skus: APPLE_PRODUCTS, type: 'all' });
-        result = (products ?? []).filter(p => APPLE_PRODUCTS.includes(p.id)).map(p => ({ id: p.id, displayPrice: p.displayPrice }));
+        result = (products ?? []).filter(p => APPLE_PRODUCTS.includes(p.id)).map(p => ({ id: p.id, displayPrice: p.displayPrice, price: p.price }));
       } else if (action === 'buy') {
         if (typeof message.product !== 'string' || !APPLE_PRODUCTS.includes(message.product)
             || typeof message.accountToken !== 'string' || !UUID.test(message.accountToken)) throw new Error('Invalid purchase');

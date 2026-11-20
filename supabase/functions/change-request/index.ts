@@ -91,7 +91,11 @@ async function account(request: Request) {
   const token = request.headers.get('authorization')?.replace(/^Bearer /i, '');
   if (!token) throw new Error('Sign in to request a change.');
   const { data: { user }, error } = await db.auth.getUser(token);
-  if (error || !user?.email) throw new Error('Sign in to request a change.');
+  if (error || !user?.email || user.is_anonymous) throw new Error('Sign in to request a change.');
+  if (user.factors?.some(factor => factor.status === 'verified')) {
+    const { data, error } = await db.auth.getClaims(token);
+    if (error || data?.claims.aal !== 'aal2') throw new Error('Verify your sign-in with your authenticator app.');
+  }
   const { data: grant, error: grantError } = await db.from('change_request_access')
     .select('user_id').eq('user_id', user.id).maybeSingle();
   if (grantError) throw grantError;
