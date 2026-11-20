@@ -6,6 +6,46 @@ import bricklinkColors from './bricklinkColors.json';
 export type ModelExportFormat = 'ldraw' | 'io' | 'csv' | 'xml';
 interface Part { id: string; color: number; quantity: number }
 
+/**
+ * Nova's display export can contain its complete LDraw parts library and
+ * LDConfig alongside the model. Studio treats these embedded parts as
+ * submodels, so downloadable files should reference Studio's own catalog.
+ *
+ * Leave ordinary LDraw/MPD files alone: their embedded sections may be
+ * intentional custom submodels rather than a copy of the standard library.
+ */
+export function studioCompatibleLDraw(content: string): string {
+  const lines = content.split(/\r?\n/);
+  const modelStart = lines.findIndex(line => /^0 BrickBuilder (?:display|construction) export from LDraw Nova\s*$/.test(line.trim()));
+  if (modelStart < 0) return content;
+
+  const sections = lines.map((line, index) => ({ line: line.trim(), index }))
+    .filter(({ line }) => /^0\s+FILE\s+/i.test(line));
+  const firstEmbedded = sections.find(({ index }) => index > modelStart);
+  if (!firstEmbedded || !/^0\s+FILE\s+(?:parts|p)\//i.test(firstEmbedded.line)) return content;
+
+  // Do not discard a non-library section if Nova ever starts emitting custom
+  // assemblies here. Such exports must remain self-contained MPDs.
+  if (sections.some(({ index, line }) => index >= firstEmbedded.index &&
+    !/^0\s+FILE\s+(?:parts|p)\//i.test(line))) return content;
+
+  const root = lines.slice(modelStart, firstEmbedded.index);
+  const converted = root.map(line => {
+    if (!/^1\s/.test(line.trim())) return line;
+    const tokens = line.trim().split(/\s+/);
+    if (tokens.length !== 15 || !tokens.slice(1, 14).every(token => Number.isFinite(Number(token)))) return null;
+    const reference = tokens[14].replaceAll('\\', '/');
+    if (/^parts\/[a-z0-9][a-z0-9_-]*\.dat$/i.test(reference)) {
+      tokens[14] = reference.slice('parts/'.length);
+    } else if (!/^[a-z0-9][a-z0-9_-]*\.dat$/i.test(reference)) {
+      return null;
+    }
+    return tokens.join(' ');
+  });
+  if (converted.some(line => line === null)) return content;
+  return converted.join('\n').trimEnd() + '\n';
+}
+
 /** Count model placements, expanding submodels but never the geometry inside a part. */
 export function modelParts(content: string): Part[] {
   const sections = new Map<string, string[]>();
@@ -59,8 +99,8 @@ export function modelParts(content: string): Part[] {
 
 export function createModelExport(content: string, name: string, format: ModelExportFormat): { blob: Blob; filename: string } {
   const base = name.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 100) || 'model';
-  if (format === 'ldraw') return { blob: new Blob([content], { type: 'text/plain;charset=utf-8' }), filename: `${base}.ldr` };
-  if (format === 'io') return { blob: new Blob([zipSync({ 'model.ldr': strToU8(content) })], { type: 'application/zip' }), filename: `${base}.io` };
+  if (format === 'ldraw') return { blob: new Blob([studioCompatibleLDraw(content)], { type: 'text/plain;charset=utf-8' }), filename: `${base}.ldr` };
+  if (format === 'io') return { blob: new Blob([zipSync({ 'model.ldr': strToU8(studioCompatibleLDraw(content)) })], { type: 'application/zip' }), filename: `${base}.io` };
   const parts = modelParts(content);
   if (format === 'csv') {
     const rows = parts.map(part => `${part.id}.dat,${part.color},${part.quantity}`);
