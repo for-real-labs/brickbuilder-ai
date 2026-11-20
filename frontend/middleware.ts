@@ -1,5 +1,6 @@
 import { maintenanceResponse } from './maintenance';
 import { isMaintenanceHost } from './src/maintenanceRoutes';
+import { stripeSandboxResponse } from './stripeSandbox';
 
 const AUTH_PATH = '/__preview-auth';
 const AUTH_COOKIE = 'brickbuilder_preview_auth';
@@ -285,6 +286,11 @@ export default async function middleware(request: Request): Promise<Response | u
     if (isMaintenanceHost(url.hostname)) {
       return maintenanceResponse(request, url);
     }
+  }
+
+  if (process.env.VERCEL_ENV === 'production') {
+    const sandbox = await stripeSandboxResponse(request, process.env);
+    if (sandbox) return sandbox;
   }
 
   if (!isProtectedDeployment(process.env)) {

@@ -9,6 +9,7 @@ import { billingDate, CreditPacks } from '../components/BillingComponents';
 import { PetAvatar } from '../components/PetCompanion';
 import { BillingHeader } from '../components/BillingHeader';
 import { PLAN_GENERATIONS } from '../utils/planDisplay';
+import { pushSubscriptionConversion } from '../utils/subscriptionConversion';
 import { LEGACY_MASTER_PLAN, type BillingAccount } from '../services/billingApi';
 
 const paymentConfirmed = (account: BillingAccount | null) => account?.purchase_confirmed
@@ -28,8 +29,7 @@ export default function BillingPage() {
     const transactionId = result?.subscription_transaction_id;
     if (transactionId && trackedTransaction.current !== transactionId) {
       trackedTransaction.current = transactionId;
-      const page = window as Window & { dataLayer?: unknown[] };
-      (page.dataLayer ??= []).push({ event: 'subscription_confirmed', transaction_id: transactionId });
+      pushSubscriptionConversion(transactionId);
     }
     setConfirmed(true);
     setParams({}, { replace: true });
