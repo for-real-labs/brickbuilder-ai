@@ -255,6 +255,7 @@ interface InstructionsViewerProps {
   initialStep?: number;
   navigationState?: unknown;
   onStepChange?: (step: number) => void;
+  backToModelButton?: React.ReactNode;
   embedded?: boolean;
   active?: boolean;
 }
@@ -268,7 +269,7 @@ export function InstructionsViewer(props: InstructionsViewerProps) {
   </>;
 }
 
-function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationState, onStepChange, embedded = false, active = true }: InstructionsViewerProps) {
+function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationState, onStepChange, backToModelButton, embedded = false, active = true }: InstructionsViewerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   // Core state
@@ -1148,7 +1149,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
   };
 
   if (loading) {
-    if (embedded) return <div className="instructions-inline-message" role="status"><Loader2 size={24} className="animate-spin" /><p>Loading building instructions…</p></div>;
+    if (embedded) return <div className="instructions-inline-message"><Loader2 size={24} className="animate-spin" /><p role="status">Loading building instructions…</p>{backToModelButton}</div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1168,7 +1169,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
     if (embedded) return <div className="instructions-inline-message" role="alert"><p>{error}</p><button type="button" className="instructions-retry" onClick={() => {
       posthog.capture('instructions_retry_clicked', { generation_id: generationId, source: 'landing' });
       setLoadAttempt(attempt => attempt + 1);
-    }}>Try again</button></div>;
+    }}>Try again</button>{backToModelButton}</div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1194,7 +1195,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
 
 
   if (!model || model.steps.length === 0) {
-    if (embedded) return <div className="instructions-inline-message" role="status"><p>No building steps found in this model.</p></div>;
+    if (embedded) return <div className="instructions-inline-message"><p role="status">No building steps found in this model.</p>{backToModelButton}</div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1230,13 +1231,16 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
                 <h4 className="text-lg font-semibold text-[#f44336]">
                 Step {model.steps[currentStepIndex].stepNumber}
                 </h4>
-                <button type="button" className="instructions-parts-toggle" aria-pressed={showPartsList} aria-controls={partsListId}
-                  onClick={() => {
-                    setShowPartsList(!showPartsList);
-                    posthog.capture('instructions_parts_list_toggled', { generation_id: generationId, show_all_parts: !showPartsList, source: embedded ? 'landing' : 'instructions' });
-                  }}>
-                  {showPartsList ? 'Step parts' : 'Parts list'}
-                </button>
+                <div className="instructions-heading-actions">
+                  {backToModelButton}
+                  <button type="button" className="instructions-heading-button instructions-parts-toggle" aria-pressed={showPartsList} aria-controls={partsListId}
+                    onClick={() => {
+                      setShowPartsList(!showPartsList);
+                      posthog.capture('instructions_parts_list_toggled', { generation_id: generationId, show_all_parts: !showPartsList, source: embedded ? 'landing' : 'instructions' });
+                    }}>
+                    {showPartsList ? 'Step parts' : 'Parts list'}
+                  </button>
+                </div>
                 <div className="text-sm text-slate-600">
                 Add {model.steps[currentStepIndex].parts.length} {model.steps[currentStepIndex].parts.length === 1 ? 'part' : 'parts'}
                 </div>

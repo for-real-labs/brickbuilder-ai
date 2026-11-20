@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useId, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Box, Maximize2, Minimize2, Ruler } from 'lucide-react';
+import { ArrowLeft, BookOpen, Maximize2, Minimize2, Ruler } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
@@ -173,6 +173,12 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     void acknowledge();
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
+  const backToModelButton = showingInstructions && <button type="button" className="instructions-heading-button" disabled={busy}
+    aria-controls={stageId} onClick={() => {
+      posthog.capture('landing_model_3d_view_clicked', { generation_id: generationId, source: 'instructions_header' });
+      setInstructionUrl(null);
+      (expanded ? backButton : expandButton).current?.focus();
+    }}>Back to model</button>;
   return <>
     {!model && building && <section className="landing-generation-workspace" aria-label="Build progress workspace">
       <LdrawGenerationAnimation />
@@ -190,7 +196,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       <section className="landing-model-workspace" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label={pendingEdit ? 'Building your edited model' : showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
           {pendingEdit ? <LdrawGenerationAnimation /> :
-          <Suspense fallback={<p role="status" className="p-6 text-sm text-slate-500">Loading viewer…</p>}>
+          <Suspense fallback={<div className="instructions-inline-message"><p role="status">Loading viewer…</p>{backToModelButton}</div>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}
               onPreviewCaptured={png => { preview.current = { id: generation.generation_id, png }; }}
@@ -198,7 +204,8 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={showRuler} />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id}
-                initialStep={Number(searchParams.get('step')) || 1} onStepChange={onInstructionStepChange} embedded active={showingInstructions} />
+                initialStep={Number(searchParams.get('step')) || 1} onStepChange={onInstructionStepChange} embedded active={showingInstructions}
+                backToModelButton={backToModelButton} />
             </div>}
           </Suspense>}
         </div>
@@ -238,24 +245,24 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
           </div>}
       </section>
-      {!pendingEdit && <div className="landing-model-bottom-toolbar">
-          <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
-            aria-pressed={showingInstructions} aria-controls={stageId} onClick={() => {
-              if (!showingInstructions && !requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;
-              posthog.capture(showingInstructions ? 'landing_model_3d_view_clicked' : 'landing_model_instructions_clicked', {
+      {!pendingEdit && <div key={`actions-${generation.generation_id}`} className="landing-model-bottom-toolbar" hidden={expanded}>
+          {!showingInstructions && <button type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
+            aria-controls={stageId} onClick={() => {
+              if (!requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;
+              posthog.capture('landing_model_instructions_clicked', {
                 generation_id: generation.generation_id, source: 'viewer_footer',
               });
               setInstructionsId(generation.generation_id);
               const lastStep = lastInstructionStep.current;
-              setInstructionUrl(showingInstructions ? null : lastStep?.id === generation.generation_id ? lastStep.step : 1);
+              setInstructionUrl(lastStep?.id === generation.generation_id ? lastStep.step : 1);
             }}>
-            {showingInstructions ? <Box size={16} aria-hidden="true" /> : <BookOpen size={16} aria-hidden="true" />}
-            <span>{showingInstructions ? 'Show model' : 'Show instructions'}</span>
+            <BookOpen size={16} aria-hidden="true" />
+            <span>Show instructions</span>
             {featureAccess !== 'allowed' && <PaidFeatureLock />}
-          </button>
-          {onViewPreviousEdit && <LandingPreviousEdits key={generation.generation_id} id={generation.generation_id}
+          </button>}
+          {onViewPreviousEdit && <LandingPreviousEdits id={generation.generation_id}
             token={accessToken} busy={busy} onView={onViewPreviousEdit} onNoVersion={onNoVersion} />}
-          {generation.endpoint !== 'uploadLdraw' && <LandingCommunityAction key={generation.generation_id}
+          {generation.endpoint !== 'uploadLdraw' && <LandingCommunityAction
             id={generation.generation_id} busy={busy} onNameSaved={onNameSaved}
             preview={() => preview.current?.id === generation.generation_id ? preview.current.png : undefined} />}
       </div>}
