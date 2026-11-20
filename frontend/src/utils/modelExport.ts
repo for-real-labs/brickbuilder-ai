@@ -59,8 +59,20 @@ export function modelParts(content: string): Part[] {
 
 export function createModelExport(content: string, name: string, format: ModelExportFormat): { blob: Blob; filename: string } {
   const base = name.replace(/[^a-zA-Z0-9_-]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 100) || 'model';
-  if (format === 'ldraw') return { blob: new Blob([content], { type: 'text/plain;charset=utf-8' }), filename: `${base}.ldr` };
-  if (format === 'io') return { blob: new Blob([zipSync({ 'model.ldr': strToU8(content) })], { type: 'application/zip' }), filename: `${base}.io` };
+  if (format === 'ldraw' || format === 'io') {
+    const sections = [...content.matchAll(/^[ \t]*0[ \t]+(?:FILE|!DATA)[ \t]+([^\r\n]+)/gim)];
+    const firstSection = sections[0];
+    // Older packed models put the build before the first embedded part.
+    // MPD readers discard geometry before the first FILE declaration.
+    if (firstSection && /^[ \t]*[1-5][ \t]/m.test(content.slice(0, firstSection.index))) {
+      const names = new Set(sections.map(section => section[1].trim().toLowerCase()));
+      let root = 'main.ldr';
+      for (let suffix = 2; names.has(root); suffix++) root = `main-${suffix}.ldr`;
+      content = `0 FILE ${root}\r\n${content}`;
+    }
+    if (format === 'ldraw') return { blob: new Blob([content], { type: 'text/plain;charset=utf-8' }), filename: `${base}.ldr` };
+    return { blob: new Blob([zipSync({ 'model.ldr': strToU8(content) })], { type: 'application/zip' }), filename: `${base}.io` };
+  }
   const parts = modelParts(content);
   if (format === 'csv') {
     const rows = parts.map(part => `${part.id}.dat,${part.color},${part.quantity}`);

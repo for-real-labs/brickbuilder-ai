@@ -51,6 +51,14 @@ it.each([['ldraw', 'Download LDraw'], ['io', 'Download IO'], ['csv', 'Download p
   expect(host.querySelector('ul[aria-label="Tools"]')).toBeNull();
 });
 
+it.each([['ldraw', 'Download LDraw'], ['io', 'Download IO']] as const)('exports %s from the original model when available', (format, label) => {
+  const download = vi.spyOn(exports, 'downloadModel').mockImplementation(() => {});
+  const source = '0 Original LDraw model';
+  mount({ ...model, generation: { ...model.generation, ldr_content: source } });
+  act(() => button('Tools').click()); act(() => button('Export').click()); act(() => button(label).click());
+  expect(download).toHaveBeenCalledWith(source, 'Castle', format);
+});
+
 it('disables downloads without a finished model and shows recoverable export errors', () => {
   mount(null); act(() => button('Tools').click()); act(() => button('Export').click());
   expect(button('Download LDraw').disabled).toBe(true);
