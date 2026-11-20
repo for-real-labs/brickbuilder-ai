@@ -87,6 +87,7 @@ function OrderCheckout() {
   const pricing = getOrderPricing(quote);
   const [step, setStep] = React.useState(0);
   const [country, setCountry] = React.useState<string>('US');
+  const regionRequired = shippingCountries.find(destination => destination.code === country)?.requiresRegion === true;
   const estimatedArrival = getEstimatedArrival(country);
   const [argentinaTaxId, setArgentinaTaxId] = React.useState('');
   const [taxIdHelpOpen, setTaxIdHelpOpen] = React.useState(false);
@@ -234,6 +235,12 @@ function OrderCheckout() {
       document.getElementById('checkout-argentina-tax-id')?.focus();
       return;
     }
+    const shippingAddress = getShippingContact(delivery, country);
+    if (regionRequired && !shippingAddress.address.state) {
+      setError('Enter your state or province.');
+      stepFocusRef.current?.querySelector<HTMLInputElement>('input[name="region"]')?.focus();
+      return;
+    }
     setLoading(true); setError(null);
     posthog.capture('order_delivery_completed', { generation_id: generationId, country });
     try {
@@ -244,7 +251,7 @@ function OrderCheckout() {
         name, priceCents: pricing.totalCents, quantity,
         generationId, brickowlCartId: state.cart_id || localStorage.getItem('current_cart_id') || undefined,
         uiMode: 'elements' as const, shipInstructionsPostcard, petId: pet.id,
-        shippingAddress: getShippingContact(delivery, country),
+        shippingAddress,
         ...(country === 'AR' ? { argentinaTaxId: argentinaTaxId.replaceAll('-', '') } : {}),
       };
       // Keep both the session and its mounted Stripe fields when merely reviewing delivery.
@@ -382,7 +389,7 @@ function OrderCheckout() {
                 </div>}
                 {field('line1', 'Address line 1', 'shipping address-line1')}
                 {field('line2', 'Address line 2', 'shipping address-line2', true)}
-                {field('region', 'State/Province', 'shipping address-level1', true)}
+                {field('region', 'State/Province', 'shipping address-level1', !regionRequired)}
                 {field('city', 'City', 'shipping address-level2')}
                 {field('postalCode', 'Postal Code', 'shipping postal-code')}
               </div>

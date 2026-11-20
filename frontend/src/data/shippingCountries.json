@@ -17,7 +17,8 @@
   },
   {
     "code": "AS",
-    "name": "American Samoa"
+    "name": "American Samoa",
+    "requiresRegion": true
   },
   {
     "code": "AD",
@@ -53,7 +54,8 @@
   },
   {
     "code": "AU",
-    "name": "Australia"
+    "name": "Australia",
+    "requiresRegion": true
   },
   {
     "code": "AT",
@@ -125,7 +127,8 @@
   },
   {
     "code": "BR",
-    "name": "Brazil"
+    "name": "Brazil",
+    "requiresRegion": true
   },
   {
     "code": "IO",
@@ -161,11 +164,13 @@
   },
   {
     "code": "CA",
-    "name": "Canada"
+    "name": "Canada",
+    "requiresRegion": true
   },
   {
     "code": "KY",
-    "name": "Cayman Islands"
+    "name": "Cayman Islands",
+    "requiresRegion": true
   },
   {
     "code": "CF",
@@ -181,7 +186,8 @@
   },
   {
     "code": "CN",
-    "name": "China"
+    "name": "China",
+    "requiresRegion": true
   },
   {
     "code": "CX",
@@ -193,7 +199,8 @@
   },
   {
     "code": "CO",
-    "name": "Colombia"
+    "name": "Colombia",
+    "requiresRegion": true
   },
   {
     "code": "KM",
@@ -213,7 +220,8 @@
   },
   {
     "code": "CR",
-    "name": "Costa Rica"
+    "name": "Costa Rica",
+    "requiresRegion": true
   },
   {
     "code": "CI",
@@ -265,7 +273,8 @@
   },
   {
     "code": "SV",
-    "name": "El Salvador"
+    "name": "El Salvador",
+    "requiresRegion": true
   },
   {
     "code": "GQ",
@@ -313,7 +322,8 @@
   },
   {
     "code": "PF",
-    "name": "French Polynesia"
+    "name": "French Polynesia",
+    "requiresRegion": true
   },
   {
     "code": "TF",
@@ -397,11 +407,13 @@
   },
   {
     "code": "HN",
-    "name": "Honduras"
+    "name": "Honduras",
+    "requiresRegion": true
   },
   {
     "code": "HK",
-    "name": "Hong Kong"
+    "name": "Hong Kong",
+    "requiresRegion": true
   },
   {
     "code": "HU",
@@ -413,11 +425,13 @@
   },
   {
     "code": "IN",
-    "name": "India"
+    "name": "India",
+    "requiresRegion": true
   },
   {
     "code": "ID",
-    "name": "Indonesia"
+    "name": "Indonesia",
+    "requiresRegion": true
   },
   {
     "code": "IR",
@@ -425,7 +439,8 @@
   },
   {
     "code": "IQ",
-    "name": "Iraq"
+    "name": "Iraq",
+    "requiresRegion": true
   },
   {
     "code": "IE",
@@ -441,15 +456,18 @@
   },
   {
     "code": "IT",
-    "name": "Italy"
+    "name": "Italy",
+    "requiresRegion": true
   },
   {
     "code": "JM",
-    "name": "Jamaica"
+    "name": "Jamaica",
+    "requiresRegion": true
   },
   {
     "code": "JP",
-    "name": "Japan"
+    "name": "Japan",
+    "requiresRegion": true
   },
   {
     "code": "JE",
@@ -477,7 +495,8 @@
   },
   {
     "code": "KR",
-    "name": "Korea, Republic of"
+    "name": "Korea, Republic of",
+    "requiresRegion": true
   },
   {
     "code": "KW",
@@ -553,7 +572,8 @@
   },
   {
     "code": "MH",
-    "name": "Marshall Islands"
+    "name": "Marshall Islands",
+    "requiresRegion": true
   },
   {
     "code": "MQ",
@@ -573,11 +593,13 @@
   },
   {
     "code": "MX",
-    "name": "Mexico"
+    "name": "Mexico",
+    "requiresRegion": true
   },
   {
     "code": "FM",
-    "name": "Micronesia, Federated States of"
+    "name": "Micronesia, Federated States of",
+    "requiresRegion": true
   },
   {
     "code": "MD",
@@ -617,7 +639,8 @@
   },
   {
     "code": "NR",
-    "name": "Nauru"
+    "name": "Nauru",
+    "requiresRegion": true
   },
   {
     "code": "NP",
@@ -661,7 +684,8 @@
   },
   {
     "code": "MP",
-    "name": "Northern Mariana Islands"
+    "name": "Northern Mariana Islands",
+    "requiresRegion": true
   },
   {
     "code": "NO",
@@ -677,7 +701,8 @@
   },
   {
     "code": "PW",
-    "name": "Palau"
+    "name": "Palau",
+    "requiresRegion": true
   },
   {
     "code": "PS",
@@ -689,7 +714,8 @@
   },
   {
     "code": "PG",
-    "name": "Papua New Guinea"
+    "name": "Papua New Guinea",
+    "requiresRegion": true
   },
   {
     "code": "PY",
@@ -733,7 +759,8 @@
   },
   {
     "code": "RU",
-    "name": "Russian Federation"
+    "name": "Russian Federation",
+    "requiresRegion": true
   },
   {
     "code": "RW",
@@ -749,7 +776,8 @@
   },
   {
     "code": "KN",
-    "name": "Saint Kitts and Nevis"
+    "name": "Saint Kitts and Nevis",
+    "requiresRegion": true
   },
   {
     "code": "LC",
@@ -821,7 +849,8 @@
   },
   {
     "code": "SO",
-    "name": "Somalia"
+    "name": "Somalia",
+    "requiresRegion": true
   },
   {
     "code": "ZA",
@@ -837,7 +866,8 @@
   },
   {
     "code": "ES",
-    "name": "Spain"
+    "name": "Spain",
+    "requiresRegion": true
   },
   {
     "code": "LK",
@@ -869,7 +899,8 @@
   },
   {
     "code": "TW",
-    "name": "Taiwan, Province of China"
+    "name": "Taiwan, Province of China",
+    "requiresRegion": true
   },
   {
     "code": "TJ",
@@ -933,7 +964,8 @@
   },
   {
     "code": "AE",
-    "name": "United Arab Emirates"
+    "name": "United Arab Emirates",
+    "requiresRegion": true
   },
   {
     "code": "GB",
@@ -941,11 +973,13 @@
   },
   {
     "code": "UM",
-    "name": "United States Minor Outlying Islands"
+    "name": "United States Minor Outlying Islands",
+    "requiresRegion": true
   },
   {
     "code": "US",
-    "name": "United States of America"
+    "name": "United States of America",
+    "requiresRegion": true
   },
   {
     "code": "UY",
@@ -961,11 +995,13 @@
   },
   {
     "code": "VE",
-    "name": "Venezuela, Bolivarian Republic of"
+    "name": "Venezuela, Bolivarian Republic of",
+    "requiresRegion": true
   },
   {
     "code": "VN",
-    "name": "Viet Nam"
+    "name": "Viet Nam",
+    "requiresRegion": true
   },
   {
     "code": "VG",
@@ -973,7 +1009,8 @@
   },
   {
     "code": "VI",
-    "name": "Virgin Islands (U.S.)"
+    "name": "Virgin Islands (U.S.)",
+    "requiresRegion": true
   },
   {
     "code": "WF",
