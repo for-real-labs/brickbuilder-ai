@@ -45,7 +45,7 @@ export function ModelOrderCard({ quote, loading, updating, error, onOrder, onRes
       </button>
       <div className="model-kit-details">
         {Boolean(quote?.total_parts) && <span><Package size={14} aria-hidden="true" />{quote?.total_parts.toLocaleString()} Pieces</span>}
-        <span><Truck size={14} aria-hidden="true" />8–12 business days</span>
+        <span><Truck size={14} aria-hidden="true" />Delivery dates at checkout</span>
       </div>
       {onResize && <button type="button" className="model-resize-link" onClick={onResize} disabled={unavailable}>Adjust size &amp; price</button>}
     </section>
