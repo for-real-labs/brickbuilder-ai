@@ -10,6 +10,8 @@ export interface CreditPlan { key: PlanKey; name: string; monthly_cents: number;
 export interface BillingAccount {
   trial_expires_at?: string | null;
   purchase_confirmed?: boolean;
+  subscription_checkout_confirmed?: boolean;
+  subscription_transaction_id?: string;
   subscription_provider?: 'apple' | 'stripe' | 'external_tester' | null; apple_remaining?: number; apple_plan?: PlanKey; apple_expires_at?: string;
   plan_key: PlanKey; credits_remaining: number; monthly_credits: number; monthly_remaining: number;
   bonus_remaining: number; bonus_available?: number; available?: boolean; checkout_available?: boolean; period_start: string; period_end: string; subscription_status: string;

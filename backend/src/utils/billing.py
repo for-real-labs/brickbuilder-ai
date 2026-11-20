@@ -372,8 +372,18 @@ async def sync_checkout(identity, session_id=None):
             paid = bool(session.get('payment_intent')) and await credit_packs.reconcile(object_id(session['payment_intent']), user_id)
             return {**await account(identity), "purchase_confirmed": paid}
         subscription_id = object_id(session.get("subscription"))
-        if subscription_id:
-            await sync_subscription(subscription_id)
+        receipt = await sync_subscription(subscription_id) if subscription_id else None
+        if session.get("mode") == "subscription":
+            confirmed = bool(receipt and session.get("status") == "complete"
+                             and session.get("payment_status") in ("paid", "no_payment_required"))
+            result = {**await account(identity), "subscription_checkout_confirmed": confirmed}
+            if confirmed and session.get("payment_status") == "paid":
+                invoice = receipt["invoice"]
+                if (invoice.id == object_id(session.get("invoice"))
+                        and invoice.get("billing_reason") == "subscription_create"
+                        and (invoice.get("amount_paid") or 0) > 0):
+                    result["subscription_transaction_id"] = invoice.id
+            return result
     else:
         row = await wallet(user_id)
         if not row.get("external_tester") and row.get("stripe_subscription_id"):

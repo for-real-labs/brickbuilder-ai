@@ -93,6 +93,39 @@ def test_foreign_checkout_cannot_be_synced(monkeypatch,identity):
     sync.assert_not_called()
 
 
+@pytest.mark.parametrize('change, confirmed, converted', [
+    (None, True, True), ('open_session', False, False), ('unpaid_session', False, False),
+    ('unpaid_invoice', False, False), ('free_invoice', True, False),
+    ('renewal', True, False), ('different_invoice', True, False),
+])
+def test_checkout_conversion_requires_the_first_paid_subscription_invoice(
+        monkeypatch, identity, subscription, change, confirmed, converted):
+    session = obj({
+        'client_reference_id': identity['user_id'], 'metadata': {'integration': billing.BILLING_TAG},
+        'livemode': False, 'mode': 'subscription', 'subscription': subscription.id,
+        'status': 'complete', 'payment_status': 'paid', 'invoice': subscription.latest_invoice.id,
+    })
+    invoice = subscription.latest_invoice
+    invoice.billing_reason = 'subscription_create'
+    invoice.amount_paid = 299
+    if change == 'open_session': session.status = 'open'
+    if change == 'unpaid_session': session.payment_status = 'unpaid'
+    if change == 'unpaid_invoice': invoice.status = 'open'
+    if change == 'free_invoice': invoice.amount_paid = 0
+    if change == 'renewal': invoice.billing_reason = 'subscription_cycle'
+    if change == 'different_invoice': session.invoice = 'in_other'
+
+    monkeypatch.setattr(billing.stripe.checkout.Session, 'retrieve', Mock(return_value=session))
+    monkeypatch.setattr(billing.stripe.Subscription, 'retrieve', Mock(return_value=subscription))
+    monkeypatch.setattr(billing, 'wallet', AsyncMock(return_value={'stripe_customer_id': subscription.customer}))
+    monkeypatch.setattr(billing, 'rpc', AsyncMock())
+    monkeypatch.setattr(billing, 'account', AsyncMock(return_value={'has_subscription': True}))
+
+    result = asyncio.run(billing.sync_checkout(identity, 'cs_test'))
+    assert result['subscription_checkout_confirmed'] is confirmed
+    assert result.get('subscription_transaction_id') == (invoice.id if converted else None)
+
+
 def test_duplicate_checkout_requests_are_rejected_before_stripe(monkeypatch,identity):
     monkeypatch.setattr(billing,'require_enabled',AsyncMock())
     monkeypatch.setattr(billing,'capacity',AsyncMock(return_value={'checkout_available':True}))
