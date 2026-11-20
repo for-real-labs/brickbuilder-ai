@@ -8,17 +8,36 @@ import StripeSandbox from '../src/pages/StripeSandbox';
 const site = 'https://brickbuilder.ai';
 const path = '/stripe-sandbox';
 const token = 'a'.repeat(64);
+const passcode = 'sandbox-test-passcode-only';
 const origin = 'https://sandbox-example.trycloudflare.com';
-const config = { STRIPE_SANDBOX_ORIGIN: origin, STRIPE_SANDBOX_ACCESS_TOKEN: token };
-const cookie = `brickbuilder_stripe_sandbox=${token}`;
+const config = { STRIPE_SANDBOX_ORIGIN: origin, STRIPE_SANDBOX_ACCESS_TOKEN: token, STRIPE_SANDBOX_PASSCODE: passcode };
+
+function login(value: string) {
+  return stripeSandboxResponse(new Request(`${site}${path}/access`, {
+    method: 'POST', headers: { origin: site, 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({ passcode: value }).toString(),
+  }), config);
+}
+
+async function authorizedCookie() {
+  return (await login(passcode))?.headers.get('set-cookie')?.split(';')[0] ?? '';
+}
 
 afterEach(() => vi.unstubAllGlobals());
 
-it('scopes the access cookie to the sandbox and removes the token from the browser URL', async () => {
-  const response = await stripeSandboxResponse(new Request(`${site}${path}?access=${token}`), config);
+it('requires the passcode and issues a scoped cookie that contains neither secret', async () => {
+  const prompt = await stripeSandboxResponse(new Request(`${site}${path}?access=${token}`), config);
+  expect(await prompt?.text()).toContain('Sandbox passcode');
+  expect(prompt?.headers.get('set-cookie')).toBeNull();
+  const denied = await login('incorrect');
+  expect(denied?.status).toBe(401);
+  expect(denied?.headers.get('set-cookie')).toBeNull();
+  const response = await login(passcode);
   expect(response?.status).toBe(303);
   expect(response?.headers.get('location')).toBe(path);
   expect(response?.headers.get('set-cookie')).toContain(`Path=${path}; HttpOnly; Secure; SameSite=Lax`);
+  expect(response?.headers.get('set-cookie')).not.toContain(token);
+  expect(response?.headers.get('set-cookie')).not.toContain(passcode);
 });
 
 it('keeps the route disabled without configuration and rejects requests without the sandbox cookie', async () => {
@@ -32,7 +51,7 @@ it('proxies only sandbox credentials and rejects a live Stripe checkout URL', as
   const fetcher = vi.fn().mockResolvedValue(Response.json({ url: 'https://checkout.stripe.com/g/pay/cs_live_abc' }));
   vi.stubGlobal('fetch', fetcher);
   const response = await stripeSandboxResponse(new Request(`${site}${path}/checkout`, {
-    method: 'POST', headers: { origin: site, cookie: `production_session=private; ${cookie}` },
+    method: 'POST', headers: { origin: site, cookie: `production_session=private; ${await authorizedCookie()}` },
   }), config);
   expect(response?.status).toBe(503);
   expect(fetcher).toHaveBeenCalledExactlyOnceWith(`${origin}/checkout`, expect.objectContaining({
@@ -43,6 +62,7 @@ it('proxies only sandbox credentials and rejects a live Stripe checkout URL', as
 it('returns a verified test invoice ID and rejects live checkout IDs before reaching the sandbox', async () => {
   const fetcher = vi.fn().mockResolvedValue(Response.json({ subscription_transaction_id: 'in_test', other: 'hidden' }));
   vi.stubGlobal('fetch', fetcher);
+  const cookie = await authorizedCookie();
   const request = (sessionId: string) => new Request(`${site}${path}/sync?session_id=${sessionId}`, {
     method: 'POST', headers: { origin: site, cookie },
   });
