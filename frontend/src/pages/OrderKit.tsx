@@ -335,7 +335,7 @@ function OrderCheckout() {
             </div>
             <div className="checkout-summary-benefits">
               <p aria-live="polite"><Truck size={16} aria-hidden="true" />
-                {estimatedArrival ? `Estimated arrival ${estimatedArrival}` : 'Delivery estimate unavailable'}
+                {estimatedArrival ? `Estimated arrival ${estimatedArrival}` : 'Estimated delivery: 8–12 business days'}
               </p>
             </div>
           </div>

@@ -158,7 +158,7 @@ it('starts with contact details, keeps the preview visible, and has no shipping 
   expect(container.querySelector('[data-testid="model-preview"]')).toBe(preview);
 });
 
-it('updates the truck row with the selected destination and clears dates when no quote exists', async () => {
+it('updates the truck row with the selected destination and falls back to business days', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-19T22:00:00Z'));
   try {
@@ -177,7 +177,7 @@ it('updates the truck row with the selected destination and clears dates when no
     await selectCountry('CN');
     expect(summaryText()).toBe('Estimated arrival Dec 10 – 13');
     await selectCountry('AQ');
-    expect(summaryText()).toBe('Delivery estimate unavailable');
+    expect(summaryText()).toBe('Estimated delivery: 8–12 business days');
   } finally {
     vi.useRealTimers();
   }

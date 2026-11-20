@@ -15,7 +15,7 @@ English transit ranges returned by Brickwith's checkout quote service on
 November 19, 2026. The sample was one 478-piece kit with 782.257 g of parts.
 All 249 checkout destinations were queried by country with the same kit weight.
 Brickwith returned at least one method for 152 destinations. The remaining 97
-display “Delivery estimate unavailable.” The same quote was verified against
+use the “Estimated delivery: 8–12 business days” fallback. The same quote was verified against
 the supplier checkout for the sample's US shipment. Other addresses or parcel
 weights may still receive a quote.
 
