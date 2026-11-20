@@ -11,8 +11,8 @@ import { BillingHeader } from '../components/BillingHeader';
 import { PLAN_GENERATIONS } from '../utils/planDisplay';
 import { LEGACY_MASTER_PLAN, type BillingAccount } from '../services/billingApi';
 
-const paymentConfirmed = (account: BillingAccount | null) => account?.purchase_confirmed !== undefined
-  ? account.purchase_confirmed : Boolean(account?.has_subscription && account.subscription_status === 'active');
+const paymentConfirmed = (account: BillingAccount | null) => account?.purchase_confirmed
+  ?? account?.subscription_checkout_confirmed ?? Boolean(account?.has_subscription && account.subscription_status === 'active');
 
 export default function BillingPage() {
   const { user } = useAuth();
@@ -22,6 +22,18 @@ export default function BillingPage() {
   const [confirmed, setConfirmed] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const attempted = useRef('');
+  const trackedTransaction = useRef<string>();
+  const confirmCheckout = (result: BillingAccount | null) => {
+    if (!paymentConfirmed(result)) return;
+    const transactionId = result?.subscription_transaction_id;
+    if (transactionId && trackedTransaction.current !== transactionId) {
+      trackedTransaction.current = transactionId;
+      const page = window as Window & { dataLayer?: unknown[] };
+      (page.dataLayer ??= []).push({ event: 'subscription_confirmed', transaction_id: transactionId });
+    }
+    setConfirmed(true);
+    setParams({}, { replace: true });
+  };
   useEffect(() => {
     const key = `${user?.id}:${sessionId ?? 'portal'}`;
     if (!user || attempted.current === key) return;
@@ -31,10 +43,9 @@ export default function BillingPage() {
     void sync(sessionId).then(result => {
       if (!active) return;
       setConfirming(false);
-      if (sessionId && paymentConfirmed(result)) {
-        setConfirmed(true); setParams({}, { replace: true });
-        posthog.capture(result?.purchase_confirmed ? 'billing_credit_pack_confirmed' : 'billing_subscription_confirmed', { plan_key: result?.plan_key });
-      }
+      if (!sessionId) return;
+      confirmCheckout(result);
+      if (paymentConfirmed(result)) posthog.capture(result?.purchase_confirmed ? 'billing_credit_pack_confirmed' : 'billing_subscription_confirmed', { plan_key: result?.plan_key });
     });
     return () => { active = false; };
   }, [user?.id, sessionId]);
@@ -48,7 +59,7 @@ export default function BillingPage() {
     {error && (enabled || account) && <div className="billing-error" role="alert">{error} <button onClick={() => { posthog.capture('billing_retry_clicked'); void refresh(); }}>Try again</button></div>}
     {confirmed && <p className="billing-confirmation" role="status">You’re all set. Your payment is confirmed and your credits are ready.</p>}
     {confirming && <p role="status">Confirming your payment and credits…</p>}
-    {!confirming && sessionId && !confirmed && !error && <p role="status">Still waiting for payment confirmation. Your credits will appear after Stripe confirms payment. <button className="billing-text-link" onClick={() => { posthog.capture('billing_confirmation_retry_clicked'); void sync(sessionId).then(result => { if (paymentConfirmed(result)) { setConfirmed(true); setParams({}, { replace: true }); } }); }}>Check again</button></p>}
+    {!confirming && sessionId && !confirmed && !error && <p role="status">Still waiting for payment confirmation. Your credits will appear after Stripe confirms payment. <button className="billing-text-link" onClick={() => { posthog.capture('billing_confirmation_retry_clicked'); void sync(sessionId).then(confirmCheckout); }}>Check again</button></p>}
     {!user ? <section className="billing-account-card"><h2>Your credits live with your account.</h2><p>Sign in to see your balance, receipts, and subscription.</p><button className="billing-primary" onClick={signIn}>Sign in</button></section>
       : !enabled && !account ? <p className="billing-launch-notice" role="status">Subscription checkout is temporarily unavailable.</p>
       : loading || !account ? <p role="status">{error ? 'Your account details will appear when billing reconnects.' : 'Loading your credits…'}</p> : <>

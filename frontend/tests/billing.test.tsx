@@ -32,7 +32,7 @@ let container: HTMLDivElement;
 let root: ReturnType<typeof createRoot>;
 let account: BillingAccount;
 function CheckoutLocation() { const location = useLocation(); return <output data-checkout-location>{location.pathname}{location.search}</output>; }
-const render = async (children: React.ReactNode) => act(async () => root.render(<HelmetProvider><MemoryRouter><BillingProvider>{children}<BillingOverlays /><CheckoutLocation /></BillingProvider></MemoryRouter></HelmetProvider>));
+const render = async (children: React.ReactNode, path = '/') => act(async () => root.render(<HelmetProvider><MemoryRouter initialEntries={[path]}><BillingProvider>{children}<BillingOverlays /><CheckoutLocation /></BillingProvider></MemoryRouter></HelmetProvider>));
 const click = async (text: string) => act(async () => {
   const button = [...container.querySelectorAll('button')].find(b => b.textContent?.includes(text));
   expect(button, text).toBeDefined(); button!.click();
@@ -287,6 +287,43 @@ it('shows no active plan instead of a Free plan for an unsubscribed account', as
   expect(container.querySelector('.billing-plan-allowance')?.textContent).toContain('Subscribe');
   await click('Explore plans');
   expect(container.querySelector('dialog')?.open).toBe(true);
+});
+
+it('pushes the verified subscription transaction to GTM even when confirmation arrives on retry', async () => {
+  const dataLayer: unknown[] = [];
+  vi.stubGlobal('dataLayer', dataLayer);
+  const active = { ...account, plan_key: 'builder' as const, has_subscription: true, subscription_status: 'active' };
+  vi.mocked(billingApi.sync)
+    .mockResolvedValueOnce({ ...active, subscription_checkout_confirmed: false })
+    .mockResolvedValueOnce({ ...active, subscription_checkout_confirmed: true, subscription_transaction_id: 'in_first' });
+  await render(<BillingPage />, '/billing?checkout=success&session_id=cs_test');
+  expect(dataLayer).toEqual([]);
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toContain('session_id=cs_test');
+
+  await click('Check again');
+  expect(dataLayer).toEqual([{ event: 'subscription_confirmed', transaction_id: 'in_first' }]);
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/billing');
+});
+
+it.each([
+  { purchase_confirmed: true },
+  { subscription_checkout_confirmed: true },
+])('keeps checkout confirmations without a verified initial invoice out of GTM (%j)', async confirmation => {
+  const dataLayer: unknown[] = [];
+  vi.stubGlobal('dataLayer', dataLayer);
+  vi.mocked(billingApi.sync).mockResolvedValueOnce({ ...account, ...confirmation });
+  await render(<BillingPage />, '/billing?checkout=success&session_id=cs_test');
+  expect(container.querySelector('.billing-confirmation')).not.toBeNull();
+  expect(dataLayer).toEqual([]);
+});
+
+it('pushes the verified transaction on the first billing sync and clears the checkout URL', async () => {
+  const dataLayer: unknown[] = [];
+  vi.stubGlobal('dataLayer', dataLayer);
+  vi.mocked(billingApi.sync).mockResolvedValueOnce({ ...account, subscription_checkout_confirmed: true, subscription_transaction_id: 'in_first' });
+  await render(<BillingPage />, '/billing?checkout=success&session_id=cs_test');
+  expect(dataLayer).toEqual([{ event: 'subscription_confirmed', transaction_id: 'in_first' }]);
+  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/billing');
 });
 
 it('pauses new sales at capacity while keeping cancellation accessible', async () => {
