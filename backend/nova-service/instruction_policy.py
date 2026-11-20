@@ -14,7 +14,7 @@ import tempfile
 import uuid
 from pathlib import Path
 
-PUBLICATION_VERSION = 2
+PUBLICATION_VERSION = 3
 MAX_MODEL_BYTES = 16 * 1024 * 1024
 TOOLKIT_ROOT = Path('/opt/ldraw-nova')
 
@@ -121,7 +121,9 @@ def install_instruction_policy(tools, settings):
             'name': 'check_assembly',
             'description': (
                 'Run the independent publication geometry and instruction checks on a self-contained '
-                'output MPD or LDR without publishing it. For mechanical builds, test a small working '
+                'output MPD or LDR without publishing it. Check inherited placements on edits, including '
+                'color changes. Seat backs and dish rims need clearance beyond their mounting studs. '
+                'For mechanical builds, test a small working '
                 'assembly first (track, sprocket, axle and frame, or boom pivot). If it fails, inspect '
                 'the reported parts and redesign their mounts using supported connectors or a reference '
                 'mechanism. Test the joined assemblies before adding bodywork. A pass checks the static '
@@ -142,7 +144,8 @@ def install_instruction_policy(tools, settings):
                 report = dict(report, draft_error='The draft archive could not be created.')
             return tools.ToolResult(json.dumps({**report, 'reason': report.get('error'), 'error':
                 'Publication blocked: repair invalid, overlapping, disconnected or blocked pieces, then retry publish_model. '
-                'Use the full connector report to verify every remaining piece. A warning about missing '
+                'Move, rotate or replace intersecting pieces and rerun check_assembly on the whole model. '
+                'Use the connector report for disconnected pieces. A warning about missing '
                 'metadata is not evidence of a connection.'}))
         # The existing publisher reads the same captured bytes that were checked.
         # Preserve its palette, validation, render and BOM workflow.
@@ -156,7 +159,7 @@ def install_instruction_policy(tools, settings):
     schema['function']['description'] += (
         ' Publication requires complete connector evidence and a connected instruction insertion sequence. '
         'Use check_assembly on the mechanical core before detailing it. Repair and recheck each joint. '
-        'Curved tiles and side studs need clearance: an attached part can still intersect solid plastic. '
+        'Check the whole model on edits. Allow clearance for seat backs, dish rims, curved tiles and side studs. '
         'Validation errors cannot be waived by visual review.')
     tools.TOOLS['publish_model'] = (schema, checked_publish)
     tools.t_publish_model = checked_publish

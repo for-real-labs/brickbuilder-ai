@@ -13,7 +13,7 @@ from src.utils.generation_budget import BUDGET_ERROR, PROVIDER_BILLING_ERROR
 from src.utils.prompt_parts_limit import PARTS_BUDGET_GUIDANCE
 
 
-VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'parts_catalog_version': 1, 'instruction_plan_version': 4, 'instruction_publication_version': 2}
+VERSIONS = {'toolkit': 'a' * 40, 'web': 'b' * 40, 'generation_cost_limit_usd': 20, 'parts_catalog_version': 1, 'instruction_plan_version': 4, 'instruction_publication_version': 3}
 
 
 @pytest.mark.parametrize('versions,error', [({}, 'cost limit'),
@@ -413,7 +413,7 @@ def test_instruction_failure_returns_repair_feedback_without_runtime_source():
     asyncio.run(run())
 
 
-@pytest.mark.parametrize('version', [None, 1])
+@pytest.mark.parametrize('version', [None, 1, 2])
 def test_old_runtime_cannot_start_a_build_without_publication_instruction_checks(version):
     async def run():
         async with NovaService(httpx.AsyncClient(base_url='http://nova')) as service:

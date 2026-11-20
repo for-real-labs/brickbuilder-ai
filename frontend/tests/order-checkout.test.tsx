@@ -147,7 +147,8 @@ it('starts with contact details, keeps the preview visible, and has no shipping 
   expect(container.textContent).not.toContain('Stripe');
   expect(container.textContent).not.toMatch(/regular kit/i);
   expect(container.querySelector('.checkout-summary-model')?.textContent).toContain('240 pieces');
-  expect(container.querySelector('.checkout-summary-benefits')?.textContent).toContain('Estimated delivery: 8–12 business days');
+  expect(container.querySelector('.checkout-summary-benefits p[aria-live="polite"]')?.textContent).toMatch(/Estimated arrival [A-Z][a-z]{2}/);
+  expect(container.querySelector('.checkout-summary-benefits svg[aria-hidden="true"]')).not.toBeNull();
   const preview = container.querySelector('[data-testid="model-preview"]')!;
   expect(preview.getAttribute('data-controls')).toBe('false');
   expect(preview.closest('#checkout-price-breakdown')).toBeNull();
@@ -187,6 +188,31 @@ it('requires a state or province only for destinations that require it', async (
   expect(create).toHaveBeenCalledWith(expect.objectContaining({
     shippingAddress: getShippingContact({ ...details, region: '' }, 'GB'),
   }), 'auth-token');
+});
+
+it('updates the truck row with the selected destination and falls back to business days', async () => {
+  vi.useFakeTimers({ toFake: ['Date'] });
+  vi.setSystemTime(new Date('2026-11-19T22:00:00Z'));
+  try {
+    await renderOrder();
+    const summary = container.querySelector('.checkout-summary-benefits')!;
+    const country = container.querySelector<HTMLSelectElement>('select[name="country"]')!;
+    const selectCountry = (value: string) => act(async () => {
+      country.value = value;
+      country.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    const summaryText = () => summary.textContent?.replaceAll(/\s/g, ' ').trim();
+
+    expect(summaryText()).toBe('Estimated arrival Dec 16 – 23');
+    await selectCountry('GB');
+    expect(summaryText()).toBe('Estimated arrival Dec 16 – 20');
+    await selectCountry('CN');
+    expect(summaryText()).toBe('Estimated arrival Dec 10 – 13');
+    await selectCountry('AQ');
+    expect(summaryText()).toBe('Estimated delivery: 8–12 business days');
+  } finally {
+    vi.useRealTimers();
+  }
 });
 
 it('retains country and optional apartment details when editing after payment', async () => {

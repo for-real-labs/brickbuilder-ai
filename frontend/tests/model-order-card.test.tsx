@@ -23,7 +23,7 @@ it('shows the kit subtotal and labels shipping separately', () => {
   expect(priceRow.children[1]?.textContent).toBe('USD + shipping');
   expect(container.textContent).not.toContain('BrickBuilder Launch Discount');
   expect(container.querySelector('.model-mobile-order strong')?.textContent).toBe('$44.77');
-  expect(container.textContent).toContain('8–12 business days');
+  expect(container.textContent).toContain('Delivery dates at checkout');
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order my kit"]')!.click());
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Order this model"]')!.click());
   expect(order.mock.calls).toEqual([['card'], ['mobile_bar']]);

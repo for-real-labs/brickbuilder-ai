@@ -302,10 +302,10 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     expect(colors.getAttribute('aria-pressed')).toBe('false');
     expect(getComputedStyle(colors).top).toBe('64px');
     expect(getComputedStyle(colors).minHeight).toBe('44px');
-    // Keep the model toggle below the viewer, clear of the assembly close-up.
-    const toolbar = toggle.closest('.landing-model-bottom-toolbar')!;
-    expect(toolbar.previousElementSibling).toBe(container.querySelector('.landing-model-workspace'));
-    expect(['absolute', 'fixed']).not.toContain(getComputedStyle(toolbar).position);
+    const back = button('Back to model');
+    expect(back.nextElementSibling).toBe(button('Parts list'));
+    expect(back.closest('.instructions-step-heading')).not.toBeNull();
+    expect(toggle.isConnected).toBe(false);
     act(() => button('Next').click());
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1&instructions=1&step=2');
@@ -313,11 +313,11 @@ it('opens instructions from the landing footer and preserves steps, colors and d
     expect(colors.textContent).toBe('Hide colors');
     expect(colors.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.getAttribute('data-highlight')).toBe('false');
-    act(() => toggle.click());
+    act(() => back.click());
     expect(container.querySelector('[data-testid="model-viewer"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="instructions-viewer"]')).toBeNull();
     expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&exact=1');
-    act(() => toggle.click());
+    act(() => button('Show instructions').click());
     expect(get).toHaveBeenCalledTimes(1);
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.textContent).toBe('Step 2');
     expect(container.querySelector('[data-testid="instructions-viewer"]')?.getAttribute('data-highlight')).toBe('false');
@@ -356,9 +356,9 @@ it('uses left and right arrows only while landing instructions are visible and f
     press('ArrowLeft', container.querySelector('input[aria-label="Instruction step"]')!);
     press('ArrowLeft', container.querySelector('textarea')!);
     expect(step()).toBe('2');
-    act(() => toggle.click());
+    act(() => container.querySelector<HTMLButtonElement>('.instructions-heading-actions button')!.click());
     press('ArrowLeft');
-    act(() => toggle.click());
+    act(() => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
     expect(step()).toBe('2');
     press('ArrowLeft');
     expect(step()).toBe('1');

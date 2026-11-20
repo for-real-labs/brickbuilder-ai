@@ -53,11 +53,12 @@
 .instructions-embedded .instructions-part-row { font-size: 11px; }
 
 .instructions-step-heading { gap: 8px; flex-wrap: wrap; }
-.instructions-parts-toggle { min-height: 44px; padding: 0 14px; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #334155; font-size: 12px; font-weight: 600; cursor: pointer; }
-.instructions-parts-toggle:hover, .instructions-parts-toggle[aria-pressed="true"] { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
-.instructions-parts-toggle:focus-visible { outline: 2px solid #f44336; outline-offset: 2px; }
+.instructions-heading-actions { display: flex; align-items: center; gap: 6px; }
+.instructions-heading-button { min-height: 44px; padding: 0 14px; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; color: #334155; font-size: 12px; font-weight: 600; cursor: pointer; }
+.instructions-heading-button:hover:enabled, .instructions-heading-button[aria-pressed="true"] { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
+.instructions-heading-button:focus-visible { outline: 2px solid #f44336; outline-offset: 2px; }
 .instructions-embedded .instructions-parts[data-all-parts] { max-height: 110px; }
 .landing-model-panel[data-expanded="true"] .instructions-parts[data-all-parts] { max-height: 180px; }
-@media (min-width: 1024px) {
+@media (min-width: 900px) {
   .landing-model-panel[data-view="instructions"] .instructions-parts[data-all-parts] { max-height: none; }
 }
