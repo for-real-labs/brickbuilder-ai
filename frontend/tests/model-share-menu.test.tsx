@@ -11,8 +11,6 @@ let root: ReturnType<typeof createRoot>, container: HTMLDivElement;
 const writeText = vi.fn();
 beforeEach(() => {
   auth.user = null;
-  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value() { this.open = true; } });
-  Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value() { this.open = false; } });
   writeText.mockReset().mockResolvedValue(undefined);
   Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { writeText } });
   container = document.createElement('div'); document.body.appendChild(container); root = createRoot(container);
@@ -68,11 +66,17 @@ it('focuses actions, closes with Escape or outside click, and restores trigger f
   expect(container.querySelector('[role="dialog"]')).toBeNull();
 });
 
-it('closes after a social link and resets the menu when navigating to another revision', () => {
+it('leaves the social anchors available to the browser and resets the menu when the revision changes', () => {
   open();
-  act(() => container.querySelector('a')!.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
-  expect(container.querySelector('[role="dialog"]')).toBeNull();
-  open();
+  const [facebook, twitter] = container.querySelectorAll('a');
+  for (const [anchor, destination] of [[facebook, 'facebook'], [twitter, 'twitter']] as const) {
+    expect(anchor.target).toBe('_blank');
+    act(() => anchor.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true })));
+    expect(anchor.isConnected).toBe(true);
+    expect(posthog.capture).toHaveBeenCalledWith('generated_model_share_clicked', {
+      generation_id: 'revision & 2', destination,
+    });
+  }
   act(() => root.render(<ModelShareMenu generationId="next" modelName="Next" />));
   expect(container.querySelector('[role="dialog"]')).toBeNull();
   open();
@@ -98,24 +102,45 @@ it('closes when keyboard focus moves to an outside control', () => {
   outside.remove();
 });
 
-it.each(['missing', 'denied'])('copies using the selected-input fallback when clipboard access is %s', async mode => {
-  if (mode === 'missing') Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
-  else writeText.mockRejectedValue(new Error('Denied'));
-  const legacyCopy = vi.fn(() => true);
+it.each(['Copy link', 'Instagram'])('writes the exact link with the selected-input fallback for %s', async label => {
+  Object.defineProperty(navigator, 'clipboard', { configurable: true, value: undefined });
+  const setData = vi.fn();
+  const legacyCopy = vi.fn(() => {
+    const input = container.querySelector('input')!;
+    expect(document.activeElement).toBe(input);
+    expect(input.selectionStart).toBe(0);
+    expect(input.selectionEnd).toBe(input.value.length);
+    const event = new Event('copy', { bubbles: true, cancelable: true });
+    Object.defineProperty(event, 'clipboardData', { value: { setData } });
+    input.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(true);
+    return true;
+  });
   Object.defineProperty(document, 'execCommand', { configurable: true, value: legacyCopy });
   try {
     open();
-    await act(async () => button('Instagram').click());
+    await act(async () => button(label).click());
     expect(legacyCopy).toHaveBeenCalledWith('copy');
-    const input = container.querySelector('input')!;
-    expect(input.selectionStart).toBe(0);
-    expect(input.selectionEnd).toBe(input.value.length);
+    expect(setData).toHaveBeenCalledWith('text/plain', container.querySelector('input')!.value);
     expect(container.querySelector('[role="status"]')!.textContent).toContain('Link copied');
+    expect(document.activeElement).toBe(button(label === 'Instagram' ? 'Copy link' : 'Link copied'));
   } finally {
     Reflect.deleteProperty(document, 'execCommand');
   }
 });
 
+it('offers manual copying when the command reports success without a copy event', async () => {
+  writeText.mockRejectedValue(new Error('Permission denied'));
+  Object.defineProperty(document, 'execCommand', { configurable: true, value: vi.fn(() => true) });
+  try {
+    open();
+    await act(async () => button('Copy link').click());
+    expect(container.querySelector('[role="status"]')!.textContent).toContain('Select and copy');
+    expect(document.activeElement).toBe(container.querySelector('input'));
+  } finally {
+    Reflect.deleteProperty(document, 'execCommand');
+  }
+});
 
 it('adds the signed-in sender ID to copied and social links', async () => {
   auth.user = { id: '11111111-1111-4111-8111-111111111111' };
@@ -130,7 +155,7 @@ it('adds the signed-in sender ID to copied and social links', async () => {
   expect(writeText).toHaveBeenCalledWith(url);
   await act(async () => button('Copy link').click());
   expect(writeText).toHaveBeenCalledWith(url);
-  expect(container.querySelector('dialog')?.open).toBe(false);
+  expect(container.querySelector('[role="status"]')?.textContent).toBe('Link copied!');
 });
 
 it('never adds a referral for guests, including anonymous Auth users', () => {
@@ -162,19 +187,15 @@ it('shows the referral badge on the closed Share button and opens sharing when c
   expect(posthog.capture).toHaveBeenCalledWith('generated_model_referral_badge_clicked', { authenticated: false });
 });
 
-it('warns guests after copying or clicking the Model link and allows either dismiss control', async () => {
+it('keeps guest copy feedback and manual selection visible alongside the referral explanation', async () => {
   open();
-  const notice = container.querySelector<HTMLDialogElement>('.share-referral-notice')!;
-  expect(notice.open).toBe(false);
   await act(async () => button('Copy link').click());
   expect(writeText).toHaveBeenCalledOnce();
-  expect(notice.open).toBe(true);
-  expect(notice.textContent).toContain('You must be logged in to receive credits from sharing.');
-  act(() => button('Dismiss').click());
-  expect(notice.open).toBe(false);
-  act(() => container.querySelector('input')!.click());
-  expect(notice.open).toBe(true);
-  act(() => notice.querySelector<HTMLButtonElement>('[aria-label="Close sharing credits notice"]')!.click());
-  expect(notice.open).toBe(false);
-  expect(container.querySelector('[aria-label="Share model"]')).not.toBeNull();
+  expect(container.querySelector('[role="status"]')?.textContent).toBe('Link copied!');
+  const input = container.querySelector('input')!;
+  act(() => { input.focus(); input.click(); });
+  expect(document.activeElement).toBe(input);
+  expect(input.selectionStart).toBe(0);
+  expect(input.selectionEnd).toBe(input.value.length);
+  expect(container.querySelector('[aria-label="Share model"]')?.textContent).toContain('Sign in before sharing to earn credits.');
 });

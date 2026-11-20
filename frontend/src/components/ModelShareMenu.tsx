@@ -1,10 +1,9 @@
 import { useAuth } from '../contexts/AuthContext';
 import React, { useEffect, useId, useRef, useState } from 'react';
-import { Check, ChevronDown, Coins, Facebook, Instagram, Link, Share2, X } from 'lucide-react';
+import { Check, ChevronDown, Coins, Facebook, Instagram, Link, Share2 } from 'lucide-react';
 import posthog from 'posthog-js';
-import { copyShareLink } from '../utils/copyShareLink';
+import { copyShareLink, selectShareLink } from '../utils/copyShareLink';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
-import './billing.css';
 
 interface Props { generationId: string; modelName: string; placement?: 'above' | 'below' }
 
@@ -17,30 +16,18 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
   const container = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const notice = useRef<HTMLDialogElement>(null);
   const signedIn = Boolean(user && !user.is_anonymous);
   const shareUrl = new URL(getGeneratedModelPath(generationId, true), window.location.origin);
   shareUrl.pathname = '/generated-model';
   shareUrl.searchParams.set('card', '3');
-  if (user && !user.is_anonymous) shareUrl.searchParams.set('ref', user.id);
+  if (signedIn && user) shareUrl.searchParams.set('ref', user.id);
   const url = shareUrl.href;
   const text = `Check out ${modelName} on BrickBuilder!`;
   const rowClass = 'flex min-h-11 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-slate-700 hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-500';
   const track = (destination: string) => posthog.capture('generated_model_share_clicked', { generation_id: generationId, destination });
 
-  const remindGuest = (source: 'url' | 'instagram' | 'select_link') => {
-    if (signedIn || !notice.current || notice.current.open) return;
-    notice.current.showModal();
-    posthog.capture('generated_model_referral_login_notice_opened', { generation_id: generationId, source });
-  };
-  const dismissNotice = (source: 'dismiss' | 'close' | 'escape') => {
-    notice.current?.close();
-    posthog.capture('generated_model_referral_login_notice_dismissed', { generation_id: generationId, source });
-  };
-
   useEffect(() => {
     setOpen(false); setMessage(''); setCopied(false);
-    if (notice.current?.open) notice.current.close();
   }, [generationId, user?.id, signedIn]);
   useEffect(() => {
     if (!open) return;
@@ -65,12 +52,14 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
     track(destination);
     try {
       await copyShareLink(url, input.current);
-      setCopied(true);
+      setCopied(destination === 'url');
       setMessage(destination === 'instagram' ? 'Link copied. Paste it into an Instagram message or story link sticker.' : 'Link copied!');
-      remindGuest(destination);
     } catch {
       setCopied(false);
-      input.current?.focus(); input.current?.select();
+      if (input.current) {
+        selectShareLink(input.current);
+        input.current.scrollIntoView?.({ block: 'nearest' });
+      }
       setMessage('Select and copy the link below, then paste it where you want to share.');
     }
   };
@@ -78,7 +67,8 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
   return <div ref={container} className="relative shrink-0" onKeyDown={event => {
     if (event.key === 'Escape') {
       event.stopPropagation();
-      if (!notice.current?.open) { setOpen(false); trigger.current?.focus(); }
+      setOpen(false);
+      trigger.current?.focus();
     }
   }}>
     <button ref={trigger} type="button" aria-expanded={open} aria-controls={menuId} aria-haspopup="dialog"
@@ -100,29 +90,18 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
       <button type="button" data-share-action className={rowClass} onClick={() => void copy('url')}>
         {copied ? <Check size={18} aria-hidden="true" /> : <Link size={18} aria-hidden="true" />} {copied ? 'Link copied' : 'Copy link'}
       </button>
-      <a className={rowClass} href={`https://www.facebook.com/sharer/sharer.php?${new URLSearchParams({ u: url })}`} target="_blank" rel="noopener noreferrer" onClick={() => { track('facebook'); setOpen(false); }}>
+      <a className={rowClass} href={`https://www.facebook.com/sharer/sharer.php?${new URLSearchParams({ u: url })}`} target="_blank" rel="noopener noreferrer" onClick={() => track('facebook')}>
         <Facebook size={18} aria-hidden="true" /> Facebook
       </a>
       <button type="button" className={rowClass} onClick={() => void copy('instagram')}><Instagram size={18} aria-hidden="true" /> Instagram <span className="ml-auto text-xs text-slate-400">Copy link</span></button>
-      <a className={rowClass} href={`https://twitter.com/intent/tweet?${new URLSearchParams({ url, text })}`} target="_blank" rel="noopener noreferrer" onClick={() => { track('twitter'); setOpen(false); }}>
+      <a className={rowClass} href={`https://twitter.com/intent/tweet?${new URLSearchParams({ url, text })}`} target="_blank" rel="noopener noreferrer" onClick={() => track('twitter')}>
         <span aria-hidden="true" className="w-[18px] text-center font-bold">𝕏</span> X (Twitter)
       </a>
       <div className="mt-1 border-t border-slate-100 px-2 pt-3 pb-1">
         <label htmlFor={`${menuId}-url`} className="mb-1 block text-xs font-medium text-slate-500">Model link</label>
-        <input ref={input} id={`${menuId}-url`} readOnly value={url} onFocus={event => event.currentTarget.select()} onClick={() => { track('select_link'); remindGuest('select_link'); }} className="w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-xs text-slate-600" />
+        <input ref={input} id={`${menuId}-url`} readOnly value={url} onFocus={event => event.currentTarget.select()} onClick={() => track('select_link')} className="w-full min-w-0 rounded-lg border border-slate-200 bg-slate-50 px-2 py-2 text-base text-slate-600 sm:text-xs" />
         {message && <p role="status" className="mt-2 text-xs leading-relaxed text-slate-600">{message}</p>}
       </div>
     </div>}
-    <dialog ref={notice} className="billing-dialog billing-feature-dialog share-referral-notice"
-      aria-labelledby={`${menuId}-notice-title`} aria-describedby={`${menuId}-notice-text`}
-      onCancel={event => { event.preventDefault(); dismissNotice('escape'); }}>
-      <button type="button" className="billing-close" aria-label="Close sharing credits notice" onClick={() => dismissNotice('close')}><X size={20} aria-hidden="true" /></button>
-      <div className="billing-feature-icon"><Coins size={20} aria-hidden="true" /></div>
-      <h2 id={`${menuId}-notice-title`}>Sharing credits</h2>
-      <p id={`${menuId}-notice-text`}>You must be logged in to receive credits from sharing.</p>
-      <div className="billing-feature-actions">
-        <button type="button" className="billing-secondary" autoFocus onClick={() => dismissNotice('dismiss')}>Dismiss</button>
-      </div>
-    </dialog>
   </div>;
 }
