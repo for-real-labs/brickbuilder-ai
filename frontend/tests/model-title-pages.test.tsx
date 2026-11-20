@@ -337,6 +337,20 @@ const pendingDashboardEdit = {
   previous_completed_preview_image_url: '/completed-v2.png',
 };
 
+it.each([
+  { name: '  Brick Space Shuttle  ', title: 'Brick Space Shuttle' },
+  { name: undefined, title: 'Untitled Model' },
+  { name: null, title: 'Untitled Model' },
+  { name: '   ', title: 'Untitled Model' },
+])('uses $title on dashboard cards when the saved name is $name', async ({ name, title }) => {
+  await act(async () => root.render(<MemoryRouter><GenerationCard
+    g={{ ...pendingDashboardEdit, status: 'completed', name }} onView={vi.fn()}
+  /></MemoryRouter>));
+  expect(container.querySelector('h3')?.textContent).toBe(title);
+  expect(container.querySelector('img')?.getAttribute('alt')).toBe(title);
+  expect(container.textContent).not.toContain(pendingDashboardEdit.prompt);
+});
+
 it.each(['queued', 'started', 'processing', 'ldr_processing', 'resizing'])(
   'keeps the completed preview and model actions available during %s', async status => {
     const onView = vi.fn();

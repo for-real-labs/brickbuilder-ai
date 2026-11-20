@@ -162,8 +162,7 @@ export const GenerationCard: React.FC<{
   const [editsError, setEditsError] = useState<string | null>(null);
   const [versionAction, setVersionAction] = useState<ModelVersionAction | null>(null);
 
-  // Truncate prompt for display
-  const displayPrompt = g.prompt.length > 60 ? g.prompt.slice(0, 60) + "..." : g.prompt;
+  const modelName = g.name?.trim() || "Untitled Model";
   
   const isProcessing = isGenerationActive(g.status);
   const completedGenerationId = isProcessing ? g.previous_completed_generation_id : null;
@@ -221,7 +220,7 @@ export const GenerationCard: React.FC<{
           {mainImage ? (
             <img
               src={mainImage}
-              alt={g.prompt}
+              alt={modelName}
               className="absolute inset-0 w-full h-full object-contain"
               draggable={false}
             />
@@ -248,7 +247,7 @@ export const GenerationCard: React.FC<{
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div className="flex-1 min-w-0">
-              <h3 className="font-semibold text-sm sm:text-base text-slate-900 leading-tight line-clamp-2">{displayPrompt}</h3>
+              <h3 className="font-semibold text-sm sm:text-base text-slate-900 leading-tight break-words line-clamp-2">{modelName}</h3>
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-600 mt-1">
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
