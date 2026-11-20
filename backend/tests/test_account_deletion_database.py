@@ -5,6 +5,7 @@ import pytest
 from test_billing_credits import server
 
 MIGRATION = Path(__file__).parents[2]/'supabase/migrations/20261028020000_account_deletion.sql'
+FILE_LOOKUP_MIGRATION = MIGRATION.with_name('20261119050000_bound_account_deletion_file_lookup.sql')
 
 @pytest.fixture
 def deletion_db(server):
@@ -19,6 +20,7 @@ def deletion_db(server):
             db.execute(f'CREATE TABLE {table}(email text)')
         db.execute('CREATE TABLE billing_credit_purchases(user_id uuid)')
         db.execute(MIGRATION.read_text())
+        db.execute(FILE_LOOKUP_MIGRATION.read_text())
         yield db
 
 
@@ -53,5 +55,43 @@ def test_active_builds_block_before_tombstone_and_public_cannot_erase(deletion_d
     db.execute('GRANT USAGE ON SCHEMA public TO authenticated; SET ROLE authenticated')
     try:
         with pytest.raises(psycopg.errors.InsufficientPrivilege): db.execute('SELECT account_deletion_data(%s)',(uid,))
+        with pytest.raises(psycopg.errors.InsufficientPrivilege): db.execute('SELECT * FROM account_deletion_files(%s)',(uid,))
         with pytest.raises(psycopg.errors.InsufficientPrivilege): db.execute('SELECT * FROM account_deletions')
     finally: db.execute('RESET ROLE')
+
+
+def test_file_lookup_uses_exact_prefixes_preserves_purchased_paths_and_pages(deletion_db):
+    db = deletion_db
+    owner, other, family, revision, purchased, request = [str(uuid4()) for _ in range(6)]
+    db.execute("INSERT INTO generations(id,generation_id,user_id,status) VALUES (%s,%s,%s,'completed'),(%s,NULL,%s,'completed')",
+               (revision, family, owner, purchased, other))
+    db.execute('INSERT INTO orders VALUES (%s)', (purchased,))
+    db.execute('INSERT INTO change_requests VALUES (%s,%s)', (request, owner))
+    db.execute("""INSERT INTO storage.objects(bucket_id,name) SELECT 'generation-output', %s || '/build-' || i
+        FROM generate_series(1, 501) i""", (family,))
+    expected = {('generation-output', f'{family}/build-{i}') for i in range(1, 502)}
+    extras = [
+        ('generations', f'generations/{revision}/model.ldr', None),
+        ('change-request-images', f'{request}/reference.png', None),
+        ('avatars', 'custom/path.png', owner),
+    ]
+    expected.update((bucket, name) for bucket, name, _ in extras)
+    protected = [
+        ('generations', f'generations/{purchased}/order.ldr', owner),
+        ('generation-output', f'{purchased}/instructions.ldr', owner),
+        ('generation-output', f'{family}0/stays.ldr', None),
+        ('avatars', f'{request}/other.png', other),
+    ]
+    for row in extras + protected:
+        db.execute('INSERT INTO storage.objects(bucket_id,name,owner_id) VALUES (%s,%s,%s)', row)
+
+    def files():
+        return db.execute('SELECT * FROM account_deletion_files(%s)', (owner,)).fetchall()
+
+    assert files() == []
+    db.execute('SELECT account_deletion_prepare(%s)', (owner,))
+    first = files()
+    assert len(first) == 500 and set(first) <= expected
+    with db.cursor() as cursor:
+        cursor.executemany('DELETE FROM storage.objects WHERE bucket_id=%s AND name=%s', first)
+    assert set(files()) == expected - set(first)
