@@ -131,7 +131,7 @@ it('opens the selected model in Studio from Tools and disables it during generat
 });
 
 vi.mock('../src/utils/objectExport', () => ({ downloadObject: vi.fn() }));
-it.each([['obj', 'Download OBJ'], ['glb', 'Download GLB'], ['stl', 'Download STL']] as const)('exports %s in the 3D objects section', async (format, label) => {
+it.each([['obj', 'Download OBJ'], ['glb', 'Download GLB'], ['stl', 'Download STL'], ['stl-parts', 'Download separate STL parts (ZIP)']] as const)('exports %s in the 3D objects section', async (format, label) => {
   const { downloadObject } = await import('../src/utils/objectExport');
   mount(); act(() => button('Tools').click()); act(() => button('Export').click());
   expect(host.textContent).not.toContain('3D objects');

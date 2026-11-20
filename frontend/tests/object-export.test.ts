@@ -46,6 +46,46 @@ it('exports binary STL at physical millimeter scale, Z-up and on the print bed',
   expect(Math.max(...points.map(p => p[2]))).toBeCloseTo(8);
 });
 
+it('exports each placed part in its own centered STL, including parts inside submodels', async () => {
+  const packed = `0 FILE main.ldr
+0 !COLOUR Red CODE 4 VALUE #C91A09 EDGE #333333
+1 4 20 40 60 1 0 0 0 1 0 0 0 1 assembly.ldr
+1 4 -60 20 40 -1 0 0 0 1 0 0 0 1 brick.dat
+0 FILE assembly.ldr
+1 16 20 0 0 1 0 0 0 1 0 0 0 1 brick.dat
+0 FILE brick.dat
+0 !LDRAW_ORG Part
+0 BFC CERTIFY CCW
+1 16 0 0 0 1 0 0 0 1 0 0 0 1 detail.dat
+3 16 0 0 0 20 0 0 0 -20 0
+0 FILE detail.dat
+0 !LDRAW_ORG Subpart
+0 BFC CERTIFY CCW
+3 16 0 0 0 0 -20 0 0 0 10`;
+  const result = await createObjectExport(packed, '../My model', 'stl-parts');
+  expect(result.filename).toBe('My_model_parts.zip');
+  const files = unzipSync(new Uint8Array(await read(result.blob)));
+  expect(Object.keys(files)).toEqual(['1_brick.stl', '2_brick.stl']);
+  const normals: number[] = [];
+  for (const bytes of Object.values(files)) {
+    const data = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    expect(data.getUint32(80, true)).toBe(2);
+    const points = Array.from({ length: 6 }, (_, i) => {
+      const offset = 96 + Math.floor(i / 3) * 50 + (i % 3) * 12;
+      return [0, 4, 8].map(axis => data.getFloat32(offset + axis, true));
+    });
+    expect(Math.min(...points.map(point => point[0]))).toBeCloseTo(-4);
+    expect(Math.max(...points.map(point => point[0]))).toBeCloseTo(4);
+    expect(Math.min(...points.map(point => point[2]))).toBeCloseTo(0);
+    expect(Math.max(...points.map(point => point[2]))).toBeCloseTo(8);
+    // The reflection shouldn't turn the face in the XZ plane inward.
+    const faceNormals = [data.getFloat32(88, true), data.getFloat32(138, true)];
+    normals.push(faceNormals.find(normal => Math.abs(normal) > 0.9) ?? 0);
+  }
+  expect(Math.abs(normals[0])).toBeCloseTo(1);
+  expect(normals[1]).toBeCloseTo(normals[0]);
+});
+
 it('exports a self-contained GLB with materials, triangles and meter scaling', async () => {
   const result = await createObjectExport(model, 'Model', 'glb');
   const buffer = await read(result.blob);
@@ -72,4 +112,7 @@ it('exports the shipped packed house model without external part requests', asyn
   const data = new DataView(await read(result.blob));
   expect(data.getUint32(80, true)).toBeGreaterThan(100);
   expect(data.byteLength).toBe(84 + 50 * data.getUint32(80, true));
+  const archive = await createObjectExport(packed, 'House', 'stl-parts');
+  const parts = unzipSync(new Uint8Array(await read(archive.blob)));
+  expect(Object.keys(parts)).toHaveLength(packed.split(/^0 FILE parts\//m)[0].match(/^1 /gm)?.length ?? 0);
 });
