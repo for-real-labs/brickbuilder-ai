@@ -59,7 +59,6 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const lastInstructionStep = useRef<{ id: string; step: number } | null>(null);
   const [showRuler, setShowRuler] = useState(true);
   const [expanded, setExpanded] = useState(false);
-  const panel = useRef<HTMLDialogElement>(null);
   const expandButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
   const collapseRef = useRef<(source: ViewerCollapseSource) => void>(() => {});
@@ -106,18 +105,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     }
   }, [generation?.generation_id, requestedInstructionsId, featureAccess, requireFeature]);
   useEffect(() => {
-    const dialog = panel.current;
-    if (!expanded || !dialog) return;
-    const header = dialog.closest('.landing-page')?.querySelector('.landing-page-shell > header');
-    const updateTop = () => {
-      if (!header) return;
-      const pageTop = dialog.closest('.landing-page')?.getBoundingClientRect().top ?? 0;
-      dialog.style.setProperty('--landing-expanded-top', `${Math.ceil(header.getBoundingClientRect().bottom - pageTop) + 16}px`);
-    };
-    updateTop();
-    const observer = header && typeof ResizeObserver !== 'undefined' ? new ResizeObserver(updateTop) : null;
-    if (header) observer?.observe(header);
-    window.addEventListener('resize', updateTop);
+    if (!expanded) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape' && !document.querySelector('.landing-community-dialog[open], .landing-previous-edits-dialog[open]')) { event.preventDefault(); collapseRef.current('escape'); }
     };
@@ -126,10 +114,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
-      observer?.disconnect();
-      window.removeEventListener('resize', updateTop);
       document.removeEventListener('keydown', onKeyDown);
-      dialog.style.removeProperty('--landing-expanded-top');
       document.body.style.overflow = previousOverflow;
       expandButton.current?.focus();
     };
@@ -185,7 +170,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       <LdrawGenerationAnimation />
     </section>}
     {model && generation && <div className={`landing-model-layout${orderable ? ' landing-model-layout--orderable' : ''}`}>
-    <dialog ref={panel} open className="landing-model-panel"
+    <dialog open className="landing-model-panel"
       data-expanded={expanded} data-view={showingInstructions ? 'instructions' : 'model'}
       role={expanded ? 'dialog' : 'region'}
       aria-label={expanded ? (showingInstructions ? 'Expanded instructions' : 'Expanded 3D viewer') : 'Model preview'}

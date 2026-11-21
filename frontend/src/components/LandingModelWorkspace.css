@@ -68,11 +68,11 @@
 .landing-model-panel [hidden] { display: none; }
 .landing-expanded-footer { display: flex; flex-shrink: 0; justify-content: center; padding-top: 12px; }
 .landing-view-back { border-color: #fecaca; background: #fff; color: #b91c1c; }
-.landing-model-panel[data-expanded="true"] { position: fixed; z-index: 50; inset: var(--landing-expanded-top, 80px) 0 0; display: flex; flex-direction: column; width: 100%; height: auto; padding: 12px max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); overflow: hidden; background: #f8fafc; }
+.landing-model-panel[data-expanded="true"] { position: fixed; z-index: 50; inset: 0; display: flex; flex-direction: column; width: 100%; height: auto; padding: max(12px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left)); overflow: hidden; background: #f8fafc; }
 .landing-model-panel[data-expanded="true"] > .landing-model-workspace { flex: 1; height: auto; max-height: none; min-height: 0; }
 .landing-model-panel[data-expanded="true"] .instructions-step-heading { padding-right: 64px; }
 @media (max-width: 639px) {
-  .landing-model-panel[data-expanded="true"] { padding: 8px max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
+  .landing-model-panel[data-expanded="true"] { padding: max(8px, env(safe-area-inset-top)) max(8px, env(safe-area-inset-right)) max(8px, env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left)); }
 }
 @media (min-width: 640px) and (max-height: 500px) {
   .landing-model-panel[data-expanded="true"] .instructions-step { grid-template-columns: minmax(0, 1fr) minmax(180px, 26%); grid-template-rows: auto minmax(0, 1fr) auto; }
@@ -104,5 +104,5 @@
   .landing-model-panel[data-view="instructions"] .landing-expanded-footer {
     position: absolute; z-index: 6; top: 24px; left: 24px; padding: 0;
   }
-  .landing-model-panel[data-view="instructions"][data-expanded="true"] .landing-expanded-footer { top: 36px; left: 44px; }
+  .landing-model-panel[data-view="instructions"][data-expanded="true"] .landing-expanded-footer { top: calc(max(12px, env(safe-area-inset-top)) + 24px); left: 44px; }
 }

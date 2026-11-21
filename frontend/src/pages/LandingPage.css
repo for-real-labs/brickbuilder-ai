@@ -137,6 +137,8 @@
 }
 .landing-page .landing-model-panel { position: relative; }
 .landing-page .landing-model-panel[data-expanded="true"] { position: fixed; }
+body:has(.landing-page .landing-model-panel[data-expanded="true"]) [data-app-banner],
+.landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-page-shell > header,
 .landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-model-conversation,
 .landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-desktop-order,
 .landing-page:has(.landing-model-panel[data-expanded="true"]) .model-mobile-order { display: none; }
