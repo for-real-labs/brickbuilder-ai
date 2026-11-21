@@ -1171,6 +1171,39 @@ it.each(['model', 'instructions'] as const)('expands %s and returns with the sam
   expect(navigate).not.toHaveBeenCalled();
 });
 
+it.each(['model', 'instructions'] as const)('fills the landing viewport and hides the top menu in expanded %s', async view => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  const style = document.createElement('style');
+  style.textContent = readFileSync('src/pages/LandingPage.css', 'utf8') + readFileSync('src/components/LandingModelWorkspace.css', 'utf8');
+  document.head.append(style);
+  const banner = document.createElement('aside');
+  banner.setAttribute('data-app-banner', '');
+  container.before(banner);
+  try {
+    await act(async () => root.render(<LandingPage />));
+    const header = container.querySelector('header')!;
+    const panel = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+    if (view === 'instructions') await act(async () => panel.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+    expect(getComputedStyle(header).display).not.toBe('none');
+    expect(getComputedStyle(banner).display).not.toBe('none');
+
+    await act(async () => panel.querySelector<HTMLButtonElement>('.landing-view-expand')!.click());
+    expect(panel.dataset.view).toBe(view);
+    expect(getComputedStyle(panel).position).toBe('fixed');
+    expect(getComputedStyle(panel).inset).toBe('0');
+    expect(getComputedStyle(header).display).toBe('none');
+    expect(getComputedStyle(banner).display).toBe('none');
+
+    act(() => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true })));
+    expect(getComputedStyle(header).display).not.toBe('none');
+    expect(getComputedStyle(banner).display).not.toBe('none');
+  } finally {
+    banner.remove();
+    style.remove();
+  }
+});
+
 it('hides the model actions in both expanded views and restores them after collapsing', async () => {
   query.value = 'id=castle&exact=1&instructions=1&step=4';
   vi.spyOn(GetGenerationsByImageApiService, 'getGenerationsByImage').mockResolvedValueOnce({
