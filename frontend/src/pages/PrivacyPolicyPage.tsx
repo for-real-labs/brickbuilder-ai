@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 import { SEO } from "../components/SEO";
 import { SiteFooter } from "../components/SiteFooter";
 
-const LAST_UPDATED = "October 2, 2026";
+const LAST_UPDATED = "November 21, 2026";
 
 const trackPrivacyInteraction = (action: string) => {
   posthog.capture("privacy_policy_interaction", { action });
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
                 Privacy Policy
               </h1>
               <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-600">
-                This policy explains how BrickBuilder handles information when you use our
+                This policy explains how BrickBuilder, Inc., the operator of BrickBuilder AI, handles information when you use our
                 website, mobile app, model-generation tools, community, and ordering features.
               </p>
               <p className="mt-4 text-sm font-medium text-slate-500">

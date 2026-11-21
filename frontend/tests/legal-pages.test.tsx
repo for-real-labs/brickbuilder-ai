@@ -12,6 +12,7 @@ describe('directory legal pages', () => {
 
   it('makes full policy disclosures accessible without executing JavaScript', () => {
     const privacy = renderLegalDocument(shell, 'privacy');
+    expect(privacy).toContain('BrickBuilder, Inc., the operator of BrickBuilder AI');
     expect(privacy).toContain('Retention and deletion');
     expect(privacy).toContain('OpenAI, Anthropic, fal.ai, and RunPod');
     expect(privacy).toContain('href="https://brickbuilder.ai/privacy"');
@@ -21,7 +22,7 @@ describe('directory legal pages', () => {
 
   it('publishes the subscription requirement, recurring billing, cancellation, and age policy consistently', () => {
     const terms = renderLegalDocument(shell, 'terms');
-    expect(terms).toContain('Operator: Jake Johnson');
+    expect(terms).toContain('Operator: BrickBuilder, Inc.');
     expect(terms).toContain('at least 13 years old');
     expect(terms).toContain('An active subscription is required');
     const text = new DOMParser().parseFromString(terms, 'text/html').body.textContent;
