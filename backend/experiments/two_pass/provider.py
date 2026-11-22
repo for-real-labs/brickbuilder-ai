@@ -14,7 +14,9 @@ OUTPUT = 40
 
 def encode(path):
     with Image.open(path) as im:
-        im = ImageOps.exif_transpose(im).convert("RGB")
+        rgba = ImageOps.exif_transpose(im).convert("RGBA")
+        im = Image.new("RGB", rgba.size, "white")
+        im.paste(rgba, mask=rgba.getchannel("A"))
         im.thumbnail((1150, 1150))
         buf = BytesIO()
         im.save(buf, "JPEG", quality=88)

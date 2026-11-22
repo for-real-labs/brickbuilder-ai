@@ -73,3 +73,17 @@ def test_two_call_budget_and_failed_revision_fallback(tmp_path, monkeypatch):
     assert limits == pytest.approx([0.17, 0.28])
     with pytest.raises(FileExistsError):
         agent.run("astra", "test", [], out, Catalog, 10, lambda *a: [])
+
+
+def test_transparent_reference_keeps_black_features_visible(tmp_path):
+    import base64
+    from io import BytesIO
+    from PIL import Image
+    from experiments.two_pass.provider import encode
+
+    image = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
+    image.paste((0, 0, 0, 255), (0, 0, 16, 16))
+    p = tmp_path / "reference.png"
+    image.save(p)
+    encoded = Image.open(BytesIO(base64.b64decode(encode(p))))
+    assert max(encoded.getpixel((5, 8))) < 10 and min(encoded.getpixel((28, 8))) > 245
