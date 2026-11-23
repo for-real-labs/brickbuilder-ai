@@ -46,7 +46,12 @@ def clean_title(value: str) -> str:
 
 
 def fallback_title(prompt: str | None) -> str:
-    if not prompt or prompt.strip().lower() in {"image reference", "image to bricks conversion", "glb to bricks conversion"}:
+    if not prompt:
+        return "Custom Model"
+    normalized = prompt.strip().lower()
+    if normalized in {"no text prompt", "image reference", "image to bricks conversion", "glb to bricks conversion"}:
+        return "Custom Model"
+    if normalized.startswith(("updated model from ", "resized model from ")):
         return "Custom Model"
     text = re.sub(r"^(?:please\s+)?(?:make|build|create|generate|design)(?:\s+me)?\s+(?:a\s+model\s+of\s+)?", "", prompt or "", flags=re.I)
     text = re.sub(r"^(?:a|an|the)\s+", "", text, flags=re.I)

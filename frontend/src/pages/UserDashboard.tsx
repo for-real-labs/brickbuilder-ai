@@ -177,7 +177,7 @@ export const GenerationCard: React.FC<{
   };
 
   // Source image (the user-provided/original image), matches community page logic
-  const sourceImage = g.external_image_url || g.image_url || g.thumbnail_url || g.processed_image_url;
+  const sourceImage = g.external_image_url || g.image_url || g.thumbnail_url || g.processed_image_url || g.original_image_url;
   // Main image is the rendered preview when available, falling back to the source
   const mainImage = previewImage || sourceImage;
   const showOverlay = Boolean(previewImage && sourceImage);
@@ -342,7 +342,9 @@ export const GenerationCard: React.FC<{
                             </span>
                           )}
                         </div>
-                        <p className="mb-1.5 break-all font-mono text-xs text-slate-900">{edit.id}</p>
+                        <p className="mb-1.5 break-words text-xs font-medium text-slate-900">
+                          {edit.name?.trim() || modelName}
+                        </p>
                         {edit.status === 'completed' && <GenerationDuration seconds={edit.generation_duration_seconds} />}
                         <div className="flex items-center gap-2 text-[10px] text-slate-500">
                           <span className="flex items-center gap-1">
@@ -406,11 +408,9 @@ export const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> =
   const order = g.order;
   if (!order) return null;
   
-  // Use order fields directly, fall back to generation fields
-  const displayPrompt = (order.prompt || g.prompt || 'Untitled Model').length > 50 
-    ? (order.prompt || g.prompt || 'Untitled Model').slice(0, 50) + "..." 
-    : (order.prompt || g.prompt || 'Untitled Model');
-  const previewImage = order.image_url || g.external_image_url || g.image_url || g.thumbnail_url;
+  const modelName = order.name?.trim() || g.name?.trim() || "Untitled Model";
+  const previewImage = order.preview_image_url || g.preview_image_url || order.image_url
+    || g.processed_image_url || g.external_image_url || g.original_image_url || g.image_url || g.thumbnail_url;
   const amountPaid = order.amount_paid ? `$${parseFloat(order.amount_paid).toFixed(2)}` : 'N/A';
   
   return (
@@ -420,7 +420,7 @@ export const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> =
           {previewImage ? (
             <img
               src={previewImage}
-              alt={displayPrompt}
+              alt={modelName}
               className="absolute inset-0 w-full h-full object-contain"
               draggable={false}
             />
@@ -434,7 +434,7 @@ export const OrderCard: React.FC<{g: GenerationWithOrder; onView: () => void}> =
         <div className="flex-1 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-semibold text-sm sm:text-base text-slate-900 leading-tight line-clamp-2">{displayPrompt}</h3>
+              <h3 className="font-semibold text-sm sm:text-base text-slate-900 leading-tight break-words line-clamp-2">{modelName}</h3>
               <div className="flex items-center gap-2 sm:gap-3 text-[11px] sm:text-xs text-slate-600 mt-1">
                 <span className="flex items-center gap-1">
                   <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5"/>
@@ -952,7 +952,7 @@ const UserDashboard: React.FC = () => {
                   ) : (
                     <div className="grid gap-3">
                       {orders.map(g => (
-                        <OrderCard key={g.id} g={g} onView={() => handleViewGeneration(g.id)} />
+                        <OrderCard key={g.order?.id ?? g.id} g={g} onView={() => handleViewGeneration(g.id, true)} />
                       ))}
                     </div>
                   )}

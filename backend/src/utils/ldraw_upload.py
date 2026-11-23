@@ -30,7 +30,9 @@ def _decode(data: bytes) -> str:
         return data.decode('cp1252')
 
 
-def normalize_ldraw_upload(filename: str, data: bytes, *, inventory_only: bool = False) -> str:
+def normalize_ldraw_upload(
+    filename: str, data: bytes, *, inventory_only: bool = False, max_expanded_geometry: int | None = None
+) -> str:
     extension = PurePosixPath(filename.replace('\\', '/')).suffix.lower()
     if extension not in {'.io', '.ldr', '.mpd'}:
         raise ValueError('Choose a Studio .io, LDraw .ldr, or .mpd file.')
@@ -74,6 +76,7 @@ def normalize_ldraw_upload(filename: str, data: bytes, *, inventory_only: bool =
         if name.lower() not in embedded:
             text += '\n0 FILE ' + name + '\n' + content.strip()
     sections = {}
+    primitives = {}
     current = None
     placements = 0
     for line in text.splitlines():
@@ -89,6 +92,8 @@ def normalize_ldraw_upload(filename: str, data: bytes, *, inventory_only: bool =
             if current in sections:
                 raise ValueError('The model contains duplicate submodel names.')
             sections[current] = []
+        if current is not None and tokens[0] in {'2', '3', '4', '5'}:
+            primitives[current] = primitives.get(current, 0) + 1
         if tokens[0] == '1':
             fields = line.split(None, 14)
             if len(fields) != 15:
@@ -109,18 +114,24 @@ def normalize_ldraw_upload(filename: str, data: bytes, *, inventory_only: bool =
     if not placements:
         raise ValueError('This model contains no parts.')
     # Reject recursive/overdeep submodels before the viewer or Nova sees them.
-    visited = set()
+    visited = {}
     def visit(name, active):
         if name in active or len(active) >= 64:
             raise ValueError('The model contains recursive or overly nested submodels.')
         if name in visited:
-            return
+            return visited[name]
+        count = primitives.get(name, 0)
         for reference in sections.get(name, []):
             if reference in sections:
-                visit(reference, active | {name})
+                count += visit(reference, active | {name})
             elif reference.endswith(('.ldr', '.mpd')):
                 raise ValueError('The model references a missing submodel. Export a self-contained MPD first.')
-        visited.add(name)
+            else:
+                count += 1
+            if max_expanded_geometry is not None and count > max_expanded_geometry:
+                raise ValueError('The model is too complex to render automatically.')
+        visited[name] = count
+        return count
     for name in sections:
         visit(name, set())
     if len(text.encode('utf-8')) > MAX_UPLOAD_BYTES:

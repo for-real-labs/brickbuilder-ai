@@ -1,11 +1,40 @@
 import asyncio
-import pytest
 import sys
 from pathlib import Path
 
+import pytest
+from PIL import Image
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from src.utils import generation_previews
 from src.utils.generation_storage import GenerationStorage
+
+
+def test_render_generation_preview_keeps_geometry_and_strips_external_metadata(monkeypatch):
+    source = b"0 FILE model.ldr\n0 !TEXMAP START PLANAR 0 0 0 1 0 0 0 0 1 external.png\n" \
+             b"1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n0 STEP\n0 NOFILE\n"
+    monkeypatch.setattr(generation_previews, "find_leocad", lambda: "leocad")
+
+    def render(command, **kwargs):
+        assert "--viewpoint" in command and kwargs["timeout"] == 25
+        model = Path(command[-1]).read_text()
+        assert "3001.dat" in model and "0 FILE model.ldr" in model
+        assert "!TEXMAP" not in model and "0 STEP" not in model
+        Image.new("RGBA", (480, 480), (255, 0, 0, 255)).save(command[command.index("--image") + 1])
+
+    monkeypatch.setattr(generation_previews.subprocess, "run", render)
+    assert generation_previews.render_generation_preview(source).startswith(b"\x89PNG\r\n\x1a\n")
+
+
+def test_render_generation_preview_rejects_exponential_submodel_expansion():
+    def placement(reference):
+        return f"1 4 0 0 0 1 0 0 0 1 0 0 0 1 {reference}\n"
+
+    sections = [f"0 FILE model-{index}.ldr\n" + placement(f"model-{index + 1}.ldr") * 2 for index in range(21)]
+    sections.append("0 FILE model-21.ldr\n" + placement("3001.dat"))
+    with pytest.raises(ValueError, match="too complex to render"):
+        generation_previews.render_generation_preview("".join(sections).encode())
 
 
 class FakeCommunityQuery:
@@ -129,11 +158,14 @@ def test_create_generation_persists_mode_and_inherits_it_for_non_generating_revi
     storage = GenerationStorage.__new__(GenerationStorage)
     storage.client = SimpleNamespace(table=lambda name: Table())
     storage.get_generation = AsyncMock(return_value={'id': 'source', 'generation_id': 'model', 'user_id': 'owner', 'user_type': 'authenticated', 'endpoint': 'novaToBricks', 'mode': 'all_parts'})
+    storage.get_original_model_titles = AsyncMock(return_value={'model': 'Lakehouse'})
     for endpoint, mode in [('novaToBricks', 'all_parts'), ('llmToBricks', 'basic_bricks'), ('textToBricks', 'basic_bricks')]:
         asyncio.run(storage.create_generation('owner', 'authenticated', 'model', 40, endpoint=endpoint))
         assert records[-1]['mode'] == mode
     asyncio.run(storage.create_generation('owner', 'authenticated', 'edit', 40, endpoint='updateModel', edit_generation_id='source'))
     assert records[-1]['generation_id'] == 'model' and records[-1]['mode'] == 'all_parts'
+    assert records[-1]['name'] == 'Lakehouse'
+    storage.get_original_model_titles.assert_awaited_once_with('owner', 'authenticated', ['model'])
 
 
 @pytest.mark.parametrize('endpoint', ['llmToBricks', 'novaToBricks', 'updateModel', 'resizeModel', 'promptEditModel'])

@@ -2,6 +2,7 @@
 Clean and elegant generation storage system for Supabase
 Stores all generation data using Supabase Storage for files and database for metadata
 """
+import asyncio
 import os
 import uuid
 import time
@@ -12,6 +13,7 @@ import base64
 from typing import Optional, Dict, Any, Union, List
 from datetime import datetime, timezone, timedelta
 from email.utils import format_datetime
+from urllib.parse import unquote, urlparse
 from supabase import Client
 from fastapi import HTTPException
 from .database import execute_query
@@ -23,7 +25,8 @@ from .storage_upload import upload_artifact
 from .community_likes import is_community_likes_schema_error
 from .image_processing import convert_base64_to_png
 from .brickowl_utils import parse_ldr_file, generate_parts_list_csv
-from .generation_titles import generate_title_details
+from .generation_titles import fallback_title, generate_title_details
+from .generation_previews import render_generation_preview
 from .generation_mode import generation_mode, INHERITED_MODE_ENDPOINTS
 from .generation_attribution import INPUT_TYPES, infer_input_type, normalize_entry_page
 
@@ -172,8 +175,16 @@ class GenerationStorage:
                 source = await self.get_generation(edit_generation_id)
                 if not source:
                     raise ValueError("Source generation not found")
+                source_name = (source.get("name") or "").strip()
                 if source.get("user_id") == user_id and source.get("user_type") == user_type:
-                    generation_data["generation_id"] = source.get("generation_id") or source["id"]
+                    model_id = source.get("generation_id") or source["id"]
+                    generation_data["generation_id"] = model_id
+                    if not source_name:
+                        if model_id == source["id"]:
+                            source_name = fallback_title(source.get("prompt"))
+                        else:
+                            titles = await self.get_original_model_titles(user_id, user_type, [model_id])
+                            source_name = titles.get(model_id)
                 elif source.get("status") == "completed":
                     generation_data["forked_from_id"] = source["id"]
                 else:
@@ -185,8 +196,8 @@ class GenerationStorage:
                 # AI/manual edits keep the original model's input origin.
                 generation_data["input_type"] = source.get("input_type") or infer_input_type(source.get("endpoint"))
                 generation_data["input_format"] = source.get("input_format")
-                if source.get("name"):
-                    generation_data["name"] = source["name"]
+                if source_name:
+                    generation_data["name"] = source_name
                 if source.get("example_edit_prompt"):
                     generation_data["example_edit_prompt"] = source["example_edit_prompt"]
 
@@ -479,19 +490,36 @@ class GenerationStorage:
             logger.error(f"Failed to store image data for generation {generation_id}")
             # Don't raise - this shouldn't break the main flow
 
-    async def store_preview_image(self, generation_id: str, png: bytes) -> str:
+    async def store_preview_image(self, generation_id: str, png: bytes, *, only_if_missing: bool = False) -> str:
         """Upload a PNG preview and save it as the generation's preview_image_url."""
         # Same path pattern as /updateImagePreview (timestamp busts CDN cache)
-        file_path = f"generations/{generation_id}/preview_image_{int(time.time())}.png"
+        file_path = f"generations/{generation_id}/preview_image_{time.time_ns()}.png"
         preview_image_url = await self._upload_file_to_storage(png, file_path, "image/png")
-        (
-            await execute_query(
-                self.client.table("generations")
-                .update({"preview_image_url": preview_image_url})
-                .eq("id", generation_id)
-            )
-        )
+        query = self.client.table("generations").update({"preview_image_url": preview_image_url}).eq("id", generation_id)
+        if only_if_missing:
+            query = query.is_("preview_image_url", "null").is_("deleted_at", "null").neq("status", "cancelled")
+        await execute_query(query)
         return preview_image_url
+
+    async def ensure_generation_preview(self, row: dict) -> None:
+        if row.get("preview_image_url") or row.get("deleted_at") or row.get("status") == "cancelled":
+            return
+        model_url = row.get("ldr_url") or row.get("mpd_url")
+        if not model_url:
+            return
+        generation_id = row["id"]
+        artifact_id = row.get("restored_from_id") or generation_id
+        path = unquote(urlparse(model_url).path)
+        markers = ("/storage/v1/object/public/generations/", "/local-storage/generations/")
+        relative = next((path.split(marker, 1)[1] for marker in markers if marker in path), "")
+        if not relative.startswith(f"generations/{artifact_id}/") or ".." in relative.split("/"):
+            return
+        try:
+            model = await asyncio.to_thread(self.client.storage.from_(self.bucket_name).download, relative)
+            png = await asyncio.to_thread(render_generation_preview, model)
+            await self.store_preview_image(generation_id, png, only_if_missing=True)
+        except Exception:
+            logger.warning("Unable to save model preview for %s", generation_id, exc_info=True)
 
     async def store_reference_images(
         self,
@@ -750,7 +778,10 @@ class GenerationStorage:
         """
         try:
             if status == "completed":
-                await self.ensure_generation_name(generation_id)
+                row = await self.get_generation(generation_id)
+                if row:
+                    await self.ensure_generation_preview(row)
+                    await self.ensure_generation_name(generation_id, row=row)
             update_data = {
                 "status": status,
                 "updated_at": datetime.utcnow().isoformat()
@@ -774,10 +805,11 @@ class GenerationStorage:
             logger.error(f"Failed to update status for generation {generation_id}: {e}")
             # Don't raise - this shouldn't break the main flow
 
-    async def ensure_generation_name(self, generation_id: str) -> None:
+    async def ensure_generation_name(self, generation_id: str, *, row: Optional[dict] = None) -> None:
         """Save an automatic title before publishing completion; never replace an owner name."""
         try:
-            row = await self.get_generation(generation_id)
+            if row is None:
+                row = await self.get_generation(generation_id)
             if not row or (row.get("name") and row.get("example_edit_prompt")) or row.get("status") == "cancelled":
                 return
             details = await generate_title_details(row, self.client.storage)
@@ -1228,7 +1260,8 @@ class GenerationStorage:
             result = await execute_query(
                 self.client.table("orders")
                 .select(
-                    "*, generations!inner(user_id, user_type, processed_image_url, external_image_url, prompt)"
+                    "*, generations!inner(user_id,user_type,generation_id,name,prompt,"
+                    "preview_image_url,processed_image_url,external_image_url,original_image_url)"
                 )
                      .eq("generations.user_id", user_id)
                      .eq("generations.user_type", user_type)
@@ -1240,6 +1273,24 @@ class GenerationStorage:
         except Exception as e:
             logger.error(f"Failed to fetch orders for user {user_id}: {e}")
             return []
+
+    async def get_original_model_titles(self, user_id: str, user_type: str, model_ids: List[str]) -> dict[str, str]:
+        """Use the root title or original prompt for models predating saved names."""
+        titles = {}
+        # Limit the number of UUIDs in a PostgREST request URL.
+        for offset in range(0, len(model_ids), 100):
+            result = await execute_query(
+                self.client.table("generations")
+                .select("id,name,prompt")
+                .eq("user_id", user_id)
+                .eq("user_type", user_type)
+                .in_("id", model_ids[offset:offset + 100])
+            )
+            titles.update({
+                row["id"]: (row.get("name") or "").strip() or fallback_title(row.get("prompt"))
+                for row in result.data or []
+            })
+        return titles
 
     async def store(
         self,

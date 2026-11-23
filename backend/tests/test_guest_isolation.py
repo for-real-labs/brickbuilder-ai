@@ -53,11 +53,13 @@ def test_rate_limits_share_ip_but_never_change_ownership_or_charge_reads(monkeyp
 
 
 def test_guest_list_only_queries_own_identity(monkeypatch):
-    storage = SimpleNamespace(count_user_generations=AsyncMock(return_value=0), get_user_generations=AsyncMock(return_value=[]))
+    storage = SimpleNamespace(count_user_generations=AsyncMock(return_value=0), get_user_generations=AsyncMock(return_value=[]),
+                              get_user_orders=AsyncMock(return_value=[]))
     monkeypatch.setattr(getUserGenerations, 'generation_storage', storage)
     for secret in ['a' * 64, 'b' * 64]:
         asyncio.run(getUserGenerations.get_user_generations(getUserGenerations.GetUserGenerationsRequest(processing=True), identity(secret)))
         assert storage.get_user_generations.await_args.kwargs['user_id'] == identity(secret)['user_id']
+        assert storage.get_user_orders.await_args.kwargs == {'user_id': identity(secret)['user_id'], 'user_type': 'anonymous'}
     with pytest.raises(HTTPException):
         asyncio.run(getUserGenerations.get_user_generations(getUserGenerations.GetUserGenerationsRequest(), identity(None)))
 

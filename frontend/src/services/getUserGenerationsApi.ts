@@ -32,6 +32,8 @@ export interface OrderInfo {
   cancelled?: boolean;
   created_at?: string;
   image_url?: string;
+  preview_image_url?: string | null;
+  name?: string | null;
   prompt?: string;
 }
 
@@ -54,6 +56,7 @@ export interface GenerationWithOrder {
   xyzrgb_url?: string;
   image_url?: string;
   thumbnail_url?: string;
+  original_image_url?: string;
   external_image_url?: string;
   processed_image_url?: string;
   preview_image_url?: string;

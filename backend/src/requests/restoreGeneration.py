@@ -83,4 +83,6 @@ async def restore_generation(source_id: str, request: RestoreGenerationRequest, 
                 raise HTTPException(429, "Your daily model limit has been reached. Please try again tomorrow.") from None
             logger.exception("Failed to restore model version %s", source_id)
             raise HTTPException(503, "Could not restore this version. Please try again.") from None
+    if not revision.get("preview_image_url"):
+        await generation_storage.ensure_generation_preview({**revision, "restored_from_id": artifact_id})
     return RestoreGenerationResponse(generation_id=revision_id)

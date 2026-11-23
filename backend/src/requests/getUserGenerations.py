@@ -26,6 +26,8 @@ class OrderInfo(BaseModel):
     cancelled: bool = False
     created_at: Optional[str] = None
     image_url: Optional[str] = None  # Image URL from the generation
+    preview_image_url: Optional[str] = None
+    name: Optional[str] = None
     prompt: Optional[str] = None  # Prompt from the generation
     shipping_info: Optional[dict] = None  # JSON object with shipping details
 
@@ -144,15 +146,6 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
         generations = rows[:request.limit]
         has_more = len(rows) > request.limit
 
-        if not generations:
-            return GetUserGenerationsResponse(
-                generations=[],
-                total_count=0,
-                total_user_generations=total_user_generations,
-                has_more=False,
-                all_orders=[],
-            )
-        
         # Fetch ALL orders for this user using JOIN (single query, no duplication)
         all_orders_data = (
             await generation_storage.get_user_orders(
@@ -163,24 +156,40 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
             else []
         )
         
-        # Build a map of generation_id -> order for quick lookup
+        # Older revisions sometimes predate automatic naming. Resolve those
+        # titles from the original model in one owner-scoped lookup.
+        versions = [*generations, *(o.get("generations") or {} for o in all_orders_data)]
+        unnamed_models = list({
+            row["generation_id"] for row in versions
+            if row.get("generation_id") and not (row.get("name") or "").strip()
+        })
+        model_titles = (
+            await generation_storage.get_original_model_titles(user_id, user_type, unnamed_models)
+            if request.include_details and unnamed_models
+            else {}
+        )
+
+        def model_name(row: dict) -> Optional[str]:
+            return (row.get("name") or "").strip() or model_titles.get(row.get("generation_id"))
+
         orders_by_generation = {}
         all_orders = []
         
         for order_data in all_orders_data:
             gen_id = order_data.get("generation_id")
             if gen_id:
-                orders_by_generation[gen_id] = order_data
-                
-                # Extract generation info from the join
-                gen_info = order_data.get("generations", {})
+                gen_info = order_data.get("generations") or {}
                 
                 # Create OrderInfo with enriched data from the join
                 order_info = OrderInfo(
                     **{k: v for k, v in order_data.items() if k != "generations"},
-                    image_url=gen_info.get("processed_image_url") or gen_info.get("external_image_url"),
-                    prompt=gen_info.get("prompt")
+                    image_url=(gen_info.get("processed_image_url") or gen_info.get("external_image_url")
+                               or gen_info.get("original_image_url")),
+                    preview_image_url=gen_info.get("preview_image_url"),
+                    name=model_name(gen_info),
+                    prompt=gen_info.get("prompt"),
                 )
+                orders_by_generation.setdefault(gen_id, order_info)
                 all_orders.append(order_info)
         
         # Combine generations with their orders
@@ -193,17 +202,6 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
                 and gen.get("status") in ACTIVE_GENERATION_STATUSES
             ):
                 previous_completed = await generation_storage.get_previous_completed_generation(gen)
-            # If this generation has an order, enrich it with generation data
-            order_info = None
-            if gen["id"] in orders_by_generation:
-                order_data = orders_by_generation[gen["id"]]
-                gen_info = order_data.get("generations", {})
-                order_info = OrderInfo(
-                    **{k: v for k, v in order_data.items() if k != "generations"},
-                    image_url=gen_info.get("processed_image_url") or gen_info.get("external_image_url"),
-                    prompt=gen_info.get("prompt")
-                )
-            
             gen_data = GenerationWithOrder(
                 id=gen.get("id"),
                 generation_id=gen.get("generation_id", gen["id"]),
@@ -211,7 +209,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
                 user_id=gen.get("user_id"),
                 user_type=gen.get("user_type"),
                 prompt=gen.get("prompt", ""),
-                name=gen.get("name"),
+                name=model_name(gen),
                 generation_duration_seconds=gen.get("generation_duration_seconds"),
                 detail_level=gen.get("detail_level", 0),
                 endpoint=gen.get("endpoint", ""),
@@ -233,7 +231,7 @@ async def get_user_generations(request: GetUserGenerationsRequest, auth_info: di
                 model_used_3d=gen.get("model_used_3d"),
                 ordered=gen.get("ordered", False),
                 updated_at=gen.get("updated_at"),
-                order=order_info
+                order=orders_by_generation.get(gen["id"]),
             )
             generations_with_orders.append(gen_data)
         
