@@ -7,8 +7,9 @@ code is used.
 
 **Status:** it runs from the command line, and on the website as extra **Building
 agent** options for the accounts on the Astrology allowlist. Nova stays the default
-for everyone else. It has not yet been exercised in the deployed API container: the
-website path is covered by tests, and the first staging build is the real check.
+for everyone else. Its build, check and render path and its script isolation were
+verified inside the API image built for production's platform; the website request
+path is covered by tests. A generation through the deployed site is the last check.
 
 | | Nova | Fable |
 |---|---|---|
@@ -310,8 +311,10 @@ that too and is the stronger design if Fable becomes a main path.
 
 ## Not done yet
 
-- The website path has not run in the deployed container. It relies on the LeoCAD
-  and LDraw installation Astrology uses there.
+- No generation has gone through the deployed site end to end yet. The API image
+  itself was checked: a script runs under the sandbox account, that account cannot
+  read the API's environment or write to the cache, the library or the app, and the
+  lake house example builds and renders there.
 - Fable's build scripts run under their own account but in the API's container, so
   they share its CPU, memory and network. See Safety for what that leaves open.
 - On the website an edit starts from the saved script, not from the conversation that
