@@ -42,6 +42,7 @@ from .utils.generation_email import start_email_worker
 from .utils.generation_recovery import start_recovery_worker
 from .requests.uploadLdraw import upload_ldraw, UploadLdrawResponse
 from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
+from .requests.astrologyToBricks import astrology_allowed
 from .requests.localProviders import router as local_providers_router
 from .requests.buildBuddy import router as build_buddy_router
 from .requests.supportEmail import router as support_email_router
@@ -164,6 +165,12 @@ async def generation_notification_email(generation_id: UUID, request: Notificati
 @app.post('/uploadLdraw', response_model=UploadLdrawResponse)
 async def upload_ldraw_endpoint(file: UploadFile = File(...), auth_info: dict = Depends(get_user_with_optional_auth), entry_page: str | None = Form(None, max_length=128)):
     return await upload_ldraw(file, auth_info, entry_page)
+
+
+@app.get("/generation-settings/building-agents")
+async def building_agents(response: Response, auth_info: dict = Depends(get_optional_identity)):
+    response.headers["Cache-Control"] = "private, no-store"
+    return {"agents": ["nova", "astrology"] if astrology_allowed(auth_info) else ["nova"]}
 
 
 @app.post("/novaToBricks", response_model=ImageToBricksResponse)

@@ -1,4 +1,4 @@
-"""Astra controls a named design, reviews actual renders and repairs failed builds."""
+"""Astrology controls a named design, reviews actual renders and repairs failed builds."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from .parts import SHAPES
 from .render import Views
 
 MODEL = "gpt-6.2-astra"
-SYSTEM = """You are Astra, BrickBuilder's LEGO designer. Build a recognizable freestanding
+SYSTEM = """You are Astrology, BrickBuilder's LEGO designer. Build a recognizable freestanding
 3D interpretation of the user's brief and optional reference photograph. Study the subject's
 silhouette, relative proportions, color blocks, inset details and negative space. Pick a scale
 that leaves room for those details within the budget. Pay attention to its side and rear.
@@ -208,7 +208,16 @@ class Designer:
 
 
 async def design(
-    session, catalog, limit, render, *, program=None, report=print, checkpoint=None, rounds=14
+    session,
+    catalog,
+    limit,
+    render,
+    *,
+    program=None,
+    report=print,
+    checkpoint=None,
+    rounds=14,
+    on_review=None,
 ):
     designer = Designer(catalog, limit, render, program, report, checkpoint)
     feedback = deque(maxlen=6)
@@ -220,6 +229,8 @@ async def design(
             last = str(error)
         feedback.append(last)
     for turn in range(rounds):
+        if on_review and designer.views:
+            await on_review("Reviewing the rendered model")
         view = designer.views.review() if designer.views else None
         state = [
             *feedback,
@@ -264,4 +275,4 @@ async def design(
                 return candidate.accept(decision.input)
             if decision.name == "decline":
                 last = str(decision.input.get("reason", ""))[:2000]
-    raise ValueError(f"Astra reached its turn limit without an accepted build. {last}")
+    raise ValueError(f"Astrology reached its turn limit without an accepted build. {last}")

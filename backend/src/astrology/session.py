@@ -3,6 +3,8 @@
 import base64
 import json
 
+import httpx
+
 from ..utils.generation_budget import GenerationBudget, input_token_bound
 from ..utils.llm_tool_conversation import OPENAI_URL, ToolCall, Turn
 from .agent import FINAL_TOOLS, MODEL, SYSTEM, TOOLS
@@ -11,6 +13,15 @@ from .agent import FINAL_TOOLS, MODEL, SYSTEM, TOOLS
 def picture(data, mime):
     encoded = base64.b64encode(data).decode("ascii")
     return {"type": "input_image", "detail": "high", "image_url": f"data:{mime};base64,{encoded}"}
+
+
+def open_client(key):
+    transport = httpx.AsyncHTTPTransport(
+        http2=True, retries=2, limits=httpx.Limits(max_keepalive_connections=0)
+    )
+    return httpx.AsyncClient(
+        headers={"Authorization": f"Bearer {key}"}, timeout=180, transport=transport
+    )
 
 
 class Session:
@@ -65,6 +76,6 @@ class Session:
             if item.get("type") == "function_call":
                 args = json.loads(item["arguments"])
                 if not isinstance(args, dict):
-                    raise ValueError("Invalid Astra tool arguments")
+                    raise ValueError("Invalid Astrology tool arguments")
                 calls.append(ToolCall(item["call_id"], item["name"], args))
         return Turn(tool_calls=calls)

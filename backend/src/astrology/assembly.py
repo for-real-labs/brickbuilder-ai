@@ -137,7 +137,7 @@ class Assembly:
     issues: list[str]
 
     def ldraw(self, *, steps=True):
-        rows = ["0 Astra BrickBuilder model", "0 Name: model.ldr"]
+        rows = ["0 Astrology BrickBuilder model", "0 Name: model.ldr"]
         for i, piece in enumerate(self.pieces):
             if steps and i and i % 5 == 0:
                 rows.append("0 STEP")

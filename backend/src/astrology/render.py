@@ -14,6 +14,19 @@ from pathlib import Path
 from PIL import Image, ImageChops, ImageOps
 
 
+def prepare_reference(data):
+    with Image.open(io.BytesIO(data)) as im:
+        if im.width * im.height > 32_000_000:
+            raise ValueError("Reference image exceeds 32 megapixels")
+        rgba = ImageOps.exif_transpose(im).convert("RGBA")
+        rgba.thumbnail((1152, 1152), Image.Resampling.LANCZOS)
+        white = Image.new("RGB", rgba.size, "white")
+        white.paste(rgba, mask=rgba.getchannel("A"))
+        buffer = io.BytesIO()
+        white.save(buffer, "JPEG", quality=82, optimize=True)
+        return buffer.getvalue()
+
+
 def png(image):
     data = io.BytesIO()
     image.save(data, "PNG")
@@ -41,7 +54,7 @@ class Renderer:
     def __init__(self):
         self.binary = shutil.which("leocad") or "/Applications/LeoCAD.app/Contents/MacOS/LeoCAD"
         if not Path(self.binary).is_file():
-            raise ValueError("Install LeoCAD and put leocad on PATH to render an Astra build")
+            raise ValueError("Install LeoCAD and put leocad on PATH to render an Astrology build")
         self.library = os.getenv("LDRAW_DIR")
         if self.library and not (Path(self.library) / "LDConfig.ldr").is_file():
             raise ValueError("LDRAW_DIR must contain an installed LDraw parts library")
@@ -61,7 +74,7 @@ class Renderer:
         center = [(a + b) / 2 for a, b in zip(low, high)]
         distance = math.dist(low, high) * 2.65
         pictures = []
-        with tempfile.TemporaryDirectory(prefix="astra-view-") as tmp:
+        with tempfile.TemporaryDirectory(prefix="astrology-view-") as tmp:
             source = Path(tmp) / "model.ldr"
             source.write_text(model.ldraw(steps=False), encoding="utf-8")
             for name, direction in (("front", (-0.46, -0.42, -1)), ("back", (0.46, -0.55, 1))):

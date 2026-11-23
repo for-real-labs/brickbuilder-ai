@@ -7,6 +7,8 @@ RUN apt-get update && \
         libx11-6 \
         libgomp1 \
         xvfb \
+        leocad \
+        libgl1-mesa-dri \
         curl \
         unzip \
         git \
@@ -35,7 +37,7 @@ COPY . .
 RUN uv sync --frozen
 
 # Nova runs in its own pinned upstream container, reached via NOVA_SERVICE_URL.
-# The API image only needs the parts library to package imported MPDs.
+# Astrology renders in the API container using LeoCAD and the parts library.
 ENV LDRAW_DIR=/root/ldraw
 ENV APPLE_ROOT_CERTIFICATES_DIR=/app/certificates/apple
 

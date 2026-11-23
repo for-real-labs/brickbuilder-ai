@@ -1,10 +1,9 @@
-"""Build an editable LEGO model from a brief, a photo or a saved Astra design."""
+"""Build an editable LEGO model from a brief, a photo or a saved Astrology design."""
 
 from __future__ import annotations
 
 import argparse
 import asyncio
-import io
 import json
 import os
 import subprocess
@@ -12,7 +11,6 @@ from pathlib import Path
 
 import httpx
 from dotenv import dotenv_values
-from PIL import Image, ImageOps
 
 from ..utils.imported_kit import fulfillment_csv
 from ..utils.ldraw_upload import normalize_ldraw_upload
@@ -20,23 +18,14 @@ from ..utils.prompt_parts_limit import prompt_parts_limit, tighter_parts_limit
 from ..utils.supplier_catalog import get_supplier_catalog
 from .agent import MODEL, design
 from .design import sections
-from .render import Renderer
-from .session import Session
+from .render import Renderer, prepare_reference
+from .session import Session, open_client
 
 
 def reference_image(path):
     if path.stat().st_size > 20 * 1024 * 1024:
         raise ValueError("Reference image exceeds 20 MiB")
-    with Image.open(path) as im:
-        if im.width * im.height > 32_000_000:
-            raise ValueError("Reference image exceeds 32 megapixels")
-        rgba = ImageOps.exif_transpose(im).convert("RGBA")
-        rgba.thumbnail((1152, 1152), Image.Resampling.LANCZOS)
-        white = Image.new("RGB", rgba.size, "white")
-        white.paste(rgba, mask=rgba.getchannel("A"))
-        buffer = io.BytesIO()
-        white.save(buffer, "JPEG", quality=82, optimize=True)
-        return buffer.getvalue()
+    return prepare_reference(path.read_bytes())
 
 
 def load_design(path):
@@ -44,7 +33,7 @@ def load_design(path):
         raise ValueError("Design file exceeds 512 KiB")
     data = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(data, dict) or type(data.get("version")) is not int or data["version"] != 1:
-        raise ValueError("Expected an Astra version 1 design file")
+        raise ValueError("Expected an Astrology version 1 design file")
     limit = data.get("max_parts")
     if type(limit) is not int or not 1 <= limit <= 5000:
         raise ValueError("Invalid saved piece limit")
@@ -84,16 +73,11 @@ async def run(args):
 
     if previous:
         checkpoint(previous, False)
-    transport = httpx.AsyncHTTPTransport(
-        http2=True, retries=2, limits=httpx.Limits(max_keepalive_connections=0)
-    )
-    async with httpx.AsyncClient(
-        headers={"Authorization": f"Bearer {key}"}, timeout=180, transport=transport
-    ) as client:
+    async with open_client(key) as client:
         session = Session(
             client, prompt or "Build the subject in the photograph.", limit, reference
         )
-        print(f"Starting Astra with a {limit}-piece limit.", flush=True)
+        print(f"Starting Astrology with a {limit}-piece limit.", flush=True)
         build = await design(
             session,
             catalog,
@@ -132,13 +116,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("prompt", nargs="?", default="")
     parser.add_argument("--image", type=Path, help="Local reference image")
-    parser.add_argument("--edit", type=Path, help="Prior Astra design.json")
+    parser.add_argument("--edit", type=Path, help="Prior Astrology design.json")
     parser.add_argument("--out", type=Path, required=True, help="New output directory")
     parser.add_argument("--max-parts", type=int, help="Maximum physical pieces (default 1000)")
     try:
         asyncio.run(run(parser.parse_args()))
     except (ValueError, OSError, httpx.HTTPError, subprocess.SubprocessError) as error:
-        parser.exit(1, f"Astra: {str(error) or type(error).__name__}\n")
+        parser.exit(1, f"Astrology: {str(error) or type(error).__name__}\n")
 
 
 if __name__ == "__main__":

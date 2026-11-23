@@ -98,6 +98,50 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
+  it('shows the agent selector to the approved account and submits Astrology', async () => {
+    const approved = { id: 'approved' };
+    authSettings.session = { user: approved, access_token: 'approved-token' };
+    authSettings.user = approved;
+    const access = vi.spyOn(NovaToBricksApiService, 'canUseAstrology').mockImplementation(async token => token === 'approved-token');
+    const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'astrology-build', message: 'Started' });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const page = (key: string) => <LandingPage key={key} />;
+    try {
+      await act(async () => root.render(page('approved')));
+      act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
+      const selector = container.querySelector<HTMLSelectElement>('#landing-generation-settings select')!;
+      expect(selector.labels?.[0].textContent).toContain('Building agent');
+      expect(Array.from(selector.options).map(option => option.text)).toEqual(['Nova', 'Astrology']);
+      expect(selector.value).toBe('nova');
+      act(() => {
+        selector.value = 'astrology';
+        selector.dispatchEvent(new Event('change', { bubbles: true }));
+      });
+      const input = container.querySelector<HTMLInputElement>('input[aria-label="Describe your model"]')!;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red boat');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Generate"]')!.click());
+      expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+        buildingAgent: 'astrology', authMode: 'api_key', prompt: 'A red boat',
+      }), 'approved-token');
+      authSettings.user = { id: 'other' };
+      authSettings.session = { user: authSettings.user, access_token: 'other-token' };
+      await act(async () => root.render(page('other')));
+      expect(container.textContent).not.toContain('Building agent');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+      access.mockRestore();
+      generate.mockRestore();
+    }
+  });
+
   it.each([undefined, 'ios', 'android'] as const)('uses compatibility copy only for the native iOS shell (%s)', platform => {
     // The same iPhone Safari UA must keep website copy without the native marker.
     const userAgent = vi.spyOn(navigator, 'userAgent', 'get').mockReturnValue(

@@ -6,10 +6,10 @@ from decimal import Decimal
 import httpx
 import pytest
 from PIL import Image
-from src.astra.__main__ import load_design, reference_image, write_json
-from src.astra.agent import design
-from src.astra.render import Views, png
-from src.astra.session import Session
+from src.astrology.__main__ import load_design, reference_image, write_json
+from src.astrology.agent import design
+from src.astrology.render import Views, png
+from src.astrology.session import Session
 from src.utils.llm_tool_conversation import ToolCall, Turn
 from src.utils.supplier_catalog import get_supplier_catalog
 
@@ -181,7 +181,7 @@ def test_edit_source_preserves_limit_and_image_preparation_strips_metadata(tmp_p
 def test_command_line_exports_an_importable_model_after_review(tmp_path, monkeypatch):
     import sys
 
-    from src.astra import __main__ as cli
+    from src.astrology import __main__ as cli
     from src.utils.parts_catalog import flat_model_inventory, parts_csv_inventory
 
     out = tmp_path / "new build"
@@ -225,7 +225,7 @@ def test_command_line_exports_an_importable_model_after_review(tmp_path, monkeyp
         sys,
         "argv",
         [
-            "astra",
+            "astrology",
             "A red block under 5 pieces",
             "--image",
             str(source),

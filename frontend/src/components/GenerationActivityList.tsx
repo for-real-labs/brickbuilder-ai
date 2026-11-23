@@ -99,7 +99,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
                 {active && (!buddyDialogue || !agentGeneration) && <GetNotifiedButton generationId={generation.id}
                   promptOnStart={notificationPromptId === generation.id} onPromptShown={onNotificationPromptShown} />}
                 {active && <div className="relative z-20 w-fit"><CancelGenerationButton generationId={generation.id} onCancelled={() => onCancelled?.(generation.id)} /></div>}
-                {(failed || cancelled) && generation.endpoint === 'novaToBricks' && onResumed &&
+                {(failed || cancelled) && generation.endpoint === 'novaToBricks' && generation.buildingAgent !== 'astrology' && onResumed &&
                   <div className="relative z-20 w-fit"><ResumeNovaButton generationId={generation.id} onResumed={id => onResumed(generation.id, id)} /></div>}
                 {generation.status === 'completed' && <button type="button"
                   className="generation-view-model-pulse relative z-20 mt-3 min-h-10 w-full rounded-full border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f44336] focus-visible:ring-offset-2"

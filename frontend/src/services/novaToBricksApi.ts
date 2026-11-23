@@ -4,11 +4,13 @@ import { DEFAULT_LLM_MODEL, getLlmModelOption, validateMaxParts, type LlmToBrick
 import { getInstructionKey } from '../utils/instructionLinks';
 
 export type NovaAuthMode = 'api_key' | 'native';
+export type BuildingAgent = 'nova' | 'astrology';
 
 export interface NovaBuilderOptions {
   model: string;
   authMode: NovaAuthMode;
   maxParts?: number;
+  buildingAgent?: BuildingAgent;
 }
 
 export const DEFAULT_NOVA_OPTIONS: NovaBuilderOptions = {
@@ -40,6 +42,14 @@ export class NovaInstructionPlanError extends Error {
 }
 
 export class NovaToBricksApiService {
+  static async canUseAstrology(authToken: string, signal: AbortSignal): Promise<boolean> {
+    const response = await apiFetch(`${NOVA_API_BASE_URL}/generation-settings/building-agents`, {
+      headers: { Authorization: `Bearer ${authToken}` }, signal, cache: 'no-store',
+    });
+    if (!response.ok) return false;
+    const data = await response.json();
+    return Array.isArray(data.agents) && data.agents.includes('astrology');
+  }
   static async instructions(generationId: string): Promise<string> {
     const key = getInstructionKey(generationId);
     const response = await authenticatedApiFetch(`${NOVA_API_BASE_URL}/generation/${encodeURIComponent(generationId)}/nova-instructions.ldr`,
@@ -93,6 +103,7 @@ export class NovaToBricksApiService {
         max_parts: request.maxParts,
         model: request.model,
         auth_mode: request.authMode,
+        building_agent: request.buildingAgent,
       }),
     });
     if (!response.ok) {

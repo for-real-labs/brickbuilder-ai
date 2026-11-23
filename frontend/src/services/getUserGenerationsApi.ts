@@ -106,7 +106,7 @@ export class GetUserGenerationsApiService {
 
   static async getResumableNovaGenerations(authToken?: string, signal?: AbortSignal): Promise<GenerationWithOrder[]> {
     const page = await this.getUserGenerations(authToken, 50, 0, false, signal, false);
-    return page.generations.filter(row => row.endpoint === 'novaToBricks'
+    return page.generations.filter(row => row.endpoint === 'novaToBricks' && row.model_used_3d !== 'astrology'
       && ['failed', 'cancelled'].includes(row.status));
   }
 

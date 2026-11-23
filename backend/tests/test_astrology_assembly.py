@@ -1,7 +1,7 @@
 import pytest
-from src.astra.assembly import assemble, connected_groups
-from src.astra.design import read_design
-from src.astra.parts import SHAPES, Piece
+from src.astrology.assembly import assemble, connected_groups
+from src.astrology.design import read_design
+from src.astrology.parts import SHAPES, Piece
 from src.utils.imported_kit import fulfillment_csv
 from src.utils.parts_catalog import flat_model_inventory, parts_csv_inventory
 from src.utils.supplier_catalog import get_supplier_catalog

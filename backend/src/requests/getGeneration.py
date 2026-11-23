@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Optional
+from typing import Dict, Literal, Optional
 
 from pydantic import BaseModel, Field
 from fastapi import HTTPException
@@ -21,6 +21,7 @@ class GetGenerationResponse(BaseModel):
     version: int = 1
     previous_completed_generation_id: Optional[str] = None
     endpoint: Optional[str] = None
+    building_agent: Literal['astrology'] | None = None
     orderable: bool = True
     mode: GenerationMode = 'basic_bricks'
     max_parts: Optional[int] = None
@@ -111,6 +112,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict, *, inst
             version=generation.get("version", 1),
             previous_completed_generation_id=previous_id,
             endpoint=generation.get("endpoint"),
+            building_agent="astrology" if generation.get("model_used_3d") == "astrology" else None,
             orderable=generation.get("endpoint") != "uploadLdraw",
             mode=generation_mode(generation.get("endpoint"), generation.get("mode")),
             input_type=generation.get("input_type"),
