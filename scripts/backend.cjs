@@ -45,15 +45,25 @@ function start(run = spawnSync, exists = existsSync, startNova = ensureRuntime, 
   execute(executable, ['local_run.py'], run);
 }
 
+function runAstrology(args, run = spawnSync, env = process.env) {
+  const python = findPython(run, env);
+  const result = run(python.command, [...python.args, '-m', 'backend.src.astrology', ...args], {
+    cwd: path.dirname(backend), stdio: 'inherit', env,
+  });
+  if (result.error) throw result.error;
+  return result.status ?? 1;
+}
+
 if (require.main === module) {
   try {
     if (process.argv[2] === 'install') install();
     else if (process.argv[2] === 'start') start();
-    else throw new Error('Expected install or start.');
+    else if (process.argv[2] === 'astrology') process.exitCode = runAstrology(process.argv.slice(3));
+    else throw new Error('Expected install, start, or astrology.');
   } catch (error) {
     console.error(error.message);
     process.exitCode = 1;
   }
 }
 
-module.exports = { environmentPython, findPython, install, start };
+module.exports = { environmentPython, findPython, install, start, runAstrology };

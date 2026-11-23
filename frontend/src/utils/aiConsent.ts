@@ -7,7 +7,7 @@ export const AI_SHARED_DATA = 'Your text prompts and edit instructions, referenc
 
 const AI_ENDPOINTS = new Set([
   'build-buddy',
-  'llmToBricks', 'llmRender', 'textToBricks', 'imageToBricks', 'promptEditModel',
+  'llmToBricks', 'novaToBricks', 'llmRender', 'textToBricks', 'imageToBricks', 'promptEditModel',
   // Conversions and saved edits can also generate an AI model title.
   'glbToBricks', 'objToBricks', 'resizeModel', 'updateModel',
 ]);

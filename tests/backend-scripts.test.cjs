@@ -1,7 +1,19 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
 const path = require('node:path');
-const { environmentPython, findPython, install, start } = require('../scripts/backend.cjs');
+const { environmentPython, findPython, install, start, runAstrology } = require('../scripts/backend.cjs');
+
+test('Astrology passes paths and the brief intact to its local module', () => {
+  const args = ['a red bird', '--image', 'my bird.jpg', '--out', 'my build'];
+  const status = runAstrology(args, (command, child, options) => {
+    if (child[0] === '-c') return { status: 0 };
+    assert.equal(command, '/some python');
+    assert.equal(options.cwd, path.resolve(__dirname, '..'));
+    assert.deepEqual(child, ['-m', 'backend.src.astrology', ...args]);
+    return { status: 2 };
+  }, { PYTHON: '/some python' });
+  assert.equal(status, 2);
+});
 
 test('selects a supported Python after rejecting missing and older interpreters', () => {
   const attempted = [];

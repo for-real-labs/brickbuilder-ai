@@ -39,7 +39,7 @@ import { ResizeScaler } from "../components/ResizeScaler";
 import { ResizeModelApiService } from "../services/resizeModelApi";
 import { LlmToBricksApiService } from "../services/llmToBricksApi";
 import { isAgentGeneration } from "../utils/agentGeneration";
-import { NovaToBricksApiService } from "../services/novaToBricksApi";
+import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService } from "../services/novaToBricksApi";
 import { VoxelPromptEditor, type EditReferenceImage } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
@@ -372,7 +372,8 @@ export default function GeneratedModel() {
     (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
   const hasNovaGeometry = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
-  const hasNovaSource = hasNovaGeometry && !isLDrawUpload;
+  const isAstrology = pendingGeneration?.building_agent === 'astrology';
+  const hasNovaSource = hasNovaGeometry && !isLDrawUpload && !isAstrology;
 
   React.useEffect(() => { setNovaSourceError(''); }, [currentGenerationId]);
   
@@ -1662,7 +1663,10 @@ export default function GeneratedModel() {
 
     try {
       // Start the async edit operation
-      const response = hasNovaGeometry
+      const response = isAstrology
+        ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined, image,
+          { ...DEFAULT_NOVA_OPTIONS, buildingAgent: 'astrology' })
+        : hasNovaGeometry
         ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined, image)
         : await LlmToBricksApiService.generate({
           sourceGenerationId: currentGenerationId,
@@ -1685,7 +1689,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaGeometry, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaGeometry, isAstrology, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.

@@ -39,6 +39,23 @@ Open the local URL printed by the frontend server, choose a mode, and start buil
 
 See the [LLM builder details](backend/README.md) and [Nova setup guide](docs/nova-agent-builder.md) for more options.
 
+## Build locally with Astrology
+
+Astrology is an independent image-to-LDraw agent. It designs with physical parts from the Brickwith catalog, renders both sides of its model, and revises the design against the reference and its stud connections. It also accepts a text brief or an edit to a saved Astrology design.
+
+On the website, approved accounts can choose **Astrology** in **Generation settings → Building agent** with **All parts** selected. The backend reads the comma-separated `ASTROLOGY_ALLOWED_EMAILS` setting and defaults to Nova when there is no allowlist.
+
+Install the backend dependencies with `npm run install:backend`, install LeoCAD, and set `OPENAI_API_KEY` in your environment or `backend/.env`. LeoCAD can use its bundled parts library. Set `LDRAW_DIR` for a separate LDraw installation. On a headless Linux host, run the command under a virtual display such as `xvfb-run -a`.
+
+```sh
+npm run astrology -- "Build the house in this photo with fewer than 600 pieces" --image ./house.jpg --out ./house-build
+npm run astrology -- "Make the door red" --edit ./house-build/design.json --out ./house-with-red-door
+```
+
+Each run uses a new output directory. Open `model.ldr` or `model.mpd` in BrickBuilder's importer, Studio, or LeoCAD. Both files contain construction steps. The directory also contains front and rear PNGs, a BrickBuilder parts CSV, and the editable `design.json`. Interrupted runs retain the last structurally checked design and the latest attempted revision in `draft.json`. Either can be passed to `--edit`. A completed run writes `result.json` with the piece count, visual assessment and estimated API cost for that run.
+
+The engine supports upright bricks, plates, slopes, tiles, window frames, and other modeled details. It checks exact part/color availability, occupied space, the total piece limit and connectivity through vertical studs. Physical balance and assembly clearance still need a hands-on review.
+
 ## License
 
 [MIT](LICENSE). LEGO® is a trademark of the LEGO Group, which does not sponsor, authorize, or endorse this project.

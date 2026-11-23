@@ -44,7 +44,7 @@ async def recover_stale_generations(storage) -> int:
     cutoff = (datetime.now(timezone.utc) - STALE_AFTER).isoformat()
     result = await execute_query(
         storage.client.table("generations").select(
-            "id,status,updated_at,ldr_url,parts_list_csv_url,generation_duration_seconds,ai_usage"
+            "id,status,updated_at,ldr_url,parts_list_csv_url,generation_duration_seconds,ai_usage,model_used_3d"
         ).eq("endpoint", "novaToBricks").in_("status", ACTIVE)
         .lt("updated_at", cutoff).order("updated_at").limit(100)
     )
@@ -75,7 +75,8 @@ async def recover_stale_generations(storage) -> int:
                 "error_message": None if complete else (snapshot.get("error") or INTERRUPTED),
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
-            values.update(await recovered_usage(storage, row))
+            if row.get("model_used_3d") != "astrology":
+                values.update(await recovered_usage(storage, row))
             # Compare the exact heartbeat we inspected: another worker, a
             # cancellation, or a finishing build always wins over recovery.
             changed = await execute_query(

@@ -154,6 +154,22 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const imageLanding = imageLandingPath ? IMAGE_LANDING_PAGES[imageLandingPath] : null;
   const landingViewportRef = useLandingViewport(!ldrawLanding);
   const { session, userProfile, loading: authLoading, isSupabaseConfigured } = useAuth();
+  const [astrologyAccount, setAstrologyAccount] = useState<string>();
+  const [astrologySelectedBy, setAstrologySelectedBy] = useState<string>();
+  const accountId = session?.user.id;
+  const accessToken = session?.access_token;
+  const canSelectAgent = Boolean(accountId && astrologyAccount === accountId);
+  const buildingAgent = canSelectAgent && astrologySelectedBy === accountId ? 'astrology' : 'nova';
+  useEffect(() => {
+    if (!accessToken || !accountId) return;
+    const controller = new AbortController();
+    NovaToBricksApiService.canUseAstrology(accessToken, controller.signal).then(allowed => {
+      if (!controller.signal.aborted) setAstrologyAccount(allowed ? accountId : undefined);
+    }).catch(() => {
+      if (!controller.signal.aborted) setAstrologyAccount(undefined);
+    });
+    return () => controller.abort();
+  }, [accessToken, accountId]);
   const buddyChat = useBuildBuddyChat(pet.id, session?.access_token, session?.user.id || 'guest');
   const { generations, error: activityError, trackGeneration, dismissGeneration } = useGenerationActivity(
     session?.user.id || "anonymous", session?.access_token, !authLoading,
@@ -597,7 +613,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     if (requireGenerationSignup(requestedPrompt, requestedImage)) return;
 
     let novaAuthMode = novaOptions.authMode;
-    if (generationMethod === 'nova' && localDevelopment) {
+    if (generationMethod === 'nova' && buildingAgent === 'nova' && localDevelopment) {
       const mode = await checkNovaConnection(llmModel);
       if (!mode) return;
       novaAuthMode = mode;
@@ -665,7 +681,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           partsInventory: partsInventory ?? undefined,
           maxParts,
           model: llmModel,
-          authMode: localDevelopment ? novaAuthMode : 'api_key',
+          authMode: buildingAgent === 'nova' && localDevelopment ? novaAuthMode : 'api_key',
+          buildingAgent: buildingAgent === 'astrology' ? buildingAgent : undefined,
           prompt: requestedPrompt.trim() || undefined,
           imageBase64,
           imageMediaType: requestedImage?.type || 'image/png',
@@ -740,7 +757,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       
       if (generationMethod === 'llm' || generationMethod === 'nova') {
         openModel(generationId);
-        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks', createdAt: generationStartedAt });
+        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks',
+          buildingAgent: generationMethod === 'nova' && buildingAgent === 'astrology' ? buildingAgent : undefined, createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
         setCreateNewStage(null);
         setLoading(false);
@@ -792,14 +810,19 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     try {
       const image = requestedImage ? { imageBase64: await fileToBase64(requestedImage), imageMediaType: requestedImage.type } : undefined;
       const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
+      const astrology = model.generation.building_agent === 'astrology';
       const response = nova
-        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image, { model: llmModel, maxParts, authMode: localDevelopment ? novaOptions.authMode : 'api_key' })
+        ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image, {
+          model: llmModel, maxParts, authMode: localDevelopment && !astrology ? novaOptions.authMode : 'api_key',
+          buildingAgent: astrology ? 'astrology' : undefined,
+        })
         : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt, model: llmModel, maxParts, ...image }, session?.access_token);
       const id = response.generation_id;
       localStorage.setItem(STORAGE_KEYS.GENERATION_ID, id);
       if (!session) recordAnonymousGeneration(id);
       buddyChat.updateTurn(turnId, { generationId: id, method: nova ? 'nova' : 'llm' });
-      trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks', createdAt: new Date().toISOString() });
+      trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks',
+        buildingAgent: astrology ? 'astrology' : undefined, createdAt: new Date().toISOString() });
       openModel(id, true);
       setImgFile(null);
       setNotificationPromptId(id);
@@ -1304,7 +1327,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);
-                          if (localDevelopment && value === 'nova') void checkNovaConnection(llmModel);
+                          if (localDevelopment && value === 'nova' && buildingAgent === 'nova') void checkNovaConnection(llmModel);
                           posthog.capture('landing_generation_method_selected', { generation_method: value });
                         }}
                         className={`min-h-9 flex flex-1 flex-col items-center gap-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
@@ -1315,15 +1338,33 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   </div>
                   <label className="min-w-0 flex-1 text-sm font-medium text-slate-700" htmlFor="generation-max-parts">
                     Maximum parts
-                    <input id="generation-max-parts" type="number" inputMode="numeric" min="1" max="100000" step="1" placeholder="No limit"
+                    <input id="generation-max-parts" type="number" inputMode="numeric" min="1"
+                      max={generationMethod === 'nova' && buildingAgent === 'astrology' ? 5000 : 100000} step="1"
+                      placeholder={generationMethod === 'nova' && buildingAgent === 'astrology' ? '1,000 by default' : 'No limit'}
                       value={maxPartsInput} onChange={event => setMaxPartsInput(event.target.value)}
                       onBlur={() => posthog.capture('landing_max_parts_changed', { max_parts: Number.isInteger(maxParts) ? maxParts : null })}
                       disabled={Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing || generationMethod === '3d'}
                       className="mt-1 min-h-11 w-full min-w-28 rounded-xl border border-slate-300 bg-white px-3 text-sm" />
                   </label>
                 </div>
-                {settingsOpen && <AiBillingSettings key={session?.user.id || 'guest'} />}
-                {localDevelopment && generationMethod === 'nova' && (
+                {canSelectAgent && (
+                  <div className="mt-3 w-full text-sm font-medium text-slate-700 sm:max-w-52">
+                    <label htmlFor="landing-building-agent">Building agent</label>
+                    <select id="landing-building-agent" value={buildingAgent}
+                      disabled={generationMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
+                      className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-50"
+                      onChange={event => {
+                        const agent = event.target.value === 'astrology' ? 'astrology' : 'nova';
+                        setAstrologySelectedBy(agent === 'astrology' ? accountId : undefined);
+                        posthog.capture('landing_building_agent_selected', { building_agent: agent });
+                      }}>
+                      <option value="nova">Nova</option>
+                      <option value="astrology">Astrology</option>
+                    </select>
+                  </div>
+                )}
+                {settingsOpen && (generationMethod !== 'nova' || buildingAgent === 'nova') && <AiBillingSettings key={session?.user.id || 'guest'} />}
+                {localDevelopment && generationMethod === 'nova' && buildingAgent === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>
                     <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} className="min-h-11 min-w-0 max-w-full rounded-full border border-slate-200 bg-white px-3" onChange={event => {
