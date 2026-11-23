@@ -16,6 +16,7 @@ from fastapi.responses import Response
 from pydantic import PrivateAttr, field_validator
 
 from .imageToBricks import ImageToBricksResponse
+from .astrologyToBricks import AGENT, astrology_allowed, astrology_to_bricks
 from .llmToBricks import LlmToBricksRequest, SUPPORTED_MODELS
 from ..utils.provider_keys import resolve as resolve_provider_key, personal_billing_task
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
@@ -53,6 +54,7 @@ def _generation_timeout() -> float | None:
 
 
 class NovaToBricksRequest(LlmToBricksRequest):
+    building_agent: Literal["nova", "astrology"] = "nova"
     auth_mode: Literal["api_key", "native"] = "api_key"
     parts_inventory: PartsInventory | None = None
 
@@ -69,8 +71,9 @@ class NovaToBricksRequest(LlmToBricksRequest):
     _nova_input_format: Optional[str] = PrivateAttr(default=None)
 
 
-async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict) -> None:
-    source = await generation_storage.get_generation(request.generation_id)
+async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict, source=None) -> None:
+    if source is None:
+        source = await generation_storage.get_generation(request.generation_id)
     if not source:
         raise HTTPException(404, 'Generation not found')
     if source.get('max_parts') is not None:
@@ -266,11 +269,18 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
 
 
 async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends(get_user_with_optional_auth), http_request=None) -> ImageToBricksResponse:
+    if request.building_agent == AGENT and not astrology_allowed(auth_info):
+        raise HTTPException(403, "Astrology is unavailable for this account.")
     if generation_storage is None:
         raise HTTPException(status_code=503, detail="Generation storage is unavailable")
+    source = await generation_storage.get_generation(request.generation_id) if request.generation_id else None
+    if request.generation_id and not source:
+        raise HTTPException(404, 'Generation not found')
+    if request.building_agent == AGENT or (source and source.get("model_used_3d") == AGENT):
+        return await astrology_to_bricks(request, auth_info, source)
     await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     if request.generation_id:
-        await _prepare_edit(request, auth_info)
+        await _prepare_edit(request, auth_info, source)
         await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     if request.auth_mode == 'native':
         from ..utils.local_provider_connections import require_local_development
@@ -323,7 +333,8 @@ async def get_nova_source(generation_id: str, auth_info: dict = Depends(get_user
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(generation, auth_info)
-    if generation.get("endpoint") != "novaToBricks" or generation.get("status") not in {"completed", "failed"}:
+    if (generation.get("endpoint") != "novaToBricks" or generation.get("model_used_3d") == AGENT
+            or generation.get("status") not in {"completed", "failed"}):
         raise HTTPException(status_code=404, detail="Nova source is not available for this generation")
     draft = generation.get("status") == "failed"
     filename = "nova-draft.zip" if draft else "nova-source.zip"

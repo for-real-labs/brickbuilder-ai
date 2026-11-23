@@ -29,6 +29,7 @@ export interface GetGenerationResponse {
   model_generation_id?: string;
   version?: number;
   endpoint?: string;
+  building_agent?: 'astrology' | null;
   orderable?: boolean;
   max_parts?: number | null;
   mode?: 'basic_bricks' | 'all_parts';
