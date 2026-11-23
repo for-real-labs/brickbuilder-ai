@@ -1,8 +1,9 @@
-"""The model behind the agent: streaming Messages API calls and their cost.
+"""The model behind the agent: what a model client is, what a call costs, and Claude.
 
-The backend talks to providers over plain HTTP, so this client does too. It never
-edits earlier turns: Claude's thinking blocks are bound to the exact system prompt,
-tool list and history that produced them.
+The backend talks to providers over plain HTTP, so these clients do too. A client
+never edits earlier turns: Claude's thinking blocks are bound to the exact system
+prompt, tool list and history that produced them. OpenAI models are served by
+``openai_provider``; both speak the transcript shape defined here.
 """
 
 from __future__ import annotations
@@ -20,15 +21,32 @@ API_VERSION = "2023-06-01"
 FALLBACK_BETA = "server-side-fallback-2026-07-01"
 DEFAULT_MODEL = "claude-fable-5-2"
 RETRY_STATUS = frozenset({408, 409, 429, 500, 502, 503, 504, 529})
-# USD per million tokens: input, output, cache read, 5-minute cache write.
-# https://platform.claude.com/docs/en/about-claude/pricing (checked 2026-11-22)
+# USD per million tokens, standard tier: input, output, cache read, default cache write
+# (5 minutes for Claude, 30 minutes for OpenAI). Checked 2026-11-22 against
+# https://platform.claude.com/docs/en/about-claude/pricing and
+# https://developers.openai.com/api/docs/pricing
 PRICES = {
     "claude-fable-5-2": ("8", "40", "0.20", "10"),
     "claude-opus-5-5": ("4", "20", "0.20", "5"),
     "claude-sonnet-5-5": ("2", "10", "0.10", "2.5"),
     "claude-opus-5": ("5", "25", "0.50", "6.25"),
     "claude-opus-4-8": ("5", "25", "0.50", "6.25"),
+    "gpt-6.2-astra": ("8", "40", "0.40", "10"),
+    "gpt-6.2-sol": ("2", "10", "0.10", "2.5"),
+    "gpt-6.1-sol": ("2", "10", "0.10", "2.5"),
+    "gpt-6.1-terra": ("1", "5", "0.05", "1.25"),
+    "gpt-6-astra": ("10", "50", "1", "12.5"),
+    "gpt-6-sol": ("2", "10", "0.20", "2.5"),
+    "gpt-6-luna": ("0.10", "0.50", "0.01", "0.125"),
+    "gpt-5.6-sol": ("4", "20", "0.40", "5"),
+    "gpt-5.6-terra": ("2", "12", "0.20", "2.5"),
+    "gpt-5.6-luna": ("0.20", "1.20", "0.02", "0.25"),
+    "gpt-5.5": ("5", "30", "0.50", "5"),  # no separate cache-write price
 }
+# OpenAI bills a request whose input is above 272K tokens at long-context rates:
+# twice the input-side prices and one and a half times the output price.
+LONG_CONTEXT_MODELS = "gpt-"
+LONG_CONTEXT_TOKENS = 272_000
 _FALLBACK_CAPABLE = ("claude-fable-5", "claude-opus-5", "claude-sonnet-5-5")
 
 
@@ -44,8 +62,14 @@ class BudgetExhausted(RuntimeError):
 
 @dataclass
 class ModelReply:
+    """One model turn in the transcript's shape, whichever provider produced it.
+
+    ``usage`` counts ``input_tokens`` (not cached), ``cache_read_input_tokens``,
+    ``cache_creation_input_tokens`` and ``output_tokens`` separately.
+    """
+
     content: list[dict]
-    stop_reason: str | None
+    stop_reason: str | None  # tool_use | end_turn | max_tokens | pause_turn | refusal
     usage: dict
     model: str
     stop_details: dict | None = None
@@ -66,16 +90,27 @@ def _tokens(usage: dict, key: str) -> int:
     return value
 
 
-def price_usage(model: str, usage: dict) -> Decimal:
-    """Cost in USD. Unknown models fail closed rather than run without a budget."""
+def rates(model: str, input_tokens: int = 0) -> tuple[Decimal, Decimal, Decimal, Decimal]:
+    """Input, output, cache-read and cache-write prices for a request with this much input.
+
+    Unknown models fail closed rather than run without a budget.
+    """
     if model not in PRICES:
         raise ProviderError(f"No pricing is configured for model {model}")
+    rate_in, rate_out, rate_read, rate_write = (Decimal(p) for p in PRICES[model])
+    if model.startswith(LONG_CONTEXT_MODELS) and input_tokens > LONG_CONTEXT_TOKENS:
+        return rate_in * 2, rate_out * Decimal("1.5"), rate_read * 2, rate_write * 2
+    return rate_in, rate_out, rate_read, rate_write
+
+
+def price_usage(model: str, usage: dict) -> Decimal:
+    """Cost in USD of one reply, from usage in the shape ``ModelReply.usage`` documents."""
     if "input_tokens" not in usage or "output_tokens" not in usage:
         raise ProviderError("The provider did not report token usage")
-    rate_in, rate_out, rate_read, rate_write = (Decimal(p) for p in PRICES[model])
-    cost = (_tokens(usage, "input_tokens") * rate_in + _tokens(usage, "output_tokens") * rate_out
-            + _tokens(usage, "cache_read_input_tokens") * rate_read
-            + _tokens(usage, "cache_creation_input_tokens") * rate_write)
+    fresh, read, written = (_tokens(usage, key) for key in (
+        "input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens"))
+    rate_in, rate_out, rate_read, rate_write = rates(model, fresh + read + written)
+    cost = fresh * rate_in + _tokens(usage, "output_tokens") * rate_out + read * rate_read + written * rate_write
     return cost / Decimal(1_000_000)
 
 
@@ -97,8 +132,9 @@ class Budget:
 
     def output_allowance(self, new_input_tokens: int, requested: int) -> int:
         """Output tokens the next call may use, reserving its whole input at the highest rate."""
-        rate_in, rate_out, _, rate_write = (Decimal(p) for p in PRICES[self.model])
-        reserve = Decimal(self._context_tokens + new_input_tokens) * max(rate_in, rate_write) / Decimal(1_000_000)
+        context = self._context_tokens + new_input_tokens
+        rate_in, rate_out, _, rate_write = rates(self.model, context)
+        reserve = Decimal(context) * max(rate_in, rate_write) / Decimal(1_000_000)
         allowance = int(((self.remaining - reserve) * Decimal(1_000_000) / rate_out)
                         .to_integral_value(rounding=ROUND_FLOOR))
         if allowance < 2048:
@@ -120,6 +156,25 @@ class Budget:
             "estimated_cost_usd": str(cost),
         })
         return cost
+
+
+def with_retries(call: Callable[[], ModelReply], *, max_retries: int, sleep: Callable[[float], None],
+                 adjust: Callable[[ProviderError], bool] | None = None) -> ModelReply:
+    """Make one model call, waiting and retrying when the failure is temporary.
+
+    ``adjust`` may change the request in response to an error and ask for an immediate retry.
+    """
+    attempt = 0
+    while True:
+        try:
+            return call()
+        except ProviderError as exc:
+            if adjust is not None and adjust(exc):
+                continue
+            attempt += 1
+            if (exc.status is not None and exc.status not in RETRY_STATUS) or attempt > max_retries:
+                raise
+            sleep(min(60.0, 3.0 * 2 ** (attempt - 1)))
 
 
 def estimate_tokens(content) -> int:
@@ -174,24 +229,19 @@ class AnthropicClient:
 
     def send(self, system: str, tools: list[dict], messages: list[dict], *, max_tokens: int,
              on_delta: Callable[[str, str], None] | None = None) -> ModelReply:
-        attempt = 0
-        while True:
-            headers, body = self._request(system, tools, messages, max_tokens)
-            try:
-                return self._stream(headers, body, on_delta)
-            except ProviderError as exc:
-                # Two request features are optional conveniences. If this account or route does not
-                # offer one, drop it once and carry on rather than failing the build.
-                if exc.status == 400 and self._fallbacks and "fallback" in str(exc).lower():
-                    self._fallbacks = False
-                    continue
-                if exc.status == 400 and self._auto_cache and "cache_control" in str(exc).lower():
-                    self._auto_cache = False
-                    continue
-                attempt += 1
-                if (exc.status is not None and exc.status not in RETRY_STATUS) or attempt > self._max_retries:
-                    raise
-                self._sleep(min(60.0, 3.0 * 2 ** (attempt - 1)))
+        return with_retries(lambda: self._stream(*self._request(system, tools, messages, max_tokens), on_delta),
+                            max_retries=self._max_retries, sleep=self._sleep, adjust=self._drop_unsupported)
+
+    def _drop_unsupported(self, error: ProviderError) -> bool:
+        """Two request features are optional conveniences. If this account or route does not offer
+        one, drop it once and carry on rather than failing the build."""
+        if error.status == 400 and self._fallbacks and "fallback" in str(error).lower():
+            self._fallbacks = False
+            return True
+        if error.status == 400 and self._auto_cache and "cache_control" in str(error).lower():
+            self._auto_cache = False
+            return True
+        return False
 
     def _stream(self, headers: dict, body: dict, on_delta) -> ModelReply:
         content: list[dict] = []

@@ -88,7 +88,8 @@ def main(argv: list[str] | None = None) -> int:
         sub.add_argument("--all-parts", action="store_true", help="Allow every LDraw part in every color")
         sub.add_argument("--max-parts", type=int, default=1500)
         if model_options:
-            sub.add_argument("--model", default=DEFAULT_MODEL)
+            sub.add_argument("--model", default=DEFAULT_MODEL,
+                             help="A Claude model, or an OpenAI model such as gpt-6.2-sol or gpt-6.2-astra")
             sub.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
             sub.add_argument("--budget", type=float, default=8.0, help="AI spending limit in USD for this run")
             sub.add_argument("--max-steps", type=int, default=60)

@@ -15,6 +15,7 @@ from .checks import ModelChecker
 from .ldraw import LDrawLibrary
 from .palette import load_palette
 from .prompts import build_request, system_prompt
+from .openai_provider import OpenAIClient, is_openai_model
 from .provider import DEFAULT_MODEL, AnthropicClient, Budget, ModelClient
 from .render import LeoCadRenderer, Renderer
 from .runner import KitSettings, ScriptRunner, SubprocessScriptRunner
@@ -88,6 +89,9 @@ def save_reference(source: Path, session: Session) -> Path:
 
 
 def _client(options: Options, model: str, effort: str) -> ModelClient:
+    """The provider is chosen by the model's name; each reads its own key."""
+    if is_openai_model(model):
+        return OpenAIClient(options.api_key or os.environ.get("OPENAI_API_KEY", ""), model=model, effort=effort)
     return AnthropicClient(options.api_key or os.environ.get("ANTHROPIC_API_KEY", ""), model=model, effort=effort)
 
 

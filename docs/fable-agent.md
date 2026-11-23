@@ -17,19 +17,24 @@ been compared with it on real requests.
 | Placement | Raw LDraw origins and matrices | A stud grid; the kit measures each part from the library |
 | Physical checks | A CLI the model chooses to run | Run on every script change; `finish` is refused until they pass |
 | Parts inventory | Palette pushed into Nova | The same `PartsCatalog`, enforced in every build report |
+| Models | One provider per deployment | Claude or OpenAI models, chosen per run with `--model` |
 | Default AI budget | $20 per generation | $8 per run, enforced before each call |
 
 ## Example
 
-Built from a customer photo of a lake house: 573 parts in 78 part/color lots, about
-$99 of parts at catalog prices. Every part is in the supplier catalog, nothing
-overlaps, and every part is attached.
+Built unattended by `claude-fable-5-2` from a customer photo of a lake house and the
+one-line prompt "Build my lake house from this photo." The run took 8 model turns and
+$3.65 of AI spend, and published a model of 572 parts in 81 part/color lots, about
+$90 of parts at catalog prices. Every part is in the supplier catalog, nothing
+overlaps, and every part is attached. A follow-up `edit` on that session ("Make the
+roof dark red and add a chimney.") took 2 more model turns and $1.22.
 
 ![Lake house, front left](assets/fable-agent/lakehouse-front-left.png)
 ![Lake house, front](assets/fable-agent/lakehouse-front.png)
 ![Lake house, front right](assets/fable-agent/lakehouse-front-right.png)
 
-The model's source is [`backend/fable_agent/examples/lakehouse.py`](../backend/fable_agent/examples/lakehouse.py).
+The script the agent wrote is kept, unedited, as
+[`backend/fable_agent/examples/lakehouse.py`](../backend/fable_agent/examples/lakehouse.py).
 Rebuild, check and render it without any model call:
 
 ```sh
@@ -50,16 +55,40 @@ python -m fable_agent edit ../output/fable-agent/lakehouse "Make the roof dark r
 
 It needs:
 
-- `ANTHROPIC_API_KEY`, in the environment or `backend/.env`.
+- `ANTHROPIC_API_KEY` for Claude models or `OPENAI_API_KEY` for OpenAI models, in the
+  environment or `backend/.env`.
 - An LDraw parts library at `$LDRAW_DIR` (default `~/ldraw`).
 - LeoCAD on `PATH`, at `$LEOCAD_BIN`, or in `/Applications` on macOS.
 
 Useful options: `--budget 8` (USD), `--max-steps 60`, `--max-parts 1500`,
 `--effort high`, `--model claude-fable-5-2`, `--catalog other.csv`, and `--all-parts`
-to lift the supplier restriction. `claude-opus-5-5` is a cheaper model choice.
+to lift the supplier restriction.
 
 `build` refuses to reuse a directory that already holds a session. `edit` continues
 that session with the model that started it.
+
+### Models
+
+The model's name picks the provider. `--model claude-fable-5-2` is the default;
+`claude-opus-5-5` is a cheaper Claude. Names starting with `gpt-` go to OpenAI, for
+example `--model gpt-6.1-sol`. The agent loop, tools, checks and session format are the
+same for both; only the client differs (`provider.py` for Claude, `openai_provider.py`
+for OpenAI).
+
+A model can be used only if `PRICES` in `backend/fable_agent/provider.py` lists it,
+because the spending limit cannot be enforced without prices. Add a row to use a new
+model.
+
+OpenAI requests are stateless (`store: false`): nothing is kept in a stored OpenAI
+response, and the model's reasoning is carried forward by sending each reasoning item
+back as it arrived.
+
+Prompt caching decides what a long build costs, because every step re-sends the whole
+conversation. The system prompt is sent to OpenAI as a leading developer message
+rather than as `instructions`: when this was written (2026-11-22), `gpt-6.2-sol` and
+`gpt-6.2-astra` cached the conversation but never top-level instructions, while both
+forms cached on `gpt-6.1-sol`. `cache_read_tokens` in a session's `usage` shows
+whether caching is working for a model.
 
 ## How a build works
 
@@ -122,9 +151,10 @@ renders/          every picture the model looked at
 published/001/    model.ldr, build.py, bom.csv, report.json, preview.png, four views
 ```
 
-The transcript is never edited. Claude's reasoning blocks are valid only against
-the exact system prompt, tool list and history that produced them, so a session
-keeps its own copy of the prompt and tools and only ever appends.
+The transcript is never edited. A model's reasoning is valid only against the exact
+system prompt, tool list and history that produced it, so a session keeps its own
+copy of the prompt and tools and only ever appends. This also keeps the provider's
+prompt cache warm from one step to the next.
 
 ## What the checks prove
 
@@ -153,15 +183,13 @@ supplier and instruction checks before a customer is charged, as Nova's do.
   Unknown models and missing usage fail closed.
 - **Reference pictures** are re-encoded, which drops EXIF such as GPS position.
   They are sent to the model provider, as with the other generation modes.
+- **API keys** are read from the environment, sent only to their own provider, and
+  never written to a session, a log or an error message.
 - Supplier prices and SKUs never reach the model: it sees only which part/color
   pairs exist.
 
 ## Not done yet
 
-- **The API path has only been tested against a mocked transport.** The lake house
-  above was built by driving the agent's tools and checks directly, with Claude
-  Fable 5.2 writing the script outside the unattended loop, because no working API
-  key was available. Run one real `build` before relying on the loop.
 - No web integration: no generation row, progress events, credits or storage.
 - Instruction steps are grouped by height. The existing connected-step planner
   should run on published models, as it does for Nova.
