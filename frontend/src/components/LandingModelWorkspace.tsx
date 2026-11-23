@@ -46,6 +46,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const generationId = generation?.generation_id;
   const [searchParams, setSearchParams] = useSearchParams();
   const requestedInstructionsId = searchParams.get('instructions') === '1' ? searchParams.get('id') : null;
+  const linkedStep = searchParams.get('step');
   const { markViewed } = useGenerationNotifications();
   const { getFeatureAccess, requireFeature } = useBilling();
   const featureAccess = getFeatureAccess('instructions', generation?.generation_id);
@@ -76,9 +77,9 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       generation_id: generationId, view: 'instructions', source: 'url',
     });
   }, [showingInstructions, generationId, instructionsId]);
-  const setInstructionUrl = useCallback((step: number | null) => {
+  const setInstructionUrl = useCallback((step: number | null | undefined) => {
     if (!generationId) return;
-    if (step !== null && requestedInstructionsId === generationId && searchParams.get('step') === String(step)) return;
+    if (typeof step === 'number' && requestedInstructionsId === generationId && linkedStep === String(step)) return;
     setSearchParams(current => {
       const next = new URLSearchParams(current);
       if (step === null) {
@@ -87,11 +88,12 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       } else {
         next.set('id', generationId);
         next.set('instructions', '1');
-        next.set('step', String(step));
+        if (step === undefined) next.delete('step');
+        else next.set('step', String(step));
       }
       return next;
     }, { replace: true, ...(historyId && { state: { forkHistoryId: historyId } }) });
-  }, [generationId, historyId, requestedInstructionsId, searchParams, setSearchParams]);
+  }, [generationId, historyId, requestedInstructionsId, linkedStep, setSearchParams]);
   const onInstructionStepChange = useCallback((step: number) => {
     if (!generationId || !showingInstructions) return;
     lastInstructionStep.current = { id: generationId, step };
@@ -190,7 +192,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={showRuler} />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id}
-                initialStep={Number(searchParams.get('step')) || 1} onStepChange={onInstructionStepChange} embedded active={showingInstructions}
+                initialStep={linkedStep === null ? undefined : Number(linkedStep)} onStepChange={onInstructionStepChange} embedded active={showingInstructions}
                 backToModelButton={backToModelButton} />
             </div>}
           </Suspense>}
@@ -240,7 +242,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               });
               setInstructionsId(generation.generation_id);
               const lastStep = lastInstructionStep.current;
-              setInstructionUrl(lastStep?.id === generation.generation_id ? lastStep.step : 1);
+              setInstructionUrl(lastStep?.id === generation.generation_id ? lastStep.step : undefined);
             }}>
             <BookOpen size={16} aria-hidden="true" />
             <span>Show instructions</span>

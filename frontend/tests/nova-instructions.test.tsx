@@ -241,6 +241,74 @@ it('loads a linked instruction step and keeps standalone step links working', as
   } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
 });
 
+it('resumes saved instructions per model and gives linked steps precedence', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockImplementation(async id => landingModel(id).generation);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  const open = (url: string) => act(async () => root.render(
+    <MemoryRouter key={url} initialEntries={[url]}><LocationProbe /><InstructionsPage /></MemoryRouter>,
+  ));
+  const stepInput = () => container.querySelector<HTMLInputElement>('input[aria-label="Instruction step"]')!;
+  const clickNext = () => act(() => Array.from(container.querySelectorAll('button')).find(el => el.textContent?.trim() === 'Next')!.click());
+  try {
+    await open('/instructions?id=nova');
+    expect(stepInput().value).toBe('1');
+    clickNext();
+    expect(stepInput().value).toBe('2');
+
+    await open('/instructions?id=other');
+    expect(stepInput().value).toBe('1');
+    await open('/instructions?id=nova');
+    expect(stepInput().value).toBe('2');
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/instructions?id=nova&step=2');
+
+    await act(async () => root.render(<MemoryRouter key="landing" initialEntries={['/?id=nova']}>
+      <LocationProbe />
+      <LandingModelWorkspace model={landingModel('nova')} busy={false}>{null}</LandingModelWorkspace>
+    </MemoryRouter>));
+    await act(async () => container.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!.click());
+    expect(stepInput().value).toBe('2');
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/?id=nova&instructions=1&step=2');
+
+    await open('/instructions?id=nova&step=3');
+    expect(stepInput().value).toBe('3');
+    act(() => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(stepInput(), '1');
+      stepInput().dispatchEvent(new Event('input', { bubbles: true }));
+    });
+    expect(container.querySelector('[data-testid="location"]')?.textContent).toBe('/instructions?id=nova&step=1');
+    await open('/instructions?id=nova');
+    expect(stepInput().value).toBe('1');
+  } finally { act(() => root.unmount()); container.remove(); }
+});
+
+it('resumes a locally opened model without mixing progress across model contents', async () => {
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  const open = (key: string, ldrContent?: string) => act(async () => root.render(
+    <MemoryRouter key={key} initialEntries={[{
+      pathname: '/instructions',
+      state: ldrContent ? { ldrContent, modelName: 'same-name.ldr', mpdContent: ldrContent } : null,
+    }]}><InstructionsPage /></MemoryRouter>,
+  ));
+  const step = () => container.querySelector<HTMLInputElement>('input[aria-label="Instruction step"]')?.value;
+  try {
+    await open('first', instructions);
+    act(() => Array.from(container.querySelectorAll('button')).find(el => el.textContent?.trim() === 'Next')!.click());
+    expect(step()).toBe('2');
+    await open('cached');
+    expect(step()).toBe('2');
+    await open('different-model', chimneyInstructions);
+    expect(step()).toBe('1');
+    await open('first-again', instructions);
+    expect(step()).toBe('2');
+  } finally { act(() => root.unmount()); container.remove(); }
+});
+
 it('lets an embedded instruction load recover without leaving the dialogue', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(landingModel('nova').generation);
   const load = vi.spyOn(NovaToBricksApiService, 'instructions').mockRejectedValueOnce(new NovaInstructionPlanError()).mockResolvedValueOnce(instructions);

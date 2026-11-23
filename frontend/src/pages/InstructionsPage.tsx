@@ -237,17 +237,41 @@ const getSingleStepMpd = (parsed: ParsedMpd, stepIndex: number): string => {
 export function InstructionsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const location = useLocation();
+  const linkedStep = searchParams.get('step');
   const onStepChange = useCallback((step: number) => {
     if (searchParams.get('step') === String(step)) return;
     setSearchParams(previous => {
       const next = new URLSearchParams(previous);
       next.set('step', String(step));
       return next;
-    }, { replace: true });
-  }, [searchParams, setSearchParams]);
+    }, { replace: true, state: location.state });
+  }, [searchParams, setSearchParams, location.state]);
   return <InstructionsViewer key={searchParams.get('id') || 'local'} generationId={searchParams.get('id')}
-    initialStep={Number(searchParams.get('step')) || 1} navigationState={location.state}
+    initialStep={linkedStep === null ? undefined : Number(linkedStep)} navigationState={location.state}
     onStepChange={onStepChange} />;
+}
+
+function instructionProgressKey(generationId: string | null, ldr: string | null) {
+  if (generationId) return `brickbuilder:instruction-step:generation:${generationId}`;
+  if (!ldr) return null;
+  // Key local models by their contents so two uploads with the same filename stay independent.
+  let hash = 2166136261;
+  for (let index = 0; index < ldr.length; index++) {
+    hash = Math.imul(hash ^ ldr.charCodeAt(index), 16777619);
+  }
+  return `brickbuilder:instruction-step:local:${ldr.length}:${hash >>> 0}`;
+}
+
+function getInitialStepIndex(linkedStep: number | undefined, progressKey: string | null, stepCount: number) {
+  let step = linkedStep;
+  if (step === undefined && progressKey) {
+    try {
+      step = Number(localStorage.getItem(progressKey));
+    } catch {
+      // The viewer must also work when browser storage is unavailable.
+    }
+  }
+  return step !== undefined && Number.isInteger(step) && step >= 1 && step <= stepCount ? step - 1 : 0;
 }
 
 interface InstructionsViewerProps {
@@ -269,9 +293,11 @@ export function InstructionsViewer(props: InstructionsViewerProps) {
   </>;
 }
 
-function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationState, onStepChange, backToModelButton, embedded = false, active = true }: InstructionsViewerProps) {
+function UnlockedInstructionsViewer({ generationId, initialStep, navigationState, onStepChange, backToModelButton, embedded = false, active = true }: InstructionsViewerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { ldrContent: navigationLdr, modelName: navigationModelName, mpdContent: navigationMpd } =
+    (navigationState as { ldrContent?: string; modelName?: string; mpdContent?: string } | null) ?? {};
   // Core state
   const [model, setModel] = useState<LDrawModel | null>(null);
   const [loading, setLoading] = useState(true);
@@ -291,6 +317,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
   
   // LDR content for download
   const [ldrContent, setLdrContent] = useState<string | null>(null);
+  const progressKey = useMemo(() => instructionProgressKey(generationId, ldrContent), [generationId, ldrContent]);
   
   // MPD content for download
   const [mpdContent, setMpdContent] = useState<string | null>(null);
@@ -320,8 +347,17 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
   }, [currentStepIndex]);
 
   useEffect(() => {
-    if (model && !loading) onStepChange?.(currentStepIndex + 1);
-  }, [currentStepIndex, model, loading, onStepChange]);
+    if (active && model?.steps[currentStepIndex] && !loading && !error) onStepChange?.(currentStepIndex + 1);
+  }, [active, currentStepIndex, model, loading, error, onStepChange]);
+
+  useEffect(() => {
+    if (!progressKey || !active || !model?.steps[currentStepIndex] || loading || error) return;
+    try {
+      localStorage.setItem(progressKey, String(currentStepIndex + 1));
+    } catch {
+      // Navigation still works when browser storage is unavailable or full.
+    }
+  }, [active, currentStepIndex, model, loading, error, progressKey]);
 
   // Get LDR content from navigation state, URL params, or localStorage
   useEffect(() => {
@@ -358,9 +394,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
           setModel(parsedModel);
           setLdrContent(ldr_content);
           
-          // Initialize step from URL param if valid, otherwise start at 0
-          const stepFromUrl = Math.trunc(initialStep) - 1;
-          const initialIndex = (stepFromUrl >= 0 && stepFromUrl < parsedModel.steps.length) ? stepFromUrl : 0;
+          const initialIndex = getInitialStepIndex(initialStep, instructionProgressKey(generationId, ldr_content), parsedModel.steps.length);
           setCurrentStepIndex(initialIndex);
           setStepInputValue(String(initialIndex + 1));
           
@@ -393,16 +427,8 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
         }
       }
       
-      // First, try to get LDR content from navigation state
-      const stateData = navigationState as {
-        ldrContent?: string,
-        modelName?: string,
-        mpdContent?: string
-      } | null;
-
-      let ldrContent = stateData?.ldrContent;
-      let mpdContent = stateData?.mpdContent;
-      let modelName = stateData?.modelName || 'model.ldr';
+      let ldrContent = navigationLdr;
+      let modelName = navigationModelName || 'model.ldr';
       
       // If not in state, try localStorage
       if (!ldrContent) {
@@ -425,15 +451,13 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
         setModel(parsedModel);
         setLdrContent(ldrContent);
         
-        // Initialize step from URL param if valid, otherwise start at 0
-        const stepFromUrl = Math.trunc(initialStep) - 1;
-        const initialIndex = (stepFromUrl >= 0 && stepFromUrl < parsedModel.steps.length) ? stepFromUrl : 0;
+        const initialIndex = getInitialStepIndex(initialStep, instructionProgressKey(null, ldrContent), parsedModel.steps.length);
         setCurrentStepIndex(initialIndex);
         setStepInputValue(String(initialIndex + 1));
         
         // Also load MPD content if available for BrickOwl wishlist
         // First try navigation state, then localStorage
-        let mpdContentToSet = mpdContent;
+        let mpdContentToSet = navigationMpd;
         if (!mpdContentToSet) {
           mpdContentToSet = localStorage.getItem('lastMpdContent') || undefined;
         }
@@ -455,7 +479,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep = 1, navigationS
 
     parseModel();
     return () => { disposed = true; };
-  }, [generationId, navigationState, loadAttempt]);
+  }, [generationId, navigationLdr, navigationModelName, navigationMpd, loadAttempt]);
 
   // Helper to export LDR for a single step
   function exportStepLdr(model: LDrawModel, stepIndex: number): string {
