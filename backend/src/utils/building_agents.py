@@ -1,0 +1,36 @@
+"""Building agents that run inside the API process for All parts generations.
+
+Nova runs in its own service. Astrology and the Fable variants run here. They are
+chosen in Generation settings and offered only to the accounts on the allowlist.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+ASTROLOGY = "astrology"
+
+
+@dataclass(frozen=True)
+class FableVariant:
+    """One way to run the Fable agent: a model, a method and the key that pays for it."""
+
+    model: str
+    method: str  # "thorough" or "lean"; see docs/fable-agent.md
+    key_env: str
+
+
+# The id is stored as the generation's model_used_3d, so never rename one: add a new id instead.
+FABLE_AGENTS = {
+    "fable-claude-fable-5-2": FableVariant("claude-fable-5-2", "thorough", "ANTHROPIC_API_KEY"),
+    "fable-gpt-6.2-sol": FableVariant("gpt-6.2-sol", "thorough", "OPENAI_API_KEY"),
+    "fable-gpt-6.1-sol": FableVariant("gpt-6.1-sol", "thorough", "OPENAI_API_KEY"),
+    "fable-lean-claude-fable-5-2": FableVariant("claude-fable-5-2", "lean", "ANTHROPIC_API_KEY"),
+    "fable-lean-gpt-6.1-sol": FableVariant("gpt-6.1-sol", "lean", "OPENAI_API_KEY"),
+}
+IN_PROCESS_AGENTS = (ASTROLOGY, *FABLE_AGENTS)
+
+
+def in_process_agent(value) -> str | None:
+    """The agent's id when a generation was built here rather than by Nova."""
+    return value if isinstance(value, str) and value in IN_PROCESS_AGENTS else None

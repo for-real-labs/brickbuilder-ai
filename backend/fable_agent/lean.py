@@ -212,13 +212,20 @@ class LeanAgent:
 
     # ----- the loop -------------------------------------------------------
 
+    def load(self, script: str) -> str:
+        """Start from an existing build script; the first round opens on its report and pictures."""
+        outcome = self._rebuild(script, list(DEFAULT_VIEWS))
+        self._state["outcome"] = "This is the model as it stands, before your change.\n" + outcome.text
+        return outcome.text
+
     def run(self, content: list[dict]) -> RunResult:
         """Add a request (a new build or a follow-up change) and work on it for a few rounds."""
         session, state = self._session, self._state
         published_before = len(session.meta["published"])
         session.meta["status"] = "running"
         state["brief"] = state["brief"] + content
-        state["outcome"] = "A new request was added to the brief above." if published_before else ""
+        if published_before:
+            state["outcome"] = "A new request was added to the brief above."
         session.save()
         reason = "round limit reached"
         rounds = 0
@@ -239,7 +246,8 @@ class LeanAgent:
             rounds += 1
             self._budget.record(reply)
             session.meta["usage"] = session.meta.get("usage", []) + self._budget.calls[-1:]
-            self._emit("turn", {"step": rounds, "spent_usd": str(self._budget.spent)})
+            self._emit("turn", {"step": rounds, "spent_usd": str(self._budget.spent),
+                                "usage": self._budget.calls[-1]})
             if reply.stop_reason == "refusal":
                 session.save()
                 return close_run(session, self._toolbox, self._budget, self._emit, "refused",

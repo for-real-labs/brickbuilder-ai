@@ -1,5 +1,6 @@
 import { startPolling } from '../utils/polling';
 import { getGuestSession } from '../utils/guestSession';
+import { inProcessAgent, type InProcessAgent } from '../utils/buildingAgents';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { GetGenerationApiService } from '../services/getGenerationApi';
 import { GetUserGenerationsApiService } from '../services/getUserGenerationsApi';
@@ -10,7 +11,7 @@ export interface GenerationActivity {
   name?: string | null;
   status: string;
   endpoint?: string;
-  buildingAgent?: 'astrology' | null;
+  buildingAgent?: InProcessAgent | null;
   createdAt?: string;
   durationSeconds?: number | null;
   imageUrl?: string;
@@ -35,7 +36,7 @@ function restoreDismissed(owner: string): Set<string> {
   } catch { return new Set(); }
 }
 const keepActivity = (row: GenerationActivity) => isGenerationActive(row.status) || isPreviewPending(row)
-  || (row.endpoint === 'novaToBricks' && row.buildingAgent !== 'astrology' && ['failed', 'cancelled'].includes(row.status));
+  || (row.endpoint === 'novaToBricks' && !inProcessAgent(row.buildingAgent) && ['failed', 'cancelled'].includes(row.status));
 
 function restore(owner: string): GenerationActivity[] {
   try {
@@ -136,7 +137,7 @@ export function useGenerationActivity(owner: string, authToken: string | undefin
         const updates = new Map<string, GenerationActivity>([...resumable, ...active].map(row => [row.id, {
           durationSeconds: row.generation_duration_seconds,
           id: row.id, prompt: row.prompt, name: row.name, status: row.status, endpoint: row.endpoint,
-          buildingAgent: row.model_used_3d === 'astrology' ? 'astrology' : undefined,
+          buildingAgent: inProcessAgent(row.model_used_3d),
           createdAt: row.created_at || rows.current.find(saved => saved.id === row.id)?.createdAt,
           imageUrl: row.preview_image_url || row.processed_image_url || row.external_image_url,
           errorMessage: row.error_message,

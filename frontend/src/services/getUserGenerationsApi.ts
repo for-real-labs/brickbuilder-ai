@@ -1,4 +1,5 @@
 import { apiFetch } from './apiFetch';
+import { inProcessAgent } from '../utils/buildingAgents';
 // API Configuration
 const API_MODE = import.meta.env.VITE_API_MODE || 'local';
 const LOCAL_API_URL = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002';
@@ -106,7 +107,7 @@ export class GetUserGenerationsApiService {
 
   static async getResumableNovaGenerations(authToken?: string, signal?: AbortSignal): Promise<GenerationWithOrder[]> {
     const page = await this.getUserGenerations(authToken, 50, 0, false, signal, false);
-    return page.generations.filter(row => row.endpoint === 'novaToBricks' && row.model_used_3d !== 'astrology'
+    return page.generations.filter(row => row.endpoint === 'novaToBricks' && !inProcessAgent(row.model_used_3d)
       && ['failed', 'cancelled'].includes(row.status));
   }
 

@@ -17,6 +17,7 @@ from pydantic import PrivateAttr, field_validator
 
 from .imageToBricks import ImageToBricksResponse
 from .astrologyToBricks import AGENT, astrology_allowed, astrology_to_bricks
+from .fableToBricks import fable_allowed, fable_to_bricks
 from .llmToBricks import LlmToBricksRequest, SUPPORTED_MODELS
 from ..utils.provider_keys import resolve as resolve_provider_key, personal_billing_task
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
@@ -25,6 +26,7 @@ from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
+from ..utils.building_agents import FABLE_AGENTS, in_process_agent
 from ..utils.nova_service import NovaService, NovaDraftError, INSTRUCTIONS_FILE
 from ..utils.parts_inventory import PartsInventory
 from ..utils.prompt_parts_limit import tighter_parts_limit
@@ -54,9 +56,16 @@ def _generation_timeout() -> float | None:
 
 
 class NovaToBricksRequest(LlmToBricksRequest):
-    building_agent: Literal["nova", "astrology"] = "nova"
+    building_agent: str = "nova"
     auth_mode: Literal["api_key", "native"] = "api_key"
     parts_inventory: PartsInventory | None = None
+
+    @field_validator('building_agent')
+    @classmethod
+    def known_agent(cls, value):
+        if value != "nova" and not in_process_agent(value):
+            raise ValueError("Unknown building agent")
+        return value
 
     @field_validator('parts_inventory')
     @classmethod
@@ -271,6 +280,8 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
 async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends(get_user_with_optional_auth), http_request=None) -> ImageToBricksResponse:
     if request.building_agent == AGENT and not astrology_allowed(auth_info):
         raise HTTPException(403, "Astrology is unavailable for this account.")
+    if request.building_agent in FABLE_AGENTS and not fable_allowed(auth_info):
+        raise HTTPException(403, "Fable is unavailable for this account.")
     if generation_storage is None:
         raise HTTPException(status_code=503, detail="Generation storage is unavailable")
     source = await generation_storage.get_generation(request.generation_id) if request.generation_id else None
@@ -278,6 +289,8 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         raise HTTPException(404, 'Generation not found')
     if request.building_agent == AGENT or (source and source.get("model_used_3d") == AGENT):
         return await astrology_to_bricks(request, auth_info, source)
+    if request.building_agent in FABLE_AGENTS or (source and source.get("model_used_3d") in FABLE_AGENTS):
+        return await fable_to_bricks(request, auth_info, source)
     await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     if request.generation_id:
         await _prepare_edit(request, auth_info, source)
@@ -333,7 +346,7 @@ async def get_nova_source(generation_id: str, auth_info: dict = Depends(get_user
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(generation, auth_info)
-    if (generation.get("endpoint") != "novaToBricks" or generation.get("model_used_3d") == AGENT
+    if (generation.get("endpoint") != "novaToBricks" or in_process_agent(generation.get("model_used_3d"))
             or generation.get("status") not in {"completed", "failed"}):
         raise HTTPException(status_code=404, detail="Nova source is not available for this generation")
     draft = generation.get("status") == "failed"

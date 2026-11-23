@@ -55,6 +55,10 @@ class BuildAgent:
         self._max_tokens = max_tokens
         self._emit = on_event or (lambda kind, data: None)
 
+    def load(self, script: str) -> str:
+        """Start from an existing build script; returns its build report."""
+        return self._toolbox.call("write_script", {"code": script}).text
+
     def run(self, content: list[dict]) -> RunResult:
         """Add a user turn (a new request or a follow-up edit) and work until it is done."""
         session = self._session
@@ -76,7 +80,8 @@ class BuildAgent:
             steps += 1
             self._budget.record(reply)
             session.meta["usage"] = session.meta.get("usage", []) + self._budget.calls[-1:]
-            self._emit("turn", {"step": steps, "spent_usd": str(self._budget.spent)})
+            self._emit("turn", {"step": steps, "spent_usd": str(self._budget.spent),
+                                "usage": self._budget.calls[-1]})
             if reply.stop_reason == "refusal":
                 # A declined turn is not part of the conversation; its content must not be replayed.
                 session.save()

@@ -127,8 +127,12 @@ def _agent(options: Options, session: Session, client: ModelClient, bench: Workb
 
 def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference: Path | None = None,
                 on_event: Event | None = None, client: ModelClient | None = None,
-                workbench: Workbench | None = None) -> RunResult:
-    """Create a session in ``run_dir`` and build the request."""
+                workbench: Workbench | None = None, script: str | None = None) -> RunResult:
+    """Create a session in ``run_dir`` and build the request.
+
+    ``script`` starts from an existing model's build script, for a change made without the
+    session that produced it.
+    """
     if not prompt.strip():
         raise ValueError("Describe what to build")
     options = options.resolved(options.method)
@@ -146,9 +150,11 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
     content = []
     if reference is not None:
         content.append(session.image_block(save_reference(Path(reference), session)))
+    agent = _agent(options, session, client, bench, on_event)
+    existing = agent.load(script) if script and script.strip() else None
     content.append({"type": "text", "text": build_request(prompt, has_reference=reference is not None,
-                                                          max_parts=options.max_parts)})
-    return _agent(options, session, client, bench, on_event).run(content)
+                                                          max_parts=options.max_parts, existing=existing)})
+    return agent.run(content)
 
 
 def continue_build(request: str, run_dir: Path | str, options: Options, *, on_event: Event | None = None,

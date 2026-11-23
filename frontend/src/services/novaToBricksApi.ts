@@ -2,9 +2,10 @@ import type { PartsInventory } from './partsInventoryApi';
 import { apiFetch, authenticatedApiFetch } from './apiFetch';
 import { DEFAULT_LLM_MODEL, getLlmModelOption, validateMaxParts, type LlmToBricksResponse } from './llmToBricksApi';
 import { getInstructionKey } from '../utils/instructionLinks';
+import { isBuildingAgent, type BuildingAgent } from '../utils/buildingAgents';
 
+export type { BuildingAgent };
 export type NovaAuthMode = 'api_key' | 'native';
-export type BuildingAgent = 'nova' | 'astrology';
 
 export interface NovaBuilderOptions {
   model: string;
@@ -42,13 +43,15 @@ export class NovaInstructionPlanError extends Error {
 }
 
 export class NovaToBricksApiService {
-  static async canUseAstrology(authToken: string, signal: AbortSignal): Promise<boolean> {
+  /** The agents this account may choose, in the order to offer them. Nova is always available. */
+  static async buildingAgents(authToken: string, signal: AbortSignal): Promise<BuildingAgent[]> {
     const response = await apiFetch(`${NOVA_API_BASE_URL}/generation-settings/building-agents`, {
       headers: { Authorization: `Bearer ${authToken}` }, signal, cache: 'no-store',
     });
-    if (!response.ok) return false;
+    if (!response.ok) return ['nova'];
     const data = await response.json();
-    return Array.isArray(data.agents) && data.agents.includes('astrology');
+    const agents: BuildingAgent[] = Array.isArray(data.agents) ? data.agents.filter(isBuildingAgent) : [];
+    return agents.includes('nova') ? agents : ['nova', ...agents];
   }
   static async instructions(generationId: string): Promise<string> {
     const key = getInstructionKey(generationId);

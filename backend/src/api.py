@@ -43,6 +43,7 @@ from .utils.generation_recovery import start_recovery_worker
 from .requests.uploadLdraw import upload_ldraw, UploadLdrawResponse
 from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
 from .requests.astrologyToBricks import astrology_allowed
+from .utils.building_agents import IN_PROCESS_AGENTS
 from .requests.localProviders import router as local_providers_router
 from .requests.buildBuddy import router as build_buddy_router
 from .requests.supportEmail import router as support_email_router
@@ -170,7 +171,8 @@ async def upload_ldraw_endpoint(file: UploadFile = File(...), auth_info: dict = 
 @app.get("/generation-settings/building-agents")
 async def building_agents(response: Response, auth_info: dict = Depends(get_optional_identity)):
     response.headers["Cache-Control"] = "private, no-store"
-    return {"agents": ["nova", "astrology"] if astrology_allowed(auth_info) else ["nova"]}
+    # One allowlist covers every experimental agent: Astrology and the Fable variants.
+    return {"agents": ["nova", *IN_PROCESS_AGENTS] if astrology_allowed(auth_info) else ["nova"]}
 
 
 @app.post("/novaToBricks", response_model=ImageToBricksResponse)

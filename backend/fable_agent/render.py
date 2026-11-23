@@ -86,10 +86,12 @@ class LeoCadRenderer:
     def _one(self, model: Path, target_file: Path, view: str, bounds: Sequence[float], elevation: float | None) -> None:
         eye, target = camera(bounds, view, elevation)
         up = ["0", "0", "1"] if view == "top" else ["0", "-1", "0"]
-        command = [self._binary, "-l", self._ldraw_dir, "-i", str(target_file),
-                   "-w", str(self._size[0]), "-h", str(self._size[1]),
+        # Long options, and the same ones Astrology passes, so both agents render wherever one does.
+        command = [self._binary, "--libpath", self._ldraw_dir, "--image", str(target_file),
+                   "--width", str(self._size[0]), "--height", str(self._size[1]),
                    "--camera-position-ldraw", *(f"{v:.2f}" for v in (*eye, *target)), *up,
-                   "--fov", f"{FIELD_OF_VIEW:g}", "--aa-samples", "4", str(model)]
+                   "--fov", f"{FIELD_OF_VIEW:g}", "--aa-samples", "4", "--no-highlight", "--no-fade-steps",
+                   str(model)]
         try:
             completed = self._run(command, capture_output=True, timeout=self._timeout, check=False)
         except (OSError, subprocess.SubprocessError) as exc:

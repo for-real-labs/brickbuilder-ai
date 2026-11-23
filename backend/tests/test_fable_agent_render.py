@@ -29,7 +29,7 @@ def fake_leocad(commands, *, fail=False):
         if not fail:
             picture = Image.new("RGBA", (400, 300), (0, 0, 0, 0))
             picture.paste((200, 30, 30, 255), (150, 100, 250, 200))
-            picture.save(command[command.index("-i") + 1])
+            picture.save(command[command.index("--image") + 1])
         return subprocess.CompletedProcess(command, 1 if fail else 0)
     return run
 
@@ -43,9 +43,9 @@ def test_leocad_is_called_per_view_and_images_are_flattened_and_trimmed(tmp_path
     with Image.open(views[0].path) as picture:
         assert picture.mode == "RGB" and picture.size == (156, 156)  # cropped to the model plus a margin
         assert picture.getpixel((0, 0)) == (244, 245, 247)
-    command = next(c for c in commands if c[c.index("-i") + 1].endswith("front-right.png"))
+    command = next(c for c in commands if c[c.index("--image") + 1].endswith("front-right.png"))
     assert command[0] == "/opt/leocad" and command[-1].endswith("model.ldr")
-    assert command[command.index("-l") + 1] == str(tmp_path / "ldraw")
+    assert command[command.index("--libpath") + 1] == str(tmp_path / "ldraw")
     position = command.index("--camera-position-ldraw")
     assert command[position + 7:position + 10] == ["0", "-1", "0"]
     assert all(isinstance(argument, str) for argument in command)

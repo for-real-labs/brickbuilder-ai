@@ -247,3 +247,31 @@ def test_claude_requests_can_leave_the_cache_point_to_the_caller():
             client.send("s", [], [{"role": "user", "content": "hi"}], max_tokens=100)
     assert "cache_control" in bodies[0] and "cache_control" not in bodies[1]
     assert bodies[1]["system"][0]["cache_control"] == {"type": "ephemeral"}
+
+
+@pytest.mark.parametrize("method", ["thorough", "lean"])
+def test_a_build_can_start_from_an_existing_script_to_change_it(tmp_path, method):
+    world = World(tmp_path / "world")
+    recolor = {"old": '"Sand_Blue"', "new": '"Red"'}
+    replies = {
+        "thorough": [reply(tool_use("edit_script", "c1", **recolor)), reply(tool_use("render", "c2")),
+                     reply(tool_use("finish", "c3", title="Red cabin", summary="Now red."))],
+        "lean": [reply(tool_use("patch", "c1", notes="recolored", edits=[recolor])),
+                 reply(tool_use("finish", "c2", title="Red cabin", summary="Now red."))],
+    }[method]
+    client = FakeClient(replies)
+    result = start_build("Make it red", tmp_path / "run", Options(max_parts=500, method=method), client=client,
+                         workbench=bench(world), script=CABIN)
+    assert result.status == "published" and result.published["title"] == "Red cabin"
+    assert '"Red"' in (tmp_path / "run" / "published" / "001" / "build.py").read_text()
+
+    opening = client.requests[0]["messages"][0]["content"]
+    brief = next(block["text"] for block in opening if block["type"] == "text")
+    assert "Change request: Make it red" in brief and "This model already exists" in brief
+    assert "Build report of the existing model" in brief and "BUILD OK" in brief
+    assert "Request: Make it red" not in brief
+    if method == "lean":
+        # The first round already shows the model as it stands: script, report and pictures.
+        assert "Current build script (revision 1)" in state_text(client.requests[0])
+        assert "before your change" in state_text(client.requests[0]) and len(pictures(client.requests[0])) == 3
+    assert Session.load(tmp_path / "run").meta["revision"] == 2
