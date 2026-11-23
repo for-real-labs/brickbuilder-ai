@@ -47,14 +47,55 @@ SHAPES = {
 GUIDE = """Design an editable physical LEGO sculpture matching the original brief, including its most distinctive details. Output only a compact JSON array of operations. Coordinates: x increases right in the front view, z increases toward the BACK, y increases upward. Horizontal distances are studs, vertical distances PLATES (3 plates per brick). y=0 ground. Each shape row is [kind,color,x,z,y,width,depth,height], integer MINIMUM left/front/bottom corners; sizes 1..64. Later shapes overwrite cells. box=solid, shell=vertical perimeter walls open top/bottom, ellipsoid=smooth oval, cylinder=vertical oval drum, cone=tapers to top, gableX=ridge parallel X, gableZ=ridge parallel Z. cut or circlecut erases a volume. The compiler fills shapes with real interlocking plates/bricks. For small details, add [\"part\",color,xCenter,zCenter,yTop,\"ldrawId\",quarterTurns] using half-studs if needed and local part origin (top of brick); these explicit parts do not subtract solids, provide clearance. Use known specialized parts for features when helpful. Repeat ANY one row by [\"repeat\",count,dx,dz,dy,row]. Include geometric depth, distinctive silhouette, color markings, facial or architectural detail, supported joins. Build economical at modest scale. Use LDraw solid colors: 0 black,1 blue,2 green,4 red,7 light gray,14 yellow,15 white,19 tan,22 purple,25 orange,28 dark tan,70 reddish brown,71 light bluish gray,72 dark bluish gray,78 skin,272 dark blue,288 dark green,484 dark orange. Avoid unnecessary plinths. For pitched roofs prefer real sloped courses ["roofX" or "roofZ",color,x,z,yBottom,lengthAlongRidge,evenCrossSpan] with sizes >=4. Height is 3*(crossSpan/2-1) plates. Use a supported platform underneath; this routine constructs the roof skin only. Avoid color 7; use 71. Make the first plan complete and compact enough to compile; keep part count modest. Never describe the plan in prose."""
 
 
-FAMILY_PARTS = "3039 3040b 3298 54200 11477 15068 6081 50950 6141 4073 4032 3941 87081 60623 60594 60603 30044 3185 3823 2412b 3633 30099 6255 3743 4716 3648 32270 3700 3705 6538c 55423 4624 3062b 4070 2877 3069b".split()
+FAMILY_PARTS = [
+    "3039",
+    "3040b",
+    "3298",
+    "54200",
+    "11477",
+    "15068",
+    "6081",
+    "50950",
+    "6141",
+    "4073",
+    "4032",
+    "3941",
+    "87081",
+    "60623",
+    "60594",
+    "60603",
+    "30044",
+    "3185",
+    "3823",
+    "2412b",
+    "3633",
+    "30099",
+    "6255",
+    "3743",
+    "4716",
+    "3648",
+    "32270",
+    "3700",
+    "3705",
+    "6538c",
+    "55423",
+    "4624",
+    "3062b",
+    "4070",
+    "2877",
+    "3069b",
+]
 PALETTE = (0, 1, 2, 4, 7, 14, 15, 19, 22, 25, 28, 70, 71, 72, 78, 272, 288, 484)
 
 
 def catalog_guide(catalog):
     lines = []
     for part in FAMILY_PARTS:
-        colors = [c for c in PALETTE if (part, c) in catalog.parts]
+        colors = [
+            c
+            for c in PALETTE
+            if (part, c) in catalog.parts and catalog.parts[part, c].max_quantity != 0
+        ]
         if colors:
             name = catalog.parts[part, colors[0]].name
             lines.append(f"{part} {name}: {','.join(map(str, colors))}")

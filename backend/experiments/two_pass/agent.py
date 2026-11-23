@@ -3,7 +3,9 @@
 import json
 import time
 from pathlib import Path
-from .engine import compile_scene, GUIDE, catalog_guide
+
+from .engine import GUIDE, catalog_guide, compile_scene
+from .part_lookup import PartLookup, draft_parts, placed_parts
 from .provider import invoke
 
 EDIT = """The attachment is the original model. Return JSON {"recolor":[[zeroBasedSourceIndex,newLdrawColor],...]}. The index table is grouped by current color and gives physical part centers in LDraw coordinates: X right, minus Y up, minus Z forward. Preserve every other placement."""
@@ -19,7 +21,7 @@ def decode(raw):
 
 def revise(old, decision):
     if not isinstance(decision, dict):
-        raise ValueError("Expected a revision object")
+        raise TypeError("Expected a revision object")
     if decision.get("keep") is True:
         return old
     if "replace" in decision:
@@ -41,12 +43,17 @@ def run(
     out.mkdir(parents=True, exist_ok=True)
     if not 0 < budget <= 0.30:
         raise ValueError("Budget must be at most $0.30")
+    start = time.monotonic()
+    if (out / "reservation.json").exists():
+        raise FileExistsError("This output directory is already reserved")
+    lookup = PartLookup(catalog)
+    initial_parts = placed_parts(source) if source else lookup.candidates(brief)
+    part_context = lookup.context(initial_parts)
     # Create an exclusive run marker before contacting a provider. A lost response may still be billed.
     with (out / "reservation.json").open("x") as marker:
         json.dump({"maximum_usd": budget}, marker)
     if any(out.glob("call*.json")):
         raise ValueError("Existing run already contains paid calls")
-    start = time.monotonic()
     cost = 0.0
     plan = None
     views = []
@@ -67,7 +74,7 @@ def run(
         EDIT if source else GUIDE + "\n" + catalog_guide(catalog)
     ) + f" Maximum {limit} physical pieces."
     for stage in range(2):
-        msg = brief + "\n" + index
+        msg = brief + "\n" + index + "\n" + part_context
         if stage:
             msg += (
                 "\nPrior plan: "
@@ -85,6 +92,7 @@ def run(
         cost += usage["cost"]
         (out / f"call{stage + 1}.json").write_text(json.dumps(usage))
         (out / f"answer{stage + 1}.txt").write_text(answer)
+        rows = []
         try:
             obj = decode(answer)
             plan = revise(plan, obj) if stage else obj
@@ -117,4 +125,8 @@ def run(
             error = str(exc)[:220]
         result.update(cost=cost, seconds=time.monotonic() - start, error=error)
         (out / "result.json").write_text(json.dumps(result))
+        if stage == 0 and not source:
+            part_context = lookup.context(
+                [*draft_parts(plan), *placed_parts(rows), *initial_parts]
+            )
     return result

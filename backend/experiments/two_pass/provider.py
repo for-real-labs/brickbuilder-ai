@@ -1,8 +1,9 @@
 """Two vision calls with a per-design budget, using native provider token counts."""
 
 import base64
-from io import BytesIO
 import os
+from io import BytesIO
+
 import httpx
 from PIL import Image, ImageOps
 

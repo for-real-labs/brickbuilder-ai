@@ -1,6 +1,7 @@
 """Read physical placements from a flat LDraw upload; ignore embedded part definitions."""
 
 import math
+
 from src.utils.parts_catalog import normalize_part_id
 
 

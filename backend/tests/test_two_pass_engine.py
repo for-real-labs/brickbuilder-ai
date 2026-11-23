@@ -1,12 +1,15 @@
 from types import SimpleNamespace
+from typing import ClassVar
+
 import pytest
-from experiments.two_pass.engine import compile_scene
 from experiments.two_pass.agent import revise
+from experiments.two_pass.engine import compile_scene
 
 
 class Catalog:
-    parts = {
-        (p, 4): SimpleNamespace(max_quantity=None) for p in ("3004", "3005", "3024")
+    parts: ClassVar[dict] = {
+        (p, 4): SimpleNamespace(max_quantity=None, name="Basic part")
+        for p in ("3004", "3005", "3024")
     }
 
 
@@ -55,22 +58,32 @@ def test_source_indices_survive_color_filter(tmp_path):
 
 
 def test_two_call_budget_and_failed_revision_fallback(tmp_path, monkeypatch):
-    from experiments.two_pass import agent
+    from experiments.two_pass import agent, part_lookup
 
     limits = []
+    prompts = []
+    reads = []
+
+    def measure(part):
+        reads.append(part)
+        return {"size": [20, 28, 40]}
 
     def fake(model, guide, prompt, images, budget):
         limits.append(budget)
+        prompts.append(prompt)
         return (
             '[["box",4,0,0,0,2,1,3]]' if len(limits) == 1 else '{"replace":[]}',
             {"cost": 0.02},
         )
 
     monkeypatch.setattr(agent, "invoke", fake)
+    monkeypatch.setattr(part_lookup, "inspect_part", measure)
     out = tmp_path / "run"
     r = agent.run("astra", "test", [], out, Catalog, 10, lambda *a: [out / "front.png"])
     assert r["model"] == "stage1.mpd" and r["error"] and r["cost"] == 0.04
     assert limits == pytest.approx([0.17, 0.28])
+    assert '"3024":' in prompts[0] and '"3004":' in prompts[1]
+    assert reads == ["3024", "3004"]
     with pytest.raises(FileExistsError):
         agent.run("astra", "test", [], out, Catalog, 10, lambda *a: [])
 
@@ -78,8 +91,9 @@ def test_two_call_budget_and_failed_revision_fallback(tmp_path, monkeypatch):
 def test_transparent_reference_keeps_black_features_visible(tmp_path):
     import base64
     from io import BytesIO
-    from PIL import Image
+
     from experiments.two_pass.provider import encode
+    from PIL import Image
 
     image = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
     image.paste((0, 0, 0, 255), (0, 0, 16, 16))
