@@ -1,9 +1,14 @@
 import asyncio
-import pytest
+import sys
 from pathlib import Path
+
+import pytest
 from PIL import Image
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from src.utils import generation_previews
+from src.utils.generation_storage import GenerationStorage
 
 
 def test_render_generation_preview_keeps_geometry_and_strips_external_metadata(monkeypatch):
@@ -20,12 +25,6 @@ def test_render_generation_preview_keeps_geometry_and_strips_external_metadata(m
 
     monkeypatch.setattr(generation_previews.subprocess, "run", render)
     assert generation_previews.render_generation_preview(source).startswith(b"\x89PNG\r\n\x1a\n")
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-
-from src.utils.generation_storage import GenerationStorage
 
 
 class FakeCommunityQuery:
