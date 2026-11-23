@@ -98,11 +98,12 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
-  it('shows the agent selector to the approved account and submits Astrology', async () => {
+  it.each(['astrology', 'fable-gpt-6.1-sol'] as const)('shows the agent selector to the approved account and submits %s', async agent => {
     const approved = { id: 'approved' };
     authSettings.session = { user: approved, access_token: 'approved-token' };
     authSettings.user = approved;
-    const access = vi.spyOn(NovaToBricksApiService, 'canUseAstrology').mockImplementation(async token => token === 'approved-token');
+    const access = vi.spyOn(NovaToBricksApiService, 'buildingAgents').mockImplementation(
+      async token => token === 'approved-token' ? ['nova', 'astrology', 'fable-gpt-6.1-sol'] : ['nova']);
     const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'astrology-build', message: 'Started' });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
@@ -115,10 +116,10 @@ describe('LandingPage', () => {
       act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
       const selector = container.querySelector<HTMLSelectElement>('#landing-generation-settings select')!;
       expect(selector.labels?.[0].textContent).toContain('Building agent');
-      expect(Array.from(selector.options).map(option => option.text)).toEqual(['Nova', 'Astrology']);
+      expect(Array.from(selector.options).map(option => option.text)).toEqual(['Nova', 'Astrology', 'Fable · GPT-6.1 Sol']);
       expect(selector.value).toBe('nova');
       act(() => {
-        selector.value = 'astrology';
+        selector.value = agent;
         selector.dispatchEvent(new Event('change', { bubbles: true }));
       });
       const input = container.querySelector<HTMLInputElement>('input[aria-label="Describe your model"]')!;
@@ -128,7 +129,7 @@ describe('LandingPage', () => {
       });
       await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Generate"]')!.click());
       expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-        buildingAgent: 'astrology', authMode: 'api_key', prompt: 'A red boat',
+        buildingAgent: agent, authMode: 'api_key', prompt: 'A red boat',
       }), 'approved-token');
       authSettings.user = { id: 'other' };
       authSettings.session = { user: authSettings.user, access_token: 'other-token' };

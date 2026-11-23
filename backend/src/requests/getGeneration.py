@@ -1,11 +1,12 @@
 import logging
-from typing import Dict, Literal, Optional
+from typing import Dict, Optional
 
 from pydantic import BaseModel, Field
 from fastapi import HTTPException
 
 from ..utils.generation_mode import GenerationMode, generation_mode
 from ..utils.authorization import require_generation_access
+from ..utils.building_agents import in_process_agent
 from ..utils.generation_storage import generation_storage
 from ..utils.posthog_client import track_error
 
@@ -21,7 +22,7 @@ class GetGenerationResponse(BaseModel):
     version: int = 1
     previous_completed_generation_id: Optional[str] = None
     endpoint: Optional[str] = None
-    building_agent: Literal['astrology'] | None = None
+    building_agent: str | None = None  # set when an agent other than Nova built it
     orderable: bool = True
     mode: GenerationMode = 'basic_bricks'
     max_parts: Optional[int] = None
@@ -112,7 +113,7 @@ async def get_generation(request: GetGenerationRequest, auth_info: dict, *, inst
             version=generation.get("version", 1),
             previous_completed_generation_id=previous_id,
             endpoint=generation.get("endpoint"),
-            building_agent="astrology" if generation.get("model_used_3d") == "astrology" else None,
+            building_agent=in_process_agent(generation.get("model_used_3d")),
             orderable=generation.get("endpoint") != "uploadLdraw",
             mode=generation_mode(generation.get("endpoint"), generation.get("mode")),
             input_type=generation.get("input_type"),

@@ -1,5 +1,6 @@
 import { authenticatedApiFetch } from './apiFetch';
 import { getInstructionKey } from '../utils/instructionLinks';
+import type { InProcessAgent } from '../utils/buildingAgents';
 // API Configuration
 const API_MODE = import.meta.env.VITE_API_MODE || 'local';
 const LOCAL_API_URL = import.meta.env.VITE_LOCAL_API_URL || 'http://127.0.0.1:8002';
@@ -29,7 +30,7 @@ export interface GetGenerationResponse {
   model_generation_id?: string;
   version?: number;
   endpoint?: string;
-  building_agent?: 'astrology' | null;
+  building_agent?: InProcessAgent | null;
   orderable?: boolean;
   max_parts?: number | null;
   mode?: 'basic_bricks' | 'all_parts';

@@ -22,13 +22,22 @@ RUN pip install --no-cache-dir uv
 # Set working directory
 WORKDIR /app
 
-# Download and install LDraw library during build (avoids runtime download issues)
-RUN mkdir -p /root/ldraw && \
-    curl -A "Mozilla/5.0 (compatible; BrickAI/1.0)" -L \
+# Download and install LDraw library during build (avoids runtime download issues).
+# It lives in /opt so the unprivileged account below can read it; /root/ldraw still points to it.
+RUN curl -A "Mozilla/5.0 (compatible; BrickAI/1.0)" -L \
     "https://library.ldraw.org/library/updates/complete.zip" -o /tmp/ldraw.zip && \
-    unzip /tmp/ldraw.zip -d /root/ && \
+    unzip -q /tmp/ldraw.zip -d /opt/ && \
     rm /tmp/ldraw.zip && \
-    echo "✅ LDraw library installed at /root/ldraw"
+    ln -s /opt/ldraw /root/ldraw && \
+    echo "✅ LDraw library installed at /opt/ldraw (linked from /root/ldraw)"
+
+# Fable runs build scripts written by the model. They run as this account, which owns nothing,
+# has no login and cannot read the API's environment. The shape cache is written by the API and
+# only read by that account.
+RUN useradd --system --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin fable-sandbox && \
+    mkdir -p /var/cache/brickbuilder-fable
+ENV FABLE_SANDBOX_USER=fable-sandbox
+ENV FABLE_AGENT_CACHE=/var/cache/brickbuilder-fable
 
 # Copy project files (README.md is required for package build)
 COPY . .

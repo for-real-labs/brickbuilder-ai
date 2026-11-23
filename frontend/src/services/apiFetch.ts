@@ -3,6 +3,7 @@ import { ensureAiConsent, requiresAiConsent } from '../utils/aiConsent';
 import { withGenerationEntryPage } from '../utils/generationAttribution';
 import { localizeGenerationLimit } from './generationLimit';
 import { getGuestSession } from '../utils/guestSession';
+import { inProcessAgent } from '../utils/buildingAgents';
 
 // Only backend API services use this transport; third-party requests use fetch.
 export async function apiFetch(url: string, init: RequestInit = {}): Promise<Response> {
@@ -13,7 +14,7 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
   }
   const headers = new Headers(init.headers);
   headers.set('X-Guest-Session', getGuestSession());
-  if (headers.has('Authorization') && init.method?.toUpperCase() === 'POST' && /\/(novaToBricks|llmToBricks)(?:Stream)?(?:[/?]|$)/.test(url) && typeof init.body === 'string' && JSON.parse(init.body).building_agent !== 'astrology') {
+  if (headers.has('Authorization') && init.method?.toUpperCase() === 'POST' && /\/(novaToBricks|llmToBricks)(?:Stream)?(?:[/?]|$)/.test(url) && typeof init.body === 'string' && !inProcessAgent(JSON.parse(init.body).building_agent)) {
     const { prepareAiBilling } = await import('./providerKeysApi');
     init = { ...init, body: await prepareAiBilling(init.body, init.signal ?? undefined) };
     if (JSON.parse(init.body as string).billing_source === 'personal') {

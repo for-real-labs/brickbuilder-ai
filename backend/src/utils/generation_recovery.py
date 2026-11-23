@@ -5,6 +5,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
+from .building_agents import in_process_agent
 from .database import execute_query
 from .generation_tasks import has_active_generation_task
 from .generation_budget import GenerationUsage
@@ -75,7 +76,7 @@ async def recover_stale_generations(storage) -> int:
                 "error_message": None if complete else (snapshot.get("error") or INTERRUPTED),
                 "updated_at": datetime.now(timezone.utc).isoformat(),
             }
-            if row.get("model_used_3d") != "astrology":
+            if not in_process_agent(row.get("model_used_3d")):
                 values.update(await recovered_usage(storage, row))
             # Compare the exact heartbeat we inspected: another worker, a
             # cancellation, or a finishing build always wins over recovery.

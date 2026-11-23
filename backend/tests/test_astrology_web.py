@@ -32,9 +32,9 @@ ACCOUNT = {
 def test_private_setting_and_direct_api_use_the_same_gate(monkeypatch, identity, allowed):
     monkeypatch.setenv("ASTROLOGY_ALLOWED_EMAILS", " builder@example.test, alternate@example.test ")
     response = Response()
-    assert asyncio.run(building_agents(response, identity)) == {
-        "agents": ["nova", "astrology"] if allowed else ["nova"]
-    }
+    agents = asyncio.run(building_agents(response, identity))["agents"]
+    assert agents[:2] == (["nova", "astrology"] if allowed else ["nova"])
+    assert len(agents) > 2 if allowed else agents == ["nova"]  # the Fable variants share the allowlist
     assert response.headers["Cache-Control"] == "private, no-store"
     if not allowed:
         admission = AsyncMock()

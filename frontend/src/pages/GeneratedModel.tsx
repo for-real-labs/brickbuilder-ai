@@ -40,6 +40,7 @@ import { ResizeModelApiService } from "../services/resizeModelApi";
 import { LlmToBricksApiService } from "../services/llmToBricksApi";
 import { isAgentGeneration } from "../utils/agentGeneration";
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService } from "../services/novaToBricksApi";
+import { inProcessAgent } from "../utils/buildingAgents";
 import { VoxelPromptEditor, type EditReferenceImage } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
@@ -372,8 +373,9 @@ export default function GeneratedModel() {
     (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
   const hasNovaGeometry = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
-  const isAstrology = pendingGeneration?.building_agent === 'astrology';
-  const hasNovaSource = hasNovaGeometry && !isLDrawUpload && !isAstrology;
+  // Astrology and Fable builds keep their own design, so edits go back to the agent that made them.
+  const builtBy = inProcessAgent(pendingGeneration?.building_agent);
+  const hasNovaSource = hasNovaGeometry && !isLDrawUpload && !builtBy;
 
   React.useEffect(() => { setNovaSourceError(''); }, [currentGenerationId]);
   
@@ -1663,9 +1665,9 @@ export default function GeneratedModel() {
 
     try {
       // Start the async edit operation
-      const response = isAstrology
+      const response = builtBy
         ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined, image,
-          { ...DEFAULT_NOVA_OPTIONS, buildingAgent: 'astrology' })
+          { ...DEFAULT_NOVA_OPTIONS, buildingAgent: builtBy })
         : hasNovaGeometry
         ? await NovaToBricksApiService.edit(currentGenerationId, editPrompt.trim(), accessToken || undefined, image)
         : await LlmToBricksApiService.generate({
@@ -1689,7 +1691,7 @@ export default function GeneratedModel() {
     } finally {
       setIsPromptEditing(false);
     }
-  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaGeometry, isAstrology, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
+  }, [editPrompt, accessToken, currentGenerationId, currentUser, hasNovaGeometry, builtBy, isNovaModel, isModelEditing, isResizing, isSavePolling, navigate, refreshNotifications]);
 
   // Guard an action (e.g. in-app navigation) behind the unsaved-changes modal.
   // If the voxel editor has unsaved changes, prompt the user; otherwise run immediately.
