@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-from .catalog import PartFinder
+from typing import Callable
+
+from .catalog import PartEntry, PartFinder
+from .ldraw import LDrawError
+from .shape import ShapeLibrary
 
 SYSTEM = """You are Fable, BrickBuilder's building agent. You design brick models that a customer will receive as real parts and assemble by hand. A good model is made only of available parts, holds together, and is recognizably the thing that was asked for.
 
@@ -69,6 +73,70 @@ def system_prompt(finder: PartFinder, palette_name: str) -> str:
             "Each entry is a part id, its description and, in brackets, how many colors it comes in. "
             "Part ids are exact; never invent one.\n\n"
             f"{finder.sheet()}\n\n"
+            "## Colors (code, name, RGB, number of parts available)\n\n"
+            f"{finder.color_sheet()}")
+
+
+LEAN_HOW = """# How you work
+
+You write a build script: a short Python program that places parts through a kit. The script is the model.
+
+The work happens in a few rounds. Each round you are shown the request, your current script, the build report for it and pictures of it, and you take exactly one action:
+
+- `build` writes the whole script. Use it in the first round, and afterwards only to redesign.
+- `patch` changes the script with exact text replacements. Put every fix you can see into one patch.
+- `look_up` returns measured facts about parts. It uses up a round, so call it only when the catalog below does not answer your question, and ask for everything at once.
+- `finish` publishes the revision you are looking at.
+
+After `build` or `patch` the script is run, checked and rendered, and the next round opens on the result. You will not see earlier rounds or your earlier reasoning: only the script as it stands, the latest report and pictures, and the note you leave yourself in `notes`. Use the note for what the script cannot tell you: decisions and their reasons, and what you mean to check or fix next.
+
+Aim to be done in three to five rounds. Build the whole model in the first round, with every feature that makes the subject recognizable, then correct what the report and the pictures show, largest problem first. Finish as soon as the report is clean and the pictures read as the subject: every round costs the customer money, so do not spend one on a change nobody would notice.
+
+Decide the scale, the footprint, the key heights and the palette, then write. The checks and the pictures catch mistakes more cheaply than long deliberation does. Put the main dimensions in named variables at the top of the script and organize it into functions, so that later patches are small.
+
+Pictures are your eyes. When there is a reference image, compare silhouette, proportions, colors and the features that make the subject recognizable. Use `views` to see another side."""
+
+LEAN_RULES = """# Rules
+
+- Use only parts and colors from the catalog below. The build report rejects anything else.
+- Stay within the part limit given in the request.
+- `finish` works only when the report shown this round has no errors. Write the summary for the customer: what you built and any honest limitation.
+- You are working unattended, so nobody can answer a question. Make reasonable decisions and keep going. A script error, a failed check or an unavailable part is part of the job: fix it in the next patch. In the last round, publish a clean build rather than starting something new."""
+
+_SIDES = {0: "front", 90: "left", 180: "back", 270: "right"}
+
+
+def part_facts(shapes: ShapeLibrary) -> Callable[[PartEntry], str]:
+    """Measured size and orientation for a sheet entry, so the model need not look each part up."""
+
+    def describe(entry: PartEntry) -> str:
+        try:
+            shape = shapes.get(entry.part_id)
+        except LDrawError:
+            return ""
+        facts = "x".join(f"{round(size, 1):g}" for size in (shape.width, shape.depth, shape.height))
+        if shape.directional:
+            facts += f" low:{_SIDES[shape.front_yaw]}"
+        if not shape.up_studs():
+            facts += " smooth"
+        return " {" + facts + "}"
+
+    return describe
+
+
+def lean_system_prompt(finder: PartFinder, shapes: ShapeLibrary, palette_name: str) -> str:
+    """The lean method's prompt: the same building knowledge, a different way of working."""
+    role = SYSTEM[:SYSTEM.index("# How you work")].rstrip()
+    knowledge = SYSTEM[SYSTEM.index("# The grid"):SYSTEM.index("# Rules")].rstrip().replace(
+        "`inspect_part` shows a height map so you can see which side that is.",
+        "The catalog marks that side as `low:`, and `look_up` shows a height map of the part.")
+    return (f"{role}\n\n{LEAN_HOW}\n\n{knowledge}\n\n{LEAN_RULES}\n\n# Catalog: {palette_name}\n\n"
+            "Each entry is a part id, its description, how many colors it comes in and, in braces, what was "
+            "measured from its geometry at rot=0: width along x by depth along z in studs, by height in plates. "
+            "`low:front` (or `left`, `back`, `right`) is the side its low or open edge faces at rot=0, which "
+            "`facing=` re-aims. `smooth` means it has no studs on top, so nothing attaches above it. Part ids "
+            "are exact; never invent one.\n\n"
+            f"{finder.sheet(part_facts(shapes), search_tool='look_up')}\n\n"
             "## Colors (code, name, RGB, number of parts available)\n\n"
             f"{finder.color_sheet()}")
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass
+from typing import Callable
 
 from .ldraw import LDrawLibrary
 from .palette import Palette
@@ -178,7 +179,8 @@ class PartFinder:
         head = re.split(r"\s+(?:with|without)\b", head)[0]
         return head.strip(" ,-") or "Other"
 
-    def sheet(self) -> str:
+    def sheet(self, describe: Callable[[PartEntry], str] | None = None, search_tool: str = "search_parts") -> str:
+        """The most widely stocked parts of each category. ``describe`` adds facts to an entry."""
         groups: dict[str, list[PartEntry]] = {}
         for entry in self.entries():
             groups.setdefault(self._category(entry.title), []).append(entry)
@@ -190,12 +192,12 @@ class PartFinder:
                 continue
             shown.add(category)
             items = "; ".join(f"{e.part_id} {e.title.removeprefix(category).strip(' ,') or e.title} ({e.colors})"
-                              for e in members[:size])
+                              + (describe(e) if describe else "") for e in members[:size])
             more = f"; +{len(members) - size} more" if len(members) > size else ""
             lines.append(f"{category}: {items}{more}")
         rest = sorted(((len(v), k) for k, v in groups.items() if k not in shown), reverse=True)
         if rest:
-            lines.append("Other categories (use search_parts): "
+            lines.append(f"Other categories (use {search_tool}): "
                          + ", ".join(f"{name} ({count})" for count, name in rest[:60]))
         return "\n".join(lines)
 

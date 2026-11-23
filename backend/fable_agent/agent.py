@@ -29,6 +29,21 @@ class RunResult:
     published: dict | None
 
 
+def close_run(session: Session, toolbox: Toolbox, budget: Budget, emit: Event, status: str | None, reason: str,
+              steps: int, published_before: int) -> RunResult:
+    """Record how a run ended. A run that stops before ``finish`` keeps its best result as a draft."""
+    published = session.meta["published"][-1] if len(session.meta["published"]) > published_before else None
+    if status is None:
+        status = "published" if published else "failed"
+        if published is None and toolbox.publish_draft(reason):
+            # Keep the customer's best result: the last error-free build, marked as unreviewed.
+            published, status = session.meta["published"][-1], "draft"
+    session.meta["status"] = status
+    session.save()
+    emit("done", {"status": status, "reason": reason})
+    return RunResult(status, reason, steps, budget.spent, published)
+
+
 class BuildAgent:
     def __init__(self, session: Session, client: ModelClient, toolbox: Toolbox, budget: Budget, *,
                  max_steps: int = 60, max_tokens: int = 32_000, on_event: Event | None = None):
@@ -115,14 +130,5 @@ class BuildAgent:
         return self._close(None, reason, steps, published_before)
 
     def _close(self, status: str | None, reason: str, steps: int, published_before: int) -> RunResult:
-        session = self._session
-        published = session.meta["published"][-1] if len(session.meta["published"]) > published_before else None
-        if status is None:
-            status = "published" if published else "failed"
-            if published is None and self._toolbox.publish_draft(reason):
-                # Keep the customer's best result: the last error-free build, marked as unreviewed.
-                published, status = session.meta["published"][-1], "draft"
-        session.meta["status"] = status
-        session.save()
-        self._emit("done", {"status": status, "reason": reason})
-        return RunResult(status, reason, steps, self._budget.spent, published)
+        return close_run(self._session, self._toolbox, self._budget, self._emit, status, reason, steps,
+                         published_before)

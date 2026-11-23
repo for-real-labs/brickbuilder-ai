@@ -7,7 +7,7 @@ import json
 import sys
 from pathlib import Path
 
-from .app import Options, Workbench, continue_build, start_build
+from .app import METHODS, Options, Workbench, continue_build, start_build
 from .kit import to_ldraw
 from .provider import DEFAULT_MODEL, ProviderError
 from .render import RenderError
@@ -45,7 +45,7 @@ def _progress(stream):
 def _options(args) -> Options:
     return Options(ldraw_dir=args.ldraw_dir, catalog_path=args.catalog, open_palette=args.all_parts,
                    model=args.model, effort=args.effort, budget_usd=args.budget, max_steps=args.max_steps,
-                   max_parts=args.max_parts)
+                   max_parts=args.max_parts, method=getattr(args, "method", "thorough"))
 
 
 def _report(result, run_dir: Path) -> int:
@@ -90,15 +90,20 @@ def main(argv: list[str] | None = None) -> int:
         if model_options:
             sub.add_argument("--model", default=DEFAULT_MODEL,
                              help="A Claude model, or an OpenAI model such as gpt-6.2-sol or gpt-6.2-astra")
-            sub.add_argument("--effort", default="high", choices=["low", "medium", "high", "xhigh", "max"])
-            sub.add_argument("--budget", type=float, default=8.0, help="AI spending limit in USD for this run")
-            sub.add_argument("--max-steps", type=int, default=60)
+            limits = "; ".join(f"{name}: {v['effort']}, ${v['budget_usd']:g}, {v['max_steps']} steps"
+                               for name, v in METHODS.items())
+            sub.add_argument("--effort", choices=["low", "medium", "high", "xhigh", "max"],
+                             help=f"Reasoning effort. Defaults by method ({limits})")
+            sub.add_argument("--budget", type=float, help="AI spending limit in USD for this run")
+            sub.add_argument("--max-steps", type=int, help="Most model turns (thorough) or rounds (lean)")
             sub.add_argument("--quiet", action="store_true")
 
     build = commands.add_parser("build", help="Build a new model from a prompt and optional reference image")
     build.add_argument("prompt")
     build.add_argument("--image", type=Path)
     build.add_argument("--out", type=Path, required=True, help="New directory for this build's session")
+    build.add_argument("--method", choices=list(METHODS), default="thorough",
+                       help="thorough: one long conversation, best detail. lean: a few short rounds, much cheaper")
     common(build)
 
     edit = commands.add_parser("edit", help="Continue an existing build with a change request")
@@ -124,9 +129,10 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "script":
             return _run_script(args)
         show = None if args.quiet else _progress(sys.stderr)
+        if (not 1 <= args.max_parts <= 5000 or (args.budget is not None and not 0 < args.budget <= 50)
+                or (args.max_steps is not None and not 1 <= args.max_steps <= 300)):
+            parser.error("Expected 1-5000 parts, a budget up to $50 and 1-300 steps")
         if args.command == "build":
-            if not 1 <= args.max_parts <= 5000 or not 0 < args.budget <= 50 or not 1 <= args.max_steps <= 300:
-                parser.error("Expected 1-5000 parts, a budget up to $50 and 1-300 steps")
             return _report(start_build(args.prompt, args.out, _options(args), reference=args.image, on_event=show),
                            args.out)
         return _report(continue_build(args.request, args.session, _options(args), on_event=show), args.session)

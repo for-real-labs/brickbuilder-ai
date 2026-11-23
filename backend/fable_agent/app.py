@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
 
@@ -13,8 +13,9 @@ from .agent import BuildAgent, Event, RunResult
 from .catalog import PartFinder
 from .checks import ModelChecker
 from .ldraw import LDrawLibrary
+from .lean import LEAN_TOOLS, LeanAgent
 from .palette import load_palette
-from .prompts import build_request, system_prompt
+from .prompts import build_request, lean_system_prompt, system_prompt
 from .openai_provider import OpenAIClient, is_openai_model
 from .provider import DEFAULT_MODEL, AnthropicClient, Budget, ModelClient
 from .render import LeoCadRenderer, Renderer
@@ -27,17 +28,35 @@ MAX_REFERENCE_BYTES = 40 * 1024 * 1024
 REFERENCE_SIDE = 1568
 
 
+# Two ways to run a build. "thorough" is one growing conversation with free use of every tool;
+# "lean" is a few short, stateless rounds (see ``lean``). Each has its own sensible limits.
+METHODS = {
+    "thorough": {"effort": "high", "budget_usd": 8.0, "max_steps": 60},
+    "lean": {"effort": "medium", "budget_usd": 2.0, "max_steps": 8},
+}
+
+
 @dataclass(frozen=True)
 class Options:
+    """Settings for one run. Effort, budget and step limit default to the method's own values."""
+
     ldraw_dir: str | None = None
     catalog_path: str | None = None
     open_palette: bool = False
     model: str = DEFAULT_MODEL
-    effort: str = "high"
-    budget_usd: float = 8.0
-    max_steps: int = 60
+    effort: str | None = None
+    budget_usd: float | None = None
+    max_steps: int | None = None
     max_parts: int = 1500
     api_key: str | None = None
+    method: str = "thorough"
+
+    def resolved(self, method: str) -> Options:
+        if method not in METHODS:
+            raise ValueError(f"Unknown method {method!r}; choose from {', '.join(METHODS)}")
+        defaults = METHODS[method]
+        return replace(self, method=method, **{key: value for key, value in defaults.items()
+                                                 if getattr(self, key) is None})
 
 
 @dataclass
@@ -92,7 +111,18 @@ def _client(options: Options, model: str, effort: str) -> ModelClient:
     """The provider is chosen by the model's name; each reads its own key."""
     if is_openai_model(model):
         return OpenAIClient(options.api_key or os.environ.get("OPENAI_API_KEY", ""), model=model, effort=effort)
-    return AnthropicClient(options.api_key or os.environ.get("ANTHROPIC_API_KEY", ""), model=model, effort=effort)
+    # Lean rounds share only their opening, so they mark the cache point themselves.
+    return AnthropicClient(options.api_key or os.environ.get("ANTHROPIC_API_KEY", ""), model=model, effort=effort,
+                           auto_cache=options.method != "lean")
+
+
+def _agent(options: Options, session: Session, client: ModelClient, bench: Workbench, on_event: Event | None):
+    budget = Budget(Decimal(str(options.budget_usd)), client.model)
+    if options.method == "lean":
+        return LeanAgent(session, client, bench.toolbox(session), budget, max_rounds=options.max_steps,
+                         on_event=on_event)
+    return BuildAgent(session, client, bench.toolbox(session), budget, max_steps=options.max_steps,
+                      on_event=on_event)
 
 
 def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference: Path | None = None,
@@ -101,21 +131,24 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
     """Create a session in ``run_dir`` and build the request."""
     if not prompt.strip():
         raise ValueError("Describe what to build")
+    options = options.resolved(options.method)
     settings = {"ldraw_dir": options.ldraw_dir, "catalog_path": options.catalog_path,
-                "open_palette": options.open_palette, "max_parts": options.max_parts, "effort": options.effort}
+                "open_palette": options.open_palette, "max_parts": options.max_parts, "effort": options.effort,
+                "method": options.method}
     bench = workbench or Workbench.open(settings)
     settings["ldraw_dir"] = str(bench.library.root)
     client = client or _client(options, options.model, options.effort)
-    session = Session.create(run_dir, system=system_prompt(bench.finder, bench.palette.name),
-                             tools=TOOL_DEFINITIONS, model=client.model, settings=settings)
+    if options.method == "lean":
+        system, tools = lean_system_prompt(bench.finder, bench.shapes, bench.palette.name), LEAN_TOOLS
+    else:
+        system, tools = system_prompt(bench.finder, bench.palette.name), TOOL_DEFINITIONS
+    session = Session.create(run_dir, system=system, tools=tools, model=client.model, settings=settings)
     content = []
     if reference is not None:
         content.append(session.image_block(save_reference(Path(reference), session)))
     content.append({"type": "text", "text": build_request(prompt, has_reference=reference is not None,
                                                           max_parts=options.max_parts)})
-    agent = BuildAgent(session, client, bench.toolbox(session), Budget(Decimal(str(options.budget_usd)), client.model),
-                       max_steps=options.max_steps, on_event=on_event)
-    return agent.run(content)
+    return _agent(options, session, client, bench, on_event).run(content)
 
 
 def continue_build(request: str, run_dir: Path | str, options: Options, *, on_event: Event | None = None,
@@ -125,10 +158,13 @@ def continue_build(request: str, run_dir: Path | str, options: Options, *, on_ev
         raise ValueError("Describe the change")
     session = Session.load(run_dir)
     settings = session.meta["settings"]
+    # A session continues with the method, model and effort that started it: its prompt, tools and
+    # (for the thorough method) earlier reasoning belong to them.
+    options = replace(options, effort=settings.get("effort") or options.effort).resolved(
+        settings.get("method", "thorough"))
     bench = workbench or Workbench.open(settings)
-    # Earlier reasoning can only be continued by the model that produced it.
-    client = client or _client(options, session.meta["model"], settings.get("effort", options.effort))
-    agent = BuildAgent(session, client, bench.toolbox(session), Budget(Decimal(str(options.budget_usd)), client.model),
-                       max_steps=options.max_steps, on_event=on_event)
-    return agent.run([{"type": "text", "text": f"Change request: {request.strip()}\n\nUpdate the existing "
-                                               "build script, check and render the result, then finish again."}])
+    client = client or _client(options, session.meta["model"], options.effort)
+    change = f"Change request: {request.strip()}"
+    if options.method != "lean":
+        change += "\n\nUpdate the existing build script, check and render the result, then finish again."
+    return _agent(options, session, client, bench, on_event).run([{"type": "text", "text": change}])

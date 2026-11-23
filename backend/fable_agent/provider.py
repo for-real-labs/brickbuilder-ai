@@ -130,9 +130,13 @@ class Budget:
     def remaining(self) -> Decimal:
         return self.limit - self.spent
 
-    def output_allowance(self, new_input_tokens: int, requested: int) -> int:
-        """Output tokens the next call may use, reserving its whole input at the highest rate."""
-        context = self._context_tokens + new_input_tokens
+    def output_allowance(self, new_input_tokens: int, requested: int, *, carried_context: bool = True) -> int:
+        """Output tokens the next call may use, reserving its whole input at the highest rate.
+
+        The input is the conversation so far plus ``new_input_tokens``, or only the latter when the
+        caller starts each request afresh (``carried_context=False``).
+        """
+        context = (self._context_tokens if carried_context else 0) + new_input_tokens
         rate_in, rate_out, _, rate_write = rates(self.model, context)
         reserve = Decimal(context) * max(rate_in, rate_write) / Decimal(1_000_000)
         allowance = int(((self.remaining - reserve) * Decimal(1_000_000) / rate_out)
@@ -193,7 +197,7 @@ def estimate_tokens(content) -> int:
 class AnthropicClient:
     def __init__(self, api_key: str, *, model: str = DEFAULT_MODEL, effort: str = "high",
                  http: httpx.Client | None = None, fallbacks: bool = True, max_retries: int = 4,
-                 sleep: Callable[[float], None] = time.sleep, url: str = API_URL):
+                 sleep: Callable[[float], None] = time.sleep, url: str = API_URL, auto_cache: bool = True):
         if not api_key:
             raise ProviderError("ANTHROPIC_API_KEY is not configured")
         if effort not in {"low", "medium", "high", "xhigh", "max"}:
@@ -204,7 +208,9 @@ class AnthropicClient:
         self._http = http or httpx.Client(timeout=httpx.Timeout(600, connect=20))
         # A declined request is retried on the model Anthropic recommends for that case.
         self._fallbacks = fallbacks and model.startswith(_FALLBACK_CAPABLE)
-        self._auto_cache = True
+        # Automatic caching suits a conversation that only grows. A caller whose requests share a
+        # prefix but end differently turns it off and marks the end of the shared part itself.
+        self._auto_cache = auto_cache
         self._max_retries = max_retries
         self._sleep = sleep
         self._url = url

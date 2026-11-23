@@ -104,19 +104,19 @@ class Session:
                 "type": "base64", "media_type": source["media_type"], "data": data}}
         return self._inflated[key]
 
+    def inflate(self, value):
+        """Content as the API expects it, with file references replaced by the pictures themselves."""
+        if isinstance(value, dict):
+            if value.get("type") == "image" and value.get("source", {}).get("type") == "session_file":
+                return self._inflate(value)
+            return {key: self.inflate(item) for key, item in value.items()}
+        if isinstance(value, list):
+            return [self.inflate(item) for item in value]
+        return value
+
     def api_messages(self) -> list[dict]:
         """The transcript as the API expects it. Files are read as-is, so bytes stay stable."""
-
-        def convert(value):
-            if isinstance(value, dict):
-                if value.get("type") == "image" and value.get("source", {}).get("type") == "session_file":
-                    return self._inflate(value)
-                return {key: convert(item) for key, item in value.items()}
-            if isinstance(value, list):
-                return [convert(item) for item in value]
-            return value
-
-        return convert(copy.deepcopy(self.messages))
+        return self.inflate(copy.deepcopy(self.messages))
 
     # ----- files ---------------------------------------------------------
 
