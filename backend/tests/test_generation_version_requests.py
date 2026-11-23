@@ -24,7 +24,7 @@ def test_restore_only_copies_snapshot_data_and_retries_the_same_insert(monkeypat
               "is_community": True, "ordered": True, "notification_email": "owner@example.com", "ai_usage": {}}
     rows = {source_id: source}
     lookup = AsyncMock(side_effect=rows.get)
-    storage = SimpleNamespace(get_generation=lookup, client=Mock())
+    storage = SimpleNamespace(get_generation=lookup, client=Mock(), ensure_generation_preview=AsyncMock())
     insert = storage.client.table.return_value.insert
 
     async def commit_then_lose_response(_):
@@ -47,6 +47,7 @@ def test_restore_only_copies_snapshot_data_and_retries_the_same_insert(monkeypat
     assert snapshot["has_parts_inventory"] and snapshot["notification_seen"]
     assert not snapshot["is_community"]
     assert {"ordered", "notification_email", "ai_usage"}.isdisjoint(snapshot)
+    storage.ensure_generation_preview.assert_awaited_once_with({**snapshot, "restored_from_id": "original-artifacts"})
 
 
 @pytest.mark.parametrize("user,status,has_geometry,expected", [

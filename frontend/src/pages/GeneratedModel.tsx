@@ -1018,13 +1018,16 @@ export default function GeneratedModel() {
 
       if (newMpdContent) {
         previewUploadedForRef.current.delete(response.generation_id);
-        setNeedsPreviewUpload(true);
-        if (options.captureVoxelPreview) {
+        const needsPreview = !completedGeneration.preview_image_url;
+        setNeedsPreviewUpload(needsPreview);
+        if (needsPreview && options.captureVoxelPreview) {
           activeSavePreviewUploadRef.current = waitForPreviewUpload(response.generation_id).finally(() => {
             activeSavePreviewUploadRef.current = null;
           });
           const voxelPreview = voxelCapturePreviewRef.current?.() ?? null;
           setPreviewPngDataUrl(voxelPreview);
+        } else {
+          setPreviewPngDataUrl(null);
         }
         setMpdContent(newMpdContent);
         localStorage.setItem('MPD_CONTENT', newMpdContent);

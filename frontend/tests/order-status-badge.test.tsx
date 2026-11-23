@@ -40,3 +40,18 @@ it('shows the cancelled state on an actual order card while retaining paid histo
     expect(container.querySelector('a')?.getAttribute('href')).toBe('/instructions?id=original-cat');
   } finally { act(() => root.unmount()); }
 });
+
+it('shows the ordered edit name and its saved render without a matching generation card', () => {
+  const container = document.createElement('div');
+  const root = createRoot(container);
+  const order = { id: 129, generation_id: 'ordered-edit', prompt: 'Remove the furniture',
+    name: 'Lakehouse', preview_image_url: '/ordered-edit.png', image_url: '/reference.png' };
+  const generation = { id: order.generation_id, created_at: '2026-11-19', order } as GenerationWithOrder;
+  try {
+    act(() => root.render(<MemoryRouter><OrderCard g={generation} onView={() => {}} /></MemoryRouter>));
+    expect(container.querySelector('h3')?.textContent).toBe('Lakehouse');
+    expect(container.querySelector('img')?.getAttribute('src')).toBe('/ordered-edit.png');
+    expect(container.querySelector('img')?.getAttribute('alt')).toBe('Lakehouse');
+    expect(container.querySelector('a')?.getAttribute('href')).toBe('/instructions?id=ordered-edit');
+  } finally { act(() => root.unmount()); }
+});

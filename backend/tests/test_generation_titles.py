@@ -133,6 +133,45 @@ def test_completion_saves_name_before_publishing_and_guards_concurrent_renames(m
     generate.assert_awaited_once()
 
 
+def test_completion_renders_and_saves_missing_preview_before_publishing(monkeypatch):
+    row = {'id': 'edit', 'status': 'processing', 'name': 'Lakehouse', 'example_edit_prompt': 'Move the boat',
+           'ldr_url': 'https://storage.example/storage/v1/object/public/generations/generations/edit/model.ldr'}
+    storage = make_storage(row)
+    storage.bucket_name = 'generations'
+    download = storage.client.storage.from_.return_value.download
+    download.return_value = b'edited geometry'
+    render = Mock(return_value=b'rendered png')
+    monkeypatch.setattr(storage_module, 'render_generation_preview', render)
+    storage._upload_file_to_storage = AsyncMock(return_value='edit.png')
+
+    asyncio.run(storage.update_status('edit', 'completed'))
+
+    download.assert_called_once_with('generations/edit/model.ldr')
+    render.assert_called_once_with(b'edited geometry')
+    assert storage._upload_file_to_storage.await_args.args[0] == b'rendered png'
+    preview, status = storage.client.writes
+    assert preview == ({'preview_image_url': 'edit.png'}, [
+        ('eq', 'id', 'edit'), ('is', 'preview_image_url', 'null'),
+        ('is', 'deleted_at', 'null'), ('neq', 'status', 'cancelled'),
+    ])
+    assert status[0]['status'] == 'completed'
+
+
+@pytest.mark.parametrize('changes', [
+    {'preview_image_url': 'already-saved.png'},
+    {'deleted_at': '2026-11-19'},
+    {'status': 'cancelled'},
+    {'ldr_url': 'https://outside.example/model.ldr'},
+    {'ldr_url': 'https://db.example/local-storage/generations/generations/other/model.ldr'},
+])
+def test_automatic_preview_skips_existing_previews_and_unrelated_artifacts(changes):
+    storage = make_storage({})
+    row = {'id': 'edit', 'ldr_url': 'https://db.example/local-storage/generations/generations/edit/model.ldr',
+           **changes}
+    asyncio.run(storage.ensure_generation_preview(row))
+    storage.client.storage.from_.assert_not_called()
+
+
 @pytest.mark.parametrize('row', [None, {'name': 'My Custom Name', 'example_edit_prompt': 'Make it blue'}, {'name': None, 'status': 'cancelled'}])
 def test_existing_names_and_cancelled_builds_are_never_renamed(monkeypatch, row):
     storage = make_storage(row)

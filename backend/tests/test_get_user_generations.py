@@ -68,7 +68,7 @@ def test_dashboard_uses_database_pagination_and_preserves_same_image_models(monk
     rows = [dict(id=id, generation_id=id, version=version, user_id="user",
                  user_type="authenticated", prompt="Castle", detail_level=40,
                  endpoint="llmToBricks", created_at="2026-09-26T00:00:00",
-                 status="processing", generation_duration_seconds=125, processed_image_url="https://example.com/same.png")
+                 status="processing", name="Castle", generation_duration_seconds=125, processed_image_url="https://example.com/same.png")
             for id, version in [("one", 3), ("two", 1), ("extra", 2)]]
     fetch = AsyncMock(return_value=rows)
     storage = SimpleNamespace(count_user_generations=AsyncMock(return_value=5),
@@ -96,7 +96,7 @@ def test_dashboard_uses_database_pagination_and_preserves_same_image_models(monk
 def test_dashboard_edit_exposes_completed_revision_without_replacing_active_job(monkeypatch, status, owner_type, previous):
     row = dict(id="active-v5", generation_id="root", version=5, user_id="owner",
                user_type=owner_type, prompt="Make it a Pepsi can", detail_level=40,
-               endpoint="llmToBricks", created_at="2026-10-01", status=status,
+               endpoint="llmToBricks", created_at="2026-10-01", status=status, name="Soda Can",
                preview_image_url="https://example.com/unfinished-v5.png")
     storage = SimpleNamespace(count_user_generations=AsyncMock(return_value=1),
                               get_user_generations=AsyncMock(return_value=[row]),
@@ -122,7 +122,7 @@ def test_dashboard_edit_exposes_completed_revision_without_replacing_active_job(
 def test_dashboard_does_not_lookup_completed_fallback_for_initial_or_finished_jobs(monkeypatch, status, version):
     row = dict(id="revision", generation_id="root", version=version, user_id="owner",
                user_type="authenticated", prompt="Castle", detail_level=40,
-               endpoint="llmToBricks", created_at="2026-10-01", status=status)
+               endpoint="llmToBricks", created_at="2026-10-01", status=status, name="Castle")
     storage = SimpleNamespace(count_user_generations=AsyncMock(return_value=1),
                               get_user_generations=AsyncMock(return_value=[row]),
                               get_user_orders=AsyncMock(return_value=[]),
@@ -134,3 +134,29 @@ def test_dashboard_does_not_lookup_completed_fallback_for_initial_or_finished_jo
     ))
     assert result.generations[0].previous_completed_generation_id is None
     storage.get_previous_completed_generation.assert_not_awaited()
+
+
+@pytest.mark.parametrize("has_generation_page", [True, False])
+def test_dashboard_orders_use_metadata_from_the_ordered_revision(monkeypatch, has_generation_page):
+    latest = dict(id="new-edit", generation_id="root", version=5, user_id="owner", user_type="authenticated",
+                  prompt="Move the boat", status="completed", preview_image_url="new.png")
+    ordered = dict(generation_id="root", name="Lakehouse", prompt="Remove the furniture",
+                   preview_image_url="ordered.png", processed_image_url="reference.png")
+    storage = SimpleNamespace(
+        count_user_generations=AsyncMock(return_value=1),
+        get_user_generations=AsyncMock(return_value=[latest] if has_generation_page else []),
+        get_user_orders=AsyncMock(return_value=[dict(id=129, generation_id="ordered-edit", generations=ordered)]),
+        get_original_model_titles=AsyncMock(return_value={"root": "Lakehouse"}),
+    )
+    monkeypatch.setattr(module, "generation_storage", storage)
+    result = asyncio.run(module.get_user_generations(
+        module.GetUserGenerationsRequest(), {"authenticated": True, "user_id": "owner"},
+    ))
+    assert result.all_orders[0].generation_id == "ordered-edit"
+    assert result.all_orders[0].name == "Lakehouse"
+    assert result.all_orders[0].preview_image_url == "ordered.png"
+    assert result.all_orders[0].image_url == "reference.png"
+    if has_generation_page:
+        assert result.generations[0].name == "Lakehouse"
+        assert result.generations[0].preview_image_url == "new.png"
+        storage.get_original_model_titles.assert_awaited_once_with("owner", "authenticated", ["root"])
