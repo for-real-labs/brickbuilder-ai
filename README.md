@@ -62,6 +62,8 @@ Fable is a second independent All parts agent, in `backend/fable_agent`. The mod
 
 On the website, the accounts allowed to use Astrology also see the Fable options in **Generation settings → Building agent** with **All parts** selected. Both agents share the `ASTROLOGY_ALLOWED_EMAILS` allowlist, and other accounts never see the selector. Fable needs `ANTHROPIC_API_KEY` for its Claude options and `OPENAI_API_KEY` for its OpenAI options, plus the LeoCAD and LDraw installation Astrology already uses.
 
+Because the model writes the build script, the API runs it as untrusted code: in a restricted dialect, in a separate process with no credentials and hard limits, and under an unprivileged account (`FABLE_SANDBOX_USER`, created in the API image) that cannot read the API's environment. If that account is unavailable, Fable refuses to build rather than run a script as the API's own user.
+
 Each option is one of two methods on one model. **Thorough** is a single long conversation in which the model looks parts up, edits and renders as often as it likes. **Lean** is a few short rounds that each show only the current script, its report and pictures, which costs much less. These are the results of one run each on the same photo of a lake house, with the one-line prompt "Build my lake house from this photo."
 
 | Building agent option | Method | Model | AI cost | Model turns | Minutes | Parts | Parts cost |

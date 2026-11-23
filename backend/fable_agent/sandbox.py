@@ -15,6 +15,7 @@ import ast
 import builtins
 import json
 import math
+import os
 import random
 import re
 import sys
@@ -156,10 +157,36 @@ def build_kit(settings: dict) -> Kit:
                max_placements=int(settings.get("max_placements", 6000)))
 
 
+def confine(limits: dict) -> None:
+    """Bound this process before it runs a script. Limits can only be lowered from here on."""
+    try:
+        import resource
+    except ImportError:  # not a POSIX system
+        return
+    for name, value in limits.items():
+        kind = getattr(resource, f"RLIMIT_{name}", None)
+        if kind is None:
+            continue
+        try:
+            resource.setrlimit(kind, (int(value), int(value)))
+        except (ValueError, OSError):
+            pass
+    if sys.platform.startswith("linux"):
+        try:
+            import ctypes
+
+            ctypes.CDLL(None, use_errno=True).prctl(38, 1, 0, 0, 0)  # PR_SET_NO_NEW_PRIVS
+        except (OSError, AttributeError):
+            pass
+
+
 def main() -> None:
-    """Child-process entry: JSON request on stdin, JSON result on stdout."""
+    """Child-process entry: limits in argv, JSON request on stdin, JSON result on stdout."""
+    if len(sys.argv) > 2:
+        confine(json.loads(sys.argv[2]))
     request = json.loads(sys.stdin.read())
-    result: dict = {"ok": False, "output": ""}
+    # The parent checks this against the account it asked for.
+    result: dict = {"ok": False, "output": "", "uid": os.geteuid() if hasattr(os, "geteuid") else None}
     try:
         kit = build_kit(request["settings"])
         result["output"] = execute_script(request["code"], kit)

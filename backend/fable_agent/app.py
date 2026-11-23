@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from pathlib import Path
@@ -50,6 +51,7 @@ class Options:
     max_parts: int = 1500
     api_key: str | None = None
     method: str = "thorough"
+    max_seconds: float | None = None  # stop starting model calls after this long; the best result is kept
 
     def resolved(self, method: str) -> Options:
         if method not in METHODS:
@@ -118,11 +120,12 @@ def _client(options: Options, model: str, effort: str) -> ModelClient:
 
 def _agent(options: Options, session: Session, client: ModelClient, bench: Workbench, on_event: Event | None):
     budget = Budget(Decimal(str(options.budget_usd)), client.model)
+    deadline = time.monotonic() + options.max_seconds if options.max_seconds else None
     if options.method == "lean":
         return LeanAgent(session, client, bench.toolbox(session), budget, max_rounds=options.max_steps,
-                         on_event=on_event)
+                         on_event=on_event, deadline=deadline)
     return BuildAgent(session, client, bench.toolbox(session), budget, max_steps=options.max_steps,
-                      on_event=on_event)
+                      on_event=on_event, deadline=deadline)
 
 
 def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference: Path | None = None,

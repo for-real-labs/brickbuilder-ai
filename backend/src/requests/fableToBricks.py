@@ -10,6 +10,8 @@ import logging
 import os
 import tempfile
 import threading
+import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -17,11 +19,13 @@ import httpx
 from fable_agent.app import Options, start_build
 from fable_agent.ldraw import default_library_dir
 from fable_agent.render import find_leocad
+from fable_agent.runner import SandboxError, script_account
 from fastapi import HTTPException
 from PIL import Image
 from storage3.exceptions import StorageApiError
 
 from ..astrology.render import prepare_reference
+from ..utils import auth
 from ..utils.auth import handle_auth_and_tracking
 from ..utils.authorization import require_generation_access
 from ..utils.building_agents import FABLE_AGENTS, FableVariant
@@ -38,7 +42,15 @@ from .imageToBricks import ImageToBricksResponse
 DESIGN_FILE = "fable-design.json"
 MAX_PARTS = 5000
 DEFAULT_PARTS = 1000
+# Builds are long and each holds a worker thread, so they get their own small pool: a rush of
+# Fable requests waits its turn instead of starving the rest of the API, and is refused past that.
+MAX_BUILDS = max(1, int(os.getenv("FABLE_MAX_CONCURRENT_BUILDS", "3")))
+MAX_WAITING = 2 * MAX_BUILDS
+BUILD_SECONDS = 30 * 60  # no new model call starts after this; the best clean revision is delivered
+HARD_STOP_SECONDS = BUILD_SECONDS + 15 * 60  # a build still running then is abandoned
 logger = logging.getLogger(__name__)
+_builds = ThreadPoolExecutor(max_workers=MAX_BUILDS, thread_name_prefix="fable-build")
+_in_flight = 0
 # What the customer is shown while the agent uses each of its tools.
 PROGRESS = {
     "search_parts": "Choosing parts", "inspect_part": "Choosing parts", "view_parts": "Choosing parts",
@@ -50,6 +62,10 @@ PROGRESS = {
 
 class BuildCancelled(Exception):
     """The generation was cancelled; stop the agent at its next step."""
+
+
+class BuildTimedOut(Exception):
+    """The build ran far past its time limit; stop the agent at its next step."""
 
 
 @dataclass(frozen=True)
@@ -101,7 +117,7 @@ def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | 
             picture = root / "reference-upload"
             picture.write_bytes(reference)
         options = Options(model=variant.model, method=variant.method, effort=variant.effort,
-                          max_parts=max_parts, api_key=key)
+                          max_parts=max_parts, api_key=key, max_seconds=BUILD_SECONDS)
         result = start_build(prompt, root / "session", options, reference=picture, on_event=on_event,
                              script=script)
         if result.published is None:
@@ -131,9 +147,11 @@ async def _build(generation_id, request, agent_id, design, reference, key, _on_t
             except Exception:
                 logger.warning("Fable heartbeat failed for %s", generation_id, exc_info=True)
 
+    global _in_flight
     loop = asyncio.get_running_loop()
     ledger = current_generation_usage.get()
     cancelled = threading.Event()
+    clock = {"hard_stop": float("inf")}  # set when the build leaves the queue and starts
     calls: list[dict] = []
     shown: list[str] = []
 
@@ -141,6 +159,8 @@ async def _build(generation_id, request, agent_id, design, reference, key, _on_t
         """Called on the agent's worker thread for every step it takes."""
         if cancelled.is_set():
             raise BuildCancelled
+        if time.monotonic() >= clock["hard_stop"]:
+            raise BuildTimedOut
         if kind == "turn":
             calls.append(data["usage"])
             if ledger is not None:
@@ -151,14 +171,19 @@ async def _build(generation_id, request, agent_id, design, reference, key, _on_t
                 shown.append(text)
                 asyncio.run_coroutine_threadsafe(on_progress(text), loop)
 
+    def work() -> Built:
+        """Runs on a build thread once one is free; time spent waiting for it does not count."""
+        clock["hard_stop"] = time.monotonic() + HARD_STOP_SECONDS
+        return _run(_change_request(prompt, design), FABLE_AGENTS[agent_id], request.max_parts, reference,
+                    design.script if design else None, key, on_event)
+
     pulse = asyncio.create_task(heartbeat())
     prompt = request.prompt or "Build the subject in the photo."
+    _in_flight += 1
     try:
         await generation_storage.update_status(generation_id, "processing")
         await on_progress("Designing your model")
-        built = await asyncio.to_thread(
-            _run, _change_request(prompt, design), FABLE_AGENTS[agent_id], request.max_parts, reference,
-            design.script if design else None, key, on_event)
+        built = await loop.run_in_executor(_builds, work)
         await on_progress("Saving your model and building instructions")
         bucket = generation_storage.client.storage.from_("generation-output")
         saved = {"agent": agent_id, "script": built.script,
@@ -181,19 +206,28 @@ async def _build(generation_id, request, agent_id, design, reference, key, _on_t
         raise
     except Exception as exc:
         logger.exception("Fable generation failed for %s", generation_id)
-        message = str(exc) if isinstance(exc, ValueError) else "Fable could not complete this build."
+        message = (str(exc) if isinstance(exc, ValueError)
+                   else "Fable ran out of time on this build. Try a simpler request."
+                   if isinstance(exc, BuildTimedOut) else "Fable could not complete this build.")
         await generation_storage.update_status(generation_id, "failed", message)
         return message
     finally:
+        _in_flight -= 1
         pulse.cancel()
         await asyncio.gather(pulse, return_exceptions=True)
 
 
 def _ready() -> bool:
-    """The parts library and renderer the agent needs are installed."""
+    """The parts library and renderer are installed, and build scripts can be run safely.
+
+    A build script is code the model wrote. On a shared service it must run under its own
+    unprivileged account, away from the API's secrets; anything less is refused. Only an offline
+    local checkout, where the developer is the only user, may run scripts as the caller.
+    """
     try:
-        return bool(find_leocad()) and (default_library_dir() / "LDConfig.ldr").is_file()
-    except OSError:
+        isolated = script_account().separate or auth.LOCAL_DB_ENABLED
+        return isolated and bool(find_leocad()) and (default_library_dir() / "LDConfig.ldr").is_file()
+    except (OSError, SandboxError):
         return False
 
 
@@ -211,6 +245,8 @@ async def fable_to_bricks(request, auth_info, source=None):
     key = os.getenv(variant.key_env)
     if not key or generation_storage is None or not _ready():
         raise HTTPException(503, "Fable is temporarily unavailable.")
+    if _in_flight >= MAX_BUILDS + MAX_WAITING:
+        raise HTTPException(503, "Fable is busy right now. Try again in a few minutes.")
     design = await _source_design(source, auth_info) if source else None
     request.max_parts = (tighter_parts_limit(request.max_parts, source.get("max_parts") if source else None)
                          or DEFAULT_PARTS)

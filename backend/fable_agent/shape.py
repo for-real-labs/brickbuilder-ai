@@ -250,7 +250,8 @@ class ShapeLibrary:
             return self._memory[part_id]
         cache = self._cache_file(part_id)
         shape = None
-        if cache is not None and cache.is_file():
+        if cache is not None:
+            # A missing or unreadable cache file is a miss: the script account may not see the cache.
             try:
                 data = json.loads(cache.read_text(encoding="utf-8"))
                 shape = PartShape(

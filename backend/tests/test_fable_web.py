@@ -16,6 +16,7 @@ from src.utils.generation_budget import GenerationUsage, current_generation_usag
 
 from fable_agent_support import CABIN, FakeClient, FakeRenderer, InlineRunner, World, reply, tool_use
 
+ORIGINAL_READY = fable._ready
 ACCOUNT = {"authenticated": True, "auth_method": "jwt", "user_email": "builder@example.test",
            "user_id": "builder"}
 AGENT = "fable-gpt-6.1-sol"
@@ -116,6 +117,70 @@ def test_requests_fable_cannot_serve_are_refused_before_anything_is_created(monk
     create.assert_not_called()
 
 
+def test_the_website_runs_scripts_only_under_a_separate_account(monkeypatch, tmp_path):
+    from fable_agent.runner import Account, SandboxError
+
+    (tmp_path / "LDConfig.ldr").write_text("0 colours\n")
+    monkeypatch.setattr(fable, "_ready", ORIGINAL_READY)
+    monkeypatch.setattr(fable, "find_leocad", lambda: "/usr/bin/leocad")
+    monkeypatch.setattr(fable, "default_library_dir", lambda: tmp_path)
+    monkeypatch.setattr(fable.auth, "LOCAL_DB_ENABLED", False)
+
+    monkeypatch.setattr(fable, "script_account", lambda: Account("fable-sandbox", 990, 991, True))
+    assert fable._ready() is True
+    # Sharing the API's own account is refused on a hosted service, whatever else is installed.
+    monkeypatch.setattr(fable, "script_account", lambda: Account("caller", 0, 0, False))
+    assert fable._ready() is False
+    create, _ = start_recorder(monkeypatch)
+    with pytest.raises(HTTPException) as unavailable:
+        asyncio.run(fable.fable_to_bricks(nova.NovaToBricksRequest(building_agent=AGENT, prompt="A boat"),
+                                          ACCOUNT))
+    assert unavailable.value.status_code == 503
+    create.assert_not_called()
+
+    def broken():
+        raise SandboxError("The build-script account 'fable-sandbox' does not exist")
+
+    monkeypatch.setattr(fable, "script_account", broken)
+    assert fable._ready() is False
+    # An offline local checkout has one user, the developer, and may run scripts as them.
+    monkeypatch.setattr(fable, "script_account", lambda: Account("caller", 501, 20, False))
+    monkeypatch.setattr(fable.auth, "LOCAL_DB_ENABLED", True)
+    assert fable._ready() is True
+    monkeypatch.setattr(fable, "find_leocad", lambda: None)
+    assert fable._ready() is False
+
+
+def test_a_rush_of_builds_is_refused_instead_of_queued_without_limit(monkeypatch):
+    create, _ = start_recorder(monkeypatch)
+    monkeypatch.setattr(fable, "_in_flight", fable.MAX_BUILDS + fable.MAX_WAITING)
+    with pytest.raises(HTTPException) as busy:
+        asyncio.run(fable.fable_to_bricks(nova.NovaToBricksRequest(building_agent=AGENT, prompt="A boat"),
+                                          ACCOUNT))
+    assert busy.value.status_code == 503 and "busy" in busy.value.detail
+    create.assert_not_called()
+    monkeypatch.setattr(fable, "_in_flight", fable.MAX_BUILDS + fable.MAX_WAITING - 1)
+    asyncio.run(fable.fable_to_bricks(nova.NovaToBricksRequest(building_agent=AGENT, prompt="A boat"), ACCOUNT))
+    create.assert_awaited_once()
+
+
+def test_a_build_far_past_its_time_limit_is_abandoned_with_a_message(monkeypatch):
+    storage, _ = web_storage(monkeypatch)
+    monkeypatch.setattr(fable, "HARD_STOP_SECONDS", -1)
+
+    def run(prompt, variant, max_parts, reference, script, key, on_event):
+        on_event("thinking", {"text": "."})  # the first step after the limit raises
+        raise AssertionError("the build should have been stopped")
+
+    monkeypatch.setattr(fable, "_run", run)
+    request = nova.NovaToBricksRequest(prompt="A cabin", building_agent=AGENT)
+    before = fable._in_flight
+    error = asyncio.run(fable._build("build", request, AGENT, None, None, "k", on_progress=AsyncMock()))
+    assert error == "Fable ran out of time on this build. Try a simpler request."
+    storage.update_status.assert_awaited_with("build", "failed", error)
+    assert fable._in_flight == before  # the slot is released however the build ends
+
+
 @pytest.mark.parametrize("missing", ["key", "tools"])
 def test_fable_is_unavailable_without_its_key_or_its_tools(monkeypatch, missing):
     create, _ = start_recorder(monkeypatch)
@@ -214,6 +279,7 @@ def test_a_completed_job_exports_the_model_instructions_usage_and_owner_design(t
     prompt, options, script = options_seen[0]
     assert (prompt, options.model, options.method, options.max_parts, script) == (
         "A small cabin", "gpt-6.1-sol", "thorough", 400, None)
+    assert options.max_seconds == fable.BUILD_SECONDS  # every website build has a time limit
 
     saved = {call.kwargs["path"]: call.kwargs["file"] for call in publish.await_args_list}
     design = json.loads(saved[f"build/{fable.DESIGN_FILE}"])

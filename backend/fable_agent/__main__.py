@@ -11,6 +11,7 @@ from .app import METHODS, Options, Workbench, continue_build, start_build
 from .kit import to_ldraw
 from .provider import DEFAULT_MODEL, ProviderError
 from .render import RenderError
+from .runner import SandboxError
 from .session import SessionError
 
 
@@ -136,7 +137,7 @@ def main(argv: list[str] | None = None) -> int:
             return _report(start_build(args.prompt, args.out, _options(args), reference=args.image, on_event=show),
                            args.out)
         return _report(continue_build(args.request, args.session, _options(args), on_event=show), args.session)
-    except (ProviderError, SessionError, RenderError, ValueError) as exc:
+    except (ProviderError, SessionError, RenderError, SandboxError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 

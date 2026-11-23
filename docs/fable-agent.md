@@ -171,6 +171,12 @@ labels in `frontend/src/utils/buildingAgents.ts`.
 - **Edits** to a Fable model go back to the option that built it, start from the saved
   script, and are open only to the model's owner.
 - **Cancelling** a generation stops the agent at its next step.
+- **Load:** at most three builds run at once (`FABLE_MAX_CONCURRENT_BUILDS`), on their
+  own worker threads so they cannot starve the rest of the API. A few more wait their
+  turn, and beyond that a request is refused with a "busy" message.
+- **Time:** after 30 minutes no new model call starts and the last clean revision is
+  delivered. A build still running 15 minutes later is abandoned.
+- **Isolation:** build scripts run under a separate unprivileged account; see Safety.
 - **Failure:** if no revision passes the checks, the generation fails with a message.
   If the agent runs out of rounds or budget after a clean revision, that revision is
   delivered.
@@ -266,15 +272,32 @@ supplier and instruction checks before a customer is charged, as Nova's do.
 
 ## Safety
 
-- **Build scripts run in a restricted dialect.** Imports other than `math` and
-  `random`, classes, underscore and frame attributes, `str.format`, and builtins
-  that reach files or the interpreter are rejected before execution.
-- **They run in a separate process** with a scrubbed environment (no API keys), an
-  empty working directory, CPU and file-size limits and a wall-clock timeout.
-- This is defense in depth, not a sandbox boundary on its own. On the website the
-  script runs in the API container as the API's own user, which is acceptable for an
-  allowlist of trusted accounts. Give Fable its own unprivileged container, as Nova
-  has, before offering it more widely.
+A build script is code the model wrote from a customer's request, so it is treated as
+untrusted. Three barriers stand between it and the rest of the system.
+
+- **A restricted dialect.** Imports other than `math` and `random`, classes,
+  underscore and frame attributes, `str.format`, and builtins that reach files or the
+  interpreter are rejected before execution.
+- **A separate process** with a scrubbed environment (no API keys), an empty working
+  directory, and limits it places on itself before it reads the script: CPU time,
+  memory, file size, open files and process count, plus a wall-clock timeout.
+- **A separate operating-system account.** On a server the process runs as an
+  unprivileged account that owns nothing. It can read the parts library and the shape
+  cache and cannot read the API's environment, where every secret lives, or write
+  anywhere the API trusts. The API image creates this account (`fable-sandbox`) and
+  names it in `FABLE_SANDBOX_USER`.
+
+The third barrier fails closed. Root never runs a script itself; if the named account
+is missing or the process cannot switch to it, no script runs. The API checks each
+result came from that account and discards it otherwise. On the website Fable answers
+"temporarily unavailable" unless scripts run under a separate account; only an offline
+local checkout, whose one user is the developer, may run them as the caller. From the
+command line on your own machine, scripts run as you.
+
+What this does not give: the script process shares the API container's CPU, memory and
+network. A script that got past the dialect could still make outbound connections or
+slow the container until its limits stop it. A separate service, as Nova has, removes
+that too and is the stronger design if Fable becomes a main path.
 - **Spending is capped per run.** Before each call the remaining budget must cover
   the whole context at the highest input rate; the rest bounds output tokens.
   Unknown models and missing usage fail closed.
@@ -289,8 +312,8 @@ supplier and instruction checks before a customer is charged, as Nova's do.
 
 - The website path has not run in the deployed container. It relies on the LeoCAD
   and LDraw installation Astrology uses there.
-- Fable runs inside the API process, one worker thread per build. It needs its own
-  service before it is offered beyond the allowlist.
+- Fable's build scripts run under their own account but in the API's container, so
+  they share its CPU, memory and network. See Safety for what that leaves open.
 - On the website an edit starts from the saved script, not from the conversation that
   wrote it, and a customer's parts inventory is not supported.
 - Instruction steps are grouped by height. The existing connected-step planner

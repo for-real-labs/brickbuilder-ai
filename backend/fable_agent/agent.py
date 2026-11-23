@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Callable
@@ -46,7 +47,9 @@ def close_run(session: Session, toolbox: Toolbox, budget: Budget, emit: Event, s
 
 class BuildAgent:
     def __init__(self, session: Session, client: ModelClient, toolbox: Toolbox, budget: Budget, *,
-                 max_steps: int = 60, max_tokens: int = 32_000, on_event: Event | None = None):
+                 max_steps: int = 60, max_tokens: int = 32_000, on_event: Event | None = None,
+                 deadline: float | None = None):
+        self._deadline = deadline  # a time.monotonic() value after which no new model call starts
         self._session = session
         self._client = client
         self._toolbox = toolbox
@@ -69,6 +72,9 @@ class BuildAgent:
         steps = 0
         reason = "step limit reached"
         while steps < self._max_steps:
+            if self._deadline is not None and time.monotonic() >= self._deadline:
+                reason = "time limit reached"
+                break
             try:
                 allowance = self._budget.output_allowance(estimate_tokens(session.messages[-1]), self._max_tokens)
             except BudgetExhausted:

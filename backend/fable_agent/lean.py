@@ -12,6 +12,7 @@ wants to remember goes in a short note it writes to itself.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -87,7 +88,9 @@ class Outcome:
 
 class LeanAgent:
     def __init__(self, session: Session, client: ModelClient, toolbox: Toolbox, budget: Budget, *,
-                 max_rounds: int = 8, max_tokens: int = 20_000, on_event: Event | None = None):
+                 max_rounds: int = 8, max_tokens: int = 20_000, on_event: Event | None = None,
+                 deadline: float | None = None):
+        self._deadline = deadline  # a time.monotonic() value after which no new round starts
         self._session = session
         self._client = client
         self._toolbox = toolbox
@@ -230,6 +233,9 @@ class LeanAgent:
         reason = "round limit reached"
         rounds = 0
         while rounds < self._max_rounds:
+            if self._deadline is not None and time.monotonic() >= self._deadline:
+                reason = "time limit reached"
+                break
             request = self._request(rounds + 1)
             try:
                 # Nothing is carried over from the last round, so only this request is reserved.
