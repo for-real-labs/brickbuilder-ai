@@ -27,6 +27,16 @@ def test_render_generation_preview_keeps_geometry_and_strips_external_metadata(m
     assert generation_previews.render_generation_preview(source).startswith(b"\x89PNG\r\n\x1a\n")
 
 
+def test_render_generation_preview_rejects_exponential_submodel_expansion(monkeypatch):
+    def placement(reference):
+        return f"1 4 0 0 0 1 0 0 0 1 0 0 0 1 {reference}\n"
+
+    sections = [f"0 FILE model-{index}.ldr\n" + placement(f"model-{index + 1}.ldr") * 2 for index in range(21)]
+    sections.append("0 FILE model-21.ldr\n" + placement("3001.dat"))
+    with pytest.raises(ValueError, match="too complex to render"):
+        generation_previews.render_generation_preview("".join(sections).encode())
+
+
 class FakeCommunityQuery:
     def __init__(self, client):
         self.client = client

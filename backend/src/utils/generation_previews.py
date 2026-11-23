@@ -21,7 +21,7 @@ def render_generation_preview(model: bytes) -> bytes:
     # Keep model sections, geometry and colors. Drop renderer directives for
     # external textures, saved cameras, hidden pieces, and construction steps.
     lines = []
-    for line in normalize_ldraw_upload("model.mpd", model).splitlines():
+    for line in normalize_ldraw_upload("model.mpd", model, max_expanded_geometry=1_000_000).splitlines():
         fields = line.split(maxsplit=2)
         if fields and (fields[0] != "0" or (len(fields) > 1 and fields[1].upper() in _geometry_metadata)):
             lines.append(line)
