@@ -5,9 +5,10 @@ turns a prompt and an optional reference photo into an LDraw model made only of
 parts the supplier stocks. Nova was the reference for what the job is; none of its
 code is used.
 
-**Status:** a standalone agent you run from the command line. It is not wired into
-the website's **All parts** mode yet. Nova keeps serving that mode until Fable has
-been compared with it on real requests.
+**Status:** it runs from the command line, and on the website as extra **Building
+agent** options for the accounts on the Astrology allowlist. Nova stays the default
+for everyone else. It has not yet been exercised in the deployed API container: the
+website path is covered by tests, and the first staging build is the real check.
 
 | | Nova | Fable |
 |---|---|---|
@@ -18,16 +19,17 @@ been compared with it on real requests.
 | Physical checks | A CLI the model chooses to run | Run on every script change; `finish` is refused until they pass |
 | Parts inventory | Palette pushed into Nova | The same `PartsCatalog`, enforced in every build report |
 | Models | One provider per deployment | Claude or OpenAI models, chosen per run with `--model` |
-| Default AI budget | $20 per generation | $8 per run, enforced before each call |
+| Default AI budget | $20 per generation | $8 per thorough run, $2 per lean run, enforced before each call |
 
 ## Example
 
-Built unattended by `claude-fable-5-2` from a customer photo of a lake house and the
-one-line prompt "Build my lake house from this photo." The run took 8 model turns and
-$3.65 of AI spend, and published a model of 572 parts in 81 part/color lots, about
-$90 of parts at catalog prices. Every part is in the supplier catalog, nothing
-overlaps, and every part is attached. A follow-up `edit` on that session ("Make the
-roof dark red and add a chimney.") took 2 more model turns and $1.22.
+Built unattended by `claude-fable-5-2` with the thorough method, from a customer photo
+of a lake house and the one-line prompt "Build my lake house from this photo." The
+run took 8 model turns and $3.65 of AI spend, and published a model of 572 parts in 81
+part/color lots, about $90 of parts at catalog prices. Every part is in the supplier
+catalog, nothing overlaps, and every part is attached. A follow-up `edit` on that
+session ("Make the roof dark red and add a chimney.") took 2 more model turns and
+$1.22.
 
 ![Lake house, front left](assets/fable-agent/lakehouse-front-left.png)
 ![Lake house, front](assets/fable-agent/lakehouse-front.png)
@@ -42,6 +44,49 @@ cd backend
 python -m fable_agent script fable_agent/examples/lakehouse.py --out /tmp/lakehouse
 ```
 
+## Two methods, several models
+
+A build runs with one of two methods. Both use the same kit, checks, renderer and
+publish gate; they differ in how the model is asked to work.
+
+- **Thorough** (the default) is one growing conversation. The model has eight tools
+  and uses them as often as it likes: look a part up, edit, render, zoom in. Its
+  reasoning carries from turn to turn. It gives the most detail, and it is what costs:
+  most of the Claude run above went on deep planning, and each OpenAI run took almost
+  forty turns.
+- **Lean** is a few short, stateless rounds. Each round the model sees only the
+  request, the current script, its build report and three pictures of it, and takes
+  one action: `build`, `patch` (many edits at once), `look_up` or `finish`. Every
+  script change is checked and rendered at once, so there is no separate render turn.
+  A short note the model writes to itself is its only memory. Its prompt lists the
+  measured size and facing of every part on the catalog sheet, so lookups are rare,
+  and it runs at medium effort with at most 8 rounds and $2.
+
+The stateless round and the "act, then look at the result" loop come from Astrology,
+which is reported to build a comparable house for about $0.30. What Fable keeps is its
+build script and geometry checks, which is why its rounds carry more text than
+Astrology's.
+
+One run of each on the same photo and prompt:
+
+| Method | Model | AI cost | Model turns | Minutes | Parts | Parts cost |
+|---|---|---|---|---|---|---|
+| thorough | `claude-fable-5-2` | $3.65 | 8 | 12 | 572 | $90 |
+| thorough | `gpt-6.2-sol` | $1.20 | 39 | 12 | 1,161 | $177 |
+| thorough | `gpt-6.1-sol` | $0.62 | 38 | 13 | 1,437 | $204 |
+| lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
+| lean, `--effort low` | `claude-fable-5-2` | $0.53 | 2 | 3 | 427 | $84 |
+| lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
+
+![The lake house from each method and model](assets/fable-agent/lakehouse-methods.jpg)
+
+All six published with a clean report. These are single runs, so they show cost and
+character, not an average: Claude builds a compact model and gets it right early, the
+OpenAI models build larger ones and take more turns, and lean trades some detail for
+a quarter of the cost or less. At low effort Claude dropped the siding color and trim.
+The `gpt-6.2-sol` run predates the caching fix described under Models, which would
+have saved about half of its cost.
+
 ## Running it
 
 From `backend`, with its Python dependencies installed:
@@ -49,6 +94,9 @@ From `backend`, with its Python dependencies installed:
 ```sh
 python -m fable_agent build "Build my lake house from this photo" \
   --image ~/Downloads/lakehouse.jpeg --out ../output/fable-agent/lakehouse
+
+python -m fable_agent build "A red fishing boat" --method lean --model gpt-6.1-sol \
+  --out ../output/fable-agent/boat
 
 python -m fable_agent edit ../output/fable-agent/lakehouse "Make the roof dark red"
 ```
@@ -60,12 +108,13 @@ It needs:
 - An LDraw parts library at `$LDRAW_DIR` (default `~/ldraw`).
 - LeoCAD on `PATH`, at `$LEOCAD_BIN`, or in `/Applications` on macOS.
 
-Useful options: `--budget 8` (USD), `--max-steps 60`, `--max-parts 1500`,
-`--effort high`, `--model claude-fable-5-2`, `--catalog other.csv`, and `--all-parts`
-to lift the supplier restriction.
+Useful options: `--method thorough|lean`, `--model claude-fable-5-2`, `--max-parts
+1500`, `--catalog other.csv`, and `--all-parts` to lift the supplier restriction.
+`--effort`, `--budget` (USD) and `--max-steps` default to the method's own values:
+high, $8 and 60 turns for thorough; medium, $2 and 8 rounds for lean.
 
 `build` refuses to reuse a directory that already holds a session. `edit` continues
-that session with the model that started it.
+that session with the method and model that started it.
 
 ### Models
 
@@ -89,6 +138,44 @@ rather than as `instructions`: when this was written (2026-11-22), `gpt-6.2-sol`
 `gpt-6.2-astra` cached the conversation but never top-level instructions, while both
 forms cached on `gpt-6.1-sol`. `cache_read_tokens` in a session's `usage` shows
 whether caching is working for a model.
+
+## On the website
+
+With **All parts** selected, allowlisted accounts get a **Building agent** selector in
+Generation settings. The backend decides who sees it
+(`GET /generation-settings/building-agents`) and checks the same allowlist again when
+a build is requested, so hiding the selector is not what protects it.
+
+| Option | Method | Model |
+|---|---|---|
+| Fable · Claude Fable 5.2 | thorough | `claude-fable-5-2` |
+| Fable · GPT-6.2 Sol | thorough | `gpt-6.2-sol` |
+| Fable · GPT-6.1 Sol | thorough | `gpt-6.1-sol` |
+| Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` |
+| Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` |
+
+The options are defined once in `backend/src/utils/building_agents.py`, with their
+labels in `frontend/src/utils/buildingAgents.ts`.
+
+- **Access** is the Astrology allowlist, `ASTROLOGY_ALLOWED_EMAILS`. A signed-in
+  account on it may use every option; nobody else can, including through the API.
+- **Billing** follows the other All parts engines: BrickBuilder credits and
+  BrickBuilder's own `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Personal provider keys
+  and local provider connections are refused. Each model call is reported to the
+  generation's usage record.
+- **Limits:** 1,000 pieces unless the request sets another limit, 5,000 at most. A
+  customer's own parts inventory is refused for now; Fable builds from the catalog.
+- **Results** use the standard viewer, parts list, preview and instructions. The build
+  script is saved with the generation as `fable-design.json`.
+- **Edits** to a Fable model go back to the option that built it, start from the saved
+  script, and are open only to the model's owner.
+- **Cancelling** a generation stops the agent at its next step.
+- **Failure:** if no revision passes the checks, the generation fails with a message.
+  If the agent runs out of rounds or budget after a clean revision, that revision is
+  delivered.
+
+`backend/src/requests/fableToBricks.py` is the whole integration. The build itself
+runs in a scratch directory that is deleted afterwards.
 
 ## How a build works
 
@@ -139,6 +226,9 @@ and staggers seams between layers so walls bond and ring corners interlock.
 `facing` aims a slope's low edge without the model reasoning about rotation
 matrices. The full list is in `SYSTEM` in `backend/fable_agent/prompts.py`.
 
+The steps above describe the thorough method. In the lean method steps 3 and 4 are
+one: `build` and `patch` return the report and pictures together.
+
 ## What a session contains
 
 ```
@@ -155,6 +245,10 @@ The transcript is never edited. A model's reasoning is valid only against the ex
 system prompt, tool list and history that produced it, so a session keeps its own
 copy of the prompt and tools and only ever appends. This also keeps the provider's
 prompt cache warm from one step to the next.
+
+A lean session keeps the same files. Its transcript is a record of each round and is
+never sent back to the model; what carries over is in `session.json` under `lean`:
+the brief, the model's note, looked-up part facts and the latest pictures.
 
 ## What the checks prove
 
@@ -176,8 +270,10 @@ supplier and instruction checks before a customer is charged, as Nova's do.
   that reach files or the interpreter are rejected before execution.
 - **They run in a separate process** with a scrubbed environment (no API keys), an
   empty working directory, CPU and file-size limits and a wall-clock timeout.
-- This is defense in depth, not a sandbox boundary on its own. A multi-tenant
-  deployment should still run builds under an unprivileged account or container.
+- This is defense in depth, not a sandbox boundary on its own. On the website the
+  script runs in the API container as the API's own user, which is acceptable for an
+  allowlist of trusted accounts. Give Fable its own unprivileged container, as Nova
+  has, before offering it more widely.
 - **Spending is capped per run.** Before each call the remaining budget must cover
   the whole context at the highest input rate; the rest bounds output tokens.
   Unknown models and missing usage fail closed.
@@ -190,10 +286,14 @@ supplier and instruction checks before a customer is charged, as Nova's do.
 
 ## Not done yet
 
-- No web integration: no generation row, progress events, credits or storage.
+- The website path has not run in the deployed container. It relies on the LeoCAD
+  and LDraw installation Astrology uses there.
+- Fable runs inside the API process, one worker thread per build. It needs its own
+  service before it is offered beyond the allowlist.
+- On the website an edit starts from the saved script, not from the conversation that
+  wrote it, and a customer's parts inventory is not supported.
 - Instruction steps are grouped by height. The existing connected-step planner
   should run on published models, as it does for Nova.
-- Rendering depends on LeoCAD. The API container does not ship it today.
 - Doors hung in frames and other clip or hinge connections are placed by `inset`
   or `connect` and are not verified.
 
@@ -201,8 +301,9 @@ supplier and instruction checks before a customer is charged, as Nova's do.
 
 ```sh
 cd backend
-uv run --group dev pytest tests/test_fable_agent_*.py
+uv run --group dev pytest tests/test_fable_agent_*.py tests/test_fable_web.py
 ```
 
 The tests build a tiny synthetic LDraw library, so they need no parts library,
-renderer or network.
+renderer or network. The frontend's selector is covered by
+`frontend/tests/landing-page.test.tsx` and `frontend/tests/building-agents.test.ts`.

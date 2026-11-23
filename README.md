@@ -56,6 +56,37 @@ Each run uses a new output directory. Open `model.ldr` or `model.mpd` in BrickBu
 
 The engine supports upright bricks, plates, slopes, tiles, window frames, and other modeled details. It checks exact part/color availability, occupied space, the total piece limit and connectivity through vertical studs. Physical balance and assembly clearance still need a hands-on review.
 
+## Build with Fable
+
+Fable is a second independent All parts agent, in `backend/fable_agent`. The model writes one build script against a kit that measures every part from the LDraw library. Each change to the script is checked for overlapping, unattached and unavailable parts, and the model reviews renders before it may publish. It runs on Claude or OpenAI models.
+
+On the website, the accounts allowed to use Astrology also see the Fable options in **Generation settings → Building agent** with **All parts** selected. Both agents share the `ASTROLOGY_ALLOWED_EMAILS` allowlist, and other accounts never see the selector. Fable needs `ANTHROPIC_API_KEY` for its Claude options and `OPENAI_API_KEY` for its OpenAI options, plus the LeoCAD and LDraw installation Astrology already uses.
+
+Each option is one of two methods on one model. **Thorough** is a single long conversation in which the model looks parts up, edits and renders as often as it likes. **Lean** is a few short rounds that each show only the current script, its report and pictures, which costs much less. These are the results of one run each on the same photo of a lake house, with the one-line prompt "Build my lake house from this photo."
+
+| Building agent option | Method | Model | AI cost | Model turns | Minutes | Parts | Parts cost |
+|---|---|---|---|---|---|---|---|
+| Fable · Claude Fable 5.2 | thorough | `claude-fable-5-2` | $3.65 | 8 | 12 | 572 | $90 |
+| Fable · GPT-6.2 Sol | thorough | `gpt-6.2-sol` | $1.20 | 39 | 12 | 1,161 | $177 |
+| Fable · GPT-6.1 Sol | thorough | `gpt-6.1-sol` | $0.62 | 38 | 13 | 1,437 | $204 |
+| Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
+| Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
+
+![The lake house built by each Fable option](docs/assets/fable-agent/lakehouse-methods.jpg)
+
+Every build passed its checks. One run per option shows what each costs and roughly how it looks, not which is better on average. The GPT-6.2 Sol run was made before a prompt-caching fix that would have saved about half of its cost.
+
+To run Fable locally, install the backend dependencies with `npm run install:backend`, install LeoCAD and an LDraw parts library (`LDRAW_DIR`, default `~/ldraw`), and set the model's API key in your environment or `backend/.env`.
+
+```sh
+cd backend
+python -m fable_agent build "Build my lake house from this photo" --image ./house.jpg --out ./house-build
+python -m fable_agent build "A red fishing boat" --method lean --model gpt-6.1-sol --out ./boat-build
+python -m fable_agent edit ./house-build "Make the roof dark red"
+```
+
+Each run writes a session directory with `published/001/model.ldr`, its build script, a parts list, the check report and renders. See [the Fable guide](docs/fable-agent.md) for how it works, what its checks do and do not prove, and its limits.
+
 ## License
 
 [MIT](LICENSE). LEGO® is a trademark of the LEGO Group, which does not sponsor, authorize, or endorse this project.
