@@ -100,7 +100,8 @@ def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | 
         if reference:
             picture = root / "reference-upload"
             picture.write_bytes(reference)
-        options = Options(model=variant.model, method=variant.method, max_parts=max_parts, api_key=key)
+        options = Options(model=variant.model, method=variant.method, effort=variant.effort,
+                          max_parts=max_parts, api_key=key)
         result = start_build(prompt, root / "session", options, reference=picture, on_event=on_event,
                              script=script)
         if result.published is None:

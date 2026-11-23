@@ -18,6 +18,7 @@ class FableVariant:
     model: str
     method: str  # "thorough" or "lean"; see docs/fable-agent.md
     key_env: str
+    effort: str | None = None  # reasoning effort; None uses the method's own default
 
 
 # The id is stored as the generation's model_used_3d, so never rename one: add a new id instead.
@@ -26,6 +27,8 @@ FABLE_AGENTS = {
     "fable-gpt-6.2-sol": FableVariant("gpt-6.2-sol", "thorough", "OPENAI_API_KEY"),
     "fable-gpt-6.1-sol": FableVariant("gpt-6.1-sol", "thorough", "OPENAI_API_KEY"),
     "fable-lean-claude-fable-5-2": FableVariant("claude-fable-5-2", "lean", "ANTHROPIC_API_KEY"),
+    # The cheapest Claude option. In its test run it built a plainer model than medium effort did.
+    "fable-lean-low-claude-fable-5-2": FableVariant("claude-fable-5-2", "lean", "ANTHROPIC_API_KEY", effort="low"),
     "fable-lean-gpt-6.1-sol": FableVariant("gpt-6.1-sol", "lean", "OPENAI_API_KEY"),
 }
 IN_PROCESS_AGENTS = (ASTROLOGY, *FABLE_AGENTS)

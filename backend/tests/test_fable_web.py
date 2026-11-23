@@ -48,7 +48,8 @@ def start_recorder(monkeypatch):
 def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypatch):
     listed = asyncio.run(building_agents(Response(), ACCOUNT))["agents"]
     assert listed == ["nova", "astrology", *FABLE_AGENTS]
-    assert {"fable-claude-fable-5-2", "fable-gpt-6.2-sol", "fable-gpt-6.1-sol"} <= set(FABLE_AGENTS)
+    assert {"fable-claude-fable-5-2", "fable-gpt-6.2-sol", "fable-gpt-6.1-sol", "fable-lean-claude-fable-5-2",
+            "fable-lean-low-claude-fable-5-2", "fable-lean-gpt-6.1-sol"} == set(FABLE_AGENTS)
     assert in_process_agent(AGENT) == AGENT and in_process_agent("nova") is None and in_process_agent(7) is None
 
     outsider = {**ACCOUNT, "user_email": "outsider@example.test"}
@@ -62,6 +63,24 @@ def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypat
     create.assert_not_called()
     with pytest.raises(ValidationError, match="Unknown building agent"):
         nova.NovaToBricksRequest(prompt="A boat", building_agent="fable-mystery")
+
+
+@pytest.mark.parametrize(("agent", "effort"), [
+    ("fable-lean-low-claude-fable-5-2", "low"), ("fable-lean-claude-fable-5-2", "medium"), (AGENT, "high")])
+def test_each_option_runs_its_own_model_method_and_effort(monkeypatch, agent, effort):
+    seen = []
+
+    def start_build(prompt, run_dir, options, **kwargs):
+        seen.append(options.resolved(options.method))
+        raise ValueError("stop before any model call")
+
+    monkeypatch.setattr(fable, "start_build", start_build)
+    variant = FABLE_AGENTS[agent]
+    with pytest.raises(ValueError, match="stop before"):
+        fable._run("A boat", variant, 300, None, None, "key", lambda kind, data: None)
+    assert (seen[0].model, seen[0].method, seen[0].max_parts) == (variant.model, variant.method, 300)
+    assert seen[0].effort == effort  # the option's own effort, or else the method's default
+    assert seen[0].api_key == "key"
 
 
 def test_all_parts_starts_fable_with_existing_billing_and_ownership(monkeypatch):

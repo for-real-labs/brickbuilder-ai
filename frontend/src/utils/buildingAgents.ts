@@ -10,6 +10,7 @@ export const BUILDING_AGENT_LABELS = {
   'fable-gpt-6.2-sol': 'Fable · GPT-6.2 Sol',
   'fable-gpt-6.1-sol': 'Fable · GPT-6.1 Sol',
   'fable-lean-claude-fable-5-2': 'Fable Lean · Claude Fable 5.2',
+  'fable-lean-low-claude-fable-5-2': 'Fable Lean · Claude Fable 5.2 (low effort)',
   'fable-lean-gpt-6.1-sol': 'Fable Lean · GPT-6.1 Sol',
 } as const;
 

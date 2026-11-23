@@ -152,6 +152,7 @@ a build is requested, so hiding the selector is not what protects it.
 | Fable · GPT-6.2 Sol | thorough | `gpt-6.2-sol` |
 | Fable · GPT-6.1 Sol | thorough | `gpt-6.1-sol` |
 | Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` |
+| Fable Lean · Claude Fable 5.2 (low effort) | lean, low effort | `claude-fable-5-2` |
 | Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` |
 
 The options are defined once in `backend/src/utils/building_agents.py`, with their
