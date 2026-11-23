@@ -1088,7 +1088,7 @@ it('places the instructions button below the viewer and updates the URL without 
   expect(frame.contains(backToModel())).toBe(true);
   expect(document.getElementById(backToModel().getAttribute('aria-controls')!)).not.toBeNull();
   expect(container.querySelector('.landing-model-conversation')).toBe(conversation);
-  expect(query.value).toBe('id=castle&exact=1&instructions=1&step=1');
+  expect(query.value).toBe('id=castle&exact=1&instructions=1');
   expect(query.set).toHaveBeenLastCalledWith(expect.any(Function), { replace: true });
   expect(navigate).not.toHaveBeenCalled();
   expect(posthog.capture).toHaveBeenCalledWith('landing_model_instructions_clicked', { generation_id: 'castle', source: 'viewer_footer' });
