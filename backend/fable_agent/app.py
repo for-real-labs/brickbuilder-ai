@@ -16,25 +16,35 @@ from .checks import ModelChecker
 from .ldraw import LDrawLibrary
 from .lean import LEAN_TOOLS, LeanAgent
 from .palette import load_palette
-from .prompts import build_request, lean_system_prompt, system_prompt
+from .prompts import (build_request, lean_system_prompt, lean_v2_system_prompt, system_prompt,
+                      thorough_v2_system_prompt)
 from .openai_provider import OpenAIClient, is_openai_model
 from .provider import DEFAULT_MODEL, AnthropicClient, Budget, ModelClient
 from .render import LeoCadRenderer, Renderer
+from .repair import BuildRepairer
 from .runner import KitSettings, ScriptRunner, SubprocessScriptRunner
 from .session import Session
 from .shape import ShapeLibrary, default_cache_dir
-from .tools import TOOL_DEFINITIONS, Toolbox
+from .tools import THOROUGH_V2_TOOLS, TOOL_DEFINITIONS, Toolbox
 
 MAX_REFERENCE_BYTES = 40 * 1024 * 1024
 REFERENCE_SIDE = 1568
 
 
-# Two ways to run a build. "thorough" is one growing conversation with free use of every tool;
+# Ways to run a build. "thorough" is one growing conversation with free use of every tool, and
 # "lean" is a few short, stateless rounds (see ``lean``). Each has its own sensible limits.
+#
+# The "-v2" methods are separate so that the first versions keep behaving exactly as they did.
+# Both add ready-made trees and automatic repair (``ASSISTED``). "thorough-v2" also puts part
+# measurements in the prompt and batches look-ups and edits, so it takes fewer turns.
 METHODS = {
     "thorough": {"effort": "high", "budget_usd": 8.0, "max_steps": 60},
+    "thorough-v2": {"effort": "high", "budget_usd": 8.0, "max_steps": 60},
     "lean": {"effort": "medium", "budget_usd": 2.0, "max_steps": 8},
+    "lean-v2": {"effort": "medium", "budget_usd": 2.0, "max_steps": 8},
 }
+LEAN = frozenset({"lean", "lean-v2"})
+ASSISTED = frozenset({"thorough-v2", "lean-v2"})
 
 
 @dataclass(frozen=True)
@@ -88,8 +98,12 @@ class Workbench:
                    renderer or LeoCadRenderer(library.root), palette)
 
     def toolbox(self, session: Session) -> Toolbox:
+        # Whether builds are repaired is fixed when the session starts, so a model is always
+        # rebuilt the way it was made.
+        repairer = (BuildRepairer(self.library, self.shapes, self.palette, self.finder)
+                    if session.meta["settings"].get("repair") else None)
         return Toolbox(session, self.library, self.shapes, self.palette, self.finder, self.checker,
-                       self.runner, self.renderer)
+                       self.runner, self.renderer, repairer)
 
 
 def save_reference(source: Path, session: Session) -> Path:
@@ -115,13 +129,13 @@ def _client(options: Options, model: str, effort: str) -> ModelClient:
         return OpenAIClient(options.api_key or os.environ.get("OPENAI_API_KEY", ""), model=model, effort=effort)
     # Lean rounds share only their opening, so they mark the cache point themselves.
     return AnthropicClient(options.api_key or os.environ.get("ANTHROPIC_API_KEY", ""), model=model, effort=effort,
-                           auto_cache=options.method != "lean")
+                           auto_cache=options.method not in LEAN)
 
 
 def _agent(options: Options, session: Session, client: ModelClient, bench: Workbench, on_event: Event | None):
     budget = Budget(Decimal(str(options.budget_usd)), client.model)
     deadline = time.monotonic() + options.max_seconds if options.max_seconds else None
-    if options.method == "lean":
+    if options.method in LEAN:
         return LeanAgent(session, client, bench.toolbox(session), budget, max_rounds=options.max_steps,
                          on_event=on_event, deadline=deadline)
     return BuildAgent(session, client, bench.toolbox(session), budget, max_steps=options.max_steps,
@@ -141,12 +155,17 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
     options = options.resolved(options.method)
     settings = {"ldraw_dir": options.ldraw_dir, "catalog_path": options.catalog_path,
                 "open_palette": options.open_palette, "max_parts": options.max_parts, "effort": options.effort,
-                "method": options.method}
+                "method": options.method, "repair": options.method in ASSISTED}
     bench = workbench or Workbench.open(settings)
     settings["ldraw_dir"] = str(bench.library.root)
     client = client or _client(options, options.model, options.effort)
     if options.method == "lean":
         system, tools = lean_system_prompt(bench.finder, bench.shapes, bench.palette.name), LEAN_TOOLS
+    elif options.method == "lean-v2":
+        system, tools = lean_v2_system_prompt(bench.finder, bench.shapes, bench.palette.name), LEAN_TOOLS
+    elif options.method == "thorough-v2":
+        system, tools = (thorough_v2_system_prompt(bench.finder, bench.shapes, bench.palette.name),
+                         THOROUGH_V2_TOOLS)
     else:
         system, tools = system_prompt(bench.finder, bench.palette.name), TOOL_DEFINITIONS
     session = Session.create(run_dir, system=system, tools=tools, model=client.model, settings=settings)
@@ -174,6 +193,6 @@ def continue_build(request: str, run_dir: Path | str, options: Options, *, on_ev
     bench = workbench or Workbench.open(settings)
     client = client or _client(options, session.meta["model"], options.effort)
     change = f"Change request: {request.strip()}"
-    if options.method != "lean":
+    if options.method not in LEAN:
         change += "\n\nUpdate the existing build script, check and render the result, then finish again."
     return _agent(options, session, client, bench, on_event).run([{"type": "text", "text": change}])

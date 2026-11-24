@@ -64,21 +64,23 @@ On the website, the accounts allowed to use Astrology also see the Fable options
 
 Because the model writes the build script, the API runs it as untrusted code: in a restricted dialect, in a separate process with no credentials and hard limits, and under an unprivileged account (`FABLE_SANDBOX_USER`, created in the API image) that cannot read the API's environment. If that account is unavailable, Fable refuses to build rather than run a script as the API's own user.
 
-Each option is one of two methods on one model. **Thorough** is a single long conversation in which the model looks parts up, edits and renders as often as it likes. **Lean** is a few short rounds that each show only the current script, its report and pictures, which costs much less. These are the results of one run each on the same photo of a lake house, with the one-line prompt "Build my lake house from this photo."
+Each option is one of two methods on one model. **Thorough** is a single long conversation in which the model looks parts up, edits and renders as often as it likes. **Lean** is a few short rounds that each show only the current script, its report and pictures, which costs much less. The **v2** options add ready-made trees (`tree()` in the build script) and an automatic repair that cuts plain parts back where they overlap and swaps colors a part is not sold in; thorough v2 is also given part measurements up front and batches its edits, so it takes fewer turns. The first versions are unchanged. Every change to an agent is recorded in [docs/agent-changes](docs/agent-changes/README.md). These are the results of one run each on the same photo of a lake house, with the one-line prompt "Build my lake house from this photo."
 
 | Building agent option | Method | Model | AI cost | Model turns | Minutes | Parts | Parts cost |
 |---|---|---|---|---|---|---|---|
 | Fable · Claude Fable 5.2 | thorough | `claude-fable-5-2` | $3.65 | 8 | 12 | 572 | $90 |
 | Fable · GPT-6.2 Sol | thorough | `gpt-6.2-sol` | $1.20 | 39 | 12 | 1,161 | $177 |
+| Fable Thorough v2 · GPT-6.2 Sol | thorough v2 | `gpt-6.2-sol` | $0.46 | 15 | 9 | 1,282 | $164 |
 | Fable · GPT-6.1 Sol | thorough | `gpt-6.1-sol` | $0.62 | 38 | 13 | 1,437 | $204 |
 | Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
 | Fable Lean · Claude Fable 5.2 (low effort) | lean, low effort | `claude-fable-5-2` | $0.53 | 2 | 3 | 427 | $84 |
 | Fable Lean · GPT-6.2 Sol | lean | `gpt-6.2-sol` | $0.22 | 5 | 4 | 1,073 | $147 |
+| Fable Lean v2 · GPT-6.2 Sol | lean v2 | `gpt-6.2-sol` | $0.18 | 5 | 3 | 988 | $146 |
 | Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
 
 ![The lake house built by each Fable option](docs/assets/fable-agent/lakehouse-methods.jpg)
 
-Every build passed its checks. One run per option shows what each costs and roughly how it looks, not which is better on average. At low effort Claude built a plainer model, without the siding color and white trim. Lean on GPT-6.2 Sol kept the roof shape, dormer and lattice skirt but laid an olive ground instead of a green lawn. The thorough GPT-6.2 Sol run was made before a prompt-caching fix that would have saved about half of its cost.
+Every build passed its checks. One run per option shows what each costs and roughly how it looks, not which is better on average. At low effort Claude built a plainer model, without the siding color and white trim. Lean on GPT-6.2 Sol kept the roof shape, dormer and lattice skirt but laid an olive ground instead of a green lawn. The thorough GPT-6.2 Sol run was made before a prompt-caching fix that would have saved about half of its cost. With that fix its cost is estimated at about $0.60, so thorough v2 at $0.46 is roughly a quarter cheaper, in 15 turns instead of 39.
 
 To run Fable locally, install the backend dependencies with `npm run install:backend`, install LeoCAD and an LDraw parts library (`LDRAW_DIR`, default `~/ldraw`), and set the model's API key in your environment or `backend/.env`.
 

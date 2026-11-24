@@ -124,21 +124,70 @@ def part_facts(shapes: ShapeLibrary) -> Callable[[PartEntry], str]:
     return describe
 
 
-def lean_system_prompt(finder: PartFinder, shapes: ShapeLibrary, palette_name: str) -> str:
-    """The lean method's prompt: the same building knowledge, a different way of working."""
-    role = SYSTEM[:SYSTEM.index("# How you work")].rstrip()
-    knowledge = SYSTEM[SYSTEM.index("# The grid"):SYSTEM.index("# Rules")].rstrip().replace(
-        "`inspect_part` shows a height map so you can see which side that is.",
-        "The catalog marks that side as `low:`, and `look_up` shows a height map of the part.")
-    return (f"{role}\n\n{LEAN_HOW}\n\n{knowledge}\n\n{LEAN_RULES}\n\n# Catalog: {palette_name}\n\n"
+_HEIGHT_MAP = "`inspect_part` shows a height map so you can see which side that is."
+
+
+def _measured_catalog(finder: PartFinder, shapes: ShapeLibrary, palette_name: str, search_tool: str) -> str:
+    """The catalog with each part's measurements, so the model need not spend a turn looking them up."""
+    return (f"# Catalog: {palette_name}\n\n"
             "Each entry is a part id, its description, how many colors it comes in and, in braces, what was "
             "measured from its geometry at rot=0: width along x by depth along z in studs, by height in plates. "
             "`low:front` (or `left`, `back`, `right`) is the side its low or open edge faces at rot=0, which "
             "`facing=` re-aims. `smooth` means it has no studs on top, so nothing attaches above it. Part ids "
             "are exact; never invent one.\n\n"
-            f"{finder.sheet(part_facts(shapes), search_tool='look_up')}\n\n"
+            f"{finder.sheet(part_facts(shapes), search_tool=search_tool)}\n\n"
             "## Colors (code, name, RGB, number of parts available)\n\n"
             f"{finder.color_sheet()}")
+
+
+def lean_system_prompt(finder: PartFinder, shapes: ShapeLibrary, palette_name: str) -> str:
+    """The lean method's prompt: the same building knowledge, a different way of working."""
+    role = SYSTEM[:SYSTEM.index("# How you work")].rstrip()
+    knowledge = SYSTEM[SYSTEM.index("# The grid"):SYSTEM.index("# Rules")].rstrip().replace(
+        _HEIGHT_MAP, "The catalog marks that side as `low:`, and `look_up` shows a height map of the part.")
+    return (f"{role}\n\n{LEAN_HOW}\n\n{knowledge}\n\n{LEAN_RULES}\n\n"
+            f"{_measured_catalog(finder, shapes, palette_name, 'look_up')}")
+
+
+ASSISTED = """# More help from the kit
+
+- `tree(x, y, z, height=30, width=6, style="round", leaves="Green", accent=None, trunk="Reddish_Brown")` builds a whole tree that is already known to hold together, and returns its part ids. Use it for every ordinary tree and bush instead of placing canopy parts yourself. `(x, z)` is the min corner of its 2 x 2 trunk and `y` its base, which must stand on studs. The canopy is `width` studs across (4, 6, 8 or 10), centered on the trunk, so keep that square clear above the trunk. `height` is the whole tree in plates. `style` is "round" (a leafy tree), "pine" (a cone) or "bush" (no trunk; it sits on the ground and ignores `height`). `accent` is a second leaf color for alternate layers. Colors work as everywhere else: "Green" with "Dark_Green", "Orange" with "Dark_Red" for autumn, a "White" trunk for a birch. Build a tree by hand only when the subject needs one this cannot make.
+- Automatic repair runs on your build before it is checked. Where a plain brick, plate or tile runs into another part, it is cut back to the cells that are free, and a part asked for in a color it does not come in is placed in the closest color it does come in. The report says what was repaired. You need not subtract every cut-out by hand, but look at the repaired places in the pictures. Shaped parts (slopes, windows, fences, plants) are never cut and nothing is moved: keep those clear of each other yourself, and unattached parts are still yours to fix."""
+
+
+def _with_help(guide: str) -> str:
+    """Add the v2 kit help just before the section on what holds together."""
+    start = guide.index("# What holds together")
+    return f"{guide[:start]}{ASSISTED}\n\n{guide[start:]}"
+
+
+def lean_v2_system_prompt(finder: PartFinder, shapes: ShapeLibrary, palette_name: str) -> str:
+    """The lean method, second version: the same rounds, plus ready-made trees and automatic repair."""
+    return _with_help(lean_system_prompt(finder, shapes, palette_name))
+
+
+THOROUGH_V2_ECONOMY = """# Working economically
+
+Every turn sends this whole conversation again, so the customer pays for each turn. Spend turns on the model, not on bookkeeping:
+
+- The catalog below already gives the size of each part it lists, which way its low side faces and whether it is smooth on top. Use `inspect_part` only for a part the catalog does not describe, or when you need a height map or stud positions, and ask for every such part in one call.
+- Write the whole model in the first `write_script`, with every feature that makes the subject recognizable.
+- Put every fix you can see into one `edit_script` call. It takes a list of replacements and rebuilds once.
+- Tool calls made in the same turn run in the order you give them. Send an edit together with the `render` of its result instead of waiting a turn to look."""
+
+
+def thorough_v2_system_prompt(finder: PartFinder, shapes: ShapeLibrary, palette_name: str) -> str:
+    """The thorough method, second version: the same conversation and tools, with fewer turns.
+
+    The model is given each part's measurements up front and is asked to batch its look-ups and
+    edits. It also gets ready-made trees and automatic repair. ``system_prompt`` stays as the
+    first version.
+    """
+    guide = SYSTEM.replace(
+        _HEIGHT_MAP, "The catalog marks that side as `low:`, and `inspect_part` shows a height map of a part.")
+    start = guide.index("# The grid")
+    return _with_help(f"{guide[:start]}{THOROUGH_V2_ECONOMY}\n\n{guide[start:]}\n\n"
+                      f"{_measured_catalog(finder, shapes, palette_name, 'search_parts')}")
 
 
 def build_request(prompt: str, *, has_reference: bool, max_parts: int, existing: str | None = None) -> str:

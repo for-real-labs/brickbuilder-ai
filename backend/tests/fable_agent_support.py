@@ -82,11 +82,23 @@ PARTS = {
 STUD = "\n".join(["0 Stud"] + _shell(-6, -4, -6, 6, 0, 6)) + "\n"
 
 
-def make_library(root: Path) -> Path:
+# Parts the ready-made trees use, for the tests that plant them (``World(extra=TREE_PARTS)``).
+TREE_PARTS = {
+    "3795": _block("Plate  2 x  6", 6, 2, 8),
+    "3034": _block("Plate  2 x  8", 8, 2, 8),
+    "3832": _block("Plate  2 x 10", 10, 2, 8),
+    "3941": _block("Cylinder  2 x  2 Trunk", 2, 2, 24),
+    "30367c": _block("Dome  2 x  2 Top", 2, 2, 20, studs=False),
+    "3942c": _block("Cone  2 x  2 x  2", 2, 2, 48, studs=False),
+}
+
+
+def make_library(root: Path, parts: dict | None = None) -> Path:
+    parts = PARTS if parts is None else parts
     (root / "parts").mkdir(parents=True)
     (root / "p").mkdir()
     (root / "p" / "stud.dat").write_text(STUD)
-    for part_id, text in PARTS.items():
+    for part_id, text in parts.items():
         (root / "parts" / f"{part_id}.dat").write_text(text)
     (root / "LDConfig.ldr").write_text("".join(
         f"0 !COLOUR {name} CODE {code} VALUE #{code * 4099 % 0xFFFFFF:06X} EDGE #333333\n"
@@ -94,14 +106,15 @@ def make_library(root: Path) -> Path:
     return root
 
 
-def make_catalog(path: Path, *, skip: set[tuple[str, int]] = frozenset()) -> Path:
+def make_catalog(path: Path, *, skip: set[tuple[str, int]] = frozenset(), parts: dict | None = None) -> Path:
+    parts = PARTS if parts is None else parts
     rows = ["part_id,color_id,name,sku,unit_price,weight_kg"]
-    for part_id in PARTS:
+    for part_id in parts:
         if part_id == "3660":
             continue
         for color in COLORS:
             if (part_id, color) not in skip:
-                rows.append(f"{part_id},{color},{PARTS[part_id].splitlines()[0][2:].replace('  ', ' ')},"
+                rows.append(f"{part_id},{color},{parts[part_id].splitlines()[0][2:].replace('  ', ' ')},"
                             f"S-{part_id}-{color},0.05,0.001")
     path.write_text("\n".join(rows) + "\n")
     return path
@@ -110,9 +123,11 @@ def make_catalog(path: Path, *, skip: set[tuple[str, int]] = frozenset()) -> Pat
 class World:
     """The collaborators most tests need, built over the synthetic library."""
 
-    def __init__(self, tmp_path: Path, *, skip: set = frozenset(), max_parts: int = 500):
-        self.library = LDrawLibrary(make_library(tmp_path / "ldraw"))
-        self.catalog_path = make_catalog(tmp_path / "catalog.csv", skip=skip)
+    def __init__(self, tmp_path: Path, *, skip: set = frozenset(), max_parts: int = 500,
+                 extra: dict | None = None):
+        parts = {**PARTS, **(extra or {})}
+        self.library = LDrawLibrary(make_library(tmp_path / "ldraw", parts))
+        self.catalog_path = make_catalog(tmp_path / "catalog.csv", skip=skip, parts=parts)
         self.shapes = ShapeLibrary(self.library)
         self.palette = load_palette(self.library, self.catalog_path)
         self.finder = PartFinder(self.library, self.palette)

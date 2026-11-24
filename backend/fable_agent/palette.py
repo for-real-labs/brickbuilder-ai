@@ -96,6 +96,28 @@ class CatalogPalette:
         return entry.unit_price if entry is not None else None
 
 
+def nearest_color(library: LDrawLibrary, palette: Palette, part_id: str, color: int) -> int | None:
+    """The color ``part_id`` is available in that looks most like ``color``; None if it comes in none.
+
+    A transparent color is matched with transparent ones first, so glass stays glass.
+    """
+    known = library.colors()
+    choices = [code for code in palette.colors_for(part_id) if code in known]
+    if not choices or color not in known:
+        return choices[0] if choices else None
+    if color in choices:
+        return color
+    wanted = known[color]
+    alike = [code for code in choices if known[code].transparent == wanted.transparent] or choices
+
+    def channels(value: str) -> tuple[int, int, int]:
+        digits = value.lstrip("#")
+        return int(digits[0:2], 16), int(digits[2:4], 16), int(digits[4:6], 16)
+
+    target = channels(wanted.hex)
+    return min(alike, key=lambda code: (sum((a - b) ** 2 for a, b in zip(channels(known[code].hex), target)), code))
+
+
 def load_palette(library: LDrawLibrary, catalog_path: Path | str | None = None, *, open_palette: bool = False):
     """The supplier inventory by default; ``open_palette`` lifts the restriction."""
     if open_palette:

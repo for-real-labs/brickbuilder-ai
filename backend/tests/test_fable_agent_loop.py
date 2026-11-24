@@ -3,7 +3,8 @@ import json
 import pytest
 from fable_agent.app import Options, Workbench, continue_build, save_reference, start_build
 from fable_agent.session import Session, SessionError
-from fable_agent.tools import TOOL_DEFINITIONS
+from fable_agent.prompts import system_prompt, thorough_v2_system_prompt
+from fable_agent.tools import THOROUGH_V2_TOOLS, TOOL_DEFINITIONS
 from PIL import Image
 
 from fable_agent_support import CABIN, FakeClient, FakeRenderer, InlineRunner, World, reply, tool_use
@@ -264,3 +265,87 @@ def test_empty_requests_are_rejected_before_any_work(tmp_path):
         start_build("   ", tmp_path / "run", Options())
     with pytest.raises(ValueError):
         continue_build("", tmp_path / "run", Options())
+
+
+V2 = Options(max_parts=500, method="thorough-v2")
+
+
+def tool_texts(session) -> list[str]:
+    return [block["content"][0]["text"] for message in session.messages if message["role"] == "user"
+            for block in message["content"] if block.get("type") == "tool_result"]
+
+
+def test_thorough_v2_gives_measurements_up_front_and_batches_edits_in_fewer_turns(tmp_path):
+    broken = CABIN.replace("range(2)", "range(1)") + "place('3001', 'Red', 0, 30, 0)\n"
+    result, client, session, world = run(tmp_path, [
+        reply(tool_use("write_script", "c1", code=broken)),
+        # Two fixes and a look at the result, all in one turn.
+        reply(tool_use("edit_script", "c2", edits=[{"old": "range(1)", "new": "range(2)"},
+                                                   {"old": "place('3001', 'Red', 0, 30, 0)\n", "new": ""}]),
+              tool_use("render", "c3", views=["front-right"])),
+        reply(tool_use("finish", "c4", title="Lake cabin", summary="A small blue cabin.")),
+    ], options=V2)
+    assert result.status == "published" and result.steps == 3
+    assert (tmp_path / "run" / "published" / "001" / "build.py").read_text() == CABIN
+    texts = tool_texts(session)
+    assert "BUILD HAS ERRORS" in texts[0] and "Revision 2. BUILD OK" in texts[1]
+    assert session.meta["settings"]["method"] == "thorough-v2"
+    sent = client.requests[0]
+    assert sent["tools"] == THOROUGH_V2_TOOLS and sent["system"] == session.meta["system"]
+    assert "3001 2 x 4 (6) {4x2x3}" in sent["system"] and "# Working economically" in sent["system"]
+    assert sent["system"] == thorough_v2_system_prompt(world.finder, world.shapes, session.meta["system"].split(
+        "# Catalog: ")[1].splitlines()[0])
+
+
+def test_a_v2_edit_applies_every_replacement_or_none_and_a_v2_look_up_takes_several_parts(tmp_path):
+    _, _, session, _ = run(tmp_path, [
+        reply(tool_use("edit_script", "c0", edits=[{"old": "x", "new": "y"}])),
+        reply(tool_use("write_script", "c1", code=CABIN)),
+        reply(tool_use("edit_script", "c2", edits=[{"old": "range(2)", "new": "range(3)"},
+                                                   {"old": "no such text", "new": ""}])),
+        reply(tool_use("edit_script", "c3", edits=[])),
+        reply(tool_use("inspect_part", "c4", parts=["3001", "no-such-part", "3039"])),
+        reply(tool_use("inspect_part", "c5", parts=[])),
+        reply({"type": "text", "text": "Stopping."}),
+        reply({"type": "text", "text": "Stopping."}),
+    ], options=V2)
+    texts = tool_texts(session)
+    assert "no script yet" in texts[0]
+    assert "Edit 2: 'old' was not found" in texts[2] and "Nothing was changed" in texts[2]
+    assert session.script == CABIN and session.meta["revision"] == 1
+    assert "must list 1 to 40" in texts[3]
+    assert texts[4].count("At rot=0 the footprint is") == 2 and "no-such-part:" in texts[4]
+    assert "3001:" in texts[4] and "3039:" in texts[4] and "low or open side" in texts[4]
+    assert "list of 1 to 12 part ids" in texts[5]
+
+
+def test_the_first_thorough_version_keeps_its_own_prompt_and_tools(tmp_path):
+    _, client, session, world = run(tmp_path, happy_path())
+    names = [tool["name"] for tool in TOOL_DEFINITIONS]
+    assert names == [tool["name"] for tool in THOROUGH_V2_TOOLS]
+    first = {tool["name"]: tool["input_schema"]["required"] for tool in TOOL_DEFINITIONS}
+    second = {tool["name"]: tool["input_schema"]["required"] for tool in THOROUGH_V2_TOOLS}
+    assert (first["edit_script"], first["inspect_part"]) == (["old", "new"], ["part"])
+    assert (second["edit_script"], second["inspect_part"]) == (["edits"], ["parts"])
+    assert {name for name in names if first[name] != second[name]} == {"edit_script", "inspect_part"}
+    assert client.requests[0]["tools"] == TOOL_DEFINITIONS and session.meta["settings"]["method"] == "thorough"
+    prompt = client.requests[0]["system"]
+    assert prompt == system_prompt(world.finder, prompt.split("# Catalog: ")[1].splitlines()[0])
+    assert "Working economically" not in prompt and "{4x2x3}" not in prompt
+    assert Options(method="thorough-v2").resolved("thorough-v2").max_steps == Options().resolved("thorough").max_steps
+
+
+def test_a_v2_session_continues_with_its_own_tools(tmp_path):
+    world = World(tmp_path / "world")
+    start_build("A small cabin", tmp_path / "run", V2, client=FakeClient([
+        reply(tool_use("write_script", "c1", code=CABIN), tool_use("render", "c2")),
+        reply(tool_use("finish", "c3", title="Lake cabin", summary="A small blue cabin.")),
+    ]), workbench=bench(world))
+    later = FakeClient([
+        reply(tool_use("edit_script", "c4", edits=[{"old": "range(2)", "new": "range(3)"}]), tool_use("render", "c5")),
+        reply(tool_use("finish", "c6", title="Taller cabin", summary="One course taller.")),
+    ])
+    result = continue_build("Make it taller", tmp_path / "run", Options(), client=later, workbench=bench(world))
+    assert result.status == "published" and result.published["number"] == 2
+    assert later.requests[0]["tools"] == THOROUGH_V2_TOOLS
+    assert "range(3)" in (tmp_path / "run" / "published" / "002" / "build.py").read_text()

@@ -63,6 +63,27 @@ publish gate; they differ in how the model is asked to work.
   measured size and facing of every part on the catalog sheet, so lookups are rare,
   and it runs at medium effort with at most 8 rounds and $2.
 
+Each method has a second version, **thorough v2** and **lean v2**. They are separate
+methods so that the first versions keep behaving exactly as they did, and so the two
+can be compared. Both add two things:
+
+- **Ready-made trees.** Scripts can call `tree(x, y, z, height, width, style, leaves,
+  accent, trunk)` for a whole leafy tree, pine or bush. Models spent more turns on
+  tree canopies than on anything else, so the kit builds them from layers that cannot
+  overlap or come loose (`backend/fable_agent/trees.py`).
+- **Automatic repair.** Before a build is checked, a plain brick, plate or tile that
+  runs into another part is cut back to its free cells, and a part asked for in a
+  color it is not sold in gets the closest color it is sold in. The report says what
+  was repaired. Shaped parts are never cut, nothing is moved, parts built sideways
+  and unattached parts are left to the model, and the repaired build still goes
+  through every check (`backend/fable_agent/repair.py`).
+
+Thorough v2 is also asked to take fewer turns. Its prompt carries the measured size
+and facing of every part on the catalog sheet, as lean's does, `inspect_part` takes
+up to 12 parts at once, `edit_script` takes a list of replacements, and the model is
+told that calls in one turn run in order, so an edit and the render of its result can
+go together.
+
 The stateless round and the "act, then look at the result" loop come from Astrology,
 which is reported to build a comparable house for about $0.30. What Fable keeps is its
 build script and geometry checks, which is why its rounds carry more text than
@@ -74,21 +95,31 @@ One run of each on the same photo and prompt:
 |---|---|---|---|---|---|---|
 | thorough | `claude-fable-5-2` | $3.65 | 8 | 12 | 572 | $90 |
 | thorough | `gpt-6.2-sol` | $1.20 | 39 | 12 | 1,161 | $177 |
+| thorough v2 | `gpt-6.2-sol` | $0.46 | 15 | 9 | 1,282 | $164 |
 | thorough | `gpt-6.1-sol` | $0.62 | 38 | 13 | 1,437 | $204 |
 | lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
 | lean, `--effort low` | `claude-fable-5-2` | $0.53 | 2 | 3 | 427 | $84 |
 | lean | `gpt-6.2-sol` | $0.22 | 5 | 4 | 1,073 | $147 |
+| lean v2 | `gpt-6.2-sol` | $0.18 | 5 | 3 | 988 | $146 |
 | lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
 
 ![The lake house from each method and model](assets/fable-agent/lakehouse-methods.jpg)
 
-All seven published with a clean report. These are single runs, so they show cost and
+All nine published with a clean report. These are single runs, so they show cost and
 character, not an average: Claude builds a compact model and gets it right early, the
 OpenAI models build larger ones and take more turns, and lean trades some detail for
 about a quarter of the cost. At low effort Claude dropped the siding color and trim.
 Lean on `gpt-6.2-sol` kept the roof shape, dormer and lattice skirt but laid an olive
 ground instead of a green lawn. The thorough `gpt-6.2-sol` run predates the caching
 fix described under Models, which would have saved about half of its cost.
+
+The two v2 runs planted every tree with `tree()`. Thorough v2 took 15 turns where the
+first version took 39, and 4 script revisions where it took 27. Against the first
+version's cost with the caching fix (about $0.60, estimated) that is roughly a quarter
+cheaper: fewer turns, but each one writes more. Lean v2 still took 5 rounds, because
+its drafts had errors the repair leaves alone (unattached steps, a part built
+sideways), so its saving came from smaller rounds. The details are in
+[docs/agent-changes](agent-changes/README.md).
 
 ## Running it
 
@@ -111,10 +142,14 @@ It needs:
 - An LDraw parts library at `$LDRAW_DIR` (default `~/ldraw`).
 - LeoCAD on `PATH`, at `$LEOCAD_BIN`, or in `/Applications` on macOS.
 
-Useful options: `--method thorough|lean`, `--model claude-fable-5-2`, `--max-parts
+Useful options: `--method thorough|thorough-v2|lean|lean-v2`, `--model claude-fable-5-2`, `--max-parts
 1500`, `--catalog other.csv`, and `--all-parts` to lift the supplier restriction.
 `--effort`, `--budget` (USD) and `--max-steps` default to the method's own values:
-high, $8 and 60 turns for thorough; medium, $2 and 8 rounds for lean.
+high, $8 and 60 turns for thorough; medium, $2 and 8 rounds for lean. The v2 methods
+use the limits of their first versions.
+
+`python -m fable_agent script build.py --out DIR --repair` rebuilds a v2 model's script
+the way the v2 methods do, with the automatic repair applied first.
 
 `build` refuses to reuse a directory that already holds a session. `edit` continues
 that session with the method and model that started it.
@@ -153,14 +188,17 @@ a build is requested, so hiding the selector is not what protects it.
 |---|---|---|
 | Fable · Claude Fable 5.2 | thorough | `claude-fable-5-2` |
 | Fable · GPT-6.2 Sol | thorough | `gpt-6.2-sol` |
+| Fable Thorough v2 · GPT-6.2 Sol | thorough v2 | `gpt-6.2-sol` |
 | Fable · GPT-6.1 Sol | thorough | `gpt-6.1-sol` |
 | Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` |
 | Fable Lean · Claude Fable 5.2 (low effort) | lean, low effort | `claude-fable-5-2` |
 | Fable Lean · GPT-6.2 Sol | lean | `gpt-6.2-sol` |
+| Fable Lean v2 · GPT-6.2 Sol | lean v2 | `gpt-6.2-sol` |
 | Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` |
 
 The options are defined once in `backend/src/utils/building_agents.py`, with their
-labels in `frontend/src/utils/buildingAgents.ts`.
+labels in `frontend/src/utils/buildingAgents.ts`. A change to any agent is recorded
+in [docs/agent-changes](agent-changes/README.md).
 
 - **Access** is the Astrology allowlist, `ASTROLOGY_ALLOWED_EMAILS`. A signed-in
   account on it may use every option; nobody else can, including through the API.
@@ -235,7 +273,8 @@ row("3039", "Dark_Bluish_Grey", 0, 16, 0, 6, facing="front")   # a course of roo
 `fill` packs cells with the largest available bricks, plates or tiles in that color
 and staggers seams between layers so walls bond and ring corners interlock.
 `facing` aims a slope's low edge without the model reasoning about rotation
-matrices. The full list is in `SYSTEM` in `backend/fable_agent/prompts.py`.
+matrices. The full list is in `SYSTEM` in `backend/fable_agent/prompts.py`; the v2
+methods add `tree()`, described in `ASSISTED` in the same file.
 
 The steps above describe the thorough method. In the lean method steps 3 and 4 are
 one: `build` and `patch` return the report and pictures together.
@@ -267,6 +306,9 @@ The report covers part availability and quantity limits, overlapping parts,
 stud-to-part connections, parts that float, and separate free-standing assemblies.
 Part shapes are sampled from library geometry in half-stud columns, so slopes,
 inverted slopes, arches and panels are checked against their real profile.
+
+In the v2 methods the automatic repair runs first and the checks then judge the
+repaired build, so a repair cannot make an invalid model pass.
 
 It does not cover clips, bars, hinges, balance, or whether a hand can reach a part.
 Parts on rotations that are not multiples of 90 degrees are not overlap-checked.

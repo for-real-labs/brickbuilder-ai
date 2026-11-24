@@ -11,6 +11,7 @@ from .app import METHODS, Options, Workbench, continue_build, start_build
 from .kit import to_ldraw
 from .provider import DEFAULT_MODEL, ProviderError
 from .render import RenderError
+from .repair import BuildRepairer
 from .runner import SandboxError
 from .session import SessionError
 
@@ -69,8 +70,13 @@ def _run_script(args) -> int:
     if outcome.build is None:
         print(f"Script failed (line {outcome.line}): {outcome.error}", file=sys.stderr)
         return 1
-    report = bench.checker.check(outcome.build)
-    (out / "model.ldr").write_text(to_ldraw(outcome.build, Path(args.script).stem), encoding="utf-8")
+    build = outcome.build
+    if args.repair:
+        build, repairs = BuildRepairer(bench.library, bench.shapes, bench.palette, bench.finder).repair(build)
+        for note in repairs.notes({c.code: c.name for c in bench.library.colors().values()}):
+            print(note)
+    report = bench.checker.check(build)
+    (out / "model.ldr").write_text(to_ldraw(build, Path(args.script).stem), encoding="utf-8")
     (out / "report.json").write_text(json.dumps(report.to_dict(), indent=1), encoding="utf-8")
     print(report.to_text({c.code: c.name for c in bench.library.colors().values()}))
     if not args.no_render:
@@ -104,7 +110,9 @@ def main(argv: list[str] | None = None) -> int:
     build.add_argument("--image", type=Path)
     build.add_argument("--out", type=Path, required=True, help="New directory for this build's session")
     build.add_argument("--method", choices=list(METHODS), default="thorough",
-                       help="thorough: one long conversation, best detail. lean: a few short rounds, much cheaper")
+                       help="thorough: one long conversation, best detail. lean: a few short rounds, much cheaper. "
+                            "The -v2 methods add ready-made trees and automatic repair; thorough-v2 also "
+                            "has part measurements up front and batched edits")
     common(build)
 
     edit = commands.add_parser("edit", help="Continue an existing build with a change request")
@@ -117,6 +125,8 @@ def main(argv: list[str] | None = None) -> int:
     script.add_argument("--out", type=Path, required=True)
     script.add_argument("--views", nargs="+", default=["front-right", "back-left"])
     script.add_argument("--no-render", action="store_true")
+    script.add_argument("--repair", action="store_true",
+                        help="Apply the automatic repair first, as the -v2 methods do")
     common(script, model_options=False)
 
     args = parser.parse_args(argv)
