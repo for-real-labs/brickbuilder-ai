@@ -93,5 +93,19 @@ Brickognize identifies one photographed item and returns ranked alternatives,
 not a counted inventory of every brick in a pile. The expandable results grid
 shows every valid returned part match with a thumbnail, part number, and score.
 It does not infer quantities or colors or automatically add alternative matches
-to the finite build palette. Users still supply a parts list or choose a set/order
-to start an inventory-constrained build.
+to the finite build palette. The designer also accepts a saved inventory from **Your parts lists**.
+
+## Saved parts lists
+
+In the dashboard, **Your parts lists** lets a signed-in user create a named list,
+combine manual entries with file, set, or order imports, and reopen it later.
+**Scan one part** uses Brickognize directly. The user confirms the suggested
+part, selects its LDraw color, enters the quantity, and adds it to the list.
+Repeated part/color pairs accumulate. **Save list** writes the current inventory
+to the user's account. The private Photo Scanner prototype offers the same
+single-part flow alongside its multi-part scanner.
+
+The landing page imports a snapshot of a saved list into its existing finite-palette
+designer. Apply `20261124010000_saved_parts_lists.sql` before releasing the frontend.
+Row-level security scopes lists to their owners and enforces account MFA assurance.
+Updates check the saved revision to detect concurrent changes.

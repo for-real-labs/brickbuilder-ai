@@ -30,7 +30,9 @@ import { isGenerationActive } from "../hooks/useGenerationActivity";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import posthog from "posthog-js";
 
-type TabKey = "dashboard" | "generations" | "orders" | "settings";
+import { DashboardPartsLists } from "../components/PartsListEditor";
+
+type TabKey = "dashboard" | "generations" | "orders" | "parts-lists" | "settings";
 
 // Mirrors the backend /updateUsername validation: 3-30 chars,
 // letters, numbers, underscores, hyphens, or periods.
@@ -42,6 +44,7 @@ const Sidebar: React.FC<{active:TabKey; onChange:(t:TabKey)=>void; onLogout:()=>
     { key: "dashboard", label: "Overview", icon: TrendingUp },
     { key: "generations", label: "My Generations", icon: Sparkles },
     { key: "orders",    label: "My Orders",      icon: Package },
+    { key: "parts-lists", label: "Your parts lists", icon: Box },
     { key: "settings",  label: "Settings",       icon: SettingsIcon },
   ];
 
@@ -657,7 +660,7 @@ const UserDashboard: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = searchParams.get("tab");
   const isValidTab = (t: string | null): t is TabKey =>
-    t === "dashboard" || t === "generations" || t === "orders" || t === "settings";
+    t === "dashboard" || t === "generations" || t === "orders" || t === "parts-lists" || t === "settings";
   const [tab, setTab] = useState<TabKey>(isValidTab(tabParam) ? tabParam : "dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userProfile, loading, signOut, session, isSupabaseConfigured } = useAuth();
@@ -680,6 +683,7 @@ const UserDashboard: React.FC = () => {
 
   const handleTabChange = (t: TabKey) => {
     setTab(t);
+    if (t === "parts-lists") posthog.capture("dashboard_parts_lists_opened");
     setSearchParams(t === "dashboard" ? {} : { tab: t });
   };
 
@@ -937,6 +941,8 @@ const UserDashboard: React.FC = () => {
                   )}
                 </div>
               )}
+
+              {tab==="parts-lists" && <DashboardPartsLists key={user?.id} owner={user?.id} />}
 
               {tab==="orders" && (
                 <div>

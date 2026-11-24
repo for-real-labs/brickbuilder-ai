@@ -6,7 +6,20 @@ import './ExistingPartsDesigner.css';
 import { PreviousOrderParts } from './PreviousOrderParts';
 import { PartsImageRecognition } from './PartsImageRecognition';
 
-export function ExistingPartsDesigner({ onSelect, onLogin }: { onSelect: (inventory: PartsInventory) => void; onLogin?: () => void }) {
+import { SavedListImport } from './SavedListPicker';
+
+type SourceProps = { onSelect: (inventory: PartsInventory) => void; onLogin?: () => void };
+export function ExistingPartsDesigner(props: SourceProps) {
+  return <main className="existing-parts-screen" aria-labelledby="existing-parts-title">
+    <div className="existing-parts-intro">
+      <h1 id="existing-parts-title" className="landing-hero-title">Design <span>LEGO</span> from your existing sets</h1>
+      <p>Give your bricks a new story. BrickBuilder designs with only your parts, colors, and quantities.</p>
+    </div>
+    <InventorySources {...props} designer />
+  </main>;
+}
+
+export function InventorySources({ onSelect, onLogin, designer = false }: SourceProps & { designer?: boolean }) {
   const [query, setQuery] = useState('');
   const [sets, setSets] = useState<LegoSet[] | null>(null);
   const [searching, setSearching] = useState(false);
@@ -61,13 +74,9 @@ export function ExistingPartsDesigner({ onSelect, onLogin }: { onSelect: (invent
     void load(signal => PartsInventoryApi.upload(file, signal));
   };
 
-  return <main className="existing-parts-screen" aria-labelledby="existing-parts-title">
-    <div className="existing-parts-intro">
-      <h1 id="existing-parts-title" className="landing-hero-title">Design <span>LEGO</span> from your existing sets</h1>
-      <p>Give your bricks a new story. BrickBuilder designs with only your parts, colors, and quantities.</p>
-    </div>
-    <div className="existing-parts-card" onDragOver={event => { event.preventDefault(); event.stopPropagation(); }}
+  return <div className="existing-parts-card" onDragOver={event => { event.preventDefault(); event.stopPropagation(); }}
       onDragEnter={event => event.stopPropagation()} onDrop={event => { event.preventDefault(); event.stopPropagation(); upload(event.dataTransfer.files[0]); }}>
+      {designer && <SavedListImport onSelect={choose} onLogin={onLogin} disabled={busy} />}
       <PreviousOrderParts onSelect={choose} onLogin={onLogin} disabled={busy} />
       <div className="existing-parts-divider"><span />or<span /></div>
       <label className="existing-parts-search"><Search size={19} aria-hidden="true" />
@@ -104,8 +113,7 @@ export function ExistingPartsDesigner({ onSelect, onLogin }: { onSelect: (invent
         <span className="existing-parts-filetypes">LDR · IO · CSV · XML · MPD <span>up to 16 MB</span></span>
       </button>
       <p className="existing-parts-format-help">Studio and LDraw models, CSV parts lists, or BrickLink XML.</p>
-      <div className="existing-parts-divider"><span />or<span /></div>
-      <PartsImageRecognition disabled={busy} />
-    </div>
-  </main>;
+      {designer && <><div className="existing-parts-divider"><span />or<span /></div>
+      <PartsImageRecognition disabled={busy} /></>}
+    </div>;
 }

@@ -17,6 +17,7 @@ import {
   prepareImageUpload,
 } from "../utils/prepareImageUpload";
 import "./PhotoScannerPage.css";
+import { ScannerPartsList } from "../components/PartsListEditor";
 
 const track = (action: string, properties: Record<string, unknown> = {}) =>
   posthog.capture(`photo_scanner_${action}`, {
@@ -367,6 +368,7 @@ function ScannerWorkspace({ owner }: { owner: string }) {
         </p>
       ) : (
         <>
+          <ScannerPartsList owner={owner} />
           <div className="scanner-toolbar">
             <div>
               <strong>Photo Scanner</strong>
