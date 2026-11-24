@@ -6,7 +6,7 @@ import { IMAGE_UPLOAD_ACCEPT } from '../utils/prepareImageUpload';
 import '../pages/InstructionsViewer.css';
 import './PartsImageRecognition.css';
 
-export function PartsImageRecognition({ disabled = false }: { disabled?: boolean }) {
+export function PartsImageRecognition({ disabled = false, onMatch }: { disabled?: boolean; onMatch?: (part: RecognizedPart | null) => void }) {
   const input = useRef<HTMLInputElement>(null);
   const operation = useRef<AbortController | null>(null);
   const [busy, setBusy] = useState(false);
@@ -20,12 +20,14 @@ export function PartsImageRecognition({ disabled = false }: { disabled?: boolean
     operation.current?.abort();
     const controller = new AbortController();
     operation.current = controller;
+    onMatch?.(null);
     setBusy(true); setError(null); setParts(null); setExpanded(false);
     posthog.capture('existing_parts_image_uploaded', { size: file.size, type: file.type });
     try {
       const matches = await recognizeParts(file, controller.signal);
       if (controller.signal.aborted) return;
       setParts(matches);
+      if (matches.length) onMatch?.(matches[0]);
       posthog.capture('existing_parts_image_recognized', { match_count: matches.length });
     } catch (err) {
       if (controller.signal.aborted) return;
@@ -43,10 +45,10 @@ export function PartsImageRecognition({ disabled = false }: { disabled?: boolean
         posthog.capture('existing_parts_image_clicked'); input.current?.click();
       }}>
         {busy ? <Loader2 size={18} className="existing-parts-spinner" aria-hidden="true" /> : <Camera size={18} aria-hidden="true" />}
-        {busy ? 'Identifying…' : 'Use image'}
+        {busy ? 'Identifying…' : onMatch ? 'Photograph a part' : 'Use image'}
       </button>
     </div>
-    <input ref={input} type="file" hidden accept={IMAGE_UPLOAD_ACCEPT} aria-label="Upload a photo of LEGO parts" disabled={disabled || busy}
+    <input ref={input} type="file" hidden accept={IMAGE_UPLOAD_ACCEPT} capture={onMatch ? 'environment' : undefined} aria-label="Upload a photo of LEGO parts" disabled={disabled || busy}
       onChange={event => { void upload(event.target.files?.[0]); event.target.value = ''; }} />
     <p className="parts-image-help">Photos are sent to Brickognize. Results are possible matches for one part; colors and quantities aren’t counted.</p>
     {busy && <p role="status" className="existing-parts-note">Looking for matching LEGO parts…</p>}
@@ -68,9 +70,12 @@ export function PartsImageRecognition({ disabled = false }: { disabled?: boolean
                 onError={event => { event.currentTarget.style.display = 'none'; }} />}
             </span>
             <strong>{part.name}</strong><span>Part {part.id}</span><small>{Math.round(part.score * 100)}% match</small>
+            {onMatch && <button type="button" disabled={disabled} className="previous-order-tag" onClick={() => {
+              onMatch(part); setExpanded(false); posthog.capture('parts_list_scan_candidate_selected');
+            }}>Use this match</button>}
           </li>)}
         </ul>
-        <p className="parts-image-help">Check the closest match against your brick. These suggestions are not added to your build inventory.</p>
+        <p className="parts-image-help">Check the closest match against your brick. {onMatch ? 'Choose a different match if needed.' : 'These suggestions are not added to your build inventory.'}</p>
       </details>
     </>}
   </section>;
