@@ -49,6 +49,29 @@ it('reviews the top photo match, counts it and saves the same scanner draft afte
   expect(host.querySelector('a')?.getAttribute('href')).toBe('/dashboard?tab=parts-lists');
 });
 
+it.each(['jake@brickbuilder.ai', 'JAKEJOHNSON3700@gmail.com'])('shows dashboard scanning for %s', async email => {
+  await render(<DashboardPartsLists owner="owner" email={email} />);
+  await click('Create parts list');
+  await click('Scan one part');
+  expect(host.querySelector('input[aria-label="Upload a photo of LEGO parts"]')).not.toBeNull();
+});
+
+it('hides dashboard scanning from other accounts and keeps manual entry and imports available', async () => {
+  await render(<DashboardPartsLists owner="owner" email="builder@example.com" />);
+  await click('Create parts list');
+  expect(host.textContent).not.toContain('Scan one part');
+  expect(host.querySelector('input[type=file]')).toBeNull();
+  await field('List name', 'My bricks');
+  await field('Part number', '3001');
+  await field('Color', '4');
+  await field('Quantity', '2');
+  await click('Add to list');
+  await click('Save list');
+  expect(SavedLists.save).toHaveBeenCalledWith('owner', expect.any(String), undefined, 'My bricks', [brick]);
+  await click('Import parts');
+  expect(host.querySelector('input[aria-label="Upload parts list"]')).not.toBeNull();
+});
+
 it('combines an existing list with an LDR import, preserving colors and handling stale revisions', async () => {
   vi.spyOn(PartsInventoryApi, 'upload').mockResolvedValue({ inventory: { name: 'Import', source: 'upload', parts: [brick] }, unavailable: [] });
   vi.mocked(SavedLists.save).mockRejectedValueOnce(new SaveConflict());

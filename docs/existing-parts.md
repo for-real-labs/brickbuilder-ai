@@ -99,7 +99,8 @@ to the finite build palette. The designer also accepts a saved inventory from **
 
 In the dashboard, **Your parts lists** lets a signed-in user create a named list,
 combine manual entries with file, set, or order imports, and reopen it later.
-**Scan one part** uses Brickognize directly. The user confirms the suggested
+Accounts on the private Photo Scanner allowlist can also use **Scan one part**.
+Brickognize suggests a match directly. The user confirms the suggested
 part, selects its LDraw color, enters the quantity, and adds it to the list.
 Repeated part/color pairs accumulate. **Save list** writes the current inventory
 to the user's account. The private Photo Scanner prototype offers the same
