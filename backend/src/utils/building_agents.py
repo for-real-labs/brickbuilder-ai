@@ -29,6 +29,7 @@ FABLE_AGENTS = {
     "fable-lean-claude-fable-5-2": FableVariant("claude-fable-5-2", "lean", "ANTHROPIC_API_KEY"),
     # The cheapest Claude option. In its test run it built a plainer model than medium effort did.
     "fable-lean-low-claude-fable-5-2": FableVariant("claude-fable-5-2", "lean", "ANTHROPIC_API_KEY", effort="low"),
+    "fable-lean-gpt-6.2-sol": FableVariant("gpt-6.2-sol", "lean", "OPENAI_API_KEY"),
     "fable-lean-gpt-6.1-sol": FableVariant("gpt-6.1-sol", "lean", "OPENAI_API_KEY"),
 }
 IN_PROCESS_AGENTS = (ASTROLOGY, *FABLE_AGENTS)

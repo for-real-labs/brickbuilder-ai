@@ -73,11 +73,12 @@ Each option is one of two methods on one model. **Thorough** is a single long co
 | Fable · GPT-6.1 Sol | thorough | `gpt-6.1-sol` | $0.62 | 38 | 13 | 1,437 | $204 |
 | Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
 | Fable Lean · Claude Fable 5.2 (low effort) | lean, low effort | `claude-fable-5-2` | $0.53 | 2 | 3 | 427 | $84 |
+| Fable Lean · GPT-6.2 Sol | lean | `gpt-6.2-sol` | $0.22 | 5 | 4 | 1,073 | $147 |
 | Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
 
 ![The lake house built by each Fable option](docs/assets/fable-agent/lakehouse-methods.jpg)
 
-Every build passed its checks. One run per option shows what each costs and roughly how it looks, not which is better on average. At low effort Claude built a plainer model, without the siding color and white trim. The GPT-6.2 Sol run was made before a prompt-caching fix that would have saved about half of its cost.
+Every build passed its checks. One run per option shows what each costs and roughly how it looks, not which is better on average. At low effort Claude built a plainer model, without the siding color and white trim. Lean on GPT-6.2 Sol kept the roof shape, dormer and lattice skirt but laid an olive ground instead of a green lawn. The thorough GPT-6.2 Sol run was made before a prompt-caching fix that would have saved about half of its cost.
 
 To run Fable locally, install the backend dependencies with `npm run install:backend`, install LeoCAD and an LDraw parts library (`LDRAW_DIR`, default `~/ldraw`), and set the model's API key in your environment or `backend/.env`.
 
