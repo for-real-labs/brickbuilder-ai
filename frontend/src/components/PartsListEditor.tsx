@@ -5,6 +5,7 @@ import { InventorySources } from './ExistingPartsDesigner';
 import { PartEntry, colorLabel } from './PartEntry';
 import { SavedListPicker } from './SavedListPicker';
 import { mergeParts, SavedLists, SaveConflict, type SavedPartsList } from '../services/savedPartsLists';
+import { canUsePhotoScanner } from '../services/photoScannerApi';
 import type { InventoryPart } from '../services/partsInventoryApi';
 import './SavedPartsLists.css';
 
@@ -14,8 +15,8 @@ const modes = [
   { id: 'import', label: 'Import parts', icon: FileInput },
 ] as const;
 
-function PartsListEditor({ owner, existing, scanner = false, onClose }: {
-  owner: string; existing?: SavedPartsList; scanner?: boolean; onClose?: () => void;
+function PartsListEditor({ owner, existing, scanner = false, allowPhoto = false, onClose }: {
+  owner: string; existing?: SavedPartsList; scanner?: boolean; allowPhoto?: boolean; onClose?: () => void;
 }) {
   const [id, setId] = useState(() => existing?.id ?? crypto.randomUUID());
   const [revision, setRevision] = useState(existing?.revision);
@@ -23,7 +24,9 @@ function PartsListEditor({ owner, existing, scanner = false, onClose }: {
   const [parts, setParts] = useState<InventoryPart[]>(existing?.parts ?? []);
   const latestParts = useRef(parts);
   const [page, setPage] = useState(0);
-  const [mode, setMode] = useState<typeof modes[number]['id']>(scanner ? 'photo' : 'manual');
+  const [selectedMode, setMode] = useState<typeof modes[number]['id']>(scanner ? 'photo' : 'manual');
+  const canScan = scanner || allowPhoto;
+  const mode = selectedMode === 'photo' && !canScan ? 'manual' : selectedMode;
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -63,7 +66,7 @@ function PartsListEditor({ owner, existing, scanner = false, onClose }: {
         setName(e.target.value); setDirty(true); setNotice('');
       }} /></label>
       {!scanner && <div className="list-modes" aria-label="Add parts">
-        {modes.map(({ id, label, icon: Icon }) => <button type="button" key={id} aria-pressed={mode === id} onClick={() => {
+        {modes.filter(({ id }) => id !== 'photo' || canScan).map(({ id, label, icon: Icon }) => <button type="button" key={id} aria-pressed={mode === id} onClick={() => {
           setMode(id); setError(''); posthog.capture('parts_list_input_selected', { mode: id });
         }}><Icon size={16} />{label}</button>)}
       </div>}
@@ -118,14 +121,14 @@ export function ScannerPartsList({ owner }: { owner: string }) {
   </section>;
 }
 
-export function DashboardPartsLists({ owner }: { owner?: string }) {
+export function DashboardPartsLists({ owner, email }: { owner?: string; email?: string }) {
   const [editor, setEditor] = useState<SavedPartsList | 'new'>();
   return <section className="dashboard-parts-lists">
     <header><h1>Your parts lists</h1>{owner && !editor && <button className="parts-list-primary" onClick={() => {
       setEditor('new'); posthog.capture('parts_list_create_clicked');
     }}>Create parts list</button>}</header>
     {!owner ? <p>Sign in to save parts lists to your account.</p> : editor
-      ? <PartsListEditor owner={owner} existing={editor === 'new' ? undefined : editor} onClose={() => setEditor(undefined)} />
+      ? <PartsListEditor owner={owner} allowPhoto={canUsePhotoScanner(email)} existing={editor === 'new' ? undefined : editor} onClose={() => setEditor(undefined)} />
       : <SavedListPicker owner={owner} onChoose={setEditor} />}
   </section>;
 }

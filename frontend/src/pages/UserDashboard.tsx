@@ -942,7 +942,7 @@ const UserDashboard: React.FC = () => {
                 </div>
               )}
 
-              {tab==="parts-lists" && <DashboardPartsLists key={user?.id} owner={user?.id} />}
+              {tab==="parts-lists" && <DashboardPartsLists key={user?.id} owner={user?.id} email={user?.email} />}
 
               {tab==="orders" && (
                 <div>
