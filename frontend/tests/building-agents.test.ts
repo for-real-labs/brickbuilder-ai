@@ -8,8 +8,9 @@ describe('building agents', () => {
   it('names every agent and treats everything but Nova as built in the API', () => {
     expect(BUILDING_AGENT_LABELS['fable-claude-fable-5-2']).toBe('Fable · Claude Fable 5.2');
     expect(BUILDING_AGENT_LABELS['fable-lean-gpt-6.1-sol']).toBe('Fable Lean · GPT-6.1 Sol');
+    expect(BUILDING_AGENT_LABELS['fable-lean-gpt-6.2-sol']).toBe('Fable Lean · GPT-6.2 Sol');
     expect(BUILDING_AGENT_LABELS['fable-lean-low-claude-fable-5-2']).toBe('Fable Lean · Claude Fable 5.2 (low effort)');
-    expect(Object.keys(BUILDING_AGENT_LABELS).filter(agent => agent.startsWith('fable-'))).toHaveLength(6);
+    expect(Object.keys(BUILDING_AGENT_LABELS).filter(agent => agent.startsWith('fable-'))).toHaveLength(7);
     expect(inProcessAgent('astrology')).toBe('astrology');
     expect(inProcessAgent('fable-gpt-6.2-sol')).toBe('fable-gpt-6.2-sol');
     for (const other of ['nova', 'toString', 'fable-unknown', undefined, null, 7]) {

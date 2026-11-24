@@ -50,7 +50,7 @@ def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypat
     listed = asyncio.run(building_agents(Response(), ACCOUNT))["agents"]
     assert listed == ["nova", "astrology", *FABLE_AGENTS]
     assert {"fable-claude-fable-5-2", "fable-gpt-6.2-sol", "fable-gpt-6.1-sol", "fable-lean-claude-fable-5-2",
-            "fable-lean-low-claude-fable-5-2", "fable-lean-gpt-6.1-sol"} == set(FABLE_AGENTS)
+            "fable-lean-low-claude-fable-5-2", "fable-lean-gpt-6.2-sol", "fable-lean-gpt-6.1-sol"} == set(FABLE_AGENTS)
     assert in_process_agent(AGENT) == AGENT and in_process_agent("nova") is None and in_process_agent(7) is None
 
     outsider = {**ACCOUNT, "user_email": "outsider@example.test"}
@@ -67,7 +67,8 @@ def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypat
 
 
 @pytest.mark.parametrize(("agent", "effort"), [
-    ("fable-lean-low-claude-fable-5-2", "low"), ("fable-lean-claude-fable-5-2", "medium"), (AGENT, "high")])
+    ("fable-lean-low-claude-fable-5-2", "low"), ("fable-lean-claude-fable-5-2", "medium"),
+    ("fable-lean-gpt-6.2-sol", "medium"), (AGENT, "high")])
 def test_each_option_runs_its_own_model_method_and_effort(monkeypatch, agent, effort):
     seen = []
 

@@ -77,16 +77,18 @@ One run of each on the same photo and prompt:
 | thorough | `gpt-6.1-sol` | $0.62 | 38 | 13 | 1,437 | $204 |
 | lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
 | lean, `--effort low` | `claude-fable-5-2` | $0.53 | 2 | 3 | 427 | $84 |
+| lean | `gpt-6.2-sol` | $0.22 | 5 | 4 | 1,073 | $147 |
 | lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
 
 ![The lake house from each method and model](assets/fable-agent/lakehouse-methods.jpg)
 
-All six published with a clean report. These are single runs, so they show cost and
+All seven published with a clean report. These are single runs, so they show cost and
 character, not an average: Claude builds a compact model and gets it right early, the
 OpenAI models build larger ones and take more turns, and lean trades some detail for
-a quarter of the cost or less. At low effort Claude dropped the siding color and trim.
-The `gpt-6.2-sol` run predates the caching fix described under Models, which would
-have saved about half of its cost.
+about a quarter of the cost. At low effort Claude dropped the siding color and trim.
+Lean on `gpt-6.2-sol` kept the roof shape, dormer and lattice skirt but laid an olive
+ground instead of a green lawn. The thorough `gpt-6.2-sol` run predates the caching
+fix described under Models, which would have saved about half of its cost.
 
 ## Running it
 
@@ -154,6 +156,7 @@ a build is requested, so hiding the selector is not what protects it.
 | Fable · GPT-6.1 Sol | thorough | `gpt-6.1-sol` |
 | Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` |
 | Fable Lean · Claude Fable 5.2 (low effort) | lean, low effort | `claude-fable-5-2` |
+| Fable Lean · GPT-6.2 Sol | lean | `gpt-6.2-sol` |
 | Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` |
 
 The options are defined once in `backend/src/utils/building_agents.py`, with their
