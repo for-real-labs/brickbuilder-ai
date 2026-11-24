@@ -20,7 +20,7 @@ from .agent import Event, RunResult, close_run
 from .provider import Budget, BudgetExhausted, ModelClient, estimate_tokens
 from .render import VIEW_AZIMUTH
 from .session import Session
-from .tools import ToolError, Toolbox
+from .tools import ToolError, Toolbox, apply_edits
 
 DEFAULT_VIEWS = ("front-left", "front-right", "back-left")
 MAX_NOTE = 1500
@@ -163,21 +163,7 @@ class LeanAgent:
         script = self._session.script
         if not script:
             raise ToolError("There is no script yet; use build first")
-        if not isinstance(edits, list) or not 1 <= len(edits) <= 40:
-            raise ToolError("'edits' must list 1 to 40 replacements")
-        for number, edit in enumerate(edits, 1):
-            old, new = (edit.get("old"), edit.get("new")) if isinstance(edit, dict) else (None, None)
-            if not isinstance(old, str) or not old or not isinstance(new, str):
-                raise ToolError(f"Edit {number} needs 'old' and 'new' strings. Nothing was changed.")
-            count = script.count(old)
-            if count == 0:
-                raise ToolError(f"Edit {number}: 'old' was not found in the script as it stands after the "
-                                "edits before it. Nothing was changed.")
-            if count > 1 and edit.get("replace_all") is not True:
-                raise ToolError(f"Edit {number}: 'old' matches {count} places; add surrounding text to make "
-                                "it unique or set replace_all. Nothing was changed.")
-            script = script.replace(old, new)
-        return script
+        return apply_edits(script, edits)
 
     def _look_up(self, arguments: dict) -> str:
         parts, search = arguments.get("parts") or [], arguments.get("search")

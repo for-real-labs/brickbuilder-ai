@@ -97,6 +97,41 @@ def _world_boxes(shape, placement: Placement) -> list[tuple[float, ...]]:
     return boxes
 
 
+def colliding_pairs(placements, boxes: dict[int, list], cells: dict[tuple[int, int], list]) -> list[tuple[int, int]]:
+    """Pairs of placements that occupy the same space, worst first, leaving out declared overlaps."""
+    worst: dict[tuple[int, int], float] = {}
+    for members in cells.values():
+        for a in range(len(members)):
+            first, box = members[a]
+            for b in range(a + 1, len(members)):
+                second, other = members[b]
+                if first == second:
+                    continue
+                dx = min(box[3], other[3]) - max(box[0], other[0])
+                dy = min(box[4], other[4]) - max(box[1], other[1])
+                dz = min(box[5], other[5]) - max(box[2], other[2])
+                if dx > OVERLAP_TOLERANCE and dy > OVERLAP_TOLERANCE and dz > OVERLAP_TOLERANCE:
+                    pair = (min(first, second), max(first, second))
+                    worst[pair] = max(worst.get(pair, 0.0), dx * dy * dz)
+    return [pair for pair, _ in sorted(worst.items(), key=lambda item: -item[1])]
+
+
+def hash_boxes(boxes: dict[int, list]) -> dict[tuple[int, int], list]:
+    """Broad phase: which boxes touch each coarse grid cell."""
+    cells: dict[tuple[int, int], list] = defaultdict(list)
+    for index, own in boxes.items():
+        for box in own:
+            for cx in range(int(box[0] // HASH), int((box[3] - 1e-6) // HASH) + 1):
+                for cz in range(int(box[2] // HASH), int((box[5] - 1e-6) // HASH) + 1):
+                    cells[(cx, cz)].append((index, box))
+    return cells
+
+
+def world_boxes(shape, placement: Placement) -> list[tuple[float, ...]]:
+    """A placed part's boxes in model space."""
+    return _world_boxes(shape, placement)
+
+
 class _Groups:
     def __init__(self, size: int):
         self.parent = list(range(size))
@@ -209,32 +244,12 @@ class ModelChecker:
 
     @staticmethod
     def _hash(boxes: dict[int, list]) -> dict[tuple[int, int], list]:
-        cells: dict[tuple[int, int], list] = defaultdict(list)
-        for index, own in boxes.items():
-            for box in own:
-                for cx in range(int(box[0] // HASH), int((box[3] - 1e-6) // HASH) + 1):
-                    for cz in range(int(box[2] // HASH), int((box[5] - 1e-6) // HASH) + 1):
-                        cells[(cx, cz)].append((index, box))
-        return cells
+        return hash_boxes(boxes)
 
     def _check_overlaps(self, placements, boxes, cells, report: Report) -> None:
-        worst: dict[tuple[int, int], float] = {}
-        for members in cells.values():
-            for a in range(len(members)):
-                first, box = members[a]
-                for b in range(a + 1, len(members)):
-                    second, other = members[b]
-                    if first == second:
-                        continue
-                    dx = min(box[3], other[3]) - max(box[0], other[0])
-                    dy = min(box[4], other[4]) - max(box[1], other[1])
-                    dz = min(box[5], other[5]) - max(box[2], other[2])
-                    if dx > OVERLAP_TOLERANCE and dy > OVERLAP_TOLERANCE and dz > OVERLAP_TOLERANCE:
-                        pair = (min(first, second), max(first, second))
-                        worst[pair] = max(worst.get(pair, 0.0), dx * dy * dz)
         declared = 0
         colliding = []
-        for (first, second), volume in sorted(worst.items(), key=lambda item: -item[1]):
+        for first, second in colliding_pairs(placements, boxes, cells):
             if placements[first].allow_overlap or placements[second].allow_overlap:
                 declared += 1
             else:

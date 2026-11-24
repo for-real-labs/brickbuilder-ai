@@ -18,7 +18,7 @@ from dataclasses import dataclass, field
 
 from .catalog import PartFinder
 from .ldraw import LDrawError, LDrawLibrary, normalize_part_id
-from .palette import RESERVED_COLORS, Palette
+from .palette import RESERVED_COLORS, Palette, nearest_color
 from .shape import PLATE, STUD, PartShape, ShapeLibrary
 
 MAX_PLACEMENTS = 6000
@@ -136,6 +136,34 @@ class Kit:
         part_id, shape = self._shape(part)
         return PartInfo(part_id, round(shape.width, 2), round(shape.depth, 2), round(shape.height, 2),
                         tuple(shape.up_studs()))
+
+    def stocked_color(self, part, color) -> int | None:
+        """``color`` if the part comes in it, else the closest color it does come in; None if it is not stocked."""
+        part_id, _ = self._shape(part)
+        return nearest_color(self._library, self._palette, part_id, self.color(color))
+
+    def plain_part(self, kind: str, short: int, long: int, color) -> tuple[str, int] | None:
+        """A plain ``short`` x ``long`` brick, plate or tile and the stocked color closest to ``color``."""
+        if kind not in KIND_HEIGHT:
+            raise KitError("kind must be 'brick', 'plate' or 'tile'")
+        code = self.color(color)
+        choices = self._family(kind).get((min(short, long), max(short, long)), [])
+        for part_id in choices:
+            if self._palette.allows(part_id, code):
+                return part_id, code
+        for part_id in choices:
+            closest = nearest_color(self._library, self._palette, part_id, code)
+            if closest is not None:
+                return part_id, closest
+        return None
+
+    def tree(self, x, y, z, height=30, width=6, style="round", leaves="Green", accent=None,
+             trunk="Reddish_Brown") -> list[int]:
+        """A whole tree, bush or pine whose parts are already known to hold together (see ``trees``)."""
+        from .trees import plant_tree
+
+        return plant_tree(self, x, y, z, height=height, width=width, style=style, leaves=leaves, accent=accent,
+                          trunk=trunk)
 
     # ----- structure -----------------------------------------------------
 

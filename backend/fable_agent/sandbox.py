@@ -130,7 +130,7 @@ def execute_script(code: str, kit: Kit) -> str:
         "__builtins__": safe, "__name__": "build", **modules,
         "place": kit.place, "place_ldu": kit.place_ldu, "row": kit.row, "fill": kit.fill,
         "module": kit.module, "step": kit.step, "connect": kit.connect, "part": kit.part, "inset": kit.inset,
-        "color": kit.color, "colour": kit.color, "rect": rect, "ring": ring,
+        "color": kit.color, "colour": kit.color, "rect": rect, "ring": ring, "tree": kit.tree,
     }
     try:
         exec(compile(tree, SCRIPT_NAME, "exec"), scope)  # noqa: S102 - validated, restricted dialect

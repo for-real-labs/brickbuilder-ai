@@ -1,0 +1,15 @@
+# Agent change log
+
+One document per change to a building agent (Nova, Astrology, Fable and their variants): which
+agent, what changed, why, and what was measured. The agent's name is in each title.
+
+New documents are written with the `agent-change-log` skill
+(`.agents/skills/agent-change-log/SKILL.md`) and ship in the same pull request as the change.
+
+| Date | Agent | Change |
+|---|---|---|
+| 2026-11-24 | Fable Lean v2 · GPT-6.2 Sol | [New agent with ready-made trees and automatic repair](2026-11-24-fable-lean-v2-gpt-6.2-sol-new-agent.md) |
+| 2026-11-24 | Fable Thorough v2 · GPT-6.2 Sol | [New agent that takes fewer turns](2026-11-24-fable-thorough-v2-gpt-6.2-sol-new-agent.md) |
+
+Earlier changes were not logged here. The Fable agents and their first options are described in
+[docs/fable-agent.md](../fable-agent.md); Nova in [docs/nova-agent-builder.md](../nova-agent-builder.md).

@@ -17,6 +17,7 @@ from .kit import Build, Placement, to_ldraw
 from .ldraw import LDrawError, LDrawLibrary, normalize_part_id
 from .palette import Palette
 from .render import VIEW_AZIMUTH, Renderer, RenderError, contact_sheet
+from .repair import BuildRepairer
 from .runner import ScriptRunner
 from .session import MODEL_FILE, Session
 from .shape import PLATE, STUD, PartShape, ShapeLibrary
@@ -109,6 +110,51 @@ TOOL_DEFINITIONS = [
 ]
 
 
+MAX_INSPECTED = 12
+MAX_EDITS = 40
+_V2_TOOLS = {
+    "inspect_part": {
+        "name": "inspect_part",
+        "description": f"Measured facts about up to {MAX_INSPECTED} parts in one call: footprint and height, a "
+                       "height map showing each shape and which way it faces, where its studs are, and the "
+                       "colors it comes in. The catalog already gives the size and facing of the parts it "
+                       "lists, so use this for other parts, or when you need a height map or stud positions.",
+        "input_schema": _schema({"parts": {"type": "array", "items": {"type": "string"}}}, ["parts"]),
+    },
+    "edit_script": {
+        "name": "edit_script",
+        "description": "Change the build script with exact text replacements, applied in order, then rebuild "
+                       "once and report. Put every fix you can see into one call. Each 'old' must match exactly "
+                       "once unless replace_all is true. If any edit fails, nothing is changed.",
+        "input_schema": _schema({"edits": {"type": "array", "items": _schema({
+            "old": {"type": "string"}, "new": {"type": "string"}, "replace_all": {"type": "boolean"},
+        }, ["old", "new"])}}, ["edits"]),
+    },
+}
+# The second version of the thorough method's tools: the same names, but a look-up or an edit
+# takes a list, so one turn does what took several. ``TOOL_DEFINITIONS`` stays as the first version.
+THOROUGH_V2_TOOLS = [_V2_TOOLS.get(tool["name"], tool) for tool in TOOL_DEFINITIONS]
+
+
+def apply_edits(script: str, edits) -> str:
+    """Apply exact text replacements in order. All of them apply, or the script is left as it was."""
+    if not isinstance(edits, list) or not 1 <= len(edits) <= MAX_EDITS:
+        raise ToolError(f"'edits' must list 1 to {MAX_EDITS} replacements")
+    for number, edit in enumerate(edits, 1):
+        old, new = (edit.get("old"), edit.get("new")) if isinstance(edit, dict) else (None, None)
+        if not isinstance(old, str) or not old or not isinstance(new, str):
+            raise ToolError(f"Edit {number} needs 'old' and 'new' strings. Nothing was changed.")
+        count = script.count(old)
+        if count == 0:
+            raise ToolError(f"Edit {number}: 'old' was not found in the script as it stands after the "
+                            "edits before it. Nothing was changed.")
+        if count > 1 and edit.get("replace_all") is not True:
+            raise ToolError(f"Edit {number}: 'old' matches {count} places; add surrounding text to make "
+                            "it unique or set replace_all. Nothing was changed.")
+        script = script.replace(old, new)
+    return script
+
+
 def _text(arguments: dict, key: str, *, limit: int = 400_000, required: bool = True) -> str:
     value = arguments.get(key)
     if value is None and not required:
@@ -122,7 +168,9 @@ def _text(arguments: dict, key: str, *, limit: int = 400_000, required: bool = T
 
 class Toolbox:
     def __init__(self, session: Session, library: LDrawLibrary, shapes: ShapeLibrary, palette: Palette,
-                 finder: PartFinder, checker: ModelChecker, runner: ScriptRunner, renderer: Renderer):
+                 finder: PartFinder, checker: ModelChecker, runner: ScriptRunner, renderer: Renderer,
+                 repairer: BuildRepairer | None = None):
+        self._repairer = repairer  # None leaves every build exactly as its script made it
         self._session = session
         self._library = library
         self._shapes = shapes
@@ -196,7 +244,22 @@ class Toolbox:
         return lines
 
     def _tool_inspect_part(self, arguments: dict) -> ToolOutput:
-        part_id = normalize_part_id(_text(arguments, "part", limit=80))
+        if "parts" not in arguments:
+            return ToolOutput(self._inspect(_text(arguments, "part", limit=80)))
+        parts = arguments["parts"]
+        if not isinstance(parts, list) or not 1 <= len(parts) <= MAX_INSPECTED or not all(
+                isinstance(part, str) and part.strip() for part in parts):
+            raise ToolError(f"'parts' must be a list of 1 to {MAX_INSPECTED} part ids")
+        found = []
+        for part in parts:
+            try:
+                found.append(self._inspect(part[:80]))
+            except LDrawError as exc:  # one unknown id should not cost the answers for the rest
+                found.append(f"{part[:80]}: {exc}")
+        return ToolOutput("\n\n".join(found))
+
+    def _inspect(self, part: str) -> str:
+        part_id = normalize_part_id(part)
         shape = self._shapes.get(part_id)
         entry = self._finder.entry(part_id)
         names = self._color_names()
@@ -226,7 +289,7 @@ class Toolbox:
                          + ", ".join(f"{names.get(c, c)} ({c})" for c in colors))
         else:
             lines.append("NOT AVAILABLE in the parts catalog: do not use it.")
-        return ToolOutput("\n".join(lines))
+        return "\n".join(lines)
 
     def _tool_view_parts(self, arguments: dict) -> ToolOutput:
         parts = arguments.get("parts")
@@ -254,6 +317,16 @@ class Toolbox:
 
     # ----- script --------------------------------------------------------
 
+    def _checked(self, build: Build) -> tuple[Build, Report]:
+        """The build as it will be published, and its report: repaired first when this session asks for it."""
+        notes = []
+        if self._repairer is not None:
+            build, repairs = self._repairer.repair(build)
+            notes = repairs.notes(self._color_names())
+        report = self._checker.check(build)
+        report.notes[:0] = notes
+        return build, report
+
     def _rebuild(self, code: str) -> ToolOutput:
         session = self._session
         revision = session.write_script(code)
@@ -270,9 +343,8 @@ class Toolbox:
                     where = f" (line {outcome.line}: {source[outcome.line - 1].strip()[:160]})"
             return ToolOutput(f"SCRIPT FAILED{where}: {outcome.error}{printed}\nNothing was built. Fix the script.",
                               is_error=True)
-        report = self._checker.check(outcome.build)
-        self._build, self._report = outcome.build, report
-        session.path(MODEL_FILE).write_text(to_ldraw(outcome.build, session.meta.get("title") or "BrickBuilder model"),
+        self._build, self._report = build, report = self._checked(outcome.build)
+        session.path(MODEL_FILE).write_text(to_ldraw(build, session.meta.get("title") or "BrickBuilder model"),
                                             encoding="utf-8")
         session.path("report.json").write_text(json.dumps(report.to_dict(), indent=1), encoding="utf-8")
         session.meta["built"] = {"revision": revision, "ok": report.ok, "parts": report.parts,
@@ -286,6 +358,10 @@ class Toolbox:
         return self._rebuild(_text(arguments, "code"))
 
     def _tool_edit_script(self, arguments: dict) -> ToolOutput:
+        if "edits" in arguments:
+            if not self._session.script:
+                raise ToolError("There is no script yet; use write_script first")
+            return self._rebuild(apply_edits(self._session.script, arguments["edits"]))
         old = _text(arguments, "old")
         new = arguments.get("new")
         if not isinstance(new, str):
@@ -354,7 +430,7 @@ class Toolbox:
         if self._build is None and self._session.script:
             outcome = self._runner.run(self._session.script)
             if outcome.build is not None:
-                self._build, self._report = outcome.build, self._checker.check(outcome.build)
+                self._build, self._report = self._checked(outcome.build)
 
     def _tool_finish(self, arguments: dict) -> ToolOutput:
         title = " ".join(_text(arguments, "title", limit=120).split())
@@ -382,10 +458,10 @@ class Toolbox:
             outcome = self._runner.run(script)
             if outcome.build is None:
                 return False
-            report = self._checker.check(outcome.build)
+            build, report = self._checked(outcome.build)
             if not report.ok:
                 return False
-            self._build, self._report = outcome.build, report
+            self._build, self._report = build, report
         self.publish(session.meta.get("title") or "Draft model",
                      f"Unreviewed draft: the build stopped early ({reason}).",
                      status="draft", script=script, revision=revision)
