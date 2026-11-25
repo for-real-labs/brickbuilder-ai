@@ -3,13 +3,12 @@
 import pytest
 from fable_agent.app import ASSISTED, LEAN, METHODS, Options, Workbench, continue_build, start_build
 from fable_agent.checks import world_boxes
-from fable_agent.kit import Build, KitError, rect
+from fable_agent.kit import Build, rect
 from fable_agent.lean import LEAN_TOOLS
 from fable_agent.palette import nearest_color
 from fable_agent.prompts import lean_system_prompt, lean_v2_system_prompt, system_prompt, thorough_v2_system_prompt
 from fable_agent.repair import BuildRepairer
 from fable_agent.session import Session
-from fable_agent.trees import MAX_WIDTH, MIN_WIDTH, STYLES, canopy_height, canopy_plan
 
 from fable_agent_support import (CABIN, TREE_PARTS, FakeClient, FakeRenderer, InlineRunner, World, reply,
                                  tool_use)
@@ -33,70 +32,7 @@ def cells(world, placement) -> set:
             for x in range(round(box[0] / 20), round(box[3] / 20)) for z in range(round(box[2] / 20), round(box[5] / 20))}
 
 
-# ----- trees -----------------------------------------------------------------
-
-
-@pytest.mark.parametrize("style", STYLES)
-@pytest.mark.parametrize("width", range(MIN_WIDTH, MAX_WIDTH + 1, 2))
-@pytest.mark.parametrize(("leaves", "accent"), [("Green", None), ("Red", "White")])
-def test_every_tree_holds_together_and_uses_only_stocked_parts(tmp_path, style, width, leaves, accent):
-    world = World(tmp_path, extra=TREE_PARTS)
-    kit = world.kit()
-    kit.fill(rect(-6, -6, 8, 8), 0, "Green", kind="plate")
-    ground = len(kit.build.placements)
-    placed = kit.tree(0, 1, 0, height=40, width=width, style=style, leaves=leaves, accent=accent, trunk="Black")
-    report = world.checker.check(kit.build)
-    assert report.ok, [issue.message for issue in report.errors]
-    assert placed == list(range(ground, len(kit.build.placements)))
-    tree = [kit.build.placements[index] for index in placed]
-    covered = set().union(*(cells(world, placement) for placement in tree))
-    # The canopy is ``width`` studs across and centered on the 2 x 2 trunk at (0, 0).
-    assert (min(x for x, _ in covered), max(x for x, _ in covered) + 1) == (1 - width // 2, 1 + width // 2)
-    assert (min(z for _, z in covered), max(z for _, z in covered) + 1) == (1 - width // 2, 1 + width // 2)
-    if style == "bush":
-        assert not any(placement.part == "3941" for placement in tree)
-    else:
-        assert abs(report.size[1] - 1 - 40) <= 4  # the trunk takes what the canopy leaves of the height
-        assert tree[0].part == "3941" and tree[0].color == 0
-
-
-def test_a_canopy_never_overhangs_its_support_by_more_than_a_strip_can_bridge():
-    for style in STYLES:
-        for width in range(MIN_WIDTH, MAX_WIDTH + 1, 2):
-            plan = canopy_plan(style, width)
-            under = width if style == "bush" else 2  # a bush sits on the ground; a tree on its trunk
-            for kind, size in plan:
-                assert size - under <= (2 if kind == "strips" else 0), (style, width, kind, size)
-                under = size
-            assert plan[-1][1] == 4 and max(size for _, size in plan) == width
-            assert canopy_height(style, width) == sum(1 if kind == "strips" else 3 for kind, _ in plan)
-
-
-def test_a_tree_falls_back_to_plain_parts_and_the_closest_stocked_color(tmp_path):
-    # No round trunk or dome in this library, and no Red 2 x 4 plate or 1 x 1 brick.
-    world = World(tmp_path, skip={("3020", 4), ("3005", 4)})
-    kit = world.kit()
-    kit.fill(rect(-4, -4, 6, 6), 0, "Green", kind="plate")
-    ground = len(kit.build.placements)
-    kit.tree(0, 1, 0, height=20, width=4, leaves="Red", trunk="Black")
-    report = world.checker.check(kit.build)
-    assert report.ok, [issue.message for issue in report.errors]
-    tree = kit.build.placements[ground:]
-    assert all(world.palette.allows(placement.part, placement.color) for placement in tree)
-    assert {placement.color for placement in tree if placement.part == "3020"} == {
-        nearest_color(world.library, world.palette, "3020", 4)}
-    assert tree[0].part == "3001" or tree[0].part.startswith("300")  # a trunk of plain bricks
-
-
-@pytest.mark.parametrize("arguments", [
-    {"width": 5}, {"width": 12}, {"width": 2}, {"style": "willow"}, {"height": 2}, {"height": 500},
-    {"x": 1.5}, {"y": "low"}, {"width": True}, {"leaves": "Blurple"},
-])
-def test_a_tree_explains_a_bad_request(tmp_path, arguments):
-    kit = World(tmp_path, extra=TREE_PARTS).kit()
-    with pytest.raises(KitError):
-        kit.tree(**{"x": 0, "y": 0, "z": 0, "trunk": "Black", **arguments})
-    assert kit.build.placements == [] or "leaves" in arguments
+# ----- helpers in a script ------------------------------------------------------
 
 
 def test_a_script_can_plant_a_tree(tmp_path):
@@ -250,7 +186,10 @@ def test_lean_v2_repairs_and_offers_trees_while_lean_stays_as_it_was(tmp_path):
     for prompt in (first, system_prompt(world.finder, "x")):
         assert "tree(" not in prompt and "Automatic repair" not in prompt
     second = thorough_v2_system_prompt(world.finder, world.shapes, "x")
-    assert "`tree(x, y, z" in second and second.index("# More help from the kit") < second.index("# What holds together")
+    assert "`tree(x, y, z" in second and "`roof(x, y, z" in second and "`wheels(x, y, z" in second
+    assert second.index("# Helpers") < second.index("# Automatic repair") < second.index("# What holds together")
+    # What a helper cannot make is still built by hand, as before.
+    assert "build that piece by hand" in second
 
 
 def test_a_repaired_session_is_rebuilt_the_same_way_when_it_continues(tmp_path):

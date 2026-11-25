@@ -67,10 +67,12 @@ Each method has a second version, **thorough v2** and **lean v2**. They are sepa
 methods so that the first versions keep behaving exactly as they did, and so the two
 can be compared. Both add two things:
 
-- **Ready-made trees.** Scripts can call `tree(x, y, z, height, width, style, leaves,
-  accent, trunk)` for a whole leafy tree, pine or bush. Models spent more turns on
-  tree canopies than on anything else, so the kit builds them from layers that cannot
-  overlap or come loose (`backend/fable_agent/trees.py`).
+- **Helpers.** Scripts can call `tree()`, `roof()`, `wall()`, `window()`, `door()`,
+  `arch()`, `deck()`, `stairs()`, `railing()`, `wheels()`, `windscreen()`, `seats()`,
+  `plant()`, `lamp()`, `chimney()` and `column()` for a whole, ready-made piece of the
+  model in one of 310 styles. Models lost most of their turns on these structures, so the kit
+  builds them from parts that are known to fit together. What no style can make is
+  still built by hand. See [docs/fable-helpers.md](fable-helpers.md).
 - **Automatic repair.** Before a build is checked, a plain brick, plate or tile that
   runs into another part is cut back to its free cells, and a part asked for in a
   color it is not sold in gets the closest color it is sold in. The report says what
@@ -292,7 +294,8 @@ row("3039", "Dark_Bluish_Grey", 0, 16, 0, 6, facing="front")   # a course of roo
 and staggers seams between layers so walls bond and ring corners interlock.
 `facing` aims a slope's low edge without the model reasoning about rotation
 matrices. The full list is in `SYSTEM` in `backend/fable_agent/prompts.py`; the v2
-methods add `tree()`, described in `ASSISTED` in the same file.
+methods add the helpers, whose descriptions are generated from
+`backend/fable_agent/helpers`.
 
 The steps above describe the thorough method. In the lean method steps 3 and 4 are
 one: `build` and `patch` return the report and pictures together.
@@ -391,8 +394,11 @@ that too and is the stronger design if Fable becomes a main path.
 
 ```sh
 cd backend
-uv run --group dev pytest tests/test_fable_agent_*.py tests/test_fable_web.py
+uv run --group dev pytest tests/test_fable_agent_*.py tests/test_fable_helpers*.py tests/test_fable_web.py
 ```
+
+`tests/test_fable_helpers_real.py` builds every helper style with the real parts library and is
+skipped where none is installed, which includes CI.
 
 The tests build a tiny synthetic LDraw library, so they need no parts library,
 renderer or network. The frontend's selector is covered by

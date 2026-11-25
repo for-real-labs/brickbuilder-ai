@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Callable
 
 from .catalog import PartEntry, PartFinder
+from .helpers import prompt_section
 from .ldraw import LDrawError
 from .shape import ShapeLibrary
 
@@ -149,16 +150,26 @@ def lean_system_prompt(finder: PartFinder, shapes: ShapeLibrary, palette_name: s
             f"{_measured_catalog(finder, shapes, palette_name, 'look_up')}")
 
 
-ASSISTED = """# More help from the kit
+HELPERS_INTRO = """# Helpers
 
-- `tree(x, y, z, height=30, width=6, style="round", leaves="Green", accent=None, trunk="Reddish_Brown")` builds a whole tree that is already known to hold together, and returns its part ids. Use it for every ordinary tree and bush instead of placing canopy parts yourself. `(x, z)` is the min corner of its 2 x 2 trunk and `y` its base, which must stand on studs. The canopy is `width` studs across (4, 6, 8 or 10), centered on the trunk, so keep that square clear above the trunk. `height` is the whole tree in plates. `style` is "round" (a leafy tree), "pine" (a cone) or "bush" (no trunk; it sits on the ground and ignores `height`). `accent` is a second leaf color for alternate layers. Colors work as everywhere else: "Green" with "Dark_Green", "Orange" with "Dark_Red" for autumn, a "White" trunk for a birch. Build a tree by hand only when the subject needs one this cannot make.
-- Automatic repair runs on your build before it is checked. Where a plain brick, plate or tile runs into another part, it is cut back to the cells that are free, and a part asked for in a color it does not come in is placed in the closest color it does come in. The report says what was repaired. You need not subtract every cut-out by hand, but look at the repaired places in the pictures. Shaped parts (slopes, windows, fences, plants) are never cut and nothing is moved: keep those clear of each other yourself, and unattached parts are still yours to fix."""
+A helper builds a whole, ready-made piece of the model with one line of your script and returns its part ids. Its parts are already known to fit together, so use a helper wherever one fits instead of placing those parts yourself: it saves you rounds. Each has styles; pick one by name and set its size and colors with the other arguments. To change what a helper built, change its arguments or its style, or remove the line. When no style can make what the request needs, build that piece by hand as you would without helpers.
+
+Arguments work as everywhere else in the kit: x and z in studs, y and heights in plates, colors by name. `facing` is "front", "back", "left" or "right". A helper raises an error that says what to change when it cannot build what you asked for."""
+
+REPAIR = """# Automatic repair
+
+Automatic repair runs on your build before it is checked. Where a plain brick, plate or tile runs into another part, it is cut back to the cells that are free, and a part asked for in a color it does not come in is placed in the closest color it does come in. The report says what was repaired. You need not subtract every cut-out by hand, but look at the repaired places in the pictures. Shaped parts (slopes, windows, fences, plants) are never cut and nothing is moved: keep those clear of each other yourself, and unattached parts are still yours to fix."""
+
+
+def assisted() -> str:
+    """What the v2 prompts add: the helpers a script may call, and the repair that follows it."""
+    return f"{HELPERS_INTRO}\n\n{prompt_section()}\n\n{REPAIR}"
 
 
 def _with_help(guide: str) -> str:
     """Add the v2 kit help just before the section on what holds together."""
     start = guide.index("# What holds together")
-    return f"{guide[:start]}{ASSISTED}\n\n{guide[start:]}"
+    return f"{guide[:start]}{assisted()}\n\n{guide[start:]}"
 
 
 def lean_v2_system_prompt(finder: PartFinder, shapes: ShapeLibrary, palette_name: str) -> str:

@@ -8,6 +8,8 @@ New documents are written with the `agent-change-log` skill
 
 | Date | Agent | Change |
 |---|---|---|
+| 2026-11-25 | Pip agent | [16 helpers with 310 styles](2026-11-25-pip-agent-helpers.md) |
+| 2026-11-25 | Fable Thorough v2 · GPT-6.2 Sol | [16 helpers with 310 styles](2026-11-25-fable-thorough-v2-gpt-6.2-sol-helpers.md) |
 | 2026-11-25 | Pip agent | [Fable Lean v2 renamed, with a choice of five models](2026-11-25-pip-agent-model-choice.md) |
 | 2026-11-24 | Fable Lean v2 · GPT-6.2 Sol | [New agent with ready-made trees and automatic repair](2026-11-24-fable-lean-v2-gpt-6.2-sol-new-agent.md) |
 | 2026-11-24 | Fable Thorough v2 · GPT-6.2 Sol | [New agent that takes fewer turns](2026-11-24-fable-thorough-v2-gpt-6.2-sol-new-agent.md) |
