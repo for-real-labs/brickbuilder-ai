@@ -24,6 +24,7 @@ class Unit:
     wide: int = 2
     tall: int = 6
     deep: int = 1
+    glazing: bool = False  # the part is itself the glass: a clear panel with no frame
 
 
 SMALL = Unit("60592", "60601")
@@ -31,6 +32,8 @@ WIDE = Unit("60594", "60603", wide=4, tall=9)
 ARCHED = Unit("30044", None, tall=8)
 FAN = Unit("20309", None, wide=4, tall=5)
 SQUARE = Unit("51239", "51266", wide=3, tall=9)
+SHEET = Unit("60581", wide=4, tall=9, glazing=True)
+CURTAIN = Unit("59349", wide=6, tall=15, glazing=True)
 # A style is a list of (unit, dx, dy): where each unit stands in the window, in studs and plates.
 STYLES: dict[str, list[tuple[Unit, int, int]]] = {
     "small": [(SMALL, 0, 0)],
@@ -59,6 +62,13 @@ STYLES: dict[str, list[tuple[Unit, int, int]]] = {
     "transom": [(WIDE, 0, 0), (FAN, 0, 9)],
     "arched_pair": [(ARCHED, 0, 0), (ARCHED, 2, 0)],
     "shuttered": [(SMALL, 1, 0)],
+    # Frameless glass, as official sets glaze shop fronts, cabs and towers (docs/fable-helpers.md).
+    "glass_block": [(Unit("87552", glazing=True), 0, 0)],
+    "glass_pane": [(Unit("87544", tall=9, glazing=True), 0, 0)],
+    "glass_wall": [(SHEET, 0, 0)],
+    "glass_tower": [(SHEET, 0, 0), (SHEET, 0, 9)],
+    "curtain_wall": [(CURTAIN, 0, 0)],
+    "storefront": [(CURTAIN, 0, 0), (CURTAIN, 6, 0)],
 }
 SHUTTERED = {"shuttered": 4}  # styles with a brick shutter either side, and their whole width
 
@@ -82,7 +92,8 @@ def build_window(kit: Kit, x, y, z, style="small", color="White", glass="Trans_C
     frame = Frame(kit, x, y, z, wide, deep, facing)
     placed: list[int] = []
     for unit, dx, dy in STYLES[style]:
-        part, code = need(kit, unit.frame, color, "window", "window frame of this style")
+        part, code = need(kit, unit.frame, glass if unit.glazing else color, "window",
+                          "window frame of this style")
         host = frame.place(part, code, dx, dy, 0)
         placed.append(host)
         if unit.pane is not None:
@@ -107,7 +118,8 @@ HELPER = Helper(
     summary="A window with its glass. (x, z) is the min corner of the opening it fills and y its sill; it stands "
             "on the studs under it. The note after each style is the opening it needs, studs wide x plates tall, "
             "and it is one stud deep unless the note says more. It lies along x when `facing` is front or back and "
-            "along z when left or right. `color` is the frame, `glass` the pane, `trim` the shutters.",
+            "along z when left or right. `color` is the frame, `glass` the pane, `trim` the shutters. The "
+            "glass_ styles, curtain_wall and storefront are sheets of glass with no frame.",
     styles=tuple(STYLES),
     notes={style: _note(style) for style in STYLES},
 )

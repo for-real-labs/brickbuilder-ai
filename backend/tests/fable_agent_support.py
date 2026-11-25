@@ -142,6 +142,73 @@ HELPER_PARTS = {
     "87087": _block("Cube  1 x  1 with Stud on Side", 1, 1, 24),
     "16091": _studded("Steering Wheel Small", 2, 2, 16),
 }
+
+
+def _shaped(description: str, shells, studs=()) -> str:
+    """A part made of several boxes (x0, y0, z0, x1, y1, z1), with a stud at each (x, y, z) given."""
+    lines = [f"0 {description}"]
+    for box in shells:
+        lines += _shell(*box)
+    lines += [f"1 16 {x:g} {y:g} {z:g} {IDENTITY} stud.dat" for x, y, z in studs]
+    return "\n".join(lines) + "\n"
+
+
+_FOUR = [(x, 0, z) for x in (-10, 10) for z in (-10, 10)]
+# Stand-ins for what vehicles and furniture are built from. A carrier has the real part's size, studs
+# and pin, because the helpers rely on them; a wheel, a tyre or a drawer is a plain block.
+VEHICLE_PARTS = {
+    "60212": _shaped("Mudguard  2 x  4 with Arch Studded",
+                     [(-40, 0, -20, -20, 16, 20), (20, 0, -20, 40, 16, 20), (-20, 8, -20, 20, 16, 20)],
+                     [(x, 0, z) for x in (-30, 30) for z in (-10, 10)] + [(x, 8, z) for x, _, z in _FOUR]),
+    "4488": _shaped("Plate  2 x  2 with Wheel Holder", [(-20, 0, -20, 20, 8, 20), (20, 2, -4, 34, 10, 4)], _FOUR),
+    "2926": _shaped("Plate  1 x  4 with Wheels Holder", [(-40, 0, -10, 40, 8, 10), (-54, 2, -4, -40, 10, 4),
+                                                         (40, 2, -4, 54, 10, 4)],
+                    [(x, 0, 0) for x in (-30, -10, 10, 30)]),
+    "2458": _shaped("Brick  1 x  2 with Pin", [(-20, 0, -10, 20, 24, 10), (-4, 6, -30, 4, 14, -10)],
+                    [(-10, 0, 0), (10, 0, 0)]),
+    "32064a": _block("Brick  1 x  2 with Axle Hole", 2, 1, 24),
+    "2655": _block("Plate  2 x  2 Round with Wheel Holder", 2, 2, 8),
+    # Wheels and tyres are discs of the real radius around their axle, so a tyre reaches the ground where
+    # the real one does.
+    **{part: _shaped(f"Wheel {part}", [(-radius, -radius, -8, radius, radius, 8)])
+       for part, radius in (("4624", 10), ("6014b", 13), ("42610", 16), ("93594", 14), ("13971", 20), ("66727", 22),
+                            ("55981", 21), ("56904", 30), ("56145", 38), ("4489b", 42), ("2496", 10))},
+    **{part: _shaped(f"Tyre {part}", [(-radius, -radius, -8, radius, radius, 8)])
+       for part, radius in (("87414", 18), ("59895", 18), ("87697", 25), ("92409", 22), ("50951", 19), ("61254", 30),
+                            ("18977", 30), ("89201", 30), ("92402", 38), ("56898", 54), ("44309", 54), ("15413", 62),
+                            ("55976", 71))},
+    **{part: _shaped(f"Axle {part}", [(-half, -6, -6, half, 6, 6)])
+       for part, half in (("44294", 70), ("3707", 80), ("3737", 100))},
+    "3030": _block("Plate  4 x 10", 10, 4, 8),
+    "3958": _block("Plate  6 x  6", 6, 6, 8),
+    "4477": _block("Plate  1 x 10", 10, 1, 8),
+    "2445": _block("Plate  2 x 12", 12, 2, 8),
+    "4282": _block("Plate  2 x 16", 16, 2, 8),
+}
+FURNITURE_PARTS = {
+    "92410": _block("Container Cupboard  2 x  3 x  2", 3, 2, 48),
+    "4536": _studded("Container Cupboard Drawer", 2.6, 2, 18),
+    "4533": _studded("Container Cupboard Door", 0.4, 2.6, 38),
+    "4345b": _shaped("Container Box  2 x  2 x  2", [(-20, 0, -20, 20, 48, 20), (-20, 0, -30, 20, 48, -20)], _FOUR),
+    "4346": _studded("Container Box Door", 2, 0.7, 48),
+    "4738a": _studded("Container Treasure Chest", 5.2, 2, 34),
+    "4739": _studded("Container Treasure Chest Lid", 4, 2, 25),
+    "2489": _studded("Barrel  2 x  2 x  2", 2, 2, 44),
+    "92926": _studded("Container Rubbish Bin", 3.4, 2, 50),
+    "30150": _block("Container Crate  3 x  4", 3, 4, 44),
+    "4032a": _block("Plate  2 x  2 Round", 2, 2, 8),
+    "14769": _studded("Tile  2 x  2 Round", 2, 2, 8),
+    "4599b": _shaped("Tap  1 x  1", [(-8, 0, -8, 8, 24, 20)], [(0, 0, 0)]),
+    "60581": _block("Panel  1 x  4 x  3", 4, 1, 72),
+    "87552": _block("Panel  1 x  2 x  2", 2, 1, 48),
+    "59349": _block("Panel  1 x  6 x  5", 6, 1, 120),
+    "4865a": _studded("Panel  1 x  2 x  1", 2, 1, 24),
+    "4175": _shaped("Plate  1 x  2 with Ladder", [(-20, 0, -10, 20, 8, 10), (-20, 0, -18, 20, 48, -10)],
+                    [(-10, 0, 0), (10, 0, 0)]),
+    "3741a": _shaped("Plant Flower Stem", [(-10, 0, -10, 10, 12, 10), (-17, -33, -11, 18, 0, 18)], [(0, 0, 0)]),
+    "3742": _studded("Plant Flower", 1.1, 1.1, 6),
+}
+HELPER_PARTS = {**HELPER_PARTS, **VEHICLE_PARTS, **FURNITURE_PARTS}
 HELPER_COLORS = {72: "Dark_Bluish_Grey", 70: "Reddish_Brown", 19: "Tan", 14: "Yellow", 47: "Trans_Clear",
                  320: "Dark_Red", 28: "Dark_Tan", 10: "Bright_Green", 288: "Dark_Green", 46: "Trans_Yellow",
                  25: "Orange", 29: "Bright_Pink", 27: "Lime", 330: "Olive_Green", 308: "Dark_Brown", 1: "Blue",

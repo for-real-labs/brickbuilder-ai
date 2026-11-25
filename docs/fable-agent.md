@@ -69,8 +69,8 @@ can be compared. Both add two things:
 
 - **Helpers.** Scripts can call `tree()`, `roof()`, `wall()`, `window()`, `door()`,
   `arch()`, `deck()`, `stairs()`, `railing()`, `wheels()`, `windscreen()`, `seats()`,
-  `plant()`, `lamp()`, `chimney()` and `column()` for a whole, ready-made piece of the
-  model in one of 310 styles. Models lost most of their turns on these structures, so the kit
+  `chassis()`, `furniture()`, `plant()`, `lamp()`, `chimney()` and `column()` for a whole,
+  ready-made piece of the model in one of 381 styles. Models lost most of their turns on these structures, so the kit
   builds them from parts that are known to fit together. What no style can make is
   still built by hand. See [docs/fable-helpers.md](fable-helpers.md).
 - **Automatic repair.** Before a build is checked, a plain brick, plate or tile that

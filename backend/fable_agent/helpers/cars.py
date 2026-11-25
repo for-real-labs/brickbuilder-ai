@@ -29,12 +29,12 @@ class Wheel:
 
 @dataclass(frozen=True)
 class WheelStyle:
-    mount: str  # holder | singles | pins | axle
+    mount: str  # holder | singles | pins | axle | caster
     wheel: Wheel
     holder: str = "4600"
     reach: int = 30  # LDraw units from the holder's middle to each rim
     drop: int = 2  # plates the tyres reach below the base
-    guard: tuple[str, tuple[int, int, int], tuple] | None = None  # a mudguard over the holder
+    out: int = 20  # on an axle: LDraw units from the middle of the brick it runs through to the rim
     rim_offset: tuple[int, int, int] = (0, 10, -20)  # on a pin brick
     rim_turn: tuple = SAME
     color: str = "Light_Bluish_Grey"
@@ -47,10 +47,10 @@ STYLES: dict[str, WheelStyle] = {
     "smooth": WheelStyle("holder", Wheel("4624", "59895")),
     "hubcap": WheelStyle("holder", Wheel("93594", "50951"), holder="2926", reach=50),
     "spoked": WheelStyle("holder", Wheel("42610", "92409")),
-    "classic": WheelStyle("holder", Wheel("6014b", "87697", (0, 0, -6))),
+    "classic": WheelStyle("holder", Wheel("6014b", "87697", (0, 0, -6)), drop=3),
     "spoked_axle": WheelStyle("holder", Wheel("42610", "92409"), holder="2926", reach=50),
-    "classic_axle": WheelStyle("holder", Wheel("6014b", "87697", (0, 0, -6)), holder="2926", reach=50),
-    "outboard_classic": WheelStyle("singles", Wheel("6014b", "87697", (0, 0, -6)), holder="4488"),
+    "classic_axle": WheelStyle("holder", Wheel("6014b", "87697", (0, 0, -6)), holder="2926", reach=50, drop=3),
+    "outboard_classic": WheelStyle("singles", Wheel("6014b", "87697", (0, 0, -6)), holder="4488", drop=3),
     "outboard": WheelStyle("singles", TINY, holder="4488"),
     "wagon": WheelStyle("singles", Wheel("4489b", None), holder="4488", drop=5, color="Reddish_Brown"),
     "medium": WheelStyle("pins", Wheel("13971", "61254")),
@@ -58,8 +58,15 @@ STYLES: dict[str, WheelStyle] = {
     "street": WheelStyle("pins", Wheel("55981", "89201"), rim_offset=(0, 10, -30), rim_turn=HALF_TURN),
     "offroad": WheelStyle("pins", Wheel("55981", "92402"), rim_offset=(0, 10, -30), rim_turn=HALF_TURN, drop=3),
     "truck": WheelStyle("axle", Wheel("56904", "56898"), drop=5),
+    # Added from official sets (docs/fable-helpers.md): the large rim with its three tyres, and trolley wheels.
+    "big": WheelStyle("axle", Wheel("56145", "44309"), out=40, drop=5),
+    "tall": WheelStyle("axle", Wheel("56145", "15413"), out=40, drop=6),
+    "balloon": WheelStyle("axle", Wheel("56145", "55976"), out=45, drop=7),
+    "caster": WheelStyle("caster", Wheel("2496", None), holder="2655", drop=2, color="Black"),
 }
-PIN_BRICK, AXLE_BRICK, AXLE = "2458", "32064a", "44294"
+PIN_BRICK, AXLE_BRICK = "2458", "32064a"
+AXLES = (("44294", 70), ("3707", 80), ("60485", 90), ("3737", 100), ("3708", 120))  # axle, half its length
+BODY = 4  # studs across the body that the one-plate holders sit under
 
 
 def _wheel(kit: Kit, host: int, wheel: Wheel, offset, turn, color, tyre_color) -> list[int]:
@@ -80,6 +87,12 @@ def _sink(kit: Kit, part: str) -> float:
 
 def build_wheels(kit: Kit, x, y, z, style="small", width=4, color=None, tyre="Black", facing="front") -> list[int]:
     """One axle: two wheels with what carries them. The car drives towards ``facing``."""
+    placed = _axle(kit, x, y, z, style, width, color, tyre, facing)
+    kit.stand(placed, "tyres standing on it")  # a road or baseplate already under the wheels
+    return placed
+
+
+def _axle(kit: Kit, x, y, z, style, width, color, tyre, facing) -> list[int]:
     look = STYLES[choice(style, STYLES, "style", "wheels")]
     x, z = whole(x, "x", "wheels"), whole(z, "z", "wheels")
     width = whole(width, "width", "wheels", 4, 16)
@@ -90,20 +103,22 @@ def build_wheels(kit: Kit, x, y, z, style="small", width=4, color=None, tyre="Bl
     base = brick_color(kit, "Light_Bluish_Grey", "wheels", "plate")
     placed: list[int] = []
 
+    if look.mount == "caster":
+        holder, tone = need(kit, look.holder, base, "wheels", "wheel holder")
+        frame = Frame(kit, x, y, z, 2, 2, facing)
+        host = frame.place(holder, tone, 0, _sink(kit, holder), 0)
+        rim, code = need(kit, look.wheel.rim, color, "wheels", "wheel of this style")
+        return [host, kit.attach(rim, code, host, (0, 14, 0), SAME, "trolley wheels clipped in their holder")]
+
     if look.mount == "holder":
         holder, tone = need(kit, look.holder, base, "wheels", "wheel holder")
         _, wide, deep, _ = kit.measure(holder)
-        studs = kit.part(holder)
-        frame = Frame(kit, x, y, z, round(max(studs.w, 2)), 2, facing)
-        host = frame.place(holder, tone, (frame.width - wide) / 2, _sink(kit, holder), 0)
+        # Centered under a body four studs wide, so that the holder's studs fall on the grid.
+        frame = Frame(kit, x, y, z, BODY, 2, facing)
+        host = frame.place(holder, tone, (BODY - wide) / 2, _sink(kit, holder), 0)
         placed.append(host)
         placed += _wheel(kit, host, look.wheel, (-look.reach, 5, 0), TURN_LEFT, color, tyre)
         placed += _wheel(kit, host, look.wheel, (look.reach, 5, 0), TURN_RIGHT, color, tyre)
-        if look.guard is not None:
-            part, offset, turn = look.guard
-            cover = stocked(kit, part, color)
-            if cover is not None:
-                placed.append(kit.attach(part, cover, host, offset, turn, "mudguard on the wheel holder"))
         return placed
 
     frame = Frame(kit, x, y, z, width, 2, facing)
@@ -129,27 +144,36 @@ def build_wheels(kit: Kit, x, y, z, style="small", width=4, color=None, tyre="Bl
     # An axle through a brick at each side of the body, with a wheel on each end.
     hosts = [frame.place(part, tone, lx, 0, 0, rot=90) for lx in (0, width - 1)]
     placed += hosts
-    axle = stocked(kit, AXLE, "Black")
     middle = (width - 1) * 10  # LDraw units from the first brick to the middle of the body
-    if axle is not None:
-        placed.append(kit.attach(AXLE, axle, hosts[0], (0, 10, -middle), QUARTER, "axle through the axle holes"))
-    out = width * 10 + 10
-    placed += _wheel(kit, hosts[0], look.wheel, (0, 10, out - middle), SAME, color, tyre)
-    placed += _wheel(kit, hosts[0], look.wheel, (0, 10, -out - middle), HALF_TURN, color, tyre)
+    reach = middle + look.out  # from the middle of the body to each rim
+    fits = [part for part, half in AXLES if half <= reach + 10 and stocked(kit, part, "Black") is not None]
+    if fits:  # the longest axle that does not poke out of the rims
+        axle = fits[-1]
+        placed.append(kit.attach(axle, stocked(kit, axle, "Black"), hosts[0], (0, 10, middle), QUARTER,
+                                 "axle through the axle holes"))
+        kit.connect(hosts[0], hosts[1], "one axle through both bricks")
+    # The first brick's own z axis points across the body to the second, so its wheel is on the minus side.
+    placed += _wheel(kit, hosts[0], look.wheel, (0, 10, -look.out), HALF_TURN, color, tyre)
+    placed += _wheel(kit, hosts[0], look.wheel, (0, 10, 2 * middle + look.out), SAME, color, tyre)
     return placed
 
 
 WHEELS = Helper(
     name="wheels", build=build_wheels,
     signature='wheels(x, y, z, style="small", width=4, color=None, tyre="Black", facing="front")',
-    summary="One axle of a vehicle: two wheels with tyres and the part that carries them, all joined. Call it "
-            "once per axle. `facing` is the way the vehicle drives; the axle lies across that. (x, z) is the min "
-            "corner of what carries the wheels and y the base of its top plate or brick: build the body on its studs, one plate above y for the small styles and one brick above y for the `any width` ones. The wheels stick out "
-            "to both sides and reach below y by the plates the note gives, so set y that far above the ground. "
-            "Styles marked `any width` put a wheel at each side of a body `width` studs wide; the others carry "
-            "both wheels on one small plate under a body about 4 wide. `color` is the rim.",
+    summary="One axle of a vehicle: two wheels with tyres and the part that carries them, all joined. For the "
+            "whole rolling base of a car or truck use chassis() instead; call this once per axle for anything "
+            "else on wheels. `facing` is the way the vehicle drives; the axle lies across that. (x, z) is the min "
+            "corner of the body above the axle, `width` studs across (4 for the styles not marked `any width`, "
+            "2 for caster) and 2 along, and y the base of the part that carries the wheels: build on its studs, "
+            "one plate above y, or one brick above y for the `any width` styles. The tyres reach below y by the "
+            "plates the note gives, so set y that far above the ground. `any width` styles put a wheel outside "
+            "each side of the body. The others tuck both wheels under the body, where the tyres rise about 2 "
+            "plates above y: keep the body 2 studs wide over them for its first 2 plates. `color` is the rim. "
+            "Wheels are joined to a road or baseplate that is already under them, so lay that first.",
     styles=tuple(STYLES),
-    notes={name: ("any width, " if look.mount != "holder" else "") + f"{look.drop} below" for name, look in STYLES.items()},
+    notes={name: {"holder": "", "caster": "2 wide, "}.get(look.mount, "any width, ") + f"{look.drop} below"
+           for name, look in STYLES.items()},
 )
 
 # ----- windscreens ---------------------------------------------------------------

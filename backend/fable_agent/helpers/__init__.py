@@ -13,7 +13,7 @@ from inspect import signature
 from ..kit import KitError
 from .common import Helper
 
-_MODULES = ("trees", "roofs", "walls", "windows", "doors", "arches", "decks", "stairs", "railings", "cars", "props")
+_MODULES = ("trees", "roofs", "walls", "windows", "doors", "arches", "decks", "stairs", "railings", "cars", "vehicles", "furniture", "props")
 HELPERS: dict[str, Helper] = {}
 for _name in _MODULES:
     _module = import_module(f"{__name__}.{_name}")
