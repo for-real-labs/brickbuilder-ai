@@ -8,7 +8,7 @@ from uuid import UUID
 import stripe
 from fastapi import HTTPException
 
-from . import auth
+from . import auth, meta_subscription
 from .database import execute_query
 
 PLANS = (
@@ -224,7 +224,8 @@ def checkout_response(session, ui_mode):
     return {"url": session.url}
 
 
-async def checkout(identity, plan_key, ui_mode="hosted", gclid=None):
+async def checkout(identity, plan_key, ui_mode="hosted", gclid=None, *, meta_attribution=None):
+    meta_attribution = meta_attribution or {}
     user_id = account_id(identity)
     await require_enabled()
     if not (await capacity())["checkout_available"]:
@@ -281,13 +282,15 @@ async def checkout(identity, plan_key, ui_mode="hosted", gclid=None):
         for old in opened.data:
             if old.get("mode") == "subscription" and old.get("metadata", {}).get("integration") == BILLING_TAG:
                 if (old["metadata"].get("plan_key") == plan_key and old.get("ui_mode", "hosted") == ui_mode
-                        and old["metadata"].get("gclid") == gclid):
+                        and old["metadata"].get("gclid") == gclid
+                        and old["metadata"].get(meta_subscription.FBC) == meta_attribution.get(meta_subscription.FBC)):
                     return checkout_response(old, ui_mode)
                 await asyncio.to_thread(stripe.checkout.Session.expire, old.id, api_key=stripe_key())
         price = await price_for(plan_key)
         metadata = {"brickbuilder_user_id": user_id, "integration": BILLING_TAG, "plan_key": plan_key}
         if gclid:
             metadata["gclid"] = gclid
+        metadata.update(meta_attribution)
         redirects = ({"return_url": site_url()+"/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}"}
             if ui_mode == "elements" else {
                 "success_url": site_url()+"/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}",
@@ -360,7 +363,7 @@ async def sync_subscription(subscription_id):
         p_version=version, p_plan=plan["key"], p_start=datetime.fromtimestamp(start, timezone.utc).isoformat(),
         p_end=datetime.fromtimestamp(end, timezone.utc).isoformat(), p_invoice=invoice.id if paid else None,
         p_allowance=plan["credits"] if paid else None)
-    return {"invoice": invoice, "plan": plan} if paid and sub.status == "active" else None
+    return {"invoice": invoice, "plan": plan, "subscription_metadata": metadata} if paid and sub.status == "active" else None
 
 
 async def sync_checkout(identity, session_id=None):
@@ -416,6 +419,9 @@ async def handle_billing_event(event):
             if isinstance(receipt, dict) and event.type == "invoice.paid" and receipt["invoice"]["id"] == obj.id:
                 from .purchase_email import send_plan_confirmation
                 await send_plan_confirmation(receipt)
+                if live_mode():
+                    await meta_subscription.send(receipt, api_key=stripe_key(),
+                        delivery=lambda: client().table("meta_subscription_delivery"))
         return True
     if event.type in ("checkout.session.completed", "checkout.session.async_payment_succeeded") and obj.get("mode") == "subscription":
         subscription_id = object_id(obj.get("subscription"))

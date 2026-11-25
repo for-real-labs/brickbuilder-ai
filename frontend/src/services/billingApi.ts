@@ -1,3 +1,4 @@
+import { metaClick } from '../utils/metaClick';
 import { googleClick } from '../utils/googleClick';
 import type { CreditPackKey } from '../utils/creditPurchase';
 import { isAppleApp } from './applePurchases';
@@ -46,7 +47,7 @@ export const billingApi = {
   applePrepare: () => request<{ app_account_token: string }>('apple/prepare', {}),
   appleSync: (transaction_id: string) => request<BillingAccount>('apple/sync', { transaction_id }),
   checkout: (plan_key: PlanKey) => isAppleApp() ? Promise.reject(new Error('Use Apple subscriptions in the iOS app.')) : request<{ url: string }>('checkout', { plan_key }),
-  planCheckout: (plan_key: PlanKey) => isAppleApp() ? Promise.reject(new Error('Use Apple subscriptions in the iOS app.')) : request<{ session_id: string; client_secret: string } | { url: string }>('checkout', { plan_key, ui_mode: 'elements', gclid: googleClick() }),
+  planCheckout: (plan_key: PlanKey) => isAppleApp() ? Promise.reject(new Error('Use Apple subscriptions in the iOS app.')) : request<{ session_id: string; client_secret: string } | { url: string }>('checkout', { plan_key, ui_mode: 'elements', gclid: googleClick(), meta_click: metaClick() }),
   portal: (action: 'manage' | 'cancel') => request<{ url: string }>('portal', { action }),
   sync: (session_id?: string) => request<BillingAccount>('sync', { session_id }),
 };
