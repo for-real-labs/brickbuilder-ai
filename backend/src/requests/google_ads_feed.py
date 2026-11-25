@@ -12,7 +12,7 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from ..utils import billing
 
 COLUMNS = ("Google Click ID", "Conversion Name", "Conversion Time", "Conversion Value",
-           "Conversion Currency", "Order ID")
+           "Conversion Currency", "Order ID", "Record Type")
 
 
 def conversion_row(invoice):
@@ -25,7 +25,7 @@ def conversion_row(invoice):
         return None
     return (meta["gclid"], "subscription_confirmed",
             datetime.fromtimestamp(paid_at, timezone.utc).strftime("%Y-%m-%d %H:%M:%S+00:00"),
-            f'{invoice["amount_paid"] / 100:.2f}', invoice["currency"].upper(), invoice["id"])
+            f'{invoice["amount_paid"] / 100:.2f}', invoice["currency"].upper(), invoice["id"], "purchase")
 
 
 def feed(credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
@@ -33,14 +33,25 @@ def feed(credentials: HTTPBasicCredentials = Depends(HTTPBasic())):
     if not billing.live_mode() or not password or credentials.username != "googleads" or not secrets.compare_digest(
             password.encode(), credentials.password.encode()):
         raise HTTPException(401, "Unauthorized", headers={"WWW-Authenticate": "Basic"})
-    result = io.StringIO()
-    writer = csv.writer(result)
-    writer.writerow(COLUMNS)
     since = datetime.now(timezone.utc) - timedelta(days=90)
     invoices = stripe.Invoice.list(status="paid", created={"gte": int(since.timestamp())},
                                    limit=100, api_key=billing.stripe_key())
-    for invoice in invoices.auto_paging_iter():
+    return Response(render_csv(invoices.auto_paging_iter()), media_type="text/csv",
+                    headers={"Cache-Control": "no-store"})
+
+
+def render_csv(invoices):
+    result = io.StringIO()
+    writer = csv.writer(result)
+    writer.writerow(COLUMNS)
+    count = 0
+    for invoice in invoices:
         row = conversion_row(invoice)
         if row:
             writer.writerow(row)
-    return Response(result.getvalue(), media_type="text/csv", headers={"Cache-Control": "no-store"})
+            count += 1
+    if not count:
+        # Data Manager needs a row to discover columns. The import filters on
+        # Record Type=purchase. This row has no click, action, amount or order.
+        writer.writerow(("", "", "", "", "", "", "schema"))
+    return result.getvalue()
