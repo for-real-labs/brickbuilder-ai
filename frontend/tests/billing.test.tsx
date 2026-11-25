@@ -8,19 +8,16 @@ import posthog from 'posthog-js';
 import { BillingProvider, useBilling } from '../src/contexts/BillingContext';
 import { BillingOverlays, MonthlyCreditUsage, CreditBalance, CreditNudge, PlanGrid, GenerationCreditQuote } from '../src/components/BillingComponents';
 import BillingPage from '../src/pages/BillingPage';
-import { GoogleTestSubscriptionSettings } from '../src/components/GoogleTestSubscriptionSettings';
-import { googleTestSubscription } from '../src/services/googleTestSubscription';
 import { openGenerationSubscription } from '../src/utils/generationSubscription';
 import { PlanPopupRedirect } from '../src/components/PlanPopupRedirect';
 import { billingApi, openStripe, type BillingAccount } from '../src/services/billingApi';
 
-const auth = vi.hoisted(() => ({ user: { id: 'builder-1' } as { id: string; app_metadata?: Record<string, boolean> } | null }));
+const auth = vi.hoisted(() => ({ user: { id: 'builder-1' } as { id: string } | null }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => auth }));
 vi.mock('../src/contexts/PetContext', () => ({ usePet: () => ({ pet: { name: 'Pip', id: 'pip' } }) }));
 vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: ({ id = 'pip' }) => <span data-pet={id} /> }));
 vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div role="dialog">Sign in to build</div> : null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
-vi.mock('../src/services/googleTestSubscription', async original => ({ ...await original<any>(), googleTestSubscription: { confirm: vi.fn(), reset: vi.fn() } }));
 vi.mock('../src/services/billingApi', async importOriginal => ({ ...await importOriginal<typeof import('../src/services/billingApi')>(),
   billingApi: { redeemPromo: vi.fn(), creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
 }));
@@ -329,29 +326,6 @@ it('pushes the verified transaction on the first billing sync and clears the che
   expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/billing');
 });
 
-it('fires the sandbox conversion on normal Billing without syncing the test session into live billing', async () => {
-  const dataLayer: unknown[] = [];
-  vi.stubGlobal('dataLayer', dataLayer);
-  vi.mocked(googleTestSubscription.confirm).mockResolvedValueOnce({ transaction_id: 'in_demo' });
-  await render(<BillingPage />, '/billing?checkout=success&session_id=cs_test_demo');
-  expect(googleTestSubscription.confirm).toHaveBeenCalledExactlyOnceWith('cs_test_demo');
-  expect(billingApi.sync).not.toHaveBeenCalledWith('cs_test_demo');
-  expect(dataLayer).toEqual([{ event: 'subscription_confirmed', transaction_id: 'in_demo' }]);
-  expect(container.textContent).toContain('Stripe confirmed the sandbox subscription');
-  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/billing');
-});
-
-it('shows the sandbox reset only to the test account and calls the sandbox service', async () => {
-  await render(<GoogleTestSubscriptionSettings />);
-  expect(container.textContent).not.toContain('Reset sandbox subscription');
-  auth.user = { id: 'test-user', app_metadata: { google_subscription_test: true } };
-  vi.mocked(googleTestSubscription.reset).mockResolvedValueOnce({ reset: true });
-  await render(<GoogleTestSubscriptionSettings />);
-  await click('Reset sandbox subscription');
-  expect(googleTestSubscription.reset).toHaveBeenCalledOnce();
-  expect(container.textContent).toContain('Sandbox subscription reset');
-});
-
 it('pauses new sales at capacity while keeping cancellation accessible', async () => {
   account = { ...account, plan_key: 'builder', has_subscription: true, subscription_status: 'active', checkout_available: false };
   vi.mocked(billingApi.plans).mockResolvedValue({ enabled: true, ready: true, checkout_available: false, plans: (await import('../src/services/billingApi')).INITIAL_PLANS });
@@ -649,15 +623,6 @@ async function enterPromo(code: string) {
   });
   await act(async () => container.querySelector('.billing-promo-dialog form')!.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true })));
 }
-
-it('routes googletest from the shared plans popup to normal checkout for the test account', async () => {
-  auth.user = { id: 'test-user', app_metadata: { google_subscription_test: true } };
-  await render(<OpenPlansPopup />);
-  await click('promo');
-  await enterPromo('googletest');
-  expect(billingApi.redeemPromo).not.toHaveBeenCalled();
-  expect(container.querySelector('[data-checkout-location]')?.textContent).toBe('/checkout-plan?plan=builder&test=1');
-});
 
 it('redeems promos below cancel anytime and refreshes Builder access without tracking codes', async () => {
   vi.mocked(billingApi.redeemPromo).mockResolvedValue({ type: 'builder', account: { ...account, plan_key: 'builder', has_subscription: true, paid_features: true, subscription_provider: 'external_tester', trial_expires_at: '2099-12-13T12:00:00Z', monthly_credits: 225, monthly_remaining: 225, credits_remaining: 225 } });

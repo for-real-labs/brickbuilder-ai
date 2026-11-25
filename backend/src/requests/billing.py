@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class CheckoutRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    gclid: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9_-]+$", max_length=500)
     plan_key: Literal["builder", "creator"]
     ui_mode: Literal["hosted", "elements"] = "hosted"
 
@@ -61,7 +62,7 @@ async def account(identity: dict = Depends(get_optional_identity)):
 
 @router.post("/checkout")
 async def checkout(request: CheckoutRequest, identity: dict = Depends(get_optional_identity)):
-    return await run(billing.checkout(identity, request.plan_key, request.ui_mode))
+    return await run(billing.checkout(identity, request.plan_key, request.ui_mode, request.gclid))
 
 
 @router.post("/portal")
@@ -128,3 +129,8 @@ class PromoRequest(BaseModel):
 @router.post('/promo')
 async def promo(request: PromoRequest, identity: dict = Depends(get_optional_identity)):
     return await run(billing.redeem_promo(identity, request.code))
+
+
+from .google_ads_feed import feed
+
+router.add_api_route("/google-ads/conversions.csv", feed, methods=["GET"], include_in_schema=False)

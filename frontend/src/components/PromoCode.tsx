@@ -1,17 +1,13 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import posthog from 'posthog-js';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { useBilling } from '../contexts/BillingContext';
 import type { BillingAccount } from '../services/billingApi';
-import { isGoogleSubscriptionTestCode } from '../services/googleTestSubscription';
-import { isAppleApp } from '../services/applePurchases';
 import { PromoConfetti } from './PromoConfetti';
 
 export function PromoCode({ source }: { source: string }) {
   const { user } = useAuth();
-  const navigate = useNavigate();
   const { redeemPromo, signIn, closeUpgrade } = useBilling();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
@@ -27,11 +23,6 @@ export function PromoCode({ source }: { source: string }) {
   async function redeem(event: React.FormEvent) {
     event.preventDefault();
     if (busy || !code.trim() || !user) return;
-    if (user.app_metadata?.google_subscription_test === true && isGoogleSubscriptionTestCode(code) && !isAppleApp()) {
-      posthog.capture('billing_test_checkout_selected', { source });
-      close(); closeUpgrade(); navigate('/checkout-plan?plan=builder&test=1');
-      return;
-    }
     const userId = user.id;
     setBusy(true); setError('');
     posthog.capture('billing_promo_submitted', { source });
