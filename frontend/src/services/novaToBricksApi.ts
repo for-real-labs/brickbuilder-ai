@@ -2,9 +2,15 @@ import type { PartsInventory } from './partsInventoryApi';
 import { apiFetch, authenticatedApiFetch } from './apiFetch';
 import { DEFAULT_LLM_MODEL, getLlmModelOption, validateMaxParts, type LlmToBricksResponse } from './llmToBricksApi';
 import { getInstructionKey } from '../utils/instructionLinks';
-import { isBuildingAgent, type BuildingAgent } from '../utils/buildingAgents';
+import { isAgentModel, isBuildingAgent, type AgentModel, type BuildingAgent } from '../utils/buildingAgents';
 
-export type { BuildingAgent };
+export type { AgentModel, BuildingAgent };
+
+/** What an account may choose: its agents, and for an agent with a choice of model, those models (default first). */
+export interface BuildingAgentChoices {
+  agents: BuildingAgent[];
+  models: Partial<Record<BuildingAgent, AgentModel[]>>;
+}
 export type NovaAuthMode = 'api_key' | 'native';
 
 export interface NovaBuilderOptions {
@@ -12,6 +18,7 @@ export interface NovaBuilderOptions {
   authMode: NovaAuthMode;
   maxParts?: number;
   buildingAgent?: BuildingAgent;
+  agentModel?: AgentModel;
 }
 
 export const DEFAULT_NOVA_OPTIONS: NovaBuilderOptions = {
@@ -44,14 +51,21 @@ export class NovaInstructionPlanError extends Error {
 
 export class NovaToBricksApiService {
   /** The agents this account may choose, in the order to offer them. Nova is always available. */
-  static async buildingAgents(authToken: string, signal: AbortSignal): Promise<BuildingAgent[]> {
+  static async buildingAgents(authToken: string, signal: AbortSignal): Promise<BuildingAgentChoices> {
     const response = await apiFetch(`${NOVA_API_BASE_URL}/generation-settings/building-agents`, {
       headers: { Authorization: `Bearer ${authToken}` }, signal, cache: 'no-store',
     });
-    if (!response.ok) return ['nova'];
+    if (!response.ok) return { agents: ['nova'], models: {} };
     const data = await response.json();
-    const agents: BuildingAgent[] = Array.isArray(data.agents) ? data.agents.filter(isBuildingAgent) : [];
-    return agents.includes('nova') ? agents : ['nova', ...agents];
+    const listed: BuildingAgent[] = Array.isArray(data.agents) ? data.agents.filter(isBuildingAgent) : [];
+    const agents = listed.includes('nova') ? listed : ['nova' as const, ...listed];
+    const models: BuildingAgentChoices['models'] = {};
+    const offered = data.models && typeof data.models === 'object' ? data.models as Record<string, unknown> : {};
+    for (const agent of agents) {
+      const choices = Array.isArray(offered[agent]) ? (offered[agent] as unknown[]).filter(isAgentModel) : [];
+      if (choices.length) models[agent] = choices;
+    }
+    return { agents, models };
   }
   static async instructions(generationId: string): Promise<string> {
     const key = getInstructionKey(generationId);
@@ -107,6 +121,7 @@ export class NovaToBricksApiService {
         model: request.model,
         auth_mode: request.authMode,
         building_agent: request.buildingAgent,
+        agent_model: request.agentModel,
       }),
     });
     if (!response.ok) {

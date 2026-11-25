@@ -74,6 +74,7 @@ class Design:
 
     script: str
     requests: tuple[str, ...]
+    model: str | None = None  # the model that built it, for an agent that offers a choice
 
 
 @dataclass(frozen=True)
@@ -102,7 +103,8 @@ async def _source_design(source: dict, auth_info: dict) -> Design:
         if not isinstance(script, str) or not script.strip() or not isinstance(requests, list) \
                 or not all(isinstance(item, str) for item in requests):
             raise ValueError("Invalid saved design")
-        return Design(script, tuple(requests[-8:]))
+        model = saved.get("model")
+        return Design(script, tuple(requests[-8:]), model if isinstance(model, str) else None)
     except (OSError, ValueError, KeyError, TypeError, StorageApiError, httpx.HTTPError):
         raise HTTPException(409, "The saved Fable design is unavailable.") from None
 
@@ -138,7 +140,8 @@ def _change_request(prompt: str, design: Design | None) -> str:
     return f"{prompt}\n\nWhat was asked for before, for context:\n{earlier}"
 
 
-async def _build(generation_id, request, agent_id, design, reference, key, _on_thinking=None, *, on_progress):
+async def _build(generation_id, request, agent_id, variant, design, reference, key, _on_thinking=None, *,
+                 on_progress):
     async def heartbeat():
         while True:
             await asyncio.sleep(5)
@@ -174,7 +177,7 @@ async def _build(generation_id, request, agent_id, design, reference, key, _on_t
     def work() -> Built:
         """Runs on a build thread once one is free; time spent waiting for it does not count."""
         clock["hard_stop"] = time.monotonic() + HARD_STOP_SECONDS
-        return _run(_change_request(prompt, design), FABLE_AGENTS[agent_id], request.max_parts, reference,
+        return _run(_change_request(prompt, design), variant, request.max_parts, reference,
                     design.script if design else None, key, on_event)
 
     pulse = asyncio.create_task(heartbeat())
@@ -186,7 +189,7 @@ async def _build(generation_id, request, agent_id, design, reference, key, _on_t
         built = await loop.run_in_executor(_builds, work)
         await on_progress("Saving your model and building instructions")
         bucket = generation_storage.client.storage.from_("generation-output")
-        saved = {"agent": agent_id, "script": built.script,
+        saved = {"agent": agent_id, "model": variant.model, "script": built.script,
                  "requests": [*(design.requests if design else ()), prompt]}
         await upload_artifact(bucket, path=f"{generation_id}/{DESIGN_FILE}", file=json.dumps(saved).encode(),
                               content_type="application/json")
@@ -242,12 +245,21 @@ async def fable_to_bricks(request, auth_info, source=None):
         raise HTTPException(422, "Fable uses BrickBuilder credits and its configured AI connections.")
     if request.parts_inventory is not None:
         raise HTTPException(422, "Fable builds from the BrickBuilder catalog and cannot use a parts inventory yet.")
-    key = os.getenv(variant.key_env)
-    if not key or generation_storage is None or not _ready():
+    if generation_storage is None or not _ready():
         raise HTTPException(503, "Fable is temporarily unavailable.")
     if _in_flight >= MAX_BUILDS + MAX_WAITING:
         raise HTTPException(503, "Fable is busy right now. Try again in a few minutes.")
     design = await _source_design(source, auth_info) if source else None
+    # A change is built with the model that built the original; a new build with the one chosen.
+    try:
+        variant = variant.using(design.model if design else request.agent_model)
+    except ValueError:
+        if not design:
+            raise HTTPException(422, "This building agent does not offer that model.") from None
+        # The saved model is no longer offered: change it with the agent's default model.
+    key = os.getenv(variant.key_env)
+    if not key:
+        raise HTTPException(503, "Fable is temporarily unavailable.")
     request.max_parts = (tighter_parts_limit(request.max_parts, source.get("max_parts") if source else None)
                          or DEFAULT_PARTS)
     if request.max_parts > MAX_PARTS:
@@ -259,13 +271,14 @@ async def fable_to_bricks(request, auth_info, source=None):
         raise HTTPException(422, "Choose a valid reference image within the supported size.") from None
     # Every All parts engine uses the same admission, credit policy and viewer.
     handle_auth_and_tracking(auth_info, "/novaToBricks", {
-        "building_agent": agent_id, "has_image": bool(reference), "is_edit": bool(source)})
+        "building_agent": agent_id, "agent_model": variant.model, "has_image": bool(reference),
+        "is_edit": bool(source)})
     job_id = await generation_storage.create_generation(
         user_id=auth_info["user_id"], user_type="authenticated", prompt=request.prompt or "Image reference",
         detail_level=request.detail_level, endpoint="novaToBricks", model_3d=agent_id,
         max_parts=request.max_parts, input_type="image" if reference else "text",
         entry_page=request.entry_page, edit_generation_id=request.generation_id)
-    start_generation_task(job_id, run_with_output(job_id, _build, request, agent_id, design, reference, key,
-                                                  native_progress=True))
+    start_generation_task(job_id, run_with_output(job_id, _build, request, agent_id, variant, design, reference,
+                                                  key, native_progress=True))
     return ImageToBricksResponse(generation_id=job_id, message="Fable generation started.")
 

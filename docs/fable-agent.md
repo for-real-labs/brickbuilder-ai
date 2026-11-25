@@ -100,12 +100,15 @@ One run of each on the same photo and prompt:
 | lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
 | lean, `--effort low` | `claude-fable-5-2` | $0.53 | 2 | 3 | 427 | $84 |
 | lean | `gpt-6.2-sol` | $0.22 | 5 | 4 | 1,073 | $147 |
-| lean v2 | `gpt-6.2-sol` | $0.18 | 5 | 3 | 988 | $146 |
+| lean v2 (Pip) | `gpt-6.2-sol` | $0.18 | 5 | 3 | 988 | $146 |
+| lean v2 (Pip) | `gpt-6.2-astra` | $0.58 | 5 | 2 | 844 | $102 |
+| lean v2 (Pip) | `claude-opus-5-5` | $0.40 | 3 | 3 | 527 | $97 |
+| lean v2 (Pip) | `claude-sonnet-5-5` | $0.12 | 3 | 1 | 290 | $63 |
 | lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
 
 ![The lake house from each method and model](assets/fable-agent/lakehouse-methods.jpg)
 
-All nine published with a clean report. These are single runs, so they show cost and
+All twelve published with a clean report. These are single runs, so they show cost and
 character, not an average: Claude builds a compact model and gets it right early, the
 OpenAI models build larger ones and take more turns, and lean trades some detail for
 about a quarter of the cost. At low effort Claude dropped the siding color and trim.
@@ -193,8 +196,23 @@ a build is requested, so hiding the selector is not what protects it.
 | Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` |
 | Fable Lean · Claude Fable 5.2 (low effort) | lean, low effort | `claude-fable-5-2` |
 | Fable Lean · GPT-6.2 Sol | lean | `gpt-6.2-sol` |
-| Fable Lean v2 · GPT-6.2 Sol | lean v2 | `gpt-6.2-sol` |
+| Pip agent | lean v2 | your choice; `gpt-6.2-sol` by default |
 | Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` |
+
+The **Pip agent** (`pip-agent`) is the lean v2 method with a choice of model. When it is
+selected, Generation settings shows a second list with `gpt-6.2-sol` (the default),
+`gpt-6.2-astra`, `claude-opus-5-5`, `claude-sonnet-5-5` and `claude-fable-5-2`. The
+backend lists the models it offers (`GET /generation-settings/building-agents`) and
+refuses any other. The chosen model is saved in `fable-design.json`, and a later change
+to the model is built with the same one. Pip replaced Fable Lean v2 · GPT-6.2 Sol: that
+option is no longer offered, but its earlier builds can still be opened and changed.
+
+![The lake house from the Pip agent on four models](assets/fable-agent/pip-models.jpg)
+
+On the lake house, GPT-6.2 Sol built the most detailed model for the least. Sonnet 5.5
+was cheapest but built a much smaller, plainer house; Opus 5.5 and Astra 6.2 cost two to
+three times Sol's price for fewer parts. Pip on `claude-fable-5-2` has not been test-run
+(lean v1 on that model cost $0.90). One run each, so these show cost and character only.
 
 The options are defined once in `backend/src/utils/building_agents.py`, with their
 labels in `frontend/src/utils/buildingAgents.ts`. A change to any agent is recorded
@@ -209,7 +227,7 @@ in [docs/agent-changes](agent-changes/README.md).
 - **Limits:** 1,000 pieces unless the request sets another limit, 5,000 at most. A
   customer's own parts inventory is refused for now; Fable builds from the catalog.
 - **Results** use the standard viewer, parts list, preview and instructions. The build
-  script is saved with the generation as `fable-design.json`.
+  script is saved with the generation as `fable-design.json`, with the model that built it.
 - **Edits** to a Fable model go back to the option that built it, start from the saved
   script, and are open only to the model's owner.
 - **Cancelling** a generation stops the agent at its next step.

@@ -103,7 +103,7 @@ describe('LandingPage', () => {
     authSettings.session = { user: approved, access_token: 'approved-token' };
     authSettings.user = approved;
     const access = vi.spyOn(NovaToBricksApiService, 'buildingAgents').mockImplementation(
-      async token => token === 'approved-token' ? ['nova', 'astrology', 'fable-gpt-6.1-sol'] : ['nova']);
+      async token => token === 'approved-token' ? { agents: ['nova', 'astrology', 'fable-gpt-6.1-sol'], models: {} } : { agents: ['nova'], models: {} });
     const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'astrology-build', message: 'Started' });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
@@ -135,6 +135,58 @@ describe('LandingPage', () => {
       authSettings.session = { user: authSettings.user, access_token: 'other-token' };
       await act(async () => root.render(page('other')));
       expect(container.textContent).not.toContain('Building agent');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+      access.mockRestore();
+      generate.mockRestore();
+    }
+  });
+
+  it('lets an approved account pick the Pip agent and its model', async () => {
+    const approved = { id: 'approved' };
+    authSettings.session = { user: approved, access_token: 'approved-token' };
+    authSettings.user = approved;
+    const access = vi.spyOn(NovaToBricksApiService, 'buildingAgents').mockResolvedValue({
+      agents: ['nova', 'pip-agent', 'fable-gpt-6.1-sol'],
+      models: { 'pip-agent': ['gpt-6.2-sol', 'gpt-6.2-astra', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-2'] },
+    });
+    const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'pip-build', message: 'Started' });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const choose = (select: HTMLSelectElement, value: string) => act(() => {
+      select.value = value;
+      select.dispatchEvent(new Event('change', { bubbles: true }));
+    });
+    try {
+      await act(async () => root.render(<LandingPage />));
+      act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
+      expect(container.querySelector('#landing-agent-model')).toBeNull(); // Nova has no model choice here
+      choose(container.querySelector<HTMLSelectElement>('#landing-building-agent')!, 'pip-agent');
+      const models = container.querySelector<HTMLSelectElement>('#landing-agent-model')!;
+      expect(models.labels?.[0].textContent).toBe('Pip agent model');
+      expect(Array.from(models.options).map(option => option.text)).toEqual(
+        ['GPT-6.2 Sol', 'GPT-6.2 Astra', 'Claude Opus 5.5', 'Claude Sonnet 5.5', 'Claude Fable 5.2']);
+      expect(models.value).toBe('gpt-6.2-sol');
+      choose(models, 'claude-opus-5-5');
+      // An agent without a model choice hides the selector; coming back keeps the model picked.
+      const agents = container.querySelector<HTMLSelectElement>('#landing-building-agent')!;
+      choose(agents, 'fable-gpt-6.1-sol');
+      expect(container.querySelector('#landing-agent-model')).toBeNull();
+      choose(agents, 'pip-agent');
+      expect(container.querySelector<HTMLSelectElement>('#landing-agent-model')!.value).toBe('claude-opus-5-5');
+      const input = container.querySelector<HTMLInputElement>('input[aria-label="Describe your model"]')!;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red boat');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Generate"]')!.click());
+      expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+        buildingAgent: 'pip-agent', agentModel: 'claude-opus-5-5', prompt: 'A red boat',
+      }), 'approved-token');
     } finally {
       act(() => root.unmount());
       container.remove();

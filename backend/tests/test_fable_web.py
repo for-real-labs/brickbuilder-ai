@@ -11,7 +11,8 @@ from pydantic import ValidationError
 from src.api import building_agents
 from src.requests import fableToBricks as fable
 from src.requests import novaToBricks as nova
-from src.utils.building_agents import FABLE_AGENTS, in_process_agent
+from src.utils.building_agents import (FABLE_AGENTS, OFFERED_AGENTS, PIP_AGENT, PIP_MODELS, RETIRED_AGENTS,
+                                       in_process_agent)
 from src.utils.generation_budget import GenerationUsage, current_generation_usage
 
 from fable_agent_support import CABIN, FakeClient, FakeRenderer, InlineRunner, World, reply, tool_use
@@ -47,12 +48,16 @@ def start_recorder(monkeypatch):
 
 
 def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypatch):
-    listed = asyncio.run(building_agents(Response(), ACCOUNT))["agents"]
-    assert listed == ["nova", "astrology", *FABLE_AGENTS]
+    offered = asyncio.run(building_agents(Response(), ACCOUNT))
+    assert offered["agents"] == ["nova", *OFFERED_AGENTS] and OFFERED_AGENTS[0] == "astrology"
     assert {"fable-claude-fable-5-2", "fable-gpt-6.2-sol", "fable-thorough-v2-gpt-6.2-sol", "fable-gpt-6.1-sol",
-            "fable-lean-claude-fable-5-2",
-            "fable-lean-low-claude-fable-5-2", "fable-lean-gpt-6.2-sol", "fable-lean-v2-gpt-6.2-sol",
-            "fable-lean-gpt-6.1-sol"} == set(FABLE_AGENTS)
+            "fable-lean-claude-fable-5-2", "fable-lean-low-claude-fable-5-2", "fable-lean-gpt-6.2-sol", PIP_AGENT,
+            "fable-lean-v2-gpt-6.2-sol", "fable-lean-gpt-6.1-sol"} == set(FABLE_AGENTS)
+    # Pip replaced Fable Lean v2: its builds still resolve, but it is not offered for new ones.
+    assert PIP_AGENT in offered["agents"] and "fable-lean-v2-gpt-6.2-sol" not in offered["agents"]
+    assert in_process_agent("fable-lean-v2-gpt-6.2-sol") == "fable-lean-v2-gpt-6.2-sol"
+    assert offered["models"] == {PIP_AGENT: ["gpt-6.2-sol", "gpt-6.2-astra", "claude-opus-5-5", "claude-sonnet-5-5",
+                                             "claude-fable-5-2"]}
     assert in_process_agent(AGENT) == AGENT and in_process_agent("nova") is None and in_process_agent(7) is None
 
     outsider = {**ACCOUNT, "user_email": "outsider@example.test"}
@@ -180,7 +185,8 @@ def test_a_build_far_past_its_time_limit_is_abandoned_with_a_message(monkeypatch
     monkeypatch.setattr(fable, "_run", run)
     request = nova.NovaToBricksRequest(prompt="A cabin", building_agent=AGENT)
     before = fable._in_flight
-    error = asyncio.run(fable._build("build", request, AGENT, None, None, "k", on_progress=AsyncMock()))
+    error = asyncio.run(fable._build("build", request, AGENT, FABLE_AGENTS[AGENT], None, None, "k",
+                                     on_progress=AsyncMock()))
     assert error == "Fable ran out of time on this build. Try a simpler request."
     storage.update_status.assert_awaited_with("build", "failed", error)
     assert fable._in_flight == before  # the slot is released however the build ends
@@ -274,7 +280,8 @@ def test_a_completed_job_exports_the_model_instructions_usage_and_owner_design(t
         ledger = GenerationUsage("build")
         token = current_generation_usage.set(ledger)
         try:
-            error = await fable._build("build", request, AGENT, None, None, "openai-test", on_progress=progress)
+            error = await fable._build("build", request, AGENT, FABLE_AGENTS[AGENT], None, None, "openai-test",
+                                       on_progress=progress)
         finally:
             current_generation_usage.reset(token)
         return error, ledger
@@ -288,7 +295,7 @@ def test_a_completed_job_exports_the_model_instructions_usage_and_owner_design(t
 
     saved = {call.kwargs["path"]: call.kwargs["file"] for call in publish.await_args_list}
     design = json.loads(saved[f"build/{fable.DESIGN_FILE}"])
-    assert design == {"agent": AGENT, "script": CABIN, "requests": ["A small cabin"]}
+    assert design == {"agent": AGENT, "model": "gpt-6.1-sol", "script": CABIN, "requests": ["A small cabin"]}
     ldraw = saved[f"build/{fable.INSTRUCTIONS_FILE}"].decode()
     assert ldraw.startswith("0 Cabin") and "0 STEP" in ldraw and "3020.dat" in ldraw
     storage.store_model_file.assert_awaited_once_with("build", ldraw, "ldr", raise_on_error=True)
@@ -315,7 +322,8 @@ def test_a_build_that_never_passes_its_checks_fails_with_a_message_for_the_custo
     monkeypatch.setattr(fable, "start_build", start_build)
     storage, publish = web_storage(monkeypatch)
     request = nova.NovaToBricksRequest(prompt="A cabin", max_parts=400, building_agent=AGENT)
-    error = asyncio.run(fable._build("build", request, AGENT, None, None, "k", on_progress=AsyncMock()))
+    error = asyncio.run(fable._build("build", request, AGENT, FABLE_AGENTS[AGENT], None, None, "k",
+                                     on_progress=AsyncMock()))
     assert "could not finish a model" in error
     storage.update_status.assert_awaited_with("build", "failed", error)
     storage.store_model_file.assert_not_awaited()
@@ -323,7 +331,8 @@ def test_a_build_that_never_passes_its_checks_fails_with_a_message_for_the_custo
 
     # Unexpected failures are logged, and the customer sees a generic message.
     monkeypatch.setattr(fable, "start_build", Mock(side_effect=RuntimeError("secret detail")))
-    error = asyncio.run(fable._build("build", request, AGENT, None, None, "k", on_progress=AsyncMock()))
+    error = asyncio.run(fable._build("build", request, AGENT, FABLE_AGENTS[AGENT], None, None, "k",
+                                     on_progress=AsyncMock()))
     assert error == "Fable could not complete this build."
 
 
@@ -344,7 +353,7 @@ def test_cancelling_a_generation_stops_the_agent_at_its_next_step(monkeypatch):
     request = nova.NovaToBricksRequest(prompt="A cabin", building_agent=AGENT)
 
     async def job():
-        task = asyncio.create_task(fable._build("build", request, AGENT, None, None, "k", on_progress=AsyncMock()))
+        task = asyncio.create_task(fable._build("build", request, AGENT, FABLE_AGENTS[AGENT], None, None, "k", on_progress=AsyncMock()))
         await asyncio.to_thread(entered.wait, 5)
         task.cancel()
         with pytest.raises(asyncio.CancelledError):
@@ -354,3 +363,96 @@ def test_cancelling_a_generation_stops_the_agent_at_its_next_step(monkeypatch):
     asyncio.run(job())
     assert stopped.is_set()
     assert all(call.args[1] != "completed" for call in storage.update_status.await_args_list)
+
+
+# ----- the Pip agent ---------------------------------------------------------------
+
+
+def test_the_pip_agent_is_lean_v2_with_a_choice_of_model():
+    pip = FABLE_AGENTS[PIP_AGENT]
+    assert (pip.model, pip.method, pip.key_env) == ("gpt-6.2-sol", "lean-v2", "OPENAI_API_KEY")
+    assert set(PIP_MODELS) == {"gpt-6.2-sol", "gpt-6.2-astra", "claude-opus-5-5", "claude-sonnet-5-5", "claude-fable-5-2"}
+    assert pip.using(None) is pip and pip.using("gpt-6.2-sol") is pip
+    opus = pip.using("claude-opus-5-5")
+    assert (opus.model, opus.method, opus.key_env, opus.models) == ("claude-opus-5-5", "lean-v2", "ANTHROPIC_API_KEY",
+                                                                     PIP_MODELS)
+    assert pip.using("gpt-6.2-astra").key_env == "OPENAI_API_KEY"
+    for refused in ("gpt-6.1-sol", "claude-opus-5", ""):
+        with pytest.raises(ValueError):
+            pip.using(refused)
+    with pytest.raises(ValueError):
+        FABLE_AGENTS[AGENT].using("claude-opus-5-5")  # options without a choice keep their model
+    # Every model it offers has a price, or its spending limit could not be enforced.
+    from fable_agent.provider import PRICES
+    assert set(PIP_MODELS) <= set(PRICES)
+
+
+@pytest.mark.parametrize("model", PIP_MODELS)
+def test_a_pip_build_runs_on_the_chosen_model_and_its_own_key(monkeypatch, model):
+    create, _ = start_recorder(monkeypatch)
+    jobs = []
+    monkeypatch.setattr(fable, "run_with_output", lambda *args, **kwargs: jobs.append(args) or AsyncMock()())
+    request = nova.NovaToBricksRequest(building_agent=PIP_AGENT, agent_model=model, prompt="A boat")
+    asyncio.run(nova.nova_to_bricks(request, ACCOUNT))
+    _, _, _, agent, variant, design, reference, key = jobs[0]
+    assert (agent, variant.model, variant.method, design) == (PIP_AGENT, model, "lean-v2", None)
+    assert key == ("openai-test" if model.startswith("gpt-") else "anthropic-test")
+    assert create.await_args.kwargs["model_3d"] == PIP_AGENT
+    assert fable.handle_auth_and_tracking.call_args.args[2]["agent_model"] == model
+
+
+def test_a_pip_build_without_a_choice_uses_its_default_model(monkeypatch):
+    start_recorder(monkeypatch)
+    jobs = []
+    monkeypatch.setattr(fable, "run_with_output", lambda *args, **kwargs: jobs.append(args) or AsyncMock()())
+    asyncio.run(nova.nova_to_bricks(nova.NovaToBricksRequest(building_agent=PIP_AGENT, prompt="A boat"), ACCOUNT))
+    assert jobs[0][4].model == "gpt-6.2-sol"
+
+
+@pytest.mark.parametrize(("fields", "message"), [
+    ({"building_agent": PIP_AGENT, "agent_model": "gpt-6.1-sol"}, "does not offer that model"),
+    ({"building_agent": PIP_AGENT, "agent_model": "x" * 65}, "at most 64"),
+    ({"building_agent": AGENT, "agent_model": "claude-opus-5-5"}, "does not offer that model"),
+    ({"building_agent": "nova", "agent_model": "claude-opus-5-5"}, "does not offer that model"),
+    ({"building_agent": "fable-lean-v2-gpt-6.2-sol"}, "has been replaced"),
+])
+def test_a_model_or_agent_that_is_not_offered_is_refused(fields, message):
+    with pytest.raises(ValidationError, match=message):
+        nova.NovaToBricksRequest(prompt="A boat", **fields)
+    assert RETIRED_AGENTS == {"fable-lean-v2-gpt-6.2-sol"}
+
+
+def test_a_pip_change_is_built_with_the_model_that_built_the_original(monkeypatch):
+    start_recorder(monkeypatch)
+    jobs = []
+    monkeypatch.setattr(fable, "run_with_output", lambda *args, **kwargs: jobs.append(args) or AsyncMock()())
+    source = {"id": "previous", "status": "completed", "model_used_3d": PIP_AGENT, "user_id": "builder",
+              "user_type": "authenticated", "max_parts": 400}
+
+    async def saved(design_model):
+        return fable.Design(CABIN, ("A cabin",), design_model)
+
+    for design_model, expected in (("claude-sonnet-5-5", "claude-sonnet-5-5"), (None, "gpt-6.2-sol"),
+                                   ("model-no-longer-offered", "gpt-6.2-sol")):
+        monkeypatch.setattr(fable, "_source_design", lambda source, auth, m=design_model: saved(m))
+        request = nova.NovaToBricksRequest(prompt="Paint it blue", generation_id="previous")
+        asyncio.run(fable.fable_to_bricks(request, ACCOUNT, source))
+        assert jobs[-1][4].model == expected
+    # Earlier builds of the retired option can still be changed.
+    request = nova.NovaToBricksRequest(prompt="Paint it blue", generation_id="previous",
+                                       building_agent="fable-lean-v2-gpt-6.2-sol")
+    retired = {**source, "model_used_3d": "fable-lean-v2-gpt-6.2-sol"}
+    asyncio.run(fable.fable_to_bricks(request, ACCOUNT, retired))
+    assert jobs[-1][3] == "fable-lean-v2-gpt-6.2-sol"
+
+
+def test_a_saved_design_remembers_its_model(monkeypatch):
+    saved = json.dumps({"agent": PIP_AGENT, "model": "claude-opus-5-5", "script": CABIN, "requests": ["A cabin"]})
+    bucket = Mock(download=Mock(return_value=saved.encode()))
+    storage = SimpleNamespace(client=SimpleNamespace(storage=SimpleNamespace(from_=lambda _: bucket)))
+    monkeypatch.setattr(fable, "generation_storage", storage)
+    source = {"id": "previous", "status": "completed", "model_used_3d": PIP_AGENT, "user_id": "builder",
+              "user_type": "authenticated"}
+    assert asyncio.run(fable._source_design(source, ACCOUNT)).model == "claude-opus-5-5"
+    bucket.download.return_value = json.dumps({"script": CABIN, "requests": [], "model": 7}).encode()
+    assert asyncio.run(fable._source_design(source, ACCOUNT)).model is None

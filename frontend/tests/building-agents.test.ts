@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { BUILDING_AGENT_LABELS, inProcessAgent, isBuildingAgent } from '../src/utils/buildingAgents';
+import { AGENT_MODEL_LABELS, BUILDING_AGENT_LABELS, inProcessAgent, isAgentModel, isBuildingAgent } from '../src/utils/buildingAgents';
 import { NovaToBricksApiService } from '../src/services/novaToBricksApi';
 
 describe('building agents', () => {
@@ -10,10 +10,17 @@ describe('building agents', () => {
     expect(BUILDING_AGENT_LABELS['fable-lean-gpt-6.1-sol']).toBe('Fable Lean · GPT-6.1 Sol');
     expect(BUILDING_AGENT_LABELS['fable-lean-gpt-6.2-sol']).toBe('Fable Lean · GPT-6.2 Sol');
     expect(BUILDING_AGENT_LABELS['fable-thorough-v2-gpt-6.2-sol']).toBe('Fable Thorough v2 · GPT-6.2 Sol');
-    expect(BUILDING_AGENT_LABELS['fable-lean-v2-gpt-6.2-sol']).toBe('Fable Lean v2 · GPT-6.2 Sol');
+    expect(BUILDING_AGENT_LABELS['pip-agent']).toBe('Pip agent');
+    expect(BUILDING_AGENT_LABELS['fable-lean-v2-gpt-6.2-sol']).toBe('Pip agent (first release)');
+    expect(inProcessAgent('pip-agent')).toBe('pip-agent');
+    expect(Object.keys(AGENT_MODEL_LABELS)).toEqual(['gpt-6.2-sol', 'gpt-6.2-astra', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-2']);
+    expect(isAgentModel('claude-opus-5-5')).toBe(true);
+    expect(isAgentModel('gpt-6.1-sol')).toBe(false);
+    expect(isAgentModel('toString')).toBe(false);
     expect(BUILDING_AGENT_LABELS['fable-gpt-6.2-sol']).toBe('Fable · GPT-6.2 Sol');
     expect(BUILDING_AGENT_LABELS['fable-lean-low-claude-fable-5-2']).toBe('Fable Lean · Claude Fable 5.2 (low effort)');
     expect(Object.keys(BUILDING_AGENT_LABELS).filter(agent => agent.startsWith('fable-'))).toHaveLength(9);
+    expect(Object.keys(BUILDING_AGENT_LABELS)).toHaveLength(12);
     expect(inProcessAgent('astrology')).toBe('astrology');
     expect(inProcessAgent('fable-gpt-6.2-sol')).toBe('fable-gpt-6.2-sol');
     for (const other of ['nova', 'toString', 'fable-unknown', undefined, null, 7]) {
@@ -30,16 +37,24 @@ describe('building agents', () => {
     const signal = new AbortController().signal;
 
     reply({ agents: ['nova', 'astrology', 'fable-gpt-6.1-sol', 'agent-from-the-future', 42] });
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual(['nova', 'astrology', 'fable-gpt-6.1-sol']);
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova', 'astrology', 'fable-gpt-6.1-sol'], models: {} });
     const [url, init] = vi.mocked(fetch).mock.calls[0];
     expect(String(url)).toContain('/generation-settings/building-agents');
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
 
     reply({ agents: ['fable-gpt-6.2-sol'] });
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual(['nova', 'fable-gpt-6.2-sol']);
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova', 'fable-gpt-6.2-sol'], models: {} });
     reply({ agents: 'nova' });
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual(['nova']);
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova'], models: {} });
     reply({}, false);
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual(['nova']);
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova'], models: {} });
+    // Models are kept only for listed agents, and only models this app knows.
+    reply({ agents: ['nova', 'pip-agent'], models: {
+      'pip-agent': ['gpt-6.2-sol', 'claude-opus-5-5', 'model-from-the-future'], 'fable-gpt-6.1-sol': ['gpt-6.2-sol'],
+    } });
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({
+      agents: ['nova', 'pip-agent'], models: { 'pip-agent': ['gpt-6.2-sol', 'claude-opus-5-5'] } });
+    reply({ agents: ['pip-agent'], models: 'all' });
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova', 'pip-agent'], models: {} });
   });
 });
