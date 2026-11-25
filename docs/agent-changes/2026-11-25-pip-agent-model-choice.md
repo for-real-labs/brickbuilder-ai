@@ -2,7 +2,7 @@
 
 - **Date:** 2026-11-25
 - **Agent:** Pip agent (`pip-agent`), replacing Fable Lean v2 · GPT-6.2 Sol (`fable-lean-v2-gpt-6.2-sol`)
-- **Pull request:** [#397](https://github.com/for-real-labs/brickbuilder-ai/pull/397)
+- **Pull request:** [#398](https://github.com/for-real-labs/brickbuilder-ai/pull/398)
 
 ## What changed
 
