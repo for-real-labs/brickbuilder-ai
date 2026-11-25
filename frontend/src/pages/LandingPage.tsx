@@ -51,7 +51,8 @@ import { useGenerationActivity, isGenerationActive } from "../hooks/useGeneratio
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
 import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/NovaProviderLoginModal';
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
-import { BUILDING_AGENT_LABELS, inProcessAgent, isBuildingAgent, type BuildingAgent } from "../utils/buildingAgents";
+import { AGENT_MODEL_LABELS, BUILDING_AGENT_LABELS, inProcessAgent, isAgentModel, isBuildingAgent,
+  type AgentModel, type BuildingAgent } from "../utils/buildingAgents";
 import { isLocalDevelopment, LocalProvidersApiService } from "../services/localProvidersApi";
 import {
   DEFAULT_LLM_MODEL,
@@ -157,19 +158,25 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const { session, userProfile, loading: authLoading, isSupabaseConfigured } = useAuth();
   // Both are tied to the account they were loaded or chosen for, so signing in as someone else
   // never carries over another account's agents or selection.
-  const [agentChoices, setAgentChoices] = useState<{ account: string; agents: BuildingAgent[] }>();
+  const [agentChoices, setAgentChoices] = useState<{ account: string; agents: BuildingAgent[];
+    models: Partial<Record<BuildingAgent, AgentModel[]>> }>();
   const [agentChoice, setAgentChoice] = useState<{ account: string; agent: BuildingAgent }>();
+  const [modelChoice, setModelChoice] = useState<{ account: string; agent: BuildingAgent; model: AgentModel }>();
   const accountId = session?.user.id;
   const accessToken = session?.access_token;
   const selectableAgents = accountId && agentChoices?.account === accountId ? agentChoices.agents : [];
   const canSelectAgent = selectableAgents.length > 1;
   const buildingAgent: BuildingAgent = canSelectAgent && agentChoice?.account === accountId
     && selectableAgents.includes(agentChoice.agent) ? agentChoice.agent : 'nova';
+  // An agent that offers a choice of model (the Pip agent); the first model is its default.
+  const agentModels = (accountId && agentChoices?.account === accountId ? agentChoices.models[buildingAgent] : undefined) ?? [];
+  const agentModel: AgentModel | undefined = modelChoice?.account === accountId && modelChoice?.agent === buildingAgent
+    && agentModels.includes(modelChoice.model) ? modelChoice.model : agentModels[0];
   useEffect(() => {
     if (!accessToken || !accountId) return;
     const controller = new AbortController();
-    NovaToBricksApiService.buildingAgents(accessToken, controller.signal).then(agents => {
-      if (!controller.signal.aborted) setAgentChoices({ account: accountId, agents });
+    NovaToBricksApiService.buildingAgents(accessToken, controller.signal).then(({ agents, models }) => {
+      if (!controller.signal.aborted) setAgentChoices({ account: accountId, agents, models });
     }).catch(() => {
       if (!controller.signal.aborted) setAgentChoices(undefined);
     });
@@ -688,6 +695,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           model: llmModel,
           authMode: buildingAgent === 'nova' && localDevelopment ? novaAuthMode : 'api_key',
           buildingAgent: inProcessAgent(buildingAgent),
+          agentModel: agentModels.length ? agentModel : undefined,
           prompt: requestedPrompt.trim() || undefined,
           imageBase64,
           imageMediaType: requestedImage?.type || 'image/png',
@@ -1365,6 +1373,21 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       }}>
                       {selectableAgents.map(agent => <option key={agent} value={agent}>{BUILDING_AGENT_LABELS[agent]}</option>)}
                     </select>
+                    {agentModels.length > 1 && (
+                      <>
+                        <label htmlFor="landing-agent-model" className="mt-3 block">{BUILDING_AGENT_LABELS[buildingAgent]} model</label>
+                        <select id="landing-agent-model" value={agentModel}
+                          disabled={generationMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
+                          className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-50"
+                          onChange={event => {
+                            const model = isAgentModel(event.target.value) ? event.target.value : agentModels[0];
+                            setModelChoice(accountId ? { account: accountId, agent: buildingAgent, model } : undefined);
+                            posthog.capture('landing_agent_model_selected', { building_agent: buildingAgent, agent_model: model });
+                          }}>
+                          {agentModels.map(model => <option key={model} value={model}>{AGENT_MODEL_LABELS[model]}</option>)}
+                        </select>
+                      </>
+                    )}
                   </div>
                 )}
                 {settingsOpen && (generationMethod !== 'nova' || buildingAgent === 'nova') && <AiBillingSettings key={session?.user.id || 'guest'} />}

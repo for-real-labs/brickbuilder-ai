@@ -13,7 +13,7 @@ from typing import Literal
 
 from fastapi import Depends, HTTPException
 from fastapi.responses import Response
-from pydantic import PrivateAttr, field_validator
+from pydantic import Field, PrivateAttr, field_validator, model_validator
 
 from .imageToBricks import ImageToBricksResponse
 from .astrologyToBricks import AGENT, astrology_allowed, astrology_to_bricks
@@ -26,7 +26,7 @@ from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.building_agents import FABLE_AGENTS, in_process_agent
+from ..utils.building_agents import FABLE_AGENTS, RETIRED_AGENTS, in_process_agent
 from ..utils.nova_service import NovaService, NovaDraftError, INSTRUCTIONS_FILE
 from ..utils.parts_inventory import PartsInventory
 from ..utils.prompt_parts_limit import tighter_parts_limit
@@ -57,6 +57,8 @@ def _generation_timeout() -> float | None:
 
 class NovaToBricksRequest(LlmToBricksRequest):
     building_agent: str = "nova"
+    # The model for an agent that offers a choice (the Pip agent). None uses the agent's default.
+    agent_model: str | None = Field(default=None, max_length=64)
     auth_mode: Literal["api_key", "native"] = "api_key"
     parts_inventory: PartsInventory | None = None
 
@@ -66,6 +68,17 @@ class NovaToBricksRequest(LlmToBricksRequest):
         if value != "nova" and not in_process_agent(value):
             raise ValueError("Unknown building agent")
         return value
+
+    @model_validator(mode="after")
+    def offered_agent_and_model(self):
+        # A retired agent's earlier builds can still be changed, but it starts no new ones.
+        if self.building_agent in RETIRED_AGENTS and not self.generation_id:
+            raise ValueError("This building agent has been replaced; choose another")
+        if self.agent_model is not None:
+            variant = FABLE_AGENTS.get(self.building_agent)
+            if variant is None or (self.agent_model != variant.model and self.agent_model not in variant.models):
+                raise ValueError("This building agent does not offer that model")
+        return self
 
     @field_validator('parts_inventory')
     @classmethod

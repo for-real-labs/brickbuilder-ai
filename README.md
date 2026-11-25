@@ -64,7 +64,7 @@ On the website, the accounts allowed to use Astrology also see the Fable options
 
 Because the model writes the build script, the API runs it as untrusted code: in a restricted dialect, in a separate process with no credentials and hard limits, and under an unprivileged account (`FABLE_SANDBOX_USER`, created in the API image) that cannot read the API's environment. If that account is unavailable, Fable refuses to build rather than run a script as the API's own user.
 
-Each option is one of two methods on one model. **Thorough** is a single long conversation in which the model looks parts up, edits and renders as often as it likes. **Lean** is a few short rounds that each show only the current script, its report and pictures, which costs much less. The **v2** options add ready-made trees (`tree()` in the build script) and an automatic repair that cuts plain parts back where they overlap and swaps colors a part is not sold in; thorough v2 is also given part measurements up front and batches its edits, so it takes fewer turns. The first versions are unchanged. Every change to an agent is recorded in [docs/agent-changes](docs/agent-changes/README.md). These are the results of one run each on the same photo of a lake house, with the one-line prompt "Build my lake house from this photo."
+Each option is one of two methods on one model. **Thorough** is a single long conversation in which the model looks parts up, edits and renders as often as it likes. **Lean** is a few short rounds that each show only the current script, its report and pictures, which costs much less. The **v2** options add ready-made trees (`tree()` in the build script) and an automatic repair that cuts plain parts back where they overlap and swaps colors a part is not sold in; thorough v2 is also given part measurements up front and batches its edits, so it takes fewer turns. The first versions are unchanged. The **Pip agent** is lean v2 with a choice of model (GPT-6.2 Sol, GPT-6.2 Astra, Claude Opus 5.5, Claude Sonnet 5.5 or Claude Fable 5.2), picked in a second list under Building agent; it replaced Fable Lean v2 · GPT-6.2 Sol, and its Claude Fable 5.2 choice has not been test-run. Every change to an agent is recorded in [docs/agent-changes](docs/agent-changes/README.md). These are the results of one run each on the same photo of a lake house, with the one-line prompt "Build my lake house from this photo."
 
 | Building agent option | Method | Model | AI cost | Model turns | Minutes | Parts | Parts cost |
 |---|---|---|---|---|---|---|---|
@@ -75,7 +75,10 @@ Each option is one of two methods on one model. **Thorough** is a single long co
 | Fable Lean · Claude Fable 5.2 | lean | `claude-fable-5-2` | $0.90 | 2 | 3 | 415 | $78 |
 | Fable Lean · Claude Fable 5.2 (low effort) | lean, low effort | `claude-fable-5-2` | $0.53 | 2 | 3 | 427 | $84 |
 | Fable Lean · GPT-6.2 Sol | lean | `gpt-6.2-sol` | $0.22 | 5 | 4 | 1,073 | $147 |
-| Fable Lean v2 · GPT-6.2 Sol | lean v2 | `gpt-6.2-sol` | $0.18 | 5 | 3 | 988 | $146 |
+| Pip agent · GPT-6.2 Sol (default) | lean v2 | `gpt-6.2-sol` | $0.18 | 5 | 3 | 988 | $146 |
+| Pip agent · GPT-6.2 Astra | lean v2 | `gpt-6.2-astra` | $0.58 | 5 | 2 | 844 | $102 |
+| Pip agent · Claude Opus 5.5 | lean v2 | `claude-opus-5-5` | $0.40 | 3 | 3 | 527 | $97 |
+| Pip agent · Claude Sonnet 5.5 | lean v2 | `claude-sonnet-5-5` | $0.12 | 3 | 1 | 290 | $63 |
 | Fable Lean · GPT-6.1 Sol | lean | `gpt-6.1-sol` | $0.18 | 6 | 3 | 932 | $135 |
 
 ![The lake house built by each Fable option](docs/assets/fable-agent/lakehouse-methods.jpg)
