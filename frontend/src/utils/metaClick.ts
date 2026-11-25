@@ -1,6 +1,7 @@
 const storageKey = 'brickbuilder.metaAdClick';
 const clickWindow = 7 * 86400000;
 const validId = /^[A-Za-z0-9_-]{1,430}$/;
+const metaSources = new Set(['facebook', 'instagram', 'meta']);
 export const META_MEASUREMENT_CHANGED = 'meta-ad-measurement-changed';
 
 type MetaClick = { id: string; clicked_at: number };
@@ -12,8 +13,10 @@ function enabled() {
 }
 
 export function metaLandingClick(search: string, now = Date.now()): MetaClick | undefined {
-  const id = new URLSearchParams(search).get('fbclid');
-  if (enabled() && id && validId.test(id)) return { id, clicked_at: now };
+  const params = new URLSearchParams(search);
+  const id = params.get('fbclid');
+  if (enabled() && id && validId.test(id) && params.get('utm_medium') === 'paid_social'
+      && metaSources.has(params.get('utm_source') || '')) return { id, clicked_at: now };
 }
 
 export function saveMetaClick(click?: MetaClick) {
