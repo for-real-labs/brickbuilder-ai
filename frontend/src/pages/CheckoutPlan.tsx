@@ -30,6 +30,11 @@ export default function CheckoutPlan() {
   const [session, setSession] = useState<PlanSession | null>(null);
   const [error, setError] = useState('');
   const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    const update = () => setAttempt(value => value + 1);
+    window.addEventListener('google-ad-measurement-changed', update);
+    return () => window.removeEventListener('google-ad-measurement-changed', update);
+  }, []);
   const [busy, setBusy] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
   const currentSession = session?.owner === user?.id && session?.plan === planKey ? session : null;

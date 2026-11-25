@@ -1,4 +1,4 @@
-import { googleClick } from './utils/googleClick';
+import { GoogleAdMeasurement } from './components/GoogleAdMeasurement';
 import { captureReferralLink } from './services/referrals';
 import { preparePasswordRecoveryPage } from './services/passwordAuth';
 import { captureSignVisit } from './utils/signAnalytics';
@@ -11,7 +11,6 @@ import { captureSignVisit } from './utils/signAnalytics';
   import "./index.css";
   import { captureInstructionLink } from './utils/instructionLinks';
 
-  googleClick();
   captureInstructionLink();
   void captureReferralLink();
   registerMobileShellAnalytics();
@@ -30,6 +29,7 @@ import { captureSignVisit } from './utils/signAnalytics';
         }}
       >
         <AuthProvider>
+          <GoogleAdMeasurement />
           <App />
         </AuthProvider>
       </PostHogProvider>
