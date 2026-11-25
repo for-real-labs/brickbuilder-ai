@@ -10,6 +10,7 @@ import { PetAvatar } from '../components/PetCompanion';
 import { BillingHeader } from '../components/BillingHeader';
 import { PLAN_GENERATIONS } from '../utils/planDisplay';
 import { pushSubscriptionConversion } from '../utils/subscriptionConversion';
+import { googleTestSubscription, isGoogleSubscriptionTestSession } from '../services/googleTestSubscription';
 import { LEGACY_MASTER_PLAN, type BillingAccount } from '../services/billingApi';
 
 const paymentConfirmed = (account: BillingAccount | null) => account?.purchase_confirmed
@@ -20,10 +21,31 @@ export default function BillingPage() {
   const { account, plans, enabled, busy, loading, error, sync, refresh, manage, signIn, openUpgrade, restore } = useBilling();
   const [params, setParams] = useSearchParams();
   const sessionId = params.get('session_id') ?? undefined;
+  const testSession = isGoogleSubscriptionTestSession(sessionId);
   const [confirmed, setConfirmed] = useState(false);
+  const [testConfirmed, setTestConfirmed] = useState(false);
+  const [testError, setTestError] = useState('');
   const [confirming, setConfirming] = useState(false);
   const attempted = useRef('');
   const trackedTransaction = useRef<string>();
+  async function confirmTest(session: string, active = () => true) {
+    setConfirming(true);
+    setTestError('');
+    try {
+      const { transaction_id } = await googleTestSubscription.confirm(session);
+      if (!active() || !transaction_id) return;
+      if (trackedTransaction.current !== transaction_id) {
+        trackedTransaction.current = transaction_id;
+        pushSubscriptionConversion(transaction_id);
+      }
+      setTestConfirmed(true);
+      setParams({}, { replace: true });
+    } catch {
+      if (active()) setTestError('Could not confirm the Stripe sandbox payment. Check again.');
+    } finally {
+      if (active()) setConfirming(false);
+    }
+  }
   const confirmCheckout = (result: BillingAccount | null) => {
     if (!paymentConfirmed(result)) return;
     const transactionId = result?.subscription_transaction_id;
@@ -39,6 +61,10 @@ export default function BillingPage() {
     if (!user || attempted.current === key) return;
     attempted.current = key;
     let active = true;
+    if (sessionId && testSession) {
+      void confirmTest(sessionId, () => active);
+      return () => { active = false; };
+    }
     setConfirming(Boolean(sessionId));
     void sync(sessionId).then(result => {
       if (!active) return;
@@ -58,8 +84,10 @@ export default function BillingPage() {
     <div className="billing-account-title"><div><h1>Credits & billing</h1></div><PetAvatar state={confirmed ? 'celebrating' : 'idle'} /></div>
     {error && (enabled || account) && <div className="billing-error" role="alert">{error} <button onClick={() => { posthog.capture('billing_retry_clicked'); void refresh(); }}>Try again</button></div>}
     {confirmed && <p className="billing-confirmation" role="status">You’re all set. Your payment is confirmed and your credits are ready.</p>}
-    {confirming && <p role="status">Confirming your payment and credits…</p>}
-    {!confirming && sessionId && !confirmed && !error && <p role="status">Still waiting for payment confirmation. Your credits will appear after Stripe confirms payment. <button className="billing-text-link" onClick={() => { posthog.capture('billing_confirmation_retry_clicked'); void sync(sessionId).then(confirmCheckout); }}>Check again</button></p>}
+    {testConfirmed && <p className="billing-confirmation" role="status">Stripe confirmed the sandbox subscription. The test conversion was sent.</p>}
+    {confirming && <p role="status">{testSession ? 'Confirming your sandbox payment…' : 'Confirming your payment and credits…'}</p>}
+    {!confirming && testSession && sessionId && !testConfirmed && <p role="status">{testError || 'Waiting for Stripe to confirm the sandbox payment.'} <button className="billing-text-link" onClick={() => void confirmTest(sessionId)}>Check again</button></p>}
+    {!confirming && !testSession && sessionId && !confirmed && !error && <p role="status">Still waiting for payment confirmation. Your credits will appear after Stripe confirms payment. <button className="billing-text-link" onClick={() => { posthog.capture('billing_confirmation_retry_clicked'); void sync(sessionId).then(confirmCheckout); }}>Check again</button></p>}
     {!user ? <section className="billing-account-card"><h2>Your credits live with your account.</h2><p>Sign in to see your balance, receipts, and subscription.</p><button className="billing-primary" onClick={signIn}>Sign in</button></section>
       : !enabled && !account ? <p className="billing-launch-notice" role="status">Subscription checkout is temporarily unavailable.</p>
       : loading || !account ? <p role="status">{error ? 'Your account details will appear when billing reconnects.' : 'Loading your credits…'}</p> : <>

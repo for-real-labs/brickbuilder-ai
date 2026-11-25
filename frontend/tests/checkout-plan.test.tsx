@@ -6,12 +6,13 @@ import CheckoutPlan from '../src/pages/CheckoutPlan';
 import { INITIAL_PLANS } from '../src/services/billingApi';
 
 const mocks = vi.hoisted(() => ({
-  user: null as null | { id: string; email: string }, loading: false, account: null as null | { has_subscription: boolean; trial_expires_at?: string; cancel_at_period_end?: boolean },
-  checkout: vi.fn(), signIn: vi.fn(), google: vi.fn(), payment: vi.fn(),
+  user: null as null | { id: string; email: string; app_metadata?: Record<string, boolean> }, loading: false, account: null as null | { has_subscription: boolean; trial_expires_at?: string; cancel_at_period_end?: boolean },
+  checkout: vi.fn(), signIn: vi.fn(), google: vi.fn(), payment: vi.fn(), testStart: vi.fn(),
 }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => ({ user: mocks.user, loading: mocks.loading, signIn: mocks.signIn, signInWithGoogle: mocks.google }) }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ plans: INITIAL_PLANS, enabled: true, checkoutAvailable: true, loading: false, account: mocks.account }) }));
 vi.mock('../src/services/billingApi', async original => ({ ...await original<any>(), billingApi: { planCheckout: mocks.checkout } }));
+vi.mock('../src/services/googleTestSubscription', async original => ({ ...await original<any>(), googleTestSubscription: { start: mocks.testStart } }));
 vi.mock('../src/components/checkout/CheckoutPayment', () => ({ CheckoutPayment: (props: any) => { mocks.payment(props); return <div>Embedded payment for {props.email}</div>; } }));
 vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: () => <span /> }));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
@@ -79,6 +80,20 @@ it('opens embedded payment only after authentication, with email and no delivery
   expect(props.session.client_secret).toBe('plan_secret');
   expect(props).not.toHaveProperty('details');
   expect(props).not.toHaveProperty('country');
+});
+
+it('opens Stripe Sandbox for the chosen plan without creating a live checkout for the test account', async () => {
+  const assign = vi.fn();
+  vi.stubGlobal('location', { ...window.location, assign });
+  mocks.user = { id: 'test-user', email: 'test@example.test', app_metadata: { google_subscription_test: true } };
+  const url = 'https://checkout.stripe.com/g/pay/cs_test_demo';
+  mocks.testStart.mockResolvedValueOnce({ url });
+  await render('/checkout-plan?plan=creator&test=1');
+  expect(container.querySelector('.checkout-promo input')).not.toBeNull();
+  await click('Apply code');
+  expect(mocks.testStart).toHaveBeenCalledExactlyOnceWith('creator', 'googletest');
+  expect(mocks.checkout).not.toHaveBeenCalled();
+  expect(assign).toHaveBeenCalledWith(url);
 });
 
 it('offers retry in the same checkout after an initialization failure', async () => {

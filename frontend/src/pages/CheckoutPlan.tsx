@@ -6,6 +6,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useBilling } from '../contexts/BillingContext';
 import { billingApi } from '../services/billingApi';
 import { isAppleApp } from '../services/applePurchases';
+import { GOOGLE_SUBSCRIPTION_TEST_CODE, googleTestSubscription, isGoogleSubscriptionTestCode } from '../services/googleTestSubscription';
 import { CheckoutStep } from '../components/checkout/CheckoutStep';
 import { CheckoutPayment } from '../components/checkout/CheckoutPayment';
 import { CheckoutAccount } from '../components/checkout/CheckoutAccount';
@@ -21,7 +22,8 @@ type PlanSession = { owner: string; plan: string; session_id: string; client_sec
 export default function CheckoutPlan() {
   const { search } = useLocation();
   const navigate = useNavigate();
-  const requested = new URLSearchParams(search).get('plan');
+  const query = new URLSearchParams(search);
+  const requested = query.get('plan');
   const planKey = requested === 'creator' ? 'creator' : 'builder';
   const valid = requested === null || requested === 'builder' || requested === 'creator';
   const { user, loading: authLoading } = useAuth();
@@ -32,8 +34,12 @@ export default function CheckoutPlan() {
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
+  const testAccount = user?.app_metadata?.google_subscription_test === true;
+  const [testCode, setTestCode] = useState(query.get('test') === '1' ? GOOGLE_SUBSCRIPTION_TEST_CODE : '');
+  const [testBusy, setTestBusy] = useState(false);
+  const [testError, setTestError] = useState('');
   const currentSession = session?.owner === user?.id && session?.plan === planKey ? session : null;
-  const canPay = Boolean(user?.email && !authLoading && !billingLoading && enabled && checkoutAvailable && (!account?.has_subscription || account.cancel_at_period_end || account.trial_expires_at) && valid && !isAppleApp());
+  const canPay = Boolean(!testAccount && user?.email && !authLoading && !billingLoading && enabled && checkoutAvailable && (!account?.has_subscription || account.cancel_at_period_end || account.trial_expires_at) && valid && !isAppleApp());
   useEffect(() => {
     let active = true;
     setSession(null); setError(''); setTotal(null);
@@ -49,6 +55,24 @@ export default function CheckoutPlan() {
     return () => { active = false; };
   }, [canPay, user?.id, planKey, attempt]);
   const back = () => { posthog.capture('plan_checkout_back_clicked', { plan_key: planKey }); navigate('/pricing'); };
+  async function startTest(event: React.FormEvent) {
+    event.preventDefault();
+    if (testBusy || busy) return;
+    setTestError('');
+    if (!testAccount || !isGoogleSubscriptionTestCode(testCode)) {
+      setTestError('That code is unavailable for this account.');
+      return;
+    }
+    setTestBusy(true);
+    posthog.capture('plan_test_checkout_started', { plan_key: planKey });
+    try {
+      const { url } = await googleTestSubscription.start(planKey, testCode);
+      window.location.assign(url);
+    } catch {
+      setTestError('The Stripe sandbox is unavailable. Try again.');
+      setTestBusy(false);
+    }
+  }
   return <div className="order-checkout plan-checkout">
     <SEO title="Plan checkout — BrickBuilder AI" description="Subscribe to create with BrickBuilder AI." url="https://brickbuilder.ai/checkout-plan" noIndex />
     <header className="checkout-header"><div className="checkout-header-inner">
@@ -75,14 +99,24 @@ export default function CheckoutPlan() {
         <div className="checkout-flow">
           {authLoading ? <p role="status">Loading your profile…</p> : <>
             <CheckoutStep title="Create profile *" number={1} active={!user} complete={!!user} disabled={busy || !!user} onEdit={() => {}}>
-              <CheckoutAccount redirectPath={`/checkout-plan?plan=${planKey}`} />
+              <CheckoutAccount redirectPath={`/checkout-plan?plan=${planKey}${query.get('test') === '1' ? '&test=1' : ''}`} />
             </CheckoutStep>
             {user && <p className="plan-checkout-signed-in">Signed in as {user.email}</p>}
             <CheckoutStep title="Payment" number={2} active={!!user} complete={false} disabled={!user || busy} onEdit={() => {}}>
-              {billingLoading ? <p role="status">Loading your plan…</p> : account?.has_subscription && !account.cancel_at_period_end && !account.trial_expires_at ? <p>You already have a subscription. <Link to="/billing">Manage your plan in Billing</Link>.</p> : !enabled || !checkoutAvailable ? <p role="status">New subscriptions are temporarily unavailable. Please try again later.</p> : error ? <div className="checkout-error" role="alert">{error}<button onClick={() => { posthog.capture('plan_checkout_retry_clicked', { plan_key: planKey }); setAttempt(value => value + 1); }}>Try again</button><Link to="/billing">View billing</Link></div> : currentSession && user?.email ? <CheckoutPayment key={currentSession.session_id} session={currentSession}
+              {testAccount ? <p>Use the subscription code below to open Stripe Sandbox.</p> : billingLoading ? <p role="status">Loading your plan…</p> : account?.has_subscription && !account.cancel_at_period_end && !account.trial_expires_at ? <p>You already have a subscription. <Link to="/billing">Manage your plan in Billing</Link>.</p> : !enabled || !checkoutAvailable ? <p role="status">New subscriptions are temporarily unavailable. Please try again later.</p> : error ? <div className="checkout-error" role="alert">{error}<button onClick={() => { posthog.capture('plan_checkout_retry_clicked', { plan_key: planKey }); setAttempt(value => value + 1); }}>Try again</button><Link to="/billing">View billing</Link></div> : currentSession && user?.email ? <CheckoutPayment key={currentSession.session_id} session={currentSession}
                 publishableKey={import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''} subscriptionPlan={planKey} email={user.email} totalCents={plan.monthly_cents}
                 onBack={back} onRetry={() => setAttempt(value => value + 1)} onBusyChange={setBusy} onTotalChange={setTotal} /> : <p role="status">Loading secure payment…</p>}
             </CheckoutStep>
+            {testAccount && <form className="checkout-promo" onSubmit={event => void startTest(event)}>
+              <label className="checkout-field">Subscription code
+                <input value={testCode} onChange={event => setTestCode(event.target.value)} maxLength={100}
+                  autoComplete="off" disabled={testBusy} />
+              </label>
+              <button type="submit" className="checkout-promo-button" disabled={testBusy || !testCode.trim()}>
+                {testBusy ? 'Opening…' : 'Apply code'}
+              </button>
+              {testError && <p role="alert" className="checkout-error">{testError}</p>}
+            </form>}
           </>}
         </div>
       </div>}
