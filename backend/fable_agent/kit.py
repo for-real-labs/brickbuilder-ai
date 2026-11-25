@@ -157,13 +157,56 @@ class Kit:
                 return part_id, closest
         return None
 
-    def tree(self, x, y, z, height=30, width=6, style="round", leaves="Green", accent=None,
-             trunk="Reddish_Brown") -> list[int]:
-        """A whole tree, bush or pine whose parts are already known to hold together (see ``trees``)."""
-        from .trees import plant_tree
+    def has_part(self, part) -> bool:
+        """Whether the parts library can draw this part at all."""
+        try:
+            self._shape(part)
+        except KitError:
+            return False
+        return True
 
-        return plant_tree(self, x, y, z, height=height, width=width, style=style, leaves=leaves, accent=accent,
-                          trunk=trunk)
+    def measure(self, part, rot=0, facing=None) -> tuple[float, float, float, float]:
+        """How a part sits when placed with ``rot`` or ``facing``: (yaw, studs along x, studs along z, plates tall)."""
+        _, shape = self._shape(part)
+        yaw = self._yaw_for(shape, rot, facing)
+        turned = round(yaw / 90) % 2 == 1
+        return (yaw, round(shape.depth if turned else shape.width, 3), round(shape.width if turned else shape.depth, 3),
+                round(shape.height, 3))
+
+    def footing(self, part) -> list[tuple[int, int]]:
+        """Whole-stud cells, from the min corner at rot=0, where the part reaches down to its base.
+
+        An arch stands on its legs and a window frame on its sill; this says where those are.
+        """
+        _, shape = self._shape(part)
+        cells = set()
+        for ix, column in enumerate(shape.bottom):
+            for iz, low in enumerate(column):
+                if low is not None and low >= shape.hi[1] - 0.6:
+                    cells.add((ix // 2, iz // 2))
+        return sorted(cells)
+
+    def attach(self, part, color, host: int, offset=(0, 0, 0), matrix=None, note: str = "") -> int:
+        """Place a part at an LDraw offset and rotation relative to a placed part, and record the joint.
+
+        For joints studs cannot make and the checks cannot see: a wheel on its pin, a door in its
+        frame. The offset and rotation are in the host's own frame, as LDraw models record them.
+        """
+        if isinstance(host, bool) or not isinstance(host, int) or not 0 <= host < len(self.build.placements):
+            raise KitError("attach() needs the id of the part to attach to, as returned by place()")
+        part_id, _ = self._shape(part)
+        base = self.build.placements[host]
+        m = base.matrix
+        turn = IDENTITY if matrix is None else tuple(float(v) for v in matrix)
+        if len(turn) != 9 or len(tuple(offset)) != 3:
+            raise KitError("attach() needs a 3-number offset and a 9-number rotation")
+        position = tuple(base.position[row] + sum(m[3 * row + col] * float(offset[col]) for col in range(3))
+                         for row in range(3))
+        rotation = tuple(sum(m[3 * row + k] * turn[3 * k + col] for k in range(3))
+                         for row in range(3) for col in range(3))
+        index = self._add(part_id, self.color(color), position, rotation, True)
+        self.build.links.append((host, index, str(note)[:80] or "attached part"))
+        return index
 
     # ----- structure -----------------------------------------------------
 
