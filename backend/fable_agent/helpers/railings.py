@@ -39,6 +39,8 @@ STYLES: dict[str, RailStyle] = {
     "bar_studs": RailStyle("part", "4083", color="Light_Bluish_Grey"),
     "wide": RailStyle("part", "30077"),
     "tall": RailStyle("part", "6079", color="Black"),
+    "panel": RailStyle("part", "4865a"),
+    "glass": RailStyle("part", "4865a", color="Trans_Clear"),
     "wall": RailStyle("wall", color="Light_Bluish_Grey"),
     "capped": RailStyle("wall", cap="tiles", color="Tan", trim="Dark_Tan"),
     "parapet": RailStyle("wall", courses=2, cap="tiles", color="Light_Bluish_Grey"),

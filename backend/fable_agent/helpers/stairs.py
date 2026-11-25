@@ -20,6 +20,7 @@ from .common import (BRICK, Frame, Helper, brick_color, bridge, choice, column, 
 from .roofs import _Slopes
 
 PREFAB = "30134"
+LADDER, RUNG = "4175", 6  # a 1 x 2 plate with a ladder hanging from it, and the plates one climbs
 POST, CAP = "3062b", "4073"  # round 1 x 1 brick, round 1 x 1 plate
 
 
@@ -27,7 +28,7 @@ POST, CAP = "3062b", "4073"  # round 1 x 1 brick, round 1 x 1 plate
 class StairStyle:
     tread: int = 2  # studs deep per step
     riser: int = 3  # plates up per step
-    kind: str = "solid"  # solid | open | floating | ramp | prefab
+    kind: str = "solid"  # solid | open | floating | ramp | prefab | ladder
     finish: str = ""  # tiles | carpet | posts | walls
     landing: int = 0  # studs of flat platform at the top
     color: str = "Light_Bluish_Grey"
@@ -57,6 +58,7 @@ STYLES: dict[str, StairStyle] = {
     "steep_ramp": StairStyle(kind="ramp", pitch="45"),
     "narrow": StairStyle(tread=1, riser=2),
     "prefab": StairStyle(kind="prefab", color="Light_Bluish_Grey"),
+    "ladder": StairStyle(kind="ladder", color="Light_Bluish_Grey", trim="Black"),
 }
 
 
@@ -65,6 +67,8 @@ def footprint(style: str, rise: int) -> tuple[int, int]:
     look = STYLES[style]
     if look.kind == "prefab":
         return 1, 7
+    if look.kind == "ladder":
+        return max(1, ceil(rise / RUNG)), 2
     if look.kind == "ramp":
         steps = max(1, ceil(rise / BRICK))
         return steps, (steps - 1) * (2 if look.pitch == "33" else 1) + (3 if look.pitch == "33" else 2)
@@ -86,12 +90,16 @@ def build_stairs(kit: Kit, x, y, z, width=4, rise=9, style="brick", color=None, 
     steps, deep = footprint(style, rise)
     if look.kind == "prefab":
         width = 4
+    if look.kind == "ladder":
+        width = 2
     frame = Frame(kit, x, y, z, width, deep, facing)
     if look.kind == "prefab":
         part, code = need(kit, PREFAB, color, "stairs", "staircase part")
         return [frame.place(part, code, 0, 0, 0, facing="front")]
     if look.kind == "ramp":
         return _ramp(frame, width, deep, steps, look, color)
+    if look.kind == "ladder":
+        return _ladder(frame, steps, color, trim)
 
     heights = [max(1, round(rise * (step + 1) / steps)) for step in range(steps)]
     placed: list[int] = []
@@ -158,6 +166,22 @@ def _halves(frame: Frame, width: int, z0: int, z1: int, ly, color) -> list[int]:
     return placed
 
 
+def _ladder(frame: Frame, lengths: int, color, trim) -> list[int]:
+    """A post with ladder lengths hung on its front. Each length's plate lies on the post and carries the next."""
+    kit = frame.kit
+    part, code = need(kit, LADDER, trim, "stairs", "ladder part")
+    info = kit.part(part)
+    back = min(stud[1] for stud in info.studs) - 0.5  # how far the ladder hangs in front of its plate
+    placed: list[int] = []
+    for number in range(lengths):
+        base = number * RUNG
+        placed += column(frame, local_rect(0, 1, 2, 2), base, RUNG - 1, color, "stairs")
+        # The ladder hangs flush against the post. The checks model it a little thicker than it is, so
+        # the fit is declared.
+        placed.append(frame.place(part, code, 0, base, 1 - back, allow_overlap=True))
+    return placed
+
+
 def _ramp(frame: Frame, width: int, deep: int, steps: int, look: StairStyle, color) -> list[int]:
     slopes = _Slopes(frame.kit, look.pitch, color)
     placed = []
@@ -182,6 +206,7 @@ HELPER = Helper(
                   if look.kind in ("solid", "open", "floating") else
                   {"ramp": "smooth slope, 1 brick up per 2 studs" if look.pitch == "33" else
                            "smooth slope, 1 brick up per stud",
-                   "prefab": "one part: 4 wide, 7 deep, 18 up"}[look.kind])
+                   "prefab": "one part: 4 wide, 7 deep, 18 up",
+                   "ladder": "upright on a post: 2 wide, 2 deep, 6 up per length"}[look.kind])
            for name, look in STYLES.items()},
 )

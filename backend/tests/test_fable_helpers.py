@@ -54,7 +54,7 @@ def cells(world, kit, ids) -> set:
 
 def test_every_helper_offers_at_least_fifteen_styles_and_reaches_scripts_and_the_prompt(world):
     assert set(HELPERS) == {"tree", "roof", "wall", "window", "door", "arch", "deck", "stairs", "railing", "wheels",
-                            "windscreen", "seats", "plant", "lamp", "chimney", "column"}
+                            "windscreen", "seats", "chassis", "furniture", "plant", "lamp", "chimney", "column"}
     section = prompt_section()
     for name, helper in HELPERS.items():
         assert len(helper.styles) >= 15 and len(set(helper.styles)) == len(helper.styles), name
@@ -245,8 +245,8 @@ def test_windows_and_doors_face_any_side_and_a_pair_of_doors_meets_in_the_middle
 @pytest.mark.parametrize("style", sorted(HELPERS["stairs"].styles))
 @pytest.mark.parametrize(("width", "rise"), [(4, 9), (2, 7), (5, 18)])
 def test_stairs_stand_on_the_ground_step_by_step_and_fill_the_footprint_they_state(world, style, width, rise):
-    if style in ("prefab",):
-        pytest.skip("one part, checked against the real library")
+    if style in ("prefab", "ladder"):
+        pytest.skip("a part of fixed size, with its own test")
     kit, call = ground(world, -4, -4, 12, 44)
     placed = call["stairs"](0, 1, 0, width=width, rise=rise, style=style, color="White", trim="Red")
     assert clean(world, kit)
@@ -330,13 +330,198 @@ def test_wheels_are_joined_to_what_carries_them_and_a_body_sits_on_its_studs(wor
         parts = [kit.build.placements[index].part for index in placed]
         assert parts == ["4600", "4624", "87414", "4624", "87414"]
         assert sorted(note for _, _, note in kit.build.links) == ["tyre on its rim"] * 2 + ["wheel on its pin"] * 2
-        kit.fill(rect(0, 0, 2, 2), 3, "Red", kind="plate")  # the body, on the holder's studs one plate above y
+        across = facing in ("front", "back")  # the axle lies across the way the car drives
+        kit.fill(rect(0, 0, 4, 2) if across else rect(0, 0, 2, 4), 3, "Red", kind="plate")  # the body, 4 wide
         assert clean(world, kit)
+        axis = 0 if across else 2
+        # The holder is centered under the body, so its studs fall on the grid.
+        assert kit.build.placements[placed[0]].position[axis] == 40
         rims = [kit.build.placements[index].position for index in placed if kit.build.placements[index].part == "4624"]
-        axis = 0 if facing in ("front", "back") else 2  # the axle lies across the way the car drives
         assert abs(rims[0][axis] - rims[1][axis]) == 60 and rims[0][2 - axis] == rims[1][2 - axis]
     with pytest.raises(KitError, match="catalog has no"):
-        bind(world.kit())["wheels"](0, 2, 0, style="truck")
+        World_without(world, "56904")["wheels"](0, 5, 0, style="truck")
+
+
+def World_without(world, *parts):
+    """The helpers over a library that lacks some parts, as a small catalog would."""
+    from pathlib import Path
+    from tempfile import mkdtemp
+    lean = World(Path(mkdtemp()), extra={k: v for k, v in HELPER_PARTS.items() if k not in parts},
+                 colors=HELPER_COLORS, max_parts=4000)
+    return bind(lean.kit())
+
+
+@pytest.mark.parametrize("style", sorted(HELPERS["wheels"].styles))
+def test_every_wheel_style_carries_a_body_and_reaches_the_ground_it_states(world, style):
+    from fable_agent.helpers.cars import STYLES
+    look = STYLES[style]
+    kit = world.kit()
+    call = bind(kit)
+    try:
+        placed = call["wheels"](0, look.drop, 0, style=style, width=4)
+    except KitError as error:
+        assert "catalog has no" in str(error)  # a wheel this stand-in library lacks
+        return
+    carriers = [index for index in placed if not kit.build.placements[index].allow_overlap]
+    top = max(-box[1] for index in carriers for box in world_boxes(
+        world.shapes.get(kit.build.placements[index].part), kit.build.placements[index])) / 8
+    wide = 2 if look.mount == "caster" else 4
+    kit.fill(rect(0, 0, wide, 2), top, "Red", kind="plate", layers=2)
+    assert clean(world, kit)
+    assert top - look.drop == (3 if look.mount in ("pins", "axle") else 1)  # where the summary says to build
+
+
+def test_an_axle_takes_the_longest_rod_that_fits_and_joins_both_of_its_bricks(world):
+    kit = world.kit()
+    placed = bind(kit)["wheels"](0, 7, 0, style="balloon", width=6)
+    parts = [kit.build.placements[index].part for index in placed]
+    assert parts[:2] == ["32064a", "32064a"] and "3737" in parts and "44294" not in parts
+    assert "one axle through both bricks" in [note for _, _, note in kit.build.links]
+    rims = [kit.build.placements[index].position[0] for index in placed if kit.build.placements[index].part == "56145"]
+    assert sorted(rims) == [10 - 45, 110 + 45]  # a rim 45 units outside the middle of each side brick
+
+
+def test_tyres_are_joined_to_a_road_that_is_already_under_them(world):
+    kit, call = ground(world)
+    call["wheels"](0, 3, 0, style="small")
+    kit.fill(rect(0, 0, 4, 2), 4, "Red", kind="plate")
+    assert "tyres standing on it" in [note for _, _, note in kit.build.links] and clean(world, kit)
+    alone = world.kit()
+    bind(alone)["wheels"](0, 2, 0, style="small")
+    assert "tyres standing on it" not in [note for _, _, note in alone.build.links]
+    road = alone.place("3020", "Red", 20, 0, 20)
+    assert alone.stand([road]) is None  # nothing lies under it
+    with pytest.raises(KitError, match="ids returned by place"):
+        alone.stand([999])
+
+
+# ----- vehicle bases -----------------------------------------------------------------
+
+
+@pytest.mark.parametrize("style", sorted(HELPERS["chassis"].styles))
+@pytest.mark.parametrize("facing", FACINGS)
+def test_a_chassis_is_one_piece_with_its_floor_at_the_deck_its_style_states(world, style, facing):
+    from fable_agent.helpers.vehicles import STYLES, deck
+    look = STYLES[style]
+    kit = world.kit()
+    placed = bind(kit)["chassis"](2, 0, 2, style=style, facing=facing)
+    floor = [index for index in placed if not kit.build.placements[index].allow_overlap]
+    top = max(-box[1] for index in floor for box in world_boxes(
+        world.shapes.get(kit.build.placements[index].part), kit.build.placements[index])) / 8
+    assert top == deck(style)
+    along = facing in ("front", "back")
+    body = rect(2, 2, 2 + look.wide, 2 + look.length) if along else rect(2, 2, 2 + look.length, 2 + look.wide)
+    kit.fill(body, deck(style), "Red")  # a body over the whole floor
+    assert clean(world, kit)
+    lowest = min(-box[4] for index in placed for box in world_boxes(
+        world.shapes.get(kit.build.placements[index].part), kit.build.placements[index])) / 8
+    assert abs(lowest) < 0.6  # the tyres stand on y, as near as whole plates allow
+
+
+def test_a_chassis_changes_length_and_wheels_and_says_what_it_cannot_carry(world):
+    from fable_agent.helpers.vehicles import deck
+    for length in (6, 9, 16):
+        kit = world.kit()
+        placed = bind(kit)["chassis"](0, 0, 0, style="city", length=length)
+        kit.fill(rect(0, 0, 4, length), deck("city"), "Red")
+        assert clean(world, kit)
+        assert cells(world, kit, [i for i in placed if not kit.build.placements[i].allow_overlap]) == rect(0, 0, 4, length)
+    for length in (11, 23, 27, 30):  # long floors are cut into pieces whose seams alternate
+        kit = world.kit()
+        bind(kit)["chassis"](0, 0, 0, style="bus", length=length)
+        kit.fill(rect(0, 0, 6, length), deck("bus"), "Red")
+        assert clean(world, kit)
+    kit = world.kit()
+    call = bind(kit)
+    swapped = call["chassis"](0, 0, 0, style="pickup", wheels="street", rim="Red")
+    assert "55981" in [kit.build.placements[index].part for index in swapped]
+    assert 4 in [kit.build.placements[index].color for index in swapped]
+    assert deck("pickup", "offroad") == deck("pickup") + 1  # tyres that reach one plate lower raise the deck one
+    with pytest.raises(KitError, match="cannot carry small wheels; choose from: medium, sport, street"):
+        call["chassis"](20, 0, 0, style="sports", wheels="small")
+    with pytest.raises(KitError, match="cannot carry sport wheels; choose from: small, smooth, spoked, classic$"):
+        call["chassis"](20, 0, 0, style="city", wheels="sport")
+    with pytest.raises(KitError, match="length must be from"):
+        call["chassis"](20, 0, 0, style="city", length=40)
+
+
+def test_a_chassis_stands_on_a_baseplate_and_closes_over_its_wheels_without_a_mudguard_part(world):
+    kit, call = ground(world, -4, -4, 30, 40)
+    call["chassis"](0, 1, 0, style="city")
+    call["chassis"](8, 1, 0, style="truck")
+    assert clean(world, kit)
+    lean = World_without(world, "60212")
+    placed = lean["chassis"](0, 0, 0, style="city")
+    assert placed  # the same deck, with plates where the mudguards would be
+
+
+# ----- furniture ---------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("style", sorted(HELPERS["furniture"].styles))
+def test_every_piece_of_furniture_stands_on_the_floor_within_its_footprint(world, style):
+    from fable_agent.helpers.furniture import STYLES
+    look = STYLES[style]
+    for facing in FACINGS:
+        kit, call = ground(world)
+        placed = call["furniture"](4, 1, 4, style=style, facing=facing)
+        assert clean(world, kit)
+        wide, deep = (look.wide, look.deep) if facing in ("front", "back") else (look.deep, look.wide)
+        fixed = [index for index in placed if not kit.build.placements[index].allow_overlap]
+        covered = cells(world, kit, fixed)
+        # A handle, a door or a round seat may reach one stud past the footprint; nothing else does.
+        assert covered <= rect(3, 3, 5 + wide, 5 + deep) and covered & rect(4, 4, 4 + wide, 4 + deep)
+
+
+def test_furniture_seats_its_joined_parts_and_falls_back_to_bricks(world):
+    kit, call = ground(world)
+    placed = call["furniture"](0, 1, 0, style="desk", color="White", accent="Red")
+    parts = [kit.build.placements[index].part for index in placed]
+    assert parts.count("92410") == 1 and parts.count("4536") == 2
+    assert [note for _, _, note in kit.build.links] == ["drawer in its cupboard"] * 2
+    drawers = [kit.build.placements[index] for index in placed if kit.build.placements[index].part == "4536"]
+    assert {drawer.color for drawer in drawers} == {4} and clean(world, kit)
+    box = call["furniture"](10, 1, 0, style="nightstand", facing="left")
+    host = kit.build.placements[box[0]]
+    assert host.part == "4345b" and host.position[0] % 20 == 0 and host.position[2] % 20 == 0  # studs on the grid
+    lean = World_without(world, "92410", "4738a")
+    assert lean["furniture"](0, 0, 0, style="desk")  # bricks stand in for the cupboard
+    with pytest.raises(KitError, match="catalog has no chest"):
+        lean["furniture"](10, 0, 0, style="chest")
+    with pytest.raises(KitError, match="Unknown color"):
+        call["furniture"](0, 1, 10, color="Blurple")
+
+
+# ----- styles added from official sets --------------------------------------------------
+
+
+def test_a_sheet_of_glass_takes_the_glass_color_and_fills_the_opening_it_states(world):
+    kit, call = ground(world)
+    placed = call["window"](0, 1, 0, style="glass_wall", color="Red", glass="Trans_Clear")
+    sheet = kit.build.placements[placed[0]]
+    assert (sheet.part, sheet.color) == ("60581", 47) and window_size("glass_wall") == (4, 9, 1)
+    assert window_size("storefront") == (12, 15, 1) and window_size("glass_tower") == (4, 18, 1)
+    assert len(call["window"](6, 1, 0, style="storefront")) == 2 and clean(world, kit)
+
+
+def test_a_ladder_hangs_on_a_post_that_carries_each_length(world):
+    kit, call = ground(world)
+    placed = call["stairs"](0, 1, 0, rise=14, style="ladder", facing="back")
+    parts = [kit.build.placements[index].part for index in placed]
+    assert parts.count("4175") == 3 and footprint("ladder", 14) == (3, 2)  # three lengths of 6 plates climb 14
+    kit.fill(rect(0, 0, 2, 1), 19, "Red", kind="plate")  # a floor laid on the top length's studs
+    assert clean(world, kit)
+
+
+def test_a_flower_stem_carries_three_flowers_on_its_stalks(world):
+    kit, call = ground(world)
+    placed = call["plant"](0, 1, 0, "flower_stem", "Yellow")
+    parts = [kit.build.placements[index].part for index in placed]
+    assert parts == ["3741a", "3742", "3742", "3742"]
+    assert [note for _, _, note in kit.build.links] == ["flower on its stalk"] * 3
+    stem = kit.build.placements[placed[0]]
+    assert (stem.position[0], stem.position[2]) == (10, 10) and clean(world, kit)  # its stud is over the cell's middle
+    assert {kit.build.placements[index].color for index in placed[1:]} == {14}
 
 
 def test_seats_face_the_way_asked_with_the_steering_wheel_in_front_of_the_driver(world):

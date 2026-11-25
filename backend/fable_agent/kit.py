@@ -208,6 +208,49 @@ class Kit:
         self.build.links.append((host, index, str(note)[:80] or "attached part"))
         return index
 
+    def stand(self, parts, note: str = "") -> int | None:
+        """Join parts that stand on a surface without studs, such as tyres on a road, to what is under them.
+
+        Looks under the lowest of ``parts`` for an earlier part whose top is level with it and records
+        that joint. Returns the part found, or None when they stand on nothing but the ground.
+        """
+        own = set(parts)
+        count = len(self.build.placements)
+        if not own or not all(isinstance(i, int) and not isinstance(i, bool) and 0 <= i < count for i in own):
+            raise KitError("stand() takes ids returned by place()")
+        feet = {i: self._boxes(i) for i in own}
+        bottom = max(box[4] for boxes in feet.values() for box in boxes)
+        lowest = {i: [box for box in boxes if bottom - box[4] <= 1] for i, boxes in feet.items()}
+        found = None
+        for index, soles in lowest.items():
+            under = self._under(soles, bottom, own)
+            if under is not None:  # every part that touches down is joined, so none is left hanging
+                self.build.links.append((under, index, str(note)[:80] or "standing on it"))
+                found = under if found is None else found
+        return found
+
+    def _under(self, soles, bottom: float, own: set[int]) -> int | None:
+        for other in range(len(self.build.placements)):
+            if other in own:
+                continue
+            for top in self._boxes(other):
+                if abs(top[1] - bottom) <= PLATE / 2 and any(
+                        sole[0] < top[3] and top[0] < sole[3] and sole[2] < top[5] and top[2] < sole[5]
+                        for sole in soles):
+                    return other
+        return None
+
+    def _boxes(self, index: int) -> list[tuple[float, ...]]:
+        """A placed part's boxes in model space, as (x0, y0, z0, x1, y1, z1) with y pointing down."""
+        placement = self.build.placements[index]
+        m, t = placement.matrix, placement.position
+        boxes = []
+        for x0, y0, z0, x1, y1, z1 in self._shapes.get(placement.part).boxes:
+            a = [m[3 * row] * x0 + m[3 * row + 1] * y0 + m[3 * row + 2] * z0 + t[row] for row in range(3)]
+            b = [m[3 * row] * x1 + m[3 * row + 1] * y1 + m[3 * row + 2] * z1 + t[row] for row in range(3)]
+            boxes.append((*(min(p, q) for p, q in zip(a, b)), *(max(p, q) for p, q in zip(a, b))))
+        return boxes
+
     # ----- structure -----------------------------------------------------
 
     def module(self, name: str) -> None:

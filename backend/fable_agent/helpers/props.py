@@ -10,8 +10,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+from math import cos, radians, sin
+
 from ..kit import Kit, KitError
-from .common import BRICK, Helper, brick_color, choice, first_stocked, whole
+from .common import BRICK, Helper, brick_color, choice, first_stocked, stocked, whole
 
 # A layer is (part or parts to try, color role[, dx, dz]). A role names one of the helper's color
 # arguments, or is a fixed color. ``dx, dz`` place the layer off-center, in studs from the base's corner.
@@ -25,6 +27,19 @@ class Stack:
     shaft: tuple[Layer, ...] = ()  # repeated to make up the height
     above: tuple[Layer, ...] = ()
     colors: tuple[tuple[str, str], ...] = ()  # default color of each role
+
+
+STEM, BLOOM = "3741a", "3742"  # a stem with three stalks, and the flower that goes on each
+
+
+def _on_stalk(turn: float) -> tuple[float, ...]:
+    """A flower leaning out 15 degrees on a stalk that points ``turn`` degrees round the stem."""
+    c, s, lean_c, lean_s = cos(radians(turn)), sin(radians(turn)), cos(radians(15)), sin(radians(15))
+    return (c, -s * lean_s, s * lean_c, 0.0, lean_c, lean_s, -s, -c * lean_s, c * lean_c)
+
+
+# Where official sets seat the three flowers of a stem (docs/fable-helpers.md).
+BLOOMS = (((0, -17.6, 15), _on_stalk(0)), ((15.2, -27.3, -8.8), _on_stalk(120)), ((-14.1, -22.5, -8.1), _on_stalk(240)))
 
 
 def _resolve(role: str, colors: dict[str, str]) -> str:
@@ -52,6 +67,16 @@ def _build(kit: Kit, x, y, z, look: Stack, colors: dict[str, str], repeats: int,
         if len(layer) == 4:
             placed.append(kit.place(part, code, x + layer[2], level, z + layer[3]))
             continue  # an extra beside the stack does not raise it
+        if part == STEM:  # its stud is off the middle of its box: seat the stud on the grid, then the flowers
+            stud = kit.part(part).studs[0]
+            host = kit.place(part, code, x + look.base / 2 - stud[0], level, z + look.base / 2 - stud[1])
+            placed.append(host)
+            bloom = stocked(kit, BLOOM, _resolve("color", colors))
+            if bloom is not None:
+                placed += [kit.attach(BLOOM, bloom, host, offset, turn, "flower on its stalk")
+                           for offset, turn in BLOOMS]
+            level += tall
+            continue
         placed.append(kit.place(part, code, x + (look.base - wide) / 2, level, z + (look.base - deep) / 2))
         level += tall
     return placed
@@ -123,6 +148,8 @@ PLANTS: dict[str, Stack] = {
     "lily_pad": Stack(2, above=((RP2, "stem"), ("24866", "color", 0, 0)), colors=(("color", "Bright_Pink"),)),
     "stump": Stack(2, above=((R2, "Reddish_Brown"), (RP2, "Tan"))),
     "boxwood": Stack(2, above=((B2, "stem"), (B2, "stem"), (P2, "stem"))),
+    "flower_stem": Stack(1, above=((STEM, "stem"),), colors=(("color", "Red"),)),
+    "tall_flowers": Stack(1, above=((R1, "stem"), (STEM, "stem")), colors=(("color", "White"),)),
 }
 for _look in list(PLANTS):
     PLANTS[_look] = Stack(PLANTS[_look].base, PLANTS[_look].below, PLANTS[_look].shaft, PLANTS[_look].above,

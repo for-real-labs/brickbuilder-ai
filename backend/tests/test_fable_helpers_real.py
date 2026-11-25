@@ -20,7 +20,8 @@ pytestmark = pytest.mark.skipif(not (default_library_dir() / "LDConfig.ldr").is_
 FACINGS = ("front", "back", "left", "right")
 ROOF_SIZES = ((8, 8), (12, 8), (13, 9), (10, 10), (16, 12), (9, 7), (11, 15))
 # Sizes a style is right to refuse, with a message that says what to change.
-MAY_REFUSE = ("needs more depth", "can span at most", "cannot bridge", "larger footprint")
+MAY_REFUSE = ("needs more depth", "can span at most", "cannot bridge", "larger footprint", "length must be from",
+              "needs more length")
 
 
 @pytest.fixture(scope="module")
@@ -69,6 +70,9 @@ def cases(name: str, style: str):
         return [dict(style=style, height=height, facing=facing) for height in (0, 9) for facing in FACINGS]
     if name == "wheels":
         return [dict(style=style, width=width, facing=facing) for width in (4, 6, 8) for facing in FACINGS]
+    if name == "chassis":
+        return [dict(style=style, facing=facing, length=length) for facing in FACINGS
+                for length in (None, 7, 11, 16, 23, 30)]
     return [dict(style=style, facing=facing) for facing in FACINGS]
 
 
@@ -101,7 +105,7 @@ def body_on(bench, kit, ids):
 def test_every_style_builds_clean_with_real_parts(bench, name, style):
     built = 0
     for arguments in cases(name, style):
-        kit = fresh(bench, ground=name != "wheels")
+        kit = fresh(bench, ground=name not in ("wheels", "chassis"))
         call = bind(kit)[name]
         try:
             if name == "roof":
@@ -111,6 +115,9 @@ def test_every_style_builds_clean_with_real_parts(bench, name, style):
                 placed = call(4, 1, 4, arguments.pop("width"), arguments.pop("depth"), **arguments)
             elif name == "wheels":
                 placed = call(0, 0, 0, **arguments)
+                body_on(bench, kit, placed)
+            elif name == "chassis":
+                placed = call(4, 0, 4, **arguments)
                 body_on(bench, kit, placed)
             else:
                 placed = call(4, 1, 4, **arguments)
@@ -151,3 +158,47 @@ def test_each_door_fills_the_opening_its_style_states(bench, style):
     call["door"](1, 1, 0, style=style)
     report = bench.checker.check(kit.build)
     assert report.ok, [issue.message for issue in report.errors][:2]
+
+
+def extent(bench, kit, ids):
+    boxes = [box for index in ids for box in world_boxes(bench.shapes.get(kit.build.placements[index].part),
+                                                         kit.build.placements[index])]
+    return [min(box[axis] for box in boxes) for axis in range(3)], [max(box[axis + 3] for box in boxes) for axis in range(3)]
+
+
+@pytest.mark.parametrize("style", sorted(HELPERS["wheels"].styles))
+@pytest.mark.parametrize("width", [4, 6])
+def test_wheels_sit_evenly_either_side_of_the_body_and_reach_the_ground_their_note_states(bench, style, width):
+    from fable_agent.helpers.cars import STYLES
+    look = STYLES[style]
+    kit = fresh(bench, ground=False)
+    placed = bind(kit)["wheels"](0, look.drop, 0, style=style, width=width)
+    wheels = [index for index in placed if kit.build.placements[index].allow_overlap]
+    low, high = extent(bench, kit, wheels)
+    body = {"holder": 4, "caster": 2}.get(look.mount, width)  # studs across the body the axle sits under
+    assert abs((low[0] + high[0]) / 40 - body / 2) < 0.3, "the two wheels are not centered on the body"
+    assert abs(-high[1] / 8) < 0.6, "the tyres do not stand on the ground the note promises"
+    carriers = [index for index in placed if not kit.build.placements[index].allow_overlap]
+    for index in carriers:  # every stud of a carrier is on the grid, so a body can sit on it
+        placement = kit.build.placements[index]
+        m, t = placement.matrix, placement.position
+        for sx, sy, sz, *_ in bench.shapes.get(placement.part).studs:
+            wx, wz = m[0] * sx + m[1] * sy + m[2] * sz + t[0], m[6] * sx + m[7] * sy + m[8] * sz + t[2]
+            assert (wx - 10) % 20 == 0 and (wz - 10) % 20 == 0, (placement.part, wx, wz)
+
+
+@pytest.mark.parametrize("style", sorted(HELPERS["chassis"].styles))
+def test_a_chassis_floor_is_at_its_deck_and_it_stands_on_a_baseplate(bench, style):
+    from fable_agent.helpers.vehicles import STYLES, deck
+    look = STYLES[style]
+    kit = fresh(bench)
+    placed = bind(kit)["chassis"](4, 1, 4, style=style, facing="left")
+    kit.fill({(x, z) for x in range(4, 4 + look.length) for z in range(4, 4 + look.wide)}, 1 + deck(style), "Red")
+    report = bench.checker.check(kit.build)
+    assert report.ok, [issue.message for issue in report.errors][:2]
+    floor = [index for index in placed if not kit.build.placements[index].allow_overlap]
+    low, high = extent(bench, kit, floor)
+    assert round(-low[1] / 8, 2) == 1 + deck(style)  # the top of the floor, where the body starts
+    wheels = [index for index in placed if kit.build.placements[index].allow_overlap
+              and kit.build.placements[index].part not in ("3022",)]
+    assert abs(-extent(bench, kit, wheels)[1][1] / 8 - 1) < 0.6  # tyres on the baseplate's top
