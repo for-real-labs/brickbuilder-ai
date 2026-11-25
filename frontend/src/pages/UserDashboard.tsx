@@ -4,7 +4,6 @@ import { PasswordSettings } from '../components/PasswordSettings';
 import { ManagePlanLink } from '../components/ManagePlanLink';
 import { DeleteAccount } from '../components/DeleteAccount';
 import { AiBillingSettings } from '../components/AiBillingSettings';
-import { GoogleTestSubscriptionSettings } from '../components/GoogleTestSubscriptionSettings';
 import { useBilling } from '../contexts/BillingContext';
 import { PaidFeatureLock } from '../components/PaidFeatureDialog';
 import { GenerationDuration } from '../components/GenerationDuration';
@@ -557,7 +556,6 @@ const SettingsPanel: React.FC = () => {
     <div>
       <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 mb-3 sm:mb-4">Settings</h1>
       <AiBillingSettings />
-      <GoogleTestSubscriptionSettings />
       <PasswordSettings />
       <PasskeySettings />
       <MfaSettings />

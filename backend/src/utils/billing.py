@@ -224,7 +224,7 @@ def checkout_response(session, ui_mode):
     return {"url": session.url}
 
 
-async def checkout(identity, plan_key, ui_mode="hosted"):
+async def checkout(identity, plan_key, ui_mode="hosted", gclid=None):
     user_id = account_id(identity)
     await require_enabled()
     if not (await capacity())["checkout_available"]:
@@ -280,11 +280,14 @@ async def checkout(identity, plan_key, ui_mode="hosted"):
         opened = await asyncio.to_thread(stripe.checkout.Session.list, customer=customer, status="open", limit=100, **version, api_key=stripe_key())
         for old in opened.data:
             if old.get("mode") == "subscription" and old.get("metadata", {}).get("integration") == BILLING_TAG:
-                if old["metadata"].get("plan_key") == plan_key and old.get("ui_mode", "hosted") == ui_mode:
+                if (old["metadata"].get("plan_key") == plan_key and old.get("ui_mode", "hosted") == ui_mode
+                        and old["metadata"].get("gclid") == gclid):
                     return checkout_response(old, ui_mode)
                 await asyncio.to_thread(stripe.checkout.Session.expire, old.id, api_key=stripe_key())
         price = await price_for(plan_key)
         metadata = {"brickbuilder_user_id": user_id, "integration": BILLING_TAG, "plan_key": plan_key}
+        if gclid:
+            metadata["gclid"] = gclid
         redirects = ({"return_url": site_url()+"/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}"}
             if ui_mode == "elements" else {
                 "success_url": site_url()+"/billing?checkout=success&session_id={CHECKOUT_SESSION_ID}",
