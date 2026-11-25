@@ -1,5 +1,5 @@
 import pytest
-from src.requests.google_ads_feed import conversion_row
+from src.requests.google_ads_feed import conversion_row, render_csv
 from src.utils.billing import BILLING_TAG
 
 
@@ -11,10 +11,15 @@ def invoice():
 
 def test_verified_invoice_export():
     assert conversion_row(invoice()) == ("click", "subscription_confirmed", "1970-01-01 00:16:40+00:00",
-                                         "2.99", "USD", "in_1")
+                                         "2.99", "USD", "in_1", "purchase")
 
 
 @pytest.mark.parametrize("change", [dict(livemode=False), dict(status="open"), dict(amount_paid=0),
                                     dict(billing_reason="subscription_cycle"), dict(parent={})])
 def test_excluded_invoices(change):
     assert conversion_row(invoice() | change) is None
+
+
+def test_empty_feed_exposes_columns_without_an_importable_event():
+    assert render_csv([]).splitlines()[1:] == [",,,,,,schema"]
+    assert "schema" not in render_csv([invoice()])
