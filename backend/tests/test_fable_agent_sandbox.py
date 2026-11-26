@@ -99,7 +99,9 @@ def test_bundled_example_scripts_stay_within_the_dialect():
 
     import fable_agent
 
-    examples = sorted((Path(fable_agent.__file__).parent / "examples").glob("*.py"))
-    assert examples
+    folder = Path(fable_agent.__file__).parent / "examples"
+    # The scripts, not the package's own modules: the lake house of the guide and the example library.
+    examples = [folder / "lakehouse.py", *sorted((folder / "library").glob("*/*.py"))]
+    assert len(examples) > 20
     for example in examples:
         validate_script(example.read_text(encoding="utf-8"))

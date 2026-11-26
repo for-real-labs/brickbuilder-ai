@@ -43,7 +43,7 @@ from .utils.generation_recovery import start_recovery_worker
 from .requests.uploadLdraw import upload_ldraw, UploadLdrawResponse
 from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
 from .requests.astrologyToBricks import astrology_allowed
-from .utils.building_agents import FABLE_AGENTS, OFFERED_AGENTS
+from .utils.building_agents import EXAMPLE_AGENTS, FABLE_AGENTS, OFFERED_AGENTS
 from .requests.localProviders import router as local_providers_router
 from .requests.buildBuddy import router as build_buddy_router
 from .requests.supportEmail import router as support_email_router
@@ -177,7 +177,7 @@ async def building_agents(response: Response, auth_info: dict = Depends(get_opti
     # Agents that offer a choice of model list it; the first model is the default.
     models = {agent: [FABLE_AGENTS[agent].model, *(m for m in FABLE_AGENTS[agent].models if m != FABLE_AGENTS[agent].model)]
               for agent in OFFERED_AGENTS if agent in FABLE_AGENTS and FABLE_AGENTS[agent].models}
-    return {"agents": ["nova", *OFFERED_AGENTS], "models": models}
+    return {"agents": ["nova", *OFFERED_AGENTS], "models": models, "examples": list(EXAMPLE_AGENTS)}
 
 
 @app.post("/novaToBricks", response_model=ImageToBricksResponse)

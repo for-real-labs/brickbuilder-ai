@@ -145,13 +145,16 @@ class Budget:
             raise BudgetExhausted("The run's AI budget is used up")
         return min(requested, allowance)
 
-    def record(self, reply: ModelReply) -> Decimal:
+    def record(self, reply: ModelReply, *, carried: bool = True) -> Decimal:
+        """Charge one call. ``carried=False`` is for a call outside the conversation, whose tokens
+        are not sent again with the next one."""
         served_by = reply.model if reply.model in PRICES else self.model
         cost = price_usage(served_by, reply.usage)
         self.spent += cost
         usage = reply.usage
-        self._context_tokens = (_tokens(usage, "input_tokens") + _tokens(usage, "cache_read_input_tokens")
-                                + _tokens(usage, "cache_creation_input_tokens") + _tokens(usage, "output_tokens"))
+        if carried:
+            self._context_tokens = (_tokens(usage, "input_tokens") + _tokens(usage, "cache_read_input_tokens")
+                                    + _tokens(usage, "cache_creation_input_tokens") + _tokens(usage, "output_tokens"))
         self.calls.append({
             "model": served_by, "input_tokens": _tokens(usage, "input_tokens"),
             "output_tokens": _tokens(usage, "output_tokens"),

@@ -153,6 +153,9 @@ Useful options: `--method thorough|thorough-v2|lean|lean-v2`, `--model claude-fa
 high, $8 and 60 turns for thorough; medium, $2 and 8 rounds for lean. The v2 methods
 use the limits of their first versions.
 
+`--examples` (v2 methods) lets the model pick a category of example scripts to read
+first; see [Example builds](#example-builds).
+
 `python -m fable_agent script build.py --out DIR --repair` rebuilds a v2 model's script
 the way the v2 methods do, with the automatic repair applied first.
 
@@ -239,9 +242,50 @@ in [docs/agent-changes](agent-changes/README.md).
 - **Time:** after 30 minutes no new model call starts and the last clean revision is
   delivered. A build still running 15 minutes later is abandoned.
 - **Isolation:** build scripts run under a separate unprivileged account; see Safety.
-- **Failure:** if no revision passes the checks, the generation fails with a message.
-  If the agent runs out of rounds or budget after a clean revision, that revision is
-  delivered.
+- **Failure:** if no revision passes the checks, the generation fails with a message
+  and the last build is offered as an unverified draft with its failed checks, in the
+  same download Nova's rejected drafts use. If the agent runs out of rounds or budget
+  after a clean revision, that revision is delivered.
+- **3D by default:** the request carries the product's design default
+  (`build_design_guidance.py`), as Nova's does: a photo is built as a 3D model, and a
+  mosaic only when it is asked for.
+
+### Example builds
+
+The v2 agents (Pip and Thorough v2) can read finished build scripts before they start.
+It is an option, **off by default**: a checkbox in Generation settings, `use_examples` on
+the request, and `--examples` on the command line.
+
+1. The model is asked once which kind of subject the request is closest to: cars,
+   aircraft, boats, spacecraft, houses, buildings, castles, animals, characters or flat
+   pictures, or none (`fable_agent/examples/chooser.py`). This is a short model call,
+   charged to the build like any other.
+2. Every example of that category is added to the end of the prompt, up to a budget of
+   30,000 characters (about 8,500 tokens). Today every category fits whole. With no
+   fitting category the build runs without examples.
+
+The scripts are in `backend/fable_agent/examples/library/<category>/`:
+
+- 13 written for BrickBuilder with the helpers (eight cars, three houses, a hospital,
+  a castle).
+- 28 official LEGO sets from the [LDraw Official Model Repository](https://library.ldraw.org/omr),
+  converted to plain `place` calls in building order. A set is kept only if at least 80% of
+  it survives without the parts the checks cannot join (minifigures, clips, hinges,
+  wheels on pins) and what is left passes every check a Pip build must pass. Of 1,829
+  model files, 28 did: skyscrapers, small houses, animals, small planes and boats. No set
+  with wheels passes, so the car examples are all written ones.
+  `backend/scripts/build_fable_examples.py` rebuilds them from a folder of downloaded
+  files; the files themselves are not in the repository. Each set and its model file's
+  author and licence are credited in `fable_agent/examples/SOURCES.md`.
+
+Rebrickable offers part lists and themes but no model files, LEGO.com only printed
+instructions, and BrickLink's models need an account and carry no licence for reuse, so
+none of those could supply examples. Rebrickable's free set table names the sets and
+their themes.
+
+`tests/test_fable_examples.py` builds every example with the real parts under Nova's
+publication rules. To add one, put a script in the category's folder with `#: title:`
+and `#: source:` lines at its top.
 
 `backend/src/requests/fableToBricks.py` is the whole integration. The build itself
 runs in a scratch directory that is deleted afterwards.
@@ -310,6 +354,7 @@ build.py          current script;  scripts/NNN.py holds every revision
 model.ldr         current build;   report.json holds its checks
 renders/          every picture the model looked at
 published/001/    model.ldr, build.py, bom.csv, report.json, preview.png, four views
+rejected/         only when no revision passed: model.ldr, parts.csv, verification.json, README.txt
 ```
 
 The transcript is never edited. A model's reasoning is valid only against the exact
@@ -331,11 +376,37 @@ inverted slopes, arches and panels are checked against their real profile.
 In the v2 methods the automatic repair runs first and the checks then judge the
 repaired build, so a repair cannot make an invalid model pass.
 
-It does not cover clips, bars, hinges, balance, or whether a hand can reach a part.
-Parts on rotations that are not multiples of 90 degrees are not overlap-checked.
-Reports say this, and every report carries `physical_validity: not_proven`.
-When Fable is wired into the site, its models should go through the existing
-supplier and instruction checks before a customer is charged, as Nova's do.
+In the first-version methods the report does not cover clips, bars, hinges, balance, or
+whether a hand can reach a part, and parts on rotations that are not multiples of 90
+degrees are not overlap-checked. Reports say this, and every report carries
+`physical_validity: not_proven`.
+
+### Nova's publication rules (the v2 methods)
+
+Pip and Thorough v2 are also held to what Nova requires before it publishes. The rules are
+not copied: `fable_agent/nova_rules.py` loads Nova's own files from `backend/nova-service`
+(`flatten.py`, `material_collision.py`, `material_surfaces.py`), so a fix made for Nova
+reaches Fable too. Fable supplies the evidence its checker measured.
+
+| Rule | What it refuses | Code |
+|---|---|---|
+| Solid plastic | Two plain bricks, plates or tiles in the same place at any rotation, and anything that cuts into a seat back, dish rim, curved tile or side stud. `allow_overlap` does not excuse it. | `material.py` |
+| Declared joints | A `connect()` between parts that do not touch, or a Technic pin or axle that is in none of the other part's holes. | `joints.py` |
+| One model | Free-standing pieces. They were a warning; a model needs one building order. | `assembly.py` |
+| Building order | A model that cannot be built one piece at a time: each piece must attach to what is already built and must not be closed in first. | `sequence.py` |
+
+A build that passes gets its instructions from Nova's planner: the pieces on the ground first,
+then upward, in steps of at most five connected pieces. A piece that hangs under its support is
+shown as built together with it (`0 !BRICKBUILDER BUILD_TOGETHER`, which the instruction viewer
+already reads). `step()` and `module()` only suggest where steps break.
+
+What this still does not prove: clips, bars, tyres on rims and panes in frames are checked for
+touching only, because the parts library does not name those connectors; the report counts them.
+Balance and whether a hand can reach a part are not checked. Nova's Technic connector
+fingerprints live in its private toolkit and are not used here.
+
+When no revision passes, the last build is kept in `rejected/` with its failed checks, and the
+website offers it as an unverified draft, the way it does for Nova.
 
 ## Safety
 
@@ -385,16 +456,16 @@ that too and is the stronger design if Fable becomes a main path.
   they share its CPU, memory and network. See Safety for what that leaves open.
 - On the website an edit starts from the saved script, not from the conversation that
   wrote it, and a customer's parts inventory is not supported.
-- Instruction steps are grouped by height. The existing connected-step planner
-  should run on published models, as it does for Nova.
+- The first-version methods (Fable, Fable Lean) still group instruction steps by height and
+  take `connect()` on trust. Only the v2 methods use Nova's rules.
 - Doors hung in frames and other clip or hinge connections are placed by `inset`
-  or `connect` and are not verified.
+  or `connect` and are verified only as two parts that touch.
 
 ## Tests
 
 ```sh
 cd backend
-uv run --group dev pytest tests/test_fable_agent_*.py tests/test_fable_helpers*.py tests/test_fable_web.py
+uv run --group dev pytest tests/test_fable_agent_*.py tests/test_fable_assembly.py tests/test_fable_helpers*.py tests/test_fable_web.py
 ```
 
 `tests/test_fable_helpers_real.py` builds every helper style with the real parts library and is

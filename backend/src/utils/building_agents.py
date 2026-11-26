@@ -64,6 +64,12 @@ RETIRED_AGENTS = frozenset({"fable-lean-v2-gpt-6.2-sol"})
 OFFERED_AGENTS = tuple(agent for agent in IN_PROCESS_AGENTS if agent not in RETIRED_AGENTS)
 
 
+# Agents whose Generation settings offer example builds: the v2 methods, which are the ones told
+# how to use a category of example scripts.
+EXAMPLE_AGENTS = tuple(agent for agent in OFFERED_AGENTS
+                       if agent in FABLE_AGENTS and FABLE_AGENTS[agent].method.endswith("-v2"))
+
+
 def in_process_agent(value) -> str | None:
     """The agent's id when a generation was built here rather than by Nova."""
     return value if isinstance(value, str) and value in IN_PROCESS_AGENTS else None

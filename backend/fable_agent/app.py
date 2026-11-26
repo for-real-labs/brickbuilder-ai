@@ -11,7 +11,10 @@ from pathlib import Path
 from PIL import Image, ImageOps
 
 from .agent import BuildAgent, Event, RunResult
+from .assembly import AssemblyReview
 from .catalog import PartFinder
+from .examples import prompt_section as example_section
+from .examples.chooser import choose_category
 from .checks import ModelChecker
 from .ldraw import LDrawLibrary
 from .lean import LEAN_TOOLS, LeanAgent
@@ -62,6 +65,7 @@ class Options:
     api_key: str | None = None
     method: str = "thorough"
     max_seconds: float | None = None  # stop starting model calls after this long; the best result is kept
+    examples: bool = False  # let the model pick a category of example scripts to read first (v2 methods)
 
     def resolved(self, method: str) -> Options:
         if method not in METHODS:
@@ -92,8 +96,11 @@ class Workbench:
         palette = load_palette(library, settings.get("catalog_path"), open_palette=bool(settings.get("open_palette")))
         kit_settings = KitSettings(str(library.root), settings.get("catalog_path"),
                                    bool(settings.get("open_palette")), str(cache))
+        # Whether Nova's publication rules apply is fixed when the session starts, like repair.
+        assembly = AssemblyReview(library, shapes) if settings.get("assembly_rules") else None
         return cls(library, shapes, PartFinder(library, palette),
-                   ModelChecker(library, shapes, palette, max_parts=int(settings.get("max_parts", 1500))),
+                   ModelChecker(library, shapes, palette, max_parts=int(settings.get("max_parts", 1500)),
+                                assembly=assembly),
                    runner or SubprocessScriptRunner(kit_settings),
                    renderer or LeoCadRenderer(library.root), palette)
 
@@ -132,8 +139,9 @@ def _client(options: Options, model: str, effort: str) -> ModelClient:
                            auto_cache=options.method not in LEAN)
 
 
-def _agent(options: Options, session: Session, client: ModelClient, bench: Workbench, on_event: Event | None):
-    budget = Budget(Decimal(str(options.budget_usd)), client.model)
+def _agent(options: Options, session: Session, client: ModelClient, bench: Workbench, on_event: Event | None,
+           budget: Budget | None = None):
+    budget = budget or Budget(Decimal(str(options.budget_usd)), client.model)
     deadline = time.monotonic() + options.max_seconds if options.max_seconds else None
     if options.method in LEAN:
         return LeanAgent(session, client, bench.toolbox(session), budget, max_rounds=options.max_steps,
@@ -155,7 +163,9 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
     options = options.resolved(options.method)
     settings = {"ldraw_dir": options.ldraw_dir, "catalog_path": options.catalog_path,
                 "open_palette": options.open_palette, "max_parts": options.max_parts, "effort": options.effort,
-                "method": options.method, "repair": options.method in ASSISTED}
+                "method": options.method, "repair": options.method in ASSISTED,
+                "assembly_rules": options.method in ASSISTED,
+                "examples": options.examples and options.method in ASSISTED}
     bench = workbench or Workbench.open(settings)
     settings["ldraw_dir"] = str(bench.library.root)
     client = client or _client(options, options.model, options.effort)
@@ -172,11 +182,34 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
     content = []
     if reference is not None:
         content.append(session.image_block(save_reference(Path(reference), session)))
-    agent = _agent(options, session, client, bench, on_event)
+    budget = Budget(Decimal(str(options.budget_usd)), client.model)
+    if settings["examples"]:
+        asked = [*content, {"type": "text", "text": f"Request: {prompt.strip()}"}]
+        _add_examples(session, client, budget, asked, on_event)
+    agent = _agent(options, session, client, bench, on_event, budget)
     existing = agent.load(script) if script and script.strip() else None
     content.append({"type": "text", "text": build_request(prompt, has_reference=reference is not None,
                                                           max_parts=options.max_parts, existing=existing)})
     return agent.run(content)
+
+
+def _add_examples(session: Session, client: ModelClient, budget: Budget, asked: list[dict],
+                  on_event: Event | None) -> None:
+    """Let the model name a category of examples, and add that category's scripts to its prompt.
+
+    This happens once, before the first round, so the prompt is then fixed for the whole session
+    like any other. The choice is a model call: it is charged to the run and reported like a turn.
+    """
+    choice = choose_category(client, session.inflate(asked))
+    if choice.reply is not None:
+        budget.record(choice.reply, carried=False)
+        session.meta["usage"] = session.meta.get("usage", []) + budget.calls[-1:]
+        if on_event is not None:
+            on_event("turn", {"step": 0, "spent_usd": str(budget.spent), "usage": budget.calls[-1]})
+    session.meta["settings"]["example_category"] = choice.category
+    if choice.category is not None:
+        session.meta["system"] += "\n\n" + example_section(choice.category)
+    session.save()
 
 
 def continue_build(request: str, run_dir: Path | str, options: Options, *, on_event: Event | None = None,

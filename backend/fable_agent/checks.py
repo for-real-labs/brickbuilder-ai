@@ -10,11 +10,16 @@ from __future__ import annotations
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from .kit import Build, Placement
 from .ldraw import LDrawError, LDrawLibrary
 from .palette import Palette
 from .shape import PLATE, STUD, ShapeLibrary
+
+if TYPE_CHECKING:
+    from .assembly import AssemblyReview
+    from .sequence import Plan
 
 HASH = 40.0  # LDU broad-phase cell
 OVERLAP_TOLERANCE = 1.0  # LDU of penetration ignored on every axis
@@ -41,6 +46,7 @@ class Report:
     warnings: list[Issue] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     estimated_parts_cost: str | None = None
+    plan: Plan | None = None  # the building order, when the build was put through Nova's rules
 
     @property
     def ok(self) -> bool:
@@ -55,6 +61,7 @@ class Report:
             "warnings": [{"kind": i.kind, "message": i.message} for i in self.warnings],
             "notes": self.notes, "estimated_parts_cost": self.estimated_parts_cost,
             "physical_validity": "not_proven",
+            **({"instruction_steps": self.plan.step_count} if self.plan else {}),
         }
 
     def to_text(self, color_names: dict[int, str] | None = None) -> str:
@@ -132,6 +139,62 @@ def world_boxes(shape, placement: Placement) -> list[tuple[float, ...]]:
     return _world_boxes(shape, placement)
 
 
+@dataclass(frozen=True)
+class StudContact:
+    """A stud of one placement that sits inside another."""
+
+    stud: int
+    receiver: int
+    axis: tuple[float, float, float]  # the way the stud points, in model space
+
+
+def stud_contacts(placements, shapes: ShapeLibrary, boxes: dict[int, list],
+                  cells: dict[tuple[int, int], list], *, free_rotation: bool = False) -> list[StudContact]:
+    """Every stud that enters another part, once per pair of parts and direction.
+
+    A part at a free rotation has no boxes in ``cells``. With ``free_rotation`` the stud's probe
+    point is turned into that part's own frame and tested against its shape there.
+    """
+    turned = []
+    for index, placement in enumerate(placements if free_rotation else ()):
+        if index not in boxes:
+            try:
+                turned.append((index, placement, shapes.get(placement.part).boxes))
+            except LDrawError:
+                continue
+    found: dict[tuple[int, int, tuple], StudContact] = {}
+    for index, placement in enumerate(placements):
+        try:
+            shape = shapes.get(placement.part)
+        except LDrawError:
+            continue
+        m, (tx, ty, tz) = placement.matrix, placement.position
+        for sx, sy, sz, dx, dy, dz in shape.studs:
+            # A point inside the stud; a mating part must be solid there.
+            lx, ly, lz = sx + dx * STUD_PROBE, sy + dy * STUD_PROBE, sz + dz * STUD_PROBE
+            px = m[0] * lx + m[1] * ly + m[2] * lz + tx
+            py = m[3] * lx + m[4] * ly + m[5] * lz + ty
+            pz = m[6] * lx + m[7] * ly + m[8] * lz + tz
+            axis = tuple(round(m[3 * row] * dx + m[3 * row + 1] * dy + m[3 * row + 2] * dz, 6) for row in range(3))
+            hit = [other for other, box in cells.get((int(px // HASH), int(pz // HASH)), ())
+                   if other != index and _inside(box, px, py, pz)]
+            for other, receiver, local in turned:
+                if other != index:
+                    n, (ox, oy, oz) = receiver.matrix, receiver.position
+                    rx, ry, rz = px - ox, py - oy, pz - oz  # the inverse of a rotation is its transpose
+                    point = (n[0] * rx + n[3] * ry + n[6] * rz, n[1] * rx + n[4] * ry + n[7] * rz,
+                             n[2] * rx + n[5] * ry + n[8] * rz)
+                    if any(_inside(box, *point) for box in local):
+                        hit.append(other)
+            for other in hit:
+                found.setdefault((index, other, axis), StudContact(index, other, axis))
+    return list(found.values())
+
+
+def _inside(box, x: float, y: float, z: float) -> bool:
+    return box[0] - 0.5 <= x <= box[3] + 0.5 and box[1] - 0.5 <= y <= box[4] + 0.5 and box[2] - 0.5 <= z <= box[5] + 0.5
+
+
 class _Groups:
     def __init__(self, size: int):
         self.parent = list(range(size))
@@ -149,11 +212,13 @@ class _Groups:
 
 
 class ModelChecker:
-    def __init__(self, library: LDrawLibrary, shapes: ShapeLibrary, palette: Palette, *, max_parts: int = 2000):
+    def __init__(self, library: LDrawLibrary, shapes: ShapeLibrary, palette: Palette, *, max_parts: int = 2000,
+                 assembly: AssemblyReview | None = None):
         self._library = library
         self._shapes = shapes
         self._palette = palette
         self._max_parts = max_parts
+        self._assembly = assembly  # Nova's publication rules, for the methods that ask for them
 
     def _label(self, index: int, placement: Placement, boxes: dict[int, list]) -> str:
         own = boxes.get(index)
@@ -205,7 +270,15 @@ class ModelChecker:
                                                 "Simplify or use larger parts."))
         cells = self._hash(boxes)
         self._check_overlaps(placements, boxes, cells, report)
-        self._check_connections(build, boxes, cells, report)
+        contacts = self._check_connections(build, boxes, cells, report)
+        if self._assembly is not None:
+            self._assembly.review(build, boxes, contacts, report, lambda i: self._label(i, placements[i], boxes))
+            if free_rotation:
+                report.notes.append(f"{len(free_rotation)} placements use a free rotation; only the solid plastic "
+                                    "of plain bricks, plates and tiles is checked on them.")
+            report.notes.append("Checks cover overlaps, solid plastic, stud connections, declared joints and the "
+                                "building order. Balance and insertion clearance are not verified.")
+            return report
         if free_rotation:
             report.notes.append(f"{len(free_rotation)} placements use a free rotation; their overlaps were not "
                                 "checked and they only count as connected through their own studs or connect().")
@@ -266,30 +339,20 @@ class ModelChecker:
         if declared:
             report.notes.append(f"{declared} overlapping pairs were declared intentional with allow_overlap.")
 
-    def _check_connections(self, build: Build, boxes, cells, report: Report) -> None:
+    def _check_connections(self, build: Build, boxes, cells, report: Report) -> list[StudContact]:
         placements = build.placements
         groups = _Groups(len(placements))
-        for index, placement in enumerate(placements):
-            try:
-                shape = self._shapes.get(placement.part)
-            except LDrawError:
-                continue
-            m, (tx, ty, tz) = placement.matrix, placement.position
-            for sx, sy, sz, dx, dy, dz in shape.studs:
-                # A point inside the stud; a mating part must be solid there.
-                lx, ly, lz = sx + dx * STUD_PROBE, sy + dy * STUD_PROBE, sz + dz * STUD_PROBE
-                px = m[0] * lx + m[1] * ly + m[2] * lz + tx
-                py = m[3] * lx + m[4] * ly + m[5] * lz + ty
-                pz = m[6] * lx + m[7] * ly + m[8] * lz + tz
-                for other, box in cells.get((int(px // HASH), int(pz // HASH)), ()):
-                    if other != index and box[0] - 0.5 <= px <= box[3] + 0.5 and box[1] - 0.5 <= py <= box[4] + 0.5 \
-                            and box[2] - 0.5 <= pz <= box[5] + 0.5:
-                        groups.join(index, other)
+        contacts = stud_contacts(placements, self._shapes, boxes, cells, free_rotation=self._assembly is not None)
+        for contact in contacts:
+            groups.join(contact.stud, contact.receiver)
         for first, second, _ in build.links:
             groups.join(first, second)
-        if build.links:
+        if build.links and self._assembly is None:
             report.notes.append(f"{len(build.links)} connections were declared with connect() and not verified.")
+        self._check_grounding(placements, groups, boxes, report)
+        return contacts
 
+    def _check_grounding(self, placements, groups: _Groups, boxes, report: Report) -> None:
         members: dict[int, list[int]] = defaultdict(list)
         for index in range(len(placements)):
             members[groups.find(index)].append(index)

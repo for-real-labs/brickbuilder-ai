@@ -24,6 +24,10 @@ from .shape import PLATE, STUD, PartShape, ShapeLibrary
 
 MAX_VIEWS = 4
 PUBLISH_VIEWS = ("front-right", "front-left", "back-left", "back-right")
+REJECTED_DIR = "rejected"
+REJECTED_README = ("Unverified draft. See verification.json for the failed checks. Connections and building "
+                   "instructions are not verified. Review and repair the model before building it or ordering "
+                   "parts.\n")
 
 
 class ToolError(ValueError):
@@ -344,8 +348,8 @@ class Toolbox:
             return ToolOutput(f"SCRIPT FAILED{where}: {outcome.error}{printed}\nNothing was built. Fix the script.",
                               is_error=True)
         self._build, self._report = build, report = self._checked(outcome.build)
-        session.path(MODEL_FILE).write_text(to_ldraw(build, session.meta.get("title") or "BrickBuilder model"),
-                                            encoding="utf-8")
+        session.path(MODEL_FILE).write_text(to_ldraw(build, session.meta.get("title") or "BrickBuilder model",
+                                                     report.plan), encoding="utf-8")
         session.path("report.json").write_text(json.dumps(report.to_dict(), indent=1), encoding="utf-8")
         session.meta["built"] = {"revision": revision, "ok": report.ok, "parts": report.parts,
                                  "bounds": list(report.bounds), "error": None}
@@ -467,6 +471,28 @@ class Toolbox:
                      status="draft", script=script, revision=revision)
         return True
 
+    def save_rejected(self, reason: str) -> str | None:
+        """Keep the latest build when no revision passed the checks, as Nova keeps a rejected draft.
+
+        It is not published: the files go to ``rejected/`` with the failed checks beside them, so
+        the customer can still open the model and see what has to be repaired.
+        """
+        session = self._session
+        self._restore()
+        if self._build is None or self._report is None or self._report.ok:
+            return None
+        target = session.path(REJECTED_DIR)
+        target.mkdir(parents=True, exist_ok=True)
+        (target / MODEL_FILE).write_text(to_ldraw(self._build, session.meta.get("title") or "Unverified draft"),
+                                         encoding="utf-8")
+        (target / "parts.csv").write_text(self._bill_of_materials(), encoding="utf-8")
+        (target / "verification.json").write_text(
+            json.dumps({**self._report.to_dict(), "passed": False, "stopped": reason}, indent=1), encoding="utf-8")
+        (target / "README.txt").write_text(REJECTED_README, encoding="utf-8")
+        session.meta["rejected"] = REJECTED_DIR
+        session.save()
+        return REJECTED_DIR
+
     def publish(self, title: str, summary: str, *, status: str = "published", script: str | None = None,
                 revision: int | None = None) -> ToolOutput:
         session = self._session
@@ -476,7 +502,7 @@ class Toolbox:
         number = len(session.meta["published"]) + 1
         target = session.path(f"published/{number:03d}")
         target.mkdir(parents=True, exist_ok=True)
-        (target / MODEL_FILE).write_text(to_ldraw(self._build, title), encoding="utf-8")
+        (target / MODEL_FILE).write_text(to_ldraw(self._build, title, self._report.plan), encoding="utf-8")
         (target / "build.py").write_text(session.script if script is None else script, encoding="utf-8")
         (target / "report.json").write_text(json.dumps(self._report.to_dict(), indent=1), encoding="utf-8")
         (target / "bom.csv").write_text(self._bill_of_materials(), encoding="utf-8")

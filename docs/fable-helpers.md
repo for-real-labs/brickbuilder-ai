@@ -146,8 +146,14 @@ they gave no new tree style: the trees stay plates and bricks.
 The checks follow studs. A wheel on a pin, a tyre on a rim, glass in a frame and a door on its
 hinges are not stud joints, so a script that guesses where such a part goes gets one that floats
 beside the model, and nothing tells it so. The helpers place these parts at the position
-customers' models or official sets use most, and record each joint (`kit.attach`, `kit.inset`),
-which the build report lists as declared and not verified.
+customers' models or official sets use most, and record each joint (`kit.attach`, `kit.inset`).
+The v2 methods then ask for evidence of every recorded joint: the two parts must touch, and a
+Technic pin or axle must lie in a hole of the other part
+([docs/fable-agent.md](fable-agent.md#novas-publication-rules-the-v2-methods)). That check found
+that the axle wheels (`truck`, `big`, `tall`, `balloon`) recorded their joints between the two
+side bricks and between a brick and the far wheel, parts that do not meet, and that a truck four
+studs wide got no axle at all. They now record brick to axle and axle to wheel, with an axle
+that reaches both rims at every width.
 
 | Joint | Position used, in the first part's own LDraw units | Seen in |
 |---|---|---|

@@ -30,6 +30,14 @@ def bench():
     return Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 6000})
 
 
+@pytest.fixture(scope="module")
+def strict():
+    """The same parts held to Nova's publication rules, as the v2 methods check a build."""
+    from fable_agent.app import Workbench
+    return Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 6000,
+                           "assembly_rules": True})
+
+
 def fresh(bench, ground=True):
     kit = Kit(bench.library, bench.shapes, bench.palette, bench.finder)
     if ground:
@@ -102,7 +110,7 @@ def body_on(bench, kit, ids):
 
 @pytest.mark.parametrize(("name", "style"), [(name, style) for name, helper in HELPERS.items()
                                              for style in helper.styles])
-def test_every_style_builds_clean_with_real_parts(bench, name, style):
+def test_every_style_builds_clean_with_real_parts(bench, strict, name, style):
     built = 0
     for arguments in cases(name, style):
         kit = fresh(bench, ground=name not in ("wheels", "chassis"))
@@ -126,10 +134,47 @@ def test_every_style_builds_clean_with_real_parts(bench, name, style):
             continue
         report = bench.checker.check(kit.build)
         assert report.ok, (arguments, [issue.message for issue in report.errors][:2])
+        # No solid plastic in the same place and no joint without evidence. (The test's ground is
+        # loose plates, so the one-model rule is tried on a bonded ground in the test below.)
+        refused = [issue.message for issue in strict.checker.check(kit.build).errors
+                   if issue.kind in ("material", "joint")]
+        assert not refused, (arguments, refused[:2])
         assert placed and all(bench.palette.allows(kit.build.placements[i].part, kit.build.placements[i].color)
                               for i in placed)
         built += 1
     assert built, f"{name} {style} refused every size it was asked for"
+
+
+@pytest.mark.parametrize("name", sorted(HELPERS))
+def test_every_helper_can_be_built_in_small_connected_steps(strict, name):
+    """On a bonded ground each helper's first buildable case passes Nova's rules and gets its instructions."""
+    for style in HELPERS[name].styles[:3]:
+        for arguments in cases(name, style)[:2]:
+            kit = Kit(strict.library, strict.shapes, strict.palette, strict.finder)
+            wheeled = name in ("wheels", "chassis")  # a vehicle stands on its own tyres, with a body on top
+            if not wheeled:
+                kit.fill({(x, z) for x in range(-12, 44) for z in range(-12, 44)}, 0, "Green", kind="plate", layers=2)
+            call = bind(kit)[name]
+            try:
+                if name == "roof":
+                    wide, deep = arguments.pop("width"), arguments.pop("depth")
+                    walls = {(x, z) for x in range(wide) for z in range(deep)} - {
+                        (x, z) for x in range(1, wide - 1) for z in range(1, deep - 1)}
+                    kit.fill(walls, 2, "White", layers=2)
+                    call(0, 8, 0, wide, deep, **arguments)
+                elif name == "deck":
+                    call(4, 2, 4, arguments.pop("width"), arguments.pop("depth"), **arguments)
+                elif wheeled:
+                    body_on(strict, kit, call(4, 0, 4, **arguments))
+                else:
+                    call(4, 2, 4, **arguments)
+            except KitError as error:
+                assert any(reason in str(error) for reason in MAY_REFUSE), (arguments, str(error))
+                continue
+            report = strict.checker.check(kit.build)
+            assert report.ok, (style, arguments, [issue.message for issue in report.errors][:2])
+            steps = report.plan.steps
+            assert report.plan.step_count > 1 and max(steps.count(step) for step in set(steps)) <= 5
 
 
 @pytest.mark.parametrize("style", sorted(windows.STYLES))

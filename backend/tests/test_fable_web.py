@@ -1,6 +1,8 @@
 import asyncio
+import io
 import json
 import threading
+import zipfile
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -11,6 +13,7 @@ from pydantic import ValidationError
 from src.api import building_agents
 from src.requests import fableToBricks as fable
 from src.requests import novaToBricks as nova
+from src.utils.build_design_guidance import guided_build_prompt
 from src.utils.building_agents import (FABLE_AGENTS, OFFERED_AGENTS, PIP_AGENT, PIP_MODELS, RETIRED_AGENTS,
                                        in_process_agent)
 from src.utils.generation_budget import GenerationUsage, current_generation_usage
@@ -59,6 +62,8 @@ def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypat
     assert offered["models"] == {PIP_AGENT: ["gpt-6.2-sol", "gpt-6.2-astra", "claude-opus-5-5", "claude-sonnet-5-5",
                                              "claude-fable-5-2"]}
     assert in_process_agent(AGENT) == AGENT and in_process_agent("nova") is None and in_process_agent(7) is None
+    # The v2 agents can read example builds first; Generation settings show the switch only for them.
+    assert offered["examples"] == ["fable-thorough-v2-gpt-6.2-sol", PIP_AGENT]
 
     outsider = {**ACCOUNT, "user_email": "outsider@example.test"}
     assert asyncio.run(building_agents(Response(), outsider)) == {"agents": ["nova"]}
@@ -178,7 +183,7 @@ def test_a_build_far_past_its_time_limit_is_abandoned_with_a_message(monkeypatch
     storage, _ = web_storage(monkeypatch)
     monkeypatch.setattr(fable, "HARD_STOP_SECONDS", -1)
 
-    def run(prompt, variant, max_parts, reference, script, key, on_event):
+    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False):
         on_event("thinking", {"text": "."})  # the first step after the limit raises
         raise AssertionError("the build should have been stopped")
 
@@ -289,8 +294,9 @@ def test_a_completed_job_exports_the_model_instructions_usage_and_owner_design(t
     error, ledger = asyncio.run(job())
     assert error is None
     prompt, options, script = options_seen[0]
-    assert (prompt, options.model, options.method, options.max_parts, script) == (
-        "A small cabin", "gpt-6.1-sol", "thorough", 400, None)
+    # The request carries the product's 3D default, as Nova's does; the saved design keeps the customer's words.
+    assert prompt == guided_build_prompt("A small cabin") and prompt.endswith("User request:\nA small cabin")
+    assert (options.model, options.method, options.max_parts, script) == ("gpt-6.1-sol", "thorough", 400, None)
     assert options.max_seconds == fable.BUILD_SECONDS  # every website build has a time limit
 
     saved = {call.kwargs["path"]: call.kwargs["file"] for call in publish.await_args_list}
@@ -336,11 +342,70 @@ def test_a_build_that_never_passes_its_checks_fails_with_a_message_for_the_custo
     assert error == "Fable could not complete this build."
 
 
+def test_a_build_that_fails_its_checks_leaves_an_unverified_draft_to_download(tmp_path, monkeypatch):
+    world = World(tmp_path / "world")
+    clash = "place('3001', 'Red', 0, 0, 0)\nplace('3001', 'White', 1, 0, 0)\n"
+    real_start = fable_app.start_build
+
+    def start_build(prompt, run_dir, options, **kwargs):
+        client = FakeClient([reply(tool_use("write_script", "c1", code=clash)),
+                             reply({"type": "text", "text": "I give up."}), reply({"type": "text", "text": "Still."})])
+        bench = fable_app.Workbench.open(world.settings(), runner=InlineRunner(world), renderer=FakeRenderer())
+        return real_start(prompt, run_dir, options, client=client, workbench=bench, **kwargs)
+
+    monkeypatch.setattr(fable, "start_build", start_build)
+    storage, publish = web_storage(monkeypatch)
+    request = nova.NovaToBricksRequest(prompt="A wall", max_parts=400, building_agent=AGENT)
+
+    def build():
+        return asyncio.run(fable._build("build", request, AGENT, FABLE_AGENTS[AGENT], None, None, "k",
+                                        on_progress=AsyncMock()))
+
+    error = build()
+    # The words the website looks for before it offers the draft download.
+    assert "Download the unverified draft" in error
+    storage.update_status.assert_awaited_with("build", "failed", error)
+    storage.store_model_file.assert_not_awaited()
+    saved = publish.await_args.kwargs
+    assert (saved["path"], saved["content_type"]) == ("build/nova-draft.zip", "application/zip")
+    with zipfile.ZipFile(io.BytesIO(saved["file"])) as archive:
+        assert sorted(archive.namelist()) == ["README.txt", "model.ldr", "parts.csv", "verification.json"]
+        checks = json.loads(archive.read("verification.json"))
+        assert checks["passed"] is False and checks["errors"][0]["kind"] == "overlap"
+        assert b"3001.dat" in archive.read("model.ldr")
+
+    # If the draft cannot be stored, the customer is not promised one.
+    publish.side_effect = RuntimeError("storage is down")
+    error = build()
+    assert "Download" not in error and "could not finish a model" in error
+    storage.update_status.assert_awaited_with("build", "failed", error)
+
+
+def test_a_rejected_draft_of_an_in_process_agent_is_served_but_never_a_nova_source(monkeypatch):
+    download = Mock(return_value=b"draft")
+    generation = {"user_id": "builder", "user_type": "authenticated", "endpoint": "novaToBricks",
+                  "model_used_3d": PIP_AGENT, "status": "failed"}
+    storage = SimpleNamespace(get_generation=AsyncMock(return_value=generation),
+                              client=SimpleNamespace(storage=SimpleNamespace(from_=lambda _: SimpleNamespace(
+                                  download=download))))
+    monkeypatch.setattr(nova, "generation_storage", storage)
+    owner = {"user_id": "builder", "authenticated": True}
+    response = asyncio.run(nova.get_nova_source("generation", owner))
+    assert response.body == b"draft" and "nova-draft.zip" in response.headers["content-disposition"]
+    download.assert_called_once_with("generation/nova-draft.zip")
+    with pytest.raises(HTTPException):
+        asyncio.run(nova.get_nova_source("generation", {"user_id": "someone-else", "authenticated": True}))
+    generation["status"] = "completed"
+    with pytest.raises(HTTPException) as refused:
+        asyncio.run(nova.get_nova_source("generation", owner))
+    assert refused.value.status_code == 404 and download.call_count == 1
+
+
 def test_cancelling_a_generation_stops_the_agent_at_its_next_step(monkeypatch):
     storage, _ = web_storage(monkeypatch)
     entered, stopped = threading.Event(), threading.Event()
 
-    def run(prompt, variant, max_parts, reference, script, key, on_event):
+    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False):
         entered.set()
         try:
             while True:
@@ -399,6 +464,27 @@ def test_a_pip_build_runs_on_the_chosen_model_and_its_own_key(monkeypatch, model
     assert key == ("openai-test" if model.startswith("gpt-") else "anthropic-test")
     assert create.await_args.kwargs["model_3d"] == PIP_AGENT
     assert fable.handle_auth_and_tracking.call_args.args[2]["agent_model"] == model
+
+
+@pytest.mark.parametrize(("agent", "asked", "given"), [
+    (PIP_AGENT, True, True), (PIP_AGENT, False, False),
+    (AGENT, True, False),  # a first-version agent has no examples to read, whatever is sent
+])
+def test_example_builds_are_off_unless_asked_for_and_only_for_the_v2_agents(tmp_path, monkeypatch, agent, asked, given):
+    seen = []
+
+    def start_build(prompt, run_dir, options, **kwargs):
+        seen.append(options)
+        return SimpleNamespace(published=None, status="refused", rejected=None)
+
+    monkeypatch.setattr(fable, "start_build", start_build)
+    web_storage(monkeypatch)
+    request = nova.NovaToBricksRequest(prompt="A boat", building_agent=agent, **({"use_examples": True} if asked else {}))
+    assert request.use_examples is asked
+    asyncio.run(fable._build("build", request, agent, FABLE_AGENTS[agent], None, None, "k", on_progress=AsyncMock()))
+    assert seen[0].examples is given
+    with pytest.raises(ValidationError):
+        nova.NovaToBricksRequest(prompt="A boat", building_agent=PIP_AGENT, use_examples="sometimes")
 
 
 def test_a_pip_build_without_a_choice_uses_its_default_model(monkeypatch):

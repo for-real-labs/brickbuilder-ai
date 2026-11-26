@@ -59,6 +59,8 @@ class NovaToBricksRequest(LlmToBricksRequest):
     building_agent: str = "nova"
     # The model for an agent that offers a choice (the Pip agent). None uses the agent's default.
     agent_model: str | None = Field(default=None, max_length=64)
+    # Let the agent read example scripts of the request's kind first (Generation settings; the Pip agent).
+    use_examples: bool = False
     auth_mode: Literal["api_key", "native"] = "api_key"
     parts_inventory: PartsInventory | None = None
 
@@ -359,10 +361,11 @@ async def get_nova_source(generation_id: str, auth_info: dict = Depends(get_user
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
     require_generation_access(generation, auth_info)
-    if (generation.get("endpoint") != "novaToBricks" or in_process_agent(generation.get("model_used_3d"))
-            or generation.get("status") not in {"completed", "failed"}):
-        raise HTTPException(status_code=404, detail="Nova source is not available for this generation")
     draft = generation.get("status") == "failed"
+    # An agent that runs inside the API keeps no Nova source, but its rejected draft is stored the same way.
+    if (generation.get("endpoint") != "novaToBricks" or generation.get("status") not in {"completed", "failed"}
+            or (in_process_agent(generation.get("model_used_3d")) and not draft)):
+        raise HTTPException(status_code=404, detail="Nova source is not available for this generation")
     filename = "nova-draft.zip" if draft else "nova-source.zip"
     try:
         bucket = generation_storage.client.storage.from_("generation-output")

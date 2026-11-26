@@ -6,6 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from fable_agent.assembly import AssemblyReview
 from fable_agent.catalog import PartFinder
 from fable_agent.checks import ModelChecker
 from fable_agent.kit import Kit
@@ -178,7 +179,7 @@ VEHICLE_PARTS = {
                             ("18977", 30), ("89201", 30), ("92402", 38), ("56898", 54), ("44309", 54), ("15413", 62),
                             ("55976", 71))},
     **{part: _shaped(f"Axle {part}", [(-half, -6, -6, half, 6, 6)])
-       for part, half in (("44294", 70), ("3707", 80), ("3737", 100))},
+       for part, half in (("3706", 60), ("44294", 70), ("3707", 80), ("3737", 100))},
     "3030": _block("Plate  4 x 10", 10, 4, 8),
     "3958": _block("Plate  6 x  6", 6, 6, 8),
     "4477": _block("Plate  1 x 10", 10, 1, 8),
@@ -216,12 +217,27 @@ HELPER_COLORS = {72: "Dark_Bluish_Grey", 70: "Reddish_Brown", 19: "Tan", 14: "Ye
                  43: "Trans_Light_Blue", 272: "Dark_Blue"}
 
 
+# A Technic pin and a brick with a hole for it, drawn with the library's connector primitives
+# (``World(extra=TECHNIC_PARTS)``). The pin lies along x; the hole runs through the brick along z.
+TECHNIC_PARTS = {
+    "3673": "\n".join(["0 Technic Pin"] + _shell(-20, -6, -6, 20, 6, 6, bottom=True)
+                      + ["1 16 0 0 0 0 1 0 -1 0 0 0 0 1 connect.dat"]) + "\n",
+    "3700": _block("Technic Brick  1 x  2 with Hole", 2, 1, 24) + "1 16 0 10 0 1 0 0 0 0 1 0 -1 0 peghole.dat\n",
+}
+PRIMITIVES = {
+    "stud.dat": STUD,
+    "connect.dat": "\n".join(["0 Technic Pin 1.0"] + _shell(-6, 0, -6, 6, 20, 6)) + "\n",
+    "peghole.dat": "\n".join(["0 Technic Peg Hole"] + _shell(-6, 0, -6, 6, 2, 6)) + "\n",
+}
+
+
 def make_library(root: Path, parts: dict | None = None, colors: dict | None = None) -> Path:
     parts = PARTS if parts is None else parts
     colors = COLORS if colors is None else colors
     (root / "parts").mkdir(parents=True)
     (root / "p").mkdir()
-    (root / "p" / "stud.dat").write_text(STUD)
+    for name, text in PRIMITIVES.items():
+        (root / "p" / name).write_text(text)
     for part_id, text in parts.items():
         (root / "parts" / f"{part_id}.dat").write_text(text)
     (root / "LDConfig.ldr").write_text("".join(
@@ -250,7 +266,7 @@ class World:
     """The collaborators most tests need, built over the synthetic library."""
 
     def __init__(self, tmp_path: Path, *, skip: set = frozenset(), max_parts: int = 500,
-                 extra: dict | None = None, colors: dict | None = None):
+                 extra: dict | None = None, colors: dict | None = None, assembly: bool = False):
         parts = {**PARTS, **(extra or {})}
         colors = {**COLORS, **(colors or {})}
         self.library = LDrawLibrary(make_library(tmp_path / "ldraw", parts, colors))
@@ -258,14 +274,16 @@ class World:
         self.shapes = ShapeLibrary(self.library)
         self.palette = load_palette(self.library, self.catalog_path)
         self.finder = PartFinder(self.library, self.palette)
-        self.checker = ModelChecker(self.library, self.shapes, self.palette, max_parts=max_parts)
+        self.assembly = assembly  # hold builds to Nova's publication rules, as the v2 methods do
+        self.checker = ModelChecker(self.library, self.shapes, self.palette, max_parts=max_parts,
+                                    assembly=AssemblyReview(self.library, self.shapes) if assembly else None)
 
     def kit(self) -> Kit:
         return Kit(self.library, self.shapes, self.palette, self.finder)
 
     def settings(self) -> dict:
         return {"ldraw_dir": str(self.library.root), "catalog_path": str(self.catalog_path),
-                "open_palette": False, "max_parts": 500, "effort": "low"}
+                "open_palette": False, "max_parts": 500, "effort": "low", "assembly_rules": self.assembly}
 
 
 class InlineRunner:

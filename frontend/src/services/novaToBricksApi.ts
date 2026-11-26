@@ -6,10 +6,14 @@ import { isAgentModel, isBuildingAgent, type AgentModel, type BuildingAgent } fr
 
 export type { AgentModel, BuildingAgent };
 
-/** What an account may choose: its agents, and for an agent with a choice of model, those models (default first). */
+/**
+ * What an account may choose: its agents, for an agent with a choice of model those models (default
+ * first), and the agents that can read example builds before they start.
+ */
 export interface BuildingAgentChoices {
   agents: BuildingAgent[];
   models: Partial<Record<BuildingAgent, AgentModel[]>>;
+  examples: BuildingAgent[];
 }
 export type NovaAuthMode = 'api_key' | 'native';
 
@@ -19,6 +23,8 @@ export interface NovaBuilderOptions {
   maxParts?: number;
   buildingAgent?: BuildingAgent;
   agentModel?: AgentModel;
+  /** Let the agent read example builds of the request's kind first (agents listed in `examples`). */
+  useExamples?: boolean;
 }
 
 export const DEFAULT_NOVA_OPTIONS: NovaBuilderOptions = {
@@ -55,7 +61,7 @@ export class NovaToBricksApiService {
     const response = await apiFetch(`${NOVA_API_BASE_URL}/generation-settings/building-agents`, {
       headers: { Authorization: `Bearer ${authToken}` }, signal, cache: 'no-store',
     });
-    if (!response.ok) return { agents: ['nova'], models: {} };
+    if (!response.ok) return { agents: ['nova'], models: {}, examples: [] };
     const data = await response.json();
     const listed: BuildingAgent[] = Array.isArray(data.agents) ? data.agents.filter(isBuildingAgent) : [];
     const agents = listed.includes('nova') ? listed : ['nova' as const, ...listed];
@@ -65,7 +71,9 @@ export class NovaToBricksApiService {
       const choices = Array.isArray(offered[agent]) ? (offered[agent] as unknown[]).filter(isAgentModel) : [];
       if (choices.length) models[agent] = choices;
     }
-    return { agents, models };
+    const examples = Array.isArray(data.examples)
+      ? (data.examples as unknown[]).filter(isBuildingAgent).filter(agent => agents.includes(agent)) : [];
+    return { agents, models, examples };
   }
   static async instructions(generationId: string): Promise<string> {
     const key = getInstructionKey(generationId);
@@ -122,6 +130,7 @@ export class NovaToBricksApiService {
         auth_mode: request.authMode,
         building_agent: request.buildingAgent,
         agent_model: request.agentModel,
+        use_examples: request.useExamples || undefined,
       }),
     });
     if (!response.ok) {

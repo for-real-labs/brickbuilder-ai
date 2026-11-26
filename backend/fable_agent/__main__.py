@@ -47,7 +47,8 @@ def _progress(stream):
 def _options(args) -> Options:
     return Options(ldraw_dir=args.ldraw_dir, catalog_path=args.catalog, open_palette=args.all_parts,
                    model=args.model, effort=args.effort, budget_usd=args.budget, max_steps=args.max_steps,
-                   max_parts=args.max_parts, method=getattr(args, "method", "thorough"))
+                   max_parts=args.max_parts, method=getattr(args, "method", "thorough"),
+                   examples=bool(getattr(args, "examples", False)))
 
 
 def _report(result, run_dir: Path) -> int:
@@ -57,6 +58,8 @@ def _report(result, run_dir: Path) -> int:
         print(f"Model: {run_dir / result.published['path'] / 'model.ldr'}")
         print(f"Preview: {run_dir / result.published['path'] / 'preview.png'}")
         print(f"Summary: {result.published['summary']}")
+    elif result.rejected:
+        print(f"Nothing passed the checks. Unverified draft and its failed checks: {run_dir / result.rejected}")
     return 0 if result.status in ("published", "draft") else 1
 
 
@@ -113,6 +116,8 @@ def main(argv: list[str] | None = None) -> int:
                        help="thorough: one long conversation, best detail. lean: a few short rounds, much cheaper. "
                             "The -v2 methods add ready-made trees and automatic repair; thorough-v2 also "
                             "has part measurements up front and batched edits")
+    build.add_argument("--examples", action="store_true",
+                       help="v2 methods: let the model pick a category of example scripts to read first")
     common(build)
 
     edit = commands.add_parser("edit", help="Continue an existing build with a change request")

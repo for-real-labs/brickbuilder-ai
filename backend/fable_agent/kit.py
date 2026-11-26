@@ -27,6 +27,7 @@ FACINGS = {"front": 0, "left": 90, "back": 180, "right": 270}
 KIND_HEIGHT = {"brick": 3, "plate": 1, "tile": 1}
 Matrix = tuple[float, float, float, float, float, float, float, float, float]
 IDENTITY: Matrix = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+BUILD_TOGETHER = "0 !BRICKBUILDER BUILD_TOGETHER"  # the instruction viewer's mark for a sub-assembly
 
 
 class KitError(ValueError):
@@ -477,24 +478,36 @@ def _number(value: float) -> str:
     return f"{rounded:.4f}".rstrip("0").rstrip(".")
 
 
-def to_ldraw(build: Build, title: str = "BrickBuilder model") -> str:
-    """A flat, self-describing LDraw model with one STEP per building step."""
+def to_ldraw(build: Build, title: str = "BrickBuilder model", plan=None) -> str:
+    """A flat, self-describing LDraw model with one STEP per building step.
+
+    With a ``plan`` (see ``sequence``) the parts are written in its building order and steps, and a
+    sub-assembly that is built before it goes on the model is marked for the viewer. Without one
+    the script's own ``step()`` calls are used, or bands of height when it made none.
+    """
     safe_title = " ".join(re.sub(r"[^\w .,'()&+-]", " ", title).split())[:80] or "BrickBuilder model"
     lines = [f"0 {safe_title}", "0 Name: model.ldr", "0 Author: BrickBuilder Fable agent",
              "0 !LDRAW_ORG Unofficial_Model", ""]
-    steps = sorted({p.step for p in build.placements})
-    banded = len(steps) <= 1
-    ordered = sorted(enumerate(build.placements),
-                     key=lambda item: (-item[1].position[1] // 24 if banded else item[1].step, item[0]))
+    if plan is not None:
+        keyed = [(step, build.placements[index], position in plan.together)
+                 for position, (index, step) in enumerate(zip(plan.order, plan.steps))]
+    else:
+        steps = sorted({p.step for p in build.placements})
+        banded = len(steps) <= 1
+        ordered = sorted(enumerate(build.placements),
+                         key=lambda item: (-item[1].position[1] // 24 if banded else item[1].step, item[0]))
+        keyed = [(-placement.position[1] // 24 if banded else placement.step, placement, False)
+                 for _, placement in ordered]
     previous_key = None
     previous_module = None
-    for _, placement in ordered:
-        key = -placement.position[1] // 24 if banded else placement.step
+    for key, placement, together in keyed:
         if previous_key is not None and key != previous_key:
             lines.append("0 STEP")
             previous_module = None
         if placement.module != previous_module:
             lines.append(f"0 // {placement.module}")
+        if together:
+            lines.append(BUILD_TOGETHER)
         previous_key, previous_module = key, placement.module
         numbers = " ".join(_number(v) for v in (*placement.position, *placement.matrix))
         lines.append(f"1 {placement.color} {numbers} {placement.part}.dat")
