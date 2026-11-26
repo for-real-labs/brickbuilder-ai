@@ -73,3 +73,11 @@
   .instructions-step-parts-toggle[aria-expanded="true"] { margin-bottom: 8px; }
   .instructions-step > .instructions-step-parts-toggle { margin-bottom: 0; }
 }
+
+.instructions-embedded .instructions-step-heading--mobile {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+.instructions-step-heading--mobile .instructions-mobile-back { justify-self: start; }
+.instructions-step-heading--mobile h4 { grid-column: 3; grid-row: 1; justify-self: end; text-align: right; }
+.instructions-step-heading--mobile .instructions-heading-actions { grid-column: 2; grid-row: 1; }

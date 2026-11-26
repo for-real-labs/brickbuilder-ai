@@ -452,6 +452,32 @@ it.each([[2, 2], [999, 1]])('opens landing instructions directly from step %s an
 });
 
 
+it('puts Back in the mobile instructions heading and shows the current step without a part count', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
+  const { InstructionsViewer } = await import('../src/pages/InstructionsPage');
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter><InstructionsViewer generationId="chimney" initialStep={2} embedded
+      mobileBackButton={<button type="button">Back</button>} /></MemoryRouter>));
+    const heading = container.querySelector('.instructions-step-heading--mobile')!;
+    expect(heading.firstElementChild?.textContent).toBe('Back');
+    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 2');
+    expect(heading.textContent).toContain('Parts list');
+    expect(heading.textContent).not.toContain('Add 2 parts');
+    const next = [...container.querySelectorAll('button')].find(button => button.textContent === 'Next')!;
+    await act(async () => next.click());
+    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 3');
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+    vi.restoreAllMocks();
+  }
+});
+
 it('toggles mobile step parts while keeping the complete list and step navigation available', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
   vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);

@@ -124,3 +124,8 @@
     gap: 4px;
   }
 }
+
+.instructions-mobile-back { display: inline-flex; align-items: center; justify-content: flex-start; gap: 2px; min-height: 44px; padding-inline: 4px 8px; border-radius: 8px; color: #334155; font-size: 13px; font-weight: 600; cursor: pointer; }
+.instructions-mobile-back:hover { color: #b91c1c; }
+.instructions-mobile-back:focus-visible { outline: 2px solid #f44336; outline-offset: -2px; }
+.instructions-inline-message > .instructions-mobile-back { position: absolute; top: 0; left: 8px; }
