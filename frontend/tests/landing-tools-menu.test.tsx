@@ -1,4 +1,4 @@
-const scannerAuth = vi.hoisted(() => ({ user: null as null | { email: string } }));
+const scannerAuth = vi.hoisted(() => ({ user: null as null | { id: string; email: string } }));
 vi.mock('../src/contexts/AuthContext', () => ({ useAuth: () => scannerAuth }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => ({ featureAccess: 'allowed', getFeatureAccess: () => 'allowed', requireFeature: () => true, enabled: false, openUpgrade: vi.fn(), retryAccess: vi.fn() }) }));
 import React, { act } from 'react';
@@ -6,6 +6,7 @@ import { createRoot } from 'react-dom/client';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import posthog from 'posthog-js';
+import { PhotoScannerApi } from '../src/services/photoScannerApi';
 import { LandingToolsMenu, type LandingToolsHandle } from '../src/components/LandingToolsMenu';
 import * as exports from '../src/utils/modelExport';
 import type { LandingModel } from '../src/hooks/useLandingModel';
@@ -150,10 +151,14 @@ it('shows asynchronous 3D export errors and allows retrying', async () => {
   expect(button('Download STL').disabled).toBe(false);
 });
 
- it.each(['jake@brickbuilder.ai', 'jakejohnson3700@gmail.com'])('shows Photo Scanner only for allowed account %s', (email) => {
-  scannerAuth.user = { email: 'someone@example.com' }; mount(); act(() => button('Tools').click());
+ it('shows Photo Scanner only after the server approves the account', async () => {
+  const check = vi.spyOn(PhotoScannerApi, 'access').mockResolvedValue({ allowed: false });
+  scannerAuth.user = { id: 'other', email: 'someone@example.com' };
+  await act(async () => { mount(); }); act(() => button('Tools').click());
   expect(host.querySelector('a[href="/photo-scanner"]')).toBeNull();
-  scannerAuth.user = { email }; mount();
+  check.mockResolvedValue({ allowed: true });
+  scannerAuth.user = { id: 'approved', email: 'approved@example.com' };
+  await act(async () => { mount(); });
   expect(host.querySelector('a[href="/photo-scanner"]')?.textContent).toBe('Photo Scanner');
   expect(host.querySelector('ul[aria-label="Tools"] > li')?.textContent).toBe('Photo Scanner');
   scannerAuth.user = null;

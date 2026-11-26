@@ -5,7 +5,6 @@ import { Helmet } from "react-helmet-async";
 import posthog from "posthog-js";
 import { useAuth } from "../contexts/AuthContext";
 import {
-  canUsePhotoScanner,
   groupScanRegions,
   PhotoScannerApi,
   scanFinished,
@@ -16,6 +15,7 @@ import {
   IMAGE_UPLOAD_ACCEPT,
   prepareImageUpload,
 } from "../utils/prepareImageUpload";
+import { usePhotoScannerAccess } from "../hooks/usePhotoScannerAccess";
 import "./PhotoScannerPage.css";
 import { ScannerPartsList } from "../components/PartsListEditor";
 
@@ -211,7 +211,6 @@ function ReviewRegion({
 }
 
 function ScannerWorkspace({ owner }: { owner: string }) {
-  const [allowed, setAllowed] = useState(false);
   const [scan, setScan] = useState<PhotoScan>();
   const [selected, setSelected] = useState<string>();
   const [error, setError] = useState("");
@@ -234,27 +233,17 @@ function ScannerWorkspace({ owner }: { owner: string }) {
   useEffect(() => {
     alive.current = true;
     const controller = new AbortController();
-    PhotoScannerApi.access(controller.signal)
-      .then(async () => {
-        if (controller.signal.aborted) return;
-        setAllowed(true);
-        track("opened");
-        const saved = sessionStorage.getItem(key);
-        if (saved) {
-          try {
-            const previous = await PhotoScannerApi.get(
-              saved,
-              controller.signal,
-            );
-            if (!controller.signal.aborted) setScan(previous);
-          } catch {
-            if (!controller.signal.aborted) sessionStorage.removeItem(key);
-          }
-        }
-      })
-      .catch((e) => {
-        if (!controller.signal.aborted) setError(e.message);
-      });
+    track("opened");
+    const saved = sessionStorage.getItem(key);
+    if (saved) {
+      PhotoScannerApi.get(saved, controller.signal)
+        .then((previous) => {
+          if (!controller.signal.aborted) setScan(previous);
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) sessionStorage.removeItem(key);
+        });
+    }
     return () => {
       alive.current = false;
       controller.abort();
@@ -360,304 +349,295 @@ function ScannerWorkspace({ owner }: { owner: string }) {
           )}
         </div>
       )}
-      {!allowed ? (
-        <p role="status">
-          {error
-            ? "This page is available only to the prototype account."
-            : "Checking private access…"}
-        </p>
-      ) : (
-        <>
-          <ScannerPartsList owner={owner} />
-          <div className="scanner-toolbar">
-            <div>
-              <strong>Photo Scanner</strong>
-              <span> SAM 3 + Brickognize</span>
-            </div>
-            <input
-              ref={input}
-              type="file"
-              aria-label="Choose a photo"
-              accept={IMAGE_UPLOAD_ACCEPT}
-              hidden
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                e.target.value = "";
-                if (file) void upload(file);
-              }}
-            />
-            <button
-              className="scanner-primary"
-              disabled={busy || Boolean(running)}
-              onClick={() => {
-                input.current?.click();
-                track("upload_clicked");
-              }}
-            >
-              <Upload size={16} />
-              {busy ? "Preparing photo…" : "Choose photo"}
-            </button>
-          </div>
-          <p className="scanner-disclosure">
-            Your photo is sent to fal.ai; isolated crops are sent to
-            Brickognize. Results are private and temporary (up to one hour;
-            server restarts clear them). Colors and inventory completeness are
-            not verified.
+      <ScannerPartsList owner={owner} />
+      <div className="scanner-toolbar">
+        <div>
+          <strong>Photo Scanner</strong>
+          <span> SAM 3 + Brickognize</span>
+        </div>
+        <input
+          ref={input}
+          type="file"
+          aria-label="Choose a photo"
+          accept={IMAGE_UPLOAD_ACCEPT}
+          hidden
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            e.target.value = "";
+            if (file) void upload(file);
+          }}
+        />
+        <button
+          className="scanner-primary"
+          disabled={busy || Boolean(running)}
+          onClick={() => {
+            input.current?.click();
+            track("upload_clicked");
+          }}
+        >
+          <Upload size={16} />
+          {busy ? "Preparing photo…" : "Choose photo"}
+        </button>
+      </div>
+      <p className="scanner-disclosure">
+        Your photo is sent to fal.ai; isolated crops are sent to
+        Brickognize. Results are private and temporary (up to one hour;
+        server restarts clear them). Colors and inventory completeness are
+        not verified.
+      </p>
+      {!scan && !preview ? (
+        <div className="scanner-empty">
+          <span>
+            <ScanLine size={42} />
+          </span>
+          <h2>Start with a spread of pieces</h2>
+          <p>
+            Use a clear, well-lit photo from above. Leave space between
+            pieces when you can.
           </p>
-          {!scan && !preview ? (
-            <div className="scanner-empty">
-              <span>
-                <ScanLine size={42} />
-              </span>
-              <h2>Start with a spread of pieces</h2>
-              <p>
-                Use a clear, well-lit photo from above. Leave space between
-                pieces when you can.
+          <div className="scanner-steps">
+            <span>01 · Upload photo</span>
+            <span>02 · Detect pieces</span>
+            <span>03 · Review parts</span>
+          </div>
+        </div>
+      ) : (
+        <div className="scanner-layout">
+          <section className="scanner-photo-panel">
+            <div className="scanner-section-heading">
+              <h2>The photo</h2>
+              <label>
+                <input
+                  type="checkbox"
+                  checked={overlay}
+                  onChange={(e) => {
+                    setOverlay(e.target.checked);
+                    track("overlay_toggled");
+                  }}
+                />{" "}
+                Regions
+              </label>
+            </div>
+            <div className="scanner-photo">
+              {(photo || preview) && (
+                <img src={photo || preview} alt="Uploaded LEGO spread" />
+              )}
+              {scan && overlay && (
+                <svg
+                  viewBox={`0 0 ${scan.width} ${scan.height}`}
+                  aria-label="Detected regions overlay"
+                >
+                  {scan.regions.map((region) => (
+                    <g
+                      key={region.id}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={`Review region ${region.id}`}
+                      onClick={() => select(region.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          select(region.id);
+                        }
+                      }}
+                      className={
+                        region.excluded
+                          ? "excluded"
+                          : region.id === selected
+                            ? "selected"
+                            : ""
+                      }
+                    >
+                      <rect
+                        x={region.box[0]}
+                        y={region.box[1]}
+                        width={region.box[2] - region.box[0]}
+                        height={region.box[3] - region.box[1]}
+                      />
+                      <text x={region.box[0]} y={region.box[1] + 18}>
+                        {region.id}
+                      </text>
+                    </g>
+                  ))}
+                </svg>
+              )}
+            </div>
+            {scan && (
+              <>
+                <div className="scanner-progress" role="status">
+                  <strong>
+                    {scan.status === "segmenting"
+                      ? `Finding pieces · tile ${scan.tiles_done} of ${scan.tiles_total}`
+                      : scan.status === "identifying"
+                        ? `Identifying · ${scan.completed} of ${scan.regions.length}`
+                        : scan.status === "cancelled"
+                          ? "Scan cancelled · partial results saved"
+                          : scan.status === "failed"
+                            ? "Scan stopped · partial results saved"
+                            : "Scan complete · ready to review"}
+                  </strong>
+                  <span>{Math.round(scan.elapsed_seconds)}s</span>
+                </div>
+                <progress
+                  max={
+                    scan.status === "segmenting"
+                      ? scan.tiles_total || 1
+                      : scan.regions.length || 1
+                  }
+                  value={
+                    scan.status === "segmenting"
+                      ? scan.tiles_done
+                      : scan.completed
+                  }
+                />
+                {running && (
+                  <button
+                    disabled={busy}
+                    onClick={async () => {
+                      setBusy(true);
+                      try {
+                        setScan(await PhotoScannerApi.cancel(scan.id));
+                        track("cancelled");
+                      } catch (e) {
+                        setError((e as Error).message);
+                      } finally {
+                        setBusy(false);
+                      }
+                    }}
+                  >
+                    Cancel scan
+                  </button>
+                )}
+                {scan.warnings.map((warning, i) => (
+                  <p key={i} className="scanner-warning">
+                    {warning}
+                  </p>
+                ))}
+              </>
+            )}
+            {scan && review ? (
+              <div ref={reviewPanel}>
+                <ReviewRegion
+                  key={review.id}
+                  scan={scan}
+                  region={review}
+                  onUpdate={setScan}
+                />
+              </div>
+            ) : (
+              <p className="scanner-muted">
+                Select a numbered region or part card to inspect its crop
+                and correct a match.
               </p>
-              <div className="scanner-steps">
-                <span>01 · Upload photo</span>
-                <span>02 · Detect pieces</span>
-                <span>03 · Review parts</span>
+            )}
+          </section>
+          <section className="scanner-results">
+            <div className="scanner-counts">
+              <div>
+                <strong>{scan?.regions.length ?? "—"}</strong>
+                <span>Detected regions</span>
+              </div>
+              <div>
+                <strong>{identified}</strong>
+                <span>Identified pieces</span>
+              </div>
+              <div>
+                <strong>{groups.length}</strong>
+                <span>Unique part types</span>
               </div>
             </div>
-          ) : (
-            <div className="scanner-layout">
-              <section className="scanner-photo-panel">
-                <div className="scanner-section-heading">
-                  <h2>The photo</h2>
-                  <label>
-                    <input
-                      type="checkbox"
-                      checked={overlay}
-                      onChange={(e) => {
-                        setOverlay(e.target.checked);
-                        track("overlay_toggled");
-                      }}
-                    />{" "}
-                    Regions
-                  </label>
-                </div>
-                <div className="scanner-photo">
-                  {(photo || preview) && (
-                    <img src={photo || preview} alt="Uploaded LEGO spread" />
-                  )}
-                  {scan && overlay && (
-                    <svg
-                      viewBox={`0 0 ${scan.width} ${scan.height}`}
-                      aria-label="Detected regions overlay"
-                    >
-                      {scan.regions.map((region) => (
-                        <g
-                          key={region.id}
-                          role="button"
-                          tabIndex={0}
-                          aria-label={`Review region ${region.id}`}
-                          onClick={() => select(region.id)}
-                          onKeyDown={(e) => {
-                            if (e.key === "Enter" || e.key === " ") {
-                              e.preventDefault();
-                              select(region.id);
-                            }
-                          }}
-                          className={
-                            region.excluded
-                              ? "excluded"
-                              : region.id === selected
-                                ? "selected"
-                                : ""
-                          }
-                        >
-                          <rect
-                            x={region.box[0]}
-                            y={region.box[1]}
-                            width={region.box[2] - region.box[0]}
-                            height={region.box[3] - region.box[1]}
-                          />
-                          <text x={region.box[0]} y={region.box[1] + 18}>
-                            {region.id}
-                          </text>
-                        </g>
-                      ))}
-                    </svg>
-                  )}
-                </div>
-                {scan && (
-                  <>
-                    <div className="scanner-progress" role="status">
-                      <strong>
-                        {scan.status === "segmenting"
-                          ? `Finding pieces · tile ${scan.tiles_done} of ${scan.tiles_total}`
-                          : scan.status === "identifying"
-                            ? `Identifying · ${scan.completed} of ${scan.regions.length}`
-                            : scan.status === "cancelled"
-                              ? "Scan cancelled · partial results saved"
-                              : scan.status === "failed"
-                                ? "Scan stopped · partial results saved"
-                                : "Scan complete · ready to review"}
-                      </strong>
-                      <span>{Math.round(scan.elapsed_seconds)}s</span>
+            <div className="scanner-section-heading">
+              <h2>Parts found</h2>
+              <span>Review before using</span>
+            </div>
+            <p className="scanner-muted">
+              Quantities count regions, not alternative matches. Similarity
+              scores are not verified accuracy.
+            </p>
+            <div className="scanner-parts-grid">
+              {groups.map((group) => (
+                <article className="scanner-part" key={group.match.id}>
+                  <button
+                    className="scanner-part-main"
+                    onClick={() => select(group.regions[0].id)}
+                  >
+                    <div className="scanner-part-image">
+                      {scan && (
+                        <PartThumbnail
+                          scanId={scan.id}
+                          region={group.regions[0]}
+                        />
+                      )}
+                      <b>×{group.regions.length}</b>
                     </div>
-                    <progress
-                      max={
-                        scan.status === "segmenting"
-                          ? scan.tiles_total || 1
-                          : scan.regions.length || 1
-                      }
-                      value={
-                        scan.status === "segmenting"
-                          ? scan.tiles_done
-                          : scan.completed
-                      }
-                    />
-                    {running && (
+                    <strong>{group.match.name}</strong>
+                    <span>#{group.match.id}</span>
+                    <small>
+                      {group.regions.some((r) => r.match?.score == null)
+                        ? "Includes manual correction"
+                        : `${Math.round(Math.min(...group.regions.map((r) => r.match!.score!)) * 100)}–${Math.round(Math.max(...group.regions.map((r) => r.match!.score!)) * 100)}% similarity`}
+                    </small>
+                    <em>
+                      {group.regions.some(
+                        (r) => !r.reviewed && (r.match?.score ?? 0) < 0.8,
+                      )
+                        ? "Uncertain · review"
+                        : group.regions.every((r) => r.reviewed)
+                          ? "Reviewed"
+                          : "Suggested match"}
+                    </em>
+                  </button>
+                  <div className="scanner-region-links">
+                    {group.regions.map((r) => (
                       <button
-                        disabled={busy}
-                        onClick={async () => {
-                          setBusy(true);
-                          try {
-                            setScan(await PhotoScannerApi.cancel(scan.id));
-                            track("cancelled");
-                          } catch (e) {
-                            setError((e as Error).message);
-                          } finally {
-                            setBusy(false);
-                          }
-                        }}
+                        key={r.id}
+                        aria-label={`Review region ${r.id}`}
+                        onClick={() => select(r.id)}
                       >
-                        Cancel scan
+                        {r.id}
                       </button>
-                    )}
-                    {scan.warnings.map((warning, i) => (
-                      <p key={i} className="scanner-warning">
-                        {warning}
-                      </p>
                     ))}
-                  </>
-                )}
-                {scan && review ? (
-                  <div ref={reviewPanel}>
-                    <ReviewRegion
-                      key={review.id}
-                      scan={scan}
-                      region={review}
-                      onUpdate={setScan}
-                    />
                   </div>
-                ) : (
-                  <p className="scanner-muted">
-                    Select a numbered region or part card to inspect its crop
-                    and correct a match.
-                  </p>
-                )}
-              </section>
-              <section className="scanner-results">
-                <div className="scanner-counts">
-                  <div>
-                    <strong>{scan?.regions.length ?? "—"}</strong>
-                    <span>Detected regions</span>
-                  </div>
-                  <div>
-                    <strong>{identified}</strong>
-                    <span>Identified pieces</span>
-                  </div>
-                  <div>
-                    <strong>{groups.length}</strong>
-                    <span>Unique part types</span>
-                  </div>
-                </div>
-                <div className="scanner-section-heading">
-                  <h2>Parts found</h2>
-                  <span>Review before using</span>
-                </div>
-                <p className="scanner-muted">
-                  Quantities count regions, not alternative matches. Similarity
-                  scores are not verified accuracy.
-                </p>
+                </article>
+              ))}
+            </div>
+            {unresolved.length > 0 && (
+              <>
+                <h2 className="scanner-unresolved-title">
+                  Unmatched & excluded <span>{unresolved.length}</span>
+                </h2>
                 <div className="scanner-parts-grid">
-                  {groups.map((group) => (
-                    <article className="scanner-part" key={group.match.id}>
-                      <button
-                        className="scanner-part-main"
-                        onClick={() => select(group.regions[0].id)}
-                      >
-                        <div className="scanner-part-image">
-                          {scan && (
-                            <PartThumbnail
-                              scanId={scan.id}
-                              region={group.regions[0]}
-                            />
-                          )}
-                          <b>×{group.regions.length}</b>
-                        </div>
-                        <strong>{group.match.name}</strong>
-                        <span>#{group.match.id}</span>
-                        <small>
-                          {group.regions.some((r) => r.match?.score == null)
-                            ? "Includes manual correction"
-                            : `${Math.round(Math.min(...group.regions.map((r) => r.match!.score!)) * 100)}–${Math.round(Math.max(...group.regions.map((r) => r.match!.score!)) * 100)}% similarity`}
-                        </small>
-                        <em>
-                          {group.regions.some(
-                            (r) => !r.reviewed && (r.match?.score ?? 0) < 0.8,
-                          )
-                            ? "Uncertain · review"
-                            : group.regions.every((r) => r.reviewed)
-                              ? "Reviewed"
-                              : "Suggested match"}
-                        </em>
-                      </button>
-                      <div className="scanner-region-links">
-                        {group.regions.map((r) => (
-                          <button
-                            key={r.id}
-                            aria-label={`Review region ${r.id}`}
-                            onClick={() => select(r.id)}
-                          >
-                            {r.id}
-                          </button>
-                        ))}
-                      </div>
-                    </article>
+                  {unresolved.map((region) => (
+                    <button
+                      className="scanner-unresolved"
+                      key={region.id}
+                      onClick={() => select(region.id)}
+                    >
+                      <Crop scanId={scan!.id} region={region.id} />
+                      <strong>Region {region.id}</strong>
+                      <span>
+                        {region.excluded ? "Excluded" : region.status}
+                      </span>
+                    </button>
                   ))}
                 </div>
-                {unresolved.length > 0 && (
-                  <>
-                    <h2 className="scanner-unresolved-title">
-                      Unmatched & excluded <span>{unresolved.length}</span>
-                    </h2>
-                    <div className="scanner-parts-grid">
-                      {unresolved.map((region) => (
-                        <button
-                          className="scanner-unresolved"
-                          key={region.id}
-                          onClick={() => select(region.id)}
-                        >
-                          <Crop scanId={scan!.id} region={region.id} />
-                          <strong>Region {region.id}</strong>
-                          <span>
-                            {region.excluded ? "Excluded" : region.status}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-                {scan && (
-                  <p className="scanner-muted">
-                    {scan.duplicates_removed} likely duplicate detections
-                    removed · {scan.retries} API retries
-                  </p>
-                )}
-              </section>
-            </div>
-          )}
-        </>
+              </>
+            )}
+            {scan && (
+              <p className="scanner-muted">
+                {scan.duplicates_removed} likely duplicate detections
+                removed · {scan.retries} API retries
+              </p>
+            )}
+          </section>
+        </div>
       )}
     </>
   );
 }
 export default function PhotoScannerPage() {
   const { user, loading, isSupabaseConfigured, signOut } = useAuth();
+  const scannerAccess = usePhotoScannerAccess(user);
   const [signInError, setSignInError] = useState("");
   return (
     <main className="photo-scanner">
@@ -670,9 +650,11 @@ export default function PhotoScannerPage() {
           <ArrowLeft size={16} />
           Back to BrickBuilder
         </Link>
-        {loading ? (
-          <p>Checking account…</p>
-        ) : canUsePhotoScanner(user?.email) && user ? (
+        {loading || scannerAccess === "checking" ? (
+          <p>Checking private access…</p>
+        ) : scannerAccess === "unavailable" ? (
+          <p role="alert">Photo Scanner is unavailable. Please try again.</p>
+        ) : scannerAccess === "allowed" && user ? (
           <ScannerWorkspace key={user.id} owner={user.id} />
         ) : (
           <div className="scanner-private">
@@ -680,18 +662,18 @@ export default function PhotoScannerPage() {
             <h1>Private prototype</h1>
             {isSupabaseConfigured === false ? <>
               <p>This local workspace is not signed in to an account.</p>
-              <p>Open the live scanner and sign in as jake@brickbuilder.ai or jakejohnson3700@gmail.com.</p>
+              <p>Open the live scanner and sign in with an approved account.</p>
               <a href="https://brickbuilder.ai/photo-scanner" onClick={() => track('live_site_opened')}>Open Photo Scanner on BrickBuilder.ai</a>
             </> : user ? <>
               <p>You’re signed in as {user.email || 'an account without an email'}.</p>
-              <p>Photo Scanner is available only to jake@brickbuilder.ai and jakejohnson3700@gmail.com.</p>
+              <p>This account does not have access to Photo Scanner.</p>
               <button onClick={async () => {
                 track('switch_account_clicked');
                 try { await signOut(); window.location.assign('/login?next=%2Fphoto-scanner'); }
                 catch { setSignInError('Could not switch accounts. Please try again.'); }
               }}>Switch account</button>
             </> : <>
-              <p>Sign in as jake@brickbuilder.ai or jakejohnson3700@gmail.com to open Photo Scanner.</p>
+              <p>Sign in with an approved account to open Photo Scanner.</p>
               <Link to="/login?next=%2Fphoto-scanner" onClick={() => track('sign_in_clicked')}>Sign in to Photo Scanner</Link>
             </>}
             {signInError && <p role="alert">{signInError}</p>}

@@ -212,3 +212,17 @@ def test_both_owner_accounts_have_access_but_scans_stay_separate(client, email):
     assert client.get('/photo-scanner/access').status_code == 200
     scan = make_scan('first-account')
     assert client.get(f'/photo-scanner/scans/{scan.id}').status_code == 404
+
+
+def test_configured_account_can_scan_without_access_to_other_accounts_assets(client, monkeypatch):
+    monkeypatch.setenv('PHOTO_SCANNER_ALLOWED_EMAILS', ' someone@example.com, TESTER@example.com ')
+    client.app.dependency_overrides[api.get_optional_identity] = lambda: {
+        'authenticated': True, 'auth_method': 'jwt', 'user_id': 'tester', 'user_email': 'tester@example.com',
+    }
+    assert client.get('/photo-scanner/access').json() == {'allowed': True}
+    own_scan = make_scan('tester')
+    other_scan = make_scan('someone')
+    assert client.get(f'/photo-scanner/scans/{own_scan.id}/assets/photo').status_code == 200
+    assert client.get(f'/photo-scanner/scans/{other_scan.id}/assets/photo').status_code == 404
+    monkeypatch.delenv('PHOTO_SCANNER_ALLOWED_EMAILS')
+    assert client.get('/photo-scanner/access').status_code == 403

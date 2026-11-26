@@ -1,6 +1,6 @@
 import { expect, it, vi } from 'vitest';
 import { authenticatedApiFetch } from '../src/services/apiFetch';
-import { PhotoScannerApi, canUsePhotoScanner, scanFinished, type PhotoScan } from '../src/services/photoScannerApi';
+import { PhotoScannerApi, scanFinished, type PhotoScan } from '../src/services/photoScannerApi';
 vi.mock('../src/services/apiFetch', () => ({ authenticatedApiFetch: vi.fn() }));
 it('uses authenticated transport for every operation including images', async () => {
  const fetch = vi.mocked(authenticatedApiFetch);
@@ -13,12 +13,15 @@ it('uses authenticated transport for every operation including images', async ()
 });
 it('surfaces authorization and expired-scan errors and rejects inaccessible images', async () => {
  vi.mocked(authenticatedApiFetch).mockResolvedValue(new Response(JSON.stringify({ detail: 'This prototype is private.' }), { status: 403 }));
- await expect(PhotoScannerApi.access()).rejects.toThrow('This prototype is private.');
+ await expect(PhotoScannerApi.access()).resolves.toEqual({ allowed: false });
  vi.mocked(authenticatedApiFetch).mockResolvedValue(new Response('not JSON', { status: 500 })); await expect(PhotoScannerApi.get('scan')).rejects.toThrow('unavailable');
  await expect(PhotoScannerApi.asset('scan', 'photo', new AbortController().signal)).rejects.toThrow('Image unavailable');
 });
-it('recognizes the private account and terminal scan states', () => {
- expect(canUsePhotoScanner('JAKE@BRICKBUILDER.AI')).toBe(true); expect(canUsePhotoScanner(null)).toBeFalsy(); expect(canUsePhotoScanner('jake@example.com')).toBe(false);
+it('recognizes explicit approval from the server', async () => {
+ vi.mocked(authenticatedApiFetch).mockResolvedValue(new Response(JSON.stringify({ allowed: true })));
+ await expect(PhotoScannerApi.access()).resolves.toEqual({ allowed: true });
+});
+it('recognizes terminal scan states', () => {
  for (const status of ['complete', 'cancelled', 'failed']) expect(scanFinished({ status } as PhotoScan)).toBe(true);
  expect(scanFinished({ status: 'identifying' } as PhotoScan)).toBe(false);
 });

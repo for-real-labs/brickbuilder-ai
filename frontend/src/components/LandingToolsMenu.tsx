@@ -1,5 +1,5 @@
 import { useAuth } from '../contexts/AuthContext';
-import { canUsePhotoScanner } from '../services/photoScannerApi';
+import { usePhotoScannerAccess } from '../hooks/usePhotoScannerAccess';
 import { StudioEditButton } from "./StudioEditButton";
 import React, { useEffect, useId, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react';
 import { Box, ChevronDown, Download, Upload, Github, Image, LifeBuoy, MessageSquare, Settings, Users, Wrench } from 'lucide-react';
@@ -37,6 +37,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
 }>(function LandingToolsMenu({ page, generationSettings, model, busy = false }, ref) {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const scannerAccess = usePhotoScannerAccess(user);
   const { openPicker } = usePet();
   const { featureAccess, requireFeature } = useBilling();
   const focusChoices = useRef(false);
@@ -189,7 +190,7 @@ export const LandingToolsMenu = React.forwardRef<LandingToolsHandle, {
     </button>
     {open && <div id={panelId} style={{ left: panelLeft }} className="absolute top-full z-[60] mt-2 max-h-[calc(var(--landing-viewport-height,100dvh)-5rem)] w-64 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl">
       <ul aria-label="Tools" className="m-0 list-none p-0">
-        {canUsePhotoScanner(user?.email) && <li><Link to="/photo-scanner" className={rowClass} onClick={() => { posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Photo Scanner' }); setOpen(false); }}><Image aria-hidden="true" className="h-4 w-4" />Photo Scanner</Link></li>}
+        {scannerAccess === 'allowed' && <li><Link to="/photo-scanner" className={rowClass} onClick={() => { posthog.capture('landing_header_tools_item_clicked', { ...attribution(), tool: 'Photo Scanner' }); setOpen(false); }}><Image aria-hidden="true" className="h-4 w-4" />Photo Scanner</Link></li>}
         {(['import', 'export'] as const).map(action => <li key={action}>
           <button type="button" className={rowClass} aria-expanded={submenu === action} aria-controls={`${panelId}-${action}`}
             onClick={() => {
