@@ -13,6 +13,7 @@ a part are outside it.
 from __future__ import annotations
 
 import heapq
+from collections import defaultdict
 from dataclasses import dataclass, field, replace
 
 from .kit import Build
@@ -148,8 +149,7 @@ class SequencePlanner:
             joints = replace(joints, stacks=_shaft_stacks(shafts))
         foundation = self._foundation(build, boxes)
         inside = _inside_axle_ends(shafts or {})
-        preferred = {part for assembly in inside.values() for part in assembly}
-        order = self._order(build, joints, foundation, preferred)
+        order = self._order(build, joints, foundation, inside)
         self._verify(order, joints, foundation)
         groups = self._together(order, joints)
         return Plan(tuple(order), self._steps(build, order, groups, inside), frozenset(groups))
@@ -201,7 +201,7 @@ class SequencePlanner:
         return foundation
 
     @staticmethod
-    def _order(build: Build, joints: _Joints, foundation: set[int], preferred=frozenset()) -> list[int]:
+    def _order(build: Build, joints: _Joints, foundation: set[int], ends=None) -> list[int]:
         """Grow one attached assembly, lowest pieces first, without closing in an unplaced piece.
 
         The pieces on the ground are seated first. With none, the lowest piece starts. Among the
@@ -220,18 +220,29 @@ class SequencePlanner:
                 raise NoSequence("The model is not one connected piece",
                                  tuple(sorted(set(range(count)) - reached)))
 
+        ends = ends or {}
+        caps = defaultdict(set)
+        for end, interior in ends.items():
+            for part in interior:
+                caps[part].add(end)
+        placed: set[int] = set()
+
         def priority(index: int) -> tuple:
-            return (index not in foundation, index not in preferred, -heights[index], index)
+            # If a wheel is reachable from the body before its axle, leave it until the inner
+            # pieces are fitted. An open end is still usable if it is the only way to proceed.
+            premature_end = index in ends and not ends[index] <= placed
+            return (index not in foundation, premature_end, index not in caps, -heights[index], index)
 
         seeds = foundation or {min(range(count), key=priority)}
         frontier = [priority(index) for index in seeds]
         heapq.heapify(frontier)
         discovered, scheduled = set(seeds), set(seeds)
         waiting: list[set[int]] = [set() for _ in range(count)]
-        placed: set[int] = set()
         order: list[int] = []
         while frontier:
             index = heapq.heappop(frontier)[-1]
+            if index not in scheduled:
+                continue  # an old heap entry for an end piece that was reprioritized
             scheduled.remove(index)
             blockers = (_trapped(index, placed, joints.above, joints.below)
                         | _trapped_on_shaft(index, placed, joints.stacks))
@@ -241,6 +252,9 @@ class SequencePlanner:
                 continue
             order.append(index)
             placed.add(index)
+            for end in caps.get(index, ()):
+                if end in scheduled and ends[end] <= placed:
+                    heapq.heappush(frontier, priority(end))
             for candidate in waiting[index]:
                 if candidate not in placed and candidate not in scheduled:
                     heapq.heappush(frontier, priority(candidate))

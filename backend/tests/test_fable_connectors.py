@@ -315,3 +315,16 @@ def test_a_plane_whose_wing_is_missing_on_one_side_is_reported_and_a_mirrored_on
     found = review.review(one_sided, boxes_of(one_sided), set(), str, "aircraft")
     assert [item.code for item in found] == ["vehicle.symmetry"] and not found[0].error
     assert review.review(one_sided, boxes_of(one_sided), set(), str, None) == []  # not a plane: not checked
+
+
+@real_parts
+def test_saved_truck_rims_are_outside_the_bricks_even_when_connector_anchors_coincide(bench):
+    # In the original truck the old rim anchor was at the same station as the adjacent brick.
+    parts = [placed("3707", (60, -54, 200)),
+             placed("56904", (-10, -54, 200), X_ONTO_Z),
+             placed("56904", (130, -54, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0)),
+             placed("32064a", (10, -64, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0)),
+             placed("32064a", (110, -64, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0))]
+    measured = bench.checker._assembly.measure(parts)
+    stations = {part: at for at, part in measured.connectors.shafts[0]}
+    assert stations[1] < stations[3] < stations[4] < stations[2]

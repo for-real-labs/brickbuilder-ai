@@ -665,3 +665,17 @@ def test_through_axle_bricks_get_an_earlier_instruction_step_than_either_wheel(t
     plan = SequencePlanner(world.shapes).plan(build, [], {}, measured.fits, measured.connectors.shafts)
     steps = dict(zip(plan.order, plan.steps))
     assert max(steps[3], steps[4]) < min(steps[0], steps[1])
+
+
+def test_axle_end_reachable_from_the_body_waits_for_its_supports(tmp_path):
+    world = World(tmp_path)
+    # A base (0) reaches both an end wheel (1) and the chassis (2). Only the chassis leads to
+    # the inner supports (3, 4) without capping the axle (5). The other end wheel is 6.
+    build = Build([Placement("3001", 0, (0, 0, 0), IDENTITY)] * 7)
+    fits = {(0, 1), (0, 2), (2, 3), (3, 5), (4, 5), (1, 5), (5, 6)}
+    boxes = {0: [(0, 0, 0, 40, 24, 40)]}
+    shafts = {5: [(-70, 1), (-50, 3), (50, 4), (70, 6)]}
+    plan = SequencePlanner(world.shapes).plan(build, [], boxes, fits, shafts)
+    steps = dict(zip(plan.order, plan.steps))
+    assert plan.order[0] == 0
+    assert max(steps[3], steps[4]) < min(steps[1], steps[6])

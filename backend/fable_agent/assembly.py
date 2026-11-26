@@ -69,9 +69,12 @@ class AssemblyReview:
             if reason is not None:
                 refuted[pair] = reason
         fits = (shaped - set(refuted)) | found.joints
-        registered = {(shaft, part) for shaft, stack in found.shafts.items() for _, part in stack}
+        # Connector anchors may be at the lip of a wheel, level with the neighbouring brick.
+        # Use the measured centre of the rim or bore for ordering when we have both.
+        for shaft, stack in found.shafts.items():
+            found.shafts[shaft] = [(at, part) for at, part in stack if (shaft, part) not in seats]
         for (shaft, part), station in seats.items():
-            if (shaft, part) not in registered and (min(shaft, part), max(shaft, part)) in fits:
+            if (min(shaft, part), max(shaft, part)) in fits:
                 found.shafts.setdefault(shaft, []).append((station, part))
         return Measured(fits, refuted, len(found.joints), found)
 
