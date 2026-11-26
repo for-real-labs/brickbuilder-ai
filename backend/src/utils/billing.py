@@ -146,6 +146,7 @@ def public_wallet(row):
         "subscription_provider": "external_tester" if tester else "apple" if apple_active(row) else "stripe" if row.get("stripe_subscription_id") else None,
         "apple_plan": row.get("apple_plan"), "apple_expires_at": row.get("apple_expires_at"),
         "period_start": row["period_start"], "period_end": row["period_end"],
+        "payment_status_version": row.get("sync_version") if row["subscription_status"] in ("past_due", "unpaid") else None,
         "subscription_status": "none" if tester else row["subscription_status"],
         "cancel_at_period_end": not tester and row["cancel_at_period_end"],
         "has_subscription": tester or apple_active(row) or row["subscription_status"] not in ("none", "canceled", "incomplete_expired"),
@@ -315,6 +316,31 @@ def object_id(value):
 def invoice_subscription(invoice):
     return object_id(invoice.get("subscription") or
         (invoice.get("parent") or {}).get("subscription_details", {}).get("subscription"))
+
+
+async def failed_payment(identity):
+    """Only expose display details of the caller's outstanding subscription invoice."""
+    row = await wallet(account_id(identity))
+    customer = row.get("stripe_customer_id")
+    subscription = row.get("stripe_subscription_id")
+    if not customer or not subscription or row["subscription_status"] not in ("past_due", "unpaid"):
+        return None
+    sub = await asyncio.to_thread(stripe.Subscription.retrieve, subscription, api_key=stripe_key())
+    if sub["customer"] != customer or sub.get("livemode") is not live_mode() or not sub.get("latest_invoice"):
+        return None
+    invoice = await asyncio.to_thread(stripe.Invoice.retrieve, object_id(sub["latest_invoice"]),
+        expand=["payments.data.payment.payment_intent"], api_key=stripe_key())
+    if (invoice.get("customer") != customer or invoice_subscription(invoice) != subscription
+            or invoice.get("livemode") is not live_mode() or invoice.get("status") != "open"
+            or not invoice.get("attempted") or invoice.get("currency") != "usd"):
+        return None
+    for payment in (invoice.get("payments") or {}).get("data", []):
+        if payment.get("is_default") and payment.get("status") == "open":
+            intent = (payment.get("payment") or {}).get("payment_intent")
+            if isinstance(intent, dict):
+                error = intent.get("last_payment_error") or {}
+                return {"amount_due_cents": invoice["amount_remaining"], "card_declined": error.get("code") == "card_declined"}
+    return {"amount_due_cents": invoice["amount_remaining"], "card_declined": False}
 
 
 def invoice_price(line):

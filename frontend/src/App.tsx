@@ -39,6 +39,7 @@ import PetPreviewPage from './pages/PetPreviewPage';
 import { AnnouncementBanner } from "./components/AnnouncementBanner";
 import { ChangeRequestProvider } from "./components/ChangeRequestLauncher";
 import { BillingProvider } from './contexts/BillingContext';
+import { BillingPaymentNotice } from './components/BillingPaymentNotice';
 import { BillingOverlays } from './components/BillingComponents';
 import { PlanPopupRedirect } from './components/PlanPopupRedirect';
 import BillingPage from './pages/BillingPage';
@@ -60,6 +61,7 @@ function MainApp() {
       <MobileAppBanner />
       <PetProvider>
       <BillingProvider>
+      <BillingPaymentNotice />
       <AiConsentDialog />
       <AiBillingPrompt />
       <GenerationNotificationsProvider>

@@ -61,6 +61,11 @@ async def account(identity: dict = Depends(get_optional_identity)):
     return await run(billing.account(identity))
 
 
+@router.get("/failed-payment")
+async def failed_payment(identity: dict = Depends(get_optional_identity)):
+    return await run(billing.failed_payment(identity))
+
+
 @router.post("/checkout")
 async def checkout(request: CheckoutRequest, http_request: Request, identity: dict = Depends(get_optional_identity)):
     attribution = meta_subscription.checkout_metadata(request.meta_click, http_request.headers, live=billing.live_mode())

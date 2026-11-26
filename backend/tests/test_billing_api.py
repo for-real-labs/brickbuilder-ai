@@ -528,3 +528,29 @@ def test_trial_can_continue_in_paid_checkout(plan_checkout, monkeypatch, identit
         'external_tester_expires_at': '2099-01-01T00:00:00Z'}))
     assert asyncio.run(billing.checkout(identity, 'builder', 'elements'))['client_secret'] == 'cs_secret'
     assert plan_checkout.call_args.kwargs['mode'] == 'subscription'
+
+
+@pytest.mark.parametrize("case, expected", [
+    ("declined", {"amount_due_cents": 1999, "card_declined": True}),
+    ("other_error", {"amount_due_cents": 1999, "card_declined": False}),
+    ("active", None), ("other_customer", None), ("other_invoice", None), ("paid", None),
+])
+def test_failed_payment_only_exposes_owners_open_invoice(monkeypatch, identity, subscription, case, expected):
+    row = {"subscription_status": "active" if case == "active" else "past_due",
+           "stripe_customer_id": "cus_test", "stripe_subscription_id": "sub_test"}
+    monkeypatch.setattr(billing, "wallet", AsyncMock(return_value=row))
+    invoice = subscription.latest_invoice
+    invoice.update({"amount_remaining": 1999, "attempted": True, "currency": "usd", "customer": "cus_test",
+                    "status": "paid" if case == "paid" else "open",
+                    "payments": {"data": [{"is_default": True, "status": "open", "payment": {"payment_intent": {
+                        "last_payment_error": {"code": "processing_error" if case == "other_error" else "card_declined"}}}}]}})
+    if case == "other_customer":
+        subscription.customer = "cus_other"
+    if case == "other_invoice":
+        invoice.parent.subscription_details.subscription = "sub_other"
+    retrieve = Mock(return_value=subscription)
+    monkeypatch.setattr(billing.stripe.Subscription, "retrieve", retrieve)
+    monkeypatch.setattr(billing.stripe.Invoice, "retrieve", Mock(return_value=invoice))
+    assert asyncio.run(billing.failed_payment(identity)) == expected
+    if case == "active":
+        retrieve.assert_not_called()
