@@ -1065,6 +1065,49 @@ it('does not open instructions without an explicit model ID', async () => {
   expect(container.querySelector('.landing-model-panel')).toBeNull();
 });
 
+it('opens mobile instructions expanded and returns to the model with the dialogue below the viewer', async () => {
+  vi.stubGlobal('matchMedia', (queryText: string) => ({
+    matches: queryText === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn(),
+  }));
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+
+  const header = container.querySelector('.landing-header--model')!;
+  const panel = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;
+  const createNew = panel.querySelector<HTMLButtonElement>('.landing-model-create-new button')!;
+  const title = panel.querySelector('.landing-model-heading')!;
+  const conversation = container.querySelector('.landing-model-conversation')!;
+  const instructions = () => panel.querySelector<HTMLButtonElement>('.landing-instructions-toggle')!;
+  expect(header.querySelector('.landing-header-github')).not.toBeNull();
+  expect(createNew.compareDocumentPosition(title) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  expect(instructions().compareDocumentPosition(conversation) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+  await act(async () => instructions().click());
+  expect(panel.dataset.expanded).toBe('true');
+  expect(panel.dataset.view).toBe('instructions');
+  expect(panel.querySelector<HTMLButtonElement>('.landing-view-expand')?.hidden).toBe(true);
+  expect(document.body.style.overflow).toBe('hidden');
+
+  await act(async () => panel.querySelector<HTMLButtonElement>('.landing-view-back')!.click());
+  expect(panel.dataset.expanded).toBe('false');
+  expect(panel.dataset.view).toBe('model');
+  expect(query.value).toBe('id=castle&exact=1');
+  expect(document.activeElement).toBe(instructions());
+
+  query.value = 'id=castle&exact=1&instructions=1&step=4';
+  await act(async () => root.render(<LandingPage />));
+  expect(panel.dataset.expanded).toBe('true');
+  expect(panel.dataset.view).toBe('instructions');
+  await act(async () => document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' })));
+  expect(panel.dataset.view).toBe('model');
+  expect(query.value).toBe('id=castle&exact=1');
+
+  await act(async () => panel.querySelector<HTMLButtonElement>('.landing-model-create-new button')!.click());
+  expect(container.querySelector('.landing-model-panel')).toBeNull();
+  expect(container.querySelector('.landing-header--model')).toBeNull();
+});
+
 it('places the instructions button below the viewer and updates the URL without adding history', async () => {
   query.value = 'id=castle&exact=1';
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
@@ -1268,8 +1311,7 @@ it('keeps the instructions sidebar and Go Back behavior at a zoomed desktop widt
   expect(container.querySelector('[data-testid="viewer"]')).not.toBeNull();
 });
 
-it('toggles expanded instructions from the top-right control without changing the linked step', async () => {
-  vi.stubGlobal('matchMedia', () => ({ matches: true }));
+it('toggles expanded desktop instructions from the top-right control without changing the linked step', async () => {
   query.value = 'id=castle&instructions=1&step=4';
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'model' }} busy={false}>{null}</LandingModelWorkspace>));
   const dialog = container.querySelector<HTMLDialogElement>('.landing-model-panel')!;

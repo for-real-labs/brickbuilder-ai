@@ -321,3 +321,60 @@ body:has(.landing-page .landing-model-panel[data-expanded="true"]) [data-app-ban
 .landing-generation-settings-button:hover, .landing-generation-settings-button[aria-expanded="true"] { background: #ffe9e4; color: #df443c; border-color: #ef6b60; }
 
 .landing-trademark { margin: 0; padding: 0 8px; color: #94a3b8; font-size: clamp(6px, 1.8vw, 10px); line-height: 1.5; text-align: center; white-space: nowrap; }
+
+@media (max-width: 767px) {
+  .landing-header--model { display: flex; flex-wrap: nowrap; }
+  .landing-header--model > nav { gap: 4px; }
+  .landing-header--model .landing-header-github,
+  .landing-header--model .landing-header-brand > .landing-create-new { display: none; }
+  .landing-header--model .landing-header-brand > a > span { font-size: clamp(12px, 4vw, 16px); }
+
+  .landing-page:has(.landing-model-layout) .landing-page-intro { display: none; }
+  .landing-page:has(.landing-model-layout) .landing-page-shell { padding-top: 12px; }
+  .landing-page:has(.landing-model-layout) .landing-page-content {
+    --landing-model-bottom: max(8px, env(safe-area-inset-bottom), var(--landing-order-banner-height, 0px));
+    overflow: clip;
+    padding: 8px 0 var(--landing-model-bottom);
+  }
+  .landing-page:has(.landing-model-layout) .landing-page-content-inner { height: 100%; }
+  .landing-page .landing-model-host:has(.landing-model-layout) {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 8px;
+    height: 100%;
+    min-height: 0;
+  }
+  .landing-page .landing-model-layout,
+  .landing-page .landing-model-panel { min-height: 0; height: 100%; }
+  .landing-page .landing-model-panel .landing-model-workspace {
+    flex: 1;
+    height: auto;
+    max-height: none;
+  }
+  .landing-page .landing-model-conversation--model-card {
+    position: static;
+    width: 100%;
+    max-height: min(280px, max(0px, calc((var(--landing-viewport-height, 100dvh) - var(--landing-header-height, 36px) - var(--landing-model-bottom) - 36px) * .48)));
+    min-height: 0;
+    padding: 0;
+    transform: none;
+    transition: none;
+    animation: none;
+  }
+  .landing-page .landing-model-conversation--model-card .pet-dialogue {
+    max-height: 112px;
+    margin-bottom: 4px;
+  }
+  .landing-page .landing-model-conversation--model-card .pet-conversation-input { height: 50px; }
+
+  .landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-page-shell > header { display: flex; }
+  .landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-page-content { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
+  .landing-page .landing-model-panel[data-expanded="true"] {
+    position: relative;
+    padding: 0;
+    overflow: visible;
+    background: transparent;
+  }
+  .landing-page .landing-model-panel[data-expanded="true"] .instructions-step-heading { padding-right: 0; }
+  .landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-header li:has(> [aria-controls~="landing-generation-settings"]) { display: none; }
+}
