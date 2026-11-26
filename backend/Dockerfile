@@ -1,5 +1,6 @@
 # Minimal Dockerfile for Railway deployment
-FROM python:3.11-slim
+# Python 3.12: pyldraw3, which the Fable agents' connector checks read parts with, needs it.
+FROM python:3.12-slim
 
 # Install system dependencies for Open3D
 RUN apt-get update && \

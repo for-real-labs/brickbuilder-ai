@@ -54,6 +54,16 @@ def test_nothing_in_the_agent_is_loaded_from_another_service():
     assert MAX_PARTS_PER_STEP == 5 and solids.EXPOSED_PARTS == {"4079", "3960", "4740"}
 
 
+def test_the_api_image_runs_a_python_the_connector_checks_can_use():
+    """pyldraw3 needs Python 3.12. On an older interpreter it is not installed, and the connector,
+    Technic and vehicle checks would turn themselves off without failing a build."""
+    import re
+    import fable_agent
+    dockerfile = (Path(fable_agent.__file__).parents[1] / "Dockerfile").read_text(encoding="utf-8")
+    major, minor = map(int, re.search(r"^FROM python:(\d+)\.(\d+)", dockerfile, re.M).groups())
+    assert (major, minor) >= (3, 12)
+
+
 def test_copied_code_keeps_its_notice_and_shared_data_its_licence_and_credit():
     """What was copied from other projects stays under its own licence, with credit that cannot be dropped quietly."""
     import fable_agent
