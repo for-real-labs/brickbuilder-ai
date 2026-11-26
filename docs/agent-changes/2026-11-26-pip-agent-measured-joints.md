@@ -2,7 +2,7 @@
 
 - **Date:** 2026-11-26
 - **Agent:** Pip agent (`pip-agent`), on every model it offers
-- **Pull request:** PRLINK3
+- **Pull request:** [#405](https://github.com/for-real-labs/brickbuilder-ai/pull/405)
 
 ## What changed
 

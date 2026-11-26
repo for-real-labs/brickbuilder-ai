@@ -2,7 +2,7 @@
 
 - **Date:** 2026-11-26
 - **Agent:** Fable Thorough v2 · GPT-6.2 Sol (`fable-thorough-v2-gpt-6.2-sol`)
-- **Pull request:** PRLINK3
+- **Pull request:** [#405](https://github.com/for-real-labs/brickbuilder-ai/pull/405)
 
 ## What changed
 
