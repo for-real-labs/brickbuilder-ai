@@ -452,7 +452,7 @@ it.each([[2, 2], [999, 1]])('opens landing instructions directly from step %s an
 });
 
 
-it('puts Back in the mobile instructions heading and shows the current step without a part count', async () => {
+it('puts Back and the step in the mobile heading and aligns both parts controls below navigation', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
   vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
   vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
@@ -463,11 +463,24 @@ it('puts Back in the mobile instructions heading and shows the current step with
   try {
     await act(async () => root.render(<MemoryRouter><InstructionsViewer generationId="chimney" initialStep={2} embedded
       mobileBackButton={<button type="button">Back</button>} /></MemoryRouter>));
-    const heading = container.querySelector('.instructions-step-heading--mobile')!;
+    const heading = container.querySelector('.instructions-step-heading')!;
     expect(heading.firstElementChild?.textContent).toBe('Back');
     expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 2');
-    expect(heading.textContent).toContain('Parts list');
+    expect(heading.querySelector('.instructions-parts-toggle')).toBeNull();
     expect(heading.textContent).not.toContain('Add 2 parts');
+    const actions = container.querySelector('.instructions-parts-actions')!;
+    const stepParts = actions.querySelector<HTMLButtonElement>('.instructions-step-parts-toggle')!;
+    const partsList = actions.querySelector<HTMLButtonElement>('.instructions-parts-toggle')!;
+    expect(actions.previousElementSibling?.classList.contains('instructions-navigation')).toBe(true);
+    expect(stepParts.nextElementSibling).toBe(partsList);
+    expect(stepParts.textContent).toBe('Show parts this step');
+    expect(partsList.textContent).toBe('Parts list');
+    await act(async () => stepParts.click());
+    await act(async () => partsList.click());
+    expect(partsList.textContent).toBe('Step parts');
+    expect(container.querySelector('.instructions-parts')?.hasAttribute('data-all-parts')).toBe(true);
+    await act(async () => partsList.click());
+    expect(actions.querySelector('.instructions-step-parts-toggle')?.textContent).toBe('Hide parts this step');
     const next = [...container.querySelectorAll('button')].find(button => button.textContent === 'Next')!;
     await act(async () => next.click());
     expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 3');

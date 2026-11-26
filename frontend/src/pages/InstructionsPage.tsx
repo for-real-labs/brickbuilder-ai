@@ -1247,6 +1247,29 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
     );
   }
 
+  const partsListButton = (
+    <button type="button" className="instructions-heading-button instructions-parts-toggle" aria-pressed={showPartsList} aria-controls={partsListId}
+      onClick={() => {
+        setShowPartsList(!showPartsList);
+        posthog.capture('instructions_parts_list_toggled', { generation_id: generationId, show_all_parts: !showPartsList, source: embedded ? 'landing' : 'instructions' });
+      }}>
+      {showPartsList ? 'Step parts' : 'Parts list'}
+    </button>
+  );
+  const hasStepParts = Boolean(currentLastStepMpd && active);
+  const stepPartsButton = hasStepParts && !showPartsList && (
+    <button type="button" className="instructions-heading-button instructions-step-parts-toggle"
+      aria-expanded={showStepParts} aria-controls={partsListId}
+      onClick={() => {
+        setShowStepParts(!showStepParts);
+        posthog.capture('instructions_step_parts_toggled', {
+          generation_id: generationId, step: currentStepIndex + 1, expanded: !showStepParts, source: embedded ? 'landing' : 'instructions',
+        });
+      }}>
+      {showStepParts ? 'Hide parts this step' : 'Show parts this step'}
+    </button>
+  );
+
   const instructionsContent = (
     <>        {/* Instructions Content */}
         <div className={embedded ? "instructions-embedded-content" : "bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6"}>
@@ -1255,21 +1278,15 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
             {/* Current Step Display */}
             {model.steps[currentStepIndex] && (
               <div className={embedded ? "instructions-step" : "border border-slate-200 rounded-xl p-6"}>
-              <div className={`instructions-step-heading flex justify-between items-center mb-4${mobileBackButton ? ' instructions-step-heading--mobile' : ''}`}>
+              <div className="instructions-step-heading flex justify-between items-center mb-4">
                 {mobileBackButton}
                 <h4 className="text-lg font-semibold text-[#f44336]">
                 Step {model.steps[currentStepIndex].stepNumber}
                 </h4>
-                <div className="instructions-heading-actions">
+                {!mobileBackButton && <div className="instructions-heading-actions">
                   {backToModelButton}
-                  <button type="button" className="instructions-heading-button instructions-parts-toggle" aria-pressed={showPartsList} aria-controls={partsListId}
-                    onClick={() => {
-                      setShowPartsList(!showPartsList);
-                      posthog.capture('instructions_parts_list_toggled', { generation_id: generationId, show_all_parts: !showPartsList, source: embedded ? 'landing' : 'instructions' });
-                    }}>
-                    {showPartsList ? 'Step parts' : 'Parts list'}
-                  </button>
-                </div>
+                  {partsListButton}
+                </div>}
                 {!mobileBackButton && <div className="text-sm text-slate-600">
                   Add {model.steps[currentStepIndex].parts.length} {model.steps[currentStepIndex].parts.length === 1 ? 'part' : 'parts'}
                 </div>}
@@ -1383,17 +1400,13 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
                 </div>
               </div>
 
-              {currentLastStepMpd && active && <>
-                {!showPartsList && <button type="button" className="instructions-heading-button instructions-step-parts-toggle"
-                  aria-expanded={showStepParts} aria-controls={partsListId}
-                  onClick={() => {
-                    setShowStepParts(!showStepParts);
-                    posthog.capture('instructions_step_parts_toggled', {
-                      generation_id: generationId, step: currentStepIndex + 1, expanded: !showStepParts, source: embedded ? 'landing' : 'instructions',
-                    });
-                  }}>
-                  {showStepParts ? 'Hide parts this step' : 'Show parts this step'}
-                </button>}
+              {mobileBackButton && <div className="instructions-parts-actions">
+                {stepPartsButton}
+                {partsListButton}
+              </div>}
+
+              {hasStepParts && <>
+                {!mobileBackButton && stepPartsButton}
                 <div id={partsListId} className="instructions-parts bg-slate-50 p-4 rounded-xl"
                   data-step-parts-collapsed={(!showPartsList && !showStepParts) || undefined}
                   data-all-parts={showPartsList || undefined} data-build-together={(!showPartsList && model.steps[currentStepIndex].buildTogether) || undefined}>
