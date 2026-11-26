@@ -306,6 +306,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [showPartsList, setShowPartsList] = useState(false);
+  const [showStepParts, setShowStepParts] = useState(false);
   const partsListId = useId();
   const [partHover, setPartHover] = useState<InstructionPartHover | null>(null);
   const [stepInputValue, setStepInputValue] = useState('1'); // Separate state for input field
@@ -368,6 +369,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
     setCameraState(null);
     setShowAllColors(false);
     setShowPartsList(false);
+    setShowStepParts(false);
     const parseModel = async () => {
       // Check for id parameter in URL
       
@@ -1379,9 +1381,20 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
                 </div>
               </div>
 
-              {/* Parts added in this step - Shows only new parts */}
-              {currentLastStepMpd && active && (
-                <div id={partsListId} className="instructions-parts bg-slate-50 p-4 rounded-xl" data-all-parts={showPartsList || undefined} data-build-together={(!showPartsList && model.steps[currentStepIndex].buildTogether) || undefined}>
+              {currentLastStepMpd && active && <>
+                {!showPartsList && <button type="button" className="instructions-heading-button instructions-step-parts-toggle"
+                  aria-expanded={showStepParts} aria-controls={partsListId}
+                  onClick={() => {
+                    setShowStepParts(!showStepParts);
+                    posthog.capture('instructions_step_parts_toggled', {
+                      generation_id: generationId, step: currentStepIndex + 1, expanded: !showStepParts, source: embedded ? 'landing' : 'instructions',
+                    });
+                  }}>
+                  {showStepParts ? 'Hide parts this step' : 'Show parts this step'}
+                </button>}
+                <div id={partsListId} className="instructions-parts bg-slate-50 p-4 rounded-xl"
+                  data-step-parts-collapsed={(!showPartsList && !showStepParts) || undefined}
+                  data-all-parts={showPartsList || undefined} data-build-together={(!showPartsList && model.steps[currentStepIndex].buildTogether) || undefined}>
                   <h5 className="font-medium mb-3 text-slate-900">
                     {showPartsList ? `Parts list · ${model.parts.length} pieces` : model.steps[currentStepIndex].buildTogether ? 'Assemble first' : 'Parts added in this step:'}
                   </h5>
@@ -1407,7 +1420,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
                     })}
                   </ul>
                 </div>
-                )}
+              </>}
               </div>
             )}
             </div>

@@ -62,3 +62,14 @@
 @media (min-width: 900px) {
   .landing-model-panel[data-view="instructions"] .instructions-parts[data-all-parts] { max-height: none; }
 }
+
+.instructions-step-parts-toggle { display: none; }
+
+@media (max-width: 767px) {
+  .instructions-step { grid-template-rows: auto minmax(0, 1fr) auto; }
+  .instructions-step-parts-toggle { display: block; margin-inline: auto; }
+  .instructions-parts[data-step-parts-collapsed] { display: none; }
+  .instructions-embedded .instructions-parts:not([data-all-parts]) { max-height: min(180px, 28dvh); }
+  .instructions-step-parts-toggle[aria-expanded="true"] { margin-bottom: 8px; }
+  .instructions-step > .instructions-step-parts-toggle { margin-bottom: 0; }
+}
