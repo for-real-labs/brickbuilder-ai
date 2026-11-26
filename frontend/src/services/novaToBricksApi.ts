@@ -2,7 +2,7 @@ import type { PartsInventory } from './partsInventoryApi';
 import { apiFetch, authenticatedApiFetch } from './apiFetch';
 import { DEFAULT_LLM_MODEL, getLlmModelOption, validateMaxParts, type LlmToBricksResponse } from './llmToBricksApi';
 import { getInstructionKey } from '../utils/instructionLinks';
-import { DEFAULT_BUILDING_AGENT, isAgentModel, isBuildingAgent, type AgentModel, type BuildingAgent } from '../utils/buildingAgents';
+import { allPartsAgentEndpoint, DEFAULT_BUILDING_AGENT, isAgentModel, isBuildingAgent, type AgentModel, type BuildingAgent } from '../utils/buildingAgents';
 
 export type { AgentModel, BuildingAgent };
 
@@ -116,7 +116,8 @@ export class NovaToBricksApiService {
     if (!['api_key', 'native'].includes(request.authMode)) throw new Error('Choose a supported provider connection');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (authToken) headers.Authorization = `Bearer ${authToken}`;
-    const response = await (authToken ? apiFetch : authenticatedApiFetch)(`${NOVA_API_BASE_URL}/novaToBricks`, {
+    const endpoint = allPartsAgentEndpoint(request.buildingAgent);
+    const response = await (authToken ? apiFetch : authenticatedApiFetch)(`${NOVA_API_BASE_URL}/${endpoint}`, {
       method: 'POST', headers,
       body: JSON.stringify({
         source_generation_id: request.sourceGenerationId,
@@ -126,7 +127,7 @@ export class NovaToBricksApiService {
         image_media_type: request.imageMediaType || 'image/png',
         detail_level: request.detailLevel ?? 40,
         max_parts: request.maxParts,
-        model: request.model,
+        model: endpoint === 'pipModelCall' ? undefined : request.model,
         auth_mode: request.authMode,
         building_agent: request.buildingAgent ?? DEFAULT_BUILDING_AGENT,
         agent_model: request.agentModel,

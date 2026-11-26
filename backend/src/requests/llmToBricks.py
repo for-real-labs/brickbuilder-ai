@@ -14,6 +14,7 @@ import httpx
 from fastapi import Depends, HTTPException
 from pydantic import AliasChoices, BaseModel, Field, PrivateAttr, field_validator, model_validator
 
+from ..utils.generation_mode import ALL_PARTS_AGENT_ENDPOINTS
 from ..utils.parts_limit import enforce_parts_limit
 from ..utils.prompt_parts_limit import prompt_parts_limit, tighter_parts_limit, PARTS_BUDGET_GUIDANCE
 from ..utils.parts_inventory import PartsInventory
@@ -696,7 +697,7 @@ async def _load_edit_source(request: LlmToBricksRequest, auth_info: dict) -> Non
     generation = await generation_storage.get_generation(request.generation_id)
     if not generation:
         raise HTTPException(status_code=404, detail="Generation not found")
-    if generation.get('endpoint') == 'novaToBricks':
+    if generation.get('endpoint') in ALL_PARTS_AGENT_ENDPOINTS:
         raise HTTPException(409, 'This model uses All parts mode. Keep that mode when editing it.')
     if generation.get('max_parts') is not None:
         request.max_parts = tighter_parts_limit(request.max_parts, generation['max_parts'])

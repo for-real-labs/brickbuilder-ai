@@ -10,7 +10,8 @@ import pytest
 from fable_agent import app as fable_app
 from fastapi import HTTPException, Response
 from pydantic import ValidationError
-from src.api import building_agents
+from fastapi.testclient import TestClient
+from src.api import app, building_agents, get_user_with_optional_auth
 from src.requests import fableToBricks as fable
 from src.requests import novaToBricks as nova
 from src.utils.build_design_guidance import guided_build_prompt
@@ -470,7 +471,30 @@ def test_a_pip_build_runs_on_the_chosen_model_and_its_own_key(monkeypatch, model
     assert (agent, variant.model, variant.method, design) == (PIP_AGENT, model, "lean-v2", None)
     assert key == ("openai-test" if model.startswith("gpt-") else "anthropic-test")
     assert create.await_args.kwargs["model_3d"] == PIP_AGENT
+    assert create.await_args.kwargs["endpoint"] == "pipModelCall"
+    assert fable.handle_auth_and_tracking.call_args.args[1] == "/pipModelCall"
     assert fable.handle_auth_and_tracking.call_args.args[2]["agent_model"] == model
+
+
+def test_pip_model_call_defaults_to_sol_and_only_runs_pip(monkeypatch):
+    create, _ = start_recorder(monkeypatch)
+    monkeypatch.setitem(app.dependency_overrides, get_user_with_optional_auth, lambda: ACCOUNT)
+    client = TestClient(app)
+    assert client.post("/pipModelCall", json={"prompt": "Build a boat"}).status_code == 200
+    assert create.await_args.kwargs["endpoint"] == "pipModelCall"
+    assert fable.handle_auth_and_tracking.call_args.args[2]["agent_model"] == "gpt-6.2-sol"
+    assert client.post("/pipModelCall", json={"prompt": "A boat", "building_agent": "nova"}).status_code == 422
+    monkeypatch.setattr(nova, "generation_storage", SimpleNamespace(get_generation=AsyncMock(
+        return_value={"model_used_3d": AGENT})))
+    assert client.post("/pipModelCall", json={"prompt": "Add sails", "source_generation_id": "old"}).status_code == 409
+    create.assert_awaited_once()
+
+    outsider = {**ACCOUNT, "user_email": "other@example.test"}
+    monkeypatch.setitem(app.dependency_overrides, get_user_with_optional_auth, lambda: outsider)
+    assert client.post("/pipModelCall", json={"prompt": "Boat", "model": "claude-opus-5-5"}).status_code == 403
+    assert client.post("/pipModelCall", json={"prompt": "Boat", "model": "gpt-6.2-sol",
+                                              "agent_model": "claude-opus-5-5"}).status_code == 422
+    create.assert_awaited_once()
 
 
 @pytest.mark.parametrize(("agent", "asked", "given"), [

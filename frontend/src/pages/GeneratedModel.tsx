@@ -38,9 +38,9 @@ import { GetPriceApiService, GetPriceResponse } from "../services/getPriceApi";
 import { ResizeScaler } from "../components/ResizeScaler";
 import { ResizeModelApiService } from "../services/resizeModelApi";
 import { LlmToBricksApiService } from "../services/llmToBricksApi";
-import { isAgentGeneration } from "../utils/agentGeneration";
+import { isAgentGeneration, isAllPartsAgentEndpoint } from "../utils/agentGeneration";
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService } from "../services/novaToBricksApi";
-import { inProcessAgent } from "../utils/buildingAgents";
+import { allPartsAgentEndpoint, inProcessAgent } from "../utils/buildingAgents";
 import { VoxelPromptEditor, type EditReferenceImage } from "../components/VoxelPromptEditor";
 import { GetGenerationApiService, GetGenerationResponse } from "../services/getGenerationApi";
 import { GetGenerationsByImageApiService, GenerationIteration } from "../services/getGenerationsByImageApi";
@@ -369,8 +369,8 @@ export default function GeneratedModel() {
   };
   const isLDrawUpload = pendingGeneration?.endpoint === 'uploadLdraw';
   const orderable = pendingGeneration?.orderable !== false && !isLDrawUpload;
-  const isNovaModel = isLDrawUpload || pendingGeneration?.endpoint === 'novaToBricks' ||
-    (isModelEditing && stateData?.editSourceEndpoint === 'novaToBricks');
+  const isNovaModel = isLDrawUpload || isAllPartsAgentEndpoint(pendingGeneration?.endpoint) ||
+    (isModelEditing && isAllPartsAgentEndpoint(stateData?.editSourceEndpoint));
   const hasNovaGeometry = isNovaModel && pendingGeneration?.status === 'completed'
     && pendingGeneration.generation_id === currentGenerationId;
   // Astrology and Fable builds keep their own design, so edits go back to the agent that made them.
@@ -1683,7 +1683,7 @@ export default function GeneratedModel() {
       localStorage.setItem('lastGenerationId', newGenerationId);
       if (!currentUser) recordAnonymousGeneration(newGenerationId);
       refreshNotifications();
-      navigate(getGeneratedModelPath(newGenerationId), { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? 'novaToBricks' : 'llmToBricks' } });
+      navigate(getGeneratedModelPath(newGenerationId), { replace: true, state: { editSourceGenerationId: currentGenerationId, editSourceEndpoint: isNovaModel ? allPartsAgentEndpoint(builtBy) : 'llmToBricks' } });
       setEditPrompt('');
       return true;
     } catch (error) {

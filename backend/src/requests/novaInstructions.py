@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from fastapi import HTTPException
 from fastapi.responses import Response
+from ..utils.generation_mode import ALL_PARTS_AGENT_ENDPOINTS
 from ..utils.generation_storage import generation_storage
 from ..utils.nova_service import NovaService, read_export, INSTRUCTIONS_FILE, NovaInstructionPlanError
 
@@ -17,7 +18,7 @@ async def get_nova_instructions(generation_id: str, *, instruction_access: bool 
         raise HTTPException(503, 'Generation storage is unavailable')
     row = await (generation_storage.get_generation(generation_id, include_deleted=True)
                  if instruction_access else generation_storage.get_generation(generation_id))
-    if not row or row.get('status') != 'completed' or row.get('endpoint') != 'novaToBricks':
+    if not row or row.get('status') != 'completed' or row.get('endpoint') not in ALL_PARTS_AGENT_ENDPOINTS:
         raise HTTPException(404, 'Nova instructions are unavailable')
     if row.get('nova_build_mode') == 'preview':
         raise HTTPException(409, 'Instructions are unavailable for this earlier unchecked preview. Create a new build.')

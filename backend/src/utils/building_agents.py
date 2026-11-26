@@ -11,6 +11,9 @@ from dataclasses import dataclass, replace
 
 ASTROLOGY = "astrology"
 PIP_AGENT = "pip-agent"
+FIRST_PIP_AGENT = "fable-lean-v2-gpt-6.2-sol"
+PIP_AGENTS = (PIP_AGENT, FIRST_PIP_AGENT)
+PIP_ENDPOINT = "pipModelCall"
 
 
 @dataclass(frozen=True)
@@ -56,11 +59,11 @@ FABLE_AGENTS = {
     PIP_AGENT: FableVariant("gpt-6.2-sol", "lean-v2", "OPENAI_API_KEY", models=PIP_MODELS),
     # Pip's first release, before it had a model choice. Kept so its builds can still be opened and
     # changed, but no longer offered for new builds (see RETIRED_AGENTS).
-    "fable-lean-v2-gpt-6.2-sol": FableVariant("gpt-6.2-sol", "lean-v2", "OPENAI_API_KEY"),
+    FIRST_PIP_AGENT: FableVariant("gpt-6.2-sol", "lean-v2", "OPENAI_API_KEY"),
     "fable-lean-gpt-6.1-sol": FableVariant("gpt-6.1-sol", "lean", "OPENAI_API_KEY"),
 }
 IN_PROCESS_AGENTS = (ASTROLOGY, *FABLE_AGENTS)
-RETIRED_AGENTS = frozenset({"fable-lean-v2-gpt-6.2-sol"})
+RETIRED_AGENTS = frozenset({FIRST_PIP_AGENT})
 # What an allowlisted account may pick for a new build, in the order offered.
 OFFERED_AGENTS = tuple(agent for agent in IN_PROCESS_AGENTS if agent not in RETIRED_AGENTS)
 

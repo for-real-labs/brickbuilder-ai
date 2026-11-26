@@ -8,6 +8,7 @@ import { instructionPartKey, useInstructionPartImages } from '../components/Inst
 import { supabase } from '../lib/supabase';
 import { parseLDrawColors, getColorNameWithFallback, type LDrawColor } from '../utils/colorParser';
 import { LdrToMpdApiService } from '../services/ldrToMpdApi';
+import { isAllPartsAgentEndpoint } from "../utils/agentGeneration";
 import { NovaToBricksApiService, NovaInstructionPlanError } from '../services/novaToBricksApi';
 import { GetGenerationApiService } from '../services/getGenerationApi';
 import { useAuth } from '../contexts/AuthContext';
@@ -379,7 +380,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
           const generationData = await GetGenerationApiService.getGeneration(generationId);
           if (disposed) return;
           const { prompt } = generationData;
-          const ldr_content = generationData.endpoint === 'novaToBricks'
+          const ldr_content = isAllPartsAgentEndpoint(generationData.endpoint)
             ? await NovaToBricksApiService.instructions(generationId)
             : generationData.ldr_content;
           

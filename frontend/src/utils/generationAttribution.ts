@@ -1,4 +1,4 @@
-const generationEndpoints = /^\/(textToBricks|imageToBricks|llmToBricks|novaToBricks)(\/stream)?$|^\/(glbToBricks|objToBricks|uploadLdraw)$/;
+const generationEndpoints = /^\/(textToBricks|imageToBricks|llmToBricks|novaToBricks|pipModelCall)(\/stream)?$|^\/(glbToBricks|objToBricks|uploadLdraw)$/;
 
 /** Add the submitting pathname only to generation requests, never URL queries. */
 export function withGenerationEntryPage(url: string, init: RequestInit): RequestInit {

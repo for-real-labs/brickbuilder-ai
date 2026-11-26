@@ -40,7 +40,8 @@ describe('Nova agent API', () => {
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({
       building_agent: 'pip-agent', source_generation_id: 'original', prompt: 'Make the roof red', image_base64: 'pixels', image_media_type: 'image/jpeg',
     });
-    expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/novaToBricks');
+    expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/pipModelCall');
+    expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).not.toHaveProperty('model');
   });
 
   it('allows image-only references and reports startup errors', async () => {
@@ -52,6 +53,7 @@ describe('Nova agent API', () => {
 
   it('recognizes both agent endpoints for reusable output viewers', () => {
     expect(isAgentGeneration('novaToBricks')).toBe(true);
+    expect(isAgentGeneration('pipModelCall')).toBe(true);
     expect(isAgentGeneration('llmToBricks')).toBe(true);
     expect(isAgentGeneration('imageToBricks')).toBe(false);
     expect(isAgentGeneration()).toBe(false);
@@ -140,7 +142,7 @@ it.each(['Repair disconnected parts before opening instructions.',
 
 it('uses the selected provider model for personal-key compatible edits', async () => {
   vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'revision' }));
-  await NovaToBricksApiService.edit('original', 'Red roof', 'owner-token', undefined, { model: 'gpt-5.5', authMode: 'api_key' });
+  await NovaToBricksApiService.edit('original', 'Red roof', 'owner-token', undefined, { model: 'gpt-5.5', authMode: 'api_key', buildingAgent: 'nova' });
   expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({ model: 'gpt-5.5', auth_mode: 'api_key' });
 });
 

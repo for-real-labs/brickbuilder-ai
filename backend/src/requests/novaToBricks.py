@@ -19,6 +19,7 @@ from .imageToBricks import ImageToBricksResponse
 from .astrologyToBricks import AGENT, astrology_allowed, astrology_to_bricks
 from .fableToBricks import fable_allowed, fable_to_bricks
 from .llmToBricks import LlmToBricksRequest, SUPPORTED_MODELS
+from ..utils.generation_mode import ALL_PARTS_AGENT_ENDPOINTS
 from ..utils.provider_keys import resolve as resolve_provider_key, personal_billing_task
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.authorization import require_generation_access
@@ -26,7 +27,7 @@ from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.building_agents import FABLE_AGENTS, PIP_AGENT, RETIRED_AGENTS, in_process_agent, open_to_everyone
+from ..utils.building_agents import FABLE_AGENTS, PIP_AGENT, PIP_AGENTS, RETIRED_AGENTS, in_process_agent, open_to_everyone
 from ..utils.nova_service import NovaService, NovaDraftError, INSTRUCTIONS_FILE
 from ..utils.saved_parts_inventory import load_inventory, save_inventory
 from ..utils.parts_inventory import PartsInventory
@@ -95,6 +96,30 @@ class NovaToBricksRequest(LlmToBricksRequest):
     _nova_uploaded_source: bool = PrivateAttr(default=False)
     _nova_input_type: Optional[str] = PrivateAttr(default=None)
     _nova_input_format: Optional[str] = PrivateAttr(default=None)
+
+
+class PipModelCallRequest(NovaToBricksRequest):
+    model: str = FABLE_AGENTS[PIP_AGENT].model
+
+    @field_validator("model")
+    @classmethod
+    def validate_model(cls, value: str) -> str:
+        return FABLE_AGENTS[PIP_AGENT].using(value.strip()).model
+
+    @model_validator(mode="after")
+    def resolve_model_choice(self):
+        if "model" in self.model_fields_set:
+            if self.agent_model is not None and self.agent_model != self.model:
+                raise ValueError("Choose one model for Pip")
+            self.agent_model = self.model
+        return self
+
+    @field_validator("building_agent")
+    @classmethod
+    def pip_agent_only(cls, value):
+        if value not in PIP_AGENTS:
+            raise ValueError("Choose a Pip agent for this endpoint")
+        return value
 
 
 async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict, source=None) -> None:
@@ -301,6 +326,8 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
     if request.generation_id and not source:
         raise HTTPException(404, 'Generation not found')
     agent = (in_process_agent(source.get("model_used_3d")) if source else None) or request.building_agent
+    if isinstance(request, PipModelCallRequest) and agent not in PIP_AGENTS:
+        raise HTTPException(409, "Edit this model with its original building agent.")
     if agent == AGENT:
         return await astrology_to_bricks(request, auth_info, source)
     if agent in FABLE_AGENTS:
@@ -352,7 +379,7 @@ async def get_nova_source(generation_id: str, auth_info: dict = Depends(get_user
     require_generation_access(generation, auth_info)
     draft = generation.get("status") == "failed"
     # An agent that runs inside the API keeps no Nova source, but its rejected draft is stored the same way.
-    if (generation.get("endpoint") != "novaToBricks" or generation.get("status") not in {"completed", "failed"}
+    if (generation.get("endpoint") not in ALL_PARTS_AGENT_ENDPOINTS or generation.get("status") not in {"completed", "failed"}
             or (in_process_agent(generation.get("model_used_3d")) and not draft)):
         raise HTTPException(status_code=404, detail="Nova source is not available for this generation")
     filename = "nova-draft.zip" if draft else "nova-source.zip"

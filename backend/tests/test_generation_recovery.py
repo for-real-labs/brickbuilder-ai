@@ -64,9 +64,10 @@ def test_heartbeat_updates_only_live_job_and_prevents_recovery(storage):
     assert read(storage, job)['status'] == 'processing'
 
 
-def test_recovery_restores_completed_artifacts_and_original_duration(storage):
+@pytest.mark.parametrize("endpoint,agent", [("novaToBricks", None), ("pipModelCall", "pip-agent")])
+def test_recovery_restores_completed_artifacts_and_original_duration(storage, endpoint, agent):
     job = save(storage, {'status': 'completed'}, ldr_url='model', parts_list_csv_url='parts',
-               generation_duration_seconds=425.2)
+               generation_duration_seconds=425.2, endpoint=endpoint, model_used_3d=agent)
     assert asyncio.run(recover_stale_generations(storage)) == 1
     row = read(storage, job)
     assert row['status'] == 'completed'

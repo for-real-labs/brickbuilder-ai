@@ -5,6 +5,7 @@ import json
 import logging
 from datetime import datetime, timedelta, timezone
 
+from .generation_mode import ALL_PARTS_AGENT_ENDPOINTS
 from .building_agents import in_process_agent
 from .database import execute_query
 from .generation_tasks import has_active_generation_task
@@ -46,7 +47,7 @@ async def recover_stale_generations(storage) -> int:
     result = await execute_query(
         storage.client.table("generations").select(
             "id,status,updated_at,ldr_url,parts_list_csv_url,generation_duration_seconds,ai_usage,model_used_3d"
-        ).eq("endpoint", "novaToBricks").in_("status", ACTIVE)
+        ).in_("endpoint", ALL_PARTS_AGENT_ENDPOINTS).in_("status", ACTIVE)
         .lt("updated_at", cutoff).order("updated_at").limit(100)
     )
     recovered = 0

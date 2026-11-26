@@ -740,12 +740,12 @@ describe('LandingPage', () => {
       });
       await act(async () => findButton('Generate').click());
       expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, buildingAgent: 'pip-agent', authMode: 'api_key', model: DEFAULT_LLM_MODEL, maxParts: 50, prompt: 'Spaceport with launch tower, rover, and research lab' }), undefined);
-      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova', model: 'gpt-6.2-sol' }));
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('#landing-build-prompt')).toBeNull();
-      expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
+      expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'pipModelCall' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
       expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();

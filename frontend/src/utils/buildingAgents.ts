@@ -22,6 +22,10 @@ export const BUILDING_AGENT_LABELS = {
 export type BuildingAgent = keyof typeof BUILDING_AGENT_LABELS;
 
 export const DEFAULT_BUILDING_AGENT: BuildingAgent = 'pip-agent';
+export function allPartsAgentEndpoint(agent: BuildingAgent = DEFAULT_BUILDING_AGENT) {
+  return agent === 'pip-agent' || agent === 'fable-lean-v2-gpt-6.2-sol' ? 'pipModelCall' : 'novaToBricks';
+}
+
 export type InProcessAgent = Exclude<BuildingAgent, 'nova'>;
 
 export const isBuildingAgent = (value: unknown): value is BuildingAgent =>

@@ -9,7 +9,7 @@ import { inProcessAgent } from '../utils/buildingAgents';
 import { LlmGenerationOutput } from './LlmGenerationOutput';
 import { GenerationDuration } from './GenerationDuration';
 import { GenerationElapsedTime } from './GenerationElapsedTime';
-import { isAgentGeneration } from '../utils/agentGeneration';
+import { isAgentGeneration, isAllPartsAgentEndpoint } from '../utils/agentGeneration';
 import { ResumeNovaButton } from './ResumeNovaButton';
 import { getGeneratedModelPath } from '../utils/generationRoutes';
 import { GetNotifiedButton } from './GetNotifiedButton';
@@ -25,7 +25,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
   onNotificationPromptShown?: () => void;
   buddyDialogue?: boolean;
 }) {
-  generations = generations.filter(generation => generation.status !== 'failed' || (generation.endpoint === 'novaToBricks' && generation.errorMessage?.includes('Download the unverified draft')));
+  generations = generations.filter(generation => generation.status !== 'failed' || (isAllPartsAgentEndpoint(generation.endpoint) && generation.errorMessage?.includes('Download the unverified draft')));
   if (!generations.length && !error) return null;
   const activeCount = generations.filter(row => isGenerationActive(row.status)).length;
   return (
@@ -51,7 +51,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
           const label = generation.status === 'queued' ? 'Queued'
             : generation.status === 'completed' ? 'Ready to build'
             : cancelled ? 'Generation cancelled' : failed ? 'Generation failed'
-            : generation.endpoint === 'novaToBricks' ? 'Building your full set'
+            : isAllPartsAgentEndpoint(generation.endpoint) ? 'Building your full set'
             : agentGeneration ? 'Designing bricks' : 'Building your model';
           return (
             <article key={generation.id} className={`relative min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition-colors ${canOpen ? 'hover:border-slate-400' : ''}`}>
@@ -92,7 +92,7 @@ export function GenerationActivityList({ generations, error, onOpen, onDismiss, 
                 {previewPending && <p className="mt-2 text-xs text-slate-500">Preparing preview…</p>}
                 {generation.status === 'completed' && generation.previewWaitUntil && !previewPending && <p className="mt-2 text-xs text-slate-500">Preview unavailable. You can still view your model.</p>}
                 {failed && <p className="mt-2 break-words text-xs text-red-600">{generation.errorMessage || 'Please try generating this model again.'}</p>}
-                {failed && generation.endpoint === 'novaToBricks' && generation.errorMessage?.includes('Download the unverified draft') && <NovaDraftDownload generationId={generation.id} />}
+                {failed && isAllPartsAgentEndpoint(generation.endpoint) && generation.errorMessage?.includes('Download the unverified draft') && <NovaDraftDownload generationId={generation.id} />}
                 {active && agentGeneration && !buddyDialogue && <LlmGenerationOutput generationId={generation.id} active />}
                 {generation.status === 'completed' && <GenerationDuration seconds={generation.durationSeconds} />}
                 {active && <GenerationElapsedTime startedAt={generation.createdAt} />}
