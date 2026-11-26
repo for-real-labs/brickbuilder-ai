@@ -106,3 +106,18 @@
   }
   .landing-model-panel[data-view="instructions"][data-expanded="true"] .landing-expanded-footer { top: calc(max(12px, env(safe-area-inset-top)) + 24px); left: 44px; }
 }
+
+.landing-model-title-row { display: contents; }
+.landing-model-create-new { display: none; }
+@media (max-width: 767px) {
+  .landing-model-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .landing-model-title-row .landing-model-heading { flex: 1; margin-bottom: 0; }
+  .landing-model-create-new { display: block; flex-shrink: 0; }
+  .landing-model-create-new .landing-create-new { padding-inline: 10px; font-size: 12px; }
+  .landing-model-panel .landing-model-bottom-toolbar { gap: 4px; }
+  .landing-model-panel .landing-model-bottom-toolbar > button {
+    padding-inline: 8px;
+    font-size: 12px;
+    gap: 4px;
+  }
+}

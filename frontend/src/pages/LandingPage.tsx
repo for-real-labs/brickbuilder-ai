@@ -1076,6 +1076,10 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
   const footerEnabled = !ldrawLanding && !conversationStarted && !pendingGeneration && !inventoryOpen;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
+  const createNew = (requestedModelId || landingModel.model) ? <button type="button" className="landing-create-new landing-action-button"
+    disabled={editSubmitting || buddyChat.routing} onClick={createNewModel}>
+    <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" /><span>Create new</span>
+  </button> : null;
   const todayProcessingBuilds = processingBuilds.filter(row => isBuildFromToday(row.createdAt));
   const todayCompletedBuilds = completedBuilds.filter(row => isBuildFromToday(row.created_at));
   const hasBuildsToday = todayProcessingBuilds.length > 0 || todayCompletedBuilds.length > 0;
@@ -1146,7 +1150,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }} />
 
       <div className={`mx-auto flex w-full max-w-screen-xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pt-6 relative ${ldrawLanding ? 'min-h-screen pb-8' : 'landing-page-shell'}`} style={{ zIndex: 10 }}>
-        <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={(requestedModelId || landingModel.model) ? { onClick: createNewModel, disabled: editSubmitting || buddyChat.routing } : undefined} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
+        <LandingHeader toolsRef={toolsRef} model={landingModel.model} modelBusy={modelBusy} createNew={createNew} page={`/${imageLandingPath ?? ''}`} onLoginClick={() => setShowLoginModal(true)}
           generationSettings={ldrawLanding ? undefined : generationSettings} />
 
         {!ldrawLanding && !landingModel.model && <div className="existing-parts-tabs" role="group" aria-label="Design source">
@@ -1182,7 +1186,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               </div>
             </div>}
           <div className={ldrawLanding ? 'w-full' : 'landing-page-content'}>
-          <div className={`mx-auto flex w-full flex-col items-center gap-6 ${landingModel.model ? 'max-w-6xl' : 'max-w-3xl'}`}>
+          <div className={`landing-page-content-inner mx-auto flex w-full flex-col items-center gap-6 ${landingModel.model ? 'max-w-6xl' : 'max-w-3xl'}`}>
             {ldrawLanding && <div className="w-full landing-fade-in landing-delay-3">
               <PetPromptGreeting mode="upload" state={petState} showPetSwitch={false} />
               <h2 className="mb-1 text-left text-xl font-semibold text-slate-900">{imageLanding?.uploadTitle}</h2>
@@ -1195,7 +1199,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             </div>}
             {!ldrawLanding && <div className="landing-model-host relative z-20 w-full">
               <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
-                canRename={!historyId && Boolean(session?.access_token)} accessToken={session?.access_token}
+                createNew={createNew} canRename={!historyId && Boolean(session?.access_token)} accessToken={session?.access_token}
                 onRenameRequest={!historyId && !session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
                 onConvertKit={() => void submitModelEdit(undefined,
                   'Convert this model to use only available Brickwith parts and colors. Keep every available part unchanged where possible, and preserve the overall shape, size, and colors as closely as possible.', null)}
@@ -1512,7 +1516,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   );
 }
 
-function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy, toolsRef }: { toolsRef?: React.RefObject<LandingToolsHandle | null>; model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: { onClick: () => void; disabled: boolean } }) {
+function LandingHeader({ onLoginClick, page, generationSettings, createNew, model, modelBusy, toolsRef }: { toolsRef?: React.RefObject<LandingToolsHandle | null>; model?: LandingModel | null; modelBusy?: boolean; onLoginClick: () => void; page: string; generationSettings?: GenerationSettingsAction; createNew?: React.ReactNode }) {
   const { user, isSupabaseConfigured } = useAuth();
   const [githubStars, setGithubStars] = useState<number | null>(null);
   const githubUrl = 'https://github.com/for-real-labs/brickbuilder-ai';
@@ -1533,7 +1537,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
   const showProfileMenu = user || !isSupabaseConfigured;
 
   return (
-    <header className="landing-header relative flex w-full items-center justify-between gap-2 landing-fade-in landing-delay-1" style={{ zIndex: 50 }}>
+    <header className={`landing-header relative flex w-full items-center justify-between gap-2 landing-fade-in landing-delay-1${model ? ' landing-header--model' : ''}`} style={{ zIndex: 50 }}>
       <div className="landing-header-brand"><a href="/" className="flex min-w-0 items-center gap-2 sm:gap-3">
         <img
           src="/logo.svg"
@@ -1549,10 +1553,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
           <span className="text-slate-900">BUILDER</span>
         </span>
       </a>
-        {createNew && <button type="button" className="landing-create-new landing-action-button"
-          disabled={createNew.disabled} onClick={createNew.onClick}>
-          <Sparkles aria-hidden="true" className="h-4 w-4 shrink-0" /><span>Create new</span>
-        </button>}
+        {createNew}
       </div>
 
       {/* Login / Sign Up OR Account Menu */}
@@ -1560,7 +1561,7 @@ function LandingHeader({ onLoginClick, page, generationSettings, createNew, mode
         <CreditBalance />
         <LandingToolsMenu ref={toolsRef} page={page} generationSettings={generationSettings} model={model} busy={modelBusy} />
         <a href={githubUrl} target="_blank" rel="noopener noreferrer" aria-label="View BrickBuilder on GitHub"
-          className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-slate-900 px-2.5 text-xs font-semibold tabular-nums text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:px-3 sm:text-sm"
+          className="landing-header-github inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-slate-900 px-2.5 text-xs font-semibold tabular-nums text-white hover:bg-slate-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-500 sm:px-3 sm:text-sm"
           onClick={() => posthog.capture('landing_header_github_clicked', { page, navigation_layout: 'header', destination: githubUrl, tool: 'GitHub' })}>
           <Github size={16} aria-hidden="true" />
           {formattedStars !== null && <span className="inline-flex items-center gap-1 max-[359px]:hidden" aria-label={`${githubStars} stars`}>
