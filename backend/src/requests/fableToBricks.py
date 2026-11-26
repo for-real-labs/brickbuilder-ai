@@ -5,17 +5,20 @@ from __future__ import annotations
 import asyncio
 import base64
 import binascii
+import io
 import json
 import logging
 import os
 import tempfile
 import threading
 import time
+import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
 import httpx
+from fable_agent.app import ASSISTED as EXAMPLE_METHODS
 from fable_agent.app import Options, start_build
 from fable_agent.ldraw import default_library_dir
 from fable_agent.render import find_leocad
@@ -28,6 +31,7 @@ from ..astrology.render import prepare_reference
 from ..utils import auth
 from ..utils.auth import handle_auth_and_tracking
 from ..utils.authorization import require_generation_access
+from ..utils.build_design_guidance import guided_build_prompt
 from ..utils.building_agents import FABLE_AGENTS, FableVariant
 from ..utils.generation_budget import current_generation_usage
 from ..utils.generation_storage import generation_storage
@@ -40,6 +44,11 @@ from .astrologyToBricks import astrology_allowed
 from .imageToBricks import ImageToBricksResponse
 
 DESIGN_FILE = "fable-design.json"
+# A build that failed its checks is kept in the slot Nova's rejected drafts use, so the same
+# download serves both.
+DRAFT_ARCHIVE = "nova-draft.zip"
+DRAFT_FILES = ("model.ldr", "parts.csv", "verification.json", "README.txt")
+MAX_DRAFT_FILE_BYTES = 16 * 1024 * 1024
 MAX_PARTS = 5000
 DEFAULT_PARTS = 1000
 # Builds are long and each holds a worker thread, so they get their own small pool: a rush of
@@ -66,6 +75,26 @@ class BuildCancelled(Exception):
 
 class BuildTimedOut(Exception):
     """The build ran far past its time limit; stop the agent at its next step."""
+
+
+class RejectedDraft(ValueError):
+    """No revision passed the checks. The last build stays downloadable, as Nova's rejected drafts do."""
+
+    def __init__(self, archive: bytes):
+        super().__init__("Fable could not finish a model that passes its checks. "
+                         "Download the unverified draft and its failed checks.")
+        self.archive = archive
+
+
+def _draft_archive(folder: Path) -> bytes:
+    """The rejected build, its parts list and its failed checks as one bounded zip."""
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for name in DRAFT_FILES:
+            source = folder / name
+            if source.is_file() and not source.is_symlink() and source.stat().st_size <= MAX_DRAFT_FILE_BYTES:
+                archive.write(source, name)
+    return buffer.getvalue()
 
 
 @dataclass(frozen=True)
@@ -110,7 +139,7 @@ async def _source_design(source: dict, auth_info: dict) -> Design:
 
 
 def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | None, script: str | None,
-         key: str, on_event) -> Built:
+         key: str, on_event, examples: bool = False) -> Built:
     """Run one build to the end in a scratch directory. Blocking: call it from a worker thread."""
     with tempfile.TemporaryDirectory(prefix="fable-generation-") as scratch:
         root = Path(scratch)
@@ -119,12 +148,15 @@ def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | 
             picture = root / "reference-upload"
             picture.write_bytes(reference)
         options = Options(model=variant.model, method=variant.method, effort=variant.effort,
-                          max_parts=max_parts, api_key=key, max_seconds=BUILD_SECONDS)
+                          max_parts=max_parts, api_key=key, max_seconds=BUILD_SECONDS,
+                          examples=examples and variant.method in EXAMPLE_METHODS)
         result = start_build(prompt, root / "session", options, reference=picture, on_event=on_event,
                              script=script)
         if result.published is None:
             if result.status == "refused":
                 raise ValueError("Fable could not build this request.")
+            if result.rejected:
+                raise RejectedDraft(_draft_archive(root / "session" / result.rejected))
             raise ValueError("Fable could not finish a model that passes its checks. Try a simpler request.")
         published = root / "session" / result.published["path"]
         preview = published / "preview.png"
@@ -177,8 +209,8 @@ async def _build(generation_id, request, agent_id, variant, design, reference, k
     def work() -> Built:
         """Runs on a build thread once one is free; time spent waiting for it does not count."""
         clock["hard_stop"] = time.monotonic() + HARD_STOP_SECONDS
-        return _run(_change_request(prompt, design), variant, request.max_parts, reference,
-                    design.script if design else None, key, on_event)
+        return _run(_change_request(guided_build_prompt(prompt), design), variant, request.max_parts, reference,
+                    design.script if design else None, key, on_event, request.use_examples)
 
     pulse = asyncio.create_task(heartbeat())
     prompt = request.prompt or "Build the subject in the photo."
@@ -209,6 +241,14 @@ async def _build(generation_id, request, agent_id, variant, design, reference, k
         raise
     except Exception as exc:
         logger.exception("Fable generation failed for %s", generation_id)
+        if isinstance(exc, RejectedDraft):
+            try:
+                await upload_artifact(generation_storage.client.storage.from_("generation-output"),
+                                      path=f"{generation_id}/{DRAFT_ARCHIVE}", file=exc.archive,
+                                      content_type="application/zip")
+            except Exception:  # the draft is a courtesy: without it the build simply failed
+                logger.warning("Fable draft upload failed for %s", generation_id, exc_info=True)
+                exc = ValueError("Fable could not finish a model that passes its checks. Try a simpler request.")
         message = (str(exc) if isinstance(exc, ValueError)
                    else "Fable ran out of time on this build. Try a simpler request."
                    if isinstance(exc, BuildTimedOut) else "Fable could not complete this build.")
@@ -272,6 +312,7 @@ async def fable_to_bricks(request, auth_info, source=None):
     # Every All parts engine uses the same admission, credit policy and viewer.
     handle_auth_and_tracking(auth_info, "/novaToBricks", {
         "building_agent": agent_id, "agent_model": variant.model, "has_image": bool(reference),
+        "use_examples": request.use_examples and variant.method in EXAMPLE_METHODS,
         "is_edit": bool(source)})
     job_id = await generation_storage.create_generation(
         user_id=auth_info["user_id"], user_type="authenticated", prompt=request.prompt or "Image reference",

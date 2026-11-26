@@ -8,6 +8,10 @@ New documents are written with the `agent-change-log` skill
 
 | Date | Agent | Change |
 |---|---|---|
+| 2026-11-25 | Pip agent | [Optional example builds, chosen by category](2026-11-25-pip-agent-example-builds.md) |
+| 2026-11-25 | Fable Thorough v2 · GPT-6.2 Sol | [Optional example builds, chosen by category](2026-11-25-fable-thorough-v2-gpt-6.2-sol-example-builds.md) |
+| 2026-11-25 | Pip agent | [Held to Nova's publication rules, with instructions in five-piece steps](2026-11-25-pip-agent-nova-publication-rules.md) |
+| 2026-11-25 | Fable Thorough v2 · GPT-6.2 Sol | [Held to Nova's publication rules, with instructions in five-piece steps](2026-11-25-fable-thorough-v2-gpt-6.2-sol-nova-publication-rules.md) |
 | 2026-11-25 | Pip agent | [Helpers checked against official sets, with vehicle bases and furniture](2026-11-25-pip-agent-helpers-from-official-sets.md) |
 | 2026-11-25 | Fable Thorough v2 · GPT-6.2 Sol | [Helpers checked against official sets, with vehicle bases and furniture](2026-11-25-fable-thorough-v2-gpt-6.2-sol-helpers-from-official-sets.md) |
 | 2026-11-25 | Pip agent | [16 helpers with 310 styles](2026-11-25-pip-agent-helpers.md) |

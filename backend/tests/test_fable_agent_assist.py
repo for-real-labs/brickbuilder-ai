@@ -1,4 +1,6 @@
-"""What the v2 methods add to a build: ready-made trees and automatic repair."""
+"""What the v2 methods add to a build: ready-made trees, automatic repair and Nova's publication rules."""
+
+import json
 
 import pytest
 from fable_agent.app import ASSISTED, LEAN, METHODS, Options, Workbench, continue_build, start_build
@@ -209,3 +211,66 @@ def test_the_second_versions_share_their_limits_and_kinds_with_the_first():
     assert METHODS["lean-v2"] == METHODS["lean"] and METHODS["thorough-v2"] == METHODS["thorough"]
     assert LEAN == {"lean", "lean-v2"} and ASSISTED == {"lean-v2", "thorough-v2"}
     assert Options(method="lean-v2").resolved("lean-v2").max_steps == 8
+
+
+def test_the_v2_methods_are_held_to_novas_rules_and_the_first_versions_are_not(tmp_path):
+    world = World(tmp_path / "world")
+    for method in ("lean-v2", "thorough-v2", "lean", "thorough"):
+        client = FakeClient([reply({"type": "text", "text": "No."})] * 2)
+        start_build("A wall", tmp_path / method, Options(max_parts=500, method=method, max_steps=1),
+                    client=client, workbench=bench(world))
+        settings = Session.load(tmp_path / method).meta["settings"]
+        assert settings["assembly_rules"] is (method in ASSISTED)
+        told = "# What the report also requires" in client.requests[0]["system"]
+        assert told is (method in ASSISTED)
+    prompt = lean_v2_system_prompt(world.finder, world.shapes, "x")
+    assert prompt.index("# Automatic repair") < prompt.index("# What the report also requires") \
+        < prompt.index("# What holds together")
+    assert "`allow_overlap` does not excuse these" in prompt and "at most five connected pieces" in prompt
+
+    # The setting, not the method, decides how a workbench checks: a session is always rechecked its own way.
+    kit = world.kit()
+    kit.place("3001", "Red", 0, 0, 0)
+    kit.place("3001", "White", 8, 0, 0)
+    strict = Workbench.open({**world.settings(), "assembly_rules": True}, runner=InlineRunner(world),
+                            renderer=FakeRenderer())
+    assert [issue.kind for issue in strict.checker.check(kit.build).errors] == ["separate"]
+    assert bench(world).checker.check(kit.build).ok
+
+
+def test_a_v2_build_is_published_with_instructions_in_small_connected_steps(tmp_path):
+    world = World(tmp_path / "world", assembly=True)
+    client = FakeClient([reply(tool_use("build", "c1", code=CABIN, notes="Walls.")),
+                         reply(tool_use("finish", "c2", title="Cabin", summary="A cabin."))])
+    result = start_build("A cabin", tmp_path / "run", Options(max_parts=500, method="lean-v2", max_steps=3),
+                         client=client, workbench=bench(world))
+    assert result.status == "published"
+    published = tmp_path / "run" / result.published["path"]
+    report = json.loads((published / "report.json").read_text())
+    steps = (published / "model.ldr").read_text().split("0 STEP")[:-1]
+    assert report["instruction_steps"] == len(steps) > 3
+    assert max(sum(line.startswith("1 ") for line in step.splitlines()) for step in steps) <= 5
+    assert "Instructions: " in client.requests[1]["messages"][0]["content"][-4]["text"]
+
+
+def test_a_run_with_no_passing_revision_keeps_the_rejected_build_and_its_failed_checks(tmp_path):
+    world = World(tmp_path / "world")
+    client = FakeClient([reply(tool_use("build", "c1", code=CLASH, notes="Two bricks."))]
+                        + [reply(tool_use("finish", f"c{n}", title="Wall", summary="A wall.")) for n in (2, 3)])
+    result = start_build("A wall", tmp_path / "run", Options(max_parts=500, method="lean", max_steps=3),
+                         client=client, workbench=bench(world))
+    assert (result.status, result.published, result.rejected) == ("failed", None, "rejected")
+    kept = tmp_path / "run" / "rejected"
+    assert sorted(path.name for path in kept.iterdir()) == ["README.txt", "model.ldr", "parts.csv",
+                                                            "verification.json"]
+    checks = json.loads((kept / "verification.json").read_text())
+    assert checks["passed"] is False and checks["ok"] is False and checks["errors"][0]["kind"] == "overlap"
+    assert "3001.dat" in (kept / "model.ldr").read_text() and "Unverified draft" in (kept / "README.txt").read_text()
+    assert (kept / "parts.csv").read_text().startswith("part_id,color_id")
+    session = Session.load(tmp_path / "run")
+    assert session.meta["rejected"] == "rejected" and session.meta["published"] == []
+
+    # A run whose script never built has nothing to keep.
+    nothing = start_build("A wall", tmp_path / "none", Options(max_parts=500, method="lean", max_steps=1),
+                          client=FakeClient([reply({"type": "text", "text": "No."})] * 2), workbench=bench(world))
+    assert nothing.status == "failed" and nothing.rejected is None and not (tmp_path / "none" / "rejected").exists()

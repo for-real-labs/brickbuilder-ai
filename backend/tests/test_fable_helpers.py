@@ -371,14 +371,30 @@ def test_every_wheel_style_carries_a_body_and_reaches_the_ground_it_states(world
     assert top - look.drop == (3 if look.mount in ("pins", "axle") else 1)  # where the summary says to build
 
 
-def test_an_axle_takes_the_longest_rod_that_fits_and_joins_both_of_its_bricks(world):
+def test_an_axle_takes_the_longest_rod_that_fits_and_every_joint_is_between_parts_that_meet(world):
     kit = world.kit()
     placed = bind(kit)["wheels"](0, 7, 0, style="balloon", width=6)
     parts = [kit.build.placements[index].part for index in placed]
     assert parts[:2] == ["32064a", "32064a"] and "3737" in parts and "44294" not in parts
-    assert "one axle through both bricks" in [note for _, _, note in kit.build.links]
     rims = [kit.build.placements[index].position[0] for index in placed if kit.build.placements[index].part == "56145"]
     assert sorted(rims) == [10 - 45, 110 + 45]  # a rim 45 units outside the middle of each side brick
+    # Brick to axle, axle to the other brick, axle to each wheel: never brick to brick or brick to wheel.
+    joined = sorted((kit.build.placements[a].part, kit.build.placements[b].part, note) for a, b, note in kit.build.links)
+    assert joined == [("32064a", "3737", "axle through the axle hole"),
+                      ("3737", "32064a", "the same axle through this brick"),
+                      ("3737", "56145", "wheel on its axle"), ("3737", "56145", "wheel on its axle"),
+                      ("56145", "55976", "tyre on its rim"), ("56145", "55976", "tyre on its rim")]
+    from fable_agent.joints import JointReview
+    found = JointReview(world.library, world.shapes).review(kit.build, {}, set())
+    assert not found.apart and not found.missed and found.touching == 6
+
+
+def test_a_narrow_truck_gets_a_short_axle_and_none_at_all_is_refused(world):
+    kit = world.kit()
+    placed = bind(kit)["wheels"](0, 5, 0, style="truck", width=4)
+    assert "3706" in [kit.build.placements[index].part for index in placed]  # rims 50 from the middle: an axle of 60
+    with pytest.raises(KitError, match="has no axle for the truck style"):
+        World_without(world, "3706")["wheels"](0, 5, 0, style="truck", width=4)
 
 
 def test_tyres_are_joined_to_a_road_that_is_already_under_them(world):

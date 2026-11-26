@@ -65,18 +65,35 @@ STYLES: dict[str, WheelStyle] = {
     "caster": WheelStyle("caster", Wheel("2496", None), holder="2655", drop=2, color="Black"),
 }
 PIN_BRICK, AXLE_BRICK = "2458", "32064a"
-AXLES = (("44294", 70), ("3707", 80), ("60485", 90), ("3737", 100), ("3708", 120))  # axle, half its length
+# Axle, half its length. An axle carries a wheel when its end stops no more than SHORT before the
+# middle of the rim and no more than LONG past it.
+AXLES = (("4519", 30), ("3705", 40), ("32073", 50), ("3706", 60), ("44294", 70), ("3707", 80), ("60485", 90),
+         ("3737", 100), ("3708", 120))
+SHORT, LONG = 5, 10
+UNQUARTER = (0, 0, 1, 0, 1, 0, -1, 0, 0)  # QUARTER undone: from a brick's frame into its axle's
 BODY = 4  # studs across the body that the one-plate holders sit under
 
 
-def _wheel(kit: Kit, host: int, wheel: Wheel, offset, turn, color, tyre_color) -> list[int]:
+def _wheel(kit: Kit, host: int, wheel: Wheel, offset, turn, color, tyre_color, note="wheel on its pin") -> list[int]:
     rim, code = need(kit, wheel.rim, color, "wheels", "wheel of this style")
-    placed = [kit.attach(rim, code, host, offset, turn, "wheel on its pin")]
+    placed = [kit.attach(rim, code, host, offset, turn, note)]
     if wheel.tyre is not None:
         tone = stocked(kit, wheel.tyre, tyre_color)
         if tone is not None:
             placed.append(kit.attach(wheel.tyre, tone, placed[0], wheel.tyre_offset, SAME, "tyre on its rim"))
     return placed
+
+
+def _axle_for(kit: Kit, reach: float) -> tuple[str, int] | None:
+    """The longest stocked axle, with its color, whose ends sit in rims ``reach`` from its middle."""
+    fits = [(part, stocked(kit, part, "Black")) for part, half in AXLES if reach - SHORT <= half <= reach + LONG]
+    fits = [(part, tone) for part, tone in fits if tone is not None]
+    return fits[-1] if fits else None
+
+
+def _times(first, second) -> tuple:
+    """The product of two row-major rotations."""
+    return tuple(sum(first[3 * row + k] * second[3 * k + col] for k in range(3)) for row in range(3) for col in range(3))
 
 
 def _sink(kit: Kit, part: str) -> float:
@@ -141,20 +158,28 @@ def _axle(kit: Kit, x, y, z, style, width, color, tyre, facing) -> list[int]:
             placed += _wheel(kit, host, look.wheel, look.rim_offset, look.rim_turn, color, tyre)
         return placed
 
-    # An axle through a brick at each side of the body, with a wheel on each end.
+    # An axle through a brick at each side of the body, with a wheel on each end. Every joint is
+    # recorded between the two parts that really meet: brick and axle, axle and wheel.
     hosts = [frame.place(part, tone, lx, 0, 0, rot=90) for lx in (0, width - 1)]
     placed += hosts
     middle = (width - 1) * 10  # LDraw units from the first brick to the middle of the body
     reach = middle + look.out  # from the middle of the body to each rim
-    fits = [part for part, half in AXLES if half <= reach + 10 and stocked(kit, part, "Black") is not None]
-    if fits:  # the longest axle that does not poke out of the rims
-        axle = fits[-1]
-        placed.append(kit.attach(axle, stocked(kit, axle, "Black"), hosts[0], (0, 10, middle), QUARTER,
-                                 "axle through the axle holes"))
-        kit.connect(hosts[0], hosts[1], "one axle through both bricks")
-    # The first brick's own z axis points across the body to the second, so its wheel is on the minus side.
-    placed += _wheel(kit, hosts[0], look.wheel, (0, 10, -look.out), HALF_TURN, color, tyre)
-    placed += _wheel(kit, hosts[0], look.wheel, (0, 10, 2 * middle + look.out), SAME, color, tyre)
+    through = _axle_for(kit, reach)
+    if through is not None:  # one axle from rim to rim
+        shaft = kit.attach(*through, hosts[0], (0, 10, middle), QUARTER, "axle through the axle hole")
+        kit.connect(shaft, hosts[1], "the same axle through this brick")
+        shafts = [(shaft, -reach), (shaft, reach)]
+    else:  # a body too wide for one axle: a short one through each brick
+        stub = _axle_for(kit, look.out)
+        if stub is None:
+            raise KitError(f"wheels() has no axle for the {style} style at this width; use another style")
+        # A brick's own z axis points across the body, so the first brick's wheel is on its minus side.
+        shafts = [(kit.attach(*stub, host, (0, 10, 0), QUARTER, "axle through the axle hole"), side * look.out)
+                  for host, side in zip(hosts, (-1, 1))]
+    placed += sorted({shaft for shaft, _ in shafts})
+    for (shaft, along), turn in zip(shafts, (HALF_TURN, SAME)):
+        placed += _wheel(kit, shaft, look.wheel, (along, 0, 0), _times(UNQUARTER, turn), color, tyre,
+                         "wheel on its axle")
     return placed
 
 

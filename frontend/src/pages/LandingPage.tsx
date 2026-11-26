@@ -159,7 +159,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   // Both are tied to the account they were loaded or chosen for, so signing in as someone else
   // never carries over another account's agents or selection.
   const [agentChoices, setAgentChoices] = useState<{ account: string; agents: BuildingAgent[];
-    models: Partial<Record<BuildingAgent, AgentModel[]>> }>();
+    models: Partial<Record<BuildingAgent, AgentModel[]>>; examples: BuildingAgent[] }>();
+  const [examplesChoice, setExamplesChoice] = useState<{ account: string; on: boolean }>();
   const [agentChoice, setAgentChoice] = useState<{ account: string; agent: BuildingAgent }>();
   const [modelChoice, setModelChoice] = useState<{ account: string; agent: BuildingAgent; model: AgentModel }>();
   const accountId = session?.user.id;
@@ -172,11 +173,15 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const agentModels = (accountId && agentChoices?.account === accountId ? agentChoices.models[buildingAgent] : undefined) ?? [];
   const agentModel: AgentModel | undefined = modelChoice?.account === accountId && modelChoice?.agent === buildingAgent
     && agentModels.includes(modelChoice.model) ? modelChoice.model : agentModels[0];
+  // An agent that can read example builds first (the Pip agent). Off unless this account turned it on.
+  const offersExamples = Boolean(accountId && agentChoices?.account === accountId
+    && agentChoices.examples.includes(buildingAgent));
+  const useExamples = offersExamples && examplesChoice?.account === accountId && examplesChoice.on;
   useEffect(() => {
     if (!accessToken || !accountId) return;
     const controller = new AbortController();
-    NovaToBricksApiService.buildingAgents(accessToken, controller.signal).then(({ agents, models }) => {
-      if (!controller.signal.aborted) setAgentChoices({ account: accountId, agents, models });
+    NovaToBricksApiService.buildingAgents(accessToken, controller.signal).then(({ agents, models, examples }) => {
+      if (!controller.signal.aborted) setAgentChoices({ account: accountId, agents, models, examples });
     }).catch(() => {
       if (!controller.signal.aborted) setAgentChoices(undefined);
     });
@@ -696,6 +701,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           authMode: buildingAgent === 'nova' && localDevelopment ? novaAuthMode : 'api_key',
           buildingAgent: inProcessAgent(buildingAgent),
           agentModel: agentModels.length ? agentModel : undefined,
+          useExamples,
           prompt: requestedPrompt.trim() || undefined,
           imageBase64,
           imageMediaType: requestedImage?.type || 'image/png',
@@ -1387,6 +1393,25 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                           {agentModels.map(model => <option key={model} value={model}>{AGENT_MODEL_LABELS[model]}</option>)}
                         </select>
                       </>
+                    )}
+                    {offersExamples && (
+                      <label htmlFor="landing-agent-examples" className="mt-3 flex min-h-11 cursor-pointer items-start gap-3">
+                        <input id="landing-agent-examples" type="checkbox" checked={useExamples}
+                          disabled={generationMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
+                          className="mt-1 h-5 w-5 shrink-0 rounded border-slate-300 disabled:opacity-50"
+                          onChange={event => {
+                            const on = event.target.checked;
+                            setExamplesChoice(accountId ? { account: accountId, on } : undefined);
+                            posthog.capture('landing_agent_examples_toggled', { building_agent: buildingAgent, enabled: on });
+                          }} />
+                        <span className="min-w-0">
+                          <span className="block">Show example builds first</span>
+                          <span className="mt-0.5 block break-words text-xs font-normal text-slate-500">
+                            {BUILDING_AGENT_LABELS[buildingAgent]} picks the closest kind of example, such as cars or
+                            houses, and reads those builds before it starts. Adds a little AI cost.
+                          </span>
+                        </span>
+                      </label>
                     )}
                   </div>
                 )}

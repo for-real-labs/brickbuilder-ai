@@ -28,21 +28,25 @@ class RunResult:
     steps: int
     spent_usd: Decimal
     published: dict | None
+    rejected: str | None = None  # the session folder of an unpublished draft that failed its checks
 
 
 def close_run(session: Session, toolbox: Toolbox, budget: Budget, emit: Event, status: str | None, reason: str,
               steps: int, published_before: int) -> RunResult:
     """Record how a run ended. A run that stops before ``finish`` keeps its best result as a draft."""
     published = session.meta["published"][-1] if len(session.meta["published"]) > published_before else None
+    rejected = None
     if status is None:
         status = "published" if published else "failed"
         if published is None and toolbox.publish_draft(reason):
             # Keep the customer's best result: the last error-free build, marked as unreviewed.
             published, status = session.meta["published"][-1], "draft"
+        elif published is None:
+            rejected = toolbox.save_rejected(reason)  # nothing passed: keep the build and its failed checks
     session.meta["status"] = status
     session.save()
     emit("done", {"status": status, "reason": reason})
-    return RunResult(status, reason, steps, budget.spent, published)
+    return RunResult(status, reason, steps, budget.spent, published, rejected)
 
 
 class BuildAgent:

@@ -103,7 +103,7 @@ describe('LandingPage', () => {
     authSettings.session = { user: approved, access_token: 'approved-token' };
     authSettings.user = approved;
     const access = vi.spyOn(NovaToBricksApiService, 'buildingAgents').mockImplementation(
-      async token => token === 'approved-token' ? { agents: ['nova', 'astrology', 'fable-gpt-6.1-sol'], models: {} } : { agents: ['nova'], models: {} });
+      async token => token === 'approved-token' ? { agents: ['nova', 'astrology', 'fable-gpt-6.1-sol'], models: {}, examples: [] } : { agents: ['nova'], models: {}, examples: [] });
     const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'astrology-build', message: 'Started' });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
@@ -150,6 +150,7 @@ describe('LandingPage', () => {
     const access = vi.spyOn(NovaToBricksApiService, 'buildingAgents').mockResolvedValue({
       agents: ['nova', 'pip-agent', 'fable-gpt-6.1-sol'],
       models: { 'pip-agent': ['gpt-6.2-sol', 'gpt-6.2-astra', 'claude-opus-5-5', 'claude-sonnet-5-5', 'claude-fable-5-2'] },
+      examples: ['pip-agent'],
     });
     const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'pip-build', message: 'Started' });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
@@ -176,8 +177,16 @@ describe('LandingPage', () => {
       const agents = container.querySelector<HTMLSelectElement>('#landing-building-agent')!;
       choose(agents, 'fable-gpt-6.1-sol');
       expect(container.querySelector('#landing-agent-model')).toBeNull();
+      expect(container.querySelector('#landing-agent-examples')).toBeNull(); // only agents that offer examples
       choose(agents, 'pip-agent');
       expect(container.querySelector<HTMLSelectElement>('#landing-agent-model')!.value).toBe('claude-opus-5-5');
+      // Example builds are off until the account turns them on.
+      const examples = container.querySelector<HTMLInputElement>('#landing-agent-examples')!;
+      expect(examples.checked).toBe(false);
+      expect(examples.labels?.[0].textContent).toContain('Show example builds first');
+      act(() => examples.click());
+      expect(container.querySelector<HTMLInputElement>('#landing-agent-examples')!.checked).toBe(true);
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_agent_examples_toggled', { building_agent: 'pip-agent', enabled: true });
       const input = container.querySelector<HTMLInputElement>('input[aria-label="Describe your model"]')!;
       act(() => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red boat');
@@ -185,7 +194,7 @@ describe('LandingPage', () => {
       });
       await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Generate"]')!.click());
       expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-        buildingAgent: 'pip-agent', agentModel: 'claude-opus-5-5', prompt: 'A red boat',
+        buildingAgent: 'pip-agent', agentModel: 'claude-opus-5-5', useExamples: true, prompt: 'A red boat',
       }), 'approved-token');
     } finally {
       act(() => root.unmount());
