@@ -49,15 +49,15 @@ it('reviews the top photo match, counts it and saves the same scanner draft afte
   expect(host.querySelector('a')?.getAttribute('href')).toBe('/dashboard?tab=parts-lists');
 });
 
-it.each(['jake@brickbuilder.ai', 'JAKEJOHNSON3700@gmail.com'])('shows dashboard scanning for %s', async email => {
-  await render(<DashboardPartsLists owner="owner" email={email} />);
+it('shows dashboard scanning when access is approved', async () => {
+  await render(<DashboardPartsLists owner="owner" allowPhoto />);
   await click('Create parts list');
   await click('Scan one part');
   expect(host.querySelector('input[aria-label="Upload a photo of LEGO parts"]')).not.toBeNull();
 });
 
 it('hides dashboard scanning from other accounts and keeps manual entry and imports available', async () => {
-  await render(<DashboardPartsLists owner="owner" email="builder@example.com" />);
+  await render(<DashboardPartsLists owner="owner" allowPhoto={false} />);
   await click('Create parts list');
   expect(host.textContent).not.toContain('Scan one part');
   expect(host.querySelector('input[type=file]')).toBeNull();

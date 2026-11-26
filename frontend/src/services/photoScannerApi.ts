@@ -1,8 +1,6 @@
 import { authenticatedApiFetch } from "./apiFetch";
 import { NOVA_API_BASE_URL } from "./novaToBricksApi";
 
-export const canUsePhotoScanner = (email?: string | null) =>
-  ["jake@brickbuilder.ai", "jakejohnson3700@gmail.com"].includes(email?.toLowerCase() ?? "");
 export interface ScanMatch {
   id: string;
   name: string;
@@ -62,7 +60,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return data as T;
 }
 export const PhotoScannerApi = {
-  access: (signal?: AbortSignal) => request("/access", { signal }),
+  async access(signal?: AbortSignal): Promise<{ allowed: boolean }> {
+    const response = await authenticatedApiFetch(base + "/access", { signal });
+    if (response.status === 401 || response.status === 403) return { allowed: false };
+    if (!response.ok) throw new Error("Photo Scanner is unavailable. Please try again.");
+    const data = await response.json();
+    return { allowed: data?.allowed === true };
+  },
   start: (file: File) => {
     const body = new FormData();
     body.append("file", file);

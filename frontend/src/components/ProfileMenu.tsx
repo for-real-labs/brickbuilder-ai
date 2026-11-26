@@ -1,4 +1,4 @@
-import { canUsePhotoScanner } from '../services/photoScannerApi';
+import { usePhotoScannerAccess } from '../hooks/usePhotoScannerAccess';
 import { CreditBalance } from './BillingComponents';
 import { NotificationPanel } from "./NotificationMenu";
 import React, { useEffect, useId, useRef, useState } from "react";
@@ -29,6 +29,7 @@ interface ProfileMenuProps {
 export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps) {
   const navigate = useNavigate();
   const { user, userProfile, signOut, isSupabaseConfigured } = useAuth();
+  const scannerAccess = usePhotoScannerAccess(user);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [view, setView] = useState<"profile" | "notifications">("profile");
   const feed = useGenerationNotifications();
@@ -136,7 +137,7 @@ export function ProfileMenu({ onNavigate, showCredits = true }: ProfileMenuProps
                 <a href="https://brickbuilder.ai/login" className="mt-2 inline-block text-red-600 underline"
                   onClick={() => posthog.capture('profile_local_sign_in_clicked')}>Sign in on BrickBuilder.ai</a>
               </div>}
-              {canUsePhotoScanner(user?.email) && <button type="button"
+              {scannerAccess === 'allowed' && <button type="button"
                 onClick={() => { posthog.capture('profile_navigation_clicked', { destination: '/photo-scanner' }); go('/photo-scanner'); }}
                 className="flex min-h-11 w-full cursor-pointer items-center gap-2 border-none bg-transparent px-4 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-50">
                 <ScanLine aria-hidden="true" className="h-4 w-4" />Photo Scanner

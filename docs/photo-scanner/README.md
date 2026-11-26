@@ -1,6 +1,6 @@
 # Private Photo Scanner prototype
 
-`/photo-scanner` is a separate tool for the authenticated `jake@brickbuilder.ai` account. The Tools dropdown shows the link only to that account. Every backend route (including original photos and crop images) independently requires a verified account JWT and checks ownership. Guest sessions, developer API keys, and local anonymous mode cannot bypass this check. The public existing-parts uploader is unchanged.
+`/photo-scanner` is available to approved accounts. The Tools and profile menus and the saved parts-list editor check access with the backend. Add approved addresses to the comma-separated server setting `PHOTO_SCANNER_ALLOWED_EMAILS`. The two existing owner accounts retain access by default. Every backend route (including original photos and crop images) independently requires a verified account JWT and checks ownership. Guest sessions, developer API keys, and local anonymous mode cannot bypass this check. The public existing-parts uploader is unchanged.
 
 ## Pipeline and operating limits
 

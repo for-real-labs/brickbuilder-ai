@@ -30,6 +30,7 @@ import { isGenerationActive } from "../hooks/useGenerationActivity";
 import { getGeneratedModelPath } from "../utils/generationRoutes";
 import posthog from "posthog-js";
 
+import { usePhotoScannerAccess } from "../hooks/usePhotoScannerAccess";
 import { DashboardPartsLists } from "../components/PartsListEditor";
 
 type TabKey = "dashboard" | "generations" | "orders" | "parts-lists" | "settings";
@@ -664,6 +665,7 @@ const UserDashboard: React.FC = () => {
   const [tab, setTab] = useState<TabKey>(isValidTab(tabParam) ? tabParam : "dashboard");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, userProfile, loading, signOut, session, isSupabaseConfigured } = useAuth();
+  const scannerAccess = usePhotoScannerAccess(tab === "parts-lists" ? user : null);
   const navigate = useNavigate();
   const [generations, setGenerations] = useState<GenerationWithOrder[]>([]);
   const [allOrders, setAllOrders] = useState<OrderInfo[]>([]);
@@ -942,7 +944,7 @@ const UserDashboard: React.FC = () => {
                 </div>
               )}
 
-              {tab==="parts-lists" && <DashboardPartsLists key={user?.id} owner={user?.id} email={user?.email} />}
+              {tab==="parts-lists" && <DashboardPartsLists key={user?.id} owner={user?.id} allowPhoto={scannerAccess === "allowed"} />}
 
               {tab==="orders" && (
                 <div>

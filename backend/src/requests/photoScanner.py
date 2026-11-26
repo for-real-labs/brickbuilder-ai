@@ -1,5 +1,6 @@
 """Account-restricted prototype endpoints; all images require bearer authentication."""
 import asyncio
+import os
 import time
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile
@@ -16,7 +17,10 @@ scanner = Scanner()
 async def require_scanner(auth: dict = Depends(get_optional_identity)) -> str:
     if auth.get('auth_method') != 'jwt' or not auth.get('authenticated') or not auth.get('user_id'):
         raise HTTPException(401, 'Sign in to use this private prototype.')
-    if (auth.get('user_email') or '').lower() not in {'jake@brickbuilder.ai', 'jakejohnson3700@gmail.com'}:
+    configured_emails = os.getenv('PHOTO_SCANNER_ALLOWED_EMAILS', '')
+    allowed_emails = {'jake@brickbuilder.ai', 'jakejohnson3700@gmail.com'}
+    allowed_emails.update(email.strip().casefold() for email in configured_emails.split(',') if email.strip())
+    if (auth.get('user_email') or '').casefold() not in allowed_emails:
         raise HTTPException(403, 'This prototype is private.')
     return auth['user_id']
 

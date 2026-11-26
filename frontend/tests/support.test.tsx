@@ -23,7 +23,10 @@ const fill = (selector: string, value: string) => act(() => {
   Object.getOwnPropertyDescriptor(field instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype, 'value')!.set!.call(field, value);
   field.dispatchEvent(new Event('input', { bubbles: true }));
 });
-const body = (index = 0) => JSON.parse(vi.mocked(authenticatedApiFetch).mock.calls[index][1]!.body as string);
+const body = (index = 0) => {
+  const supportCalls = vi.mocked(authenticatedApiFetch).mock.calls.filter(([url]) => url.endsWith('/support-email'));
+  return JSON.parse(supportCalls[index][1]!.body as string);
+};
 const mount = (selected: LandingModel | null = model) => act(() => root.render(<MemoryRouter><LandingToolsMenu page="/" model={selected} /></MemoryRouter>));
 const open = () => { act(() => button('Tools').click()); act(() => button('Support').click()); };
 beforeEach(() => {

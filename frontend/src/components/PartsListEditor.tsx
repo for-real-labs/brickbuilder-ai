@@ -5,7 +5,6 @@ import { InventorySources } from './ExistingPartsDesigner';
 import { PartEntry, colorLabel } from './PartEntry';
 import { SavedListPicker } from './SavedListPicker';
 import { mergeParts, SavedLists, SaveConflict, type SavedPartsList } from '../services/savedPartsLists';
-import { canUsePhotoScanner } from '../services/photoScannerApi';
 import type { InventoryPart } from '../services/partsInventoryApi';
 import './SavedPartsLists.css';
 
@@ -121,14 +120,14 @@ export function ScannerPartsList({ owner }: { owner: string }) {
   </section>;
 }
 
-export function DashboardPartsLists({ owner, email }: { owner?: string; email?: string }) {
+export function DashboardPartsLists({ owner, allowPhoto }: { owner?: string; allowPhoto?: boolean }) {
   const [editor, setEditor] = useState<SavedPartsList | 'new'>();
   return <section className="dashboard-parts-lists">
     <header><h1>Your parts lists</h1>{owner && !editor && <button className="parts-list-primary" onClick={() => {
       setEditor('new'); posthog.capture('parts_list_create_clicked');
     }}>Create parts list</button>}</header>
     {!owner ? <p>Sign in to save parts lists to your account.</p> : editor
-      ? <PartsListEditor owner={owner} allowPhoto={canUsePhotoScanner(email)} existing={editor === 'new' ? undefined : editor} onClose={() => setEditor(undefined)} />
+      ? <PartsListEditor owner={owner} allowPhoto={allowPhoto} existing={editor === 'new' ? undefined : editor} onClose={() => setEditor(undefined)} />
       : <SavedListPicker owner={owner} onChoose={setEditor} />}
   </section>;
 }
