@@ -1,4 +1,6 @@
 """Import saved LDraw placements into a Pip build script, including nested submodels."""
+import re
+
 import numpy as np
 from fable_agent.examples.importer import read_file
 from fable_agent.sandbox import MAX_SCRIPT_BYTES
@@ -8,7 +10,11 @@ from .parts_catalog import normalize_part_id
 
 
 def source_script(content: bytes, max_parts: int) -> str:
-    model = read_file(normalize_ldraw_upload("model.ldr", content))
+    text = normalize_ldraw_upload("model.ldr", content)
+    # The example-file reader skips direct RGB colors. An edit must account for every placement.
+    if re.search(r"^\s*1\s+0x", text, re.MULTILINE | re.IGNORECASE):
+        raise ValueError("Pip needs standard LDraw colors to edit this model.")
+    model = read_file(text)
     if not model:
         raise ValueError("The saved model is too large or empty.")
     lines = []

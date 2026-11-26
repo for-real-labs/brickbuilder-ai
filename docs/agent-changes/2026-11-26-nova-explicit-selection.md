@@ -8,3 +8,5 @@ Nova keeps its existing build method and settings. Routing and access tests cove
 Production AI cost and build quality were not measured.
 
 See `backend/src/requests/novaToBricks.py` and `frontend/src/pages/LandingPage.tsx`.
+
+[Pull request #410](https://github.com/for-real-labs/brickbuilder-ai/pull/410)

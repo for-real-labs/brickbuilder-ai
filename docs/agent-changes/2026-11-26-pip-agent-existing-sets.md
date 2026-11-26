@@ -13,3 +13,5 @@ that Pip rejects a two-brick draft and publishes a revision using the available 
 It does not measure production generation time or AI cost.
 
 See `backend/src/requests/fableToBricks.py` and `backend/tests/test_fable_web.py`.
+
+[Pull request #410](https://github.com/for-real-labs/brickbuilder-ai/pull/410)

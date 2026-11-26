@@ -69,7 +69,6 @@ class Options:
     max_seconds: float | None = None  # stop starting model calls after this long; the best result is kept
     examples: bool = False  # show the example builds closest to the request first (v2 methods)
     example_query: str | None = None  # what to find examples for; the customer's own words, without added guidance
-
     inventory_csv: str | None = None  # exact part/color counts, also sent to the isolated script runner
 
     def resolved(self, method: str) -> Options:

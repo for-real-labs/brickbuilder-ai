@@ -49,6 +49,7 @@ it('searches sets and requires an explicit choice when some pieces are unavailab
   await act(async () => { vi.advanceTimersByTime(300); });
   await act(async () => element.querySelector<HTMLButtonElement>('.existing-parts-results button')!.click());
   expect(select).not.toHaveBeenCalled();
+  expect(element.textContent).toContain('Your inventory includes 3 matched pieces.');
   expect(element.textContent).toContain('2 pieces have no exact');
   act(() => element.querySelector<HTMLButtonElement>('.existing-parts-use')!.click());
   expect(select).toHaveBeenCalledWith(inventory);

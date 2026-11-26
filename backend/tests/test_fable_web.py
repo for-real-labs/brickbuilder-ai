@@ -615,3 +615,23 @@ def test_implicit_edit_of_legacy_geometry_uses_pip_and_keeps_submodel_transforms
     assert jobs[0][5].script == "place_ldu('3005', 4, (2, 0, 2), (0, 0, 1, 0, 1, 0, -1, 0, 0))"
     assert request.parts_inventory is None
     assert create.await_args.kwargs["model_3d"] == PIP_AGENT
+
+
+def test_pip_refuses_a_source_with_direct_color_instead_of_dropping_a_placement():
+    from src.utils.pip_source_model import source_script
+    data = (b"1 4 0 0 0 1 0 0 0 1 0 0 0 1 3005.dat\n"
+            b"1 0x2FF0000 0 8 0 1 0 0 0 1 0 0 0 1 3024.dat")
+    with pytest.raises(ValueError, match="standard LDraw colors"):
+        source_script(data, 100)
+
+
+def test_a_busy_pip_inventory_build_never_contacts_nova(monkeypatch):
+    start_recorder(monkeypatch)
+    monkeypatch.setattr(fable, "_in_flight", fable.MAX_BUILDS + fable.MAX_WAITING)
+    monkeypatch.setattr(nova, "_nova_service", Mock(side_effect=AssertionError("Unexpected Nova fallback")))
+    request = nova.NovaToBricksRequest(prompt="A car", parts_inventory={
+        "name": "My set", "parts": [{"part_id": "3005", "color_id": 4, "quantity": 1}]})
+    with pytest.raises(HTTPException, match="busy") as refused:
+        asyncio.run(nova.nova_to_bricks(request, ACCOUNT))
+    assert refused.value.status_code == 503
+    nova._nova_service.assert_not_called()
