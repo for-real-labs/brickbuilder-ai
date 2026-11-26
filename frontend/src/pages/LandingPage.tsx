@@ -203,7 +203,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [prompt, setPrompt] = useState("");
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [partsInventory, setPartsInventory] = useState<PartsInventory | null>(null);
-  const basicInventory = useBasicPartsInventory(partsInventory);
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [giftPlanning, setGiftPlanning] = useState(false);
   const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
@@ -242,7 +241,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [size, setSize] = useState<SizeValue>("big");
   const [modelQuality, setModelQuality] = useState<ModelQuality>("regular");
   const startWithAllParts = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('mode') === 'all_parts';
-  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(startWithAllParts ? 'nova' : DEFAULT_GENERATION_METHOD);
+  const basicBricksEnabled = import.meta.env.VITE_ENABLE_BASIC_BRICKS === 'true';
+  const [generationMethod, setGenerationMethod] = useState<GenerationMethod>(DEFAULT_GENERATION_METHOD);
   const [threeDModel, setThreeDModel] = useState<ThreeDModel>(DEFAULT_THREE_D_MODEL);
   const [maxPartsInput, setMaxPartsInput] = useState('');
   const maxParts = maxPartsInput === '' ? undefined : Number(maxPartsInput);
@@ -279,9 +279,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     } finally { checkingProviderRef.current = false; setCheckingProvider(false); }
   };
   const [imgFile, setImgFile] = useState<File | null>(null);
-  useEffect(() => {
-    if (imgFile) setInputValidationMessage(null);
-  }, [imgFile]);
   const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preparingImage, setPreparingImage] = useState(false);
@@ -328,10 +325,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const historyId = typeof locationState?.forkHistoryId === 'string' ? locationState.forkHistoryId : undefined;
   const [linkedModelId] = useState(requestedModelId);
   const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
+  const generation = landingModel.model?.generation;
+  const displayedMethod = generation
+    ? (generation.mode === 'all_parts' || isAllPartsAgentEndpoint(generation.endpoint) || generation.endpoint === 'uploadLdraw' ? 'nova' : 'llm')
+    : generationMethod;
+  const basicInventory = useBasicPartsInventory(generationMethod === 'llm' ? partsInventory : null);
   useEffect(() => {
-    const generation = landingModel.model?.generation;
     if (!generation) return;
-    setGenerationMethod(generation.mode === 'all_parts' || isAllPartsAgentEndpoint(generation.endpoint) || generation.endpoint === 'uploadLdraw' ? 'nova' : 'llm');
     setMaxPartsInput(generation.max_parts == null ? '' : String(generation.max_parts));
   }, [landingModel.model?.generation.generation_id]);
 
@@ -453,8 +453,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       if (Number.isInteger(payload.maxParts) && payload.maxParts! >= 1 && payload.maxParts! <= 100000) setMaxPartsInput(String(payload.maxParts));
       if (payload.size) setSize(payload.size);
       if (payload.modelQuality) setModelQuality(payload.modelQuality);
-      setGenerationMethod(startWithAllParts ? 'nova' : payload.generationMethod === 'nova' || payload.generationMethod === 'llm'
-        ? payload.generationMethod : DEFAULT_GENERATION_METHOD);
+      const basicDraft = payload.generationMethod === 'llm' || (payload.generationMethod === '3d' && Boolean(payload.partsInventory));
+      const resume3d = payload.resumeGeneration && payload.generationMethod === '3d' && !payload.partsInventory;
+      setGenerationMethod(resume3d ? '3d' : basicDraft && basicBricksEnabled && !startWithAllParts ? 'llm' : DEFAULT_GENERATION_METHOD);
       if (payload.novaOptions && getLlmModelOption(payload.novaOptions.model)) {
         setNovaOptions({ ...DEFAULT_NOVA_OPTIONS, ...payload.novaOptions, model: DEFAULT_LLM_MODEL, authMode: localDevelopment && payload.novaOptions.authMode === 'native' ? 'native' : 'api_key' });
       }
@@ -462,7 +463,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         setPartsInventory(payload.partsInventory);
       }
       if (payload.resumeGeneration) {
-        if (payload.generationMethod === '3d') setGenerationMethod(payload.partsInventory ? 'llm' : '3d');
         if (payload.threeDModel === 'sam3d' || payload.threeDModel === 'trellis') setThreeDModel(payload.threeDModel);
         if (GENERATION_MODEL_OPTIONS.some(option => option.id === payload.llmModel)) setLlmModel(payload.llmModel!);
       }
@@ -481,7 +481,13 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           console.warn('Failed to restore uploaded image after login:', decodeErr);
         }
       }
-      if (payload.resumeGeneration) setPendingGenerateAfterLogin({ prompt: payload.prompt || '', image: restoredImage, edit: Boolean(payload.edit) });
+      if (payload.resumeGeneration) {
+        if (basicDraft && !basicBricksEnabled && !payload.edit) {
+          setInputValidationMessage('Your draft is ready. Select Generate to build with All parts for 20 credits.');
+        } else {
+          setPendingGenerateAfterLogin({ prompt: payload.prompt || '', image: restoredImage, edit: Boolean(payload.edit) });
+        }
+      }
     } catch (err) {
       console.warn('Failed to parse pending landing state:', err);
     }
@@ -588,7 +594,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
         prompt,
         size,
         modelQuality,
-        generationMethod,
+        generationMethod: pendingGenerateAfterLogin?.edit ? displayedMethod : generationMethod,
         threeDModel,
         llmModel,
         maxParts,
@@ -1152,7 +1158,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
           }}>Design from existing parts</button>
         </div>}
         {inventoryOpen ? <ExistingPartsDesigner onLogin={() => setShowLoginModal(true)} onSelect={inventory => {
-          setPartsInventory(inventory); if (generationMethod === '3d') setGenerationMethod('llm'); setInventoryOpen(false);
+          setPartsInventory(inventory); if (generationMethod === '3d') setGenerationMethod(basicBricksEnabled ? 'llm' : DEFAULT_GENERATION_METHOD); setInventoryOpen(false);
           setGiftPlanning(false); setCreateNewStage(null); dismissRandomIdea();
         }} /> : <main className={`${partsInventory ? 'landing-inventory-return ' : ''}flex flex-1 flex-col items-center text-center w-full ${ldrawLanding ? '' : 'landing-page-main'}`}>
           {ldrawLanding ? <h1 className="sr-only">{imageLanding?.uploadTitle || 'Build a custom brick model with BrickBuilder'}</h1>
@@ -1345,15 +1351,15 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     {([{ value: 'llm', label: 'Basic bricks', credits: 2 }, { value: 'nova', label: 'All parts', credits: 20 }] as const).map(({ value, label, credits }) => (
                       <button key={value} type="button" value={value}
                         aria-label={label}
-                        aria-pressed={(generationMethod === '3d' ? 'llm' : generationMethod) === value}
-                        disabled={Boolean(landingModel.model) || loading || buddyChat.routing || checkingProvider || generationMethod === '3d'}
+                        aria-pressed={(displayedMethod === '3d' ? 'llm' : displayedMethod) === value}
+                        disabled={(value === 'llm' && !basicBricksEnabled) || Boolean(landingModel.model) || loading || buddyChat.routing || checkingProvider || displayedMethod === '3d'}
                         onClick={() => {
-                          if (value === generationMethod) return;
+                          if (value === displayedMethod) return;
                           setGenerationMethod(value);
                           if (localDevelopment && value === 'nova' && buildingAgent === 'nova') void checkNovaConnection(llmModel);
                           posthog.capture('landing_generation_method_selected', { generation_method: value });
                         }}
-                        className={`min-h-9 flex flex-1 flex-col items-center gap-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
+                        className={`min-h-9 flex flex-1 flex-col items-center gap-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(displayedMethod === '3d' ? 'llm' : displayedMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
                         <span>{label}</span>
                         <span className="credit-balance generation-mode-cost"><Coins size={14} aria-hidden="true" /><span>{credits}</span><span>credits</span></span>
                       </button>
@@ -1362,11 +1368,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <label className="min-w-0 flex-1 text-sm font-medium text-slate-700" htmlFor="generation-max-parts">
                     Maximum parts
                     <input id="generation-max-parts" type="number" inputMode="numeric" min="1"
-                      max={generationMethod === 'nova' && buildingAgent !== 'nova' ? 5000 : 100000} step="1"
-                      placeholder={generationMethod === 'nova' && buildingAgent !== 'nova' ? '1,000 by default' : 'No limit'}
+                      max={displayedMethod === 'nova' && buildingAgent !== 'nova' ? 5000 : 100000} step="1"
+                      placeholder={displayedMethod === 'nova' && buildingAgent !== 'nova' ? '1,000 by default' : 'No limit'}
                       value={maxPartsInput} onChange={event => setMaxPartsInput(event.target.value)}
                       onBlur={() => posthog.capture('landing_max_parts_changed', { max_parts: Number.isInteger(maxParts) ? maxParts : null })}
-                      disabled={Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing || generationMethod === '3d'}
+                      disabled={Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing || displayedMethod === '3d'}
                       className="mt-1 min-h-11 w-full min-w-28 rounded-xl border border-slate-300 bg-white px-3 text-sm" />
                   </label>
                 </div>
@@ -1374,7 +1380,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <div className="mt-3 w-full text-sm font-medium text-slate-700 sm:max-w-72">
                     <label htmlFor="landing-building-agent">Building agent</label>
                     <select id="landing-building-agent" value={buildingAgent}
-                      disabled={generationMethod !== 'nova' || Boolean(inProcessAgent(landingModel.model?.generation.building_agent)) || loading || modelBusy || buddyChat.routing}
+                      disabled={displayedMethod !== 'nova' || Boolean(inProcessAgent(landingModel.model?.generation.building_agent)) || loading || modelBusy || buddyChat.routing}
                       className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-50"
                       onChange={event => {
                         const agent = isBuildingAgent(event.target.value) ? event.target.value : DEFAULT_BUILDING_AGENT;
@@ -1387,7 +1393,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       <>
                         <label htmlFor="landing-agent-model" className="mt-3 block">{BUILDING_AGENT_LABELS[buildingAgent]} model</label>
                         <select id="landing-agent-model" value={agentModel}
-                          disabled={generationMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
+                          disabled={displayedMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
                           className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-50"
                           onChange={event => {
                             const model = isAgentModel(event.target.value) ? event.target.value : agentModels[0];
@@ -1401,7 +1407,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     {offersExamples && (
                       <label htmlFor="landing-agent-examples" className="mt-3 flex min-h-11 cursor-pointer items-start gap-3">
                         <input id="landing-agent-examples" type="checkbox" checked={useExamples}
-                          disabled={generationMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
+                          disabled={displayedMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
                           className="mt-1 h-5 w-5 shrink-0 rounded border-slate-300 disabled:opacity-50"
                           onChange={event => {
                             const on = event.target.checked;
@@ -1419,8 +1425,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     )}
                   </div>
                 )}
-                {settingsOpen && (generationMethod !== 'nova' || buildingAgent === 'nova') && <AiBillingSettings key={session?.user.id || 'guest'} />}
-                {localDevelopment && generationMethod === 'nova' && buildingAgent === 'nova' && (
+                {settingsOpen && (displayedMethod !== 'nova' || buildingAgent === 'nova') && <AiBillingSettings key={session?.user.id || 'guest'} />}
+                {localDevelopment && displayedMethod === 'nova' && buildingAgent === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>
                     <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} className="min-h-11 min-w-0 max-w-full rounded-full border border-slate-200 bg-white px-3" onChange={event => {
