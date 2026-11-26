@@ -140,7 +140,7 @@ describe('preview password middleware', () => {
     expect(html).toContain('<div id="root"></div>');
   });
 
-  it('answers model page HEAD probes with preview headers and an empty body', async () => {
+  it('answers model page HEAD probes with preview headers', async () => {
     process.env.VERCEL_ENV = 'production';
     const id = '123e4567-e89b-12d3-a456-426614174000';
     vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({
@@ -151,7 +151,7 @@ describe('preview password middleware', () => {
     expect(response?.status).toBe(200);
     expect(response?.headers.get('content-type')).toBe('text/html; charset=utf-8');
     expect(response?.headers.get('cache-control')).toContain('s-maxage=60');
-    expect(response?.body).toBeNull();
+    expect(response?.body).not.toBeNull();
   });
 
   it.each(['LinkedInBot', 'facebookexternalhit/1.1', 'Twitterbot', 'Slackbot'])('asks %s to retry when the model service is unavailable', async userAgent => {
@@ -221,7 +221,7 @@ describe('preview password middleware', () => {
     expect(response?.status).toBe(200);
     expect(response?.headers.get('content-type')).toBe('image/png');
     expect(response?.headers.get('content-length')).toBe('4');
-    expect(response?.body).toBeNull();
+    expect(response?.body).not.toBeNull();
   });
 
   it('briefly caches the raw preview while the branded renderer deploys', async () => {

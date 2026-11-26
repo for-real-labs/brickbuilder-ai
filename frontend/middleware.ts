@@ -74,8 +74,9 @@ async function loadShareModel(id: string): Promise<{ name?: unknown; preview_ima
 async function modelShareResponse(request: Request): Promise<Response | undefined> {
   const url = new URL(request.url);
   const imageMatch = SHARE_IMAGE_PATH.exec(url.pathname);
-  const headOnly = request.method === 'HEAD';
-  if (request.method !== 'GET' && !headOnly) return undefined;
+  if (request.method !== 'GET' && request.method !== 'HEAD') return undefined;
+  // Vercel strips the body on the wire for HEAD, but drops content headers if
+  // the middleware returns a Response without a body.
   const id = imageMatch?.[1] || url.searchParams.get('id');
   if (!id || !MODEL_ID.test(id)) return undefined;
   if (!imageMatch && !['/', '/generated-model'].includes(url.pathname)) return undefined;
@@ -106,7 +107,7 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
       if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return unavailableShareResponse();
       const bytes = await imageResponse.arrayBuffer();
       if (bytes.byteLength > 10_000_000) return unavailableShareResponse();
-      return new Response(headOnly ? null : bytes, {
+      return new Response(bytes, {
         headers: {
           'Content-Type': 'image/png',
           'Content-Length': String(bytes.byteLength),
@@ -135,7 +136,7 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
       document = setMeta(document, 'property', 'og:image:width', '1200');
       document = setMeta(document, 'property', 'og:image:height', '630');
     }
-    return new Response(headOnly ? null : document, {
+    return new Response(document, {
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
   } catch {
