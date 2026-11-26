@@ -17,7 +17,7 @@ describe('PrivacyPolicyPage', () => {
     );
 
     expect(markup).toContain('Privacy Policy');
-    expect(markup).toContain('October 2, 2026');
+    expect(markup).toContain('November 21, 2026');
     expect(markup).toContain('Camera and photo library access');
     expect(markup).toContain('OpenAI, Anthropic, fal.ai, and RunPod');
     expect(markup).toContain('Retention and deletion');
