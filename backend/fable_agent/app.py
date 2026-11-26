@@ -29,6 +29,7 @@ from .repair import BuildRepairer
 from .runner import KitSettings, ScriptRunner, SubprocessScriptRunner
 from .session import Session
 from .shape import ShapeLibrary, default_cache_dir
+from .vehicle import vehicle_kind
 from .tools import THOROUGH_V2_TOOLS, TOOL_DEFINITIONS, Toolbox
 
 MAX_REFERENCE_BYTES = 40 * 1024 * 1024
@@ -99,7 +100,8 @@ class Workbench:
         kit_settings = KitSettings(str(library.root), settings.get("catalog_path"),
                                    bool(settings.get("open_palette")), str(cache))
         # Whether the publication rules apply is fixed when the session starts, like repair.
-        assembly = (AssemblyReview(library, shapes, ConnectorReview(ConnectorLibrary(library.root, cache)))
+        assembly = (AssemblyReview(library, shapes, ConnectorReview(ConnectorLibrary(library.root, cache)),
+                                   vehicle=settings.get("vehicle"))
                     if settings.get("assembly_rules") else None)
         return cls(library, shapes, PartFinder(library, palette),
                    ModelChecker(library, shapes, palette, max_parts=int(settings.get("max_parts", 1500)),
@@ -168,7 +170,9 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
                 "open_palette": options.open_palette, "max_parts": options.max_parts, "effort": options.effort,
                 "method": options.method, "repair": options.method in ASSISTED,
                 "assembly_rules": options.method in ASSISTED,
-                "examples": options.examples and options.method in ASSISTED}
+                "examples": options.examples and options.method in ASSISTED,
+                # What kind of vehicle the customer asked for, if any: it decides which vehicle findings are errors.
+                "vehicle": vehicle_kind(prompt if options.example_query is None else options.example_query)}
     bench = workbench or Workbench.open(settings)
     settings["ldraw_dir"] = str(bench.library.root)
     client = client or _client(options, options.model, options.effort)

@@ -286,12 +286,15 @@ The examples are in `backend/fable_agent/examples/library/`, one script per exam
   annotated copies in ldraw-nova.
 - **The example atlases** of ldraw-nova: buildings, vehicles, spaceships and mechanisms.
 
-An example keeps the parts its set uses, whether or not BrickBuilder stocks them, and is held
-to every check a Pip build must pass apart from the catalog. The prompt says so, and says that
-the build itself may use catalog parts only. Minifigures, parts that overlap and parts nothing
-joins are left out; an example is kept only if at least 80% of its pieces survive. Models of
-more than 1,200 pieces are not kept whole, because they would not fit a prompt; their
-submodels are. Files licensed for non-commercial use only are never used.
+An example keeps the parts its set uses, whether or not BrickBuilder stocks them, and only its
+minifigures are left out. Examples are references, not builds Pip may copy: many use joints Pip's
+checks cannot follow (clips, hinges, Technic parts that were not measured, parts set at an angle),
+and those are marked in the prompt as using joints its report cannot verify. The prompt says the
+build itself may use catalog parts only and is held to every check. `index.jsonl` records which
+examples also pass the checks (`checked`). Technic models are included. Sections of fewer than 3
+pieces and models of more than 1,200 pieces are left out, the first as too small to teach
+anything and the second because they would not fit a prompt; a large model's sections are kept.
+Files licensed for non-commercial use only are never used.
 
 `backend/scripts/build_fable_examples.py --source <checkout>` rebuilds the library from a
 local checkout of the annotated models. `NOTICE.md` and `SOURCES.md` in the folder give the
@@ -405,7 +408,7 @@ Nova's publication checks and are now the Fable agents' own code: nothing is loa
 | Measured joints | Nothing: these are found, not refused. A connector of one part seated in a connector of another counts as attached without `connect()`, and the space the two share is not called an overlap: a Technic pin or axle in a hole, a bar in a clip or a hollow stud, hinge halves, a wheel on its pin or axle, a tyre on its rim, a pane or door in its frame. | `connectors.py`, `fits.py` |
 | Fit | A tyre on a rim of another size and a pane in a frame it was not made for, however well it is centred (`[fit]`). | `connectors.py` |
 | Technic seating | A pin that is not centred in its holes, an axle that does not reach through a hole, two parts in one hole (`[technic]`). An axle with no stop at both ends and a single pin that leaves a pivot are warnings. | `toolkit/technic.py`, `toolkit/technic_review.py` |
-| Wheels | Nothing: warnings only (`[vehicle]`). A tyre that does not stand on the ground the others stand on, an axle that is not a mirrored pair, bodywork that reaches below the tyres. | `vehicle.py`, `toolkit/vehicle_review.py` |
+| Vehicles | A tyre off the ground the others stand on and bodywork below the tyres: errors when the request is a car, truck or other wheeled vehicle, warnings otherwise (`[vehicle]`). Warnings: a part inside the space a tyre turns in (measured on the part's real surface), an axle that is not a mirrored pair, and a plane or boat that is not a mirror image left to right. The kind of vehicle is read from the request's words. | `vehicle.py`, `toolkit/vehicle_review.py` |
 | Declared joints | A `connect()` between parts that do not touch, between parts whose seats do not fit, or a Technic pin or axle that is in none of the other part's holes. | `joints.py` |
 | One model | Free-standing pieces. They were a warning; a model needs one building order. | `assembly.py` |
 | Building order | A model that cannot be built one piece at a time: each piece must attach to what is already built, must not be closed in first, and must go onto an axle before parts sit on both sides of its place. | `sequence.py` |
@@ -501,8 +504,9 @@ that too and is the stronger design if Fable becomes a main path.
 - The Technic checks cover the 51 parts whose holes were measured. Other Technic parts
   are joined from their shape only, and a build with more than 300 measured Technic
   parts is told its seating was not reviewed.
-- Example retrieval has no whole model for many subjects: of 1,821 annotated official
-  sets, 139 survive conversion whole, and the rest are represented by their submodels.
+- Most examples (10,082 of 16,850) use joints Pip's checks cannot verify. They are shown as
+  references, and whether Pip builds better from them than from verified examples has not
+  been measured.
 
 ## Tests
 

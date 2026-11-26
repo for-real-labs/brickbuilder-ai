@@ -8,7 +8,8 @@ run after the ordinary checks and add to the same report:
   (``connectors``), from its shape otherwise (``fits``); parts that sit on each other without
   fitting; Technic pins and axles that are not seated (``toolkit``); and declared joints that
   have no evidence (``joints``);
-* wheels that do not stand on one road or have no room to turn (``vehicle``), as warnings;
+* vehicles: wheels that do not stand on one road or have no room to turn, and planes and boats
+  that are not mirror images (``vehicle``); errors only where the request is a wheeled vehicle;
 * a building order of small connected steps (``sequence``), kept on the report for the
   instructions.
 """
@@ -43,13 +44,15 @@ class Measured:
 
 
 class AssemblyReview:
-    def __init__(self, library: LDrawLibrary, shapes: ShapeLibrary, connectors: ConnectorReview | None = None):
+    def __init__(self, library: LDrawLibrary, shapes: ShapeLibrary, connectors: ConnectorReview | None = None,
+                 vehicle: str | None = None):
         self._material = MaterialReview(library, shapes)
         self._fits = FitFinder(library)
         self._connectors = connectors
         self._joints = JointReview(library, shapes)
         self._sequence = SequencePlanner(shapes)
         self._wheels = WheelReview(library)
+        self._vehicle = vehicle  # what the request is about (see ``vehicle.vehicle_kind``)
 
     def measure(self, placements) -> Measured:
         """Pairs of placements where a connector of one is seated in a connector of the other.
@@ -98,8 +101,9 @@ class AssemblyReview:
         self._review_misfits(measured, studded, report, label)
         self._review_technic(measured, report, label)
         self._review_joints(build, boxes, studded, measured, report, label)
-        for finding in self._wheels.review(build.placements, boxes, fits, label):
-            report.warnings.append(Issue("vehicle", finding.message, finding.placements))
+        for finding in self._wheels.review(build.placements, boxes, fits, label, self._vehicle):
+            (report.errors if finding.error else report.warnings).append(
+                Issue("vehicle", finding.message, finding.placements))
         self._require_one_model(report)
         if report.ok:
             self._plan(build, boxes, contacts, fits, report, label, measured.connectors.shafts)

@@ -247,3 +247,71 @@ def test_wheel_findings_are_warnings_on_a_build_and_name_the_parts(bench):
     # A spare lying flat on the other four is not on their axis, and is not reported.
     square = [placed("3641", (x, 0, z), side) for x, z in ((-30, 0), (30, 0), (-30, 100), (30, 100))]
     assert WheelReview(bench.library).review([*square, placed("3641", (0, -60, 50))], {}, set(), str) == []
+
+
+# ----- what the request is about decides how strict the vehicle review is -------------------
+
+@pytest.mark.parametrize(("request_text", "kind"), [
+    ("A red pickup truck on a road base", "road"), ("An orange off-road jeep", "road"),
+    ("A truck carrying a boat", "road"), ("A tugboat", "boat"), ("A seaplane on the water", "aircraft"),
+    ("A fighter jet", "aircraft"), ("A vintage motorcycle", "motorcycle"),
+    ("A lake house with a small dock", None), ("Fire fighters at a station", None), ("A fish tank", None),
+    ("", None), (None, None),
+])
+def test_the_kind_of_vehicle_is_read_from_the_request(request_text, kind):
+    from fable_agent.vehicle import vehicle_kind
+    assert vehicle_kind(request_text) == kind
+
+
+@real_parts
+def test_wheel_problems_are_errors_only_when_the_request_is_a_wheeled_vehicle(bench):
+    from fable_agent.vehicle import WheelReview
+    side = (0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0)
+    lifted = [placed("3641", (x, y, z), side) for x, y, z in ((-30, 0, 0), (30, 0, 0), (-30, 0, 100), (30, -8, 100))]
+    review = WheelReview(bench.library)
+    as_car = {item.code: item.error for item in review.review(lifted, {}, set(), str, "road")}
+    assert as_car["vehicle.ground_contact"] is True and as_car["vehicle.axle_symmetry"] is False
+    assert not any(item.error for item in review.review(lifted, {}, set(), str, None))
+
+
+@real_parts
+def test_a_part_inside_the_space_a_tyre_turns_in_is_reported_and_one_above_it_is_not(bench):
+    from fable_agent.checks import world_boxes
+    from fable_agent.vehicle import WheelReview
+    side = (0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0)
+    tyre = placed("3641", (0, -18, 0), side)  # radius 18: it reaches from y=0 up to y=-36
+    review = WheelReview(bench.library)
+    for height, reported in ((-30, True), (-40, False)):  # a 1 x 2 plate's underside at that height
+        plate = placed("3023", (0, height - 8, 0), side)
+        boxes = {1: world_boxes(bench.shapes.get("3023"), plate)}
+        found = review.review([tyre, plate], boxes, set(), str, "road")
+        assert ("vehicle.wheel_space" in {item.code for item in found}) is reported, height
+    # The road it stands on is not in its way, and a spare lying on its side is not checked at all.
+    road = placed("3020", (0, 8, 0))
+    found = review.review([tyre, road], {1: world_boxes(bench.shapes.get("3020"), road)}, set(), str, "road")
+    assert "vehicle.wheel_space" not in {item.code for item in found}
+    flat = (1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, -1.0, 0.0)  # turns the tyre's axis upright
+    spare = placed("3641", (0, -18, 0), flat)
+    plate = placed("3023", (0, -16, 0), side)  # inside the circle it would turn in, were it a wheel
+    found = review.review([spare, plate], {1: world_boxes(bench.shapes.get("3023"), plate)}, set(), str, "road")
+    assert "vehicle.wheel_space" not in {item.code for item in found}
+
+
+@real_parts
+def test_a_plane_whose_wing_is_missing_on_one_side_is_reported_and_a_mirrored_one_is_not(bench):
+    from fable_agent.checks import world_boxes
+    from fable_agent.vehicle import WheelReview
+    def boxes_of(parts):
+        return {i: world_boxes(bench.shapes.get(p.part), p) for i, p in enumerate(parts)}
+    lift = -48  # on a stand: what is within three plates of the ground is its base, not its shape
+    body = [placed("3001", (0, lift - 24, z)) for z in (-80, -40, 0, 40)]  # a fuselage along z, longer in front
+    body.append(placed("3022", (0, lift - 32, -120)))  # and a nose: the plane is not the same front and back
+    wings = [placed("3001", (x, lift - 24, 0)) for x in (-40, -80, 40, 80)]
+    base = [placed("3020", (-60, -8, 0)), placed("3001", (0, -48, 0))]  # off-centre base and a pillar
+    review = WheelReview(bench.library)
+    whole = [*base, *body, *wings]
+    assert review.review(whole, boxes_of(whole), set(), str, "aircraft") == []
+    one_sided = [*base, *body, *wings[:2]]
+    found = review.review(one_sided, boxes_of(one_sided), set(), str, "aircraft")
+    assert [item.code for item in found] == ["vehicle.symmetry"] and not found[0].error
+    assert review.review(one_sided, boxes_of(one_sided), set(), str, None) == []  # not a plane: not checked

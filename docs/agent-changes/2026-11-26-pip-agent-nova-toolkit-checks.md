@@ -17,8 +17,12 @@
   a pin must be centred in its holes, an axle must reach through its hole (the message says how long it must be),
   and two parts may not take one hole. An axle with no stop at both ends and a single-pin pivot are warnings. A
   wheel or gear the registry has not measured is joined to a measured axle that passes through its hole.
-- **Wheels are reviewed as running gear (`[vehicle]`, warnings).** Tyres that do not stand on one ground, an axle
-  that is not a mirrored pair, bodywork that reaches below the tyres.
+- **Vehicles are reviewed (`[vehicle]`).** The kind of vehicle is read from the request's words. For a car, truck
+  or other wheeled vehicle, a tyre off the ground the others stand on and bodywork below the tyres are errors; for
+  anything else, warnings. A part inside the space a tyre turns in (measured on its real surface, not its outline)
+  and an axle that is not a mirrored pair are warnings, and so is a plane or boat that is not a mirror image left
+  to right. The toolkit's motorcycle, boat and aircraft profiles, which look for the parts of its own example
+  plans, are replaced by that symmetry check. These vehicle rules were added after the measurement below.
 - **Building order knows axles.** A part is slid onto an axle before parts sit on both sides of its place. This
   rule of Nova's instruction planner was missing from the earlier port.
 - **Automatic repair swaps unstocked parts.** A part the catalog stocks in no color is replaced by the same mould
@@ -27,7 +31,7 @@
 - **Four building guides in the prompt**: design, vehicles, spacecraft and joints that are not studs, adapted from
   the Nova toolkit's agent guides (about 6,500 characters).
 - **Examples are found by description, not by category.** The example library is rebuilt from the toolkit's
-  annotated official sets and example atlases: 2,504 scripts, each a whole model or one described submodel. With
+  annotated official sets and example atlases: 16,850 scripts, each a whole model or one described submodel. With
   examples on, the request is ranked against their descriptions by Jev (keyword shortlist, then semantic rerank)
   and the best five that fit are shown, at most two per set. When Jev is unavailable the keyword ranking is used and
   the build's record says so. Examples keep the parts their set uses, stocked or not; the prompt says the build
@@ -168,6 +172,21 @@ sets and 37 atlas models). Before this change 62 official sets passed, held to t
 What is not used: 15,460 have fewer than eight pieces left once minifigures are out, 5,166 lose more than a fifth
 of their pieces to overlaps or joints the checks cannot find, 4,745 are mostly Technic, 641 are mostly built off
 the stud grid, and about 1,090 fail for other reasons (a wheel not joined, a Technic joint not seated, too large).
+
+## After the measurement
+
+These changes came after the 136-build measurement above, so its numbers do not include them:
+
+- **Examples are references.** An example keeps every part of its set except minifigures, including parts the checks
+  cannot follow, Technic models and parts set at an angle, and sections of as few as 3 pieces. The library grew from
+  2,504 to 16,850 scripts (1,294 whole models, 15,556 sections, 104 MB); 6,768 also pass Pip's checks. The prompt
+  marks the others as using joints Pip's report cannot verify. For "a red fire engine with a ladder" Jev now returns
+  five fire engines, where before it returned a locomotive nose and a truck cab.
+- **Vehicle rules** as described above (request-aware errors, wheel space on real surfaces, plane and boat symmetry).
+  Four real builds were run on them (an off-road jeep, a pickup with examples, a plane with examples, a tugboat): all
+  published, at $0.11 to $0.24. They first showed false findings (the road under the tyres, a spare on the tailgate, a
+  plane's display stand), which were fixed; rechecked, none of the four has a vehicle finding.
+- **Technic parts redrawn by a library release** are recognised by their size and holes.
 
 ## Not verified
 

@@ -19,7 +19,9 @@ the same ways. The full account, with the table of every Nova change of the last
   part that measures the same.
 - The prompt carries four short building guides.
 - With examples on, the examples closest to the request are found by description with Jev instead of by category,
-  from a library of 2,504 scripts converted from annotated official sets.
+  from a library of 16,850 scripts converted from annotated official sets and atlases.
+- Vehicle checks read the kind of vehicle from the request: wheel problems are errors for a wheeled vehicle, and
+  planes and boats are checked for being mirror images.
 
 ## Why
 
