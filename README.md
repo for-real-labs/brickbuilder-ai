@@ -21,21 +21,21 @@ At [brickbuilder.ai](https://brickbuilder.ai), describe a build, optionally uplo
 
 ## Run locally
 
-Install **Node.js 18+**, **Python 3.10+**, and **Git**. For **All parts**, also install and start **Docker Desktop**; Nova runs in Docker.
+Install **Node.js 18+**, **Python 3.10+**, and **Git**. For **All parts** with Pip, install **LeoCAD** and the **LDraw parts library** in `~/ldraw` or set `LDRAW_DIR` to its location. Nova runs in **Docker Desktop**.
 
 ```bash
 cp backend/.env-example backend/.env
 cp frontend/.env-example frontend/.env
 ```
 
-Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in `backend/.env` for **Basic bricks**. For **All parts**, you can use a project API key or connect your OpenAI or Claude account through the local provider sign-in.
+Set `OPENAI_API_KEY` or `ANTHROPIC_API_KEY` in `backend/.env` for **Basic bricks**. All parts builds use Pip by default, with GPT-6.2 Sol and the project `OPENAI_API_KEY`. Keep the Supabase settings blank in both local `.env` files to use the embedded database. Builds from your own parts inventory use Nova, which supports local ChatGPT or Claude sign-in and project API keys.
 
 ```bash
 npm install
 npm start
 ```
 
-Open the local URL printed by the frontend server, choose a mode, and start building. If you only want **Basic bricks**, run both npm commands with `NOVA_SKIP_SETUP=true` to skip Docker and Nova.
+Open the local URL printed by the frontend server, choose a mode, and start building. If you’re testing Pip or **Basic bricks** only, prefix both npm commands with `NOVA_SKIP_SETUP=true` to skip Docker and Nova.
 
 See the [LLM builder details](backend/README.md) and [Nova setup guide](docs/nova-agent-builder.md) for more options.
 

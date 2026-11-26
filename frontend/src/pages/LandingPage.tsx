@@ -167,11 +167,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const accessToken = session?.access_token;
   const selectableAgents = accountId && agentChoices?.account === accountId ? agentChoices.agents : [];
   const canSelectAgent = selectableAgents.length > 1;
-  // The Pip agent builds All parts models unless an allowlisted account chose another agent. Running
-  // locally, Nova stays the default: the ChatGPT and Claude account connections there are Nova's.
   const buildingAgent: BuildingAgent = canSelectAgent && agentChoice?.account === accountId
-    && selectableAgents.includes(agentChoice.agent) ? agentChoice.agent
-    : isLocalDevelopment() ? 'nova' : DEFAULT_BUILDING_AGENT;
+    && selectableAgents.includes(agentChoice.agent) ? agentChoice.agent : DEFAULT_BUILDING_AGENT;
   // An agent that offers a choice of model (the Pip agent); the first model is its default.
   const agentModels = (accountId && agentChoices?.account === accountId ? agentChoices.models[buildingAgent] : undefined) ?? [];
   const agentModel: AgentModel | undefined = modelChoice?.account === accountId && modelChoice?.agent === buildingAgent
@@ -179,7 +176,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   // An agent that can read example builds first (the Pip agent). On unless this account turned it off.
   const offersExamples = Boolean(accountId && agentChoices?.account === accountId
     && agentChoices.examples.includes(buildingAgent));
-  const useExamples = offersExamples && (examplesChoice?.account === accountId ? examplesChoice.on : true);
+  const useExamples = (buildingAgent === DEFAULT_BUILDING_AGENT || offersExamples)
+    && (examplesChoice && examplesChoice.account === accountId ? examplesChoice.on : true);
   useEffect(() => {
     if (!accessToken || !accountId) return;
     const controller = new AbortController();
@@ -205,6 +203,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const [inventoryOpen, setInventoryOpen] = useState(false);
   const [partsInventory, setPartsInventory] = useState<PartsInventory | null>(null);
   const basicInventory = useBasicPartsInventory(partsInventory);
+  // Builds with a parts inventory use Nova when Pip is selected.
+  const agentForBuild: BuildingAgent = partsInventory && buildingAgent === DEFAULT_BUILDING_AGENT ? 'nova' : buildingAgent;
   const [hasEnteredChat, setHasEnteredChat] = useState(false);
   const [giftPlanning, setGiftPlanning] = useState(false);
   const giftReplyPending = buddyChat.turns.some(turn => turn.kind === 'gift' && !turn.reply);
@@ -633,7 +633,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     if (requireGenerationSignup(requestedPrompt, requestedImage)) return;
 
     let novaAuthMode = novaOptions.authMode;
-    if (generationMethod === 'nova' && buildingAgent === 'nova' && localDevelopment) {
+    if (generationMethod === 'nova' && agentForBuild === 'nova' && localDevelopment) {
       const mode = await checkNovaConnection(llmModel);
       if (!mode) return;
       novaAuthMode = mode;
@@ -695,8 +695,6 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       // Trellis (non-streamed).
       const stream3d = threeDModel === 'sam3d';
 
-      // Pip builds from the catalog only, so a build from a parts inventory goes to Nova.
-      const agentForBuild: BuildingAgent = partsInventory && buildingAgent === DEFAULT_BUILDING_AGENT ? 'nova' : buildingAgent;
       if (generationMethod === 'nova') {
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
@@ -1351,7 +1349,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                         onClick={() => {
                           if (value === generationMethod) return;
                           setGenerationMethod(value);
-                          if (localDevelopment && value === 'nova' && buildingAgent === 'nova') void checkNovaConnection(llmModel);
+                          if (localDevelopment && value === 'nova' && agentForBuild === 'nova') void checkNovaConnection(llmModel);
                           posthog.capture('landing_generation_method_selected', { generation_method: value });
                         }}
                         className={`min-h-9 flex flex-1 flex-col items-center gap-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50 ${(generationMethod === '3d' ? 'llm' : generationMethod) === value ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}>
@@ -1363,8 +1361,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <label className="min-w-0 flex-1 text-sm font-medium text-slate-700" htmlFor="generation-max-parts">
                     Maximum parts
                     <input id="generation-max-parts" type="number" inputMode="numeric" min="1"
-                      max={generationMethod === 'nova' && buildingAgent !== 'nova' ? 5000 : 100000} step="1"
-                      placeholder={generationMethod === 'nova' && buildingAgent !== 'nova' ? '1,000 by default' : 'No limit'}
+                      max={generationMethod === 'nova' && agentForBuild !== 'nova' ? 5000 : 100000} step="1"
+                      placeholder={generationMethod === 'nova' && agentForBuild !== 'nova' ? '1,000 by default' : 'No limit'}
                       value={maxPartsInput} onChange={event => setMaxPartsInput(event.target.value)}
                       onBlur={() => posthog.capture('landing_max_parts_changed', { max_parts: Number.isInteger(maxParts) ? maxParts : null })}
                       disabled={Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing || generationMethod === '3d'}
@@ -1420,8 +1418,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     )}
                   </div>
                 )}
-                {settingsOpen && (generationMethod !== 'nova' || buildingAgent === 'nova') && <AiBillingSettings key={session?.user.id || 'guest'} />}
-                {localDevelopment && generationMethod === 'nova' && buildingAgent === 'nova' && (
+                {settingsOpen && (generationMethod !== 'nova' || agentForBuild === 'nova') && <AiBillingSettings key={session?.user.id || 'guest'} />}
+                {localDevelopment && generationMethod === 'nova' && agentForBuild === 'nova' && (
                   <div className="mt-3 flex flex-wrap items-center gap-2 text-left text-sm text-slate-600">
                     <label htmlFor="nova-connection">Provider connection</label>
                     <select id="nova-connection" value={novaOptions.authMode} disabled={(Boolean(landingModel.model) && modelBusy) || loading || buddyChat.routing || checkingProvider} className="min-h-11 min-w-0 max-w-full rounded-full border border-slate-200 bg-white px-3" onChange={event => {

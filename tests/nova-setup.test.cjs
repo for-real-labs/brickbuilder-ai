@@ -89,9 +89,12 @@ test('a clean installed checkout can update to a new pin without deleting sessio
   assert.ok(calls.some(args => args[0] === 'remote' && args[1] === 'set-url' && args[3] === SOURCES[0].url));
 });
 
-test('Docker is required unless explicitly using Basic bricks or an external runtime', () => {
+test('Docker is required unless Nova setup is skipped or an external runtime is configured', () => {
   assert.throws(() => install(() => ({ status: 1 }), {}), /Docker Desktop/);
-  install(() => assert.fail('Basic bricks must not install Docker'), { NOVA_SKIP_SETUP: 'true' });
+  const env = { NOVA_SKIP_SETUP: 'true' };
+  const run = () => assert.fail('Skipping Nova must not invoke Docker');
+  install(run, env);
+  startService(run, env);
   install(() => assert.fail('external runtime must not build locally'), { NOVA_SERVICE_URL: 'http://nova:8000', NOVA_SERVICE_TOKEN: 'private' });
   assert.throws(() => install(() => assert.fail('must not spawn'), { NOVA_SERVICE_URL: 'http://nova:8000' }), /both/);
 });

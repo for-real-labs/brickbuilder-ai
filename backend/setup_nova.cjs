@@ -102,7 +102,7 @@ function prepare(run = spawnSync) {
 
 function externalRuntime(env) {
   if (env.NOVA_SKIP_SETUP === 'true') {
-    console.log('Local Nova setup skipped; All parts needs a running Nova service.');
+    console.log('Local Nova setup skipped. Pip and Basic bricks can run without Nova.');
     return true;
   }
   if (env.NOVA_SERVICE_URL || env.NOVA_SERVICE_TOKEN) {
@@ -115,7 +115,7 @@ function externalRuntime(env) {
 
 function requireDocker(run) {
   const result = run('docker', ['info'], { encoding: 'utf8', stdio: 'pipe' });
-  if (result.error || result.status !== 0) throw new Error('Nova requires Git and Docker Desktop running. Start Docker Desktop, then run npm install again. For Basic bricks only, set NOVA_SKIP_SETUP=true.');
+  if (result.error || result.status !== 0) throw new Error('Nova requires Git and Docker Desktop running. Start Docker Desktop, then run npm install again. For Pip or Basic bricks without Nova, set NOVA_SKIP_SETUP=true.');
 }
 
 function install(run = spawnSync, env = process.env) {
