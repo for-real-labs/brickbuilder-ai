@@ -98,8 +98,8 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
-  it('builds with the Pip agent on its default model, examples on, for an account that cannot choose', async () => {
-    vi.stubEnv('VITE_API_MODE', 'production');
+  it.each(['production', 'local'])('uses the Pip default in %s for an account that cannot choose', async mode => {
+    vi.stubEnv('VITE_API_MODE', mode);
     const outsider = { id: 'outsider' };
     authSettings.session = { user: outsider, access_token: 'outsider-token' };
     authSettings.user = outsider;
@@ -122,7 +122,7 @@ describe('LandingPage', () => {
       });
       await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Generate"]')!.click());
       expect(generate).toHaveBeenCalledWith(expect.objectContaining({
-        buildingAgent: 'pip-agent', agentModel: undefined, useExamples: true, prompt: 'A red boat',
+        buildingAgent: 'pip-agent', agentModel: undefined, authMode: 'api_key', useExamples: true, prompt: 'A red boat',
       }), 'outsider-token');
     } finally {
       act(() => root.unmount());
@@ -136,7 +136,7 @@ describe('LandingPage', () => {
     authSettings.session = { user: approved, access_token: 'approved-token' };
     authSettings.user = approved;
     const access = vi.spyOn(NovaToBricksApiService, 'buildingAgents').mockImplementation(
-      async token => token === 'approved-token' ? { agents: ['nova', 'astrology', 'fable-gpt-6.1-sol'], models: {}, examples: [] } : { agents: ['nova'], models: {}, examples: [] });
+      async token => token === 'approved-token' ? { agents: ['nova', 'pip-agent', 'astrology', 'fable-gpt-6.1-sol'], models: {}, examples: [] } : { agents: ['nova'], models: {}, examples: [] });
     const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'astrology-build', message: 'Started' });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
@@ -149,8 +149,8 @@ describe('LandingPage', () => {
       act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
       const selector = container.querySelector<HTMLSelectElement>('#landing-generation-settings select')!;
       expect(selector.labels?.[0].textContent).toContain('Building agent');
-      expect(Array.from(selector.options).map(option => option.text)).toEqual(['Nova', 'Astrology', 'Fable · GPT-6.1 Sol']);
-      expect(selector.value).toBe('nova');
+      expect(Array.from(selector.options).map(option => option.text)).toEqual(['Nova', 'Pip agent', 'Astrology', 'Fable · GPT-6.1 Sol']);
+      expect(selector.value).toBe('pip-agent');
       act(() => {
         selector.value = agent;
         selector.dispatchEvent(new Event('change', { bubbles: true }));
@@ -198,8 +198,7 @@ describe('LandingPage', () => {
     try {
       await act(async () => root.render(<LandingPage />));
       act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
-      expect(container.querySelector('#landing-agent-model')).toBeNull(); // Nova has no model choice here
-      choose(container.querySelector<HTMLSelectElement>('#landing-building-agent')!, 'pip-agent');
+      expect(container.querySelector<HTMLSelectElement>('#landing-building-agent')!.value).toBe('pip-agent');
       const models = container.querySelector<HTMLSelectElement>('#landing-agent-model')!;
       expect(models.labels?.[0].textContent).toBe('Pip agent model');
       expect(Array.from(models.options).map(option => option.text)).toEqual(
@@ -701,8 +700,8 @@ describe('LandingPage', () => {
     } finally { act(() => root.unmount()); container.remove(); vi.unstubAllGlobals(); }
   });
 
-  it('defaults to All parts, routes through Nova, and keeps the model when switching to Basic bricks', async () => {
-    vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
+  it('defaults to Pip for local All parts builds and keeps the model when switching to Basic bricks', async () => {
+    const providerStatus = vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
 
@@ -719,7 +718,7 @@ describe('LandingPage', () => {
       const model = container.querySelector('#landing-render-model') as HTMLSelectElement;
       const maximum = container.querySelector<HTMLInputElement>('#generation-max-parts')!;
       expect(maximum.value).toBe('');
-      expect(maximum.placeholder).toBe('No limit');
+      expect(maximum.placeholder).toBe('1,000 by default');
       expect(mode.querySelector('button[value="llm"] .credit-balance')?.textContent).toBe('2credits');
       expect(mode.querySelector('button[value="nova"] .credit-balance')?.textContent).toBe('20credits');
       expect(mode.querySelectorAll('.credit-balance svg')).toHaveLength(2);
@@ -740,13 +739,14 @@ describe('LandingPage', () => {
         input.dispatchEvent(new Event('input', { bubbles: true }));
       });
       await act(async () => findButton('Generate').click());
-      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, authMode: 'native', model: DEFAULT_LLM_MODEL, maxParts: 50, prompt: 'Spaceport with launch tower, rover, and research lab' }), undefined);
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({ ...DEFAULT_NOVA_OPTIONS, buildingAgent: 'pip-agent', useExamples: true, maxParts: 50, prompt: 'Spaceport with launch tower, rover, and research lab' }), undefined);
       expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_generate_clicked', expect.objectContaining({ generation_method: 'nova' }));
+      expect(providerStatus).not.toHaveBeenCalled();
       expect(llm).not.toHaveBeenCalled();
       expect(poll).not.toHaveBeenCalled();
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
       expect(container.querySelector('#landing-build-prompt')).toBeNull();
-      expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks' });
+      expect(JSON.parse(localStorage.getItem(`pending_generations:v2:guest:${getGuestSession()}`)!)[0]).toMatchObject({ id: 'full-set', endpoint: 'novaToBricks', buildingAgent: 'pip-agent' });
       vi.mocked(llm).mockResolvedValue({ generation_id: 'basic-bricks', message: 'Started' });
       act(() => Array.from(container.querySelectorAll<HTMLButtonElement>('[aria-label="Generation in progress actions"] button')).find(button => button.textContent === 'Start new')!.click());
       expect(container.querySelector('.landing-hero-pet .pet-avatar')).not.toBeNull();
@@ -812,14 +812,16 @@ describe('LandingPage', () => {
       expect(selected).toHaveBeenCalledWith(expect.objectContaining({
         model: DEFAULT_LLM_MODEL, prompt: undefined, imageBase64: btoa('reference'), imageMediaType: 'image/png',
       }), undefined);
-      if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({authMode:'native'}),undefined);
+      if (modeValue === 'nova') expect(nova).toHaveBeenCalledWith(expect.objectContaining({ buildingAgent: 'pip-agent', authMode: 'api_key' }), undefined);
       expect(other).not.toHaveBeenCalled();
       expect(container.querySelector('[aria-label="Build buddy conversation"]')?.textContent || '').not.toContain('email');
       expect(container.querySelector('[aria-label="Build progress workspace"] [aria-label="Bricks falling onto a table"]')).not.toBeNull();
     } finally { act(() => root.unmount()); container.remove(); }
   });
 
-  it('waits for an explicit provider connection choice and preserves the prompt before starting Nova', async () => {
+  it('waits for an explicit provider connection choice and preserves the inventory build prompt', async () => {
+    const inventory = { name: 'My set', source: 'set', parts: [{ part_id: '3001', color_id: 4, quantity: 2 }] };
+    sessionStorage.setItem('pendingLandingState', JSON.stringify({ generationMethod: 'nova', partsInventory: inventory }));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({generation_count:12,brick_count:400});
 
@@ -841,7 +843,7 @@ describe('LandingPage', () => {
       expect(container.querySelector('[role="dialog"]')).toBeNull();
       expect(input.value).toBe('A red lighthouse');
       await act(async()=>container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
-      expect(nova).toHaveBeenCalledWith(expect.objectContaining({prompt:'A red lighthouse',model:'claude-opus-5-5',authMode:'api_key'}),undefined);
+      expect(nova).toHaveBeenCalledWith(expect.objectContaining({prompt:'A red lighthouse',model:'claude-opus-5-5',authMode:'api_key',partsInventory:inventory}),undefined);
     } finally {act(()=>root.unmount());container.remove();}
   });
 
@@ -1025,12 +1027,13 @@ describe('LandingPage', () => {
       expect(container.querySelector('[aria-label="Upload image"]')?.closest('[hidden]')).toBeNull();
       openSettings();
       expect(panel.hidden).toBe(false);
-      const billing = panel.querySelector('[aria-label="AI billing settings"]')!;
-      expect(panel.querySelector('[aria-label="Mode"]')!.compareDocumentPosition(billing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      expect(panel.querySelector('[aria-label="AI billing settings"]')).toBeNull();
       const connections = container.querySelector('[aria-label="Local provider connections"]')!;
       expect(connections.closest('form')).toBeNull();
       expect(connections.closest('[hidden]')).toBeNull();
       act(() => panel.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+      const billing = panel.querySelector('[aria-label="AI billing settings"]')!;
+      expect(panel.querySelector('[aria-label="Mode"]')!.compareDocumentPosition(billing) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(panel.querySelector('#landing-render-model')).toBeNull();
       act(() => panel.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
       expect(panel.hidden).toBe(true);
@@ -1310,7 +1313,7 @@ it('returns from a parts upload to the existing composer and submits its exact i
       prompt.dispatchEvent(new Event('input', { bubbles: true }));
     });
     await act(async () => { container.querySelector<HTMLButtonElement>('button[type=submit]')!.click(); await vi.waitFor(() => expect(nova).toHaveBeenCalled()); });
-    expect(nova).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'A tiny car', partsInventory: inventory }), undefined);
+    expect(nova).toHaveBeenCalledWith(expect.objectContaining({ prompt: 'A tiny car', partsInventory: inventory, buildingAgent: undefined, authMode: 'native', useExamples: false }), undefined);
   } finally { act(() => root.unmount()); container.remove(); }
 });
 
