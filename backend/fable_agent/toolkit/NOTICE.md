@@ -18,12 +18,13 @@ Every file starts with a header naming its origin and a dated "Modified by Brick
 | File here | Toolkit file | Changes |
 |---|---|---|
 | `connection_adapter.py` | `ldraw_tools/connection_adapter.py` | None. |
-| `technic.py` | `ldraw_tools/technic.py` | None. |
+| `technic.py` | `ldraw_tools/technic.py` | `definition()` also recognises a part redrawn by a later library release when its size and holes match `data/technic-sizes.json`. |
 | `technic_review.py` | `ldraw_tools/technic_review.py` | `contract_check` and `review_structure` left out. |
 | `common.py` | `ldraw_tools/common.py` | Reduced to `DATA`, `jsonable`, `issue`, `atomic_write`, `get_parts`; `get_parts` takes its paths as arguments. |
 | `vehicle_review.py` | `ldraw_tools/vehicle_review.py` | The road profile, rewritten to work in any frame on plain measurements; see the file's header. |
 | `data/technic-parts.json` | `ldraw_tools/data/technic-parts.json` | None. |
 | `data/rectangular-parts.json` | `ldraw_tools/data/rectangular-parts.json` | None. |
+| `data/technic-sizes.json` | (new) | Written by `fable_agent/technic_sizes.py`: each measured part's outline and holes. |
 
 ## What this means for this repository
 

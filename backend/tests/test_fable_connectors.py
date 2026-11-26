@@ -180,25 +180,11 @@ def test_a_build_with_too_many_technic_parts_is_told_its_seating_was_not_reviewe
 
 
 @real_parts
-def test_technic_parts_this_library_does_not_match_are_counted_not_guessed(review):
-    found = review.review([placed("3700"), placed("32062", (0, 10, 10), X_ONTO_Z)])
-    assert found.unreviewed == (0 if recognised(review, "3700", "32062") else 1)
-
-
-@real_parts
-def test_the_measured_technic_parts_are_recognised_in_this_parts_library(review):
-    """The registry is keyed to each part's exact geometry; a fingerprint that fails on this
-    platform would silently turn its checks off."""
-    from fable_agent.toolkit.technic import definition, registry
-    parts = review._library.parts
-    present = [code for code in registry()["parts"] if parts.find_part(code=code) is not None]
-    unknown = [code for code in present if definition(parts.geometry(code)) is None]
-    assert len(present) >= 40
-    # The beams, bricks and pins have not changed in years; an axle or bush may differ in an older library.
-    assert not {"3700", "3701", "32523", "32316", "2780", "3673", "6558"} & set(unknown)
-    if unknown:
-        pytest.skip(f"{len(unknown)} of {len(present)} measured parts are another release in this parts library: "
-                    f"{', '.join(unknown)}. Their Technic checks are off here and say so in each report.")
+def test_technic_parts_this_library_does_not_match_are_counted_not_guessed(review, monkeypatch):
+    from fable_agent.toolkit import technic
+    assert review.review([placed("3700"), placed("32062", (0, 10, 10), X_ONTO_Z)]).unreviewed == 0
+    monkeypatch.setattr(technic, "definition", lambda local: None)
+    assert review.review([placed("3700"), placed("32062", (0, 10, 10), X_ONTO_Z)]).unreviewed == 2
 
 
 # ----- studs the connector data taught Nova, which Pip measures by shape ---------

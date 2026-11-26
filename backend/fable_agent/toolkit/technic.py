@@ -4,6 +4,9 @@
 # Licensed under the GNU Affero General Public License, version 3: see LICENSE-AGPL-3.0 at the
 # root of this repository and NOTICE.md in this folder. There is NO WARRANTY.
 # Modified by BrickBuilder, 2026-11-26: copied unchanged apart from this header.
+# Modified by BrickBuilder, 2026-11-27: definition() also accepts a part whose exact geometry differs
+# from the measured one when its size and its holes match what was recorded (``data/technic-sizes.json``),
+# so a release of the parts library that redraws a part's outline does not turn its checks off.
 """Reviewed Technic interfaces and seating, independent of mechanism simulation.
 
 The registry replaces only mechanical features on measured, fingerprinted parts.
@@ -74,7 +77,40 @@ def definition(local):
     # Floating-point expansion and point ordering vary across CPU architectures.
     # A millionth of an LDU is far below the mechanical seating tolerance.
     matches = cached[1] == entry['geometry_sha256'] or cached[2] == entry.get('geometry_points_sha256')
-    return entry if matches else None
+    return entry if matches or same_size(code, local) else None
+
+
+SIZE_PLAY = 0.6  # LDU a part's outline may differ between library releases: their axle ends differ by 0.5
+HOLE_PLAY = 0.1  # LDU a hole may move; any more and the measured ports no longer describe the part
+
+
+@lru_cache(maxsize=1)
+def sizes():
+    try:
+        return json.loads((DATA / 'technic-sizes.json').read_text())['parts']
+    except (OSError, ValueError, KeyError):
+        return {}
+
+
+def part_size(local):
+    """What a part is recognised by when its exact geometry is not the measured one: its outline,
+    and the holes the library draws in it, in its own frame."""
+    if local.bounds is None:
+        return None
+    b = local.bounds
+    holes = sorted([str(f.kind), *(round(float(v), 3) for v in (f.position.x, f.position.y, f.position.z))]
+                   for f in local.connections if f.kind in HOLES)
+    return dict(bounds=[round(float(v), 3) for v in (b.min.x, b.min.y, b.min.z, b.max.x, b.max.y, b.max.z)],
+                holes=holes)
+
+
+def same_size(code, local):
+    recorded, found = sizes().get(code), part_size(local)
+    if recorded is None or found is None or len(recorded['holes']) != len(found['holes']):
+        return False
+    return (all(abs(a - b) <= SIZE_PLAY for a, b in zip(recorded['bounds'], found['bounds']))
+            and all(h[0] == g[0] and all(abs(x - y) <= HOLE_PLAY for x, y in zip(h[1:], g[1:]))
+                    for h, g in zip(recorded['holes'], found['holes'])))
 
 
 def managed(feature):

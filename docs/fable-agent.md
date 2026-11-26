@@ -421,8 +421,10 @@ and bars, pins and axles with their holes, hinge fingers, and the seats of tyres
 doors with the groups that say which fits which. `connectors.py` reads it with the
 [pyldraw3](https://github.com/hbmartin/pyldraw3) library. For 51 Technic parts the holes and
 grips were measured by hand (`toolkit/data/technic-parts.json`); those are used instead, and
-each is tied to the exact geometry of the part, so a different release of the parts library
-turns that part's checks off, and the report says how many parts that is. `Kit.inset()` puts a
+each is tied to the geometry they were measured on. A part a later release of the parts library
+redraws is still recognised when its outline (within 0.6 LDU) and its holes match what was
+recorded in `toolkit/data/technic-sizes.json`; otherwise its checks are off and the report says
+how many parts that is. `Kit.inset()` puts a
 pane or door on the seat the data gives (`data/shadow/seats.json`).
 
 Only seats prove a misfit: a tyre whose rim is not the size of any rim it is sold on, a pane

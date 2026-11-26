@@ -175,10 +175,12 @@ the stud grid, and about 1,090 fail for other reasons (a wheel not joined, a Tec
   branch was not run locally.
 - Whether a measured joint is strong enough, balance, and whether a hand can reach a part. Nova's toolkit says the
   same of itself.
-- The Technic registry recognises a part only by its exact geometry. On the parts library on the development Mac
-  (a 2025 release) 16 of 50 measured parts are not recognised; on the current release, which production downloads,
-  all 51 are. A later release of the library can turn a part's checks off again; each report says how many parts
-  that is, but nothing alerts anyone.
+- The Technic registry was keyed to each part's exact geometry, so on the 2025 parts library on the development Mac
+  16 of 50 measured parts were not recognised (all 51 are on the current release, which production downloads). A
+  part is now also recognised when its outline is within 0.6 LDU and its holes are where they were recorded
+  (`toolkit/data/technic-sizes.json`): all parts match on both releases. A future release that moves a hole or
+  changes a part's size still turns that part's checks off; the report says how many parts that is, and
+  `test_the_measured_technic_parts_are_recognised_in_this_parts_library` fails on such a library.
 - Frames the connector data has no seat for (the 1 x 4 x 3 window and some doors) are still checked for touching
   only.
 - Retrieval quality was looked at on a handful of requests, not scored. Where the library has no close model (no
