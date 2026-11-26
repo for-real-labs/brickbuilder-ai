@@ -174,7 +174,7 @@ async def building_agents(response: Response, auth_info: dict = Depends(get_opti
     # One allowlist covers choosing an agent or a model. Everyone else builds with the Pip agent on its
     # default model, and may still turn example builds on or off.
     if not astrology_allowed(auth_info):
-        return {"agents": ["nova"], "models": {}, "examples": [PIP_AGENT]}
+        return {"agents": [PIP_AGENT], "models": {}, "examples": [PIP_AGENT]}
     # Agents that offer a choice of model list it; the first model is the default.
     models = {agent: [FABLE_AGENTS[agent].model, *(m for m in FABLE_AGENTS[agent].models if m != FABLE_AGENTS[agent].model)]
               for agent in OFFERED_AGENTS if agent in FABLE_AGENTS and FABLE_AGENTS[agent].models}

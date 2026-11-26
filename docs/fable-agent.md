@@ -230,14 +230,14 @@ The options are defined once in `backend/src/utils/building_agents.py`, with the
 labels in `frontend/src/utils/buildingAgents.ts`. A change to any agent is recorded
 in [docs/agent-changes](agent-changes/README.md).
 
-- **Access** is the Astrology allowlist, `ASTROLOGY_ALLOWED_EMAILS`. A signed-in
-  account on it may use every option; nobody else can, including through the API.
+- **Access** defaults to Pip on its standard model. The Astrology allowlist, `ASTROLOGY_ALLOWED_EMAILS`,
+  controls who can select a different agent or model in Generation settings.
 - **Billing** follows the other All parts engines: BrickBuilder credits and
   BrickBuilder's own `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`. Personal provider keys
   and local provider connections are refused. Each model call is reported to the
   generation's usage record.
-- **Limits:** 1,000 pieces unless the request sets another limit, 5,000 at most. A
-  customer's own parts inventory is refused for now; Fable builds from the catalog.
+- **Limits:** 1,000 pieces unless the request sets another limit, 5,000 at most. Pip can also build from a
+  selected set or parts inventory. Each part and color is limited to the quantity supplied.
 - **Results** use the standard viewer, parts list, preview and instructions. The build
   script is saved with the generation as `fable-design.json`, with the model that built it.
 - **Edits** to a Fable model go back to the option that built it, start from the saved

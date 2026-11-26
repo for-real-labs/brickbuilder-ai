@@ -48,7 +48,7 @@ def set_inventory(row: dict, *, known_parts: frozenset[str] | None = None) -> di
             continue
         counts[(part, color)] += quantity
     if not counts:
-        raise ValueError('This set has no parts Nova can identify exactly. Export its inventory as LDraw and upload it instead.')
+        raise ValueError('No pieces in this set have an exact part and color match. Export its inventory as LDraw and upload it instead.')
     inventory = PartsInventory(name=f"{row['name']} ({row['set_num']})"[:200], source='set',
         parts=[InventoryPart(part_id=p, color_id=c, quantity=q) for (p, c), q in counts.items()])
     return {'inventory': inventory.model_dump(), 'unavailable': unavailable,

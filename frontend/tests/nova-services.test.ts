@@ -14,14 +14,14 @@ beforeEach(() => vi.stubGlobal('fetch', vi.fn()));
 describe('Nova agent API', () => {
   it('starts a native agent build with owner credentials', async () => {
     vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'set', message: 'Started' }));
-    await expect(NovaToBricksApiService.generate({ ...DEFAULT_NOVA_OPTIONS, prompt: '  orbital launch site  ', authMode: 'native', imageBase64: 'pixels' }, 'token')).resolves.toMatchObject({ generation_id: 'set' });
+    await expect(NovaToBricksApiService.generate({ ...DEFAULT_NOVA_OPTIONS, prompt: '  orbital launch site  ', buildingAgent: 'nova', authMode: 'native', imageBase64: 'pixels' }, 'token')).resolves.toMatchObject({ generation_id: 'set' });
     const [url, init] = vi.mocked(fetch).mock.calls[0];
     expect(url).toContain('/novaToBricks');
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
     expect(new Headers(init?.headers).has('X-Guest-Session')).toBe(true);
     expect(JSON.parse(init?.body as string)).toEqual({
       prompt: 'orbital launch site', image_base64: 'pixels', image_media_type: 'image/png', detail_level: 40, entry_page: '/',
-      model: DEFAULT_NOVA_OPTIONS.model, auth_mode: 'native',
+      model: DEFAULT_NOVA_OPTIONS.model, building_agent: 'nova', auth_mode: 'native',
     });
   });
 
@@ -34,11 +34,11 @@ describe('Nova agent API', () => {
     expect(fetch).not.toHaveBeenCalled();
   });
 
-  it('sends follow-up edits to Nova with the source generation identity', async () => {
+  it('sends follow-up edits to Pip by default with the source generation identity', async () => {
     vi.mocked(fetch).mockResolvedValue(response({ generation_id: 'revision', message: 'Started' }));
     await NovaToBricksApiService.edit('original', 'Make the roof red', 'owner-token', { imageBase64: 'pixels', imageMediaType: 'image/jpeg' });
     expect(JSON.parse(vi.mocked(fetch).mock.calls[0][1]?.body as string)).toMatchObject({
-      source_generation_id: 'original', prompt: 'Make the roof red', image_base64: 'pixels', image_media_type: 'image/jpeg',
+      building_agent: 'pip-agent', source_generation_id: 'original', prompt: 'Make the roof red', image_base64: 'pixels', image_media_type: 'image/jpeg',
     });
     expect(vi.mocked(fetch).mock.calls[0][0]).toContain('/novaToBricks');
   });

@@ -69,6 +69,7 @@ class Options:
     max_seconds: float | None = None  # stop starting model calls after this long; the best result is kept
     examples: bool = False  # show the example builds closest to the request first (v2 methods)
     example_query: str | None = None  # what to find examples for; the customer's own words, without added guidance
+    inventory_csv: str | None = None  # exact part/color counts, also sent to the isolated script runner
 
     def resolved(self, method: str) -> Options:
         if method not in METHODS:
@@ -96,9 +97,11 @@ class Workbench:
         library = LDrawLibrary(settings.get("ldraw_dir"))
         cache = default_cache_dir()
         shapes = ShapeLibrary(library, cache)
-        palette = load_palette(library, settings.get("catalog_path"), open_palette=bool(settings.get("open_palette")))
+        palette = load_palette(library, settings.get("catalog_path"), open_palette=bool(settings.get("open_palette")),
+                               inventory_csv=settings.get("inventory_csv"))
         kit_settings = KitSettings(str(library.root), settings.get("catalog_path"),
-                                   bool(settings.get("open_palette")), str(cache))
+                                   bool(settings.get("open_palette")), str(cache),
+                                   inventory_csv=settings.get("inventory_csv"))
         # Whether the publication rules apply is fixed when the session starts, like repair.
         assembly = (AssemblyReview(library, shapes, ConnectorReview(ConnectorLibrary(library.root, cache)),
                                    vehicle=settings.get("vehicle"))
@@ -173,6 +176,8 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
                 "examples": options.examples and options.method in ASSISTED,
                 # What kind of vehicle the customer asked for, if any: it decides which vehicle findings are errors.
                 "vehicle": vehicle_kind(prompt if options.example_query is None else options.example_query)}
+    if options.inventory_csv is not None:
+        settings["inventory_csv"] = options.inventory_csv
     bench = workbench or Workbench.open(settings)
     settings["ldraw_dir"] = str(bench.library.root)
     client = client or _client(options, options.model, options.effort)

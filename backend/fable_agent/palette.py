@@ -85,7 +85,8 @@ class CatalogPalette:
 
     def label(self, part_id: str) -> str:
         entries = self._by_part.get(part_id)
-        return next(iter(entries.values())).name if entries else ""
+        label = next(iter(entries.values())).name if entries else ""
+        return "" if label == part_id else label
 
     def quantity_limit(self, part_id: str, color: int) -> int | None:
         entry = self._by_part.get(part_id, {}).get(color)
@@ -118,11 +119,18 @@ def nearest_color(library: LDrawLibrary, palette: Palette, part_id: str, color: 
     return min(alike, key=lambda code: (sum((a - b) ** 2 for a, b in zip(channels(known[code].hex), target)), code))
 
 
-def load_palette(library: LDrawLibrary, catalog_path: Path | str | None = None, *, open_palette: bool = False):
+def load_palette(library: LDrawLibrary, catalog_path: Path | str | None = None, *, open_palette: bool = False,
+                 inventory_csv: str | None = None):
     """The supplier inventory by default; ``open_palette`` lifts the restriction."""
+    from src.utils.parts_catalog import PartsCatalog
+
+    if inventory_csv is not None:
+        palette = CatalogPalette(PartsCatalog.from_csv(inventory_csv), library, "your parts inventory")
+        if not palette.part_ids():
+            raise ValueError("Pip could not find any of these parts in the LDraw library.")
+        return palette
     if open_palette:
         return OpenPalette(library)
-    from src.utils.parts_catalog import PartsCatalog
     from src.utils.supplier_catalog import catalog_path as default_catalog_path
 
     path = Path(catalog_path) if catalog_path else default_catalog_path()

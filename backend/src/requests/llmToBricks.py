@@ -18,7 +18,7 @@ from ..utils.parts_limit import enforce_parts_limit
 from ..utils.prompt_parts_limit import prompt_parts_limit, tighter_parts_limit, PARTS_BUDGET_GUIDANCE
 from ..utils.parts_inventory import PartsInventory
 from ..utils.basic_parts_inventory import basic_inventory, validate_inventory_model
-from ..utils.storage_upload import upload_artifact
+from ..utils.saved_parts_inventory import save_inventory
 from ..utils.provider_keys import resolve as resolve_provider_key, personal_billing_task
 from ..utils.auth import deduct_credits, get_user_with_optional_auth, handle_auth_and_tracking
 from ..utils.brick_design import (
@@ -941,21 +941,6 @@ async def process_llm_to_bricks_task(
             heartbeat_task.cancel()
 
 
-async def _save_parts_inventory(generation_id: str, request: LlmToBricksRequest) -> None:
-    if request.parts_inventory is None:
-        return
-    try:
-        bucket = generation_storage.client.storage.from_('generation-output')
-        await upload_artifact(bucket, path=f'{generation_id}/parts-inventory.json',
-            file=request.parts_inventory.model_dump_json().encode(), content_type='application/json')
-        await asyncio.to_thread(lambda: generation_storage.client.table('generations').update({
-            'has_parts_inventory': True
-        }).eq('id', generation_id).execute())
-    except Exception:
-        await generation_storage.update_status(generation_id, 'failed', 'Could not save the parts inventory. Please try again.')
-        raise HTTPException(503, 'Could not save the parts inventory. Please try again.') from None
-
-
 async def llm_to_bricks(
     request: LlmToBricksRequest,
     auth_info: dict = Depends(get_user_with_optional_auth),
@@ -999,7 +984,7 @@ async def llm_to_bricks(
             model_3d=request.model,
             edit_generation_id=request.generation_id,
         )
-        await _save_parts_inventory(generation_id, request)
+        await save_inventory(generation_storage, generation_id, request.parts_inventory)
         task = start_generation_task(generation_id,
             run_with_output(generation_id, process_llm_to_bricks_task, request, user_info, auth_info)
         )
@@ -1065,7 +1050,7 @@ async def llm_to_bricks_stream(
         edit_generation_id=request.generation_id,
     )
 
-    await _save_parts_inventory(generation_id, request)
+    await save_inventory(generation_storage, generation_id, request.parts_inventory)
 
     async def event_stream():
         yield f'data: {json.dumps({"type": "started", "generation_id": generation_id})}\n\n'

@@ -14,11 +14,11 @@ from src.utils.nova_service import NovaResult
 
 
 def test_request_accepts_nova_continuation_and_validates_provider_input():
-    assert module.NovaToBricksRequest(prompt='castle').model == 'claude-opus-5-5'
+    assert module.NovaToBricksRequest(building_agent='nova', prompt='castle').model == 'claude-opus-5-5'
     request = module.NovaToBricksRequest(prompt='  red roof  ', source_generation_id='previous', model='gpt-5.5')
     assert request.prompt == 'red roof' and request.generation_id == 'previous'
     with pytest.raises(ValidationError):
-        module.NovaToBricksRequest(prompt='castle', auth_mode='oauth-token')
+        module.NovaToBricksRequest(building_agent='nova', prompt='castle', auth_mode='oauth-token')
 
 
 def test_nova_has_no_default_wall_clock_cutoff_but_can_be_explicitly_limited(monkeypatch):
@@ -44,17 +44,19 @@ def test_source_and_sessions_recheck_owner_before_accessing_runtime_or_storage(m
 
 
 def test_resume_cannot_bypass_native_loopback_guard(monkeypatch):
+    monkeypatch.setattr(module, 'astrology_allowed', lambda _: True)
     monkeypatch.setattr(module, 'generation_storage', SimpleNamespace(get_generation=AsyncMock(return_value={
         'user_id': 'owner', 'user_type': 'anonymous'})))
     monkeypatch.setattr(module, '_owned_session', AsyncMock(return_value={
         'chat_id': 'chat', 'model': 'gpt-5.5', 'auth_mode': 'native', 'tenant': 'a' * 64}))
-    request = module.NovaToBricksRequest(prompt='red roof', source_generation_id='source')
+    request = module.NovaToBricksRequest(building_agent='nova', prompt='red roof', source_generation_id='source')
     with pytest.raises(HTTPException) as exc:
         asyncio.run(module.nova_to_bricks(request, {'user_id': 'owner'}))
     assert exc.value.status_code == 403
 
 
 def test_runtime_without_publication_checks_is_rejected_before_creating_generation(monkeypatch):
+    monkeypatch.setattr(module, 'astrology_allowed', lambda _: True)
     create = AsyncMock()
     storage = SimpleNamespace(create_generation=create)
     class Service:
@@ -66,7 +68,7 @@ def test_runtime_without_publication_checks_is_rejected_before_creating_generati
     monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **kwargs: {
         'user_email': 'caller@example.com', 'is_anonymous': False})
     with pytest.raises(HTTPException) as error:
-        asyncio.run(module.nova_to_bricks(module.NovaToBricksRequest(prompt='castle'), {'user_id': 'caller'}))
+        asyncio.run(module.nova_to_bricks(module.NovaToBricksRequest(building_agent='nova', prompt='castle'), {'user_id': 'caller'}))
     assert error.value.status_code == 503
     create.assert_not_awaited()
 
@@ -141,7 +143,7 @@ def test_failed_nova_turn_does_not_charge(monkeypatch, message):
     monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
     monkeypatch.setattr(module, 'deduct_credits', charge)
     monkeypatch.setattr(module, 'track_error', lambda **kwargs: None)
-    request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5')
+    request = module.NovaToBricksRequest(building_agent='nova', prompt='castle', model='gpt-5.5')
     asyncio.run(module.process_nova_to_bricks_task('generation', request, {'user_email': 'test'}, {}))
     charge.assert_not_awaited()
     storage.update_status.assert_awaited_with('generation', 'failed', message)
@@ -163,7 +165,7 @@ def test_nova_heartbeat_uses_timestamp_only_refresh_and_survives_storage_error(m
         monkeypatch.setattr(module, 'generation_storage', storage)
         monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
         monkeypatch.setattr(module, 'track_error', lambda **kwargs: None)
-        request = module.NovaToBricksRequest(prompt='castle', model='gpt-5.5')
+        request = module.NovaToBricksRequest(building_agent='nova', prompt='castle', model='gpt-5.5')
         await module.process_nova_to_bricks_task('generation', request, {'user_email': 'test'}, {})
         storage.heartbeat.assert_awaited_once_with('generation')
         assert [call.args[1] for call in storage.update_status.await_args_list] == ['processing', 'failed']
@@ -202,6 +204,7 @@ def test_foreign_edit_copies_only_public_geometry_and_keeps_callers_provider(mon
 
 
 def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
+    monkeypatch.setattr(module, 'astrology_allowed', lambda _: True)
     storage = SimpleNamespace(
         get_generation=AsyncMock(return_value={'user_id': 'other', 'user_type': 'authenticated',
             'status': 'completed', 'endpoint': 'novaToBricks', 'ldr_url': 'public-model',
@@ -223,7 +226,7 @@ def test_foreign_edit_creates_callers_independent_generation(monkeypatch):
         future.set_result(None)
         return future
     monkeypatch.setattr(module, 'start_generation_task', start)
-    request = module.NovaToBricksRequest(prompt='add a door', source_generation_id='original')
+    request = module.NovaToBricksRequest(building_agent='nova', prompt='add a door', source_generation_id='original')
     result = asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True, 'rate_limit_id': 'ip_v1_' + 'a' * 64}))
     assert result.generation_id == 'new-generation'
     saved = storage.create_generation.call_args.kwargs
@@ -407,10 +410,11 @@ def test_generation_persists_private_inventory_before_starting_agent(monkeypatch
         future = asyncio.get_running_loop().create_future(); future.set_result(None); return future
     monkeypatch.setattr(module, 'generation_storage', storage)
     monkeypatch.setattr(module, '_nova_service', lambda *args: Service())
-    monkeypatch.setattr(module, 'upload_artifact', upload)
+    monkeypatch.setattr(module, 'astrology_allowed', lambda _: True)
+    monkeypatch.setattr('src.utils.saved_parts_inventory.upload_artifact', upload)
     monkeypatch.setattr(module, 'start_generation_task', start)
     monkeypatch.setattr(module, 'handle_auth_and_tracking', lambda **kwargs: {'user_email': 'caller', 'is_anonymous': False})
-    request = module.NovaToBricksRequest(prompt='car using 10 pieces', parts_inventory={'name': 'parts.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
+    request = module.NovaToBricksRequest(building_agent='nova', prompt='car using 10 pieces', parts_inventory={'name': 'parts.csv', 'parts': [{'part_id': '3001', 'color_id': 4, 'quantity': 2}]})
     if storage_failure:
         with pytest.raises(HTTPException) as error:
             asyncio.run(module.nova_to_bricks(request, {'user_id': 'caller', 'authenticated': True}))

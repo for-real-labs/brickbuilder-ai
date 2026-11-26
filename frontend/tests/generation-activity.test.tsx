@@ -282,7 +282,8 @@ it('recovers a cancelled Nova build and resumes the saved session without keepin
   expect(container.textContent).toContain('Generation cancelled');
   const button = [...container.querySelectorAll('button')].find(b => b.textContent === 'Resume build')!;
   await act(async () => button.click());
-  expect(resume).toHaveBeenCalledWith('cottage', expect.stringContaining('saved conversation and workspace'));
+  expect(resume).toHaveBeenCalledWith('cottage', expect.stringContaining('saved conversation and workspace'),
+    undefined, undefined, expect.objectContaining({ buildingAgent: 'nova' }));
   expect(activity.generations.map(row => row.id)).toEqual(['continued']);
   expect(activity.generations[0].status).toBe('started');
 });

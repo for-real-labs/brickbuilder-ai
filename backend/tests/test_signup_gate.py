@@ -19,6 +19,8 @@ GUEST = {'authenticated': False, 'is_anonymous': True, 'user_id': 'guest_test',
     ('/llmToBricks', {'prompt': 'A little castle'}),
     ('/llmToBricks/stream', {'prompt': 'A little castle'}),
     ('/novaToBricks', {'prompt': 'A little castle'}),
+    ('/novaToBricks', {'prompt': 'A little castle', 'parts_inventory': {'name': 'My set',
+        'parts': [{'part_id': '3005', 'color_id': 4, 'quantity': 2}]}}),
 ])
 def test_hosted_generation_requires_subscription_even_with_a_guest_session(monkeypatch, path, payload):
     monkeypatch.setattr(auth, 'LOCAL_DB_ENABLED', False)

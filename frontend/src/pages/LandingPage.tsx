@@ -167,11 +167,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const accessToken = session?.access_token;
   const selectableAgents = accountId && agentChoices?.account === accountId ? agentChoices.agents : [];
   const canSelectAgent = selectableAgents.length > 1;
-  // The Pip agent builds All parts models unless an allowlisted account chose another agent. Running
-  // locally, Nova stays the default: the ChatGPT and Claude account connections there are Nova's.
   const buildingAgent: BuildingAgent = canSelectAgent && agentChoice?.account === accountId
     && selectableAgents.includes(agentChoice.agent) ? agentChoice.agent
-    : isLocalDevelopment() ? 'nova' : DEFAULT_BUILDING_AGENT;
+    : DEFAULT_BUILDING_AGENT;
   // An agent that offers a choice of model (the Pip agent); the first model is its default.
   const agentModels = (accountId && agentChoices?.account === accountId ? agentChoices.models[buildingAgent] : undefined) ?? [];
   const agentModel: AgentModel | undefined = modelChoice?.account === accountId && modelChoice?.agent === buildingAgent
@@ -695,18 +693,16 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       // Trellis (non-streamed).
       const stream3d = threeDModel === 'sam3d';
 
-      // Pip builds from the catalog only, so a build from a parts inventory goes to Nova.
-      const agentForBuild: BuildingAgent = partsInventory && buildingAgent === DEFAULT_BUILDING_AGENT ? 'nova' : buildingAgent;
       if (generationMethod === 'nova') {
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
           partsInventory: partsInventory ?? undefined,
           maxParts,
           model: llmModel,
-          authMode: agentForBuild === 'nova' && localDevelopment ? novaAuthMode : 'api_key',
-          buildingAgent: inProcessAgent(agentForBuild),
-          agentModel: agentForBuild === buildingAgent && agentModels.length ? agentModel : undefined,
-          useExamples: agentForBuild === buildingAgent && useExamples,
+          authMode: buildingAgent === 'nova' && localDevelopment ? novaAuthMode : 'api_key',
+          buildingAgent,
+          agentModel: agentModel,
+          useExamples,
           prompt: requestedPrompt.trim() || undefined,
           imageBase64,
           imageMediaType: requestedImage?.type || 'image/png',
@@ -782,7 +778,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       if (generationMethod === 'llm' || generationMethod === 'nova') {
         openModel(generationId);
         trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks',
-          buildingAgent: generationMethod === 'nova' ? inProcessAgent(agentForBuild) : undefined, createdAt: generationStartedAt });
+          buildingAgent: generationMethod === 'nova' ? inProcessAgent(buildingAgent) : undefined, createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
         setCreateNewStage(null);
         setLoading(false);
@@ -835,10 +831,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       const image = requestedImage ? { imageBase64: await fileToBase64(requestedImage), imageMediaType: requestedImage.type } : undefined;
       const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
       const builtBy = inProcessAgent(model.generation.building_agent);
+      const editAgent = builtBy ?? buildingAgent;
       const response = nova
         ? await NovaToBricksApiService.edit(sourceId, submittedPrompt, session?.access_token, image, {
-          model: llmModel, maxParts, authMode: localDevelopment && !builtBy ? novaOptions.authMode : 'api_key',
-          buildingAgent: builtBy,
+          model: llmModel, maxParts, authMode: localDevelopment && editAgent === 'nova' ? novaOptions.authMode : 'api_key',
+          buildingAgent: editAgent,
         })
         : await LlmToBricksApiService.generate({ sourceGenerationId: sourceId, prompt: submittedPrompt, model: llmModel, maxParts, ...image }, session?.access_token);
       const id = response.generation_id;
@@ -846,7 +843,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       if (!session) recordAnonymousGeneration(id);
       buddyChat.updateTurn(turnId, { generationId: id, method: nova ? 'nova' : 'llm' });
       trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks',
-        buildingAgent: builtBy, createdAt: new Date().toISOString() });
+        buildingAgent: inProcessAgent(editAgent), createdAt: new Date().toISOString() });
       openModel(id, true);
       setImgFile(null);
       setNotificationPromptId(id);
@@ -1079,12 +1076,12 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     <GenerationActivityList generations={landingModel.model ? displayedGenerations.filter(row => row.status !== 'completed') : displayedGenerations} error={displayedGenerations.length || ldrawLanding ? activityError : null} onDismiss={dismissGeneration} buddyDialogue={!ldrawLanding}
       notificationPromptId={notificationPromptId} onNotificationPromptShown={() => setNotificationPromptId(null)}
       onOpen={id => { openModel(id); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-      onResumed={(sourceId, newId) => {
+      onResumed={buildingAgent === 'nova' ? (sourceId, newId) => {
         const row = generations.find(generation => generation.id === sourceId);
         if (row) trackGeneration({ ...row, id: newId, status: 'started', errorMessage: undefined,
           createdAt: new Date().toISOString(), durationSeconds: undefined, previewWaitUntil: undefined }, sourceId);
         if (row) { setNotificationPromptId(newId); openModel(newId); }
-      }}
+      } : undefined}
       onCancelled={id => {
         const row = generations.find(generation => generation.id === id);
         if (row) trackGeneration({ ...row, status: 'cancelled', previewWaitUntil: undefined });
@@ -1375,7 +1372,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   <div className="mt-3 w-full text-sm font-medium text-slate-700 sm:max-w-72">
                     <label htmlFor="landing-building-agent">Building agent</label>
                     <select id="landing-building-agent" value={buildingAgent}
-                      disabled={generationMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
+                      disabled={generationMethod !== 'nova' || Boolean(inProcessAgent(landingModel.model?.generation.building_agent)) || loading || modelBusy || buddyChat.routing}
                       className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-50"
                       onChange={event => {
                         const agent = isBuildingAgent(event.target.value) ? event.target.value : DEFAULT_BUILDING_AGENT;

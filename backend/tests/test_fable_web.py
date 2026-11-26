@@ -68,11 +68,11 @@ def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypat
     # Off the allowlist an account cannot choose an agent or a model; it builds with Pip on its default
     # model, and example builds are offered to it.
     outsider = {**ACCOUNT, "user_email": "outsider@example.test"}
-    assert asyncio.run(building_agents(Response(), outsider)) == {"agents": ["nova"], "models": {},
+    assert asyncio.run(building_agents(Response(), outsider)) == {"agents": [PIP_AGENT], "models": {},
                                                                   "examples": [PIP_AGENT]}
     create, _ = start_recorder(monkeypatch)
     for identity in (outsider, {**ACCOUNT, "auth_method": "api_key"}, {**ACCOUNT, "is_anonymous": True}):
-        for chosen in (dict(building_agent=AGENT), dict(building_agent="fable-gpt-6.2-sol"),
+        for chosen in (dict(building_agent="nova"), dict(building_agent=AGENT), dict(building_agent="fable-gpt-6.2-sol"),
                        dict(building_agent=PIP_AGENT, agent_model="claude-opus-5-5")):
             with pytest.raises(HTTPException) as denied:
                 asyncio.run(nova.nova_to_bricks(nova.NovaToBricksRequest(prompt="A boat", **chosen), identity))
@@ -190,7 +190,7 @@ def test_a_build_far_past_its_time_limit_is_abandoned_with_a_message(monkeypatch
     storage, _ = web_storage(monkeypatch)
     monkeypatch.setattr(fable, "HARD_STOP_SECONDS", -1)
 
-    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False, example_query=None):
+    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False, example_query=None, inventory=None):
         on_event("thinking", {"text": "."})  # the first step after the limit raises
         raise AssertionError("the build should have been stopped")
 
@@ -412,7 +412,7 @@ def test_cancelling_a_generation_stops_the_agent_at_its_next_step(monkeypatch):
     storage, _ = web_storage(monkeypatch)
     entered, stopped = threading.Event(), threading.Event()
 
-    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False, example_query=None):
+    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False, example_query=None, inventory=None):
         entered.set()
         try:
             while True:
@@ -549,3 +549,89 @@ def test_a_saved_design_remembers_its_model(monkeypatch):
     assert asyncio.run(fable._source_design(source, ACCOUNT)).model == "claude-opus-5-5"
     bucket.download.return_value = json.dumps({"script": CABIN, "requests": [], "model": 7}).encode()
     assert asyncio.run(fable._source_design(source, ACCOUNT)).model is None
+
+
+def test_pip_builds_with_only_the_supplied_set_colors_and_counts(tmp_path, monkeypatch):
+    world = World(tmp_path / "world")
+    monkeypatch.setenv("LDRAW_DIR", str(world.library.root))
+    monkeypatch.setattr(fable_app, "LeoCadRenderer", lambda *_: FakeRenderer())
+    one = "place('3005', 4, 0, 0, 0)"
+    client = FakeClient([
+        reply(tool_use("look_up", "c1", parts=["3005"], search="brick", notes="Check the stock")),
+        reply(tool_use("build", "c2", code=one + "\nplace('3005', 4, 0, 3, 0)", notes="Try two")),
+        reply(tool_use("finish", "c3", title="Stack", summary="Two bricks")),
+        reply(tool_use("build", "c4", code=one, notes="Use the single red brick")),
+        reply(tool_use("finish", "c5", title="Brick", summary="One red brick")),
+    ])
+    monkeypatch.setattr(fable_app, "_client", lambda *_: client)
+    storage, publish = web_storage(monkeypatch)
+    request = nova.NovaToBricksRequest(prompt="Build a tower", max_parts=100, parts_inventory={
+        "name": "Tiny set", "source": "set", "parts": [{"part_id": "3005", "color_id": 4, "quantity": 1}]})
+    assert request.building_agent == PIP_AGENT
+    error = asyncio.run(fable._build("build", request, PIP_AGENT, FABLE_AGENTS[PIP_AGENT], None, None, "test",
+                                     on_progress=AsyncMock()))
+    assert error is None
+    observed = json.dumps(client.requests, ensure_ascii=False)
+    assert "3005 4 1" in observed and "2 used, 1 available" in observed
+    assert "Red (4) × 1" in observed and "1 colors" in observed
+    from src.utils.parts_catalog import flat_model_inventory
+    ldraw = storage.store_model_file.await_args.args[1]
+    assert flat_model_inventory(ldraw) == {("3005", 4): 1}
+    assert any(call.kwargs["path"].endswith(fable.INSTRUCTIONS_FILE) for call in publish.await_args_list)
+
+
+def test_pip_edits_keep_the_original_inventory_even_after_restore(monkeypatch):
+    create, _ = start_recorder(monkeypatch)
+    original = {"name": "My set", "source": "set", "parts": [{"part_id": "3005", "color_id": 4, "quantity": 2}]}
+    source = {"id": "copy", "user_id": "builder", "user_type": "authenticated", "status": "completed",
+              "model_used_3d": PIP_AGENT, "restored_from_id": "original", "has_parts_inventory": True}
+    monkeypatch.setattr(nova, "generation_storage", SimpleNamespace(get_generation=AsyncMock(return_value=source)))
+    bucket = Mock(download=Mock(side_effect=[json.dumps({"script": CABIN, "requests": []}).encode(),
+                                            json.dumps(original).encode()]))
+    fable.generation_storage.client = SimpleNamespace(storage=SimpleNamespace(from_=lambda _: bucket))
+    save = AsyncMock()
+    monkeypatch.setattr(fable, "save_inventory", save)
+    request = nova.NovaToBricksRequest(prompt="Change the shape", source_generation_id="copy")
+    asyncio.run(nova.nova_to_bricks(request, ACCOUNT))
+    assert request.parts_inventory.model_dump() == original
+    assert bucket.download.call_args.args == ("original/parts-inventory.json",)
+    assert save.await_args.args[2] == request.parts_inventory
+    assert create.await_args.kwargs["model_3d"] == PIP_AGENT
+
+
+def test_implicit_edit_of_legacy_geometry_uses_pip_and_keeps_submodel_transforms(monkeypatch):
+    create, _ = start_recorder(monkeypatch)
+    source = {"endpoint": "novaToBricks", "user_type": "authenticated", "user_id": "another-builder",
+              "status": "completed", "ldr_url": "geometry", "has_parts_inventory": True}
+    monkeypatch.setattr(nova, "generation_storage", SimpleNamespace(get_generation=AsyncMock(return_value=source)))
+    monkeypatch.setattr(nova, "_nova_service", Mock(side_effect=AssertionError("Wrong agent")))
+    fable.generation_storage.download_file_from_storage = AsyncMock(return_value=(
+        b"0 FILE model.ldr\n1 4 2 0 3 0 0 1 0 1 0 -1 0 0 wall.ldr\n"
+        b"0 FILE wall.ldr\n1 16 1 0 0 1 0 0 0 1 0 0 0 1 3005.dat"))
+    jobs = []
+    monkeypatch.setattr(fable, "run_with_output", lambda *args, **kwargs: jobs.append(args) or AsyncMock()())
+    request = nova.NovaToBricksRequest(prompt="Add a tower", source_generation_id="legacy")
+    asyncio.run(nova.nova_to_bricks(request, {**ACCOUNT, "user_email": "other@example.test"}))
+    assert jobs[0][5].script == "place_ldu('3005', 4, (2, 0, 2), (0, 0, 1, 0, 1, 0, -1, 0, 0))"
+    assert request.parts_inventory is None
+    assert create.await_args.kwargs["model_3d"] == PIP_AGENT
+
+
+def test_pip_refuses_a_source_with_direct_color_instead_of_dropping_a_placement():
+    from src.utils.pip_source_model import source_script
+    data = (b"1 4 0 0 0 1 0 0 0 1 0 0 0 1 3005.dat\n"
+            b"1 0x2FF0000 0 8 0 1 0 0 0 1 0 0 0 1 3024.dat")
+    with pytest.raises(ValueError, match="standard LDraw colors"):
+        source_script(data, 100)
+
+
+def test_a_busy_pip_inventory_build_never_contacts_nova(monkeypatch):
+    start_recorder(monkeypatch)
+    monkeypatch.setattr(fable, "_in_flight", fable.MAX_BUILDS + fable.MAX_WAITING)
+    monkeypatch.setattr(nova, "_nova_service", Mock(side_effect=AssertionError("Unexpected Nova fallback")))
+    request = nova.NovaToBricksRequest(prompt="A car", parts_inventory={
+        "name": "My set", "parts": [{"part_id": "3005", "color_id": 4, "quantity": 1}]})
+    with pytest.raises(HTTPException, match="busy") as refused:
+        asyncio.run(nova.nova_to_bricks(request, ACCOUNT))
+    assert refused.value.status_code == 503
+    nova._nova_service.assert_not_called()

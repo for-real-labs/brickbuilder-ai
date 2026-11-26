@@ -95,7 +95,7 @@ export function InventorySources({ onSelect, onLogin, designer = false }: Source
       {error && <p role="alert" className="existing-parts-error">{error}</p>}
       {review && <div className="existing-parts-review" role="status">
         <strong>{review.inventory.name}</strong>
-        <p>Nova can use {inventoryQuantity(review.inventory).toLocaleString()} pieces. {review.unavailable.reduce((n, p) => n + p.quantity, 0).toLocaleString()} pieces have no exact part or color match and will be left out. No substitutes will be added.</p>
+        <p>Your inventory includes {inventoryQuantity(review.inventory).toLocaleString()} matched pieces. {review.unavailable.reduce((n, p) => n + p.quantity, 0).toLocaleString()} pieces have no exact part or color match and will be left out. No substitutes will be added.</p>
         <details onToggle={event => { if (event.currentTarget.open) posthog.capture('existing_parts_unavailable_expanded'); }}><summary>See unavailable pieces</summary>
           <ul>{review.unavailable.map((p, i) => <li key={i}>{p.quantity} × {p.part_id}, Rebrickable color {p.color_id}</li>)}</ul>
         </details>
