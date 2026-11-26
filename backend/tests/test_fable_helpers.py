@@ -389,12 +389,12 @@ def test_an_axle_takes_the_longest_rod_that_fits_and_every_joint_is_between_part
     assert not found.apart and not found.missed and found.touching == 6
 
 
-def test_a_narrow_truck_gets_a_short_axle_and_none_at_all_is_refused(world):
+def test_a_narrow_truck_gets_an_axle_long_enough_to_clear_the_deck(world):
     kit = world.kit()
     placed = bind(kit)["wheels"](0, 5, 0, style="truck", width=4)
-    assert "3706" in [kit.build.placements[index].part for index in placed]  # rims 50 from the middle: an axle of 60
+    assert "44294" in [kit.build.placements[index].part for index in placed]  # rims 60 from the middle: an axle of 70
     with pytest.raises(KitError, match="has no axle for the truck style"):
-        World_without(world, "3706")["wheels"](0, 5, 0, style="truck", width=4)
+        World_without(world, "3706", "44294")["wheels"](0, 5, 0, style="truck", width=4)
 
 
 def test_tyres_are_joined_to_a_road_that_is_already_under_them(world):

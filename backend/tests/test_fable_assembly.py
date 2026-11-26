@@ -628,3 +628,18 @@ def test_joint_review_measures_a_turned_part_by_the_box_that_holds_it(tmp_path):
     found = JointReview(world.library, world.shapes).review(kit.build, {}, set())
     assert found.touching == 1 and not found.apart and not found.missed and found.seated == 0
     assert JointReview._gap([], [(0, 0, 0, 1, 1, 1)]) == 0.0
+
+
+def test_truck_deck_cuts_into_the_old_wheels_and_clears_the_wider_axle(tmp_path):
+    # The side tyre from the saved truck and the three 2 x 6 plates across its chassis in step 3.
+    # The lightweight library keeps this publication regression running in CI without LDraw installed.
+    from fable_agent_support import _shaped
+    world = World(tmp_path, assembly=True, extra={
+        "56898": _shaped("Tyre with Offset Tread", [(-50, -22, -18, -40, -8, 18)]),
+        "3795": _shaped("Plate 2 x 6", [(-60, 0, -20, 60, 8, 20)]),
+    })
+    plates = [Placement("3795", 0, (60, -72, z), IDENTITY) for z in (160, 200, 240)]
+    for x, expected in ((-10, True), (-20, False)):
+        tyre = Placement("56898", 0, (x, -54, 200), QUARTER_Y, allow_overlap=True)
+        report = world.checker.check(Build([tyre, *plates]))
+        assert any(issue.kind == "material" for issue in report.errors) is expected

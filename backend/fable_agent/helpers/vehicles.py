@@ -81,12 +81,17 @@ def _carried(wheels: str, wide: int, at: int) -> set[tuple[int, int]]:
     return local_rect(0, at, edge, at + 2) | local_rect(wide - edge, at, wide, at + 2)
 
 
+def _spine_layers(wheels: list[str]) -> int:
+    # The classic tucked tyre projects into the floor ahead of and behind its mudguard.
+    return 2 if "classic" in wheels else 1
+
+
 def deck(style: str, wheels: str | None = None) -> int:
     """Plates from the ground to the top of a style's floor."""
     look = STYLES[style]
     styles = [wheels or name for _, name in look.axles]
     if all(_tucked(name) for name in styles):
-        return max(WHEELS[name].drop for name in styles) + 4
+        return max(WHEELS[name].drop for name in styles) + _spine_layers(styles) + 3
     return max(WHEELS[name].drop + TOP[WHEELS[name].mount] for name in styles) + 2
 
 
@@ -156,22 +161,24 @@ def build_chassis(kit: Kit, x, y, z, style="city", length=None, color=None, whee
         base = max(drops)  # the holders' base, in plates above the ground
         for name, at in zip(names, starts):
             placed += axle(name, at, base)
-        placed += bridge(frame, 1, 0, 3, length, base + 1, tone, "chassis", across="z")  # the spine
+        floor_y = base + 1 + _spine_layers(names)
+        for level in range(base + 1, floor_y):
+            placed += bridge(frame, 1, 0, 3, length, level, tone, "chassis", across="z")
         rows = set()
         guard, square = stocked(kit, MUDGUARD, color), kit.plain_part("plate", 2, 2, tone)
         for at in starts:
             rows |= local_rect(0, at, look.wide, at + 2)
             if guard is not None and square is not None:
-                placed.append(frame.place(MUDGUARD, guard, 0, base + 2, at))
+                placed.append(frame.place(MUDGUARD, guard, 0, floor_y, at))
                 # A 2 x 2 plate fills the mudguard's middle, level with its arches. The checks model the
                 # arches' inner walls as thicker than they are, so this fit is declared.
-                placed.append(frame.place(square[0], square[1], 1, base + 3, at, allow_overlap=True))
+                placed.append(frame.place(square[0], square[1], 1, floor_y + 1, at, allow_overlap=True))
             else:  # no mudguard part: the body stays two wide over the wheels, then closes above them
-                placed += frame.fill(local_rect(1, at, 3, at + 2), base + 2, tone, kind="plate")
-                placed += bridge(frame, 0, at, look.wide, at + 2, base + 3, tone, "chassis", across="x")
+                placed += frame.fill(local_rect(1, at, 3, at + 2), floor_y, tone, kind="plate")
+                placed += bridge(frame, 0, at, look.wide, at + 2, floor_y + 1, tone, "chassis", across="x")
         floor = local_rect(0, 0, look.wide, length) - rows
         if floor:
-            placed += frame.fill(floor, base + 2, tone, kind="plate", layers=2)
+            placed += frame.fill(floor, floor_y, tone, kind="plate", layers=2)
         return placed
 
     # Outboard: carriers at each axle, raised to one level, then plates across and plates along.
@@ -236,8 +243,8 @@ HELPER = Helper(
             "its length runs along z when that is front or back and along x when left or right. Styles marked "
             "`wheels outside` have their tyres beside the floor, about one stud out at each side. `wheels` puts "
             "another wheels() style on every axle; the error names the ones a style can take, and the deck moves "
-            "by the difference between the two styles' `below` notes. `rim` is the rims' color, `color` the "
-            "floor's. The "
+            "by the difference between the two styles' `below` notes. Tucked classic wheels add one more plate "
+            "to the deck height. `rim` is the rims' color, `color` the floor's. The "
             "tyres are joined to a road or baseplate that is already under them, so lay that before the vehicle.",
     styles=tuple(STYLES),
     notes={style: _note(style) for style in STYLES},
