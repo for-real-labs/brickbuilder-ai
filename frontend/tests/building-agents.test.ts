@@ -71,6 +71,7 @@ describe('building agents', () => {
     await NovaToBricksApiService.generate({ ...request, useExamples: true }, 'token');
     await NovaToBricksApiService.generate(request, 'token');
     const bodies = sent.mock.calls.map(call => JSON.parse(String((call as unknown as [string, RequestInit])[1].body)));
+    expect(sent.mock.calls.map(call => (call as unknown as [string])[0])).toEqual([expect.stringMatching(/\/pipModelCall$/), expect.stringMatching(/\/pipModelCall$/)]);
     expect(bodies[0].use_examples).toBe(true);
     expect('use_examples' in bodies[1]).toBe(false);
   });

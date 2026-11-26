@@ -41,7 +41,7 @@ from .requests.generationEmail import NotificationEmailRequest, save_notificatio
 from .utils.generation_email import start_email_worker
 from .utils.generation_recovery import start_recovery_worker
 from .requests.uploadLdraw import upload_ldraw, UploadLdrawResponse
-from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest
+from .requests.novaToBricks import nova_to_bricks, get_nova_source, NovaToBricksRequest, PipModelCallRequest
 from .requests.astrologyToBricks import astrology_allowed
 from .utils.building_agents import EXAMPLE_AGENTS, FABLE_AGENTS, OFFERED_AGENTS, PIP_AGENT
 from .requests.localProviders import router as local_providers_router
@@ -179,6 +179,11 @@ async def building_agents(response: Response, auth_info: dict = Depends(get_opti
     models = {agent: [FABLE_AGENTS[agent].model, *(m for m in FABLE_AGENTS[agent].models if m != FABLE_AGENTS[agent].model)]
               for agent in OFFERED_AGENTS if agent in FABLE_AGENTS and FABLE_AGENTS[agent].models}
     return {"agents": ["nova", *OFFERED_AGENTS], "models": models, "examples": list(EXAMPLE_AGENTS)}
+
+
+@app.post("/pipModelCall", response_model=ImageToBricksResponse)
+async def pip_model_call_endpoint(request: PipModelCallRequest, auth_info: dict = Depends(get_user_with_optional_auth)):
+    return await nova_to_bricks(request, auth_info)
 
 
 @app.post("/novaToBricks", response_model=ImageToBricksResponse)

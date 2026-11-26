@@ -3,13 +3,13 @@ import { apiFetch } from '../src/services/apiFetch';
 vi.mock('../src/utils/aiConsent', () => ({ requiresAiConsent: () => false }));
 afterEach(() => { vi.unstubAllGlobals(); vi.restoreAllMocks(); });
 
-it('opens the credit flow on a generation 402 and refreshes the balance after admission', async () => {
+it.each(['novaToBricks', 'pipModelCall'])('handles credit events for %s', async endpoint => {
   const events = vi.spyOn(window, 'dispatchEvent');
   vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(new Response('No credits', { status: 402 })).mockResolvedValueOnce(new Response('ok')));
-  const rejected = await apiFetch('https://api.example.test/novaToBricks', { method: 'POST' });
+  const rejected = await apiFetch(new URL(endpoint, "https://api.example.test").href, { method: 'POST' });
   expect(rejected.status).toBe(402);
   expect(events.mock.calls.map(([event]) => event.type)).toContain('brickbuilder:credits-required');
-  await apiFetch('https://api.example.test/llmToBricks', { method: 'POST' });
+  await apiFetch(new URL(endpoint, "https://api.example.test").href, { method: 'POST' });
   expect(events.mock.calls.map(([event]) => event.type)).toContain('brickbuilder:credits-changed');
 });
 

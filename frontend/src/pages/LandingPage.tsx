@@ -50,9 +50,10 @@ import { GenerationActivityList } from "../components/GenerationActivityList";
 import { useGenerationActivity, isGenerationActive } from "../hooks/useGenerationActivity";
 import { LocalProviderSettings } from "../components/LocalProviderSettings";
 import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/NovaProviderLoginModal';
+import { isAllPartsAgentEndpoint } from "../utils/agentGeneration";
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
 import { AGENT_MODEL_LABELS, BUILDING_AGENT_LABELS, inProcessAgent, isAgentModel, isBuildingAgent,
-  type AgentModel, type BuildingAgent, DEFAULT_BUILDING_AGENT } from "../utils/buildingAgents";
+  allPartsAgentEndpoint, type AgentModel, type BuildingAgent, DEFAULT_BUILDING_AGENT } from "../utils/buildingAgents";
 import { isLocalDevelopment, LocalProvidersApiService } from "../services/localProvidersApi";
 import {
   DEFAULT_LLM_MODEL,
@@ -326,7 +327,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const landingModel = useLandingModel(session?.user.id || 'guest', session?.access_token, requestedModelId);
   const generation = landingModel.model?.generation;
   const displayedMethod = generation
-    ? (generation.mode === 'all_parts' || generation.endpoint === 'novaToBricks' || generation.endpoint === 'uploadLdraw' ? 'nova' : 'llm')
+    ? (generation.mode === 'all_parts' || isAllPartsAgentEndpoint(generation.endpoint) || generation.endpoint === 'uploadLdraw' ? 'nova' : 'llm')
     : generationMethod;
   const basicInventory = useBasicPartsInventory(generationMethod === 'llm' ? partsInventory : null);
   useEffect(() => {
@@ -783,7 +784,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       
       if (generationMethod === 'llm' || generationMethod === 'nova') {
         openModel(generationId);
-        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks',
+        trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? allPartsAgentEndpoint(buildingAgent) : 'llmToBricks',
           buildingAgent: generationMethod === 'nova' ? inProcessAgent(buildingAgent) : undefined, createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
         setCreateNewStage(null);
@@ -835,7 +836,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     posthog.capture('landing_model_ai_edit_submitted', { generation_id: sourceId, prompt_length: submittedPrompt.length, has_image: Boolean(requestedImage) });
     try {
       const image = requestedImage ? { imageBase64: await fileToBase64(requestedImage), imageMediaType: requestedImage.type } : undefined;
-      const nova = model.generation.endpoint === 'novaToBricks' || model.generation.endpoint === 'uploadLdraw';
+      const nova = isAllPartsAgentEndpoint(model.generation.endpoint) || model.generation.endpoint === 'uploadLdraw';
       const builtBy = inProcessAgent(model.generation.building_agent);
       const editAgent = builtBy ?? buildingAgent;
       const response = nova
@@ -848,7 +849,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       localStorage.setItem(STORAGE_KEYS.GENERATION_ID, id);
       if (!session) recordAnonymousGeneration(id);
       buddyChat.updateTurn(turnId, { generationId: id, method: nova ? 'nova' : 'llm' });
-      trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? 'novaToBricks' : 'llmToBricks',
+      trackGeneration({ id, prompt: submittedPrompt, status: 'started', endpoint: nova ? allPartsAgentEndpoint(editAgent) : 'llmToBricks',
         buildingAgent: inProcessAgent(editAgent), createdAt: new Date().toISOString() });
       openModel(id, true);
       setImgFile(null);
@@ -905,7 +906,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       page: window.location.pathname,
       input_type: requestedImage ? 'image' : 'text',
       generation_method: generationMethod,
-      model: generationMethod === '3d' ? threeDModel : llmModel,
+      model: generationMethod === '3d' ? threeDModel
+        : generationMethod === 'nova' && buildingAgent === 'pip-agent' ? agentModel ?? 'gpt-6.2-sol' : llmModel,
       has_prompt: Boolean(requestedPrompt.trim()),
       has_image: Boolean(requestedImage),
       size,

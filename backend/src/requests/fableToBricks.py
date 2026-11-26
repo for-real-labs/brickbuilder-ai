@@ -29,10 +29,11 @@ from storage3.exceptions import StorageApiError
 
 from ..astrology.render import prepare_reference
 from ..utils import auth
+from ..utils.generation_mode import ALL_PARTS_AGENT_ENDPOINTS
 from ..utils.auth import handle_auth_and_tracking
 from ..utils.authorization import require_generation_access
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.building_agents import FABLE_AGENTS, PIP_AGENT, FableVariant, open_to_everyone
+from ..utils.building_agents import FABLE_AGENTS, PIP_AGENT, PIP_AGENTS, PIP_ENDPOINT, FableVariant, open_to_everyone
 from ..utils.generation_budget import current_generation_usage
 from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
@@ -125,7 +126,7 @@ async def _import_geometry(source: dict, auth_info: dict) -> Design:
     if source.get("status") != "completed":
         require_generation_access(source, auth_info)
         raise HTTPException(409, "Pip needs a completed model. Start a new build to use Pip.")
-    if source.get("endpoint") not in {"novaToBricks", "uploadLdraw", "glbToBricks", "objToBricks"}:
+    if source.get("endpoint") not in {*ALL_PARTS_AGENT_ENDPOINTS, "uploadLdraw", "glbToBricks", "objToBricks"}:
         raise HTTPException(409, "Keep the original build mode when editing this model.")
     if not source.get("ldr_url"):
         raise HTTPException(409, "This model has no saved geometry to edit.")
@@ -363,14 +364,15 @@ async def fable_to_bricks(request, auth_info, source=None):
     except (OSError, ValueError, binascii.Error, Image.DecompressionBombError):
         raise HTTPException(422, "Choose a valid reference image within the supported size.") from None
     # Every All parts engine uses the same admission, credit policy and viewer.
-    handle_auth_and_tracking(auth_info, "/novaToBricks", {
+    endpoint = PIP_ENDPOINT if agent_id in PIP_AGENTS else "novaToBricks"
+    handle_auth_and_tracking(auth_info, f"/{endpoint}", {
         "building_agent": agent_id, "agent_model": variant.model, "has_image": bool(reference),
         "use_examples": request.use_examples and variant.method in EXAMPLE_METHODS,
         "is_edit": bool(source)})
     job_id = await generation_storage.create_generation(
         user_id=auth_info["user_id"], user_type="anonymous" if auth_info.get("is_anonymous") else "authenticated",
         guest_ip_hash=auth_info.get("rate_limit_id"), prompt=request.prompt or "Image reference",
-        detail_level=request.detail_level, endpoint="novaToBricks", model_3d=agent_id,
+        detail_level=request.detail_level, endpoint=endpoint, model_3d=agent_id,
         max_parts=request.max_parts, input_type=(source or {}).get("input_type") or ("image" if reference else "text"),
         input_format=(source or {}).get("input_format"),
         entry_page=request.entry_page, edit_generation_id=request.generation_id)

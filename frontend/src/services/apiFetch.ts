@@ -24,7 +24,7 @@ export async function apiFetch(url: string, init: RequestInit = {}): Promise<Res
     }
   }
   const response = await fetch(url, { ...withGenerationEntryPage(url, init), headers: Object.fromEntries(headers.entries()) });
-  if (init.method?.toUpperCase() === 'POST' && /\/(novaToBricks|llmToBricks|textToBricks|imageToBricks|promptEditModel|llmRender)(?:Stream)?(?:[/?]|$)/.test(url)) {
+  if (init.method?.toUpperCase() === 'POST' && /\/(novaToBricks|llmToBricks|pipModelCall|textToBricks|imageToBricks|promptEditModel|llmRender)(?:Stream)?(?:[/?]|$)/.test(url)) {
     if (response.status === 402) {
       const payload = await response.clone().json().catch(() => null);
       if (payload?.detail?.code === GENERATION_SUBSCRIPTION_CODE) {
