@@ -17,9 +17,7 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
   const trigger = useRef<HTMLButtonElement>(null);
   const input = useRef<HTMLInputElement>(null);
   const signedIn = Boolean(user && !user.is_anonymous);
-  const shareUrl = new URL(getGeneratedModelPath(generationId, true), window.location.origin);
-  shareUrl.pathname = '/generated-model';
-  shareUrl.searchParams.set('card', '3');
+  const shareUrl = new URL(getGeneratedModelPath(generationId), window.location.origin);
   if (signedIn && user) shareUrl.searchParams.set('ref', user.id);
   const url = shareUrl.href;
   const text = `Check out ${modelName} on BrickBuilder!`;
