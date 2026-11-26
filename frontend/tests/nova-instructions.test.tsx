@@ -3,6 +3,7 @@ import React, { act } from 'react';
 import { createRoot } from 'react-dom/client';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { expect, it, vi } from 'vitest';
+import posthog from 'posthog-js';
 import { LandingModelWorkspace } from '../src/components/LandingModelWorkspace';
 import { InstructionsPage } from '../src/pages/InstructionsPage';
 import { GetGenerationApiService } from '../src/services/getGenerationApi';
@@ -450,6 +451,53 @@ it.each([[2, 2], [999, 1]])('opens landing instructions directly from step %s an
   } finally { act(() => root.unmount()); container.remove(); vi.restoreAllMocks(); }
 });
 
+
+it('toggles mobile step parts while keeping the complete list and step navigation available', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
+  const { InstructionsViewer } = await import('../src/pages/InstructionsPage');
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  const mobileToggle = () => container.querySelector<HTMLButtonElement>('.instructions-step-parts-toggle')!;
+  const fullList = () => container.querySelector<HTMLButtonElement>('.instructions-parts-toggle')!;
+  const parts = () => container.querySelector<HTMLElement>('.instructions-parts')!;
+  try {
+    await act(async () => root.render(<MemoryRouter><InstructionsViewer generationId="chimney" initialStep={2} embedded /></MemoryRouter>));
+    expect(mobileToggle().textContent).toBe('Show parts this step');
+    expect(mobileToggle().getAttribute('aria-expanded')).toBe('false');
+    expect(mobileToggle().getAttribute('aria-controls')).toBe(parts().id);
+    expect(parts().hasAttribute('data-step-parts-collapsed')).toBe(true);
+
+    await act(async () => fullList().click());
+    expect(parts().hasAttribute('data-step-parts-collapsed')).toBe(false);
+    expect(parts().hasAttribute('data-all-parts')).toBe(true);
+    expect(mobileToggle()).toBeNull();
+    await act(async () => fullList().click());
+    expect(parts().hasAttribute('data-step-parts-collapsed')).toBe(true);
+
+    await act(async () => mobileToggle().click());
+    expect(mobileToggle().textContent).toBe('Hide parts this step');
+    expect(mobileToggle().getAttribute('aria-expanded')).toBe('true');
+    expect(parts().hasAttribute('data-step-parts-collapsed')).toBe(false);
+    expect(parts().querySelectorAll('li')).toHaveLength(2);
+    expect(posthog.capture).toHaveBeenCalledWith('instructions_step_parts_toggled', {
+      generation_id: 'chimney', step: 2, expanded: true, source: 'landing',
+    });
+
+    const next = [...container.querySelectorAll('button')].find(button => button.textContent === 'Next')!;
+    await act(async () => next.click());
+    expect(mobileToggle().getAttribute('aria-expanded')).toBe('true');
+    expect(parts().querySelectorAll('li')).toHaveLength(1);
+    await act(async () => mobileToggle().click());
+    expect(parts().hasAttribute('data-step-parts-collapsed')).toBe(true);
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+    vi.restoreAllMocks();
+  }
+});
 
 it('opens the complete parts list from embedded instructions and returns to the same step', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
