@@ -1,0 +1,32 @@
+#: title: Sturdy black-and-blue monorail passenger cabin built on a 4x8 plate with jet engine plates, a wedge, a gauge-patterned slope, wings, and neon-green whip antennas.
+#: source: LDraw Official Model Repository, 6991-1.mpd, section 6991 - Cabin1.ldr
+#: author: Javier Orquera [Kuramapika1]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3460", "Black", 2, 0, 5, rot=90)
+place("3460", "Black", 5, 0, 5, rot=90)
+place("3035", "Black", 2, 1, 5, rot=270)
+place("4032a", "Light_Grey", 3, 1, 13, rot=90)
+place("3023", "Blue", 2, 2, 10, rot=270)
+place_ldu("6104", "Black", (80, -24, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2419", "Black", 1, 2, 12, rot=180)
+place("3023", "Blue", 5, 2, 10, rot=270)
+place("3008", "Light_Grey", 2, 3, 6, rot=90)
+place("6153a", "Light_Grey", 2, 3, 0)
+place("3039pc1", "Black", 3, 3, 5, rot=180)
+place("3002", "Light_Grey", 3, 3, 12, rot=90)
+place("3008", "Light_Grey", 5, 3, 6, rot=90)
+place_ldu("3475b", "Blue", (50, -56, 260), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3475b", "Blue", 5, 5, 11, rot=90)
+place("3623", "Blue", 2, 7, 12, rot=270)
+place("3623", "Blue", 5, 7, 12, rot=270)
+place_ldu("2569", "Trans_Neon_Green", (30, -70, 294), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2569", "Trans_Neon_Green", (130, -70, 294), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3023", "Blue", 2, 8, 12, rot=270)
+place_ldu("6019", "Blue", (50, -72, 290), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3002", "Black", 3, 6, 12, rot=270)
+place("3023", "Blue", 5, 8, 12, rot=270)
+place("6019", "Blue", 5, 7.75, 14, rot=270)
+place("3297", "Light_Grey", 2, 9, 12, rot=180)
+place_ldu("4315", "Black", (80, -104, 250), (1, 0, 0, 0, 1, 0, 0, 0, 1))

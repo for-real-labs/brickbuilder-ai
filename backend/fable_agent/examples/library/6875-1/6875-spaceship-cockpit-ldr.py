@@ -1,0 +1,31 @@
+#: title: An enclosed cockpit assembly with a transparent dark blue canopy, trans_dark_blue panels, control antennas, and inverted sloped framing.
+#: source: LDraw Official Model Repository, 6875-1.mpd, section 6875 - Spaceship - Cockpit.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("4275b", "White", 2, 0, 15, rot=270)
+place("4275b", "White", 3, 0, 15, rot=270)
+place("3022", "White", 2, 1, 15, rot=270)
+place_ldu("6141", "Trans_Dark_Blue", (30, -24, 348), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4740", "Black", (30, -24, 356), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3069b", "White", (60, -24, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4590", "White", (60, -24, 108), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3956", "White", (60, -24, 320), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Dark_Blue", (90, -24, 348), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4740", "Black", (90, -24, 356), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4589", "Trans_Dark_Blue", (30, -34, 24), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3957a", "White", (30, -34, 32), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3676", "White", (50, -34, 300), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6141", "Black", (50, -34, 324), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3037", "White", (60, -34, 124), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4590", "Black", (60, -34, 332), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3676", "White", (70, -34, 300), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Black", (70, -34, 324), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4589", "Trans_Dark_Blue", (90, -34, 24), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3957a", "White", (90, -34, 32), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3020", "White", (60, -44, 148), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3024", "White", (30, -54, 292), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2466", "Trans_Dark_Blue", (40, -54, 156), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2466", "Trans_Dark_Blue", (80, -54, 156), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3024", "White", (90, -54, 292), (0, 0, -1, -1, 0, 0, 0, 1, 0))

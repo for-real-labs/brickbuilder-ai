@@ -1,0 +1,31 @@
+#: title: Technic engine intake/thruster nozzle with belt wheel, rod frame and sensor detailing
+#: source: LDraw Official Model Repository, 10240-1.mpd, section 10240 - subModel-61.ldr
+#: author: Roland Dahl [RolandD]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("98585", "Light_Bluish_Grey", (30, -10, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (30, -20, 10), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (30, -20, 50), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("98585", "Light_Bluish_Grey", (30, -30, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4185", "Dark_Bluish_Grey", (30, -44, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("98585", "Light_Bluish_Grey", (30, -58, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("98585", "Light_Bluish_Grey", (30, -78, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("60485", "Light_Bluish_Grey", (30, -90, 30), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("98585", "Light_Bluish_Grey", (30, -98, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("98585", "Light_Bluish_Grey", (30, -118, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4185", "Dark_Bluish_Grey", (30, -132, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4185", "Dark_Bluish_Grey", (30, -140, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("30033", "Light_Bluish_Grey", (30, -153, 30), (-0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, -0.7071))
+place_ldu("4032b", "Black", (30, -161, 30), (-0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, -0.7071))
+place_ldu("63868", "Dark_Bluish_Grey", (47.9555, -180.712, 12.0445), (0.0617, 0.7044, -0.7071, 0.9962, -0.0872, 0, -0.0617, -0.7044, -0.7071))
+place_ldu("63868", "Dark_Bluish_Grey", (55.3929, -180.712, 30), (0.0872, 0.9962, 0, 0.9962, -0.0872, 0, 0, 0, -1))
+place_ldu("63868", "Dark_Bluish_Grey", (4.6084, -180.712, 30), (-0.0872, -0.9962, 0, 0.9962, -0.0872, 0, 0, 0, 1))
+place_ldu("63868", "Dark_Bluish_Grey", (12.0454, -180.712, 47.9546), (-0.0617, -0.7044, 0.7071, 0.9962, -0.0872, 0, 0.0617, 0.7044, 0.7071))
+place_ldu("63868", "Dark_Bluish_Grey", (12.7525, -180.712, 11.3383), (-0.0617, -0.7044, -0.7071, 0.9962, -0.0872, 0, -0.0617, -0.7044, 0.7071))
+place_ldu("63868", "Dark_Bluish_Grey", (30, -180.712, 55.3916), (0, 0, 1, 0.9962, -0.0872, 0, 0.0872, 0.9962, 0))
+place_ldu("63868", "Dark_Bluish_Grey", (31, -180.712, 4.6084), (0, 0, -1, 0.9962, -0.0872, 0, -0.0872, -0.9962, 0))
+place_ldu("63868", "Dark_Bluish_Grey", (47.9546, -180.712, 47.9546), (0.0617, 0.7044, 0.7071, 0.9962, -0.0872, 0, 0.0617, 0.7044, -0.7071))
+place_ldu("4728", "Trans_Dark_Pink", (30, -185, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4740", "Trans_Dark_Pink", (30, -193, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4740", "Trans_Dark_Pink", (30, -201, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))

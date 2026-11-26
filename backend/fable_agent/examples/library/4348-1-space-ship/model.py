@@ -1,0 +1,31 @@
+#: title: A compact yellow space ship built around a detachable Aero Pod subassembly with jet engines, wings, and sloped panels.
+#: source: LDraw Official Model Repository, 4348-1_Space-Ship.mpd
+#: author: Ken Drew [Ken]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3020", "Yellow", 2, 0, 2, rot=90)
+place("3022", "Black", 2, 0, 6, rot=90)
+place_ldu("6141", "Trans_Orange", (20, -11, 160), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6141", "Trans_Orange", (100, -11, 160), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("43722", "Yellow", 1, 1, 1)
+place_ldu("3475b", "Dark_Grey", (50, -16, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3023", "Yellow", 2, 1, 4)
+place("3023", "Yellow", 2, 1, 7)
+place("3475b", "Dark_Grey", 3, 0, 4, rot=90)
+place("43723", "Yellow", 3, 1, 1)
+place("3710", "Yellow", 2, 2, 2, rot=90)
+place_ldu("44567", "Yellow", (60, -24, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30602", "Trans_Brown", (60, -24, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41862", "Yellow", (60, -24, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3710", "Yellow", 3, 2, 2, rot=90)
+place("3839b", "Light_Grey", 1.5, 2.75, 2)
+place("3023", "Trans_Clear", 2, 4, 3)
+place_ldu("4081b", "Black", (50, -48, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4070", "Yellow", 2, 3, 4, rot=90)
+place("4286", "Yellow", 2, 3, 5, rot=180)
+place("4081b", "Black", 3, 4.75, 3, rot=270)
+place("4070", "Yellow", 3, 3, 4, rot=270)
+place("4286", "Yellow", 3, 3, 5, rot=180)
+place("3068b", "Yellow", 2, 6, 3)
+place("44661", "Yellow", 2, 6, 5)

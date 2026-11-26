@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, conservatory.mpd, section glass-roof.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 195 of 195 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 195 of 195 parts kept (minifigures left out)
 place("3034", "Trans_Clear", 0, 0, 0)
 place("3034", "Trans_Clear", 8, 0, 0)
 place("3795", "Trans_Clear", 16, 0, 0)

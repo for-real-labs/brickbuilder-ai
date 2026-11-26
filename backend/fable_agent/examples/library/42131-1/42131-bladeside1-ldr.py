@@ -1,0 +1,31 @@
+#: title: Yellow side panel of the blade assembled from long beams, panels, and connector blocks forming a contoured sidewall.
+#: source: LDraw Official Model Repository, 42131-1.mpd, section 42131 - bladeside1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (30, -8.91, 12), (-1, 0, 0, 0, -0.8, -0.6, 0, -0.6, 0.8))
+place_ldu("43093", "Blue", (170, -8.91, 12), (1, 0, 0, 0, -0.8, 0.6, 0, -0.6, -0.8))
+place_ldu("18945", "Black", (72.615, -44.91, 99.077), (0.969, 0, -0.246, 0, 1, 0, 0.246, 0, 0.969))
+place_ldu("18654", "Black", (77.235, -44.91, 162.137), (0, -0.969, -0.246, 1, 0, 0, 0, -0.246, 0.969))
+place_ldu("32063", "Yellow", (90, -59.91, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32316", "Yellow", (-9.846, -64.91, 98.769), (0.969, 0, 0.246, 0, -1, 0, 0.246, 0, -0.969))
+place_ldu("32140", "Black", (111.375, -64.91, 108.917), (0, -0.969, -0.246, 1, 0, 0, 0, -0.246, 0.969))
+place_ldu("43093", "Blue", (121.065, -64.91, 111.377), (-0.969, 0, -0.246, 0, -1, 0, -0.246, 0, 0.969))
+place_ldu("39793", "Black", (145.215, -64.91, 138.137), (-0.969, 0, -0.246, 0, -1, 0, -0.246, 0, 0.969))
+place_ldu("43857", "Yellow", (160, -64.91, 70), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32063", "Yellow", (90, -69.91, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6629", "Yellow", (20, -144.91, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43093", "Blue", (30, -144.91, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (170, -144.91, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6629", "Yellow", (180, -144.91, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43857", "Black", (155.071, -174.91, 99.394), (0.969, 0.246, 0, 0, 0, 1, 0.246, -0.969, 0))
+place_ldu("15458", "Yellow", (60, -184.91, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32525", "Yellow", (100, -184.91, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("15458", "Yellow", (140, -184.91, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("15458", "Black", (145.231, -184.91, 138.154), (0, -0.969, -0.246, 1, 0, 0, 0, -0.246, 0.969))
+place_ldu("32524", "Yellow", (20, -224.91, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32524", "Yellow", (180, -224.91, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32140", "Black", (130.771, -264.91, 113.854), (0, 0.969, -0.246, -1, 0, 0, 0, 0.246, 0.969))
+place_ldu("43093", "Blue", (140.461, -264.91, 116.314), (-0.969, 0.246, 0, 0, 0, -1, -0.246, -0.969, 0))
+place_ldu("40490", "Black", (100, -304.91, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))

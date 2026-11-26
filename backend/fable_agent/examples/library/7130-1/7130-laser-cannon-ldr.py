@@ -3,7 +3,7 @@
 #: author: Daniel Goerner [TK-949]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures left out)
 place("3031", "White", 0, 0, 0)
 place("3003", "Light_Grey", 1, 1, 2)
 place("3003", "Light_Grey", 1, 4, 2)

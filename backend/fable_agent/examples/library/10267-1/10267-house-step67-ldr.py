@@ -1,0 +1,31 @@
+#: title: A tan and reddish brown architectural section with curved-top bricks, chamfered indented tiles, and grooved tiles, forming part of the house's decorative stonework or trim.
+#: source: LDraw Official Model Repository, 10267-1.mpd, section 10267 - house-step67.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("6141", "Reddish_Brown", 0, 0, 0)
+place("6141", "Reddish_Brown", 0, 0, 2)
+place("6141", "Reddish_Brown", 3, 0, 0)
+place("6141", "Reddish_Brown", 3, 0, 2)
+place("3020", "Tan", 0, 1, 0, rot=180)
+place("3710", "Tan", 0, 1, 2)
+place("2420", "Tan", 0, 2, 1, rot=90)
+place("3022", "White", 1, 2, 0)
+place("2420", "Tan", 2, 2, 1, rot=180)
+place("3024", "Tan", 0, 3, 1)
+place("96910", "Reddish_Brown", 1, 3, 0)
+place("96910", "Reddish_Brown", 1, 3, 1)
+place("3710", "Tan", 0, 3, 2)
+place("3024", "Tan", 3, 3, 1)
+place("3024", "Tan", 0, 4, 2)
+place("3024", "Tan", 3, 4, 2)
+place_ldu("96910", "Reddish_Brown", (40, -46, 32), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("6091", "Tan", 0, 2, 0)
+place("3070b", "Tan", 0, 5, 1)
+place("6091", "Tan", 3, 2, 0)
+place("3070b", "Tan", 3, 5, 1)
+place("11211", "Tan", 1, 4, 2)
+place("6091", "Tan", 0, 5, 2, rot=90)
+place("3069b", "Tan", 1, 8, 2, rot=180)
+place("6091", "Tan", 2, 5, 2, rot=270)

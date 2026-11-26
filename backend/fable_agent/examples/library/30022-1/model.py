@@ -1,0 +1,30 @@
+#: title: A small build composed of a single bee submodel.
+#: source: LDraw Official Model Repository, 30022-1.mpd
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("87620", "Yellow", (78, -20, 80), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("87620", "Yellow", (78, -20, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("4592", "White", (14, -40, 90), (0, 1, 0, 0.707107, 0, -0.707107, -0.707107, 0, -0.707107))
+place_ldu("4593", "Black", (14, -40, 90), (0, 0.707107, 0.707107, 0.707107, 0.5, -0.5, -0.707107, 0.5, -0.5))
+place_ldu("4592", "White", (14, -40, 110), (0, 1, 0, -0.707107, 0, -0.707107, -0.707107, 0, 0.707107))
+place_ldu("4593", "Black", (14, -40, 110), (0, 0.707107, 0.707107, -0.707107, 0.5, -0.5, -0.707107, -0.5, 0.5))
+place_ldu("44567", "Black", (22, -40, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("43898", "Yellow", (30, -40, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6141", "Black", (38, -40, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4032a", "Yellow", (46, -40, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("87081", "Black", (54, -40, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("30541", "Black", (78, -40, 90), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("30541", "Black", (78, -40, 110), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("87081", "Black", (102, -40, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Blue", (126, -40, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("43898", "Yellow", (142, -40, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6141", "Black", (150, -40, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("49668", "Black", (158, -40, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3005", "Yellow", (78, -50, 70), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3005", "Yellow", (78, -50, 130), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place("44302a", "Black", 4, 7.75, 2, rot=270)
+place_ldu("44302a", "Black", (90, -70, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("30413", "Trans_Brown", 4, 8.75, 0, rot=90)
+place("30413", "Trans_Brown", 4, 8.75, 6, rot=90)

@@ -1,0 +1,32 @@
+#: title: Roller side subassembly built from open-center beams, belt wheels, and bent liftarms.
+#: source: LDraw Official Model Repository, 42100-1.mpd, section 42100 - rollerside1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("87083", "Dark_Bluish_Grey", (50, -10, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32140", "Dark_Bluish_Grey", (60, -10, 140), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("27940", "Dark_Bluish_Grey", (60, -10, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32140", "Dark_Bluish_Grey", (60, -10, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -10, 120), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place("64179", "Light_Bluish_Grey", 0.5, 0, 5.5, rot=90)
+place_ldu("6558", "Blue", (80, -10, 200), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32523", "White", (100, -10, 100), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("87082", "Light_Bluish_Grey", (100, -10, 160), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (120, -10, 120), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (120, -10, 200), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (60, -20, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (60, -20, 200), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32184", "White", (60, -30, 120), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32184", "White", (60, -30, 200), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("43093", "Blue", (70, -30, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("43093", "Blue", (70, -30, 140), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("43093", "Blue", (70, -30, 180), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("43093", "Blue", (70, -30, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32525", "Black", (80, -30, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (90, -30, 120), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (90, -30, 200), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32054", "Orange", (100, -50, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (100, -50, 210), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("60484", "Dark_Bluish_Grey", (100, -50, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("64179", "Light_Bluish_Grey", (100, -90, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))

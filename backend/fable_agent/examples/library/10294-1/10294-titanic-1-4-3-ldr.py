@@ -3,7 +3,7 @@
 #: author: Jens Brühl [jb70]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
 place("3710", "Bright_Light_Orange", 0, 0, 24, rot=270)
 place("3460", "Bright_Light_Orange", 0, 0, 16, rot=270)
 place("3460", "Bright_Light_Orange", 0, 0, 8, rot=270)

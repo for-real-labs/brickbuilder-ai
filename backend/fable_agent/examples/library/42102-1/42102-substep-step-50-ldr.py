@@ -1,0 +1,32 @@
+#: title: Gear-driven linear actuator bracket assembly with bevel gears, axles, and a red liftarm.
+#: source: LDraw Official Model Repository, 42102-1.mpd, section 42102 - Substep_Step-50.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("6536", "Red", (80, -27, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32073", "Yellow", (120, -27, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("62462", "Red", (120, -27, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6536", "Red", (160, -27, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3749", "Tan", (60, -47, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32498", "Black", (60, -47, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (80, -47, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32524", "Red", (120, -47, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3749", "Tan", (120, -47, 50), (0, -0.707, 0.707, 0, -0.707, -0.707, 1, 0, 0))
+place_ldu("32270", "Black", (120, -47, 60), (0.707, -0.707, 0, -0.707, -0.707, 0, 0, 0, -1))
+place_ldu("2780", "Black", (160, -47, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3749", "Tan", (180, -47, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32498", "Black", (180, -47, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("11478", "Red", (95, -67, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32270", "Black", (120, -67, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("11478", "Red", (145, -67, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3713", "Red", (120, -87, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3705", "Black", (120, -97, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (120, -107, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3713", "Red", (100, -116.436, -18.871), (0, 0, -1, 0.236, 0.972, 0, 0.972, -0.236, 0))
+place_ldu("43093", "Blue", (110, -116.436, -18.871), (-1, 0, 0, 0, 0.236, 0.972, 0, 0.972, -0.236))
+place_ldu("6589", "Tan", (120, -120, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43093", "Blue", (110, -121.153, -38.307), (1, 0, 0, 0, 0.972, 0.236, 0, -0.236, 0.972))
+place_ldu("32140", "Lime", (120, -121.153, -38.307), (0, -1, 0, 0.972, 0, 0.236, -0.236, 0, 0.972))
+place_ldu("44294", "Light_Bluish_Grey", (125, -147, 40), (1, 0, 0, 0, -0.156, 0.988, 0, -0.988, -0.156))
+place_ldu("32198", "Tan", (137, -147, 40), (0, 0, 1, -0.988, -0.156, 0, 0.156, -0.988, 0))

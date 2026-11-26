@@ -1,0 +1,33 @@
+#: title: A miniature Boba Fett's Slave I starship built from a single mini submodel.
+#: source: LDraw Official Model Repository, 6964-1.mpd
+#: author: Johann Eisner [technicbasics]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3795", "Dark_Bluish_Grey", 4, 0, 3, rot=90)
+place("3023", "Tan", 0.5, 0.25, 6)
+place("3023", "Tan", 7.5, 0.25, 6, rot=180)
+place("3021", "Tan", 4, 1, 4, rot=270)
+place("3794a", "Sand_Green", 4, 1, 8, rot=180)
+place_ldu("4589", "Tan", (60, -30, 130), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4589", "Tan", (140, -30, 130), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3040b", "Reddish_Brown", 3, 1, 7, rot=90)
+place("6069ps3", "Reddish_Brown", 3, 1, 2)
+place("3040b", "Reddish_Brown", 5, 1, 7, rot=270)
+place_ldu("4599a", "Tan", (40, -34, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4599a", "Tan", (160, -34, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4070", "Dark_Bluish_Grey", 4, 2, 6, rot=90)
+place("3794a", "Sand_Green", 4, 4, 5)
+place("4070", "Dark_Bluish_Grey", 5, 2, 6, rot=270)
+place("3024", "Sand_Green", 4.5, 5, 5)
+place("3794a", "Sand_Green", 4, 5, 6)
+place_ldu("4592", "Sand_Green", (88, -54, 10), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4593", "Black", (88, -54, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4592", "Sand_Green", (112, -54, 10), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4593", "Black", (112, -54, 10), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4081b", "Light_Bluish_Grey", (100, -56, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4287a", "Sand_Green", 4.5, 4, 2)
+place("3024", "Light_Bluish_Grey", 4.5, 6, 5)
+place("3666", "Light_Bluish_Grey", 4.5, 7, 1, rot=90)
+place("6005", "Black", 4.5, 2, 6, rot=180)
+place("2431", "Sand_Green", 4.5, 8, 2, rot=90)

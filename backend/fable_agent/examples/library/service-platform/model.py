@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, service-platform.mpd
 #: author: ldraw-nova structural examples
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 55 of 55 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 55 of 55 parts kept (minifigures left out)
 place_ldu("2780", "Black", (20, -10, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
 place("64179", "Yellow", 1, 0, 4)
 place_ldu("2780", "Black", (20, -10, 190), (1, 0, 0, 0, 1, 0, 0, 0, 1))

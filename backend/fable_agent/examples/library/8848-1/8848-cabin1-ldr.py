@@ -3,7 +3,7 @@
 #: author: Allard van Efferen (rabbitdesign.nl)
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
 place("3832", "Red", 0, 0, 4)
 place("3004", "Red", 0, 1, 4, rot=270)
 place("3004", "Red", 9, 1, 4, rot=270)

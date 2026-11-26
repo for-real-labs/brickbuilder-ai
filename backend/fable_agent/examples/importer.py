@@ -53,6 +53,10 @@ class Limits:
     least_kept: float = 0.8  # of the set's parts that must survive
     most_raw: float = 0.5  # of the kept parts that may need place_ldu (sideways building)
     original_parts: bool = True  # keep the parts the set uses; False keeps only what the palette stocks
+    # Keep a model as a reference even where the checks cannot follow it: parts they find overlapping or
+    # unattached, Technic, parts built off the grid. Pip reads it for how a thing is built; its own build
+    # is still held to every check. False keeps only models that pass the checks.
+    reference: bool = True
     most_technic: float = 0.5  # of the set's parts that may be Technic: beyond it, it is a Technic model
 
 
@@ -61,6 +65,7 @@ class Converted:
     script: str
     parts: int  # in the script
     of: int  # in the set
+    checked: bool = True  # passes every check a Pip build must pass, apart from the catalog
 
 
 @dataclass(frozen=True)
@@ -215,11 +220,13 @@ class SetImporter:
             return None, "too many parts"
         technic = sum(1 for part, *_ in model.parts
                       if self._is_set_part(part) and self._library.description(part).lstrip("~_=").startswith("Technic"))
-        if technic > limits.most_technic * total:
+        if not limits.reference and technic > limits.most_technic * total:
             return None, "mostly Technic"
         build = self._standing(self._original(model) if limits.original_parts else self._stocked(model))
         if build is None:
             return None, "nothing stands"
+        if limits.reference:
+            return self._reference(build, total)
         for _ in range(4):  # dropping a part can strand others, so settle a few times
             kept = self._joined(build)
             if len(kept.placements) == len(build.placements):
@@ -243,6 +250,25 @@ class SetImporter:
         if not self._passes(script, count):
             return None, "its script does not rebuild it"
         return Converted(script, count, total), ""
+
+    def _reference(self, build: Build, total: int) -> tuple[Converted | None, str]:
+        """Every part of the model, as a reference. The checks only say whether it also passes them.
+
+        A model that passes is written in the building order the checks found; any other from the
+        ground up.
+        """
+        count = len(build.placements)
+        if self._limits.most_parts and count > self._limits.most_parts:
+            return None, "too many parts"
+        report = self._checker.check(build)
+        checked = report.ok and not report.warnings and report.plan is not None
+        order = (report.plan.order if checked else
+                 sorted(range(count), key=lambda i: (-build.placements[i].position[1], build.placements[i].position[0],
+                                                     build.placements[i].position[2])))
+        script = self._script(build, order, any_grid=True)
+        if not self._rebuilds(script, count):
+            return None, "its script does not rebuild it"
+        return Converted(script, count, total, checked), ""
 
     # ----- what can be kept ----------------------------------------------
 
@@ -345,7 +371,7 @@ class SetImporter:
 
     # ----- writing the script --------------------------------------------
 
-    def _script(self, build: Build, order) -> str | None:
+    def _script(self, build: Build, order, *, any_grid: bool = False) -> str | None:
         names = self._library.colors()
         lines, raw = [], 0
         for index in order:
@@ -358,7 +384,7 @@ class SetImporter:
                 turn = ", ".join(f"{value:g}" for value in placement.matrix)
                 call = f'place_ldu("{placement.part}", "{color}", ({numbers}), ({turn}))'
             lines.append(call)
-        if raw > self._limits.most_raw * len(lines):
+        if not any_grid and raw > self._limits.most_raw * len(lines):
             return None
         return "\n".join(lines) + "\n"
 
@@ -378,6 +404,16 @@ class SetImporter:
             return None  # not on a quarter of the grid: say it in LDraw units instead
         rot = f", rot={turn}" if turn else ""
         return f'place("{placement.part}", "{color}", {x:g}, {y:g}, {z:g}{rot})'
+
+    def _rebuilds(self, script: str, count: int) -> bool:
+        """Whether the script runs and places every part."""
+        kit = Kit(self._library, self._shapes, self._palette, self._finder, max_placements=100_000)
+        try:
+            exec(compile(script, "<example>", "exec"), {"place": kit.place, "place_ldu": kit.place_ldu,  # noqa: S102
+                                                         "rect": rect, "ring": ring, "__builtins__": {}})
+        except (KitError, LDrawError):
+            return False
+        return len(kit.build.placements) == count
 
     def _passes(self, script: str, count: int) -> bool:
         """Run the finished script as a build would and hold it to the same checks."""

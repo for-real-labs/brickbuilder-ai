@@ -1,0 +1,32 @@
+#: title: A lower body section mirroring bottom1, built from long beams, side panels, and an H-shaped beam pinned together to form the underfloor frame.
+#: source: LDraw Official Model Repository, 42083-1.mpd, section 42083 - bottom2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32523", "Light_Bluish_Grey", (120, -10, 240), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (140, -10, 240), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6558", "Blue", (100, -10, 240), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("15458", "Black", (120, -10, 120), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("15458", "Black", (120, -10, 360), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (80, -10, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -10, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -10, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -10, 320), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -10, 360), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -10, 400), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (90, -10, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32278", "Black", (80, -10, 320), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32316", "Black", (80, -10, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -10, 380), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -10, 340), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -10, 300), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32278", "Black", (60, -10, 200), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32523", "Light_Bluish_Grey", (60, -10, 380), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -10, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32140", "Black", (20, -10, 240), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (40, -10, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("11214", "Red", (40, -10, 240), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32523", "Light_Bluish_Grey", (40, -10, 220), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("14720", "Light_Bluish_Grey", (40, -50, 160), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("15100", "Blue", (20, -10, 160), (1, 0, 0, 0, 0, 1, 0, -1, 0))

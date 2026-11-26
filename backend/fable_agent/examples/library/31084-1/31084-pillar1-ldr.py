@@ -3,7 +3,7 @@
 #: author: Philippe Hurbain [Philo]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 14 of 14 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 14 of 14 parts kept (minifigures left out)
 place("6143", "Dark_Bluish_Grey", 0, 0, 4)
 place("32001", "Light_Bluish_Grey", 0, 3, 0, rot=90)
 place("6143", "Dark_Azure", 0, 4, 4, rot=90)

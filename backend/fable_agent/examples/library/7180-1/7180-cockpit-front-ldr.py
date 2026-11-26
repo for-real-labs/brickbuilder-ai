@@ -1,0 +1,31 @@
+#: title: The front nose of a cockpit built with wedges, inverted slopes, grille tiles, and a Star Wars computer screen.
+#: source: LDraw Official Model Repository, 7180-1.mpd, section 7180 - Cockpit Front.ldr
+#: author: Merlijn Wissink [Legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3022", "Red", 1, 1, 3)
+place("2412b", "Dark_Grey", 1, 1, 5, rot=180)
+place("3022", "Red", 1, 1, 6)
+place("4855", "Light_Grey", 0, 0, 0)
+place("4854", "Dark_Grey", 0, 0, 4, rot=270)
+place("3023", "Blue", 1, 2, 7, rot=180)
+place("3710", "Black", 0, 3, 3, rot=90)
+place("4859", "Black", 0, 3, 0)
+place("3710", "Black", 0, 3, 7, rot=180)
+place("3710", "Black", 3, 3, 3, rot=90)
+place("3004", "White", 1, 2, 3)
+place("4865a", "Light_Grey", 0, 4, 4, rot=270)
+place("2357", "Dark_Grey", 0, 4, 6, rot=90)
+place("3937", "Light_Grey", 1, 4, 0)
+place("6134", "Black", 1, 5, 0)
+place("3069bps1", "Light_Grey", 1, 6, 2, rot=180)
+place_ldu("30384", "Trans_Brown", (40, -56, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2399", "Light_Grey", (40, -56, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4865a", "Light_Grey", 3, 4, 4, rot=90)
+place("2357", "Dark_Grey", 2, 4, 6, rot=180)
+place("3062b", "Dark_Grey", 0, 7, 7)
+place("32064a", "Green", 1, 7, 7)
+place("3062b", "Dark_Grey", 3, 7, 7)
+place("3040b", "Dark_Grey", 0, 10, 7, rot=90)
+place("3040b", "Dark_Grey", 2, 10, 7, rot=270)

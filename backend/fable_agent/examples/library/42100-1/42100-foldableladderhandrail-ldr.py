@@ -1,0 +1,32 @@
+#: title: A handrail for the foldable ladder made of axle joiners, angle connectors, and thin liftarms along its length.
+#: source: LDraw Official Model Repository, 42100-1.mpd, section 42100 - foldableladderhandrail.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32062", "Red", (20, -19.5, 402.426), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Red", (40, -19.5, 302.426), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32039", "Dark_Bluish_Grey", (20, -29.5, 402.426), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32039", "Dark_Bluish_Grey", (40, -29.5, 302.426), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("41677", "Dark_Bluish_Grey", (20, -49.5, 317.426), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("41677", "Dark_Bluish_Grey", (20, -49.5, 327.426), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (20, -49.5, 342.426), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("18654", "Dark_Bluish_Grey", (20, -49.5, 342.426), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("59443", "Dark_Bluish_Grey", (20, -49.5, 372.426), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (20, -49.5, 402.426), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32192", "Dark_Bluish_Grey", (20, -49.5, 442.426), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32192", "Dark_Bluish_Grey", (40, -49.5, 262.426), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (40, -49.5, 302.426), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32062", "Red", (40, -61.926, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Red", (40, -61.926, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Red", (40, -70.713, 241.213), (0, -1, 0, 0.707, 0, -0.707, 0.707, 0, 0.707))
+place_ldu("32039", "Dark_Bluish_Grey", (40, -71.926, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32039", "Dark_Bluish_Grey", (40, -71.926, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("59443", "Dark_Bluish_Grey", (40, -91.926, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (40, -91.926, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("59443", "Dark_Bluish_Grey", (40, -91.926, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32062", "Red", (40, -91.926, 110), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("59443", "Dark_Bluish_Grey", (40, -91.926, 130), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3705", "Black", (40, -91.926, 170), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("18654", "Dark_Bluish_Grey", (40, -91.926, 180), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32192", "Dark_Bluish_Grey", (40, -91.926, 220), (-1, 0, 0, 0, -1, 0, 0, 0, 1))

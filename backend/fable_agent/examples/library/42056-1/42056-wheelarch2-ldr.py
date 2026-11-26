@@ -1,0 +1,32 @@
+#: title: Wheel arch assembly using arched mudguard panels and bent liftarms to shape the fender over the wheel.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - wheelarch2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("87086", "Orange", (20, -10, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (40, -20, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (80, -20, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32348", "Black", (40, -30, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("63869", "Black", (60, -30, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3705", "Black", (70, -30, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32348", "Black", (80, -30, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -50, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42003", "Black", (100, -50, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (100, -50, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32526", "Black", (100, -50, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (20, -70, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24118p01", "Orange", (20, -70, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (100, -70, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24118", "Orange", (100, -70, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4274", "Blue", (60, -110, 70), (0, -1, 0, -0.8, 0, 0.6, -0.6, 0, -0.8))
+place_ldu("42003", "Black", (60, -114, 92), (-1, 0, 0, 0, 0.6, -0.8, 0, -0.8, -0.6))
+place_ldu("4274", "Blue", (60, -122, 86), (0, -1, 0, -0.8, 0, 0.6, -0.6, 0, -0.8))
+place_ldu("3023", "Trans_Clear", (60, -122.4, 73.2), (0, 0, 1, 0.6, 0.8, 0, -0.8, 0.6, 0))
+place_ldu("3069b", "Trans_Clear", (60, -122.8, 60.4), (-1, 0, 0, 0, 0.8, 0.6, 0, 0.6, -0.8))
+place_ldu("4519", "Light_Bluish_Grey", (60, -126, 108), (-1, 0, 0, 0, 0.6, -0.8, 0, -0.8, -0.6))
+place_ldu("6141", "Trans_Clear", (60, -134.8, 76.4), (0, 0, 1, 0.6, 0.8, 0, -0.8, 0.6, 0))
+place_ldu("6558", "Blue", (60, -150, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32525", "Orange", (60, -150, 220), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -150, 320), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3960", "Trans_Clear", (60, -150.8, 64.4), (-1, 0, 0, 0, 0.8, 0.6, 0, 0.6, -0.8))

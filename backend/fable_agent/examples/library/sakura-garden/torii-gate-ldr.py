@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, sakura-garden.mpd, section torii-gate.ldr
 #: author: ldraw-nova sakura-garden generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
 place("4032a", "Black", 3, 0, 1)
 place("4032a", "Black", 9, 0, 1)
 place("3941", "Red", 3, 1, 1)

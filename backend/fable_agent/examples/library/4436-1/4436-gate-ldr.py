@@ -1,0 +1,32 @@
+#: title: A barred security gate with two lattice doors mounted on technic pins and supported by plates.
+#: source: LDraw Official Model Repository, 4436-1.mpd, section 4436 - Gate.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("2445", "Dark_Bluish_Grey", 1, 0, 0, rot=270)
+place("3023", "Green", 3, 0, 0, rot=90)
+place("3023", "Green", 3, 0, 10, rot=90)
+place("3021", "Tan", 1, 1, 0, rot=180)
+place_ldu("60470a", "Light_Bluish_Grey", (30, -16, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("92589", "Light_Bluish_Grey", (11.969, -14.349, 50), (-0.984808, 0, 0.173648, 0.173648, 0, 0.984808, 0, 1, 0))
+place("60470a", "Light_Bluish_Grey", 2, 0.75, 8, rot=270)
+place_ldu("92589", "Light_Bluish_Grey", (68.031, -14.349, 50), (0.984808, 0, 0.173648, 0.173648, 0, -0.984808, 0, 1, 0))
+place_ldu("60470a", "Light_Bluish_Grey", (30, -16, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("60470a", "Light_Bluish_Grey", 2, 0.75, 2, rot=270)
+place("3020", "Light_Bluish_Grey", 1, 1, 4, rot=270)
+place("32530", "Dark_Bluish_Grey", 1, 2, 0, rot=90)
+place("32530", "Dark_Bluish_Grey", 3, 2, 0, rot=90)
+place("3002", "Reddish_Brown", 1, 1, 10)
+place_ldu("3957b", "Black", (50, -40, 230), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (50, -46, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32014", "Red", (50, -46, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (50, -46, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62462", "White", (50, -46, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (50, -46, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62462", "Red", (50, -46, 110), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (50, -46, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62462", "White", (50, -46, 150), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (50, -46, 170), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62462", "Red", (50, -46, 190), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("30259", "White", (50, -112, 230), (0, 0, -1, 0, 1, 0, 1, 0, 0))

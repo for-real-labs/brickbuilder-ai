@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, cathedral.mpd, section cathedral-bell-tower.ldr
 #: author: Original design generated with ldraw-nova for the workspace owner
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 542 of 542 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 542 of 542 parts kept (minifigures left out)
 place("3008", "Dark_Tan", 1, 0, 1)
 place("3008", "Dark_Tan", 1, 0, 10)
 place("3008", "Dark_Tan", 1, 0, 2, rot=90)

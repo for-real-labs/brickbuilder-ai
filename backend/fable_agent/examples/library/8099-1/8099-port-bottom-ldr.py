@@ -3,7 +3,7 @@
 #: author: Orion Pobursky [OrionP]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 59 of 59 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 59 of 59 parts kept (minifigures left out)
 place("3023", "Blue", 6, 0, 26, rot=270)
 place("32028", "Light_Bluish_Grey", 6, 1, 26, rot=270)
 place("3747b", "Dark_Bluish_Grey", 4, 2, 26, rot=90)

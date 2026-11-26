@@ -1,0 +1,33 @@
+#: title: A rear bottom structural panel using a large Technic Panel Smooth 11x2x3 with a Beam 13 and bent liftarms for rigidity.
+#: source: LDraw Official Model Repository, 42110-1.mpd, section 42110 - backbottom.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("32123b", "Light_Bluish_Grey", (35, -10, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (35, -10, 260), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (40, -10, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32524", "Light_Bluish_Grey", (40, -10, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (40, -10, 240), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (45, -10, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (45, -10, 260), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (50, -10, 80), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (50, -10, 200), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -10, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6558", "Blue", (60, -10, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("41239", "Light_Bluish_Grey", (60, -10, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -10, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -10, 260), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("25214", "Light_Bluish_Grey", (100, -10, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("25214", "Light_Bluish_Grey", (100, -10, 260), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("22961", "Black", (100, -50, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (100, -50, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("62531", "Light_Bluish_Grey", (100, -50, 140), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (100, -50, 250), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("22961", "Black", (100, -50, 260), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (40, -70, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32140", "Light_Bluish_Grey", (40, -70, 220), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("24316", "Reddish_Brown", (58, -70, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("24316", "Reddish_Brown", (58, -70, 220), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15100", "Light_Bluish_Grey", (100, -70, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32054", "Light_Bluish_Grey", (100, -70, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))

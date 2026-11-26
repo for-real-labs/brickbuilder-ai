@@ -1,0 +1,30 @@
+#: title: Titanic - 2.12.4
+#: source: LDraw Official Model Repository, 10294-1.mpd, section 10294 - Titanic - 2.12.4.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3020", "Reddish_Brown", 0, 0, 0)
+place("3020", "Reddish_Brown", 8, 0, 0)
+place("3023", "Reddish_Brown", 0, 1, 0, rot=90)
+place("3023", "Reddish_Brown", 11, 1, 0, rot=90)
+place("3003", "Reddish_Brown", 1, 1, 0)
+place("92950", "Reddish_Brown", 3, 1, 0)
+place("92950", "Reddish_Brown", 3, 1, 1)
+place("3003", "Reddish_Brown", 9, 1, 0)
+place("3020", "Reddish_Brown", 2, 4, 0)
+place("3020", "Reddish_Brown", 6, 4, 0)
+place("6091", "Reddish_Brown", 0, 2, 0, rot=90)
+place("6091", "Reddish_Brown", 0, 2, 1, rot=90)
+place("6091", "Reddish_Brown", 10, 2, 0, rot=270)
+place("6091", "Reddish_Brown", 10, 2, 1, rot=270)
+place("39789", "Reddish_Brown", 4, 5, 0)
+place("18653", "Reddish_Brown", 1, 5, 0, rot=180)
+place("18653", "Reddish_Brown", 1, 5, 1, rot=180)
+place("39789", "Reddish_Brown", 4, 8, 0)
+place("18653", "Reddish_Brown", 8, 5, 0)
+place("18653", "Reddish_Brown", 8, 5, 1)
+place_ldu("32073", "Light_Bluish_Grey", (120, -90, 20), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("33909", "Reddish_Brown", 3, 11, 0, rot=90)
+place("15535", "Black", 5, 11, 0, rot=180)
+place("33909", "Reddish_Brown", 7, 11, 0, rot=270)

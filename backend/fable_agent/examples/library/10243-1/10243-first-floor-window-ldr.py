@@ -1,0 +1,33 @@
+#: title: Window with an olive-green frame, clear glass and grooved tiling
+#: source: LDraw Official Model Repository, 10243-1.mpd, section 10243 - First floor - Window.ldr
+#: author: Willy Tschager [Holly Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3070b", "White", (10, -10, 0), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3024", "White", (10, -10, 32), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3024", "White", (10, -10, 128), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3070b", "White", (10, -10, 160), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3004", "Olive_Green", (20, -10, 8), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3004", "Olive_Green", (20, -10, 152), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("99206", "White", 0, 0, 2)
+place("3022", "White", 0, 1, 3)
+place("99206", "White", 0, 0, 4, rot=180)
+place_ldu("32028", "White", (30, -20, 32), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32028", "White", (30, -20, 128), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("3069b", "Dark_Brown", 0, 2, 2, rot=90)
+place("3069b", "Dark_Brown", 0, 2, 4, rot=90)
+place_ldu("3004", "Olive_Green", (30, -40, 8), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3004", "Olive_Green", (30, -40, 152), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6636", "Olive_Green", (30, -60, 0), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32028", "White", (30, -60, 32), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32028", "White", (30, -60, 128), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6636", "Olive_Green", (30, -60, 160), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("60592c01", "White", 1, 2, 2, rot=270)
+place("60592c01", "White", 1, 2, 4, rot=270)
+place_ldu("3622", "Olive_Green", (30, -90, 8), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3622", "Olive_Green", (30, -90, 152), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32028", "White", (30, -100, 32), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32028", "White", (30, -100, 128), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("60592c01", "White", 1, 8, 2, rot=270)
+place("60592c01", "White", 1, 8, 4, rot=270)

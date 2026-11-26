@@ -1,0 +1,31 @@
+#: title: An engine crankshaft and piston assembly with two crankshafts, six connecting rods, and pistons mounted on a drive axle.
+#: source: LDraw Official Model Repository, 42043-1.mpd, section 42043 - camshaft.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32062", "Red", (20, -10, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2852", "Light_Bluish_Grey", 0.5, 0, 6.5)
+place_ldu("32062", "Red", (20, -10, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2852", "Light_Bluish_Grey", 0.5, 0, 10.5)
+place_ldu("32062", "Red", (20, -10, 300), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2852", "Light_Bluish_Grey", 0.5, 0, 14.5)
+place_ldu("2853", "Yellow", (20, -10, 330), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3705", "Black", (20, -20, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2853", "Yellow", (20, -20, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Tan", (20, -20, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Tan", (20, -20, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Tan", (20, -20, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Tan", (20, -20, 240), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Tan", (20, -20, 280), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("2852", "Light_Bluish_Grey", 0.5, 2.5, 4.5)
+place_ldu("32062", "Red", (20, -30, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2852", "Light_Bluish_Grey", 0.5, 2.5, 8.5)
+place("2852", "Light_Bluish_Grey", 0.5, 2.5, 12.5)
+place_ldu("32062", "Red", (20, -30, 260), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2851", "Yellow", (20, -50, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2851", "Yellow", (20, -50, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2851", "Yellow", (20, -50, 300), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2851", "Yellow", (20, -70, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2851", "Yellow", (20, -70, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2851", "Yellow", (20, -70, 260), (0, 0, 1, 0, 1, 0, -1, 0, 0))

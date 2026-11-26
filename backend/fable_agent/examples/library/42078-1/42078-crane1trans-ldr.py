@@ -1,0 +1,30 @@
+#: title: Transmission assembly for the first crane using universal joints, bevel gears, and an H-shaped beam housing.
+#: source: LDraw Official Model Repository, 42078-1.mpd, section 42078 - crane1trans.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (40, -10, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("14720", "Light_Bluish_Grey", (60, -10, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (80, -10, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("74695", "Dark_Bluish_Grey", (40, -30, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32062", "Red", (40, -30, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("62520", "Light_Bluish_Grey", (60, -30, 20), (-1, -0.003, 0.001, -0.003, 0.806, -0.592, 0.001, -0.592, -0.806))
+place_ldu("62520", "Light_Bluish_Grey", (60, -30, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("62519", "Light_Bluish_Grey", (60, -30, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("87408", "Black", (60, -30, 50), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -30, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32270", "Black", (60, -30, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("74695", "Dark_Bluish_Grey", (80, -30, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32062", "Red", (80, -30, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32062", "Red", (60.028, -47.752, -4.184), (-0.001, 0.003, 1, 0.592, -0.806, 0.003, 0.806, 0.592, -0.001))
+place_ldu("62520", "Light_Bluish_Grey", (59.471, -65.504, -28.365), (0.005, -1, 0, -0.05, 0, -0.999, 0.999, 0.005, -0.05))
+place_ldu("62519", "Light_Bluish_Grey", (59.471, -65.504, -28.365), (1, -0.005, -0.005, 0.005, 0.05, 0.999, -0.005, -0.999, 0.05))
+place_ldu("62520", "Light_Bluish_Grey", (60.057, -65.504, -28.368), (1, -0.003, -0.001, 0.003, 0.806, 0.592, -0.001, -0.592, 0.806))
+place_ldu("32062", "Red", (59.464, -95.466, -29.877), (0, 0.005, 1, 0.999, -0.05, 0, 0.05, 0.999, -0.005))
+place_ldu("26287", "Red", (59.456, -125.428, -31.388), (0.005, 1, 0, -0.05, 0, 0.999, 0.999, -0.005, 0.05))
+place_ldu("43093", "Blue", (29.447, -165.377, -33.258), (1, 0.005, 0, 0, -0.05, -0.999, -0.005, 0.999, -0.05))
+place_ldu("4519", "Light_Bluish_Grey", (59.446, -165.377, -33.404), (0, 1, 0.005, -0.999, 0, -0.05, -0.05, -0.005, 0.999))
+place_ldu("32034", "Dark_Bluish_Grey", (59.446, -165.377, -33.404), (0, -0.005, 1, -0.999, 0.05, 0, -0.05, -0.999, -0.005))
+place_ldu("43093", "Blue", (89.446, -165.377, -33.55), (-1, -0.005, 0, 0, 0, -1, 0.005, -1, 0))
+place_ldu("6589", "Tan", (59.443, -178.361, -34.059), (0.005, -1, 0, -0.05, 0, -0.999, 0.999, 0.005, -0.05))

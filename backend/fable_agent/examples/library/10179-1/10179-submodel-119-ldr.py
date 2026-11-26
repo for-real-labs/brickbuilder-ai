@@ -3,7 +3,7 @@
 #: author: Roland Dahl [RolandD]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 108 of 108 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 108 of 108 parts kept (minifigures left out)
 place_ldu("6636", "Dark_Bluish_Grey", (390, 0, 351), (0, 0, 1, 0, -1, 0, 1, 0, 0))
 place_ldu("47905", "Dark_Bluish_Grey", (390, -18, 318), (1, 0, 0, 0, 0, -1, 0, 1, 0))
 place_ldu("3308", "Light_Bluish_Grey", (320, -18, 270), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

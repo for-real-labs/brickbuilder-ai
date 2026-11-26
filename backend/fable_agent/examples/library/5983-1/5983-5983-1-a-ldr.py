@@ -1,0 +1,33 @@
+#: title: Central fuselage core of a small craft, featuring plates, inverted slopes, wing elements, hinge controls, and Technic axle structures.
+#: source: LDraw Official Model Repository, 5983-1.mpd, section 5983 - 5983-1-a.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3795", "Dark_Grey", 1, 0, 7, rot=90)
+place("3023", "Light_Grey", 1, 1, 12)
+place_ldu("40244", "Black", (30, -22, 76), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3673", "Black", (30, -22, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("40244", "Black", (50, -22, 76), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3673", "Black", (50, -22, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3795", "Dark_Grey", 1, 2, 8, rot=90)
+place_ldu("60470a", "Red", (30, -32, 260), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("32000", "Red", 1, 1, 7)
+place("4854", "Dark_Grey", 0, 1, 8, rot=90)
+place("60470a", "Red", 2, 2.75, 12, rot=270)
+place_ldu("4592c01", "Red", (10, -40, 190), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3069b", "Dark_Grey", 0, 4, 10, rot=90)
+place_ldu("48183", "Dark_Grey", (40, -40, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30602", "Light_Grey", (40, -40, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Light_Grey", 1, 4, 12)
+place_ldu("4592c01", "Red", (70, -40, 190), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3069b", "Dark_Grey", 3, 4, 10, rot=90)
+place_ldu("30033", "Black", (40, -46, 284), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4519", "Light_Grey", (40, -46, 290), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6233", "Light_Grey", (40, -46, 292), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4032a", "Light_Grey", (40, -46, 340), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4032a", "Red", (40, -46, 348), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3023", "Light_Grey", 1, 5, 12)
+place_ldu("4590", "Dark_Grey", (40, -56, 250), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("32064a", "Black", 1, 4, 13)
+place("50943", "Dark_Grey", 1, 7, 12)

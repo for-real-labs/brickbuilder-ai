@@ -1,0 +1,32 @@
+#: title: Multi-speed gearbox assembly with clutch gears, driving rings, bevel gears, and axles forming a transmission mechanism.
+#: source: LDraw Official Model Repository, 8880-1.mpd, section 8880 - step13.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("4519", "Black", (40, -32.4, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3648a", "Light_Grey", (40, -32.4, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6538a", "Light_Grey", (40, -32.4, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3713", "Light_Grey", (40, -32.4, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3705", "Black", (40, -32.4, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4019", "Light_Grey", (40, -32.4, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3648a", "Light_Grey", (80, -32.4, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3705", "Black", (80, -32.4, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6542a", "Dark_Grey", (80, -32.4, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6538a", "Light_Grey", (80, -32.4, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6539", "Light_Grey", (80, -32.4, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Black", (80, -32.4, 190), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6542a", "Dark_Grey", (80, -32.4, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3647", "Light_Grey", (120, -32.4, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3705", "Black", (120, -32.4, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6542a", "Dark_Grey", (120, -32.4, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6538a", "Light_Grey", (120, -32.4, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6539", "Light_Grey", (120, -32.4, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6542a", "Dark_Grey", (120, -32.4, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3708", "Black", (120, -32.4, 280), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6538a", "Light_Grey", (120, -32.4, 400), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3706", "Black", (120, -32.4, 460), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4019", "Light_Grey", (120, -32.4, 490), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2730", "Light_Grey", (100, -42.4, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3701", "Light_Grey", (100, -42.4, 210), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3701", "Light_Grey", (100, -42.4, 370), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

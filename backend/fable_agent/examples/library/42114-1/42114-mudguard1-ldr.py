@@ -1,0 +1,30 @@
+#: title: A small wheel mudguard assembly built from bent liftarms, beams, and axle pins.
+#: source: LDraw Official Model Repository, 42114-1.mpd, section 42114 - mudguard1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("6536", "Black", (20, -10, 160), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("43093", "Blue", (20, -10, 170), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -10, 30), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("64179", "Black", (60, -10, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("87082", "Red", (60, -10, 160), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32054", "Light_Bluish_Grey", (60, -10, 160), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (80, -10, 30), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (100, -10, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("11214", "Red", (100, -10, 160), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (110, -10, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -20, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6536", "Black", (40, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("60483", "Black", (40, -30, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32140", "Black", (40, -30, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -30, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32140", "Black", (60, -30, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -30, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32316", "Black", (60, -30, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("87083", "Dark_Bluish_Grey", (70, -30, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("87083", "Dark_Bluish_Grey", (70, -30, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Black", (80, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32140", "Black", (80, -30, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32316", "Black", (100, -30, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))

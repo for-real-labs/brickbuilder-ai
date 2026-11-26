@@ -1,0 +1,31 @@
+#: title: A hanging shop sign front: white and red plates and tiles with a black frame and clip mounts.
+#: source: LDraw Official Model Repository, 10246-1.mpd, section 10246 - Sign.ldr
+#: author: Willy Tschager [Holly-Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("15535", "Red", (20, 0, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("15535", "Red", (20, 0, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("63864", "Red", (34.158, 0, 149.563), (0.208, 0, 0.978, 0, -1, 0, 0.978, 0, -0.208))
+place_ldu("14719", "Red", (35.847, 0, 10.874), (-0.956, 0, -0.292, 0, -1, 0, -0.292, 0, 0.956))
+place_ldu("3069b", "Black", (20, -8, 10), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3795", "White", (20, -8, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("15535", "Red", (20, -8, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3023", "Black", (10, -16, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3710", "Black", (10, -16, 140), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("4081b", "Light_Bluish_Grey", (50, -20, 52), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("98138", "Light_Bluish_Grey", (50, -20, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("98138", "Light_Bluish_Grey", (50, -20, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4081b", "Light_Bluish_Grey", (50, -21, 88), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("3024", "Black", 0, 2, 2, rot=270)
+place("3024", "Black", 0, 2, 4, rot=270)
+place("60478", "Black", 0, 2, 3)
+place("3023", "Black", 1, 2, 0, rot=270)
+place("3710", "Black", 1, 2, 5, rot=270)
+place("3069b", "Black", 0, 3, 0)
+place("3795", "White", 0, 3, 1, rot=270)
+place("15535", "Red", 0, 3, 7)
+place_ldu("14719", "Red", (4.153, -40, 10.874), (0.956, 0, 0.292, 0, 1, 0, -0.292, 0, 0.956))
+place_ldu("63864", "Red", (5.842, -40, 149.563), (-0.208, 0, -0.978, 0, 1, 0, 0.978, 0, -0.208))
+place("15535", "Red", 0, 4, 2)
+place("15535", "Red", 0, 4, 4)

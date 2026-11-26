@@ -1,0 +1,30 @@
+#: title: Green and bluish-grey floating island base built on a medium-azure plate with sloped rocks, foliage-patterned tiles, and small accessory pieces including a turkey leg, telescope, and skeleton leg.
+#: source: LDraw Official Model Repository, 41181-1.mpd, section 41181-1 - island.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("6003", "Medium_Azure", 0, 0, 0)
+place("2460", "Light_Bluish_Grey", 4, 1, 4, rot=270)
+place_ldu("33291", "Lime", (77, -24, 55), (0.966, 0, 0.259, 0, 1, 0, -0.259, 0, 0.966))
+place_ldu("92907", "Black", (100, -26, 100), (0.866, 0.5, 0, 0, 0, 1, 0.5, -0.866, 0))
+place_ldu("2423", "Magenta", (134.248, -26, 96.68), (0.3535, -0.866, -0.3535, 0.707, 0, 0.707, -0.612262, -0.5, 0.612262))
+place("3010", "Green", 0, 1, 2, rot=90)
+place("3003", "Light_Bluish_Grey", 1, 1, 2, rot=90)
+place("3003", "Green", 1, 1, 4, rot=90)
+place_ldu("6141", "Medium_Lilac", (77, -32, 55), (0.966, 0, 0.259, 0, 1, 0, -0.259, 0, 0.966))
+place_ldu("32062", "Red", (110, -46, 82.68), (0.866, 0.5, 0, 0, 0, 1, 0.5, -0.866, 0))
+place_ldu("88289", "Dark_Brown", (115, -55, 74.02), (0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866))
+place_ldu("33291", "Lime", (96.83, -55.426, 115.49), (0.965762, 0, 0.258762, 0, 1, 0, -0.258762, 0, 0.965762))
+place("3003", "Green", 0, 4, 2, rot=90)
+place("6215", "Green", 0, 4, 4)
+place("60481", "Light_Bluish_Grey", 2, 1, 1, rot=270)
+place_ldu("6141", "Medium_Lilac", (96.83, -63.426, 115.49), (0.965762, 0, 0.258762, 0, 1, 0, -0.258762, 0, 0.965762))
+place_ldu("15070", "Lime", (50, -64, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("33291", "Red", (50, -72, 30), (0.707, 0, 0.707, 0, 1, 0, -0.707, 0, 0.707))
+place("3684c", "Light_Bluish_Grey", 0, 1, 0)
+place("6215", "Green", 0, 7, 2, rot=270)
+place("60481", "Light_Bluish_Grey", 2, 4, 2, rot=180)
+place("87580", "Lime", 0, 10, 1)
+place("15070", "Lime", 2, 8, 2, rot=270)
+place_ldu("30153", "Trans_Clear", (44, -108, 45), (-0.433, -0.5, 0.75, 0.866, 0, 0.5, -0.25, 0.866, 0.433))

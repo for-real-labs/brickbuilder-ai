@@ -1,0 +1,30 @@
+#: title: Reinforced structural body side panel combining Technic beams and pins with brown and grey plating for the walker's chassis.
+#: source: LDraw Official Model Repository, 75253-1_Gong.mpd, section 75253 - bodyside2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32525", "Dark_Bluish_Grey", (160, -109, 30), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32525", "Dark_Bluish_Grey", (200, -109, 30), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("15092", "Dark_Bluish_Grey", (80, -119, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32526", "Yellow", (260, -129, 30), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("48989", "Light_Bluish_Grey", (260, -149, 50), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("15092", "Dark_Bluish_Grey", (80, -159, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32063", "Yellow", (80, -159, 25), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32063", "Black", (80, -159, 35), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3460", "Reddish_Brown", (80, -187, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3460", "Reddish_Brown", (240, -187, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6141", "Light_Bluish_Grey", (10, -195, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3460", "Light_Bluish_Grey", (100, -195, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3460", "Light_Bluish_Grey", (260, -195, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (80, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4274", "Blue", (100, -209, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (120, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (140, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (160, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (200, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (220, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (260, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (280, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (300, -209, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3703", "Light_Bluish_Grey", (160, -219, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

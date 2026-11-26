@@ -1,0 +1,30 @@
+#: title: A roof sub-assembly with a large black engine-panel, towball pins, and pin joiners.
+#: source: LDraw Official Model Repository, 42096-1.mpd, section 42096 - roof3.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("62462", "White", (50, -10, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (80, -10, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("15100", "White", (80, -10, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("62462", "White", (110, -10, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (140, -10, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18654", "White", (140, -10, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("62462", "White", (170, -10, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (200, -10, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("15100", "White", (200, -10, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("62462", "White", (230, -10, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place("64782", "Black", 1.5, 0, 1.5)
+place_ldu("6558", "Blue", (80, -10, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (200, -10, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (100, -10, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (120, -10, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (180, -10, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (160, -10, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32523", "Black", (80, -10, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32523", "Black", (200, -10, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32523", "Black", (140, -10, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("15458", "Black", 1.5, 0, 7.5)
+place_ldu("6628", "Black", (60, -20, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6628", "Black", (220, -20, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))

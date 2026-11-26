@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, market-court.mpd, section bakery-roof.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 134 of 134 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 134 of 134 parts kept (minifigures left out)
 place("3034", "Bright_Light_Yellow", 0, 0, 0)
 place("3020", "Bright_Light_Yellow", 8, 0, 0)
 place("3034", "Bright_Light_Yellow", 0, 0, 2)

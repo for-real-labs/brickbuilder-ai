@@ -1,0 +1,33 @@
+#: title: Rear roof and engine deck section combining a large black panel with thin fairings and orange support beams.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - backroof.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("64782", "Black", 3.5, 0, 2.5)
+place_ldu("2780", "Black", (120, -10, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (220, -10, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (240, -10, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (120, -10, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (220, -10, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (240, -10, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (60, -10, 80), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (60, -10, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (300, -10, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (300, -10, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("11946", "Black", (80, -10, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11947", "Black", (280, -10, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32524", "Orange", (60, -10, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32524", "Orange", (300, -10, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (310, -10, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -10, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18651", "Black", (320, -10, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18651", "Black", (40, -10, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("60483", "Orange", (320, -10, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("60483", "Orange", (40, -10, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (320, -10, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (40, -10, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32523", "Orange", (320, -10, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32523", "Orange", (40, -10, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))

@@ -1,0 +1,31 @@
+#: title: Colorful Technic gearbox assembly with gears, axles, bushings, and multi-colored liftarms forming a drive mechanism.
+#: source: LDraw Official Model Repository, 21323-1.mpd, section 21323 - step81-91.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("41677", "White", (85, -9, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("41677", "White", (115, -9, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("41677", "White", (175, -9, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("41677", "White", (235, -9, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("41677", "White", (305, -9, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("11458", "Black", (130, -23, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("11458", "Black", (290, -23, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60483", "Orange", (20, -29, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (40, -29, 30), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("41677", "Red", (55, -29, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32316", "Reddish_Brown", (70, -29, 70), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("41677", "Blue", (95, -29, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32123b", "Yellow", (105, -29, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("41677", "Red", (145, -29, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("3713", "Light_Bluish_Grey", (160, -29, 30), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("50451", "Black", (170, -29, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32198", "Tan", (183, -29, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("18654", "Pearl_Gold", (200, -29, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32123b", "Yellow", (215, -29, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("41677", "Red", (225, -29, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("3713", "Light_Bluish_Grey", (250, -29, 30), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("41677", "Blue", (265, -29, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("41677", "Red", (275, -29, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("59443", "Tan", (330, -29, 30), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("30526", "Light_Bluish_Grey", (50, -39, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))

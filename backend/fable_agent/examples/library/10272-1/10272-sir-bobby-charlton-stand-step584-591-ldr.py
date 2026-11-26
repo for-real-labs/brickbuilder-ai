@@ -1,0 +1,33 @@
+#: title: Red corner tower section with curved bricks, slopes and plates forming a decorative corner structure.
+#: source: LDraw Official Model Repository, 10272-1.mpd, section 10272 - sir-bobby-charlton-stand-step584-591.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("60479", "Red", 0, 0, 0)
+place("15672", "Red", 0, 1, 0, rot=90)
+place("3023", "Red", 2, 1, 0)
+place_ldu("61252", "Red", (90, -16, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3023", "Red", 5, 1, 0)
+place_ldu("61252", "Red", (150, -16, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3023", "Red", 8, 1, 0)
+place("15672", "Red", 10, 1, 0, rot=270)
+place("3023", "Red", 1, 2, 0, rot=180)
+place("3666", "Red", 3, 2, 0, rot=180)
+place("3023", "Red", 9, 2, 0, rot=180)
+place("34103", "Red", 1, 3, 0, rot=180)
+place("34103", "Red", 4, 3, 0, rot=180)
+place("3070b", "Red", 7, 3, 0, rot=180)
+place("34103", "Red", 8, 3, 0, rot=180)
+place("3622", "Red", 4.5, 4, 0)
+place("34103", "Red", 4.5, 7, 0, rot=180)
+place("34103", "Red", 4.5, 8, 0, rot=180)
+place("33243", "Red", 1.5, 4, 0, rot=90)
+place("34103", "Red", 4.5, 9, 0, rot=180)
+place("33243", "Red", 7.5, 4, 0, rot=270)
+place("3040b", "Red", 3, 10, 0, rot=90)
+place("2877", "Red", 5, 10, 0)
+place("3040b", "Red", 7, 10, 0, rot=270)
+place("3040b", "Red", 4, 13, 0, rot=90)
+place("3040b", "Red", 6, 13, 0, rot=270)
+place("3069b", "Red", 5, 16, 0)

@@ -3,7 +3,7 @@
 #: author: Massimo Maso
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 37 of 37 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 37 of 37 parts kept (minifigures left out)
 place("6134", "Light_Blue", 0, 0, 6, rot=180)
 place("6134", "Light_Blue", 14, 0, 6, rot=180)
 place("41539", "Black", 0, 2, 0)

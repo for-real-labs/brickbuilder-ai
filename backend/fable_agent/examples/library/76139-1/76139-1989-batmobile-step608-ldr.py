@@ -1,0 +1,32 @@
+#: title: Rotating display turntable mechanism with 60-tooth turntable, liftarms and axles for the model stand.
+#: source: LDraw Official Model Repository, 76139-1.mpd, section 76139 - 1989 Batmobile - step608.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("3737", "Black", (60, -10, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6632", "Light_Bluish_Grey", (100, -10, 175), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6632", "Light_Bluish_Grey", (100, -10, 185), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6632", "Light_Bluish_Grey", (100, -10, 195), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3737", "Black", (100, -10, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("10247", "Dark_Bluish_Grey", (100, -20, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3666", "Light_Bluish_Grey", 1, 0.5, 11, rot=180)
+place_ldu("10247", "Dark_Bluish_Grey", (60, -20, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3024", "Tan", 6, 1.5, 11, rot=180)
+place("3024", "Tan", 1, 1.5, 11, rot=180)
+place("3666", "Light_Bluish_Grey", 1, 2.5, 11, rot=180)
+place_ldu("18939", "Light_Bluish_Grey", (80, -30, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6632", "Light_Bluish_Grey", (100, -10, 65), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6632", "Light_Bluish_Grey", (100, -10, 55), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6632", "Light_Bluish_Grey", (100, -10, 45), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("10247", "Dark_Bluish_Grey", (60, -20, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3666", "Light_Bluish_Grey", 1, 0.5, 0)
+place_ldu("10247", "Dark_Bluish_Grey", (100, -20, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3024", "Tan", 1, 1.5, 0)
+place("3024", "Tan", 6, 1.5, 0)
+place("3666", "Light_Bluish_Grey", 1, 2.5, 0)
+place_ldu("18938", "Black", (80, -30, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32002", "Dark_Bluish_Grey", (30, -50, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32002", "Dark_Bluish_Grey", (130, -50, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6632", "Light_Bluish_Grey", (135, -50, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6632", "Light_Bluish_Grey", (25, -50, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))

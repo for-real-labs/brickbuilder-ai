@@ -1,0 +1,33 @@
+#: title: Rover chassis frame with Technic beams, toggle joints, axles, and a large curved wedge, forming the wheeled undercarriage and drivetrain.
+#: source: LDraw Official Model Repository, 5983-1.mpd, section 5983 - 5983-2-c.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("4032a", "Light_Grey", 3, 0, 9)
+place("4032a", "Light_Grey", 3, 0, 11)
+place("3034", "White", 3, 1, 5, rot=90)
+place_ldu("48496", "Black", (40, -30, 340), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32524", "Light_Grey", (50, -30, 340), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3673", "Black", (60, -30, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3749", "Blue", (60, -30, 300), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32073", "Light_Grey", (80, -30, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3673", "Black", (100, -30, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3749", "Blue", (100, -30, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32524", "Light_Grey", (110, -30, 340), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("48496", "Black", (120, -30, 340), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("3702", "Black", 3, 2, 8, rot=90)
+place("32064a", "Black", 3, 2, 5)
+place("32064a", "Black", 3, 2, 6)
+place("32064a", "Black", 3, 2, 7)
+place("3702", "Black", 4, 2, 8, rot=90)
+place("3023", "Blue", 3, 5, 15)
+place("4623", "Black", 3, 6, 15, rot=180)
+place("3006", "White", 3, 5, 5, rot=90)
+place("3023", "Blue", 3, 7, 15)
+place("3795", "Dark_Grey", 3, 8, 10, rot=90)
+place("54200", "Trans_Dark_Blue", 3, 10, 14, rot=270)
+place("54200", "Trans_Dark_Blue", 3, 10, 15, rot=270)
+place("45301", "White", 2, 7, 0)
+place("54200", "Trans_Red", 4, 10, 14, rot=90)
+place("54200", "Trans_Red", 4, 10, 15, rot=90)

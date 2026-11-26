@@ -1,0 +1,30 @@
+#: title: A white and black Technic front fork assembly using plates with holes, bushes, and a 45-degree slope brick.
+#: source: LDraw Official Model Repository, 8810-1.mpd, section 8810 - Front-Fork.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3713", "Light_Grey", (70, -54, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3705", "Black", (70, -54, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2695", "White", (70, -54, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2696", "Rubber_Black", (70, -54, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3651", "Light_Grey", (70, -74, 10), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3651", "Light_Grey", (70, -74, 70), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3713", "Light_Grey", (70, -136, 10), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3713", "Light_Grey", (70, -136, 70), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3707", "Black", (70, -144, 10), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3707", "Black", (70, -144, 70), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("3176", "White", 2, 17.25, 1, rot=270)
+place("3023", "White", 2, 18.25, 1, rot=270)
+place("4263", "Black", 3, 18.25, 0, rot=270)
+place_ldu("4150p01", "White", (28, -166, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6141", "Trans_Yellow", (28, -176, 10), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6141", "Trans_Yellow", (28, -176, 70), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place("3700", "White", 2, 19.25, 1, rot=270)
+place("3700", "Black", 3, 19.25, 1, rot=270)
+place_ldu("2436a", "Black", (50, -186, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4263", "Black", 3, 22.25, 0, rot=270)
+place("3176", "White", 2, 23.25, 1, rot=270)
+place_ldu("3713", "Light_Grey", (70, -196, 10), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3713", "Light_Grey", (70, -196, 70), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3039", "White", 2, 24.25, 1, rot=90)

@@ -1,0 +1,30 @@
+#: title: A white and dark blue airboat with a seat, binoculars, a radio, and curved hull pieces.
+#: source: LDraw Official Model Repository, 60066-1.mpd, section 60066 - Airboat.ldr
+#: author: Merlijn Wissink [Legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3666", "Black", 2, 1, 2, rot=270)
+place("3666", "Black", 3, 1, 2, rot=270)
+place("43713", "White", 1, 0, 0)
+place("4871", "White", 1, 0, 6, rot=270)
+place("2431", "Dark_Blue", 1, 3, 4, rot=270)
+place("43719", "Dark_Blue", 1, 3, 0)
+place("85984", "White", 2, 4, 1)
+place("2431", "Dark_Blue", 4, 3, 4, rot=270)
+place("3039", "Light_Bluish_Grey", 2, 2, 2)
+place("3001", "Light_Bluish_Grey", 2, 2, 4, rot=270)
+place_ldu("58176", "Trans_Dark_Blue", (30, -48, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("11476", "Light_Bluish_Grey", (50, -48, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4598", "Black", 2, 5, 5)
+place_ldu("11476", "Light_Bluish_Grey", (70, -48, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("58176", "Trans_Dark_Blue", (90, -48, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4592", "Yellow", (50, -56, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4593", "Black", (50, -56, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("60897", "White", (50, -56, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4592", "Yellow", (70, -56, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4593", "Black", (70, -56, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("60897", "White", 3, 6, 6, rot=270)
+place_ldu("4285b", "Dark_Bluish_Grey", (60, -68, 168), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2476a", "White", (60, -68, 176), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("92842", "Black", (60, -68, 194), (1, 0, 0, 0, -1, 0, 0, 0, -1))

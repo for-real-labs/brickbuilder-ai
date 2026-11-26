@@ -1,0 +1,31 @@
+#: title: Structural beam assembly with open-center liftarms, long beams up to 13 studs, and cross blocks forming a frame bracket.
+#: source: LDraw Official Model Repository, 8258-1.mpd, section 8258 - m-1p'.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("6558", "Blue", (80, -10, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32524", "Light_Bluish_Grey", (80, -10, 42), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -10, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32524", "Light_Bluish_Grey", (80, -10, 160), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (120, -10, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("64179", "Light_Bluish_Grey", 2.5, 0, 2.5, rot=270)
+place_ldu("6558", "Blue", (120, -10, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 170), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("41239", "Light_Bluish_Grey", (200, -10, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("48989", "Light_Bluish_Grey", (200, -10, 100), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("41239", "Light_Bluish_Grey", (200, -10, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (230, -10, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Black", (240, -10, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3705", "Black", (240, -10, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32034", "Red", (240, -10, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3705", "Black", (240, -10, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6536", "Black", (240, -10, 160), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (280, -10, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("64179", "Light_Bluish_Grey", 10.5, 0, 2.5, rot=270)
+place_ldu("6558", "Blue", (280, -10, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (320, -10, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (320, -10, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("40490", "Light_Bluish_Grey", (340, -10, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("40490", "Light_Bluish_Grey", (340, -10, 160), (0, 0, 1, 1, 0, 0, 0, 1, 0))

@@ -1,0 +1,27 @@
+#: title: Yellow front section of the tipper bed made of long plates and technic bricks with holes.
+#: source: LDraw Official Model Repository, 8848-1.mpd, section 8848 - front_tipper.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 21 of 21 parts kept (minifigures left out)
+place("3034", "Yellow", 2, 0, 7)
+place_ldu("u1126", "Yellow", (50, -32, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place("3894", "Yellow", 2, 1, 5, rot=90)
+place("3701", "Yellow", 6, 1, 7, rot=90)
+place_ldu("u1126", "Yellow", (190, -32, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place("3894", "Yellow", 9, 1, 5, rot=90)
+place_ldu("u1125", "Yellow", (50, -40, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3029", "Yellow", (120, -40, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place("3034", "Yellow", 2, 4, 7)
+place("3023", "Yellow", 6, 4, 9, rot=90)
+place_ldu("u1125", "Yellow", (190, -40, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3710", "Yellow", 6, 5, 7, rot=90)
+place_ldu("3673", "Light_Bluish_Grey", (120, -62, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3795", "Yellow", (60, -65.774, 89.9291), (1, 0, 0, 0, 0.5, -0.866025, 0, 0.866025, 0.5))
+place_ldu("3795", "Yellow", (180, -65.774, 89.9291), (1, 0, 0, 0, 0.5, -0.866025, 0, 0.866025, 0.5))
+place_ldu("3020", "Yellow", (120, -69.774, 83.0009), (1, 0, 0, 0, 0.5, -0.866025, 0, 0.866025, 0.5))
+place("3700", "Yellow", 6, 6, 9, rot=90)
+place_ldu("3702", "Yellow", (110, -82, 190), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3145", "Yellow", (10, -100.274, 30.1734), (0, 0, 1, 0.866025, 0.5, 0, -0.5, 0.866025, 0))
+place_ldu("3145", "Yellow", (230, -100.274, 30.1734), (0, 0, -1, -0.866025, 0.5, 0, 0.5, 0.866025, 0))
+place_ldu("3029", "Yellow", (120, -121.532, 87.1327), (-1, 0, 0, 0, 0.499999, -0.866025, 0, -0.866025, -0.499999))

@@ -1,0 +1,33 @@
+#: title: Orange and blue Technic chassis frame built from 13-stud beams, cross blocks, plates, and curved slope body panels.
+#: source: LDraw Official Model Repository, 42088-1.mpd, section 42088 - Chassis.ldr
+#: author: Marc Belanger [MonsieurPoulet]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("87082", "Light_Bluish_Grey", (60, -10, 180), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("41678", "Orange", (60, -10, 230), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43093", "Blue", (30, -30, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("41239", "Orange", (40, -30, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (60, -30, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6536", "White", (60, -30, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("87082", "Light_Bluish_Grey", (60, -30, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18651", "Black", (60, -30, 180), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6536", "White", (60, -30, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (60, -30, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 240), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41239", "Orange", (80, -30, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (90, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41678", "Orange", (60, -40, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32556", "Tan", (60, -50, 80), (1, 0, 0, 0, 0.087, -0.996, 0, 0.996, 0.087))
+place_ldu("54200", "Blue", (40, -51.569, 62.068), (1, 0, 0, 0, 0.087, -0.996, 0, 0.996, 0.087))
+place_ldu("3623", "Blue", (60, -51.569, 62.068), (1, 0, 0, 0, 0.087, -0.996, 0, 0.996, 0.087))
+place_ldu("54200", "Blue", (60, -51.569, 62.068), (1, 0, 0, 0, 0.087, -0.996, 0, 0.996, 0.087))
+place_ldu("54200", "Blue", (80, -51.569, 62.068), (1, 0, 0, 0, 0.087, -0.996, 0, 0.996, 0.087))
+place_ldu("18677", "Light_Bluish_Grey", (40, -60.834, 70.91), (0, 0, 1, 0.996, 0.087, 0, -0.087, 0.996, 0))
+place_ldu("18677", "Light_Bluish_Grey", (80, -60.834, 70.91), (0, 0, 1, 0.996, 0.087, 0, -0.087, 0.996, 0))
+place_ldu("3023", "Blue", (40, -80.06, 80.622), (0, 0, 1, 0.996, 0.087, 0, -0.087, 0.996, 0))
+place_ldu("11477", "Blue", (40, -80.06, 80.622), (-1, 0, 0, 0, 0.087, 0.996, 0, 0.996, -0.087))
+place_ldu("3023", "Blue", (80, -80.06, 80.622), (0, 0, 1, 0.996, 0.087, 0, -0.087, 0.996, 0))
+place_ldu("11477", "Blue", (80, -80.06, 80.622), (-1, 0, 0, 0, 0.087, 0.996, 0, 0.996, -0.087))

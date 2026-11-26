@@ -1,0 +1,30 @@
+#: title: White spacesuit figure with arm holders, a clear visor brick, round studs, and a United States flag sticker.
+#: source: LDraw Official Model Repository, 367-1.mpd, section 367 - Moon Landing - Astronaut1.ldr
+#: author: Willy Tschager [Holly Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3021", "Black", 1, 0, 0)
+place("3003", "White", 1, 1, 0)
+place("3003", "White", 1, 4, 0)
+place_ldu("3614a", "Yellow", (44.921, -64.4529, 60.2169), (0.966, 0, 0.259, -0.259061, 0, 0.966229, 0, -1.00024, 0))
+place("3003", "White", 1, 7, 0)
+place("3022", "Black", 1, 10, 0)
+place_ldu("3613", "White", (40, -102.816, 56.216), (0, -1, 0, 0, 0, -1.00024, 1.00024, 0, 0))
+place("3002", "White", 0, 11, 0)
+place_ldu("3612", "White", (40, -114.408, 53.108), (0, -1, 0, -0.259, 0, -0.966, 0.966, 0, -0.259))
+place_ldu("795", "White", (40, -126, 0), (-0.5, 0.866, 0, 0.866, 0.5, 0, 0, 0, -1))
+place_ldu("795", "White", (40, -126, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3612", "White", (45.196, -135, -16), (0.25, 0.866, -0.433, -0.433, 0.5, 0.749956, 0.866, 0, 0.5))
+place("3004", "White", 0, 14, 0, rot=90)
+place("792", "White", 1, 14, 0)
+place_ldu("793", "White", (40, -136, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3613", "White", (50.392, -143.999, -22), (-0.060916, 0.866, -0.496467, 0.105507, 0.5, 0.859881, 0.992934, 0, -0.121832))
+place("3021", "White", 0, 17, 0)
+place("3004", "White", 0, 18, 0, rot=90)
+place("3003", "Trans_Clear", 1, 18, 0)
+place("3021", "White", 0, 21, 0)
+place_ldu("3614a", "Yellow", (64.4475, -176.343, -8.1259), (0.300987, 0.866, 0.399482, -0.521309, 0.5, -0.691904, -0.798965, 0, 0.601974))
+place("3022", "White", 1, 22, 0)
+place("3062a", "White", 0, 22, 0)
+place("3062a", "White", 0, 25, 0)

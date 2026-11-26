@@ -1,0 +1,32 @@
+#: title: Snow-covered roof section built on a reddish brown plate base with white curved slopes, tiles, and claw details, decorated with colorful candy groove tiles and hinged via technic connectors.
+#: source: LDraw Official Model Repository, 10267-1.mpd, section 10267 - house-step93-101.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("11214", "Dark_Bluish_Grey", (10, -9, 170), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("32013", "White", 0, 0, 9)
+place("18677", "Coral", 0, 0, 7, rot=180)
+place("18677", "Coral", 0, 0, 8, rot=180)
+place_ldu("15068", "White", (20, -19, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("24201", "Light_Bluish_Grey", (30, -19, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24201", "Light_Bluish_Grey", (30, -19, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6134", "Light_Bluish_Grey", (60, -19, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("15068", "White", (60, -19, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("15068", "White", (100, -19, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3460", "White", (110, -19, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3024", "White", (110, -19, 190), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3036", "Reddish_Brown", (60, -27, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6636", "White", (10, -35, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("27261", "White", (20, -35, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("27925", "White", (30, -35, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("27925", "White", (30, -35, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("98138", "Yellow", (50, -35, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("98138", "Lime", (50, -35, 170), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("27261", "White", (60, -35, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("98138", "Medium_Blue", (70, -35, 110), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("27925", "White", (90, -35, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("98138", "Orange", (90, -35, 130), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("27925", "White", (90, -35, 170), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("27261", "White", (100, -35, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6636", "White", (110, -35, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))

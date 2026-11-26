@@ -1,0 +1,32 @@
+#: title: A Mia minifig display scene featuring a potted flower planter, an ice cream stand with toppings, and a blue skateboard.
+#: source: LDraw Official Model Repository, 30101-1.mpd
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("92251p01", "Lime", (40, 0, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3032", "Tan", 4, 0, 4)
+place("3068b", "White", 4, 1, 4)
+place("87580", "Yellow", 6, 1, 4)
+place("3068b", "White", 8, 1, 4)
+place("87580", "Yellow", 8, 1, 6)
+place("3941", "Lime", 1, 0, 4)
+place("4032a", "Tan", 1, 3, 4)
+place("3062b", "Red", 8.5, 2, 6.5)
+place_ldu("3741a", "Green", (40, -44, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("92248", "Lime", (40, -47.4, 42.7), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Light_Grey", (180, -54, 122), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3940", "Dark_Bluish_Grey", 5, 1, 6)
+place_ldu("33291", "Dark_Pink", (40, -61.628, 114.973), (1, 0, 0, 0, 0.96592, 0.25882, 0, -0.258825, 0.965919))
+place("4032a", "Lime", 5, 7, 6)
+place("87087", "Red", 8.5, 5, 6.5)
+place_ldu("33291", "Dark_Pink", (25.911, -66.458, 91.866), (-0.5, 0.22415, -0.8365, 0, 0.96592, 0.25882, 0.86603, 0.12941, -0.48296))
+place_ldu("33291", "Bright_Light_Orange", (55.209, -71.287, 91.218), (-0.5, -0.22415, 0.83651, 0, 0.96592, 0.25882, -0.86603, 0.12941, -0.48296))
+place("6141", "Light_Grey", 8.5, 8, 6.5)
+place_ldu("92245", "Light_Nougat", (29, -76.8, 43.9), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("92241p05", "Light_Nougat", (40, -76.8, 43.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("92244", "Light_Nougat", (51, -76.8, 43.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Trans_Yellow", 5, 8, 7)
+place_ldu("92257", "Dark_Red", (40, -110, 40.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("92198p05", "Light_Nougat", (40, -110, 43.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("59900", "Trans_Yellow", 5, 11, 7)

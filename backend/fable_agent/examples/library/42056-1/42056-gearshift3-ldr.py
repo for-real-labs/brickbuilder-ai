@@ -1,0 +1,32 @@
+#: title: Gear shift linkage subassembly using towball pins, angle connector, and 12-tooth gears to route shift movement.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - gearshift3.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2780", "Black", (100, -20, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (100, -30, 20), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32523", "Light_Bluish_Grey", (100, -30, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (100, -30, 140), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (20, -50, 20), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (20, -50, 140), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (30, -50, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("15100", "Black", (40, -50, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("15100", "Black", (40, -50, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3749", "Tan", (60, -50, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("59443", "Yellow", (60, -50, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("64179", "Light_Bluish_Grey", 0.5, 5, 0.5)
+place_ldu("32013", "Orange", (60, -50, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32270", "Black", (60, -50, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3708", "Black", (60, -50, 170), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32270", "Black", (80, -50, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("60483", "Orange", (80, -50, 120), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (80, -50, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (100, -50, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (100, -50, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (100, -50, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("26287", "Red", (140, -50, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (180, -50, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -60, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6628", "Black", (40, -60, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6628", "Black", (40, -60, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))

@@ -1,0 +1,31 @@
+#: title: Cab door frame built from angle connectors, cross blocks, and liftarm beams.
+#: source: LDraw Official Model Repository, 42100-1.mpd, section 42100 - door.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32316", "White", (20, -10, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3705", "Black", (20, -30, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (20, -30, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32013", "White", (20, -30, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -50, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -50, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("42003", "Light_Bluish_Grey", (20, -50, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("42003", "Light_Bluish_Grey", (20, -50, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("62462", "White", (20, -60, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -70, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -70, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32524", "White", (20, -90, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("18654", "White", (20, -90, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (20, -90, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -110, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -110, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("62462", "White", (20, -120, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -130, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4274", "Light_Bluish_Grey", (10, -130, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("42003", "Light_Bluish_Grey", (20, -130, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42003", "Light_Bluish_Grey", (20, -130, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (20, -150, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (20, -150, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32013", "White", (20, -150, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32316", "White", (20, -170, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

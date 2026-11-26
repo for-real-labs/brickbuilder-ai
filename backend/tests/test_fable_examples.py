@@ -46,7 +46,7 @@ def test_the_index_lists_every_script_and_every_script_carries_its_credit():
         # Only files whose own licence allows commercial reuse with credit are adapted.
         assert REUSABLE.search(facts["licence"]) and "non-commercial" not in facts["licence"].lower(), entry.id
         assert f"`{entry.id}.py`" in credited, entry.id
-        assert entry.title and entry.kind in ("model", "submodel") and entry.parts >= 8
+        assert entry.title and entry.kind in ("model", "submodel") and entry.parts >= 3
     assert "non-commercial" not in credited.lower()
 
 
@@ -62,10 +62,9 @@ def test_an_example_is_read_by_its_id_only_and_its_credit_stays_out_of_the_scrip
 
 
 @real_parts
-def test_examples_pass_the_checks_a_pip_build_must_pass_apart_from_the_catalog():
-    """Every example was held to these checks when it was converted. This runs a spread of them
-    again, on this machine's parts library, so a change to a check that an example no longer
-    passes is noticed."""
+def test_examples_marked_checked_pass_the_checks_a_pip_build_must_pass_apart_from_the_catalog():
+    """Examples marked ``checked`` passed these checks when they were converted. This runs a spread
+    of them again, on this machine's parts library, so a change to a check is noticed."""
     from fable_agent.connectors import ConnectorLibrary
     from fable_agent.kit import Kit
     from fable_agent.shape import default_cache_dir
@@ -75,7 +74,8 @@ def test_examples_pass_the_checks_a_pip_build_must_pass_apart_from_the_catalog()
         pytest.skip("this parts library is an older release than the one the examples were converted with")
     bench = Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": True, "max_parts": 100_000,
                             "assembly_rules": True})
-    listed = entries()
+    listed = [entry for entry in entries() if entry.checked]
+    assert listed
     for entry in listed[:: max(1, len(listed) // 40)]:
         kit = Kit(bench.library, bench.shapes, bench.palette, bench.finder, max_placements=100_000)
         exec(load(entry.id).script, {"place": kit.place, "place_ldu": kit.place_ldu, "__builtins__": {}})  # noqa: S102
@@ -320,7 +320,7 @@ def test_submodels_are_flattened_with_their_position_turn_and_color():
 
 def importer(world, **limits):
     return SetImporter(world.library, world.shapes, world.palette, world.finder, world.checker,
-                       Limits(**{"least_parts": 4, **limits}))
+                       Limits(**{"least_parts": 4, "reference": False, **limits}))
 
 
 def test_a_set_that_stands_and_passes_becomes_a_script_of_plain_place_calls(tmp_path):
@@ -410,7 +410,7 @@ def test_an_example_keeps_the_parts_its_set_uses_whether_or_not_they_are_stocked
     everything = load_palette(world.library, None, open_palette=True)
     checker = ModelChecker(world.library, world.shapes, everything, assembly=AssemblyReview(world.library, world.shapes))
     free = SetImporter(world.library, world.shapes, everything, PartFinder(world.library, everything), checker,
-                       Limits(least_parts=4))
+                       Limits(least_parts=4, reference=False))
     converted, reason = free.verdict(model)
     assert reason == "" and (converted.parts, converted.of) == (8, 8) and converted.script.count('"3001"') == 4
     assert Limits().original_parts is True
@@ -432,6 +432,25 @@ def test_each_section_of_a_file_can_be_an_example_and_a_reason_is_given_for_what
     assert importer(world, least_parts=3).verdict(part)[0].parts == 3
     assert importer(world).verdict(read_model(model_file(*hut_lines(lift=40))))[1] == \
         "too many parts overlap or are not joined"
+
+
+def test_as_a_reference_a_model_keeps_what_the_checks_cannot_follow_and_says_whether_it_passes(tmp_path):
+    world = World(tmp_path, assembly=True)
+    floating = f"1 4 0 -200 0 {ONE} 3005.dat"  # held by nothing the checks can see
+    reference = SetImporter(world.library, world.shapes, world.palette, world.finder, world.checker,
+                            Limits(least_parts=4))
+    assert Limits().reference is True
+    kept, reason = reference.verdict(read_model(model_file(*hut_lines(), floating)))
+    assert reason == "" and (kept.parts, kept.of) == (9, 9) and '"3005"' in kept.script and not kept.checked
+    whole, _ = reference.verdict(read_model(model_file(*hut_lines())))
+    assert whole.checked and whole.parts == 8
+    # Held to the checks instead, the loose brick is dropped and what is left passes.
+    strict = importer(world).verdict(read_model(model_file(*hut_lines(), floating)))[0]
+    assert strict.parts == 8 and strict.checked
+    # A model the checks cannot follow is shown as one, and the prompt says how to use it.
+    marked = Example(Entry("1-1/model", "A hut", "model", "1-1", 9, len(kept.script), checked=False),
+                     "test", "A", "CCAL", kept.script)
+    assert "uses joints your report cannot verify" in prompt_section([marked])
 
 
 def test_a_file_without_licence_lines_takes_the_licence_of_its_collection_and_only_a_reusable_one(tmp_path):

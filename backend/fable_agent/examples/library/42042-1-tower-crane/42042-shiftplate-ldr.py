@@ -1,0 +1,33 @@
+#: title: Gear-shifting plate assembly using bent liftarms, a perpendicular pin connector, and a white selector beam to actuate gear changes.
+#: source: LDraw Official Model Repository, 42042-1_Tower-Crane.mpd, section 42042 - shiftplate.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("6558", "Blue", (80, -10, 120), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32524", "White", (80, -10, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (100, -10, 50), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32140", "Light_Bluish_Grey", (100, -10, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (100, -10, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (100, -10, 190), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32524", "Blue", (140, -10, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (140, -10, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("48989", "Light_Bluish_Grey", (140, -10, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (140, -10, 120), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("48989", "Light_Bluish_Grey", (140, -10, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (140, -10, 190), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32524", "Blue", (140, -10, 200), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32526", "Blue", (160, -10, 100), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32526", "Blue", (160, -10, 140), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Light_Bluish_Grey", (200, -10, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32054", "Light_Bluish_Grey", (200, -10, 200), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (80, -30, 120), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (80, -50, 120), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (80, -70, 100), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32524", "Blue", (80, -90, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32524", "Blue", (80, -90, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -110, 90), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("60483", "Dark_Bluish_Grey", (80, -110, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -130, 100), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("55615", "Light_Bluish_Grey", (80, -150, 140), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("40490", "Light_Bluish_Grey", (80, -170, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))

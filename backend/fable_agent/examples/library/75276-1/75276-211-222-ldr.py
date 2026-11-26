@@ -1,0 +1,33 @@
+#: title: Complex dark-grey and black mounting module with brackets, offset plates, and grille-style slope details.
+#: source: LDraw Official Model Repository, 75276-1.mpd, section 75276 - 211-222.ldr
+#: author: Jaco van der Molen [Jaco]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3069b", "White", (60, 0, 78), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("99781", "White", (40, -22, 68), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("34103", "Black", (60, -22, 36), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32028", "Black", (60, -22, 44), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3023", "Black", (60, -22, 52), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("99780", "Black", (60, -22, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("99781", "White", (80, -22, 68), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3070b", "White", (30, -32, 52), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("61409", "Black", (50, -32, 36), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2436b", "Black", (60, -32, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("61409", "Black", (70, -32, 36), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3070b", "White", (90, -32, 52), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("3022", "Black", 2, 4, 4)
+place_ldu("34103", "White", (30, -42, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3023", "Black", (60, -42, 36), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("92593", "Black", (60, -42, 68), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("34103", "White", (90, -42, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("29120", "White", (20, -52, 68), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("93273", "White", (60, -52, 38), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("29119", "White", (100, -52, 68), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("98282", "White", (60, -60, 48), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("85984", "White", (60, -60, 58), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("92593", "Black", (60, -62, 68), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3004", "Black", 2, 5, 4, rot=180)
+place("3660", "Black", 2, 5, 5, rot=180)
+place_ldu("44728", "Dark_Bluish_Grey", (60, -72, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3022", "Orange", 2, 8, 5)

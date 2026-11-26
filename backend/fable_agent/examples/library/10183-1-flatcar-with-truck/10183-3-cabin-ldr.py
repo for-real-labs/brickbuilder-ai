@@ -3,7 +3,7 @@
 #: author: Bert Van Raemdonck [BEAVeR]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
 place("3710", "Red", 2, 0, 1)
 place("3710", "Red", 2, 0, 6)
 place("3004", "Red", 2, 1, 1)

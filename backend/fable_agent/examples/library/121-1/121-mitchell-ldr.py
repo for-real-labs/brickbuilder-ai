@@ -1,0 +1,13 @@
+#: title: An empty assembly submodel containing no direct pieces.
+#: source: LDraw Official Model Repository, 121-1.mpd, section 121 - Mitchell.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 7 of 7 parts kept (minifigures left out)
+place_ldu("u9100", "Yellow", (30, -37, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("u9102", "Black", (40, -37, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("u9103", "Red", (40, -37, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("u9100", "Yellow", (50, -37, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("u9101", "Black", (17, -63, 40), (-1, 0, 0, 0, 0.5, -0.866, 0, -0.866, -0.5))
+place_ldu("u9101", "Black", (63, -63, 40), (1, 0, 0, 0, 0.866, 0.5, 0, -0.5, 0.866))
+place_ldu("u9105p01c01", "Fabuland_Brown", (40, -67, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))

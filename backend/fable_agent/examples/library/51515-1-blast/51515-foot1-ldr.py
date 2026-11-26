@@ -1,0 +1,30 @@
+#: title: Articulated foot assembly with bent beams, cross blocks, smooth wheels, and fairing panels for a rolling stance.
+#: source: LDraw Official Model Repository, 51515-1_Blast.mpd, section 51515 - foot1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32278", "Black", (20, -10, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 180), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 220), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 340), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32526", "Black", (40, -10, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -10, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32523", "Black", (40, -10, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32523", "Black", (40, -10, 240), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (40, -10, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32526", "Black", (40, -10, 360), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("48989", "Light_Bluish_Grey", (60, -10, 120), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("48989", "Light_Bluish_Grey", (60, -10, 280), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (70, -10, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("87083", "Dark_Bluish_Grey", (70, -10, 360), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (80, -10, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32525", "Black", (80, -10, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (80, -10, 360), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("11947", "White", (100, -10, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (100, -10, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("15100", "White", (100, -10, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15100", "White", (100, -10, 280), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("43093", "Blue", (100, -10, 290), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("11946", "White", (100, -10, 300), (0, -1, 0, 1, 0, 0, 0, 0, 1))

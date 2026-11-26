@@ -1,0 +1,31 @@
+#: title: seats
+#: source: LDraw Official Model Repository, 42129-1.mpd, section 42129 - seats.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (120, -9, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Dark_Bluish_Grey", (120, -9, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32525", "Dark_Bluish_Grey", (140, -9, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (160, -9, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Dark_Bluish_Grey", (160, -9, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (50, -29, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (60, -29, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32184", "Black", (200, -29, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("11214", "Red", (220, -29, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("18654", "Black", (220, -29, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("63869", "Light_Bluish_Grey", (220, -29, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("18651", "Black", (220, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("22484", "Dark_Bluish_Grey", (200, -57, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("24116", "Black", (40, -109, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("24116", "Black", (140, -109, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("24116", "Black", (240, -109, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43857", "Black", (20, -119, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43857", "Black", (60, -119, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43857", "Black", (120, -119, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43857", "Black", (160, -119, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43857", "Black", (220, -119, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43857", "Black", (260, -119, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("18654", "Black", (40, -129, 120), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("18654", "Black", (140, -129, 120), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("18654", "Black", (240, -129, 120), (0, 1, 0, 0, 0, 1, 1, 0, 0))

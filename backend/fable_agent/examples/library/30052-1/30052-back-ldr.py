@@ -3,7 +3,7 @@
 #: author: Jude Parrill
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures left out)
 place("3747a", "Tan", 2, 0, 5, rot=180)
 place("3710", "Tan", 1, 3, 5, rot=180)
 place("3023", "Dark_Tan", 2, 3, 6, rot=270)

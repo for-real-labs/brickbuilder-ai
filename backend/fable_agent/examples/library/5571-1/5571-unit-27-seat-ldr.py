@@ -1,0 +1,30 @@
+#: title: A yellow seat assembly with hinges, plates, and grooved tiles.
+#: source: LDraw Official Model Repository, 5571-1.mpd, section 5571 - Unit 27 Seat.ldr
+#: author: Tim Singer [tsinger]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3710", "Yellow", 0, 1, 0)
+place("6134", "Red", 1, 0, 1)
+place("3020", "Yellow", 0, 2, 0)
+place("3710", "Yellow", 0, 2, 2)
+place("6141", "Yellow", 0, 3, 0)
+place("4275b", "Yellow", 0, 3, 1, rot=270)
+place("3069b", "Yellow", 1, 3, 0)
+place("3068b", "Yellow", 1, 3, 1)
+place("6141", "Yellow", 3, 3, 0)
+place("4275b", "Yellow", 3, 3, 1, rot=270)
+place_ldu("3068b", "Yellow", (40, -38.5427, 67.7972), (1, 0, 0, 0, 0.173648, -0.984808, 0, 0.984808, 0.173648))
+place("3069b", "Yellow", 0, 4, 1, rot=270)
+place("3069b", "Yellow", 3, 4, 1, rot=270)
+place_ldu("4276b", "Yellow", (10, -58.2388, 71.2702), (0, 0, 1, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0))
+place_ldu("4276b", "Yellow", (70, -58.2388, 71.2702), (0, 0, 1, 0.984808, 0.173648, 0, -0.173648, 0.984808, 0))
+place_ldu("3069b", "Yellow", (10, -59.628, 63.3917), (0, 0, -1, -0.984808, 0.173648, 0, 0.173648, 0.984808, 0))
+place_ldu("3069b", "Yellow", (70, -59.628, 63.3917), (0, 0, -1, -0.984808, 0.173648, 0, 0.173648, 0.984808, 0))
+place_ldu("3069b", "Yellow", (40, -68.0869, 73.0067), (1, 0, 0, 0, 0.173648, -0.984808, 0, 0.984808, 0.173648))
+place_ldu("3031", "Yellow", (40, -76.5458, 82.6216), (1, 0, 0, 0, 0.173648, -0.984808, 0, 0.984808, 0.173648))
+place_ldu("2412b", "Yellow", (40, -87.7831, 76.4796), (1, 0, 0, 0, 0.173648, -0.984808, 0, 0.984808, 0.173648))
+place_ldu("3069b", "Yellow", (10, -97.6312, 78.2161), (0, 0, -1, -0.984808, 0.173648, 0, 0.173648, 0.984808, 0))
+place_ldu("3069b", "Yellow", (70, -97.6312, 78.2161), (0, 0, -1, -0.984808, 0.173648, 0, 0.173648, 0.984808, 0))
+place_ldu("3068b", "Yellow", (40, -117.327, 81.6891), (1, 0, 0, 0, 0.173648, -0.984808, 0, 0.984808, 0.173648))
+place_ldu("3023", "Yellow", (40, -125.786, 91.304), (1, 0, 0, 0, 0.173648, -0.984808, 0, 0.984808, 0.173648))

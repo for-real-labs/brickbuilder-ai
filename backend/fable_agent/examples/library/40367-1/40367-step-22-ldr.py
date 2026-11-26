@@ -1,0 +1,9 @@
+#: title: Sand-green corner-less plate with paired curved cutout slopes forming a rounded robe edge.
+#: source: LDraw Official Model Repository, 40367-1.mpd, section 40367 - Step 22.ldr
+#: author: Vincent Messenet [Cheenzo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 3 of 3 parts kept (minifigures left out)
+place_ldu("29119", "Sand_Green", (20, 0, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("29120", "Sand_Green", 2, -0, 0, rot=270)
+place("26601", "Sand_Green", 1, 0, 0, rot=180)

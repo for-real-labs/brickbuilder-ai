@@ -1,0 +1,32 @@
+#: title: Rear structural assembly with bent liftarms, angle connectors, axles, and a body panel.
+#: source: LDraw Official Model Repository, 42096-1.mpd, section 42096 - rear1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("10197", "Dark_Bluish_Grey", (20, -10, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32523", "Black", (60, -10, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32034", "White", (60, -10, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32073", "Light_Bluish_Grey", (120, -10, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32523", "Black", (180, -10, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32034", "White", (180, -10, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("10197", "Dark_Bluish_Grey", (220, -10, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32526", "Black", (60, -30, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (60, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (60, -30, 100), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32526", "Black", (180, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (180, -30, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (180, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (180, -30, 100), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (60, -40, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (180, -40, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("43857", "Black", (60, -50, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32140", "Black", (60, -50, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("43857", "Black", (180, -50, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32140", "Black", (180, -50, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (40, -60, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (200, -60, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("22961", "Black", (60, -70, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("15458", "Black", 0.5, 7.5, 0.5)
+place_ldu("22961", "Black", (180, -70, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))

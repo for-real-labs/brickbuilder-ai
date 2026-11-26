@@ -1,0 +1,30 @@
+#: title: Chameleon head featuring round eye tiles, curved slopes and arches, convex red slopes, and a socket joint for neck articulation.
+#: source: LDraw Official Model Repository, 31031-1_Chameleon.mpd, section 31031 - Head.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3022", "Black", 0, 1, 2)
+place("3023", "Green", 0, 2, 2, rot=90)
+place("4871", "Dark_Blue", 0, 0, 1)
+place("3023", "Green", 1, 2, 2, rot=90)
+place("3020", "Green", 0, 3, 1, rot=90)
+place_ldu("98138p07", "White", (-32, -32.34, 66.34), (0, 1, 0, -0.866, 0, -0.5, -0.5, 0, 0.866))
+place_ldu("3045", "Red", (-24, -32.34, 66.34), (0, 1, 0, -0.5, 0, 0.866, 0.866, 0, 0.5))
+place_ldu("3045", "Red", (64, -32.34, 66.34), (0, -1, 0, -0.866, 0, 0.5, -0.5, 0, -0.866))
+place_ldu("98138p07", "White", (72, -32.34, 66.34), (0, -1, 0, 0.866, 0, -0.5, 0.5, 0, 0.866))
+place("3176", "Red", 0, 4, 0)
+place_ldu("14704", "Light_Bluish_Grey", (20, -40, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("87087", "Lime", 0, 4, 3, rot=90)
+place("87087", "Lime", 1, 4, 3, rot=270)
+place("3005", "Green", 0, 5, 4, rot=90)
+place("3005", "Green", 1, 5, 4, rot=90)
+place("6091", "Lime", 0, 5, 2)
+place("2429", "Green", 0, 8, 3, rot=270)
+place_ldu("2430", "Green", (20, -72, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("6091", "Lime", 1, 5, 2)
+place("3023", "Green", 0, 9, 4)
+place("6005", "Green", 0, 5, 1)
+place("6005", "Green", 1, 5, 1)
+place("50950", "Green", 0, 10, 3)
+place("50950", "Green", 1, 10, 3)

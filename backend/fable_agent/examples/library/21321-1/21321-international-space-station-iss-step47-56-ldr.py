@@ -1,0 +1,30 @@
+#: title: ISS structural segment with technic plates, axlehole bricks, brackets, a grilles round brick, and a curved slope forming a junction detail.
+#: source: LDraw Official Model Repository, 21321-1.mpd, section 21321 - International Space Station - iss-step47-56.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3709b", "Light_Bluish_Grey", 0, 0, 3)
+place("35480", "Light_Bluish_Grey", 0, 1, 3, rot=90)
+place_ldu("99780", "White", (40, -16, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("99780", "White", 1, 1, 4, rot=180)
+place("35480", "Light_Bluish_Grey", 3, 1, 3, rot=90)
+place_ldu("98138p0h", "Pearl_Silver", (40, -28, 8), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3062b", "Light_Bluish_Grey", (40, -28, 16), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("18674", "Light_Bluish_Grey", (40, -28, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4032a", "Dark_Bluish_Grey", (40, -28, 48), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("32064a", "Light_Bluish_Grey", 0, 2, 3, rot=270)
+place("32064a", "Light_Bluish_Grey", 1, 2, 3, rot=270)
+place("32064a", "Light_Bluish_Grey", 2, 2, 3, rot=270)
+place("32064a", "Light_Bluish_Grey", 3, 2, 3, rot=270)
+place("35480", "Light_Bluish_Grey", 0, 5, 3, rot=90)
+place_ldu("99781", "Light_Bluish_Grey", (40, -48, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("99781", "Light_Bluish_Grey", 1, 3.5, 4, rot=180)
+place("35480", "Light_Bluish_Grey", 3, 5, 3, rot=90)
+place("3709b", "Light_Bluish_Grey", 0, 6, 3)
+place_ldu("15092", "Dark_Bluish_Grey", (88, -70, 80), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("92947", "White", (40, -80, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("15068", "White", 2, 10, 3, rot=270)
+place("32000", "White", 3, 7, 3, rot=270)
+place("92280", "White", 1, 10, 3, rot=180)
+place("88072", "Dark_Bluish_Grey", 1, 10, 4, rot=180)

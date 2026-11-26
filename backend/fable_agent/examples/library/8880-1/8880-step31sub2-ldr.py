@@ -1,0 +1,32 @@
+#: title: Hinged panel assembly with long technic bricks and axle, mirroring the opposite wing element.
+#: source: LDraw Official Model Repository, 8880-1.mpd, section 8880 - step31sub2.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2430", "Black", (20, -8, 40), (0.8, 0, -0.6, 0, 1, 0, 0.6, 0, 0.8))
+place_ldu("2429", "Black", (20, -8, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2429", "Black", (100, -8, 100), (0.8, 0, -0.6, 0, 1, 0, 0.6, 0, 0.8))
+place_ldu("2430", "Black", (100, -8, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3021", "Black", 7, 0, 1, rot=90)
+place("3022", "Black", 7, 0, 4, rot=180)
+place_ldu("3749", "Light_Grey", (120, -22, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4265b", "Light_Grey", (120, -22, 45), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6538a", "Light_Grey", 5.5, 1.5, 2.5, rot=180)
+place_ldu("4265b", "Light_Grey", (120, -22, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3706", "Black", (120, -22, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Black", (180, -22, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (220, -22, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3005", "Black", (22, -32, 54), (0.8, 0, -0.6, 0, 1, 0, 0.6, 0, 0.8))
+place_ldu("3701", "Black", (62, -32, 84), (-0.8, 0, 0.6, 0, 1, 0, -0.6, 0, -0.8))
+place("3895", "Black", 0, 1, 1, rot=180)
+place("3701", "Black", 5, 1, 5, rot=180)
+place("3622", "Black", 7, 1, 2, rot=90)
+place("3700", "Black", 8, 1, 3, rot=90)
+place("3702", "Black", 8, 1, 2, rot=180)
+place_ldu("2430", "Black", (20, -40, 40), (0.8, 0, -0.6, 0, 1, 0, 0.6, 0, 0.8))
+place_ldu("2429", "Black", (20, -40, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2429", "Black", (100, -40, 100), (0.8, 0, -0.6, 0, 1, 0, 0.6, 0, 0.8))
+place_ldu("2430", "Black", (100, -40, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3021", "Black", 7, 4, 1, rot=270)
+place("3022", "Black", 7, 4, 4, rot=270)

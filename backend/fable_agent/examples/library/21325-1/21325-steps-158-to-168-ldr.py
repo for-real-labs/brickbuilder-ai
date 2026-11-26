@@ -3,7 +3,7 @@
 #: author: Vincent Messenet [Cheenzo]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
 place("4287a", "Reddish_Brown", 2, 0, 3, rot=270)
 place("4287a", "Reddish_Brown", 2, 0, 0, rot=270)
 place("3031", "Reddish_Brown", 1, 3, 0)

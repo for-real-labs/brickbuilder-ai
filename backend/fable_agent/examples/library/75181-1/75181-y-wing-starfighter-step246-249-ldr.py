@@ -1,0 +1,33 @@
+#: title: Engine wheel and axle assembly using a large spoked armoured wheel, crankshafts, T-pieces, and long axles with joiners forming the rotating engine turbine.
+#: source: LDraw Official Model Repository, 75181-1.mpd, section 75181 - Y-Wing Starfighter - step246-249.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("55817", "Light_Bluish_Grey", (80, -17, 80), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4032a", "Dark_Bluish_Grey", (80, -45, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("15535", "Dark_Bluish_Grey", (80, -53, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4697b", "Light_Bluish_Grey", (20, -57, 80), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4697b", "Light_Bluish_Grey", (80, -57, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4697b", "Light_Bluish_Grey", (80, -57, 140), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4697b", "Light_Bluish_Grey", (140, -57, 80), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (10, -82, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (80, -82, 10), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (80, -82, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (150, -82, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2853", "Light_Bluish_Grey", (20, -87, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2853", "Light_Bluish_Grey", (80, -87, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2853", "Light_Bluish_Grey", (80, -87, 140), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2853", "Light_Bluish_Grey", (140, -87, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (10, -107, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (80, -107, 10), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("59443", "Light_Bluish_Grey", (80, -107, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("59443", "Light_Bluish_Grey", (150, -107, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("23948", "Light_Bluish_Grey", (10, -217, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("23948", "Light_Bluish_Grey", (80, -217, 10), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("23948", "Light_Bluish_Grey", (80, -217, 150), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("23948", "Light_Bluish_Grey", (150, -217, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (10, -327, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (80, -327, 10), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("59443", "Light_Bluish_Grey", (80, -327, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("59443", "Light_Bluish_Grey", (150, -327, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))

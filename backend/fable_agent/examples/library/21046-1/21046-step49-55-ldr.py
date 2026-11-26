@@ -1,0 +1,30 @@
+#: title: Sculpted corner section with white slope, red side-stud bricks, and pearl gold groove tiles forming decorative detailing.
+#: source: LDraw Official Model Repository, 21046-1.mpd, section 21046 - step49-55.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("22885", "Red", 0, 0, 4)
+place("22885", "Red", 2, 0, 4)
+place_ldu("3069b", "Pearl_Gold", (40, -10, 72), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3623", "Light_Bluish_Grey", (10, -30, 72), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3023", "Blue", (10, -20, 64), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("52107", "Red", (10, -20, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("34103", "Tan", (28, -10, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3069b", "Trans_Clear", (36, -20, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3023", "Trans_Clear", (36, -20, 50), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3069b", "Trans_Clear", (44, -20, 50), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3623", "Light_Bluish_Grey", (70, -30, 72), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3023", "Blue", (70, -20, 64), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("52107", "Red", (70, -20, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("34103", "Tan", (52, -10, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3023", "Trans_Clear", (44, -20, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3069b", "Trans_Clear", (36, -20, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3069b", "Trans_Clear", (44, -20, 50), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3069b", "Pearl_Gold", (40, -30, 72), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("34103", "Tan", (28, -30, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("34103", "Tan", (52, -30, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place("85984", "White", 1, 5, 4, rot=180)
+place_ldu("3710", "Light_Bluish_Grey", (40, -50, 64), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3023", "Blue", (40, -50, 72), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3010", "Light_Bluish_Grey", (40, -50, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

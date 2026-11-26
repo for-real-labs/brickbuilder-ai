@@ -3,7 +3,7 @@
 #: author: Max Martin Richter [MMR1988]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 23 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 23 parts kept (minifigures left out)
 place("3747a", "Black", 8, 0, 5, rot=180)
 place("3034", "Black", 8, 3, 0, rot=270)
 place("3794a", "Black", 8, 4, 1, rot=180)

@@ -1,0 +1,32 @@
+#: title: Miniature Super Star Destroyer docked on the Death Star's surface: hinge-plate hull, bracket, binocular turrets and trans-neon-orange engine thrust nozzles
+#: source: LDraw Official Model Repository, 10143-1.mpd, section 10143 - SSD.ldr
+#: author: Jude Parrill [theJudeAbides]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("6538b", "Black", (260, -9.2, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42445", "Trans_Clear", (140, -13.2, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6141", "Trans_Neon_Orange", (10, -19.2, 112), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4589", "Light_Bluish_Grey", (30, -19.2, 128), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6141", "Trans_Neon_Orange", (30, -19.2, 136), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4589", "Light_Bluish_Grey", (50, -19.2, 128), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6141", "Trans_Neon_Orange", (50, -19.2, 136), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6141", "Trans_Neon_Orange", (70, -19.2, 112), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3623", "Light_Bluish_Grey", (18.3895, -21.2, 9.0352), (-0.165048, 0, -0.986286, 0, 1, 0, 0.986286, 0, -0.165048))
+place_ldu("2429", "Light_Bluish_Grey", (20, -21.2, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2430", "Light_Bluish_Grey", (20, -21.2, 60), (-0.165048, 0, -0.986286, 0, 1, 0, 0.986286, 0, -0.165048))
+place_ldu("2430", "Light_Bluish_Grey", (39.8058, -21.2, -58.3543), (-0.165048, 0, -0.986286, 0, 1, 0, 0.986286, 0, -0.165048))
+place_ldu("2429", "Light_Bluish_Grey", (40.1942, -21.2, -58.3543), (-0.165048, 0, 0.986286, 0, 1, 0, -0.986286, 0, -0.165048))
+place_ldu("2430", "Light_Bluish_Grey", (60, -21.2, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2429", "Light_Bluish_Grey", (60, -21.2, 60), (-0.165048, 0, 0.986286, 0, 1, 0, -0.986286, 0, -0.165048))
+place_ldu("3623", "Light_Bluish_Grey", (61.6105, -21.2, 9.0352), (-0.165048, 0, 0.986286, 0, 1, 0, -0.986286, 0, -0.165048))
+place_ldu("3460", "Light_Bluish_Grey", (16.7391, -29.2, 18.8981), (-0.165048, 0, -0.986286, 0, 1, 0, 0.986286, 0, -0.165048))
+place_ldu("44567", "Black", (40, -29.2, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2436a", "Light_Bluish_Grey", (40, -29.2, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3460", "Light_Bluish_Grey", (63.2609, -29.2, 18.8981), (-0.165048, 0, 0.986286, 0, 1, 0, -0.986286, 0, -0.165048))
+place_ldu("41529", "Dark_Bluish_Grey", (40, -37.2, 31), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3020", "Light_Bluish_Grey", (40, -37.2, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2412b", "Dark_Bluish_Grey", (40, -45.2, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2412b", "Dark_Bluish_Grey", (40, -45.2, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3794a", "Dark_Bluish_Grey", (40, -45.2, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Dark_Bluish_Grey", (40, -53.2, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))

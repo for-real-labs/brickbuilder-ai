@@ -1,0 +1,33 @@
+#: title: The front lifting arm assembly of black Technic bricks, liftarms, and axles with bushings.
+#: source: LDraw Official Model Repository, 8868-1_Dump-Truck.mpd, section 8868 - armfront.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3749", "Light_Grey", (50, 37.772, 25.228), (1, 0, 0, 0, 0.087, 0.996, 0, -0.996, 0.087))
+place_ldu("3749", "Light_Grey", (355, 37.772, 25.228), (-1, 0, 0, 0, 0.087, -0.996, 0, -0.996, -0.087))
+place("2450", "Black", 3, 0, 1, rot=270)
+place("2450", "Black", 14, 0, 1, rot=180)
+place_ldu("32006", "Black", (50, -22, 20), (0, 1, 0, -0.087, 0, 0.996, 0.996, 0, 0.087))
+place_ldu("3705", "Black", (50, -22, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4265a", "Light_Grey", (55, -22, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3749", "Light_Grey", (60, -22, 20), (-1, 0, 0, 0, 0.996, 0.087, 0, 0.087, -0.996))
+place_ldu("4265a", "Light_Grey", (85, -22, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (200, -22, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4265a", "Light_Grey", (315, -22, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3749", "Light_Grey", (345, -22, 20), (1, 0, 0, 0, 0.996, -0.087, 0, 0.087, 0.996))
+place_ldu("4265a", "Light_Grey", (345, -22, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3705", "Black", (350, -22, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32006", "Black", (355, -22, 20), (0, -1, 0, 0.087, 0, 0.996, -0.996, 0, 0.087))
+place("3701", "Black", 3, 1, 0, rot=270)
+place("3004", "Black", 4, 1, 0, rot=270)
+place("2730", "Black", 5, 1, 1)
+place("3004", "Black", 15, 1, 0, rot=270)
+place("3701", "Black", 16, 1, 0, rot=270)
+place("3021", "Black", 3, 4, 0, rot=180)
+place("3023", "Black", 6, 4, 1, rot=180)
+place("3023", "Black", 9, 4, 1, rot=180)
+place("3023", "Black", 12, 4, 1, rot=180)
+place("3021", "Black", 14, 4, 0, rot=180)
+place("3023", "Black", 5, 5, 1, rot=180)
+place("3023", "Black", 13, 5, 1, rot=180)

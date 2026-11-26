@@ -1,0 +1,32 @@
+#: title: Main assembly referencing a yellow and black race car submodel.
+#: source: LDraw Official Model Repository, 7453-1.mpd
+#: author: Massimo Maso
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("6015", "Rubber_Black", 0, 0, 0.75, rot=90)
+place("6015", "Rubber_Black", 0, 0, 5.75, rot=90)
+place_ldu("6014", "White", (20, -25, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6014", "White", (20, -25, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6014", "White", (100, -25, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6014", "White", (100, -25, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6015", "Rubber_Black", (106, -25, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6015", "Rubber_Black", (106, -25, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6157", "Black", (60, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6157", "Black", (60, -30, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30236", "Dark_Grey", (60, -46, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2456", "Black", 2, 2.75, 2, rot=90)
+place("3022", "Black", 2, 5.75, 1)
+place_ldu("44674", "Yellow", (60, -62, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3788", "Yellow", 1, 5.75, 6)
+place("3002", "Yellow", 1, 5.75, 3, rot=90)
+place("54200", "Trans_Red", 2, 8.75, 5, rot=180)
+place("3069b", "Light_Grey", 2, 7.75, 1)
+place("2412b", "Metallic_Silver", 2, 7.75, 2)
+place("54200", "Trans_Red", 3, 8.75, 5, rot=180)
+place("3002", "Yellow", 3, 5.75, 3, rot=90)
+place("3020", "Black", 1, 8.75, 3)
+place("50950", "Dark_Grey", 1, 7.75, 5, rot=180)
+place("3068b", "Dark_Grey", 1, 9.75, 3)
+place("3068b", "Dark_Grey", 3, 9.75, 3)
+place("50950", "Dark_Grey", 4, 7.75, 5, rot=180)

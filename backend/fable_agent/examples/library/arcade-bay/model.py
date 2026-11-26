@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, arcade-bay.mpd
 #: author: Orion Pobursky [OrionP]; parameterized adaptation by ldraw-nova
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 15 of 15 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 15 of 15 parts kept (minifigures left out)
 place("3710", "Tan", 0, 0, 0)
 place("3005", "Tan", 0, 1, 0)
 place("3005", "Tan", 3, 1, 0)

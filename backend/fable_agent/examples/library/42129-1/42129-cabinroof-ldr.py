@@ -1,0 +1,30 @@
+#: title: cabinroof
+#: source: LDraw Official Model Repository, 42129-1.mpd, section 42129 - cabinroof.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3673", "Light_Bluish_Grey", (30, -10, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3673", "Light_Bluish_Grey", (330, -10, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("40490", "Black", (180, -12, 180), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("43093", "Blue", (100, -20, 180), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (260, -22, 180), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18651", "Black", (60, -30, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32034", "Black", (100, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("44294", "Light_Bluish_Grey", (180, -30, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32034", "Black", (260, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("18651", "Black", (300, -30, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("62531", "Dark_Bluish_Grey", (60, -50, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (80, -50, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6190", "Black", (100, -50, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (120, -50, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32525", "Dark_Bluish_Grey", (180, -50, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("15458", "Dark_Bluish_Grey", 3.5, 5, 2.5)
+place_ldu("32525", "Dark_Bluish_Grey", (180, -50, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("15458", "Dark_Bluish_Grey", 3.5, 5, 6.5)
+place("64782", "Dark_Bluish_Grey", 3.5, 5, 9.5)
+place_ldu("4274", "Light_Bluish_Grey", (240, -50, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6190", "Black", (260, -50, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (280, -50, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("62531", "Dark_Bluish_Grey", (300, -50, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Light_Bluish_Grey", (260, -60, 100), (0, 0, -1, -1, 0, 0, 0, 1, 0))

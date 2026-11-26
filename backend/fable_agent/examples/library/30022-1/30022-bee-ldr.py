@@ -1,0 +1,30 @@
+#: title: A bee figure with a striped yellow-and-black body, hinged wings, and articulated control-stick antennae.
+#: source: LDraw Official Model Repository, 30022-1.mpd, section 30022 - Bee.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("49668", "Black", (40, 0, 100), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6141", "Black", (40, -8, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43898", "Yellow", (40, -16, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4274", "Blue", (40, -32, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("87081", "Black", 0, 4, 3)
+place_ldu("44302a", "Black", (70, -68, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("44302a", "Black", (70, -68, 140), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("30413", "Trans_Brown", (94, -68, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("30413", "Trans_Brown", (94, -68, 160), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("87620", "Yellow", 0, 7, 3, rot=90)
+place("87620", "Yellow", 0, 7, 5, rot=180)
+place("30541", "Black", 1, 7, 4)
+place("30541", "Black", 1, 7, 5)
+place("3005", "Yellow", 2, 7, 3)
+place("3005", "Yellow", 2, 7, 6)
+place("87081", "Black", 0, 10, 3)
+place("4032a", "Yellow", 1, 13, 4)
+place("6141", "Black", 1.5, 14, 4.5)
+place("43898", "Yellow", 0.5, 14, 3.5)
+place_ldu("44567", "Black", (40, -136, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4592", "White", (40, -144, 90), (-0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, -0.707107))
+place_ldu("4593", "Black", (40, -144, 90), (-0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, 0.5, -0.5))
+place_ldu("4592", "White", (40, -144, 110), (0.707107, 0, 0.707107, 0, 1, 0, -0.707107, 0, 0.707107))
+place_ldu("4593", "Black", (40, -144, 110), (0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5))

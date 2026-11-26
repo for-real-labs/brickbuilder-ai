@@ -1,0 +1,33 @@
+#: title: Rear powered bogie truck with two single-axle wheelsets, buffers, magnetic coupling and bogie plate
+#: source: LDraw Official Model Repository, 10183-1_Modern-urban-electric-locomotive.mpd, section 10183 - 5 - wheels back.ldr
+#: author: Bert Van Raemdonck [BEAVeR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3795", "Black", (80, -23, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4032a", "Black", (40, -31, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3022", "Black", (80, -31, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3020", "Black", (80, -31, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4032a", "Black", (120, -31, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6141", "Black", (40, -39, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3710", "Black", (80, -39, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3020", "Black", (80, -39, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6141", "Black", (120, -39, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2959c01", "Black", (80, -43, 13), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4032a", "Black", (40, -47, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2920", "Black", (80, -47, 45), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3022", "Black", (80, -47, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4032a", "Black", (120, -47, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2412b", "Black", (30, -55, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3023", "Red", (50, -55, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3009", "Black", (80, -55, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3034", "Black", (80, -55, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3023", "Red", (110, -55, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2412b", "Black", (130, -55, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4022", "Black", (80, -63, 75), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2878c02", "Black", 1, 0, 4)
+place_ldu("3023", "White", (80, -63, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3020", "Black", (80, -63, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2878c02", "Black", 1, 0, 9)
+place_ldu("3023", "Red", (80, -63, 230), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4092b", "Black", (80, -71, 178), (0, 0, 1, 0, 1, 0, -1, 0, 0))

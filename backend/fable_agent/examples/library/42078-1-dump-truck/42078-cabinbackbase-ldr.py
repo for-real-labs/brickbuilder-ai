@@ -1,0 +1,31 @@
+#: title: Rear cabin base framework constructed from bent liftarms, a 13-stud beam, cross blocks, and short axles providing the mounting structure behind the cab.
+#: source: LDraw Official Model Repository, 42078-1_Dump-Truck.mpd, section 42078 - cabinbackbase.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("6536", "Light_Bluish_Grey", (40, -10, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6536", "Light_Bluish_Grey", (280, -10, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -20, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (240, -20, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (80, -25, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (240, -25, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("74695", "Dark_Bluish_Grey", (20, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("74695", "Dark_Bluish_Grey", (300, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6632", "Dark_Bluish_Grey", (40, -35, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (280, -35, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (40, -40, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("87083", "Dark_Bluish_Grey", (280, -40, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (20, -50, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -50, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (60, -50, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Dark_Bluish_Grey", (80, -50, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32140", "Dark_Bluish_Grey", (240, -50, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (260, -50, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (300, -50, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (300, -50, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -60, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (240, -60, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("74695", "Dark_Bluish_Grey", (20, -70, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41239", "Dark_Bluish_Grey", (160, -70, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("74695", "Dark_Bluish_Grey", (300, -70, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))

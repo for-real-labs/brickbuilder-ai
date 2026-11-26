@@ -1,0 +1,32 @@
+#: title: A rear pillar frame with liftarms, grooved tiles, and translucent red plates forming a windowed structural post.
+#: source: LDraw Official Model Repository, 42110-1.mpd, section 42110 - backpilar.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("74695", "Black", (20, -9, 22), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("18651", "Black", (30, -9, 22), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32002", "Tan", (30, -29, 22), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18677", "Black", (20, -39, 32), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("11478", "Black", (5, -49, 22), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3024", "Trans_Red", (20, -49, 16), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6141", "White", (20, -49, 24), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("11478", "Black", (35, -49, 22), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2431", "Black", (20, -59, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32002", "Tan", (10, -69, 22), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32002", "Tan", (40, -69, 22), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32524", "Olive_Green", (50, -69, 22), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("18677", "Black", (20, -79, 32), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3024", "Trans_Red", (20, -89, 16), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6141", "White", (20, -89, 24), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32526", "Black", (10, -109, 22), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (30, -109, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (30, -129, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (20, -169, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("18654", "Black", (10, -189, 22), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -189, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("40490", "Black", (30, -189, 22), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -209, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (30, -249, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("74695", "Black", (50, -269, 22), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("24316", "Reddish_Brown", (50, -269, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

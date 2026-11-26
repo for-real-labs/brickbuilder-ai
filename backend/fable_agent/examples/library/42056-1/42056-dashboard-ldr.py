@@ -1,0 +1,30 @@
+#: title: Interior dashboard assembly using a smooth panel, angle connector, grooved tile, and beams forming the cockpit fascia.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - dashboard.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32013", "Orange", (40, -9, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32054", "Red", (40, -9, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (-35.981, -32.038, 40), (0.866, 0.433, -0.25, 0.5, -0.75, 0.433, 0, -0.5, -0.866))
+place_ldu("2780", "Black", (-35.981, -32.038, 120), (0.866, 0.433, -0.25, 0.5, -0.75, 0.433, 0, -0.5, -0.866))
+place_ldu("32524", "Black", (-44.641, -37.038, 80), (-0.5, 0.866, 0, 0.866, 0.5, 0, 0, 0, -1))
+place_ldu("3713", "Light_Bluish_Grey", (40, -49, 20), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("24119", "Black", (10, -51.679, 80), (0.866, 0.5, 0, 0.5, -0.866, 0, 0, 0, -1))
+place_ldu("3705", "Black", (40, -59, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (15, -60.34, 40), (-0.5, 0.866, 0, 0.866, 0.5, 0, 0, 0, -1))
+place_ldu("2780", "Black", (15, -60.34, 80), (-0.5, 0.866, 0, 0.866, 0.5, 0, 0, 0, -1))
+place_ldu("2780", "Black", (15, -60.34, 120), (-0.5, 0.866, 0, 0.866, 0.5, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (-15.981, -66.679, 60), (-0.866, 0, 0.5, -0.5, 0, -0.866, 0, -1, 0))
+place_ldu("4274", "Blue", (-15.981, -66.679, 100), (-0.866, 0, 0.5, -0.5, 0, -0.866, 0, -1, 0))
+place_ldu("87082", "Light_Bluish_Grey", (20, -69, 40), (0, 0.5, 0.866, 0, -0.866, 0.5, 1, 0, 0))
+place_ldu("15100", "Black", (20, -69, 60), (-0.5, 0, -0.866, 0.866, 0, -0.5, 0, -1, 0))
+place_ldu("15100", "Black", (20, -69, 100), (-0.5, 0, -0.866, 0.866, 0, -0.5, 0, -1, 0))
+place_ldu("87082", "Light_Bluish_Grey", (20, -69, 120), (0, 0.5, 0.866, 0, -0.866, 0.5, 1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (40, -69, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2431", "White", (-22.909, -70.679, 80), (0, 0.866, 0.5, 0, 0.5, -0.866, -1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (2.679, -79, 60), (0, -0.5, -0.866, 0, 0.866, -0.5, 1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (2.679, -79, 80), (0, 0.866, -0.5, 0, 0.5, 0.866, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (2.679, -79, 80), (0, 0.866, -0.5, 0, 0.5, 0.866, 1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (2.679, -79, 100), (0, -0.5, -0.866, 0, 0.866, -0.5, 1, 0, 0))
+place_ldu("42003", "Black", (40, -89, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))

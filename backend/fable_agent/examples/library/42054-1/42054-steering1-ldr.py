@@ -1,0 +1,33 @@
+#: title: Primary steering linkage with a T-shaped beam, 24-tooth gear, and lime liftarms connecting to the axle.
+#: source: LDraw Official Model Repository, 42054-1.mpd, section 42054 - steering1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("60484", "Dark_Bluish_Grey", (80, -10, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("15100", "Black", (60, -30, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (60, -30, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3713", "Red", (80, -30, 140), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32523", "Black", (80, -30, 160), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("15100", "Black", (100, -30, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (100, -30, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32524", "Lime", (80, -50, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("42003", "Dark_Bluish_Grey", (120, -50, 180), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (100, -60, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6632", "Dark_Bluish_Grey", (80, -65, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32054", "Light_Bluish_Grey", (20, -70, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6536", "Black", (20, -70, 160), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("44294", "Light_Bluish_Grey", (80, -70, 160), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15100", "Black", (120, -70, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32054", "Light_Bluish_Grey", (140, -70, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6536", "Black", (140, -70, 160), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (80, -75, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("55013", "Dark_Bluish_Grey", (80, -80, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3648b", "Dark_Bluish_Grey", (80, -90, 140), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15462", "Dark_Tan", (120, -90, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (20, -100, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (140, -100, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32524", "Lime", (80, -110, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (120, -120, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (120, -120, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32524", "Dark_Bluish_Grey", (120, -130, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))

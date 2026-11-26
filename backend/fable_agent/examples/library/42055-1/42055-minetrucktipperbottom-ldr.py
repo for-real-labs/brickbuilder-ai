@@ -1,0 +1,30 @@
+#: title: Base frame of the tipper bed using long beams and a large white panel.
+#: source: LDraw Official Model Repository, 42055-1.mpd, section 42055 - minetrucktipperbottom.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("64782", "White", (100, -10, 140), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (160, -10, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (160, -10, 180), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (40, -10, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (40, -10, 180), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32525", "White", (40, -10, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32525", "White", (20, -10, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32525", "White", (160, -10, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32525", "White", (180, -10, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -10, 30), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 30), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("40490", "Light_Bluish_Grey", (100, -10, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (60, -20, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -20, 220), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (140, -20, 220), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (140, -20, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32525", "Dark_Bluish_Grey", (60, -30, 160), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32525", "Dark_Bluish_Grey", (140, -30, 160), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (60, -40, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (60, -40, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (140, -40, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (140, -40, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32184", "Black", (60, -50, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32184", "Black", (140, -50, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))

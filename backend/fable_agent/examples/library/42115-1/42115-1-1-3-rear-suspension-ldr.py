@@ -1,0 +1,30 @@
+#: title: Rear suspension linkage assembly using 6-stud liftarms, cross blocks, and bushings that connect the wishbones to the chassis mounting points.
+#: source: LDraw Official Model Repository, 42115-1.mpd, section 42115 - 1-1-3-rear-suspension.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("6558", "Blue", (20, -9, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("41677", "Black", (55, -9, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("41677", "Black", (65, -9, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -9, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("63869", "Light_Bluish_Grey", (100, -9, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32073", "Yellow", (100, -9, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3713", "Light_Bluish_Grey", (120, -9, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("41677", "Black", (135, -9, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("41677", "Black", (145, -9, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (180, -9, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("6536", "Black", 0.5, 0, 1.5, rot=180)
+place_ldu("4519", "Light_Bluish_Grey", (40, -29, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32291", "Red", (40, -29, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (160, -29, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32291", "Red", (160, -29, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place("6536", "Black", 8.5, 0, 1.5, rot=180)
+place_ldu("6558", "Blue", (30, -49, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (50, -49, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32063", "Black", (100, -49, 15), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32063", "Black", (100, -49, 25), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32063", "Black", (100, -49, 55), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32063", "Black", (100, -49, 65), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (150, -49, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (170, -49, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))

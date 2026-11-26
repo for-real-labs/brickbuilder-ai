@@ -3,7 +3,7 @@
 #: author: Jaco van der Molen [Jaco van der Molen]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 35 of 35 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 35 of 35 parts kept (minifigures left out)
 place("30357", "Dark_Green", 0, 0, 14, rot=270)
 place("3021", "Dark_Green", 0, 0, 12)
 place("3021", "Dark_Green", 0, 0, 10)

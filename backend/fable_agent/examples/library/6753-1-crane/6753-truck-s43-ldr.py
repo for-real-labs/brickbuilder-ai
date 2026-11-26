@@ -3,7 +3,7 @@
 #: author: Marc Giraudet [Mad_Marc]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 33 of 33 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 33 of 33 parts kept (minifigures left out)
 place("3738", "Light_Bluish_Grey", 0, 0, 1)
 place_ldu("2540", "Tan", (40, -16, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
 place_ldu("6020", "Black", (40, -14, 10), (1, 0, 0, 0, 0.043, -0.999, 0, 0.999, 0.043))

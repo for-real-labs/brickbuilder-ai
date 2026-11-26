@@ -1,0 +1,31 @@
+#: title: Rear fuselage frame of bent liftarms, triangle liftarms and cross blocks with towball pins.
+#: source: LDraw Official Model Repository, 42040-1.mpd, section 42040 - rearframe.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (-40, 71, 45), (0, 0.6, 0.8, 0, -0.8, 0.6, 1, 0, 0))
+place_ldu("6629", "White", (-40, 71, 55), (0.8, 0, 0.6, 0.6, 0, -0.8, 0, 1, 0))
+place_ldu("43093", "Blue", (240, 71, 45), (0, 0.8, 0.6, 0, -0.6, 0.8, 1, 0, 0))
+place_ldu("6629", "White", (240, 71, 55), (-0.8, 0, -0.6, 0.6, 0, -0.8, 0, -1, 0))
+place_ldu("2780", "Black", (20, -9, 45), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -9, 45), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6628", "Black", (60, -9, 45), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6632", "Black", (80, -9, 70), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("18651", "Black", (80, -9, 75), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6632", "Black", (80, -9, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (100, -9, 65), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("18651", "Black", (120, -9, 75), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6628", "Black", (140, -9, 45), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (160, -9, 45), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (180, -9, 45), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (40, -29, 35), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (160, -29, 35), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32062", "Red", (60, -49, 65), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("99773", "Light_Bluish_Grey", (100, -49, 50), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("99773", "Light_Bluish_Grey", (100, -49, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32062", "Red", (140, -49, 65), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32140", "White", (40, -69, 35), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32184", "Light_Bluish_Grey", (60, -69, 75), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32184", "Light_Bluish_Grey", (140, -69, 75), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32140", "White", (160, -69, 35), (1, 0, 0, 0, 0, 1, 0, -1, 0))

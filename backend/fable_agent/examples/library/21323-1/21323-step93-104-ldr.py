@@ -1,0 +1,30 @@
+#: title: Technic axle and liftarm assembly with bushings forming part of the keyboard or hammer drive train.
+#: source: LDraw Official Model Repository, 21323-1.mpd, section 21323 - step93-104.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("11458", "Reddish_Brown", (310, -23, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (40, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32123b", "Yellow", (55, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("41677", "Red", (65, -29, 10), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("41677", "White", (75, -29, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (90, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("41677", "Blue", (105, -29, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (120, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("41677", "White", (135, -29, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32316", "Reddish_Brown", (150, -29, 70), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("41677", "Red", (165, -29, 10), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("50451", "Black", (170, -29, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41677", "Blue", (175, -29, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (190, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("41677", "White", (205, -29, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("41677", "Red", (215, -29, 10), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (230, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("41677", "Blue", (245, -29, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32123b", "Yellow", (255, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("41677", "White", (265, -29, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (280, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32123b", "Yellow", (295, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32123b", "Yellow", (325, -29, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("30526", "Light_Bluish_Grey", (130, -39, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))

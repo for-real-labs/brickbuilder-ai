@@ -1,0 +1,33 @@
+#: title: Mixer drum roller support with small wheels and tyres on cross blocks and axles to guide the rotating drum.
+#: source: LDraw Official Model Repository, 42112-1.mpd, section 42112 - mixerrollsupport.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("42610", "Light_Bluish_Grey", (60, -19, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("50951", "Rubber_Black", (60, -19, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32556", "Tan", (60, -19, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -19, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("50951", "Rubber_Black", (60, -19, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("42610", "Light_Bluish_Grey", (180, -19, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("50951", "Rubber_Black", (180, -19, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32556", "Tan", (180, -19, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (180, -19, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("50951", "Rubber_Black", (180, -19, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32138", "Light_Bluish_Grey", (30, -39, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place("42003", "Light_Bluish_Grey", 2.5, 1.25, 1.5, rot=180)
+place_ldu("32525", "Black", (120, -39, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("42003", "Light_Bluish_Grey", 8.5, 1.25, 1.5, rot=180)
+place_ldu("32138", "Light_Bluish_Grey", (210, -39, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32291", "Black", (30, -59, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Yellow", (50, -59, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("92907", "Light_Bluish_Grey", (60, -59, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("92907", "Light_Bluish_Grey", (180, -59, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4519", "Yellow", (190, -59, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32291", "Black", (210, -59, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4274", "Light_Bluish_Grey", (60, -69, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (180, -69, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("18654", "White", (30, -79, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("24316", "Reddish_Brown", (50, -79, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("24316", "Reddish_Brown", (190, -79, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("18654", "White", (210, -79, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))

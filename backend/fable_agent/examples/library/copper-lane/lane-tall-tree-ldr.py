@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, copper-lane.mpd, section lane-tall-tree.ldr
 #: author: ldraw-nova example generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures left out)
 place("3031", "Tan", 2, 0, 2)
 place("3022", "Reddish_Brown", 3, 1, 3)
 place_ldu("24866", "Bright_Pink", (50, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))

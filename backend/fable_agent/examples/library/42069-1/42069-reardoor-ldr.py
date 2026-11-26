@@ -1,0 +1,31 @@
+#: title: A rear door featuring a black 5x11 panel, two 9-stud beams, and a 40.4 sprocket wheel for the spare or mechanism.
+#: source: LDraw Official Model Repository, 42069-1.mpd, section 42069 - reardoor.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("2780", "Black", (250, -30, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("64782", "Black", (140, -50, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (30, -30, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (260, -70, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (30, -90, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32054", "Light_Bluish_Grey", (60, -90, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -90, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("57519", "Black", (60, -90, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (60, -90, 25), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("74695", "Dark_Bluish_Grey", (40, -90, 100), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (40, -90, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (40, -90, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("74695", "Dark_Bluish_Grey", (40, -90, 140), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("40490", "Black", (260, -110, 80), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("40490", "Black", (20, -110, 80), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (270, -170, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("43093", "Blue", (250, -190, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32034", "Black", (220, -190, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("44294", "Light_Bluish_Grey", (140, -190, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32034", "Black", (60, -190, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4274", "Blue", (60, -190, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("4274", "Blue", (220, -190, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("98138", "Trans_Clear", (60, -190, 62), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("98138", "Trans_Clear", (220, -190, 62), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (30, -190, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))

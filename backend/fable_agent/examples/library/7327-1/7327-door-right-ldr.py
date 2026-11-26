@@ -3,7 +3,7 @@
 #: author: Christian Neumann [Wesley]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 13 of 13 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 13 of 13 parts kept (minifigures left out)
 place("4477", "Black", 0, 0, 1)
 place("3743", "Light_Bluish_Grey", 5, 1, 1)
 place("3005", "Black", 0, 1, 1)

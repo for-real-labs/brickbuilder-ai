@@ -3,7 +3,7 @@
 #: author: Roland Dahl [RolandD]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 69 of 69 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 69 of 69 parts kept (minifigures left out)
 place("2413", "Light_Bluish_Grey", 1, 0, 10, rot=270)
 place("3033", "Black", 1, 1, 13)
 place("4151b", "Black", 2, 1, 5, rot=270)

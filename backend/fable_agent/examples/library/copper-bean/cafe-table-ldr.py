@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, copper-bean.mpd, section cafe-table.ldr
 #: author: ldraw-nova copper-bean generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures left out)
 place("3062b", "White", 0, 0, 0)
 place("3062b", "White", 0, 0, 3)
 place("3062b", "White", 4, 0, 0)

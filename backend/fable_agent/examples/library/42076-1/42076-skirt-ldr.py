@@ -1,0 +1,31 @@
+#: title: skirt
+#: source: LDraw Official Model Repository, 42076-1.mpd, section 42076 - skirt.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32525", "Black", (60, -9, 360), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -9, 280), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -9, 440), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("62531", "Black", (20, -49, 360), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -9, 240), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -9, 470), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32523", "Black", (60, -9, 240), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -9, 240), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (20, -49, 240), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (20, -49, 470), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62531", "Black", (100, -49, 360), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (80, -9, 470), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (100, -49, 240), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (100, -49, 470), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32316", "Red", (60, -49, 240), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("62531", "Black", (20, -49, 580), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -9, 500), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32525", "Black", (60, -9, 580), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -9, 660), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("62531", "Black", (100, -49, 580), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("62531", "Black", (20, -49, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -9, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32525", "Black", (60, -9, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -9, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("62531", "Black", (100, -49, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))

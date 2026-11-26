@@ -1,0 +1,31 @@
+#: title: Dormer roof window (variant 1): white 2x4x3 window and pane, white plates and panels, a white mudguard roof, a dark-bluish-grey frog accent and dark-red curved trim
+#: source: LDraw Official Model Repository, 10182-1.mpd, section 10182 - Second floor - Roof window 1.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3020", "White", 0, 0, 1)
+place_ldu("4133", "White", (11, -71, 26), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4132", "White", 0, 1, 1)
+place("3794a", "White", 1, 10, 1)
+place_ldu("33320", "Dark_Bluish_Grey", (40, -88, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "White", 1, 10, 2)
+place("3023", "White", 1, 11, 2)
+place("6231", "White", 0, 10, 1)
+place("3005", "White", 0, 10, 2)
+place("6231", "White", 3, 10, 1, rot=90)
+place("3005", "White", 3, 10, 2)
+place("3023", "White", 0, 13, 1, rot=90)
+place("3023", "White", 3, 13, 1, rot=90)
+place("3024", "White", 0, 14, 2, rot=90)
+place_ldu("50745", "White", (40, -120, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3024", "White", 3, 14, 2, rot=90)
+place("3710", "White", 0, 15, 2)
+place("3023", "Dark_Red", 1, 16, 2)
+place("6091", "Dark_Red", 0, 14, 1)
+place("3024", "Dark_Red", 0, 17, 2)
+place("6091", "Dark_Red", 3, 14, 1)
+place("3024", "Dark_Red", 3, 17, 2)
+place("6091", "Dark_Red", 1, 15, 1)
+place("3710", "Dark_Red", 0, 18, 2)
+place("6091", "Dark_Red", 2, 15, 1)

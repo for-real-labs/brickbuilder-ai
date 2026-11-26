@@ -1,0 +1,30 @@
+#: title: Right headlight module with curved trans-clear elements, beams, and fairing panels forming the light housing.
+#: source: LDraw Official Model Repository, 42077-1.mpd, section 42077 - headlight2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("64394", "Dark_Azure", (180, -10, 40), (0.8, 0.6, 0, 0, 0, -1, -0.6, 0.8, 0))
+place_ldu("2780", "Black", (140, -20, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (164, -20, 52), (0, 0.6, -0.8, -1, 0, 0, 0, 0.8, 0.6))
+place_ldu("32271", "White", (20, -30, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (60, -40, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (20, -50, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (120, -50, 20), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18654", "Dark_Bluish_Grey", (120, -50, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (186, -50, 48), (-0.6, -0.48, -0.64, 0, -0.8, 0.6, -0.8, 0.36, 0.48))
+place_ldu("32291", "Black", (120, -70, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32524", "Dark_Azure", (192, -70, 56), (0.8, 0.6, 0, 0, 0, -1, -0.6, 0.8, 0))
+place_ldu("2780", "Black", (130, -80, 40), (-1, 0, 0, 0, -0.254, -0.967, 0, -0.967, 0.254))
+place_ldu("2780", "Black", (186, -90, 48), (-0.6, -0.48, -0.64, 0, -0.8, 0.6, -0.8, 0.36, 0.48))
+place_ldu("32316", "Dark_Bluish_Grey", (140, -118.687, 50.166), (0, 1, 0, -0.254, 0, -0.967, -0.967, 0, 0.254))
+place_ldu("6558", "Blue", (140, -118.687, 50.166), (1, 0, 0, 0, 0.254, -0.967, 0, 0.967, 0.254))
+place_ldu("32000", "Black", (120, -130.9, 43.036), (0, 0, 1, 0.967, 0.254, 0, -0.254, 0.967, 0))
+place_ldu("30602", "Trans_Clear", (150, -130.9, 43.036), (0, 0, -1, -0.967, 0.254, 0, 0.254, 0.967, 0))
+place_ldu("32000", "Black", (160, -130.9, 43.036), (0, 0, 1, 0.967, 0.254, 0, -0.254, 0.967, 0))
+place_ldu("3023", "Trans_Clear", (120, -132.933, 35.299), (0, 0, -1, -0.967, 0.254, 0, 0.254, 0.967, 0))
+place_ldu("3023", "Trans_Clear", (120, -134.966, 27.561), (0, 0, -1, -0.967, 0.254, 0, 0.254, 0.967, 0))
+place_ldu("3069b", "Trans_Clear", (120, -136.999, 19.824), (0, 0, -1, -0.967, 0.254, 0, 0.254, 0.967, 0))
+place_ldu("6558", "Blue", (140, -138.03, 55.249), (1, 0, 0, 0, 0.254, -0.967, 0, 0.967, 0.254))
+place_ldu("6558", "Blue", (160, -157.373, 60.332), (1, 0, 0, 0, 0.254, -0.967, 0, 0.967, 0.254))
+place_ldu("18654", "Dark_Bluish_Grey", (160, -157.373, 60.332), (0, -1, 0, 0.967, 0, 0.254, -0.254, 0, 0.967))

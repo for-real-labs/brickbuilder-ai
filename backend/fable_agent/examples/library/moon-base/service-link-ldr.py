@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, moon-base.mpd, section service-link.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
 place("3034", "Reddish_Brown", 0, 0, 0)
 place("3034", "Reddish_Brown", 0, 0, 2)
 place("3008", "Light_Bluish_Grey", 0, 1, 0)

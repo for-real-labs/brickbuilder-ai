@@ -1,0 +1,30 @@
+#: title: The spoiler lift mechanism with axles, connector bushes, a cross block, and liftarms forming the adjustable wing linkage.
+#: source: LDraw Official Model Repository, 42115-1.mpd, section 42115 - 3-11-spoiler-lift.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32073", "Yellow", (20, -49.5, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32039", "Black", (20, -89.5, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32073", "Yellow", (60, -109.5, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("41677", "Black", (35, -109.5, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (45, -109.5, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32140", "Dark_Bluish_Grey", (60, -109.5, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6632", "Dark_Bluish_Grey", (75, -109.5, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("41677", "Black", (85, -109.5, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32039", "Black", (100, -89.5, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32073", "Yellow", (100, -49.5, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3705", "Red", (60, -109.5, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32556", "Tan", (60, -109.5, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("18654", "Lime", (80, -109.5, 80), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (75, -129.5, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("63869", "Lime", (60, -129.5, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32123b", "Light_Bluish_Grey", (45, -129.5, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -129.5, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32039", "Black", (90, -129.5, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32039", "Black", (30, -129.5, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("43093", "Blue", (90, -139.5, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (30, -139.5, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (80, -149.5, 50), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -149.5, 50), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32523", "Lime", (60, -149.5, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))

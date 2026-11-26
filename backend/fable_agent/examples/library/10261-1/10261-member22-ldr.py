@@ -3,7 +3,7 @@
 #: author: Philippe Hurbain [Philo]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures left out)
 place("4477", "White", 12, 0, 0)
 place("3023", "White", 10, 0, 0)
 place("4477", "White", 0, 0, 0)

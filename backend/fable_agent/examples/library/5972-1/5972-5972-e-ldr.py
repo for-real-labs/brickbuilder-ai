@@ -1,0 +1,30 @@
+#: title: A dark grey winged thruster unit with flame element, cylinder, and axle-mounted detail.
+#: source: LDraw Official Model Repository, 5972-1.mpd, section 5972 - 5972-e.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3673", "Black", (20, -9, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Black", (20, -9, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3020", "Black", (60, -11, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3020", "Black", (200, -11, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("10247", "Black", 1, 0, 1, rot=180)
+place("10247", "Black", 1, 0, 3, rot=180)
+place_ldu("3710", "Yellow", (30, -27, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("30036", "Dark_Grey", (120, -27, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3023", "Brown", (190, -27, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3020", "Black", (40, -35, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Brown", (190, -35, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3003", "Light_Grey", (220, -35, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("44676", "Black", (150, -41, 40), (0.917192, 0, 0.398445, 0.398445, 0, -0.917192, 0, 1, 0))
+place_ldu("30367b", "Dark_Grey", (210, -45, 0), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("30360", "Black", (210, -45, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4032a", "Dark_Grey", (210, -45, 120), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("30236", "Dark_Grey", (170, -51, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3022", "Brown", (180, -59, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32062", "Red", (240, -65, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3794b", "Dark_Grey", (190, -67, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2555", "Dark_Grey", (190, -75, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("85943", "Dark_Grey", (210, -75, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("61409", "Dark_Grey", (210, -75, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6141", "Light_Grey", (210, -83, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))

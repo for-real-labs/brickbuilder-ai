@@ -3,7 +3,7 @@
 #: author: Marc Giraudet [Mad_Marc]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures left out)
 place("2465", "White", 0, 0, 0)
 place("2465", "White", 0, 3, 0)
 place("54200", "White", 0, 6, 0, rot=90)

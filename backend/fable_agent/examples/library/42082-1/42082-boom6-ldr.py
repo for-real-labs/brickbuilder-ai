@@ -1,0 +1,33 @@
+#: title: Red boom section mirroring boom4 with H-shaped beams and smooth panels forming a reinforced segment.
+#: source: LDraw Official Model Repository, 42082-1.mpd, section 42082 - boom6.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("2780", "Black", (20, -29, 970), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("14720", "Red", (20, -49, 980), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("15458", "Red", (20, -49, 860), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (20, -29, 740), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("14720", "Red", (20, -49, 740), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -29, 730), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("15458", "Red", (20, -49, 620), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (20, -29, 500), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("14720", "Red", (20, -49, 500), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -29, 490), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("15458", "Red", (20, -49, 380), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (20, -29, 260), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("14720", "Red", (20, -49, 260), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -29, 250), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("15458", "Red", (20, -49, 140), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -29, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("42003", "Red", (20, -29, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -49, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -69, 970), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (20, -69, 740), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -69, 730), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (20, -69, 500), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -69, 490), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (20, -69, 260), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -69, 250), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("43093", "Blue", (30, -69, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("53585", "Black", (40, -69, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))

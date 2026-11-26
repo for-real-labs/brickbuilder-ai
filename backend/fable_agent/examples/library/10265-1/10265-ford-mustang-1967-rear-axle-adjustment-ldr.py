@@ -1,0 +1,33 @@
+#: title: Rear axle alignment linkage using an 11-stud liftarm, cross blocks, and bevel gears to adjust wheel tracking.
+#: source: LDraw Official Model Repository, 10265-1.mpd, section 10265 - Ford Mustang 1967 Rear Axle Adjustment.ldr
+#: author: Ulrich Röder [UR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("32073", "Yellow", (60, -9, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("63869", "Light_Bluish_Grey", (60, -9, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("60483", "Light_Bluish_Grey", (60, -9, 100), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("60483", "Light_Bluish_Grey", (80, -9, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -9, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32054", "Red", (80, -9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32525", "Light_Bluish_Grey", (160, -9, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (240, -9, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32054", "Red", (240, -9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("60483", "Light_Bluish_Grey", (260, -9, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32073", "Yellow", (260, -9, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("63869", "Light_Bluish_Grey", (260, -9, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("60483", "Light_Bluish_Grey", (260, -9, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32198", "Tan", (23, -29, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("60483", "White", (40, -29, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32209", "Dark_Bluish_Grey", (53, -29, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("11214", "Red", (60, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Black", (70, -29, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32017", "Light_Bluish_Grey", (75, -29, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32017", "Light_Bluish_Grey", (85, -29, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32017", "Light_Bluish_Grey", (235, -29, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32017", "Light_Bluish_Grey", (245, -29, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3673", "Black", (250, -29, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("11214", "Red", (260, -29, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32209", "Dark_Bluish_Grey", (267, -29, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60483", "White", (280, -29, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32198", "Tan", (297, -29, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))

@@ -1,0 +1,32 @@
+#: title: Lower building section with red and white side-stud plates and tan bricks forming the decorative masonry base.
+#: source: LDraw Official Model Repository, 21046-1.mpd, section 21046 - step28-33.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("15573", "White", (20, -14, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("15573", "White", (20, -14, 188), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15573", "White", (60, -14, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("15573", "White", (60, -14, 188), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("30414", "Tan", 0, 0, 1)
+place("30414", "Tan", 0, 0, 8, rot=180)
+place("99206", "Red", 0, 3, 1, rot=90)
+place("99206", "Red", 0, 3, 3, rot=90)
+place("99206", "Red", 0, 3, 5, rot=90)
+place("99206", "Red", 0, 3, 7, rot=90)
+place("3034", "Dark_Bluish_Grey", 1, 4, 1, rot=90)
+place("99206", "Red", 2, 3, 1, rot=270)
+place("99206", "Red", 2, 3, 3, rot=270)
+place("99206", "Red", 2, 3, 5, rot=270)
+place("99206", "Red", 2, 3, 7, rot=270)
+place("15573", "White", 0, 5, 1)
+place("15573", "White", 0, 5, 8)
+place("87079", "White", 0, 5, 2)
+place("87079", "White", 0, 5, 4)
+place("87079", "White", 0, 5, 6)
+place("15573", "White", 2, 5, 1)
+place("15573", "White", 2, 5, 8)
+place("3460", "Red", 0.5, 6, 1, rot=90)
+place("3460", "Red", 2.5, 6, 1, rot=90)
+place("3460", "White", 0.5, 7, 1, rot=90)
+place("3460", "White", 2.5, 7, 1, rot=90)

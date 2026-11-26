@@ -1,0 +1,30 @@
+#: title: Titanic - 2.9.4.1
+#: source: LDraw Official Model Repository, 10294-1.mpd, section 10294 - Titanic - 2.9.4.1.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("35459", "White", 0, 0, 1)
+place("3023", "Trans_Brown", 0, 1, 1)
+place_ldu("41682", "White", (20, -20, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("3023", "Trans_Brown", 0, 3, 1)
+place("3665b", "Black", 2, 1, 1, rot=270)
+place("3024", "White", 0, 4, 1, rot=180)
+place("93274", "White", 0, 0, 1, rot=180)
+place("6141", "Pearl_Gold", 3, 4, 1, rot=180)
+place("3023", "Trans_Brown", 0, 5, 1)
+place("3023", "Reddish_Brown", 2, 5, 1)
+place("3023", "White", 0, 6, 1)
+place("3023", "Trans_Brown", 0, 7, 1)
+place("3023", "White", 0, 8, 1)
+place_ldu("30136", "Light_Bluish_Grey", (60, -72, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3024", "Trans_Brown", 0, 9, 1, rot=180)
+place("93274", "White", 0, 5, 1, rot=180)
+place("6141", "Pearl_Gold", 3, 9, 1, rot=180)
+place("99207", "White", 0, 10, 1, rot=180)
+place("99207", "White", 2, 10, 1, rot=180)
+place("3023", "Trans_Brown", 0, 11, 1)
+place_ldu("41682", "White", (20, -100, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("3023", "Trans_Brown", 0, 13, 1)
+place("3040b", "Black", 2, 11, 1, rot=270)
+place("63864", "White", 0, 14, 1)

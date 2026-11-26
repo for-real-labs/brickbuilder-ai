@@ -1,0 +1,33 @@
+#: title: Angular dark-blue starship mini build with sloped armor, sand-green patterned wedge plates, and engine cones.
+#: source: LDraw Official Model Repository, 4487-1.mpd, section 4487 - Slave I.ldr
+#: author: Evert-Jan Boer [ejboer]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3795", "Dark_Grey", 4, 0, 3, rot=90)
+place("3023", "Tan", 0.5, 0.25, 6)
+place("3023", "Tan", 7.5, 0.25, 6, rot=180)
+place("3021", "Green", 4, 1, 4, rot=270)
+place("3794a", "Sand_Green", 4, 1, 8, rot=180)
+place_ldu("4589", "White", (60, -30, 130), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4589", "White", (140, -30, 130), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3040b", "Dark_Blue", 3, 1, 7, rot=90)
+place("6069ps2", "Dark_Blue", 3, 1, 2)
+place("3040b", "Dark_Blue", 5, 1, 7, rot=270)
+place_ldu("4599a", "White", (40, -34, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4599a", "White", (160, -34, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4070", "Dark_Blue", 4, 2, 6, rot=90)
+place("3794a", "Dark_Blue", 4, 4, 5)
+place("4070", "Dark_Blue", 5, 2, 6, rot=270)
+place("3024", "Yellow", 4.5, 5, 5)
+place("3794a", "Dark_Blue", 4, 5, 6)
+place_ldu("4592", "Light_Grey", (88, -54, 10), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4593", "Black", (88, -54, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4592", "Light_Grey", (112, -54, 10), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4593", "Black", (112, -54, 10), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4081b", "Yellow", (100, -56, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4287a", "White", 4.5, 4, 2)
+place("3024", "White", 4.5, 6, 5)
+place("3666", "White", 4.5, 7, 1, rot=90)
+place("6005", "Black", 4.5, 2, 6, rot=180)
+place("2431", "Black", 4.5, 8, 2, rot=90)

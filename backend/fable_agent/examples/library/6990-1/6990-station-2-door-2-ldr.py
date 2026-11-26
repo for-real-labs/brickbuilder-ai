@@ -1,0 +1,33 @@
+#: title: A detailed white door structure built from plates, hinges, and sloped bricks with a turntable mechanism.
+#: source: LDraw Official Model Repository, 6990-1.mpd, section 6990 - Station 2 - Door 2.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3679", "Light_Grey", (40, -8, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3022", "White", 2, 1, 8)
+place("2401", "White", 0, 1, 0)
+place("3795", "White", 2, 2, 8)
+place_ldu("2430", "White", (40, -32, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3021", "Black", 3, 3, 8, rot=180)
+place("3004", "White", 0, 2, 0, rot=180)
+place("3003", "White", 8, 2, 8, rot=180)
+place("3004", "Black", 3, 4, 8, rot=90)
+place("3040p32", "White", 3, 7, 7)
+place("3005", "Black", 3, 7, 9, rot=90)
+place("2449", "White", 1, 4, 8, rot=90)
+place("2449", "White", 1, 4, 9, rot=90)
+place("3004", "Black", 3, 10, 8, rot=90)
+place("3684", "White", 4, 4, 8, rot=270)
+place("4476", "Black", 0, 13, 8, rot=270)
+place("3003", "White", 0, 28, 8, rot=270)
+place("3940", "White", 0, 31, 8, rot=270)
+place("2409", "Trans_Dark_Blue", 0, 2, 0)
+place_ldu("4589", "White", (38, -310, 130), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4589", "White", (70, -310, 162), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4081b", "Black", (10, -312, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3022", "Black", 0, 38, 8, rot=180)
+place("4081b", "Black", 2, 37.75, 9, rot=270)
+place("2450", "White", 0, 39, 7)
+place_ldu("3957a", "White", (20, -328, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4740", "Trans_Red", 0, 41, 8)

@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, gatehouse.mpd
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 322 of 322 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 322 of 322 parts kept (minifigures left out)
 place("3811", "Olive_Green", 0, 0, 0)
 place("3034", "Reddish_Brown", 4, 0.5, 15)
 place("3034", "Reddish_Brown", 4, 0.5, 17)

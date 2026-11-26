@@ -1,0 +1,31 @@
+#: title: Left track assembly with sprocket wheels, bent liftarms, and cross blocks forming the tracked drive unit.
+#: source: LDraw Official Model Repository, 42038-1.mpd, section 42038 - track1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("41239", "Light_Bluish_Grey", (47, -10, 132), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (67, -10, 12), (-1, 0, 0, 0, -0.5878, -0.809, 0, -0.809, 0.5878))
+place_ldu("57520", "Black", (67, -10, 12), (0, 0, -1, 0.809, -0.5878, 0, -0.5878, -0.809, 0))
+place_ldu("48989", "Light_Bluish_Grey", (67, -10, 92), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("48989", "Light_Bluish_Grey", (67, -10, 172), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (67, -10, 252), (-1, 0, 0, 0, 0.2588, -0.9659, 0, -0.9659, -0.2588))
+place_ldu("57520", "Black", (67, -10, 252), (0, 0, -1, 0.9659, 0.2588, 0, 0.2588, -0.9659, 0))
+place_ldu("41239", "Light_Bluish_Grey", (87, -10, 132), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (97, -10, 32), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (97, -10, 52), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (97, -10, 92), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (97, -10, 172), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (97, -10, 212), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32184", "Light_Bluish_Grey", (107, -10, 192), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32054", "Black", (107, -30, 192), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("92907", "Black", (107, -30, 192), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("92907", "Black", (107, -50, 172), (0, 0, 1, -0.8, -0.6, 0, 0.6, -0.8, 0))
+place_ldu("32062", "Red", (107, -50, 172), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (97, -58, 128), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (87, -62, 156), (0, 0, -1, 0.8, -0.6, 0, -0.6, -0.8, 0))
+place_ldu("32062", "Red", (87, -62, 156), (0, 1, 0, 0.8, 0, -0.6, -0.6, 0, -0.8))
+place_ldu("59426", "Dark_Bluish_Grey", (60, -74, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("57519", "Black", (65, -74, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (97, -90, 152), (1, 0, 0, 0, 0.8, 0.6, 0, -0.6, 0.8))
+place_ldu("6629", "Light_Bluish_Grey", (107, -90, 152), (0, -1, 0, -0.6, 0, 0.8, -0.8, 0, -0.6))

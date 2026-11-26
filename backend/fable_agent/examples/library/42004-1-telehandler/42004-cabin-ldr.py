@@ -1,0 +1,31 @@
+#: title: Operator cabin frame with curved quarter-ellipse liftarms, a steering wheel, and assorted thin beams.
+#: source: LDraw Official Model Repository, 42004-1_Telehandler.mpd, section 42004 - Cabin.ldr
+#: author: Tomas Kralicek [RabbiT_CZ]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32250", "Black", (20, -29, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("41677", "Light_Bluish_Grey", (30, -29, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6632", "Blue", (30, -29, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (45, -29, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("60483", "Black", (45, -29, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (45, -29, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("60483", "Black", (45, -29, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (45, -29, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("41677", "Light_Bluish_Grey", (60, -29, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6632", "Blue", (60, -29, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32250", "Black", (70, -29, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (45, -49, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6536", "Yellow", (45, -49, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (45, -59, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("30663", "Black", (45, -67, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (35, -84.616, 110.115), (1, 0, 0, 0, -0.174, 0.985, 0, -0.985, -0.174))
+place_ldu("32140", "Blue", (45, -84.616, 110.115), (0, -1, 0, -0.174, 0, 0.985, -0.985, 0, -0.174))
+place_ldu("32250", "Yellow", (20, -109, 80), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32449", "Yellow", (30, -109, 90), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (35, -109, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (45, -109, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32523", "Black", (45, -109, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (45, -109, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32449", "Yellow", (60, -109, 90), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32250", "Yellow", (70, -109, 80), (0, 1, 0, 0, 0, 1, 1, 0, 0))

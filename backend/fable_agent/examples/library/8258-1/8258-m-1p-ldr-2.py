@@ -1,0 +1,30 @@
+#: title: A red 11-stud beam with 180-degree angle connectors and axle pins forming a symmetrical linkage.
+#: source: LDraw Official Model Repository, 8258-1.mpd, section 8258 - m-1p''.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32034", "Red", (40, -10, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (40, -10, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32525", "Red", (120, -10, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32034", "Red", (200, -10, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (200, -10, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -20, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (200, -20, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32015", "Light_Bluish_Grey", (40, -30, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6536", "Black", (80, -30, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (100, -30, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("44294", "Light_Bluish_Grey", (120, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Black", (120, -30, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (140, -30, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Black", (160, -30, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32015", "Light_Bluish_Grey", (200, -30, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (80, -40, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (120, -40, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (160, -40, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4032b", "Black", (80, -48, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4032b", "Black", (120, -48, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4032b", "Black", (160, -48, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2654", "Trans_Clear", (80, -56, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2654", "Trans_Clear", (120, -56, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2654", "Trans_Clear", (160, -56, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))

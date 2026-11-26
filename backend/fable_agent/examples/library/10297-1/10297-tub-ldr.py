@@ -1,0 +1,32 @@
+#: title: White bathtub with curved slopes, a gold dual-valve tap, and translucent pink decorative cones.
+#: source: LDraw Official Model Repository, 10297-1.mpd, section 10297 - tub.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("24866", "Pearl_Gold", (10, -8, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24866", "Pearl_Gold", (10, -8, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "White", 1, 0, 1, rot=90)
+place_ldu("24866", "Pearl_Gold", (70, -8, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24866", "Pearl_Gold", (70, -8, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("99207", "White", (20, -16, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("99207", "White", 0, 1, 4, rot=180)
+place("3020", "White", 0, 1, 2, rot=180)
+place_ldu("99207", "White", (60, -16, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("99207", "White", 2, 1, 4, rot=180)
+place_ldu("35480", "White", (40, -18, 8), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("35480", "White", (40, -18, 112), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("26603", "White", 1, 2, 1, rot=90)
+place("15573", "White", 1, 2, 4)
+place_ldu("15068", "White", (20, -28, 16), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("15068", "White", (20, -28, 104), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("15068", "White", (60, -28, 16), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("15068", "White", (60, -28, 104), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("99781", "White", (40, -38, 8), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("99781", "White", (40, -38, 112), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("10314", "White", 0, 2, 1, rot=270)
+place("10314", "White", 3, 2, 1, rot=90)
+place_ldu("59900", "Trans_Dark_Pink", (30, -76, 18), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59900", "Trans_Dark_Pink", (50, -76, 18), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("20482", "White", (30, -84, 18), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("20482", "White", (50, -84, 18), (1, 0, 0, 0, 1, 0, 0, 0, 1))

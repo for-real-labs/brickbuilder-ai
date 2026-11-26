@@ -1,0 +1,33 @@
+#: title: A front-axle steering and suspension linkage with bent beams, pin joiners, and a suspension arm.
+#: source: LDraw Official Model Repository, 42043-1.mpd, section 42043 - frontaxle-2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("32526", "Dark_Bluish_Grey", (40, -10, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32556", "Tan", (40, -10, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("62462", "Yellow", (70, -10, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("87082", "Light_Bluish_Grey", (100, -10, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("62462", "Yellow", (130, -10, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32556", "Tan", (160, -10, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32526", "Dark_Bluish_Grey", (160, -10, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("43093", "Blue", (30, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (170, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (100, -45.149, 59.403), (1, 0, 0, 0, 0.97, 0.243, 0, -0.243, 0.97))
+place_ldu("43857", "Yellow", (80, -47.575, 49.701), (0, -1, 0, 0.97, 0, 0.243, -0.243, 0, 0.97))
+place_ldu("43857", "Yellow", (120, -47.575, 49.701), (0, -1, 0, 0.97, 0, 0.243, -0.243, 0, 0.97))
+place_ldu("2780", "Black", (20, -50, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32184", "Light_Bluish_Grey", (20, -50, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("60483", "Dark_Bluish_Grey", (60, -50, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("40490", "Black", (100, -50, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("44294", "Light_Bluish_Grey", (100, -50, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("15459", "Light_Bluish_Grey", (100, -50, 40), (-1, 0, 0, 0, 0.97, -0.243, 0, -0.243, -0.97))
+place_ldu("60483", "Dark_Bluish_Grey", (140, -50, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (180, -50, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32184", "Light_Bluish_Grey", (180, -50, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("11214", "Dark_Bluish_Grey", (40, -70, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (160, -70, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (40, -90, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -90, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (160, -90, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (160, -90, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

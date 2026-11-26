@@ -1,0 +1,30 @@
+#: title: A wheeled cart carrying colorful balloons built from a green brick base, dish, and taps with blue and yellow balloon-tops.
+#: source: LDraw Official Model Repository, 31084-1.mpd, section 31084 - ballooncart.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("2654", "White", 1, 0.75, 2)
+place_ldu("87994", "Light_Bluish_Grey", (90, -20, 30), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("16091", "Black", (90, -20, 32), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("16091", "Black", (90, -20, 88), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("99781", "Black", (30, -22, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("63868", "Black", (60, -22, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63868", "Black", (60, -22, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3002", "Green", 1, 2.75, 2, rot=180)
+place("3062b", "Blue", 5, 2.75, 2, rot=90)
+place("3062b", "Yellow", 5, 2.75, 3, rot=90)
+place_ldu("48336", "Dark_Bluish_Grey", (30, -54, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60897", "Dark_Bluish_Grey", (50, -54, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("60897", "Dark_Bluish_Grey", 2, 5.75, 3, rot=180)
+place("48336", "Dark_Bluish_Grey", 3, 5.75, 2, rot=270)
+place_ldu("60470b", "Medium_Nougat", (110, -54, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("26603", "White", 1, 6.75, 2, rot=180)
+place_ldu("4599b", "Blue", (110, -78, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4599b", "Yellow", (110, -78, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("63965", "White", (50, -132, 30), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("63965", "White", (50, -132, 90), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place("15395", "Lime", 1.5, 16.5, 0.5, rot=180)
+place("15395", "Red", 1.5, 16.5, 3.5, rot=180)
+place("30367c", "Lime", 1.5, 19.5, 0.5, rot=180)
+place("30367c", "Red", 1.5, 19.5, 3.5, rot=180)

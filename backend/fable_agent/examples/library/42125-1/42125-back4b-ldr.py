@@ -1,0 +1,32 @@
+#: title: A mirror-image rear quarter bodywork section with red and yellow quarter-ellipse liftarms, panels, and C-clipped bars forming an angled fairing.
+#: source: LDraw Official Model Repository, 42125-1.mpd, section 42125 - back4b.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("44676", "White", (80, -50, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("41677", "Black", (80, -50, 55), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("41677", "Black", (80, -50, 65), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("87994", "Black", (80, -50, 90), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("44676", "White", (100, -50, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("41677", "Black", (100, -50, 65), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("87994", "Black", (100, -50, 90), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("87080", "Red", (140, -50, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (120, -60, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -70, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("10197", "Black", (40, -70, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32184", "White", (60, -70, 80), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("41677", "Black", (80, -70, 55), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (80, -70, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32140", "Red", (80, -70, 100), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11214", "Red", (100, -70, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("18654", "Black", (100, -70, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("18651", "Black", (120, -70, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32250", "Blue", (40, -85, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32250", "Blue", (40, -95, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -100, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (100, -100, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32250", "Yellow", (40, -105, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32250", "Yellow", (40, -115, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("18651", "Black", (40, -130, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -140, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))

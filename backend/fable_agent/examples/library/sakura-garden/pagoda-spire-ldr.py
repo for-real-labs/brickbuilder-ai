@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, sakura-garden.mpd, section pagoda-spire.ldr
 #: author: ldraw-nova sakura-garden generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 23 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 23 parts kept (minifigures left out)
 place("3941", "Dark_Bluish_Grey", 0, 0, 0)
 place("87580", "Pearl_Gold", 0, 3, 0)
 place("85861", "Pearl_Gold", 0.5, 4, 0.5)

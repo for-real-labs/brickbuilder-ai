@@ -1,0 +1,31 @@
+#: title: Curved roof assembly using a large curved panel mounted on liftarms to form the cockpit canopy area.
+#: source: LDraw Official Model Repository, 42113-1.mpd, section 42113 - roof.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("18944", "Dark_Bluish_Grey", (100, 15.99, -98.388), (-1, 0, 0, 0, 0.978, 0.207, 0, 0.207, -0.978))
+place_ldu("2780", "Black", (30, -9, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (30, -9, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32449", "Light_Bluish_Grey", (35, -9, 130), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18651", "Black", (40, -9, 180), (-1, 0, 0, 0, 0.982, 0.187, 0, 0.187, -0.982))
+place_ldu("60483", "Dark_Bluish_Grey", (40, -9, 180), (0, -1, 0, 0.187, 0, 0.982, -0.982, 0, 0.187))
+place_ldu("32449", "Light_Bluish_Grey", (45, -9, 130), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("11214", "Red", (60, -9, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32524", "Dark_Bluish_Grey", (60, -9, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("11214", "Red", (60, -9, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("40490", "Dark_Bluish_Grey", (80, -9, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (100, -9, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (100, -9, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32524", "Dark_Bluish_Grey", (100, -9, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (100, -9, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("40490", "Dark_Bluish_Grey", (120, -9, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("11214", "Red", (140, -9, 100), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32524", "Dark_Bluish_Grey", (140, -9, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("11214", "Red", (140, -9, 160), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32449", "Light_Bluish_Grey", (155, -9, 130), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("18651", "Black", (160, -9, 180), (1, 0, 0, 0, -0.982, 0.187, 0, -0.187, -0.982))
+place_ldu("60483", "Dark_Bluish_Grey", (160, -9, 180), (0, -1, 0, 0.187, 0, 0.982, -0.982, 0, 0.187))
+place_ldu("32449", "Light_Bluish_Grey", (165, -9, 130), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (170, -9, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (170, -9, 140), (1, 0, 0, 0, -1, 0, 0, 0, -1))

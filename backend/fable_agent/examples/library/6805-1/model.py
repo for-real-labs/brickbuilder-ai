@@ -1,0 +1,31 @@
+#: title: A small classic space set featuring a compact Astro Dasher rover and a blue-suited astronaut minifigure.
+#: source: LDraw Official Model Repository, 6805-1.mpd
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("4032a", "Black", 4, 0, 5)
+place("4032a", "Black", 4, 0, 7)
+place("4596", "Light_Grey", 1, 0.75, 6, rot=90)
+place("4596", "Light_Grey", 4, 0.75, 2)
+place_ldu("4590", "Light_Grey", (100, -16, 170), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4596", "Light_Grey", 5, 0.75, 6, rot=270)
+place("3020", "Light_Grey", 4, 2, 5, rot=270)
+place_ldu("4589", "Trans_Red", (70, -30, 84), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4592", "Black", (70, -30, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4593", "Black", (70, -30, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4589", "Trans_Red", (130, -30, 84), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4592", "Black", (130, -30, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4593", "Black", (130, -30, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4081a", "Light_Grey", (90, -32, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4598", "Light_Grey", 4, 3, 6)
+place("4081a", "Light_Grey", 5, 2.75, 5, rot=270)
+place_ldu("4623", "Light_Grey", (100, -40, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Green", (20, -52, 190), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4596", "Light_Grey", (90, -52, 188), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4740", "Trans_Red", (100, -52, 26), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4735", "Black", (100, -52, 114), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3941", "Black", (100, -52, 196), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4589", "Trans_Red", (100, -52, 220), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4596", "Light_Grey", (110, -52, 188), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Trans_Green", (180, -52, 190), (0, 1, 0, 0, 0, -1, -1, 0, 0))

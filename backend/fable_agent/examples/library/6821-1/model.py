@@ -1,0 +1,30 @@
+#: title: A light grey wheeled space vehicle with a computer panel, positioning rockets, antenna, and an articulated shovel bucket arm assembly.
+#: source: LDraw Official Model Repository, 6821-1.mpd
+#: author: Willy Tschager [Holly-Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3024", "Yellow", (100, -8, 19), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Rubber_Black", (30, -18, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (30, -18, 260), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (90, -18, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (90, -18, 260), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("122c01", "Light_Grey", (60, -24, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("122c01", "Light_Grey", (60, -24, 260), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3024", "Yellow", (60, -33.5523, 73.1541), (1, 0, 0, 0, 0.998419, -0.059917, 0, 0.059917, 0.998419))
+place_ldu("795", "Light_Grey", (60, -38, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("794", "Light_Grey", (60, -48, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("792", "Light_Grey", 2, 3, 8, rot=180)
+place("3747a", "Light_Grey", 2, 3, 10)
+place("3004", "Light_Grey", 2, 3, 13, rot=180)
+place_ldu("4089", "Light_Grey", (60, -48.7285, 86.2706), (1, 0, 0, 0, 0.866218, -0.500096, 0, 0.500096, 0.866218))
+place_ldu("3612", "Light_Grey", (60, -49.592, 146.892), (0, 1, 0, -0.259, 0, 0.966, 0.966, 0, 0.259))
+place("3795", "Light_Grey", 2, 6, 8, rot=90)
+place("3963", "Light_Grey", 0, 5, 7, rot=90)
+place_ldu("3829c01", "Light_Grey", (60, -64, 190), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3963", "Light_Grey", 3, 5, 7, rot=270)
+place_ldu("3612", "Light_Grey", (60, -64.2885, 132.191), (0, 1, 0, -0.966056, 0, 0.258706, 0.258706, 0, 0.966056))
+place_ldu("3613", "Light_Grey", (60, -67.3929, 120.599), (0, 1, 0, -0.500119, 0, -0.866205, -0.866205, 0, 0.500119))
+place("3039p34", "Light_Grey", 2, 7, 12)
+place_ldu("3957a", "Light_Grey", (50, -88, 270), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4085a", "Light_Grey", 3, 10, 13, rot=270)

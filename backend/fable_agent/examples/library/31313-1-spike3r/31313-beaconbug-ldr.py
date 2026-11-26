@@ -1,0 +1,33 @@
+#: title: Standalone remote-controlled beacon bug built around the EV3 IR Beacon handset with curved blades, beams, and axles forming legs.
+#: source: LDraw Official Model Repository, 31313-1_Spike3r.mpd, section 31313 - beaconbug.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("98347", "White", (40, -5, 20), (0, 0.906, -0.423, -1, 0, 0, 0, 0.423, 0.906))
+place_ldu("98347", "White", (120, -5, 20), (0, -0.906, 0.423, 1, 0, 0, 0, 0.423, 0.906))
+place_ldu("98347", "White", (40, -15, 20), (0, 0.866, 0.5, -1, 0, 0, 0, -0.5, 0.866))
+place_ldu("98347", "White", (120, -15, 20), (0, -0.866, -0.5, 1, 0, 0, 0, -0.5, 0.866))
+place_ldu("32523", "Black", (2.679, -20, 80), (-0.5, 0, 0.866, -0.866, 0, -0.5, 0, -1, 0))
+place_ldu("32523", "Black", (2.679, -20, 120), (-0.5, 0, 0.866, -0.866, 0, -0.5, 0, -1, 0))
+place_ldu("32523", "Black", (2.679, -20, 160), (-0.5, 0, 0.866, -0.866, 0, -0.5, 0, -1, 0))
+place_ldu("2780", "Black", (40, -20, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (120, -20, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32523", "Black", (157.321, -20, 80), (-0.5, 0, -0.866, 0.866, 0, -0.5, 0, -1, 0))
+place_ldu("32523", "Black", (157.321, -20, 120), (-0.5, 0, -0.866, 0.866, 0, -0.5, 0, -1, 0))
+place_ldu("32523", "Black", (157.321, -20, 160), (-0.5, 0, -0.866, 0.866, 0, -0.5, 0, -1, 0))
+place_ldu("6536", "Red", (20, -30, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3713", "Red", (20, -30, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("55013", "Dark_Bluish_Grey", (20, -30, 90), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6536", "Red", (20, -30, 100), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6536", "Red", (20, -30, 140), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6536", "Red", (140, -30, 20), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3713", "Red", (140, -30, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("55013", "Dark_Bluish_Grey", (140, -30, 90), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6536", "Red", (140, -30, 100), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6536", "Red", (140, -30, 140), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (30, -50, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -50, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("72156", "White", (80, -50, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (130, -50, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (130, -50, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))

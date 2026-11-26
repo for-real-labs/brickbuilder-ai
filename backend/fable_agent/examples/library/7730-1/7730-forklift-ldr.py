@@ -1,0 +1,31 @@
+#: title: Small yellow forklift vehicle with forks, offset-tread tyres, a driver's seat, steering wheel, and headlights.
+#: source: LDraw Official Model Repository, 7730-1.mpd, section 7730 - forklift.ldr
+#: author: [Strikeman]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("87414", "Black", (12, -17.9, 120.075), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87414", "Black", (12.0544, -17.9, 199.936), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87414", "Black", (67.9296, -17.9, 120.05), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87414", "Black", (68, -17.9, 199.936), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("122c01", "Black", (40, -23.9, 120.063), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("122c01", "Black", (40.0105, -23.9, 199.936), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3795", "Black", (40, -31.9, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3020", "Yellow", (41, -39.9, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Yellow", (11, -47.9, 160.013), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3788", "Yellow", (41, -47.9, 120.062), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3021", "Yellow", (41, -47.9, 130.046), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3788", "Yellow", (41, -47.9, 199.936), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Yellow", (70.9441, -47.9, 159.936), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3430c02", "Black", (41, -55.9, 119.064), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("9552", "Red", (41, -55.9, 150.015), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Milky_White", (70.9336, -61.8425, 95.9365), (1, 0, 0, 0, 0, -0.999999, 0, 1, 0))
+place_ldu("6141", "Trans_Red", (11.0681, -61.9, 224.003), (-0.999999, 0, 0, 0, 0, -0.999999, 0, -1, 0))
+place_ldu("6141", "Trans_Red", (70.9261, -61.9, 223.936), (-0.999999, 0, 0, 0, 0, -0.999999, 0, -1, 0))
+place_ldu("6141", "Milky_White", (11.0761, -62.8353, 95.9365), (1, 0, 0, 0, 0, -0.999999, 0, 1, 0))
+place_ldu("4070", "Yellow", (11, -71.9, 110.091), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3040b", "Yellow", (11, -71.9, 130.06), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4070", "Yellow", (11.0606, -71.9, 209.936), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4070", "Yellow", (70.92, -71.9, 110.064), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3040b", "Yellow", (70.9299, -71.9, 130.032), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4070", "Yellow", (71, -71.9, 209.936), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

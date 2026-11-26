@@ -1,0 +1,30 @@
+#: title: Mirrored tail boom side fairing with trapezium panel, curved fairing panel, and long liftarms.
+#: source: LDraw Official Model Repository, 42113-1.mpd, section 42113 - tailside2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("18945", "Dark_Bluish_Grey", (60, -49, 120), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (60, -69, 230), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (40, -89, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (50, -89, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (50, -89, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("18651", "Black", (60, -89, 240), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("60483", "Dark_Bluish_Grey", (60, -89, 240), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("11946", "Dark_Bluish_Grey", (60, -89, 260), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (60, -99, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -99, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -99, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -99, 180), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32184", "Light_Bluish_Grey", (40, -108.998, 144.555), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3707", "Black", (40, -109, 110), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32184", "Light_Bluish_Grey", (40, -109, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32054", "Light_Bluish_Grey", (40, -109, 200), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32525", "Dark_Bluish_Grey", (60, -109, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -109, 300), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -109, 320), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (60, -119, 160), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -119, 240), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("60483", "Dark_Bluish_Grey", (20, -129, 200), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("18651", "Black", (40, -129, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("15100", "Light_Bluish_Grey", (60, -129, 200), (0, 1, 0, 1, 0, 0, 0, 0, -1))

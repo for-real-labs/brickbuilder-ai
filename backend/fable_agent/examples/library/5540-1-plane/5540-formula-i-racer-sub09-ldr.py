@@ -1,0 +1,30 @@
+#: title: Red and white plate assembly forming a layered structural base with stud details.
+#: source: LDraw Official Model Repository, 5540-1_Plane.mpd, section 5540 - Formula I Racer - sub09.ldr
+#: author: Rene Frijhoff
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("4531", "Black", (130, 136.074, 120.272), (0, 0, 1, -0.008727, 0.999962, 0, -0.999962, -0.008727, 0))
+place_ldu("4531", "Black", (470, 136.074, 120.272), (0, 0, 1, -0.008727, 0.999962, 0, -0.999962, -0.008727, 0))
+place_ldu("4275a", "Black", (130, 113.5, 75), (0, 0, 1, 0.92388, -0.382683, 0, 0.382683, 0.92388, 0))
+place_ldu("4275a", "Black", (470, 113.5, 75), (0, 0, 1, 0.92388, -0.382683, 0, 0.382683, 0.92388, 0))
+place_ldu("3623", "Black", (130, 69.298, 56.882), (0, 0, -1, -0.92388, -0.382683, 0, -0.382683, 0.92388, 0))
+place_ldu("3623", "Black", (470, 69.298, 56.882), (0, 0, -1, -0.92388, -0.382683, 0, -0.382683, 0.92388, 0))
+place_ldu("3460", "Black", (130, 65.115, 46.182), (0, 0, -1, -0.92388, -0.382683, 0, -0.382683, 0.92388, 0))
+place_ldu("3460", "Black", (470, 65.115, 46.182), (0, 0, -1, -0.92388, -0.382683, 0, -0.382683, 0.92388, 0))
+place_ldu("4276a", "Black", (130, 25.1, 38.267), (0, 0, -1, -0.92388, -0.382683, 0, -0.382683, 0.92388, 0))
+place_ldu("4276a", "Black", (470, 25.1, 38.267), (0, 0, -1, -0.92388, -0.382683, 0, -0.382683, 0.92388, 0))
+place_ldu("4275a", "Black", (130, -8, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3024", "White", 13, 0, 0, rot=180)
+place("3024", "White", 16, 0, 0, rot=180)
+place_ldu("4275a", "Black", (470, -8, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3023", "Black", 6, 1, 2, rot=90)
+place("3021", "White", 10, 1, 2, rot=180)
+place("3832", "White", 10, 1, 0, rot=180)
+place("3021", "White", 17, 1, 2, rot=180)
+place("3023", "Black", 23, 1, 2, rot=90)
+place("3028", "Red", 0, 2, 0)
+place("3032", "Red", 12, 2, 0)
+place("3028", "Red", 18, 2, 0)
+place("3020", "White", 11, 3, 0, rot=270)
+place("3020", "White", 17, 3, 0, rot=270)

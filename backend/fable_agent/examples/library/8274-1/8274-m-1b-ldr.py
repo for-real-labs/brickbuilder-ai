@@ -1,0 +1,30 @@
+#: title: m-1b''
+#: source: LDraw Official Model Repository, 8274-1.mpd, section 8274 - m-1b''.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (30, 26.956, 544.689), (-1, 0, 0, 0, 0.924, -0.383, 0, -0.383, -0.924))
+place_ldu("43857", "Black", (20, 17.716, 548.519), (0, -1, 0, -0.383, 0, 0.924, -0.924, 0, -0.383))
+place_ldu("2780", "Black", (30, 8.476, 552.349), (-1, 0, 0, 0, 0.924, -0.383, 0, -0.383, -0.924))
+place_ldu("32523", "Black", (40, 8.476, 552.349), (0, -1, 0, 0.383, 0, -0.924, 0.924, 0, 0.383))
+place_ldu("6536", "Light_Bluish_Grey", (20, -10, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32184", "Light_Bluish_Grey", (20, -10, 220), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32278", "White", (20, -10, 420), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 320), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 480), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 500), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -10, 540), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (30, -10, 560), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32278", "White", (40, -10, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("40490", "White", (40, -10, 400), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32523", "White", (40, -10, 520), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (20, -20, 140), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (20, -20, 200), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (20, -20, 240), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32278", "White", (20, -30, 160), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6628", "Black", (20, -40, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))

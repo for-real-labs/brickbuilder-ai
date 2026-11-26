@@ -1,0 +1,33 @@
+#: title: A compact blue race car featuring four slick tyres, rounded sloped bodywork, grille tiles, and hinge construction.
+#: source: LDraw Official Model Repository, 4347-1_Race-Car.mpd
+#: author: Ken Drew [Ken]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3710", "Blue", 0, 0, 0, rot=180)
+place("3020", "Blue", 1, 0, 1, rot=90)
+place("3023", "Blue", 1, 0, 5, rot=180)
+place_ldu("30027a", "Rubber_White", (7, -11, 40), (0, 0, 0.999999, 0, 0.999999, 0, -0.999999, 0, 0))
+place_ldu("30027a", "Rubber_White", (7, -11, 100), (0, 0, 0.999999, 0, 0.999999, 0, -0.999999, 0, 0))
+place_ldu("30028", "Black", (12, -11, 40), (-0.999999, 0, 0, 0, 0.999999, 0, 0, 0, -0.999999))
+place_ldu("30028", "Black", (12, -11, 100), (-0.999999, 0, 0, 0, 0.999999, 0, 0, 0, -0.999999))
+place_ldu("30027a", "Rubber_White", (73, -11, 40), (0, 0, -0.999999, 0, 0.999999, 0, 0.999999, 0, 0))
+place_ldu("30027a", "Rubber_White", (73, -11, 100), (0, 0, -0.999999, 0, 0.999999, 0, 0.999999, 0, 0))
+place_ldu("30028", "Black", (78, -11, 40), (-0.999999, 0, 0, 0, 0.999999, 0, 0, 0, -0.999999))
+place_ldu("30028", "Black", (78, -11, 100), (-0.999999, 0, 0, 0, 0.999999, 0, 0, 0, -0.999999))
+place("6141", "Trans_Yellow", 1, 1, 0, rot=180)
+place_ldu("4600", "Light_Grey", (40, -16, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3710", "Blue", 0, 1, 3, rot=180)
+place_ldu("4600", "Light_Grey", (40, -16, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("6141", "Trans_Yellow", 2, 1, 0, rot=180)
+place("3021", "Blue", 1, 2, 0, rot=270)
+place("3021", "Blue", 1, 2, 3, rot=270)
+place_ldu("41855", "Blue", (40, -40, 50), (0.999999, 0, 0, 0, 0.999999, 0, 0, 0, 0.999999))
+place_ldu("3938", "Light_Grey", (40, -43.3572, 118.426), (-1, 0, 0, 0, 0.5, -0.866025, 0, -0.866025, -0.5))
+place_ldu("3023", "Blue", (40, -47.3572, 125.354), (-1, 0, 0, 0, 0.5, -0.866025, 0, -0.866025, -0.5))
+place("3937", "Blue", 1, 3, 5, rot=180)
+place_ldu("6141", "Trans_Red", (30, -51.3572, 132.282), (-1, 0, 0, 0, 0.5, -0.866025, 0, -0.866025, -0.5))
+place_ldu("6141", "Trans_Red", (50, -51.3572, 132.282), (-1, 0, 0, 0, 0.5, -0.866025, 0, -0.866025, -0.5))
+place_ldu("2436a", "Blue", (40, -55.3572, 139.211), (1, 0, 0, 0, 0.5, 0.866025, 0, -0.866025, 0.5))
+place_ldu("2412b", "Light_Blue", (20, -69.4098, 119.55), (-0.999999, 0, 0, 0, 0.866025, 0.5, 0, 0.5, -0.866025))
+place_ldu("2412b", "Light_Blue", (60, -69.4098, 119.55), (-0.999999, 0, 0, 0, 0.866025, 0.5, 0, 0.5, -0.866025))

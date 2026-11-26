@@ -3,7 +3,7 @@
 #: author: Tim Singer [tsinger]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures left out)
 place("3023", "Yellow", 1, 0, 5)
 place("3031", "Yellow", 0, 0, 1)
 place_ldu("4276b", "Yellow", (70, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))

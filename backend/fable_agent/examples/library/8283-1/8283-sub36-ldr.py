@@ -1,0 +1,30 @@
+#: title: Rounded lamp housing with bent liftarms, a transparent yellow round brick, and a dish cover.
+#: source: LDraw Official Model Repository, 8283-1.mpd, section 8283 - Sub36.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3705", "Black", (60, 0, 20), (0, -0.971, -0.238, 1, 0, 0, 0, -0.238, 0.971))
+place_ldu("32250", "Black", (35, -10, 80), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("41677", "Black", (45, -10, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3713", "Light_Bluish_Grey", (50, -10, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("42003", "Black", (60, -10, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32062", "Red", (60, -10, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -10, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -10, 120), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (70, -10, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("41677", "Black", (75, -10, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32250", "Black", (85, -10, 80), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6538b", "Black", (60, -40, 20.005), (0.971, -0.239, 0, 0, 0, -1, 0.239, 0.971, 0))
+place_ldu("3713", "Light_Bluish_Grey", (60, -70, 20.005), (0.971, -0.239, 0, 0, 0, -1, 0.239, 0.971, 0))
+place_ldu("32039", "Black", (20, -90, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("41677", "Black", (45, -90, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32073", "Light_Bluish_Grey", (60, -90, 20.005), (0, -0.239, 0.971, 1, 0, 0, 0, 0.971, 0.239))
+place_ldu("42003", "Black", (60, -90, 40.005), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32062", "Red", (60, -90, 60.005), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32073", "Light_Bluish_Grey", (60, -90, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("41677", "Black", (75, -90, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32039", "Black", (100, -90, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123a", "Light_Bluish_Grey", (60, -105, 20.005), (0.971, -0.239, 0, 0, 0, -1, 0.239, 0.971, 0))
+place_ldu("6143", "Trans_Yellow", (60, -113.987, 20.01), (0.971, 0, 0.239, 0, -1, 0, 0.239, 0, -0.971))
+place_ldu("2654", "Black", (59.853, -137.987, 19.761), (0.966, 0, 0.259, 0, -1, 0, 0.259, 0, -0.966))

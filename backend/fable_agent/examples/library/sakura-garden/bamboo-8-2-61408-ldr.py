@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, sakura-garden.mpd, section bamboo-8-2-61408.ldr
 #: author: ldraw-nova sakura-garden generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 9 of 9 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 9 of 9 parts kept (minifigures left out)
 place("3062b", "Green", 2, 0, 2)
 place("3062b", "Green", 2, 3, 2)
 place("3062b", "Green", 2, 6, 2)

@@ -1,0 +1,31 @@
+#: title: Extended Technic frame section using long bricks and plates joined with friction pins.
+#: source: LDraw Official Model Repository, 8828-1_Grader.mpd, section 8828 - Substep_Step-9.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3738", "Yellow", (306, -20, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3749", "Light_Grey", (320, -20, 20), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3749", "Light_Grey", (320, -20, 180), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3700", "Yellow", (330, -20, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3700", "Yellow", (330, -20, 170), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3738", "Yellow", (338, -20, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (320, -60, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (320, -60, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3894", "Yellow", (330, -60, 70), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("3894", "Yellow", (330, -60, 130), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("3701", "Yellow", 13, 5.75, 4)
+place("3701", "Yellow", 13, 5.75, 5)
+place("3709b", "Yellow", 13, 8.75, 4, rot=180)
+place("3710", "Yellow", 13, 9.75, 4, rot=180)
+place("3710", "Yellow", 13, 9.75, 5, rot=180)
+place_ldu("3673", "Light_Grey", (20, -100, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (200, -100, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (200, -100, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (220, -100, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (220, -100, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (320, -100, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (320, -100, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3895", "Yellow", 0, 10.75, 6)
+place("3702", "Yellow", 9, 10.75, 4, rot=180)
+place("3702", "Yellow", 9, 10.75, 5, rot=180)

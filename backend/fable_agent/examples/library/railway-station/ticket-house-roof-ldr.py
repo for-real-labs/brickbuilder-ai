@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, railway-station.mpd, section ticket-house-roof.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 96 of 96 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 96 of 96 parts kept (minifigures left out)
 place("3034", "Tan", 0, 0, 0)
 place("3020", "Tan", 8, 0, 0)
 place("3034", "Tan", 0, 0, 2)

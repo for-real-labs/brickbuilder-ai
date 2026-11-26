@@ -1,0 +1,33 @@
+#: title: Tan and reddish-brown canoe with paddle seat details, built from plates and headlight bricks on a grey hull base.
+#: source: LDraw Official Model Repository, 31025-1_Mountaintop-Lockout.mpd, section 31025 - Canoe.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3795", "Light_Bluish_Grey", 0, 0, 1)
+place_ldu("6141", "Reddish_Brown", (68.542, -22.984, 25.25), (-0.648, 0.679, -0.346, 0.748, 0.654, -0.117, 0.146, -0.335, -0.931))
+place_ldu("2921", "Tan", (10, -32, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2921", "Tan", 0, 1, 2, rot=180)
+place("4070", "Tan", 5, 1, 1, rot=270)
+place_ldu("3062b", "Tan", (140, -22, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("4070", "Tan", 5, 1, 2, rot=270)
+place_ldu("3062b", "Tan", (140, -22, 50), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("4070", "Tan", 4, 1, 1)
+place_ldu("6141", "Black", (90, -22, 16), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6636", "Reddish_Brown", (80, -22, 8), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6141", "Black", (30, -22, 16), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("4070", "Tan", 1, 1, 1)
+place("4070", "Tan", 4, 1, 2, rot=180)
+place_ldu("6141", "Black", (90, -22, 64), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6636", "Reddish_Brown", (80, -22, 72), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6141", "Black", (30, -22, 64), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("4070", "Tan", 1, 1, 2, rot=180)
+place_ldu("59900", "Dark_Bluish_Grey", (52.246, -38.68, 33.29), (-0.648, 0.679, -0.346, 0.748, 0.654, -0.117, 0.146, -0.335, -0.931))
+place_ldu("30374", "Reddish_Brown", (61.752, -29.524, 28.6), (0.648, -0.679, -0.346, -0.748, -0.654, -0.117, -0.146, 0.335, -0.931))
+place("3022", "Reddish_Brown", 0, 4, 1, rot=180)
+place("3623", "Reddish_Brown", 4, 4, 1, rot=180)
+place("3623", "Reddish_Brown", 4, 4, 2, rot=180)
+place("6141", "Reddish_Brown", 1, 5, 1, rot=180)
+place("6141", "Reddish_Brown", 1, 5, 2, rot=180)
+place_ldu("59900", "Dark_Bluish_Grey", (16.938, -72.688, 50.71), (0.648, -0.679, -0.346, -0.748, -0.654, -0.117, -0.146, 0.335, -0.931))
+place_ldu("6141", "Reddish_Brown", (0.642, -88.384, 58.75), (-0.648, -0.679, 0.346, 0.748, -0.654, 0.117, 0.146, 0.335, 0.931))

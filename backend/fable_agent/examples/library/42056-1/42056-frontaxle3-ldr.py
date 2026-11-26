@@ -1,0 +1,30 @@
+#: title: Front axle reinforcement using a 15-stud beam, bent liftarms, and suspension arms to stiffen the axle structure.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - frontaxle3.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (40, -9, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (100, -9, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32526", "Black", (100, -9, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32278", "Black", (180, -9, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("15100", "Black", (220, -9, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (260, -9, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32526", "Black", (260, -9, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (320, -9, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4274", "Blue", (20, -29, 50), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("4274", "Blue", (340, -29, 50), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("57515", "Dark_Bluish_Grey", (59.392, -42.054, 60), (0, 0.174, 0.985, 0, -0.985, 0.174, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (59.392, -42.054, 60), (0, -0.985, 0.174, 0, -0.174, -0.985, 1, 0, 0))
+place_ldu("4255", "Red", (59.392, -42.054, 60), (-0.684, -0.729, 0, 0.729, -0.684, 0, 0, 0, 1))
+place_ldu("57515", "Dark_Bluish_Grey", (300.608, -42.054, 60), (0, -0.174, -0.985, 0, -0.985, 0.174, -1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (300.608, -42.054, 60), (0, 0.985, -0.174, 0, -0.174, -0.985, -1, 0, 0))
+place_ldu("4255", "Red", (300.608, -42.054, 60), (0.684, 0.729, 0, 0.729, -0.684, 0, 0, 0, -1))
+place_ldu("6632", "Dark_Bluish_Grey", (20, -49, 35), (0.174, 0, 0.985, -0.985, 0, 0.174, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (20, -49, 60), (0, -0.985, 0.174, 0, -0.174, -0.985, 1, 0, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (20, -49, 85), (0.174, 0, 0.985, -0.985, 0, 0.174, 0, -1, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (340, -49, 35), (-0.174, 0, -0.985, -0.985, 0, 0.174, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (340, -49, 60), (0, 0.985, -0.174, 0, -0.174, -0.985, -1, 0, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (340, -49, 85), (-0.174, 0, -0.985, -0.985, 0, 0.174, 0, 1, 0))
+place_ldu("4254", "Black", (-19.3502, -115.936, 60), (-0.684, -0.729, 0, 0.729, -0.684, 0, 0, 0, 1))
+place_ldu("4254", "Black", (379.35, -115.936, 60), (0.684, 0.729, 0, 0.729, -0.684, 0, 0, 0, -1))

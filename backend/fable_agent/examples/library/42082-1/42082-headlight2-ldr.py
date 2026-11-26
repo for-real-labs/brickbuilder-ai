@@ -1,0 +1,29 @@
+#: title: A mirrored headlight housing built from bent liftarms and axles with a transparent orange slope lens.
+#: source: LDraw Official Model Repository, 42082-1.mpd, section 42082 - headlight2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 23 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (50, -9, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("59443", "Black", (70, -9, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3705", "Red", (110, -9, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (120, -9, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (30, -29, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32140", "Black", (20, -49, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -49, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32526", "Black", (40, -49, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (50, -49, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("74695", "Light_Bluish_Grey", (60, -49, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("11214", "Red", (60, -49, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("59443", "Black", (70, -49, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32073", "Light_Bluish_Grey", (80, -49, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("63869", "Black", (80, -49, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32526", "Black", (100, -49, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32054", "Black", (100, -49, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("11214", "Red", (100, -49, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("54200", "Trans_Orange", (60, -69, 22), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (60, -69, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3623", "Dark_Bluish_Grey", (80, -69, 22), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3069b", "Trans_Clear", (90, -69, 6), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3023", "Trans_Clear", (90, -69, 14), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (100, -69, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))

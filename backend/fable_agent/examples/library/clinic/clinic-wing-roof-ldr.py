@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, clinic.mpd, section clinic-wing-roof.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 63 of 63 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 63 of 63 parts kept (minifigures left out)
 place("3034", "Dark_Turquoise", 0, 0, 0)
 place("3034", "Dark_Turquoise", 8, 0, 0)
 place("3022", "Dark_Turquoise", 16, 0, 0)

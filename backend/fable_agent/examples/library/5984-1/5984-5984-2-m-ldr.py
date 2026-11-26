@@ -1,0 +1,32 @@
+#: title: A landing strut or engine nacelle assembly mirroring the left version, with mudguard arch, cylinder housing, cones, and wing cutout plates.
+#: source: LDraw Official Model Repository, 5984-1.mpd, section 5984 - 5984-2-m.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3795", "Light_Grey", 2, 0, 4)
+place_ldu("3673", "Black", (20, -14, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Black", (20, -14, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3710", "Black", 2, 1, 3, rot=90)
+place("3020", "Black", 3, 1, 4)
+place_ldu("10247", "Light_Grey", (40, -24, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("10247", "Light_Grey", (40, -24, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("43719", "Dark_Grey", 3, 2, 3, rot=270)
+place("3666", "Black", 1, 3, 2, rot=90)
+place("3020", "Black", 2, 3, 4)
+place("3660", "Light_Grey", 7, 1, 4, rot=270)
+place("3022", "Light_Grey", 1, 4, 4)
+place("3021", "Dark_Blue_Violet", 5, 4, 4)
+place("3023", "White", 8, 4, 4, rot=90)
+place_ldu("6239", "Black", (192, -44, 110), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3942c", "Dark_Blue_Violet", (150, -50, 16), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("30360", "Black", 6, 2, 2)
+place_ldu("4032a", "Dark_Grey", (150, -50, 160), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3749", "Blue", (150, -50, 168), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("55981", "Light_Grey", (150, -50, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("62361", "Black", 1, 4, 2)
+place("61678", "Black", 1, 5, 1)
+place("61678", "Black", 1, 5, 5, rot=180)
+place("44728", "Light_Grey", 8, 3, 4, rot=270)
+place("2412b", "Chrome_Gold", 8, 8, 4, rot=270)
+place("3937", "Light_Grey", 7, 7, 4, rot=90)

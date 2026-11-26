@@ -1,0 +1,33 @@
+#: title: Rear body structure of curved white panels and long beams braced by pins.
+#: source: LDraw Official Model Repository, 42100-1.mpd, section 42100 - bodyback.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("18944", "White", (140, -30, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (20, -40, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (260, -40, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32526", "White", (100, -50, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32526", "White", (180, -50, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -60, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (100, -60, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (180, -60, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (240, -60, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("41239", "White", (140, -70, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (20, -90, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("18944", "White", (140, -90, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (260, -90, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("62462", "White", (20, -120, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("62462", "White", (260, -120, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -150, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("18944", "White", (140, -150, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (260, -150, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("41239", "White", (140, -170, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -180, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (100, -180, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (180, -180, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (240, -180, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -190, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32526", "White", (100, -190, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32526", "White", (180, -190, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (260, -190, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))

@@ -1,0 +1,31 @@
+#: title: Steering linkage mechanism using beams, ball joint, and connectors for the front wheels.
+#: source: LDraw Official Model Repository, 42062-1.mpd, section 42062 - handlersteering.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32316", "Orange", (60, -10, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32316", "Orange", (60, -10, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Tan", (40, -20, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3749", "Tan", (80, -20, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("48989", "Light_Bluish_Grey", (20, -30, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3713", "Red", (40, -30, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (40, -30, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("53585", "Black", (60, -30, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("10197", "Dark_Bluish_Grey", (60, -30, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Black", (60, -30, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -30, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3713", "Red", (80, -30, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (80, -30, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Orange", (80, -30, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("48989", "Light_Bluish_Grey", (100, -30, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32316", "Orange", (60, -50, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32039", "Light_Bluish_Grey", (60, -50, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32316", "Orange", (60, -50, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("43093", "Blue", (30, -70, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32034", "Orange", (60, -70, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("18654", "Black", (60, -70, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("15100", "Black", (60, -70, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("55013", "Dark_Bluish_Grey", (60, -70, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("87082", "Light_Bluish_Grey", (60, -70, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43093", "Blue", (90, -70, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))

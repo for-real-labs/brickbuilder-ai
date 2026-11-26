@@ -3,7 +3,7 @@
 #: author: Willy Tschager [Holly Wood]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures left out)
 place("3034", "Dark_Bluish_Grey", 0, 0, 1)
 place("87552", "Light_Bluish_Grey", 6, 1, 1, rot=270)
 place("87552", "Light_Bluish_Grey", 7, 1, 1, rot=90)

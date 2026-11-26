@@ -1,0 +1,33 @@
+#: title: A Technic landing gear mechanism with liftarms, axles, pins, towball joints, and steering links in red and grey.
+#: source: LDraw Official Model Repository, 4953-1.mpd, section 4953 - Plane S17.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("2739a", "Dark_Bluish_Grey", (30, -8, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2739a", "Dark_Bluish_Grey", (50, -8, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place("3031", "Blue", 0, 0.75, 11, rot=180)
+place_ldu("6628", "Black", (30, -18, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6628", "Black", (50, -18, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32525", "Light_Bluish_Grey", (10, -28, 260), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32002", "Dark_Bluish_Grey", (20, -28, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (20, -28, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6632", "Red", (25, -28, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (25, -28, 360), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32062", "Red", (40, -28, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32291", "Black", (40, -28, 140), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32039", "Red", (40, -28, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (40, -28, 215), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3713", "Red", (40, -28, 250), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3707", "Black", (40, -28, 270), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (40, -28, 325), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32039", "Red", (40, -28, 340), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3705", "Black", (40, -28, 360), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6632", "Red", (55, -28, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (55, -28, 360), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32002", "Dark_Bluish_Grey", (60, -28, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (60, -28, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32525", "Light_Bluish_Grey", (70, -28, 260), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("3700", "Black", 1, 1.75, 11, rot=180)
+place("3700", "Black", 1, 1.75, 13, rot=180)
+place("3031", "Light_Bluish_Grey", 0, 4.75, 11, rot=180)

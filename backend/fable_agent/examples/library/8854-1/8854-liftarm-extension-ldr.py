@@ -1,0 +1,33 @@
+#: title: A telescoping liftarm extension using Technic bricks, a rack, rotor blades, and a wheel rim for the extension drive.
+#: source: LDraw Official Model Repository, 8854-1.mpd, section 8854 - Liftarm Extension.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("2444", "Black", 22, 0, 1)
+place_ldu("4459", "Black", (20, -33, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4459", "Black", (100, -33, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4459", "Black", (140, -33, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4459", "Black", (220, -33, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4459", "Black", (260, -33, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4459", "Black", (340, -33, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4459", "Black", (380, -33, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4265a", "Light_Grey", (440, -33, 7), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3705", "Black", (440, -33, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4265a", "Light_Grey", (440, -33, 73), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Light_Grey", (460, -33, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4274", "Light_Grey", (460, -33, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2711", "Black", (480, -33, 12), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2711", "Black", (480, -33, 68), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4265a", "Light_Grey", (520, -33, 7), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3705", "Black", (520, -33, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3482", "Light_Grey", (520, -33, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4265a", "Light_Grey", (520, -33, 73), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3894", "Black", (60, -43, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3895", "Black", (120, -43, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3895", "Black", (240, -43, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3895", "Black", (360, -43, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3894", "Black", (420, -43, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Black", (20, -51, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3069b", "Black", (20, -51, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2428", "Black", (240, -57, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))

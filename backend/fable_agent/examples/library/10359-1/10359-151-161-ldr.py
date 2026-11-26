@@ -3,7 +3,7 @@
 #: author: Orion Pobursky [OrionP]
 #: licence: Licenced under CC BY 4.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures left out)
 place("2420", "White", 5, 0, 1, rot=270)
 place("3623", "White", 6, 0, 4, rot=270)
 place("3623", "White", 6, 0, 8, rot=270)

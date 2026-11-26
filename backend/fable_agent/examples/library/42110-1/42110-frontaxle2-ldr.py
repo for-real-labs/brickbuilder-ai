@@ -1,0 +1,30 @@
+#: title: Front differential housing with open-center beam, bevel gears, differential, and universal joints to distribute drive to the front wheels.
+#: source: LDraw Official Model Repository, 42110-1.mpd, section 42110 - frontaxle2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("4274", "Light_Bluish_Grey", (60, -26, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (140, -26, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (-19.124, -27.675, 120), (0.978, 0, -0.208, -0.208, 0, -0.978, 0, 1, 0))
+place_ldu("3713", "Red", (-19.124, -27.675, 120), (0.208, 0, -0.978, 0.978, 0, 0.208, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (219.124, -27.675, 120), (0.978, 0, 0.208, 0.208, 0, -0.978, 0, 1, 0))
+place_ldu("3713", "Red", (219.124, -27.675, 120), (-0.208, 0, 0.978, 0.978, 0, 0.208, 0, 1, 0))
+place_ldu("62520", "Light_Bluish_Grey", (20, -36, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("62520", "Light_Bluish_Grey", (20, -36, 120), (0, -0.208, -0.978, 0, -0.978, 0.208, -1, 0, 0))
+place_ldu("62519", "Light_Bluish_Grey", (20, -36, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (50, -36, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -36, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (60, -36, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6589", "Tan", (83, -36, 120), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("99008", "Tan", (100, -36, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("64178", "Light_Bluish_Grey", (100, -36, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("62821", "Dark_Bluish_Grey", (100, -36, 120), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6589", "Tan", (100, -36, 137), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6589", "Tan", (117, -36, 120), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (140, -36, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (150, -36, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (150, -36, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("62520", "Light_Bluish_Grey", (180, -36, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("62520", "Light_Bluish_Grey", (180, -36, 120), (0, -0.208, 0.978, 0, 0.978, 0.208, -1, 0, 0))
+place_ldu("62519", "Light_Bluish_Grey", (180, -36, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))

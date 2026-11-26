@@ -1,0 +1,33 @@
+#: title: Blue dolphin figure built from plates, curved slope body sections, hinge joints, trapezoid flags, and an attached tail fin submodel.
+#: source: LDraw Official Model Repository, 7608-1.mpd
+#: author: Merlijn Wissink [legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3710", "Light_Bluish_Grey", 3, 0, 2, rot=270)
+place("3710", "Light_Bluish_Grey", 4, 0, 2, rot=270)
+place("3022", "Light_Bluish_Grey", 3, 1, 3, rot=270)
+place_ldu("44676", "Dark_Blue", (50, -22, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("44676", "Dark_Blue", (110, -22, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2540", "Dark_Bluish_Grey", (70, -24, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2540", "Dark_Bluish_Grey", 4, 2, 3, rot=270)
+place("3747a", "Light_Bluish_Grey", 3, 1, 0)
+place("3022", "Light_Bluish_Grey", 3, 3, 3, rot=90)
+place("3747a", "Light_Bluish_Grey", 3, 1, 5, rot=180)
+place_ldu("30602", "Blue", (80, -39.999, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30602", "Blue", (80, -39.999, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("6141", "Black", 3, 4, 2, rot=90)
+place("44302", "Blue", 3, 4, 6, rot=270)
+place("3022", "Blue", 3, 4, 0, rot=90)
+place("6141", "Black", 4, 4, 2, rot=90)
+place("44302", "Blue", 4, 4, 6, rot=270)
+place_ldu("3022", "Light_Bluish_Grey", (80, -47.804, 198.981), (0, 0, 1, 0.5, 0.866, 0, -0.866, 0.5, 0))
+place_ldu("44301", "Light_Bluish_Grey", (70, -54.732, 194.981), (0, 0, 1, 0.5, 0.866, 0, -0.866, 0.5, 0))
+place_ldu("44301", "Light_Bluish_Grey", (90, -54.732, 194.981), (0, 0, 1, 0.5, 0.866, 0, -0.866, 0.5, 0))
+place("3002", "Blue", 3, 4, 3, rot=90)
+place_ldu("3069b", "Blue", (80, -63.588, 178.321), (-1, 0, 0, 0, 0.866, 0.5, 0, 0.5, -0.866))
+place("3069b", "Blue", 3, 7, 3, rot=180)
+place("44661", "White", 3, 7, 4)
+place_ldu("41769", "Blue", (60, -71.66, 208.301), (1, 0, 0, 0, 0.866, -0.5, 0, 0.5, 0.866))
+place_ldu("41770", "Blue", (100, -71.66, 208.301), (1, 0, 0, 0, 0.866, -0.5, 0, 0.5, 0.866))
+place_ldu("3069b", "Blue", (80, -73.588, 195.641), (-1, 0, 0, 0, 0.866, 0.5, 0, 0.5, -0.866))

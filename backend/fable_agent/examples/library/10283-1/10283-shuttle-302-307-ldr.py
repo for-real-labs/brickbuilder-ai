@@ -1,0 +1,33 @@
+#: title: Mixed-color structural detail section combining curved slopes, side-stud bricks, and plates.
+#: source: LDraw Official Model Repository, 10283-1.mpd, section 10283 - shuttle-302-307.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3023", "Black", 1, 0, 4)
+place("13547", "Black", 1, 0, 1)
+place("3022", "Black", 1, 2, 3)
+place("13547", "Black", 2, 0, 1)
+place("3022", "Black", 1, 3, 1)
+place_ldu("3023", "Black", (40, -36, 10), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("85984", "Black", (40, -36, 10), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place("3022", "Black", 1, 4, 1)
+place_ldu("11211", "Yellow", (40, -54, 0), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("4070", "Blue", 1, 5, 1)
+place("22885", "Light_Bluish_Grey", 1, 3, 3, rot=90)
+place("11211", "Yellow", 1, 5, 2)
+place("15068", "Yellow", 1, 8, 2)
+place("4070", "Blue", 2, 5, 1)
+place("22885", "Light_Bluish_Grey", 2, 3, 3, rot=270)
+place("87580", "Olive_Green", 1, 8, 0, rot=270)
+place("3795", "Light_Bluish_Grey", 1, 8, 3, rot=270)
+place("44861", "Yellow", 1, 9, 4, rot=270)
+place("6141", "Yellow", 1.5, 9, 0.5, rot=270)
+place("3023", "Olive_Green", 1, 9, 8)
+place("44861", "Yellow", 2, 9, 4, rot=270)
+place_ldu("48336", "Blue", (40, -88, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Black", 1, 10, 8)
+place("3023", "Olive_Green", 1, 11, 6)
+place("3710", "Black", 0, 12, 6)
+place("18671", "Red", 1, 9, 6)
+place("99206", "Light_Bluish_Grey", 1, 11, 8, rot=180)

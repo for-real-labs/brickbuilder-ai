@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, temple.mpd
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 342 of 342 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 342 of 342 parts kept (minifigures left out)
 place("3811", "Olive_Green", 0, 0, 0)
 place("3795", "Light_Bluish_Grey", 7, 0.5, 10)
 place("3795", "Light_Bluish_Grey", 19, 0.5, 10)

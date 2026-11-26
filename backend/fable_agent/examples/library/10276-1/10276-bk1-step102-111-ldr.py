@@ -1,0 +1,32 @@
+#: title: Architectural wall section with slopes, bricks, plates, and brackets forming an angled facade similar to steps 55-64.
+#: source: LDraw Official Model Repository, 10276-1.mpd, section 10276 - bk1-step102-111.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3710", "Dark_Bluish_Grey", 0, 0.5, 1, rot=270)
+place_ldu("36840", "Dark_Bluish_Grey", (30, -12, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3710", "Dark_Bluish_Grey", 2, 0.5, 1)
+place("3666", "Black", 1, 0.5, 4)
+place_ldu("36840", "Dark_Bluish_Grey", (130, -12, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3020", "Dark_Bluish_Grey", 7, 0.5, 1, rot=270)
+place_ldu("6141", "Tan", (130, -14, 8), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("3023", "Dark_Tan", 0, 1.5, 2, rot=270)
+place("3460", "Dark_Bluish_Grey", 0, 1.5, 1)
+place("3460", "Dark_Bluish_Grey", 0, 1.5, 4)
+place("99781", "Dark_Bluish_Grey", 8, 0, 1, rot=270)
+place("99781", "Dark_Bluish_Grey", 8, 0, 3, rot=270)
+place("3001", "Dark_Bluish_Grey", 0, 2.5, 3)
+place("3009", "Dark_Bluish_Grey", 0, 2.5, 1)
+place("4286", "Dark_Bluish_Grey", 6, 2.5, 1, rot=270)
+place("4161", "Black", 6, 2.5, 2, rot=270)
+place_ldu("6141", "Tan", (30, -58, 12), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("3010", "Dark_Bluish_Grey", 0, 5.5, 1, rot=270)
+place("87087", "Dark_Bluish_Grey", 1, 5.5, 1)
+place("3010", "Dark_Bluish_Grey", 2, 5.5, 1, rot=270)
+place("60477", "Dark_Bluish_Grey", 3, 5.5, 1, rot=270)
+place("30363", "Black", 3, 5.5, 2, rot=270)
+place("60477", "Black", 3, 5.5, 4, rot=270)
+place("60477", "Dark_Bluish_Grey", 0, 8.5, 1, rot=270)
+place("30363", "Black", 0, 8.5, 2, rot=270)
+place("60477", "Black", 0, 8.5, 4, rot=270)

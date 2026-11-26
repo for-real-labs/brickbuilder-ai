@@ -1,0 +1,30 @@
+#: title: Companion outrigger subassembly with gear racks, gears, and beams for a stabilizer leg.
+#: source: LDraw Official Model Repository, 42043-1_Flatbed-Trailer.mpd, section 42043 - outrigger2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("18940", "Red", (40, -9, 180), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (50, -9, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -9, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -9, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (30, -29, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("18942", "Dark_Bluish_Grey", (40, -29, 150), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32062", "Red", (40, -29, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -29, 320), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (30, -49, 320), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32523", "Black", (20, -68.341, 325.09), (0, -1, 0, -0.254, 0, 0.967, -0.967, 0, -0.254))
+place_ldu("60483", "Dark_Bluish_Grey", (40, -69, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32270", "Black", (40, -69, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32524", "Dark_Bluish_Grey", (40, -69, 260), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Red", (50, -69, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -69, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("87083", "Dark_Bluish_Grey", (50, -69, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -69, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -69, 220), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (50, -69, 320), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (60, -69, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("40490", "Black", (60, -69, 140), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32140", "Light_Bluish_Grey", (60, -69, 320), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -69, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32523", "Black", (20, -78.506, 114.094), (0, -1, 0, 0.829, 0, -0.559, 0.559, 0, 0.829))

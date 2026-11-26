@@ -1,0 +1,30 @@
+#: title: A liftarm and cross block assembly reinforcing the structure with red bent liftarms and beams.
+#: source: LDraw Official Model Repository, 8448-1_Hot-Rod.mpd, section 8448 - hotrodstep5-6.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("6536", "Black", 20, 0, 0.5, rot=90)
+place("6536", "Black", 20, 0, 1.5, rot=90)
+place("6536", "Black", 1, 0, 0.5, rot=90)
+place("6536", "Black", 1, 0, 1.5, rot=90)
+place_ldu("6558", "Black", (410, -9, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Black", (410, -9, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Black", (30, -9, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Black", (30, -9, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Black", (410, -29, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4519", "Black", (30, -29, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32009", "Black", (410, -109, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32009", "Black", (30, -109, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (270, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (310, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (370, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (130, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (70, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (170, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Light_Grey", (190, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Light_Grey", (250, -109, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6629", "Red", (290, -109, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6629", "Red", (150, -109, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32063", "Red", (220, -109, 75), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32063", "Red", (220, -109, 85), (0, 0, -1, 1, 0, 0, 0, -1, 0))

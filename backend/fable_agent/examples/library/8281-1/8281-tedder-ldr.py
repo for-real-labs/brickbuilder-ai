@@ -1,0 +1,33 @@
+#: title: Red Technic hay tedder assembly with multiple crown gears, bevel-driven axles, and a 7-stud beam forming the rotors and drive mechanism.
+#: source: LDraw Official Model Repository, 8281-1.mpd, section 8281 - Tedder.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("6536", "Red", (80, -9, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (100, -9, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6553", "Light_Bluish_Grey", (100, -9, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6536", "Red", (120, -9, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32123a", "Light_Bluish_Grey", (40, -29, 65), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6587", "Dark_Bluish_Grey", (40, -29, 88), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (40, -29, 95), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32014", "Red", (40, -29, 130), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Black", (70, -29, 130), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (80, -29, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6538b", "Yellow", (100, -29, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6587", "Dark_Bluish_Grey", (100, -29, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32524", "Red", (100, -29, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4019", "Light_Bluish_Grey", (100, -29, 98), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32034", "Red", (100, -29, 130), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (120, -29, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32062", "Black", (130, -29, 130), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (160, -29, 65), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6587", "Dark_Bluish_Grey", (160, -29, 88), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (160, -29, 95), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32014", "Red", (160, -29, 130), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3749", "Tan", (40, -39, 130), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3749", "Tan", (100, -39, 130), (0, 0.991, 0.131, -1, 0, 0, 0, -0.131, 0.991))
+place_ldu("3749", "Tan", (160, -39, 130), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3650c", "Light_Bluish_Grey", (40, -47, 130), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3650c", "Light_Bluish_Grey", (160, -47, 130), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3650c", "Light_Bluish_Grey", (100, -51, 130), (-0.131, -0.991, 0, 0, 0, 1, -0.991, 0.131, 0))

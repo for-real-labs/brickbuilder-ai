@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, cathedral.mpd, section cathedral-transept-roof.ldr
 #: author: Original design generated with ldraw-nova for the workspace owner
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 201 of 201 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 201 of 201 parts kept (minifigures left out)
 place("3034", "Tan", 0, 0, 0)
 place("3795", "Tan", 8, 0, 0)
 place("3034", "Tan", 0, 0, 2)

@@ -3,7 +3,7 @@
 #: author: Merlijn Wissink [legolijntje]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures left out)
 place("3623", "Tan", 1, 0, 2, rot=270)
 place("44302", "Reddish_Brown", 1, 1, 3, rot=270)
 place("3623", "Tan", 1, 1, 0, rot=270)

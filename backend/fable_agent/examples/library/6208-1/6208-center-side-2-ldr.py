@@ -1,0 +1,30 @@
+#: title: A rounded side panel of the fuselage using round axlehole plates, curved-top bricks, and angle connectors to form a contoured surface.
+#: source: LDraw Official Model Repository, 6208-1.mpd, section 6208 - Center Side 2.ldr
+#: author: Merlijn Wissink [Legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("30165", "Dark_Bluish_Grey", (2, -30, 80), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("30165", "Dark_Bluish_Grey", (2, -30, 120), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("30602", "Light_Bluish_Grey", (26, -30, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3034", "Dark_Bluish_Grey", (26, -30, 100), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("30602", "Light_Bluish_Grey", (26, -30, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("4032a", "Light_Bluish_Grey", (34, -30, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4032a", "Light_Bluish_Grey", (34, -30, 140), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4032a", "Light_Bluish_Grey", (42, -30, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4032a", "Light_Bluish_Grey", (42, -30, 140), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Black", (50, -30, 140), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32034", "Light_Bluish_Grey", (80, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Black", (80, -30, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32034", "Light_Bluish_Grey", (80, -30, 140), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Black", (80, -30, 140), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Black", (110, -30, 140), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4032a", "Light_Bluish_Grey", (118, -30, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4032a", "Light_Bluish_Grey", (118, -30, 140), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4032a", "Light_Bluish_Grey", (126, -30, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4032a", "Light_Bluish_Grey", (126, -30, 140), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("30602", "Light_Bluish_Grey", (134, -30, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3034", "Dark_Bluish_Grey", (134, -30, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("30602", "Light_Bluish_Grey", (134, -30, 160), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("30165", "Dark_Bluish_Grey", (158, -30, 80), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("30165", "Dark_Bluish_Grey", (158, -30, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))

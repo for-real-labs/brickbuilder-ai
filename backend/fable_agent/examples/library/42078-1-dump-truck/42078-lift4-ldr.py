@@ -1,0 +1,32 @@
+#: title: Second articulated lift linkage arm built from green and black liftarms, angle connectors, and pins mirroring the scissor-lift mechanism.
+#: source: LDraw Official Model Repository, 42078-1_Dump-Truck.mpd, section 42078 - lift4.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2780", "Black", (30, -9, 220), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("22961", "Light_Bluish_Grey", (40, -29, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("32034", "Dark_Bluish_Grey", 1.5, 2.5, 2.5)
+place_ldu("27940", "Dark_Bluish_Grey", (40, -29, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("59443", "Dark_Bluish_Grey", (40, -29, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32062", "Red", (40, -29, 170), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("32013", "Black", 1.5, 2.5, 8.5)
+place_ldu("74695", "Dark_Bluish_Grey", (40, -29, 240), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (50, -29, 80), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -29, 200), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -29, 220), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("43093", "Blue", (50, -29, 240), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32525", "Black", (60, -29, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (40, -49, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32526", "Green", (40, -49, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("15100", "Dark_Bluish_Grey", (40, -49, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32526", "Green", (40, -49, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -49, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49, 120), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49, 140), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49, 220), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49, 240), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49, 260), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49, 280), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41239", "Green", (60, -49, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))

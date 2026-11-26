@@ -1,0 +1,31 @@
+#: title: Spaceship - Door
+#: source: LDraw Official Model Repository, 1789-1.mpd, section 1789 - Spaceship - Door.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3020", "Blue", 2, 0, 2, rot=180)
+place_ldu("4275b", "Black", (50, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4275b", "Black", (70, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6104", "Light_Grey", (80, -16, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4275b", "Black", (90, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4275b", "Black", (110, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3070b", "Blue", 1, 2, 2, rot=180)
+place("3070b", "Trans_Dark_Blue", 1, 2, 3, rot=180)
+place("3070b", "Blue", 1, 2, 4, rot=180)
+place("3070b", "Trans_Dark_Blue", 2, 2, 5, rot=180)
+place("3070b", "Blue", 2, 2, 6, rot=180)
+place("6141", "Trans_Neon_Green", 3, 2, 8, rot=180)
+place("3031", "Blue", 2, 2, 1, rot=180)
+place("3068b", "Black", 3, 2, 5, rot=180)
+place("3069b", "Blue", 3, 2, 7, rot=180)
+place("6141", "Trans_Neon_Green", 4, 2, 8, rot=180)
+place("3070b", "Trans_Dark_Blue", 5, 2, 5, rot=180)
+place("3070b", "Blue", 5, 2, 6, rot=180)
+place("3070b", "Blue", 6, 2, 2, rot=180)
+place("3070b", "Trans_Dark_Blue", 6, 2, 3, rot=180)
+place("3070b", "Blue", 6, 2, 4, rot=180)
+place("3068b", "Black", 2, 3, 1, rot=180)
+place("3068b", "Black", 2, 3, 3, rot=180)
+place("3068b", "Black", 4, 3, 1, rot=180)
+place("3068b", "Black", 4, 3, 3, rot=180)

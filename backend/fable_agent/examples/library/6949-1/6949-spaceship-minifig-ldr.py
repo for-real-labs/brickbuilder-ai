@@ -3,7 +3,7 @@
 #: author: Damien Roux [Darats]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
 place("3710", "Red", 1, 0, 2, rot=180)
 place("3710", "Red", 1, 0, 5, rot=180)
 place("6141", "Trans_Neon_Green", 5, 0, 4, rot=180)

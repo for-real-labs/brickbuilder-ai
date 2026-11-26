@@ -3,7 +3,7 @@
 #: author: Greg Teft [gregteft]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 346 of 346 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 346 of 346 parts kept (minifigures left out)
 place("3033", "Black", 6, 0, 0, rot=90)
 place("3033", "Black", 0, 0, 0, rot=90)
 place("3069b", "Black", 10, 1, 9)

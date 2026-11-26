@@ -1,0 +1,31 @@
+#: title: Detailed superstructure wall section mirroring 1.2.2.0 with hinge plates, wing element, and side-studded bricks.
+#: source: LDraw Official Model Repository, 10294-1.mpd, section 10294 - Titanic - 1.2.2.1.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3023", "Reddish_Brown", 1, 0, 1, rot=90)
+place_ldu("2429", "Dark_Bluish_Grey", (20, -16, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2430", "Dark_Bluish_Grey", (20, -16, 20), (-0.969, 0, -0.246, 0, 1, 0, 0.246, 0, -0.969))
+place_ldu("47398", "Dark_Red", (10.615, -8, 104.923), (-0.969, 0, -0.246, 0, 1, 0, 0.246, 0, -0.969))
+place_ldu("3666", "Light_Bluish_Grey", (25.692, -16, 245.538), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("4477", "White", (45.385, -8, 323.077), (0.246, 0, -0.969, 0, 1, 0, 0.969, 0, 0.246))
+place_ldu("3623", "Yellow", (62.615, -16, 390.923), (0.246, 0, -0.969, 0, 1, 0, 0.969, 0, 0.246))
+place_ldu("2429", "Dark_Bluish_Grey", (60, -16, 340), (0.246, 0, -0.969, 0, 1, 0, 0.969, 0, 0.246))
+place_ldu("2430", "Dark_Bluish_Grey", (60, -16, 340), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2430", "Dark_Bluish_Grey", (40, -16, 180), (-0.969, 0, -0.246, 0, 1, 0, 0.246, 0, -0.969))
+place_ldu("2429", "Dark_Bluish_Grey", (40, -16, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3460", "Tan", (-13.692, -16, 90.462), (0.246, 0, -0.969, 0, 1, 0, 0.969, 0, 0.246))
+place_ldu("3623", "Yellow", (-16.462, -16, -1.692), (-0.969, 0, -0.246, 0, 1, 0, 0.246, 0, -0.969))
+place_ldu("6141", "White", (27.846, -24, 172.769), (0.246, 0, -0.969, 0, 1, 0, 0.969, 0, 0.246))
+place_ldu("87087", "Blue", (67.538, -40, 410.308), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("30414", "Light_Bluish_Grey", (55.231, -40, 361.846), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("3010", "Yellow", (35.538, -40, 284.308), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("3062b", "Light_Bluish_Grey", (23.231, -40, 235.846), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("30414", "Light_Bluish_Grey", (10.923, -40, 187.385), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("30136", "Light_Bluish_Grey", (-3.846, -40, 129.231), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("30414", "Light_Bluish_Grey", (-18.615, -40, 71.077), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("3622", "White", (-35.846, -40, 3.231), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))
+place_ldu("4070", "Reddish_Brown", (-31.077, -10, -18.615), (-0.246, -0.969, 0, 0, 0, 1, -0.969, 0.246, 0))
+place_ldu("3039", "Black", (-1.846, -40, 15.231), (0.969, 0, 0.246, 0, 1, 0, -0.246, 0, 0.969))
+place_ldu("3062b", "Light_Bluish_Grey", (27.846, -48, 172.769), (-0.246, 0, 0.969, 0, 1, 0, -0.969, 0, -0.246))

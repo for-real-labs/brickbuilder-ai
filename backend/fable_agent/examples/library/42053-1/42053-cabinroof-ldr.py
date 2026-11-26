@@ -1,0 +1,31 @@
+#: title: Yellow cabin roof frame built from liftarms, beams, and axles forming the roof structure.
+#: source: LDraw Official Model Repository, 42053-1.mpd, section 42053 - cabinroof.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32526", "Yellow", (10, -10, 220), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("15100", "Black", (30, -10, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("15100", "Black", (90, -10, 220), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32526", "Yellow", (110, -10, 220), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32316", "Yellow", (10, -90, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32002", "Tan", (20, -90, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (20, -90, 160), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32065", "Black", (25, -90, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32449", "Yellow", (25, -90, 190), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18651", "Black", (30, -90, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (30, -90, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("18651", "Black", (30, -90, 220), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6632", "Yellow", (35, -90, 160), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32449", "Yellow", (35, -90, 210), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32316", "Yellow", (50, -90, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3706", "Black", (60, -90, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -90, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("59443", "Yellow", (60, -90, 220), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32073", "Yellow", (60, -90, 240), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32316", "Yellow", (70, -90, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("11214", "Dark_Bluish_Grey", (70, -90, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6632", "Yellow", (85, -90, 160), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32449", "Yellow", (85, -90, 210), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18651", "Black", (90, -90, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32449", "Yellow", (95, -90, 190), (0, -1, 0, -1, 0, 0, 0, 0, -1))

@@ -1,0 +1,30 @@
+#: title: A linear actuator mechanism with a geared body, piston, and orange actuator axle mounted on beams and ball joints.
+#: source: LDraw Official Model Repository, 42050-1.mpd, section 42050 - linact.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("53585", "Black", (20, -12.81, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32073", "Light_Bluish_Grey", (20, -12.81, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3713", "Red", (20, -12.81, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("53585", "Black", (20, -12.81, 100), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32525", "Black", (120, -12.81, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32525", "Black", (120, -12.81, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("92696", "Dark_Bluish_Grey", (180, -12.81, 60), (0, 0.252, 0.968, 0, -0.968, 0.252, 1, 0, 0))
+place_ldu("6558", "Blue", (180, -12.81, 60), (0, -0.999, 0.042, 0, 0.042, 0.999, -1, 0, 0))
+place_ldu("6558", "Blue", (200, -12.81, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (220, -12.81, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32316", "Black", (240, -12.81, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (240, -12.81, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (280, -12.81, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32524", "Black", (300, -12.81, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (300, -12.81, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (300, -12.81, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32524", "Black", (300, -12.81, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (360, -12.81, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (360, -32.81, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("92695", "Orange", (89.241, -36.451, 60), (0, 0.252, 0.968, 0, -0.968, 0.252, 1, 0, 0))
+place_ldu("32270", "Black", (79.742, -39.647, 60), (0, 0.259, 0.966, 0, -0.966, 0.259, 1, 0, 0))
+place_ldu("92693c01", "Light_Bluish_Grey", (60.209, -44.013, 60), (0, 0.252, 0.968, 0, -0.968, 0.252, 1, 0, 0))
+place_ldu("44294", "Yellow", (60.209, -44.013, 60), (0, 0.252, 0.968, 0, -0.968, 0.252, 1, 0, 0))
+place_ldu("6589", "Tan", (60.209, -44.013, 77), (-0.252, 0.968, 0, 0.968, 0.252, 0, 0, 0, -1))

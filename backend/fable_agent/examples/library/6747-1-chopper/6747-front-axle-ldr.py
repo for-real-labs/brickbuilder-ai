@@ -1,0 +1,31 @@
+#: title: A front steering axle assembly with technic bricks, liftarms, pins, a steering head, cones, and a red accent tile.
+#: source: LDraw Official Model Repository, 6747-1_Chopper.mpd, section 6747 - Front Axle.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("2730", "Light_Bluish_Grey", 3, 0, 6)
+place("2730", "Light_Bluish_Grey", 3, 0, 1)
+place_ldu("2780", "Black", (80, -14, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4274", "Blue", (100, -14, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4274", "Blue", (120, -14, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4274", "Blue", (140, -14, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (160, -14, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32271", "Light_Bluish_Grey", (160, -14, 110), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (180, -14, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (200, -14, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (40, -14, 100), (0, 0.8, 0.6, 0, -0.6, 0.8, 1, 0, 0))
+place_ldu("2904", "Black", (32, -8, 80), (0, 0.8, 0.6, 0, -0.6, 0.8, 1, 0, 0))
+place_ldu("3069b", "Red", (19.6, -11.2, 80), (0, 0.8, 0.6, 0, -0.6, 0.8, 1, 0, 0))
+place_ldu("2780", "Black", (40, -14, 60), (0, 0.8, 0.6, 0, -0.6, 0.8, 1, 0, 0))
+place_ldu("32271", "Light_Bluish_Grey", (160, -14, 50), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (80, -14, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (160, -14, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4274", "Blue", (100, -14, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4274", "Blue", (140, -14, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4274", "Blue", (120, -14, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4274", "Blue", (180, -14, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (200, -14, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3706", "Black", (16, -46, 80), (0, 0.6, -0.8, 0, 0.8, 0.6, 1, 0, 0))
+place_ldu("4589", "Dark_Bluish_Grey", (16, -46, 152), (0.8, 0, 0.6, -0.6, 0, 0.8, 0, -1, 0))
+place_ldu("4589", "Dark_Bluish_Grey", (16, -46, 8), (-0.6, 0, -0.8, -0.8, 0, 0.6, 0, 1, 0))

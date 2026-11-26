@@ -1,0 +1,32 @@
+#: title: Lower fuselage structure formed from a large panel, long beams, and bent liftarms pinned together.
+#: source: LDraw Official Model Repository, 42113-1.mpd, section 42113 - bottom1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("64782", "Light_Bluish_Grey", 3.5, 0, 3.5, rot=180)
+place_ldu("2780", "Black", (120, -10, 70), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (180, -10, 70), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (120, -10, 170), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (180, -10, 170), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (70, -10, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (70, -10, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32316", "Light_Bluish_Grey", (60, -10, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("40490", "Light_Bluish_Grey", (100, -10, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("40490", "Light_Bluish_Grey", (100, -10, 180), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (60, -10, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (60, -10, 200), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 190), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32526", "Light_Bluish_Grey", (140, -10, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32526", "Light_Bluish_Grey", (140, -10, 200), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (300, -10, 160), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Blue", (300, -10, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (200, -10, 70), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (240, -10, 70), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (200, -10, 170), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (240, -10, 170), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32316", "Light_Bluish_Grey", (300, -10, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("40490", "Light_Bluish_Grey", (280, -10, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("40490", "Light_Bluish_Grey", (280, -10, 180), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32316", "Light_Bluish_Grey", (320, -10, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))

@@ -6,8 +6,10 @@ models of the toolkit's atlases. ``importer`` converts them and ``scripts/build_
 builds the folder; ``NOTICE.md`` and ``SOURCES.md`` in it give the licences and credit every
 file. ``index.jsonl`` lists every example with the plain-English description it is found by.
 
-An example keeps the parts its set uses, stocked or not, and passes every check a Pip build must
-pass apart from the catalog (``tests/test_fable_examples.py`` proves it on the real parts).
+An example keeps the parts its set uses, stocked or not. It is a reference, not a build Pip may
+copy: many use joints Pip's checks cannot follow (clips, hinges, most Technic, parts set at an
+angle). ``checked`` says whether one also passes every check a Pip build must pass, apart from the
+catalog; ``tests/test_fable_examples.py`` holds those to it on the real parts.
 
 Examples are an option of a build, off unless asked for. When it is on, the examples closest to
 the request are found by ``retrieval`` and added to the prompt, as many as fit ``PROMPT_BUDGET``.
@@ -45,6 +47,7 @@ class Entry:
     parts: int
     chars: int  # the length of its script
     atlas: bool = False  # from the toolkit's example atlases, not an official set
+    checked: bool = True  # also passes every check a Pip build must pass, apart from the catalog
 
 
 @dataclass(frozen=True)
@@ -95,16 +98,18 @@ def prompt_section(examples: Sequence[Example]) -> str:
     parts = [
         f"# Example builds\n\nBelow {'is' if count == 1 else 'are'} {count} finished build"
         f"{'' if count == 1 else 's'} found for this request, written as plain `place` calls in building order. "
-        "Each is a real LEGO set, or one section of one, and passes every check apart from the catalog. Read "
-        "them for how such a thing is built: what stands on what, how wide and tall it is, which parts shape it, "
-        "and how its details are attached. A whole model shows proportions and colors; a section shows how one "
-        "piece of it is put together.\n\n"
+        "Each is a real LEGO set, or one section of one: a reference for how such a thing is built, what stands "
+        "on what, how wide and tall it is, which parts shape it and how its details are attached. A whole model "
+        "shows proportions and colors; a section shows how one piece of it is put together. Some use joints your "
+        "report cannot verify (clips, hinges, Technic parts it has not measured, parts set at an angle): where "
+        "one is marked so, build the same idea with joints the report accepts.\n\n"
         "An example may use parts and colors the catalog does not stock. Your own build may use catalog parts "
         "only: the report refuses anything else. When you want a part from an example, look it up first, and use "
         "the closest stocked part if it is not sold. Do not copy a design. Build what the request asks, in its "
         "colors and details, and use the helpers where they fit."]
     for example in examples:
         what = "whole model" if example.entry.kind == "model" else "one section of a model"
-        parts.append(f"## {example.entry.title}\n\n({what}, {example.entry.parts} parts)\n\n"
+        checked = "" if example.entry.checked else "; uses joints your report cannot verify"
+        parts.append(f"## {example.entry.title}\n\n({what}, {example.entry.parts} parts{checked})\n\n"
                      f"```python\n{example.script.strip()}\n```")
     return "\n\n".join(parts)

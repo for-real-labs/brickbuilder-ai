@@ -1,0 +1,33 @@
+#: title: Wall-hung pendulum clock - reddish-brown case with a windowed face carrying a clock-face patterned tile, pearl-gold pendulum bob and ornamental slope trim.
+#: source: LDraw Official Model Repository, 10270-1.mpd, section 10270 - Pendulum_Clock.ldr
+#: author: Ulrich Röder [UR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3003", "Reddish_Brown", 1, 0, 0)
+place("3023", "Reddish_Brown", 1, 3, 1)
+place("3004", "Medium_Nougat", 1, 1, 2)
+place_ldu("6141", "Pearl_Gold", (40, -46, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("3700", "Reddish_Brown", 1, 4, 1)
+place("3004", "Medium_Nougat", 1, 4, 2)
+place("3023", "Reddish_Brown", 1, 7, 1)
+place("60592", "Reddish_Brown", 1, 3, 0)
+place_ldu("60601", "Trans_Clear", (40, -72, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Reddish_Brown", 1, 8, 1)
+place("54200", "Reddish_Brown", 1, 10, 0, rot=270)
+place_ldu("11476", "Dark_Orange", (30, -80, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3004", "Medium_Nougat", 1, 7, 2)
+place("54200", "Reddish_Brown", 2, 10, 0, rot=90)
+place_ldu("11476", "Dark_Orange", (50, -80, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3003", "Medium_Nougat", 1, 10, 1)
+place_ldu("60478", "Reddish_Brown", (12, -108, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3069b", "Pearl_Gold", (20, -108, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("14769p0a", "Reddish_Brown", (40, -108, 4), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4032a", "Reddish_Brown", (40, -108, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3069b", "Pearl_Gold", (60, -108, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("60478", "Reddish_Brown", (68, -108, 20), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place("11211", "Black", 1, 13, 1)
+place("3004", "Medium_Nougat", 1, 13, 2)
+place("54200", "Reddish_Brown", 1, 17, 0, rot=90)
+place("3022", "Reddish_Brown", 1, 16, 0)
+place("54200", "Reddish_Brown", 2, 17, 0, rot=270)

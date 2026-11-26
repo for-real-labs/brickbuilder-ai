@@ -1,0 +1,30 @@
+#: title: A red trailer with hinge plates, wing panels, a set of stretcher wheels, and a towball connection.
+#: source: LDraw Official Model Repository, 6698-1.mpd, section 6698 - trailer.ldr
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3641", "Black", (80, -18, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (80, -18, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4715", "White", (230, -20, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6141", "Trans_Red", (19, -22, 10), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6141", "Trans_Red", (19, -22, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4081a", "Red", (30, -24, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4081a", "Red", 1, 1.75, 2, rot=180)
+place("3023", "Red", 2, 2, 1, rot=90)
+place_ldu("122c02", "Black", (80, -24, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3020", "Red", 5, 2, 1)
+place("4276b", "Red", 9, 2, 1)
+place("4276b", "Red", 9, 2, 2)
+place("3021", "White", 1, 3, 1)
+place("3022", "White", 4, 3, 1, rot=90)
+place("4859", "White", 5, 3, 0, rot=270)
+place("3022", "White", 8, 3, 1, rot=270)
+place("3731", "White", 10, 2.5, 1, rot=270)
+place("3794a", "Red", 1, 4, 1)
+place("3794a", "Red", 1, 4, 2)
+place("3795", "Red", 5, 4, 1)
+place_ldu("2342", "Red", (230, -40, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3794a", "Red", 1.5, 5, 1, rot=270)
+place("3787", "Red", 3, 4, 0, rot=270)
+place("3794a", "Red", 6, 5, 1, rot=270)

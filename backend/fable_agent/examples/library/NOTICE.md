@@ -25,11 +25,10 @@ All three were taken from the fork https://github.com/jjohnson5253/ldraw-nova at
 ## Changes
 
 Yes, every file was changed. Each model, and each described submodel on its own, was flattened to
-its parts and rewritten as a build script of `place` calls in building order. The parts and colors
-are the ones the set uses. Minifigures, parts that overlap another part and parts that nothing joins
-to the rest were left out, and the model was moved to stand on the ground; `#: changes:` in each
-script says how many parts were kept. A model that could not be converted, or that did not pass
-BrickBuilder's checks afterwards, is not here.
+its parts and rewritten as a build script of `place` calls. The parts and colors are the ones the set
+uses; minifigures were left out, and the model was moved to stand on the ground. `#: changes:` in
+each script says how many parts were kept. Examples are references: many use joints BrickBuilder's
+checks cannot follow, and `index.jsonl` marks which ones pass them (`checked`).
 
 ## Licence of this folder
 

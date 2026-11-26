@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, sakura-garden.mpd, section stone-lantern.ldr
 #: author: ldraw-nova sakura-garden generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 8 of 8 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 8 of 8 parts kept (minifigures left out)
 place("18674", "Light_Bluish_Grey", 0.5, 0, 0.5)
 place("3062b", "Light_Bluish_Grey", 1, 1, 1)
 place("3062b", "Light_Bluish_Grey", 1, 4, 1)

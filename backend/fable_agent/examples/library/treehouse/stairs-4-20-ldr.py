@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, treehouse.mpd, section stairs-4-20.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 110 of 110 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 110 of 110 parts kept (minifigures left out)
 place("3020", "Light_Bluish_Grey", 0, 0, 0)
 place("3020", "Light_Bluish_Grey", 0, 0, 2)
 place("3020", "Light_Bluish_Grey", 0, 0, 4)

@@ -1,0 +1,30 @@
+#: title: An in-flight service area featuring a minifig seat, a tap, a tiled grille counter, a suitcase, and blue and yellow panel detailing.
+#: source: LDraw Official Model Repository, 7893-1.mpd, section 7893 - service.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3033", "Light_Bluish_Grey", 0, 0, 0, rot=270)
+place("2412b", "White", 0, 1, 5, rot=90)
+place("3023", "Blue", 0, 1, 8, rot=270)
+place("3023", "Blue", 0, 1, 4, rot=180)
+place("3023", "Blue", 0, 1, 7, rot=180)
+place("2412b", "White", 1, 1, 5, rot=90)
+place("3023", "Blue", 2, 1, 5, rot=90)
+place("4865a", "Yellow", 0, 1, 1, rot=270)
+place("3938", "Black", 0.25, 2, 5, rot=270)
+place("4865a", "Yellow", 0, 1, 0)
+place("4865a", "Yellow", 0, 1, 3, rot=180)
+place("4865a", "Yellow", 1, 1, 1, rot=90)
+place("3938", "Black", 1.25, 2, 5, rot=270)
+place("3747a", "White", 0, 2, 8, rot=270)
+place("4589", "Trans_Neon_Green", 0.75, 5, 5.25, rot=270)
+place("4589", "Trans_Green", 1.5, 5, 5.75, rot=270)
+place("4345b", "Light_Bluish_Grey", 0.25, 4, 5, rot=270)
+place_ldu("4346", "Trans_Clear", (25, -80, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4460a", "Light_Bluish_Grey", 0, 2, 4, rot=270)
+place("4460a", "Light_Bluish_Grey", 0, 2, 7, rot=270)
+place("3245b", "White", 0, 5, 8, rot=270)
+place("2412b", "White", 0.25, 10, 5, rot=270)
+place("48336", "White", 1.25, 10, 5, rot=270)
+place("6636", "Blue", 0, 11, 4, rot=270)

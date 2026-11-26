@@ -1,0 +1,32 @@
+#: title: Driver seat assembly built from bent liftarms and cross blocks forming the backrest and base.
+#: source: LDraw Official Model Repository, 42096-1.mpd, section 42096 - seat1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32009", "Black", (40, -10, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -10, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("42003", "Black", (60, -10, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32009", "Black", (80, -10, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (30, -32.622, 82.458), (-1, 0, 0, 0, 0.292, 0.956, 0, 0.956, -0.292))
+place_ldu("2780", "Black", (90, -32.622, 82.458), (-1, 0, 0, 0, 0.292, 0.956, 0, 0.956, -0.292))
+place_ldu("32348", "Black", (20, -90, 100), (0, -1, 0, -0.292, 0, 0.956, -0.956, 0, -0.292))
+place_ldu("43093", "Blue", (30, -90, 100), (-1, 0, 0, 0, 0.292, 0.956, 0, 0.956, -0.292))
+place_ldu("43093", "Blue", (90, -90, 100), (1, 0, 0, 0, 0.292, -0.956, 0, 0.956, 0.292))
+place_ldu("32348", "Black", (100, -90, 100), (0, -1, 0, -0.292, 0, 0.956, -0.956, 0, -0.292))
+place_ldu("6536", "Black", (20, -110, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32073", "Light_Bluish_Grey", (60, -110, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6536", "Black", (100, -110, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41677", "Black", (55, -130, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("18651", "Black", (60, -130, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41677", "Black", (65, -130, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("42003", "Black", (20, -150, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("42003", "Black", (100, -150, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (20, -160, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -160, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (100, -160, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (100, -160, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("42003", "Black", (20, -170, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32073", "Light_Bluish_Grey", (60, -170, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("18654", "Black", (60, -170, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("42003", "Black", (100, -170, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))

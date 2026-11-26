@@ -1,0 +1,33 @@
+#: title: Structural frame segment with an open-center beam, angle connector, and orange liftarms.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - bodyframe8.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("4274", "Blue", (40, -69, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (40, -89, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("40490", "Black", (160, -89, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (160, -89, 70), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32140", "Black", (40, -109, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (40, -109, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (40, -109, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32526", "Black", (120, -109, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (50, -129, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("64179", "Light_Bluish_Grey", (100, -129, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (40, -149, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("18651", "Black", (60, -149, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("60483", "Orange", (60, -149, 80), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32013", "Orange", (100, -149, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (100, -149, 90), (0, -0.866, 0.5, 0, -0.5, -0.866, 1, 0, 0))
+place_ldu("60483", "Orange", (40, -169, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("15462", "Dark_Tan", (40, -169, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (60, -169, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (80, -169, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32316", "Black", (100, -169, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (120, -169, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (160, -169, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("41239", "Orange", (40, -189, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (40, -249, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place("42003", "Black", 1.5, 30, 1.5)
+place_ldu("2780", "Black", (40, -269, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (30, -289, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))

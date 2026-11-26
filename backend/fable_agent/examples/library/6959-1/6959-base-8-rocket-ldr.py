@@ -1,0 +1,33 @@
+#: title: A rocky terrain section combined with the rocket assembly.
+#: source: LDraw Official Model Repository, 6959-1.mpd, section 6959 - Base - 8 + Rocket.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3020", "Black", 0, 0, 1)
+place("3020", "Black", 0, 0, 9)
+place("3700", "Red", 2, 1, 1)
+place("3700", "Red", 2, 1, 10)
+place("2357", "Black", 0, 4, 0)
+place("3022", "Black", 0, 7, 0)
+place_ldu("4591", "Red", (61.308, -69.224, 120), (-0.9848, -0.1736, 0, -0.1736, 0.9848, 0, 0, 0, -1))
+place_ldu("4591", "Black", (69.6408, -116.494, 120), (-0.9848, -0.1736, 0, -0.1736, 0.9848, 0, 0, 0, -1))
+place_ldu("3707", "Black", (70.3352, -120.434, 120), (-0.1736, 0.9848, 0, 0.9848, 0.1736, 0, 0, 0, -1))
+place_ldu("6143", "Red", (73.8072, -140.13, 120), (-0.9848, -0.1736, 0, -0.1736, 0.9848, 0, 0, 0, -1))
+place("6082", "Dark_Grey", 0, 1, 1, rot=90)
+place("3022", "Red", 2, 18, 3)
+place("3022", "Red", 2, 18, 7)
+place("4081b", "Red", 3, 18.75, 4, rot=270)
+place("4081b", "Red", 3, 18.75, 7, rot=270)
+place_ldu("2412a", "Red", (106.59, -164.813, 120), (0, -0.9848, -0.1736, 0, -0.1736, 0.9848, -1, 0, 0))
+place_ldu("4589", "Trans_Dark_Blue", (79.0152, -169.674, 85), (-0.9848, 0, -0.1736, -0.1736, 0, 0.9848, 0, 1, 0))
+place_ldu("4589", "Trans_Dark_Blue", (79.0152, -169.674, 155), (-0.9848, 0, 0.1736, -0.1736, 0, -0.9848, 0, -1, 0))
+place("3004", "Black", 2, 19, 2)
+place("3004", "Black", 2, 19, 9)
+place_ldu("4746", "Black", (100.447, -176.05, 120), (0, -0.9848, -0.1736, 0, -0.1736, 0.9848, -1, 0, 0))
+place_ldu("4592", "Red", (110.062, -184.509, 110), (0, -0.9848, -0.1736, 0, -0.1736, 0.9848, -1, 0, 0))
+place_ldu("4593", "Black", (110.062, -184.509, 110), (0, -0.342062, -0.939637, 0, -0.939637, 0.342062, -1, 0, 0))
+place_ldu("4592", "Red", (110.062, -184.509, 130), (0, -0.9848, -0.1736, 0, -0.1736, 0.9848, -1, 0, 0))
+place_ldu("4593", "Black", (110.062, -184.509, 130), (0, -0.342062, -0.939637, 0, -0.939637, 0.342062, -1, 0, 0))
+place_ldu("4589", "Trans_Dark_Blue", (95.3336, -262.245, 120), (-0.9848, -0.1736, 0, -0.1736, 0.9848, 0, 0, 0, -1))
+place("6083", "Dark_Grey", 1, 19, 2, rot=90)

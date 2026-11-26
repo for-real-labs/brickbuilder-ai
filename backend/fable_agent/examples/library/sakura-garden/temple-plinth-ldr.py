@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, sakura-garden.mpd, section temple-plinth.ldr
 #: author: ldraw-nova sakura-garden generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 1148 of 1148 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 1148 of 1148 parts kept (minifigures left out)
 place("3008", "Light_Bluish_Grey", 0, 0, 0)
 place("3008", "Light_Bluish_Grey", 8, 0, 0)
 place("3009", "Light_Bluish_Grey", 16, 0, 0)

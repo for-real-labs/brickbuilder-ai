@@ -1,0 +1,31 @@
+#: title: A worm-gear-driven door-lift reduction mechanism with an 8-tooth output gear.
+#: source: LDraw Official Model Repository, 42039-1.mpd, section 42039 - doorlift2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32184", "Red", (20, -29, 95), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32123b", "Yellow", (35, -29, 95), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4716", "Light_Bluish_Grey", (60, -29, 95), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3706", "Black", (70, -29, 95), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32123b", "Yellow", (85, -29, 95), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32184", "Red", (100, -29, 95), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("59443", "Yellow", (130, -29, 95), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("87408", "Black", (150, -29, 95), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Red", (150, -29, 115), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (160, -29, 95), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32270", "Black", (180, -29, 95), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (200, -29, 55), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("60485", "Light_Bluish_Grey", (200, -29, 95), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6589", "Tan", (200, -29, 112), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("94925", "Light_Bluish_Grey", (200, -29, 135), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("60483", "Light_Bluish_Grey", (20, -49, 55), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (20, -49, 87), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("11478", "Black", (60, -49, 70), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11478", "Black", (60, -49, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (60, -49, 85), (0, 0.788, -0.6157, 0, 0.6157, 0.788, 1, 0, 0))
+place_ldu("10928", "Dark_Bluish_Grey", (60, -49, 95), (0.6157, 0.788, 0, -0.788, 0.6157, 0, 0, 0, 1))
+place_ldu("11478", "Black", (60, -49, 110), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11478", "Black", (60, -49, 120), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (100, -49, 87), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("42003", "Bright_Green", (140, -49, 115), (1, 0, 0, 0, -1, 0, 0, 0, -1))

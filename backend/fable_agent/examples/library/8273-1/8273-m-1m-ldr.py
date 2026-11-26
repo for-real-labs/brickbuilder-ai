@@ -1,0 +1,31 @@
+#: title: Angled connector framework using bent liftarms, angle connectors, and cross blocks forming a structural joint.
+#: source: LDraw Official Model Repository, 8273-1.mpd, section 8273 - m-1m'.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("6538b", "Light_Bluish_Grey", (120, -9.2, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6538b", "Light_Bluish_Grey", (80, -9.2, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32056", "Light_Bluish_Grey", (55, -9.2, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3706", "Black", (100, -9.2, 50), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("41677", "Light_Bluish_Grey", (45, -9.2, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Red", (100, -9.2, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32062", "Red", (140, -9.2, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32062", "Red", (60, -9.2, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32056", "Light_Bluish_Grey", (145, -9.2, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("41677", "Light_Bluish_Grey", (155, -9.2, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (50, -49.2, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32056", "Light_Bluish_Grey", (45, -49.2, 10), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32013", "Black", (10, -49.2, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (70, -49.2, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41677", "Light_Bluish_Grey", (55, -49.2, 10), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32034", "Light_Bluish_Grey", (90, -49.2, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (70, -49.2, 10), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6538b", "Light_Bluish_Grey", (100, -49.2, 10), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (130, -49.2, 10), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32184", "Light_Bluish_Grey", (130, -49.2, 30), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (130, -49.2, 50), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("41677", "Light_Bluish_Grey", (145, -49.2, 10), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32056", "Light_Bluish_Grey", (155, -49.2, 10), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (70, -59.2, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6141", "Black", (70, -67.2, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))

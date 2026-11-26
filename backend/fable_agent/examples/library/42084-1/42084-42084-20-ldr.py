@@ -1,0 +1,30 @@
+#: title: Large structural side panel assembly with smooth body panels, liftarms, and pins forming a chassis or body section.
+#: source: LDraw Official Model Repository, 42084-1.mpd, section 42084 - 42084_20.ldr
+#: author: Johann Eisner [technicbasics]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("15100", "Light_Bluish_Grey", (40, -9, 242), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (50, -9, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -9, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3749", "Tan", (50, -9, 242), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32526", "Light_Bluish_Grey", (60, -9, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32316", "Light_Bluish_Grey", (60, -9, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (80, -9, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32316", "Light_Bluish_Grey", (80, -9, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (80, -9, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (80, -9, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (80, -9, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32556", "Tan", (80, -9, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60483", "Black", (80, -9, 200), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("26287", "Light_Bluish_Grey", (80, -9, 242), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32526", "Light_Bluish_Grey", (100, -9, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32316", "Light_Bluish_Grey", (100, -9, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (110, -9, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (110, -9, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3749", "Tan", (110, -9, 242), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("15100", "Light_Bluish_Grey", (120, -9, 242), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("62531", "Dark_Bluish_Grey", (20, -49, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32556", "Tan", (80, -49, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18654", "White", (80, -49, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("62531", "Dark_Bluish_Grey", (140, -49, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))

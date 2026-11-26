@@ -1,0 +1,31 @@
+#: title: An engine side panel with bent liftarms, grooved tiles, and a jet engine fan.
+#: source: LDraw Official Model Repository, 42114-1.mpd, section 42114 - engineside1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (59.385, -20, 24.923), (0, -0.246, -0.969, -1, 0, 0, 0, 0.969, -0.246))
+place_ldu("60483", "Black", (20, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32524", "Black", (20, -30, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("11214", "Red", (20, -30, 180), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("60483", "Black", (59.385, -30, 24.923), (-0.246, 0, -0.969, 0, 1, 0, 0.969, 0, -0.246))
+place_ldu("43093", "Blue", (20, -40, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (20, -40, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (20, -40, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (40, -40, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("11214", "Red", (20, -50, 20), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("11214", "Red", (20, -50, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (20, -50, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32140", "Black", (20, -50, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32184", "Black", (20, -50, 120), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (20, -50, 160), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("60483", "Black", (20, -50, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("46667", "Black", (30, -50, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("60483", "Black", (20, -70, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32524", "Black", (20, -70, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (20, -80, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (20, -80, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (20, -80, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (20, -80, 180), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("2431", "Black", 0.5, 10, 1.5, rot=270)
+place("2431", "Black", 0.5, 10, 5.5, rot=270)

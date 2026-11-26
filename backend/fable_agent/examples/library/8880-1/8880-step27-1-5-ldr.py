@@ -1,0 +1,31 @@
+#: title: Engine assembly with crankshafts, connecting rods, and pistons for a multi-cylinder block.
+#: source: LDraw Official Model Repository, 8880-1.mpd, section 8880 - step27-1-5.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3704", "Black", (10, -9, 120), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2852", "Light_Grey", (10, -9, 120), (0.415, -0.91, 0, 0.91, 0.415, 0, 0, 0, 1))
+place_ldu("2852", "Light_Grey", (10, -9, 120), (-0.589, 0.808, 0, 0.808, 0.589, 0, 0, 0, -1))
+place_ldu("2852", "Light_Grey", (10, -9, 200), (0.415, -0.91, 0, 0.91, 0.415, 0, 0, 0, 1))
+place_ldu("2852", "Light_Grey", (10, -9, 200), (-0.589, 0.808, 0, 0.808, 0.589, 0, 0, 0, -1))
+place_ldu("4519", "Black", (20, -9, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2853", "Light_Grey", (20, -9, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2854", "Dark_Grey", (20, -9, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2854", "Dark_Grey", (20, -9, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2854", "Dark_Grey", (20, -9, 180), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2853", "Light_Grey", (20, -9, 200), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("4519", "Black", (20, -9, 240), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2852", "Light_Grey", (30, -9, 80), (0.589, -0.808, 0, 0.808, 0.589, 0, 0, 0, 1))
+place_ldu("2852", "Light_Grey", (30, -9, 80), (-0.415, 0.91, 0, 0.91, 0.415, 0, 0, 0, -1))
+place_ldu("3704", "Black", (30, -9, 160), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2852", "Light_Grey", (30, -9, 160), (0.589, -0.808, 0, 0.808, 0.589, 0, 0, 0, 1))
+place_ldu("2852", "Light_Grey", (30, -9, 160), (-0.415, 0.91, 0, 0.91, 0.415, 0, 0, 0, -1))
+place_ldu("2851", "Dark_Grey", (-6.391, -25.604, 80), (0.406, 0.914, 0, -0.914, 0.406, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (-6.391, -25.604, 160), (0.406, 0.914, 0, -0.914, 0.406, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (46.391, -25.604, 120), (0.406, -0.914, 0, 0.914, 0.406, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (46.391, -25.604, 200), (0.406, -0.914, 0, 0.914, 0.406, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (-22.326, -32.559, 120), (0.402, 0.916, 0, -0.916, 0.402, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (-22.326, -32.559, 200), (0.406, 0.914, 0, -0.914, 0.406, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (62.326, -32.559, 80), (0.406, -0.914, 0, 0.914, 0.406, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (62.326, -32.559, 160), (0.406, -0.914, 0, 0.914, 0.406, 0, 0, 0, 1))

@@ -1,0 +1,30 @@
+#: title: Raised floor section using panels and beams forming an elevated deck platform.
+#: source: LDraw Official Model Repository, 42043-1_Flatbed-Trailer.mpd, section 42043 - floorraised.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (30, -10, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32524", "Black", (20, -10, 260), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("62531", "Light_Bluish_Grey", (140, -30, 160), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (250, -10, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32524", "Black", (260, -10, 260), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (220, -30, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (180, -30, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (100, -30, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (60, -30, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32140", "Light_Bluish_Grey", (240, -30, 140), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (40, -30, 140), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (80, -30, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (200, -30, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("64782", "Light_Bluish_Grey", 1.5, 2.5, 1.5)
+place_ldu("2780", "Black", (200, -30, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (80, -30, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (250, -30, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (250, -30, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (250, -30, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32524", "Light_Bluish_Grey", (260, -30, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -30, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -30, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -30, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32524", "Light_Bluish_Grey", (20, -30, 120), (0, -1, 0, 1, 0, 0, 0, 0, 1))

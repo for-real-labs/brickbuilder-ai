@@ -1,0 +1,31 @@
+#: title: V-engine block assembly with blue hinge bases, handle bricks, and sloped pieces forming the cylinder bank shape.
+#: source: LDraw Official Model Repository, 10265-1.mpd, section 10265 - Ford Mustang 1967 Engine.ldr
+#: author: Ulrich Röder [UR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3938", "Light_Bluish_Grey", (50, -14, 20), (0, 0.5, 0.866025, 0, 0.866025, -0.5, -1, 0, 0))
+place_ldu("3938", "Light_Bluish_Grey", (50, -14, 60), (0, 0.5, 0.866025, 0, 0.866025, -0.5, -1, 0, 0))
+place_ldu("3938", "Light_Bluish_Grey", (110, -14, 20), (0, -0.5, 0.866025, 0, 0.866025, 0.5, -1, 0, 0))
+place_ldu("3938", "Light_Bluish_Grey", (110, -14, 60), (0, -0.5, 0.866025, 0, 0.866025, 0.5, -1, 0, 0))
+place("3039", "Black", 0, 0, 0, rot=270)
+place("30236", "Black", 0, 0, 2, rot=270)
+place("3937", "Blue", 2, 0, 0, rot=90)
+place("3937", "Blue", 2, 0, 2, rot=90)
+place("3001", "Blue", 3, 0, 0, rot=90)
+place("3937", "Blue", 5, 0, 0, rot=270)
+place("3937", "Blue", 5, 0, 2, rot=270)
+place("3039", "Black", 6, 0, 0, rot=90)
+place_ldu("30236", "Black", (150, -24, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3666", "Blue", (41, -29.5884, 60), (0, 0.5, 0.866025, 0, 0.866025, -0.5, -1, 0, 0))
+place_ldu("3666", "Blue", (119, -29.5884, 60), (0, -0.5, 0.866025, 0, 0.866025, 0.5, -1, 0, 0))
+place("92280", "Black", 3, 3, 1, rot=90)
+place("92280", "Black", 4, 3, 1, rot=90)
+place_ldu("3069b", "Blue", (37, -36.5166, 20), (0, 0.5, 0.866025, 0, 0.866025, -0.5, -1, 0, 0))
+place_ldu("2431dt0", "Blue", (37, -36.5166, 80), (0, 0.5, 0.866025, 0, 0.866025, -0.5, -1, 0, 0))
+place_ldu("3794b", "Blue", (123, -36.5166, 20), (0, -0.5, 0.866025, 0, 0.866025, 0.5, -1, 0, 0))
+place_ldu("2431dt0", "Blue", (123, -36.5166, 80), (0, -0.5, -0.866025, 0, 0.866025, -0.5, 1, 0, 0))
+place_ldu("32028", "Blue", (70, -40, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("32028", "Blue", 4, 4, 2, rot=270)
+place_ldu("98138p09", "Light_Bluish_Grey", (127, -43.4449, 20), (0, -0.5, -0.866025, 0, 0.866025, -0.5, 1, 0, 0))
+place("3023", "Dark_Bluish_Grey", 3, 5, 2, rot=180)

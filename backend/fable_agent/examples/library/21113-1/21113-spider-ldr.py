@@ -1,0 +1,31 @@
+#: title: A black spider model with a brick body and hinged plate legs with clip attachments.
+#: source: LDraw Official Model Repository, 21113-1.mpd, section 21113 - Spider.ldr
+#: author: Merlijn Wissink [legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3020", "Black", 1, 0, 0, rot=90)
+place("3021", "Black", 1, 1, 1, rot=90)
+place("3003", "Black", 1, 2, 3, rot=90)
+place("87087", "Black", 1, 2, 2, rot=90)
+place_ldu("4697b", "Black", (12, -30, 50), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("63868", "Black", (-16.875, -21.619, 60), (0.94, 0.342, 0, -0.342, 0.94, 0, 0, 0, 1))
+place_ldu("2430", "Black", (4.655, -20.942, 70), (-0.94, 0.342, 0, 0.342, 0.94, 0, 0, 0, -1))
+place_ldu("2429", "Black", (4.655, -20.942, 70), (0.814, 0.342, 0.47, -0.296, 0.94, -0.171, -0.5, 0, 0.866))
+place_ldu("63868", "Black", (-16.875, -21.619, 40), (0.94, 0.342, 0, -0.342, 0.94, 0, 0, 0, 1))
+place_ldu("2429", "Black", (4.655, -20.942, 30), (0.94, 0.342, 0, -0.342, 0.94, 0, 0, 0, 1))
+place_ldu("2430", "Black", (4.655, -20.942, 30), (-0.814, 0.342, 0.47, 0.296, 0.94, -0.171, -0.5, 0, -0.866))
+place_ldu("3023", "Black", (-9.658, -24.245, 88.66), (0.814, 0.342, 0.47, -0.296, 0.94, -0.171, -0.5, 0, 0.866))
+place_ldu("3023", "Black", (-9.658, -24.245, 11.34), (0.814, 0.342, -0.47, -0.296, 0.94, 0.171, 0.5, 0, 0.866))
+place("87087", "Black", 2, 2, 2, rot=270)
+place_ldu("4697b", "Black", (68, -30, 50), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("63868", "Black", (96.875, -21.619, 40), (-0.94, -0.342, 0, -0.342, 0.94, 0, 0, 0, -1))
+place_ldu("2430", "Black", (75.345, -20.942, 30), (0.94, -0.342, 0, 0.342, 0.94, 0, 0, 0, 1))
+place_ldu("2429", "Black", (75.345, -20.942, 30), (-0.814, -0.342, -0.47, -0.296, 0.94, -0.171, 0.5, 0, -0.866))
+place_ldu("63868", "Black", (96.875, -21.619, 60), (-0.94, -0.342, 0, -0.342, 0.94, 0, 0, 0, -1))
+place_ldu("2429", "Black", (75.345, -20.942, 70), (-0.94, -0.342, 0, -0.342, 0.94, 0, 0, 0, -1))
+place_ldu("2430", "Black", (75.345, -20.942, 70), (0.814, -0.342, -0.47, 0.296, 0.94, -0.171, 0.5, 0, 0.866))
+place_ldu("3023", "Black", (89.658, -24.245, 11.34), (-0.814, -0.342, -0.47, -0.296, 0.94, -0.171, 0.5, 0, -0.866))
+place_ldu("3023", "Black", (89.658, -24.245, 88.66), (-0.814, -0.342, 0.47, -0.296, 0.94, 0.171, -0.5, 0, -0.866))
+place("3069b", "Black", 1, 5, 4)
+place("3068b", "Black", 1, 5, 2)

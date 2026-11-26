@@ -1,0 +1,30 @@
+#: title: A small Technic gear and axle assembly using 13-long beams, angle connectors, and bevel gears for power transmission.
+#: source: LDraw Official Model Repository, 8258-1.mpd, section 8258 - m-1j'.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32013", "Red", (20, -30, 130), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Red", (20, -30, 130), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("41239", "Light_Bluish_Grey", (60, -30, 130), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32054", "Red", (60, -30, 250), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3705", "Black", (70, -30, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (80, -30, 130), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32062", "Red", (90, -30, 250), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32034", "Red", (120, -30, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (120, -30, 150), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32270", "Black", (120, -30, 170), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32034", "Red", (120, -30, 190), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (120, -30, 210), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3737", "Black", (120, -30, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("32072", "Yellow", 4.5, 0, 11)
+place_ldu("32034", "Red", (120, -30, 250), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (120, -30, 270), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32270", "Black", (120, -30, 290), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32062", "Red", (150, -30, 250), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (160, -30, 130), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3705", "Black", (170, -30, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41239", "Light_Bluish_Grey", (180, -30, 130), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32054", "Red", (180, -30, 250), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32013", "Red", (220, -30, 130), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Red", (220, -30, 130), (0, -1, 0, 1, 0, 0, 0, 0, 1))

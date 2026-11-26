@@ -1,0 +1,30 @@
+#: title: Black upholstered armchair - curved-top bricks and hinge/bracket plates forming a lounge seat with reddish-brown wooden feet.
+#: source: LDraw Official Model Repository, 10270-1.mpd, section 10270 - Building-1_Easychair.ldr
+#: author: Ulrich Röder [UR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3021", "Reddish_Brown", 1, 0, 1, rot=270)
+place_ldu("3069b", "Black", (4, -22, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("99780", "Black", (12, -22, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("63864", "Black", (40, -22, 12), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("99780", "Black", (68, -22, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3069b", "Black", (76, -22, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3938", "Black", (40, -31.703, 72.419), (-1, 0, 0, 0, 0.97, -0.242, 0, -0.242, -0.97))
+place("26604", "Black", 1, 1, 1, rot=90)
+place("87087", "Reddish_Brown", 1, 1, 2, rot=90)
+place("3937", "Black", 1, 1, 3, rot=180)
+place("26604", "Black", 2, 1, 1)
+place("87087", "Reddish_Brown", 2, 1, 2, rot=270)
+place("33909", "Black", 1, 4, 1, rot=180)
+place("49307", "Black", 0, 5.5, 1, rot=90)
+place("3023", "Black", 0, 4.5, 1, rot=270)
+place("49307", "Black", 0, 5.5, 2, rot=90)
+place("49307", "Black", 3, 5.5, 1, rot=270)
+place("3023", "Black", 3, 4.5, 1, rot=90)
+place("49307", "Black", 3, 5.5, 2, rot=270)
+place_ldu("3622", "Black", (40, -54.99, 78.225), (-1, 0, 0, 0, 0.97, -0.242, 0, -0.242, -0.97))
+place_ldu("49307", "Black", (20, -78.277, 84.031), (-1, 0, 0, 0, 0.97, -0.242, 0, -0.242, -0.97))
+place_ldu("49307", "Black", (40, -78.277, 84.031), (-1, 0, 0, 0, 0.97, -0.242, 0, -0.242, -0.97))
+place_ldu("3622", "Black", (40, -78.277, 84.031), (-1, 0, 0, 0, 0.97, -0.242, 0, -0.242, -0.97))
+place_ldu("49307", "Black", (60, -78.277, 84.031), (-1, 0, 0, 0, 0.97, -0.242, 0, -0.242, -0.97))

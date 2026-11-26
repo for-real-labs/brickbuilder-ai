@@ -1,0 +1,32 @@
+#: title: Rear underbody exhaust surround made of black plates and tiles with Technic brick mounts and joiners.
+#: source: LDraw Official Model Repository, 42125-1.mpd, section 42125 - exhaust2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (80, -9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6632", "Red", (80, -9, 85), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43093", "Blue", (220, -9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6632", "Red", (220, -9, 85), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("10247", "Black", 3, 0, 2, rot=270)
+place("10247", "Black", 10, 0, 2, rot=270)
+place_ldu("6180", "Black", (60, -27, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3623", "Black", (150, -27, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6180", "Black", (240, -27, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3710", "Black", (100, -35, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3623", "Black", (110, -35, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3024", "Black", (150, -35, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3623", "Black", (190, -35, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3710", "Black", (200, -35, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (220, -41, 55), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18651", "Black", (220, -41, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3710", "Black", (110, -43, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("11212", "Black", (150, -43, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3710", "Black", (190, -43, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (80, -49, 55), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18651", "Black", (80, -49, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87079", "Black", (120, -51, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2431", "Black", (150, -51, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("87079", "Black", (180, -51, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32064a", "Black", (220, -51, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32064a", "Black", (80, -59, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

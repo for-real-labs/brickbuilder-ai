@@ -1,0 +1,32 @@
+#: title: A compact white and black police speedboat with inverted slopes, a wing element, hinge assembly, and steering wheel.
+#: source: LDraw Official Model Repository, 6540-1.mpd, section 6540 - small police boat.ldr
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3022", "Black", 1, 1, 3, rot=90)
+place("4855", "White", 0, 0, 0)
+place_ldu("3829c01", "White", (40, -24, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4871", "White", 0, 0, 4, rot=90)
+place("4854", "White", 0, 0, 6, rot=90)
+place("3666", "Black", 0, 3, 3, rot=90)
+place("3024", "Black", 0, 3, 9, rot=90)
+place("4859", "Black", 0, 3, 0)
+place("3937", "White", 1, 1, 9)
+place("3938", "White", 1, 2, 9)
+place("3666", "Black", 3, 3, 3, rot=90)
+place("3024", "Black", 3, 3, 9, rot=90)
+place("3710", "White", 0, 4, 3, rot=90)
+place("3623", "White", 0, 4, 7, rot=270)
+place("4859", "White", 0, 4, 0)
+place("3003", "Black", 1, 2, 2, rot=90)
+place("2432", "Black", 1, 1, 7)
+place("3794a", "White", 1, 4, 9)
+place_ldu("2433", "Black", (40, -40, 210), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3710", "White", 3, 4, 3, rot=90)
+place("3623", "White", 3, 4, 7, rot=270)
+place("3069bp18", "White", 1, 5, 2)
+place("3023", "White", 1.5, 5, 9, rot=90)
+place("3023", "Red", 1.5, 6, 9, rot=90)
+place("2412b", "White", 1.5, 7, 9, rot=90)
+place("2437", "Trans_Medium_Blue", 0, 5, 3)

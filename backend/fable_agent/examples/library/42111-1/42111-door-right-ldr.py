@@ -1,0 +1,30 @@
+#: title: Right side door built from a large smooth panel, liftarms, and angle connectors with a grab handle.
+#: source: LDraw Official Model Repository, 42111-1.mpd, section 42111 - door-right.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("24119", "Black", (60, -9, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -9, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24119", "Black", (60, -9, 220), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -29, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (20, -39, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("41239", "Black", (20, -49, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (20, -69, 80), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("41239", "Black", (20, -69, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (20, -69, 240), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("87618", "Light_Bluish_Grey", (60, -80.5, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("11954", "Black", (20, -89, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("15100", "Black", (20, -89, 280), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("11214", "Red", (20, -89, 280), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2825", "Light_Bluish_Grey", (60, -89, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32062", "Red", (60, -99, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -119, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("25214", "Black", (20, -129, 280), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("41677", "Light_Bluish_Grey", (25, -129, 240), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (40, -129, 240), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32062", "Red", (50, -129, 280), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6632", "Black", (55, -129, 280), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32192", "Light_Bluish_Grey", (60, -129, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15100", "Black", (60, -129, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("87994", "Light_Bluish_Grey", (60, -178.497, 89.497), (-1, 0, 0, 0, 0.707, -0.707, 0, -0.707, -0.707))

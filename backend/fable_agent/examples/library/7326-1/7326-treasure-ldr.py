@@ -3,7 +3,7 @@
 #: author: Christian Neumann [Wesley]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures left out)
 place("3034", "Tan", 1, 0, 1, rot=90)
 place_ldu("48336", "Pearl_Gold", (40, -16, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
 place("48336", "Pearl_Gold", 1, 1, 8, rot=180)

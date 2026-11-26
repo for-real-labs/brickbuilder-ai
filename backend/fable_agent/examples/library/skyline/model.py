@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, skyline.mpd
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 441 of 441 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 441 of 441 parts kept (minifigures left out)
 place("3811", "Black", 0, 0, 0)
 place("3034", "Light_Bluish_Grey", 1, 0.5, 6)
 place("3034", "Light_Bluish_Grey", 9, 0.5, 6)

@@ -1,0 +1,32 @@
+#: title: Secondary gear train of red and dark-bluish-grey beams mounting the number-5 coin-pattern tile as an indicator.
+#: source: LDraw Official Model Repository, 42064-1.mpd, section 42064 - shipgears2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("6558", "Blue", (20, -9, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("40490", "Red", (100, -9, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (180, -9, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -29, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (180, -29, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (20, -49, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -49, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60484", "Dark_Bluish_Grey", (60, -49, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (80, -49, 90), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (100, -49, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("40490", "Red", (100, -49, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (120, -49, 90), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("60484", "Dark_Bluish_Grey", (140, -49, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (160, -49, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (180, -49, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (20, -69, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42003", "Light_Bluish_Grey", (80, -69, 100), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (100, -69, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("42003", "Light_Bluish_Grey", (120, -69, 100), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (180, -69, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (100, -89, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32525", "Dark_Bluish_Grey", (20, -109, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32524", "Dark_Bluish_Grey", (100, -109, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32525", "Dark_Bluish_Grey", (180, -109, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (20, -209, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (180, -209, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))

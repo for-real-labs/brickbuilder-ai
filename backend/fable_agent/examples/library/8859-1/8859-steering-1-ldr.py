@@ -1,0 +1,25 @@
+#: title: steering-1
+#: source: LDraw Official Model Repository, 8859-1.mpd, section 8859 - steering-1.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 19 of 19 parts kept (minifigures left out)
+place_ldu("3673", "Light_Grey", (180, -14, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3700", "Black", 8, 0, 1)
+place("3460", "Black", 5, 3, 1)
+place("4263", "Black", 4, 4, 1)
+place("4262", "Black", 8, 4, 1)
+place_ldu("3706", "Black", (60, -54, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3706", "Black", (300, -54, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Grey", (70, -54.5, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Grey", (110, -54.5, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3713", "Light_Grey", (250, -54.5, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Grey", (290, -54.5, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4261", "Light_Grey", 4, 3.75, 1)
+place("3894", "Black", 6, 5, 1)
+place("4261", "Light_Grey", 13, 3.75, 1)
+place("4262", "Black", 4, 8, 1, rot=180)
+place("4263", "Black", 10, 8, 1, rot=180)
+place("3460", "Black", 5, 9, 1)
+place("3040a", "Black", 6, 10, 1, rot=90)
+place("3040a", "Black", 10, 10, 1, rot=270)

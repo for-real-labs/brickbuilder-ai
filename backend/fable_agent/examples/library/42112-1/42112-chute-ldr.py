@@ -1,0 +1,32 @@
+#: title: Concrete discharge chute built from bent liftarms, panel fairings, angle connectors, and long beams.
+#: source: LDraw Official Model Repository, 42112-1.mpd, section 42112 - chute.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("6558", "Blue", (40, -27.38, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32192", "Red", (40, -27.38, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (20, -47.38, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -47.38, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32184", "Yellow", (40, -47.38, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (60, -47.38, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("15100", "Black", (40, -67.38, 20), (0.866, 0, 0.5, -0.5, 0, 0.866, 0, -1, 0))
+place_ldu("57585", "Light_Bluish_Grey", (40, -67.38, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("24316", "Reddish_Brown", (40, -67.38, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("15100", "Black", (40, -67.38, 60), (-0.866, 0, 0.5, -0.5, 0, -0.866, 0, -1, 0))
+place_ldu("22961", "Light_Bluish_Grey", (40, -67.38, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("57585", "Light_Bluish_Grey", (40, -67.38, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("24316", "Reddish_Brown", (40, -67.38, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("15100", "Black", (40, -67.38, 120), (0.866, 0, 0.5, -0.5, 0, 0.866, 0, -1, 0))
+place_ldu("32525", "Black", (22.679, -77.38, 60), (-0.5, -0.866, 0, 0.866, -0.5, 0, 0, 0, 1))
+place_ldu("32525", "Black", (57.321, -77.38, 60), (0.5, -0.866, 0, 0.866, 0.5, 0, 0, 0, 1))
+place_ldu("2780", "Black", (14.019, -82.38, 0), (-0.866, 0.5, 0, -0.5, -0.866, 0, 0, 0, 1))
+place_ldu("2780", "Black", (14.019, -82.38, 140), (-0.866, 0.5, 0, -0.5, -0.866, 0, 0, 0, 1))
+place_ldu("2780", "Black", (65.981, -82.38, 0), (-0.866, -0.5, 0, 0.5, -0.866, 0, 0, 0, 1))
+place_ldu("2780", "Black", (65.981, -82.38, 140), (-0.866, -0.5, 0, 0.5, -0.866, 0, 0, 0, 1))
+place_ldu("11946", "Light_Bluish_Grey", (5.359, -87.38, 60), (-0.5, 0.866, 0, 0.866, 0.5, 0, 0, 0, -1))
+place_ldu("32062", "Red", (5.359, -87.38, 70), (0, 0.866, 0.5, 0, 0.5, -0.866, -1, 0, 0))
+place_ldu("11947", "Light_Bluish_Grey", (5.359, -87.38, 80), (0.5, 0.866, 0, -0.866, 0.5, 0, 0, 0, 1))
+place_ldu("11947", "Light_Bluish_Grey", (74.641, -87.38, 60), (-0.5, -0.866, 0, -0.866, 0.5, 0, 0, 0, -1))
+place_ldu("32062", "Red", (74.641, -87.38, 70), (0, -0.866, -0.5, 0, 0.5, -0.866, 1, 0, 0))
+place_ldu("11946", "Light_Bluish_Grey", (74.641, -87.38, 80), (0.5, -0.866, 0, 0.866, 0.5, 0, 0, 0, 1))

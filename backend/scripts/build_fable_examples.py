@@ -66,7 +66,7 @@ def _open() -> SetImporter:
     assembly = AssemblyReview(library, shapes, ConnectorReview(ConnectorLibrary(library.root, default_cache_dir())))
     checker = ModelChecker(library, shapes, palette, max_parts=MOST_PARTS, assembly=assembly)
     return SetImporter(library, shapes, palette, PartFinder(library, palette), checker,
-                       Limits(least_parts=8, most_parts=MOST_PARTS), assembly)
+                       Limits(least_parts=3, most_parts=MOST_PARTS), assembly)
 
 
 def convert_file(job: tuple[str, str, list]) -> list[dict]:
@@ -107,7 +107,8 @@ def convert_file(job: tuple[str, str, list]) -> list[dict]:
             continue
         rows.append({"file": path.name, "section": file.sections[key].name, "kind": "model" if section is None else "submodel",
                      "origin": origin, "title": (description or model.title).strip(), "author": model.author,
-                     "licence": model.licence, "parts": converted.parts, "of": converted.of, "script": converted.script})
+                     "licence": model.licence, "parts": converted.parts, "of": converted.of, "checked": converted.checked,
+                     "script": converted.script})
     return rows
 
 
@@ -168,7 +169,7 @@ def write(rows: list[dict], out: Path) -> None:
         target.parent.mkdir(parents=True, exist_ok=True)
         official = row["origin"] == ANNOTATED
         changes = ("converted to a BrickBuilder build script; moved to stand on the ground; "
-                   f"{row['parts']} of {row['of']} parts kept (minifigures, overlapping and unattached parts left out)")
+                   f"{row['parts']} of {row['of']} parts kept (minifigures left out)")
         header = [f"#: title: {row['title']}",
                   f"#: source: {row['origin']}, {row['file']}" + (f", section {row['section']}" if row["kind"] == "submodel" else ""),
                   f"#: author: {row['author'] or 'not named in the file'}",
@@ -178,7 +179,7 @@ def write(rows: list[dict], out: Path) -> None:
         target.write_text("\n".join(header) + "\n" + row["script"], encoding="utf-8")
         identity = f"{folder}/{target.stem}"
         index.append({"id": identity, "title": row["title"], "kind": row["kind"], "set": folder, "parts": row["parts"],
-                      "chars": len(row["script"]), "atlas": not official})
+                      "chars": len(row["script"]), "atlas": not official, "checked": row["checked"]})
         credits.append(f"| `{identity}.py` | {row['file']} | {row['author'] or '-'} | {row['licence']} | "
                        f"{row['parts']} of {row['of']} |")
     (out / "index.jsonl").write_text("".join(json.dumps(entry, ensure_ascii=False) + "\n" for entry in index),

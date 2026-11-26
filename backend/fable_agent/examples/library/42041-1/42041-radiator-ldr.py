@@ -1,0 +1,30 @@
+#: title: Cooling radiator built around a 6x6 plate covered with grille tiles, attached via cross blocks and a long liftarm.
+#: source: LDraw Official Model Repository, 42041-1.mpd, section 42041 - radiator.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("40490", "Black", (120, -20, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (40, -20, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (60, -20, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (180, -20, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (200, -20, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("42003", "Black", (40, -20, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("42003", "Black", (200, -20, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2460", "Light_Bluish_Grey", (160, -20, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2460", "Light_Bluish_Grey", (80, -20, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3958", "Black", (120, -60, 22), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (110, -20, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (130, -20, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (150, -60, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (170, -60, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (110, -60, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (130, -60, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (70, -60, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (90, -60, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (170, -100, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (150, -100, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (110, -100, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (130, -100, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (70, -100, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Light_Bluish_Grey", (90, -100, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))

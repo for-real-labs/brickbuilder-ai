@@ -1,0 +1,33 @@
+#: title: A blue and yellow truck built on a chassis with tow-hook and large wheels, featuring doors and a rounded-top window.
+#: source: LDraw Official Model Repository, 121-1.mpd
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("u9100", "Yellow", (173.34, -37, 272.464), (0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866))
+place_ldu("u9102", "Black", (182, -37, 277.464), (0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866))
+place_ldu("u9103", "Red", (182, -37, 277.464), (0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866))
+place_ldu("u9100", "Yellow", (190.66, -37, 282.464), (0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866))
+place_ldu("3888ac01", "Red", (80, -38, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3004", "Yellow", 2, 4.75, 15, rot=90)
+place("3001", "Blue", 2, 4.75, 2, rot=180)
+place("3001", "Blue", 3, 4.75, 4, rot=90)
+place("3001", "Blue", 2, 4.75, 13, rot=180)
+place("3004", "Blue", 3, 4.75, 15)
+place("3004", "Yellow", 5, 4.75, 15, rot=90)
+place_ldu("u9101", "Black", (162.082, -63, 265.964), (-0.866, 0.433, 0.25, 0, 0.5, -0.866, -0.5, -0.749956, -0.433))
+place_ldu("u9101", "Black", (201.918, -63, 288.964), (0.866, 0.25, -0.433, 0, 0.866, 0.5, 0.5, -0.433, 0.749956))
+place_ldu("u9105p01c01", "Fabuland_Brown", (182, -67, 277.464), (0.866, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866))
+place("3004", "Blue", 2, 7.75, 13)
+place("3003", "Blue", 2, 7.75, 14, rot=90)
+place("3001", "Blue", 3, 7.75, 2, rot=90)
+place("3003", "Blue", 3, 7.75, 6, rot=90)
+place("3004", "Blue", 4, 7.75, 13)
+place("3003", "Blue", 4, 7.75, 14, rot=90)
+place("3001", "Yellow", 2, 10.75, 13)
+place("3004", "Yellow", 3, 10.75, 15)
+place("3001", "Yellow", 2, 13.75, 13)
+place("3003", "Yellow", 2, 16.75, 13, rot=90)
+place("281", "Yellow", 2, 10.75, 7)
+place("3003", "Yellow", 4, 16.75, 13, rot=90)
+place("3032", "Yellow", 2, 19.75, 10, rot=270)

@@ -1,0 +1,31 @@
+#: title: Bent liftarm arm assembly with curved slope panels, bricks, and plates forming the grabber arm structure.
+#: source: LDraw Official Model Repository, 42053-1.mpd, section 42053 - grabberarm.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("4274", "Blue", (0, -40.91, 120), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4274", "Blue", (0, -40.91, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32271", "Black", (10, -40.91, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32271", "Black", (10, -40.91, 280), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (30, -40.91, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (30, -40.91, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (30, -40.91, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (30, -40.91, 240), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (30, -40.91, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (30, -40.91, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (30, -40.91, 340), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4274", "Blue", (60, -40.91, 220), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3701", "Black", (10, -50.91, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2730", "Black", (30, -50.91, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3701", "Black", (50, -50.91, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3623", "Black", (10, -58.91, 250), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3021", "Black", (30, -58.91, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3021", "Black", (30, -58.91, 340), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3623", "Black", (50, -58.91, 250), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("85970", "Black", (10, -66.91, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3021", "Black", (30, -66.91, 320), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("85970", "Black", (50, -66.91, 280), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (30, -72.91, 424), (1, 0, 0, 0, 0.8, 0.6, 0, -0.6, 0.8))
+place_ldu("63864", "Black", (10, -74.91, 290), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("63864", "Black", (50, -74.91, 290), (0, 0, 1, 0, 1, 0, -1, 0, 0))

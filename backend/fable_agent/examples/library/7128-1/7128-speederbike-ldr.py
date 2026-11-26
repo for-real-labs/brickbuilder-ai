@@ -1,0 +1,32 @@
+#: title: A compact speeder bike build with brown wedge and slope elements, dark-grey plates and bars, grille tile, and a backpack detail.
+#: source: LDraw Official Model Repository, 7128-1.mpd, section 7128 - Speederbike.ldr
+#: author: Daniel Goerner [TK-949]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3710", "Black", 3, 0, 0, rot=270)
+place("3062b", "Dark_Grey", 10, 0, 1.5)
+place("3022", "Dark_Grey", 1, 3, 1, rot=270)
+place("3004", "Dark_Grey", 3, 1, 1, rot=270)
+place("4032a", "Brown", 8, 3, 1, rot=270)
+place("2555", "Black", 10, 3, 1.5)
+place("3034", "Black", 1, 4, 1, rot=180)
+place("2540", "Dark_Grey", 9, 4, 1, rot=270)
+place("3022", "Dark_Grey", 1, 5, 1, rot=270)
+place_ldu("30259", "Brown", (338, -53.747, 30.432), (0, -1, 0, 0.866025, 0, 0.5, -0.5, 0, 0.866025))
+place_ldu("30259", "Brown", (338, -53.747, 49.567), (0, -1, 0, -0.866025, 0, 0.5, -0.5, 0, -0.866025))
+place_ldu("2433", "Black", (318, -54, 30), (0, 1, 0, 0.5, 0, 0.866025, 0.866025, 0, -0.5))
+place_ldu("2433", "Black", (318, -54, 50), (0, 1, 0, -0.5, 0, 0.866025, 0.866025, 0, 0.5))
+place("3023", "Light_Grey", 5, 6, 1, rot=270)
+place_ldu("4085b", "Dark_Grey", (130, -56, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4085b", "Dark_Grey", 6, 6, 2, rot=180)
+place("30359a", "Dark_Grey", 8, 5, 1, rot=270)
+place("30359a", "Dark_Grey", 8, 5, 2, rot=270)
+place("2399", "Brown", 0, 6, 0, rot=270)
+place("3794a", "Black", 1, 8, 1, rot=270)
+place("4732", "Brown", 2, 5, 1, rot=90)
+place("2412b", "Dark_Grey", 3, 9, 1, rot=270)
+place("3039", "Brown", 5, 7, 1, rot=90)
+place("3794a", "Black", 7, 9, 1, rot=270)
+place("2555", "Dark_Grey", 7, 10, 1.5, rot=180)
+place("3048b", "Brown", 8, 9, 1, rot=270)

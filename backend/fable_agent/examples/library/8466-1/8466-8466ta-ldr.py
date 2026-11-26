@@ -1,0 +1,33 @@
+#: title: Front axle module with a 1x16 technic brick, engine crankshaft, steering arm, and plates forming the steering mechanism.
+#: source: LDraw Official Model Repository, 8466-1.mpd, section 8466 - 8466ta.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("2444", "Black", (40, -19.5, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6632", "Black", (220, -24.5, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3176", "Black", (40, -27.5, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2420", "Black", (30, -35.5, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (220, -39.5, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Black", (40, -47.5, 10), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2711", "Black", (170, -48.5, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (20, -49.5, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2853", "Light_Grey", (130, -49.5, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32069", "Black", (170, -49.5, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Black", (200, -49.5, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6536", "Black", (220, -49.5, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6536", "Black", (220, -49.5, 70), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Black", (220, -49.5, 70), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32017", "Black", (170, -53.5, 90), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3700", "Black", (20, -59.5, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3703", "Black", (160, -59.5, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6587", "Dark_Grey", (170, -61.5, 90), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2420", "Black", (30, -67.5, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Light_Grey", (169, -69.5, 130), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32126", "Light_Grey", (190, -69.5, 130), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3737", "Black", (280, -69.5, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123a", "Light_Grey", (375, -69.5, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6632", "Black", (169, -74.5, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6632", "Black", (220, -74.5, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3176", "Black", (40, -75.5, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3700", "Black", (40, -99.5, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

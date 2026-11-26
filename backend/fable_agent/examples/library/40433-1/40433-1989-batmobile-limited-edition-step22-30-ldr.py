@@ -1,0 +1,31 @@
+#: title: A black engine intake assembly using brackets, sloped grille pieces, and trans-yellow plates to form the turbine and jet details.
+#: source: LDraw Official Model Repository, 40433-1.mpd, section 40433 - 1989 Batmobile - Limited Edition - step22-30.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("24299", "Black", (20, -8, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("99780", "Black", 0, 0, 2, rot=180)
+place_ldu("24307", "Black", (140, -8, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("99780", "Black", 6, 0, 2, rot=180)
+place("2420", "Black", 0, 1, 1)
+place("3666", "Black", 1, 1, 2)
+place("92593", "Black", 2, 1, 3)
+place("2420", "Black", 6, 1, 1, rot=270)
+place_ldu("61409", "Black", (10, -20, 64), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3069b", "Light_Bluish_Grey", (30, -20, 72), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3069b", "Light_Bluish_Grey", (130, -20, 72), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("61409", "Black", (150, -20, 64), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("3023", "Trans_Yellow", 0, 2, 1)
+place("3023", "Black", 0, 2, 2)
+place("3023", "Trans_Yellow", 6, 2, 1)
+place("3023", "Black", 6, 2, 2)
+place("92946", "Black", 0, 3, 1)
+place("92946", "Black", 1, 3, 1)
+place("11215", "Black", 3, 0, 2)
+place("92946", "Black", 6, 3, 1)
+place("92946", "Black", 7, 3, 1)
+place("99781", "Black", 0, 2.5, 2, rot=180)
+place("15571", "Black", 2, 2, 2, rot=270)
+place("15571", "Black", 5, 2, 2, rot=90)
+place("99781", "Black", 6, 2.5, 2, rot=180)

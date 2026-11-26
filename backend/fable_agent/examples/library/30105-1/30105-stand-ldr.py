@@ -1,0 +1,30 @@
+#: title: A white stand structure with sloped sides, hinges, gold telescopes, a red accented base, and a pink flower with brown stem.
+#: source: LDraw Official Model Repository, 30105-1.mpd, section 30105 - Stand.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3010", "White", 0, 0, 0)
+place("3001", "White", 0, 0, 1)
+place_ldu("6134", "Light_Bluish_Grey", (40, -46.268, 25.6), (-1, 0, 0, 0, 0.866025, 0.5, 0, 0.5, -0.866025))
+place("4286", "White", 0, 3, 0)
+place("3937", "Black", 1, 3, 1)
+place("4286", "White", 3, 3, 0)
+place_ldu("3020", "White", (40, -48.195, 12.941), (-1, 0, 0, 0, 0.866025, 0.5, 0, 0.5, -0.866025))
+place_ldu("3741ac03", "Dark_Pink", (10, -53.588, -1.719), (0, 0, -1, -0.5, 0.866025, 0, 0.866025, 0.5, 0))
+place_ldu("87580", "Red", (60, -55.123, 8.941), (1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025))
+place_ldu("3022", "Black", (60, -62.052, 4.941), (1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025))
+place_ldu("6141", "Reddish_Brown", (50, -63.98, -7.719), (1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025))
+place_ldu("6141", "Bright_Pink", (70, -63.98, -7.719), (1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025))
+place("59900", "White", 0, 6, 2)
+place("59900", "White", 3, 6, 2)
+place_ldu("6141", "Bright_Pink", (50, -73.98, 9.602), (1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025))
+place_ldu("6141", "Reddish_Brown", (70, -73.98, 9.602), (1, 0, 0, 0, 0.866025, -0.5, 0, 0.5, 0.866025))
+place("3020", "White", 0, 14, 1)
+place("3794b", "Red", 1, 15, 1)
+place_ldu("3176", "Red", (40, -142, 4), (-0.707107, 0, -0.707107, -0.707107, 0, 0.707107, 0, 1, 0))
+place_ldu("3176", "Red", (40, -142, 12), (-0.707107, 0, 0.707107, 0.707107, 0, 0.707107, 0, 1, 0))
+place("3040b", "Dark_Pink", 0, 15, 1)
+place("3004", "Red", 1, 15, 2)
+place("3040b", "Dark_Pink", 3, 15, 1)
+place("87087", "White", 1.5, 16, 1)

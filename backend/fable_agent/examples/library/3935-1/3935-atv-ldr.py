@@ -1,0 +1,32 @@
+#: title: A four-wheeled all-terrain vehicle with lime bodywork, light aqua mudguards, red transparent lights, and black wheel-mounted plates.
+#: source: LDraw Official Model Repository, 3935-1.mpd, section 3935 - ATV.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("6014c03", "White", (40, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6014c03", "White", (40, -30, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6014c03", "White", (120, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6014c03", "White", (120, -30, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4600", "Black", (40, -36, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4600", "Black", (120, -36, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3795", "Dark_Bluish_Grey", 1, 4.5, 2)
+place_ldu("54200", "Bright_Pink", (16, -46, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("54200", "Bright_Pink", (16, -46, 70), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place("3022", "Light_Bluish_Grey", 1, 5.5, 2)
+place("41854", "Lime", 3, 5.5, 1, rot=90)
+place("3023", "White", 5, 5.5, 2, rot=90)
+place("88072", "Light_Bluish_Grey", 6, 5.5, 2, rot=270)
+place("3023", "White", 1, 6.5, 2, rot=90)
+place("3020", "Lime", 2, 6.5, 2)
+place("6141", "Trans_Red", 6, 6.5, 2)
+place("6141", "Trans_Red", 6, 6.5, 3)
+place_ldu("2412b", "Light_Bluish_Grey", (8, -66, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("44674", "Light_Aqua", (40, -68, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("44674", "Light_Aqua", (120, -68, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("44728", "White", (30, -76, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2412b", "Light_Bluish_Grey", 2, 8.5, 2, rot=90)
+place("87580", "Yellow", 5, 8.5, 2)
+place_ldu("32028", "Light_Aqua", (30, -84, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3794a", "Lime", 1, 10.5, 2, rot=90)
+place("2555", "White", 1, 11.5, 2.5)

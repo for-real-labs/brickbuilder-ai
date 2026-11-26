@@ -3,7 +3,7 @@
 #: author: Willy Tschager [Holly-Wood]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 10 of 10 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 10 of 10 parts kept (minifigures left out)
 place("3795", "Reddish_Brown", 0, 0, 1, rot=270)
 place_ldu("33291", "Magenta", (10, -16, 110), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
 place_ldu("33291", "Bright_Green", (10, -16, 130), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))

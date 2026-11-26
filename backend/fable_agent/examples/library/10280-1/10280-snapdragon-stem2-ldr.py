@@ -1,0 +1,30 @@
+#: title: A green snapdragon stem built from axle joiners and connectors on a light bluish grey axle.
+#: source: LDraw Official Model Repository, 10280-1.mpd, section 10280 - snapdragon-stem2.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("26287", "Dark_Green", (20, -30, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -60, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -90, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -120, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -150, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -180, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -210, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -240, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -270, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -300, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -330, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -360, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -390, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -420, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -450, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32062", "Red", (20, -480, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -510, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32039", "Dark_Bluish_Grey", (20, -550, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (20, -550, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("10197", "Black", (20, -550, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32039", "Dark_Bluish_Grey", (40, -550, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("26287", "Dark_Green", (20, -590, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32062", "Red", (20, -620, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("26287", "Dark_Green", (20, -650, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))

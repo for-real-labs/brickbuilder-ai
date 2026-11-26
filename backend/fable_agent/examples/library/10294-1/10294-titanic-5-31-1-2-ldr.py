@@ -1,0 +1,32 @@
+#: title: Ornate hull section with curved slopes, gold accents, and technic mounting elements.
+#: source: LDraw Official Model Repository, 10294-1.mpd, section 10294 - Titanic - 5.31.1.2.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3460", "Tan", 0, 0, 0, rot=90)
+place("3034", "Black", 0, 0, 8, rot=180)
+place("3460", "Light_Bluish_Grey", 0, 0, 10)
+place("3021", "Dark_Red", 8, 0, 8, rot=90)
+place("3024", "Dark_Red", 9, 0, 7, rot=270)
+place("6141", "Pearl_Gold", 0, 1, 0, rot=270)
+place("4477", "White", 0, 1, 1, rot=90)
+place("3460", "Tan", 1, 1, 8, rot=180)
+place_ldu("41682", "Black", (40, -20, 160), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41682", "Dark_Red", (80, -20, 160), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41682", "Dark_Red", (120, -20, 160), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41682", "Dark_Red", (160, -20, 160), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("6141", "Pearl_Gold", 0, 2, 6, rot=270)
+place("3710", "Blue", 0, 2, 7, rot=270)
+place_ldu("85970", "Black", (10, -32, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6141", "Pearl_Gold", 0, 3, 10, rot=270)
+place("2456", "Light_Bluish_Grey", 1, 1, 9)
+place("3460", "Tan", 1, 3, 8, rot=180)
+place("3700", "Tan", 7, 1, 9)
+place("32064a", "Light_Bluish_Grey", 7, 1, 10)
+place("3068b", "Black", 0, 4, 8, rot=270)
+place("63864", "Black", 2, 4, 8, rot=270)
+place("26603", "Dark_Red", 3, 4, 8, rot=270)
+place("26603", "Dark_Red", 5, 4, 8, rot=270)
+place("26603", "Dark_Red", 7, 4, 8, rot=270)
+place("10314", "Dark_Red", 9, 1, 7, rot=270)

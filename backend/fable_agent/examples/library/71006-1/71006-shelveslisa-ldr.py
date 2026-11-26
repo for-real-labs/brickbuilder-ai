@@ -1,0 +1,33 @@
+#: title: Blue shelving unit with books, a pink music player, and various colorful small items.
+#: source: LDraw Official Model Repository, 71006-1.mpd, section 71006 - shelveslisa.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3020", "Blue", 0, 0, 0)
+place("3794b", "Blue", 1, 1, 0, rot=90)
+place("3069b", "Blue", 2, 1, 0, rot=90)
+place_ldu("99780", "Light_Bluish_Grey", (39.6593, -24, 22.5882), (0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659))
+place_ldu("3069bpc6", "Bright_Pink", (45.3533, -26, 1.3378), (-0.9659, -0.2588, 0, 0, 0, 1, -0.2588, 0.9659, 0))
+place_ldu("3023", "Bright_Pink", (39.6593, -32, 22.5882), (0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659))
+place_ldu("4593", "Black", (49.3185, -40, 25.1764), (0.2588, 0.966, 0.0002, 0, 0.0002, -1.0001, -0.9659, 0.2588, 0))
+place_ldu("4592", "Light_Bluish_Grey", (49.3185, -40, 25.1764), (0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588))
+place("87552", "Blue", 0, 1, 0, rot=270)
+place("87552", "Blue", 3, 1, 0, rot=90)
+place("3020", "Blue", 0, 7, 0)
+place("3794b", "Blue", 1, 8, 0, rot=90)
+place("3069b", "Blue", 2, 8, 0, rot=90)
+place_ldu("4070", "Orange", (40, -82, 20), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3023", "Red", (48, -92, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3069b", "Medium_Azure", (56, -92, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("6141", "Black", 1, 11, 0.5)
+place("87552", "Blue", 0, 8, 0, rot=270)
+place("87552", "Blue", 3, 8, 0, rot=90)
+place("3020", "Blue", 0, 14, 0)
+place("3023", "White", 0, 15, 0)
+place("3023", "White", 0, 15, 1)
+place_ldu("6141", "Red", (60, -128, 20), (0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659))
+place("87580", "Medium_Azure", 0, 16, 0)
+place_ldu("6141", "Red", (60, -136, 20), (0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659))
+place_ldu("3023", "White", (20, -144, 20), (0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659))
+place_ldu("3069b", "Medium_Azure", (20, -152, 20), (0.9659, 0, -0.2588, 0, 1, 0, 0.2588, 0, 0.9659))

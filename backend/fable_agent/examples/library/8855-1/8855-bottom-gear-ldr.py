@@ -1,0 +1,30 @@
+#: title: A drivetrain subassembly with belt wheels, axles, and toggle connectors transferring motion along the underside.
+#: source: LDraw Official Model Repository, 8855-1.mpd, section 8855 - Bottom gear.ldr
+#: author: Ignacio Fernandez Galvan [jellby]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("4273a", "Light_Grey", (50, -10, 70), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4265a", "Light_Grey", (26, -30, 50), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4265a", "Light_Grey", (26, -30, 90), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4185", "Light_Grey", (35, -30, 70), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3749", "Light_Grey", (50, -30, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3651", "Light_Grey", (50, -30, 30), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("4519", "Black", (50, -30, 50), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3704", "Black", (50, -30, 70), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4519", "Black", (50, -30, 90), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3651", "Light_Grey", (50, -30, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Grey", (50, -30, 150), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3706", "Black", (50, -30, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4019", "Light_Grey", (50, -30, 210), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4185", "Light_Grey", (65, -30, 70), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4265a", "Light_Grey", (74, -30, 50), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4265a", "Light_Grey", (74, -30, 50), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4265a", "Light_Grey", (74, -30, 90), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("3700", "Yellow", 1.5, 2, 0)
+place("3701", "Yellow", 0.5, 2, 6)
+place("3701", "Yellow", 0.5, 2, 9)
+place("3023", "Yellow", 1.5, 5, 9)
+place_ldu("4273a", "Light_Grey", (50, -50, 70), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3894", "Yellow", (40, -70, 170), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3705", "Black", (50, -80, 70), (0, 0, -1, 1, 0, 0, 0, -1, 0))

@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, cathedral.mpd, section cathedral-east-chapel.ldr
 #: author: Original design generated with ldraw-nova for the workspace owner
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 212 of 212 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 212 of 212 parts kept (minifigures left out)
 place("3008", "Dark_Tan", 0, 0, 7)
 place("3010", "Dark_Tan", 8, 0, 7)
 place("3009", "Dark_Tan", 0, 0, 0, rot=90)

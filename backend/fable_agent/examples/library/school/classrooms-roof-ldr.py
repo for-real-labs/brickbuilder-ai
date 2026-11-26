@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, school.mpd, section classrooms-roof.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 67 of 67 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 67 of 67 parts kept (minifigures left out)
 place("3034", "White", 0, 0, 0)
 place("3034", "White", 8, 0, 0)
 place("3020", "White", 16, 0, 0)

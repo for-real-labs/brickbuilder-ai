@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, fire-station.mpd, section hose-tower-cap.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 15 of 15 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 15 of 15 parts kept (minifigures left out)
 place("3795", "White", 0, 0, 0)
 place("3795", "White", 0, 0, 2)
 place("3795", "White", 0, 0, 4)

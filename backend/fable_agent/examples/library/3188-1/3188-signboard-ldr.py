@@ -3,7 +3,7 @@
 #: author: Takeshi Takahashi [RainbowDolphin]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures left out)
 place("3795", "Lime", 2, 0, 0)
 place("3021", "White", 3, 1, 0, rot=90)
 place("3021", "White", 5, 1, 0, rot=90)

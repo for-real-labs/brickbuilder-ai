@@ -3,7 +3,7 @@
 #: author: Massimo Maso [Sirio]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 32 of 32 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 32 of 32 parts kept (minifigures left out)
 place_ldu("2412b", "Light_Grey", (72, -10, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
 place_ldu("4868b", "Light_Grey", (38, -20, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
 place_ldu("60470a", "Black", (72, -30, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))

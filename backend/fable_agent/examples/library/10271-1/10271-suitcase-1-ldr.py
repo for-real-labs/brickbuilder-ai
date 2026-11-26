@@ -1,0 +1,33 @@
+#: title: Suitcase in reddish brown and medium nougat with hinge bases, door rails, and a handle plate.
+#: source: LDraw Official Model Repository, 10271-1.mpd, section 10271 - suitcase-1.ldr
+#: author: Magnus Forsberg [MagFors]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("99207", "Reddish_Brown", (30, -8, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("99207", "Reddish_Brown", (30, -8, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "Reddish_Brown", 2, 0, 1, rot=270)
+place("99207", "Reddish_Brown", 4, 0, 1, rot=270)
+place("99207", "Reddish_Brown", 4, 0, 3, rot=270)
+place_ldu("3710", "Reddish_Brown", (8, -10, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3710", "Reddish_Brown", (112, -10, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3710", "Medium_Nougat", 1, 1, 1)
+place("87079", "Medium_Nougat", 1, 1, 2)
+place("3710", "Medium_Nougat", 1, 1, 4)
+place_ldu("87079", "Medium_Nougat", (0, -20, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("87079", "Medium_Nougat", (120, -20, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3024", "Medium_Nougat", 1, 2, 1)
+place_ldu("48336", "Reddish_Brown", (60, -24, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3024", "Medium_Nougat", 4, 2, 1)
+place_ldu("32028", "Reddish_Brown", (8, -30, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32028", "Reddish_Brown", (8, -30, 80), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32028", "Reddish_Brown", (112, -30, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32028", "Reddish_Brown", (112, -30, 80), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("2431", "Medium_Nougat", 1, 3, 1)
+place("3937", "Medium_Nougat", 1, 2, 4, rot=180)
+place("6134", "Reddish_Brown", 1, 3, 3, rot=180)
+place("3710", "Medium_Nougat", 1, 4, 1, rot=180)
+place("3937", "Medium_Nougat", 3, 2, 4, rot=180)
+place("6134", "Reddish_Brown", 3, 3, 3, rot=180)
+place("87079", "Medium_Nougat", 1, 5, 1, rot=90)
+place("87079", "Medium_Nougat", 3, 5, 1, rot=90)

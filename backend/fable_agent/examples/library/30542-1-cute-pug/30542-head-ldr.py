@@ -1,0 +1,33 @@
+#: title: A detailed tan pug head featuring printed eye tiles, a red tongue clip, and black facial accents with curved slopes.
+#: source: LDraw Official Model Repository, 30542-1_Cute-Pug.mpd, section 30542 - Head.ldr
+#: author: Lasse Deleuran [Lasse Deleuran]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3623", "Tan", 3, 0, 1, rot=90)
+place_ldu("24201", "Black", (30, -16, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24201", "Black", (30, -16, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24201", "Black", (30, -16, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3021", "Tan", (60.0001, -16, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3623", "Black", 1, 2, 1, rot=90)
+place_ldu("54200", "Black", (30, -24, 70), (-1, 0, 1e-06, 0, 1, 0, -1e-06, 0, -1))
+place_ldu("3021", "Tan", (60.0001, -24, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("54200", "Black", (29.9997, -24.0001, 30.0001), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3623", "Tan", (49.9999, -32, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4081b", "Red", (30, -32.0001, 49.9999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (80.0001, -38, 49.9999), (-1, 0, 1e-06, 0, 1, 0, -1e-06, 0, -1))
+place_ldu("3023", "Black", (40.0001, -40, 49.9999), (-1, 0, 1e-06, 0, 1, 0, -1e-06, 0, -1))
+place_ldu("98138p07", "White", (32, -46, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("54200", "Black", (49.9999, -46, 19.9998), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("98138p07", "White", (32, -46.0001, 69.9999), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("54200", "Black", (50, -46.0001, 79.9999), (1, 1e-06, 0, 0, 0, 1, 1e-06, -1, 0))
+place_ldu("3024", "Tan", (49.9999, -48, 49.9999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("11477", "Tan", (60, -48, 29.9999), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3005", "Tan", (70, -48, 29.9999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6541", "Tan", (70, -48, 49.9999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("11477", "Tan", (60, -48.0001, 49.9999), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("11477", "Tan", (60, -48.0001, 70), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3005", "Tan", (70, -48.0001, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("26604", "Tan", (49.9999, -56, 29.9999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3024", "Tan", (49.9999, -56, 49.9999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("26604", "Tan", (49.9999, -56.0001, 70), (-1, 0, 1e-06, 0, 1, 0, -1e-06, 0, -1))

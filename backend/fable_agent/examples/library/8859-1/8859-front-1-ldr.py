@@ -1,0 +1,28 @@
+#: title: front-1
+#: source: LDraw Official Model Repository, 8859-1.mpd, section 8859 - front-1.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures left out)
+place("3710", "Black", 1, 0, 1, rot=90)
+place("3666", "Black", 0, 0, 0)
+place("3710", "Black", 4, 0, 1, rot=90)
+place("3023", "Black", 0, 1, 0, rot=90)
+place("3623", "Black", 1, 1, 0, rot=90)
+place("3023", "Black", 2, 1, 0)
+place("3023", "Black", 2, 1, 0)
+place("3623", "Black", 4, 1, 0, rot=90)
+place("3023", "Black", 5, 1, 0, rot=90)
+place_ldu("3673", "Light_Grey", (60, -30, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3665ap01", "Black", 0, 2, 1, rot=180)
+place("3894", "Black", 0, 2, 0)
+place("3665ap01", "Black", 5, 2, 1, rot=180)
+place("3623", "Black", 0, 5, 0, rot=90)
+place("3710", "Black", 1, 5, 0)
+place("3623", "Black", 5, 5, 0, rot=90)
+place_ldu("3701", "Black", (70, -50, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("3023", "Black", 0, 6, 1, rot=90)
+place("3666", "Black", 0, 6, 0)
+place("3023", "Black", 5, 6, 1, rot=90)
+place_ldu("3673", "Light_Grey", (60, -70, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3894", "Black", 0, 7, 0)

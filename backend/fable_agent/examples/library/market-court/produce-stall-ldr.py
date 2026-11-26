@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, market-court.mpd, section produce-stall.ldr
 #: author: ldraw-nova building atlas
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 33 of 33 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 33 of 33 parts kept (minifigures left out)
 place("3795", "Reddish_Brown", 0, 0, 0)
 place("3795", "Reddish_Brown", 0, 0, 2)
 place("3005", "Reddish_Brown", 0, 1, 0)

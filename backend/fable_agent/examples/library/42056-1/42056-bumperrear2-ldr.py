@@ -1,0 +1,33 @@
+#: title: Rear bumper detail section with angle connectors, orange fairing panels, tiles, and a plate.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - bumperrear2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (100, -20, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (220, -20, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (130, -30, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4274", "Blue", (150, -30, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6636", "Orange", (160, -30, 46), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4274", "Blue", (170, -30, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4274", "Blue", (190, -30, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3795", "Orange", (160, -40, 38), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("60483", "Orange", (40, -50, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (50, -50, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (60, -50, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32034", "Black", (100, -50, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Black", (100, -50, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32291", "Black", (140, -50, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32073", "Light_Bluish_Grey", (160, -50, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (160, -50, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6636", "Orange", (160, -50, 46), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32291", "Black", (180, -50, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32034", "Black", (220, -50, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Black", (220, -50, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (260, -50, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (270, -50, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("60483", "Orange", (280, -50, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("87080", "Orange", (20, -70, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (30, -70, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (290, -70, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("87086", "Orange", (300, -70, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))

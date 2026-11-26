@@ -3,7 +3,7 @@
 #: author: Stefan Frenz [smf]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures left out)
 place("3938", "Black", 0, 0, 0, rot=180)
 place("3938", "Black", 4, 0, 0, rot=180)
 place("3938", "Black", 6, 0, 0, rot=180)

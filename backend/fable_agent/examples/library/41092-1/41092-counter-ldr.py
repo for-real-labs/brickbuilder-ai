@@ -1,0 +1,33 @@
+#: title: A shop service counter with pink corner plates, nougat embossed bricks, arched tan storefront sections, pizza-pattern tiles, a coin tile, and a red bar detail.
+#: source: LDraw Official Model Repository, 41092-1.mpd, section 41092 - counter.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("30357", "Bright_Pink", 2, 0, 0, rot=90)
+place("30357", "Bright_Pink", 2, 0, 3)
+place_ldu("33291", "Bright_Green", (90, -16, 70), (-0.707, 0, -0.707, 0, 1, 0, 0.707, 0, -0.707))
+place_ldu("33291", "Bright_Green", (90, -16, 90), (-0.707, 0, -0.707, 0, 1, 0, 0.707, 0, -0.707))
+place_ldu("33291", "Red", (90, -24, 90), (-0.707, 0, -0.707, 0, 1, 0, 0.707, 0, -0.707))
+place("98283", "Medium_Nougat", 2, 1, 0)
+place("98283", "Medium_Nougat", 2, 1, 5, rot=180)
+place("15533", "Medium_Nougat", 3, 1, 1, rot=270)
+place_ldu("6190", "Red", (26, -44, 10), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("60475b", "White", (50, -56, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3005", "Tan", 2, 4, 5, rot=180)
+place("3009", "Tan", 3, 4, 0, rot=90)
+place("3020", "Light_Bluish_Grey", 3, 7, 1, rot=90)
+place("3245c", "Tan", 2, 7, 0)
+place("3245c", "Tan", 2, 7, 5)
+place("12939", "Tan", 2, 13, 0, rot=90)
+place("12939", "Tan", 3, 13, 0, rot=90)
+place("11477", "Magenta", 3, 19, 0, rot=270)
+place("11477", "White", 3, 19, 1, rot=270)
+place("11477", "Magenta", 3, 19, 2, rot=270)
+place("11477", "White", 3, 19, 3, rot=270)
+place("11477", "Magenta", 3, 19, 4, rot=270)
+place("11477", "White", 3, 19, 5, rot=270)
+place("3795", "White", 2, 19, 0, rot=90)
+place("3040b", "Light_Bluish_Grey", 2, 20, 1)
+place("3040b", "Light_Bluish_Grey", 2, 20, 3, rot=180)
+place("11211", "White", 2, 23, 2, rot=270)

@@ -1,0 +1,32 @@
+#: title: A left wheel arch assembly combining a mudguard arch panel, curved and short fairings, and dark blue liftarms to shape the fender.
+#: source: LDraw Official Model Repository, 42083-1.mpd, section 42083 - wheelarch1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2780", "Black", (50, -28.4, 80), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -28.4, 280), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32525", "Dark_Blue", (60, -28.4, 180), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18944", "Dark_Blue", (60, -28.4, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -28.4, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (70, -28.4, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (70, -28.4, 260), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32278", "Dark_Blue", (80, -28.4, 180), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("11214", "Red", (80, -28.4, 180), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -28.4, 220), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -28.4, 300), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("18651", "Black", (100, -28.4, 320), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("74695", "Dark_Blue", (100, -28.4, 320), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (110, -28.4, 200), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (110, -28.4, 240), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32524", "Dark_Blue", (120, -28.4, 260), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (130, -28.4, 260), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (130, -28.4, 280), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("11946", "Dark_Blue", (140, -28.4, 320), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -88.4, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -108.4, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("24118", "Dark_Blue", (20, -108.4, 180), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6629", "Dark_Blue", (100, -108.4, 300), (0, -1, 0, -0.6, 0, 0.8, -0.8, 0, -0.6))
+place_ldu("32062", "Red", (110, -108.4, 300), (1, 0, 0, 0, -0.6, 0.8, 0, -0.8, -0.6))
+place_ldu("59443", "Black", (130, -108.4, 300), (0, 0, 1, 0.6, -0.8, 0, 0.8, 0.6, 0))
+place_ldu("43093", "Blue", (150, -108.4, 300), (-1, 0, 0, 0, -0.8, 0.6, 0, 0.6, 0.8))

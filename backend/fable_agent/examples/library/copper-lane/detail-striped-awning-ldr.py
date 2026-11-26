@@ -2,7 +2,7 @@
 #: source: ldraw-nova example atlas, copper-lane.mpd, section detail-striped-awning.ldr
 #: author: ldraw-nova example generator
 #: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 9 of 9 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 9 of 9 parts kept (minifigures left out)
 place("3034", "White", 0, 0, 1)
 place("4286", "Dark_Green", 0, 1, 0)
 place("4286", "White", 1, 1, 0)

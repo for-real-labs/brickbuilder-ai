@@ -3,7 +3,7 @@
 #: author: Robert Paciorek [bercik]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures left out)
 place("4282", "Green", 0.5, 0, 0.5, rot=270)
 place("6141", "White", 1, 1, 8, rot=180)
 place("6141", "White", 1, 1, 11, rot=180)

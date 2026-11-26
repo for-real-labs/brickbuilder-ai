@@ -1,0 +1,32 @@
+#: title: Rear upper section of the trailer with cross blocks, bent liftarms, bushings, and a red light plate for tail detailing.
+#: source: LDraw Official Model Repository, 42080-1.mpd, section 42080 - trailertoprear.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32526", "Dark_Bluish_Grey", (60, -9, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4519", "Yellow", (100, -9, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41678", "Light_Bluish_Grey", (100, -9, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32062", "Red", (30, -29, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32140", "Black", (40, -29, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32002", "Tan", (70, -29, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (90, -29, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (110, -29, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32002", "Tan", (130, -29, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("42003", "Dark_Bluish_Grey", (20, -49, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (20, -49, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6141", "Trans_Clear", (20, -49, 78), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6632", "Red", (75, -49, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32123b", "Yellow", (85, -49, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32073", "Light_Bluish_Grey", (100, -49, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Black", (100, -49, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32123b", "Yellow", (115, -49, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6632", "Red", (125, -49, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (20, -69, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6141", "Trans_Red", (20, -69, 78), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (50, -69, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (80, -69, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (100, -69, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (120, -69, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (40, -89, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6558", "Blue", (40, -89, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))

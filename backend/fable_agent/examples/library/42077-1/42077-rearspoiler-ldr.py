@@ -1,0 +1,32 @@
+#: title: Rear wing spoiler with a large arched mudguard panel, bent panels, and angle connectors mounted on liftarms.
+#: source: LDraw Official Model Repository, 42077-1.mpd, section 42077 - rearspoiler.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("15100", "Black", (25, -30, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6632", "White", (40, -30, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6632", "White", (50, -30, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("87083", "Dark_Bluish_Grey", (55, -30, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (55, -30, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (55, -30, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (65, -30, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32014", "White", (105, -30, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24118", "Dark_Azure", (205, -30, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32014", "White", (305, -30, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (345, -30, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (355, -30, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (355, -30, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (355, -30, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6632", "White", (360, -30, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6632", "White", (370, -30, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("15100", "Black", (385, -30, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32062", "Red", (105, -60, 20), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Red", (305, -60, 20), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32013", "White", (105, -90, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (105, -90, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("24116", "White", (105, -90, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32525", "White", (205, -90, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32013", "White", (305, -90, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6558", "Blue", (305, -90, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("24116", "White", (305, -90, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))

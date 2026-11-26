@@ -1,0 +1,33 @@
+#: title: Wheel and fairing subassembly with two axle 6s, angle connectors, cross blocks, a beam 11, and red panel fairings forming a styled wheel housing.
+#: source: LDraw Official Model Repository, 8289-1_Tow-Truck.mpd, section 8289 - Truck 039.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("42003", "Red", (80, 9.877, 187.784), (-1, 0, 0, 0, 0.994, -0.111, 0, -0.111, -0.994))
+place_ldu("42003", "Red", (160, 9.877, 187.784), (-1, 0, 0, 0, 0.994, -0.111, 0, -0.111, -0.994))
+place_ldu("2780", "Black", (20, -10, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (40, -10, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32535", "Red", (70, -10, 20), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (90, -10, 190), (-1, 0, 0, 0, 0.111, 0.994, 0, 0.994, -0.111))
+place_ldu("43093", "Blue", (100, -10, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6538b", "Red", (100, -10, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (100, -10, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3706", "Black", (100, -10, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (100, -10, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32013", "Red", (100, -10, 190), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32525", "Red", (120, -10, 30), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32184", "Black", (120, -10, 110), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32184", "Black", (120, -10, 150), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("43093", "Blue", (140, -10, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6538b", "Red", (140, -10, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (140, -10, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3706", "Black", (140, -10, 120), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (140, -10, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32013", "Red", (140, -10, 190), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (150, -10, 190), (1, 0, 0, 0, -0.111, 0.994, 0, -0.994, -0.111))
+place_ldu("32534", "Red", (170, -10, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (200, -10, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (220, -10, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (120, -20, 110), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (120, -20, 150), (0, 0, -1, -1, 0, 0, 0, 1, 0))

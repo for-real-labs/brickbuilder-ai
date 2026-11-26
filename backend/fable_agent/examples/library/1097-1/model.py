@@ -3,10 +3,12 @@
 #: author: Robert Paciorek [bercik]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 9 of 11 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 11 of 11 parts kept (minifigures left out)
 place("2654", "Light_Grey", 2, 0, 1, rot=90)
-place("3032", "Yellow", 3, 1, 0)
+place("4859", "Yellow", 0, 1, 0, rot=90)
 place("3023", "White", 2, 1, 1, rot=90)
+place("3032", "Yellow", 3, 1, 0)
+place("6153", "Black", 0, 2, 0, rot=90)
 place("3003", "Light_Grey", 4, 2, 1)
 place("4286", "Black", 6, 2, 0, rot=270)
 place("4286", "Black", 6, 2, 3, rot=270)

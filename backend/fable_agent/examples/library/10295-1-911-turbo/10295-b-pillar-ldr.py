@@ -3,7 +3,7 @@
 #: author: Ulrich Röder {UR}
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
 #: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
-#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures, overlapping and unattached parts left out)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 12 of 12 parts kept (minifigures left out)
 place("4477", "Dark_Bluish_Grey", 0, 0, 0)
 place("3623", "Black", 9, 0, 3, rot=270)
 place("3623", "Black", 0, 0, 3, rot=270)
