@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { NovaToBricksApiService } from '../services/novaToBricksApi';
+import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService } from '../services/novaToBricksApi';
 
 export function ResumeNovaButton({ generationId, onResumed }: {
   generationId: string;
@@ -13,7 +13,8 @@ export function ResumeNovaButton({ generationId, onResumed }: {
     setError(null);
     try {
       const result = await NovaToBricksApiService.edit(generationId,
-        'Continue this build from the saved conversation and workspace, and publish the completed model. Reuse your existing research and files.');
+        'Continue this build from the saved conversation and workspace, and publish the completed model. Reuse your existing research and files.',
+        undefined, undefined, { ...DEFAULT_NOVA_OPTIONS, buildingAgent: 'nova' });
       onResumed(result.generation_id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Unable to resume. Please try again.');

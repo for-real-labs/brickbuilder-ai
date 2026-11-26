@@ -2,7 +2,7 @@ import type { PartsInventory } from './partsInventoryApi';
 import { apiFetch, authenticatedApiFetch } from './apiFetch';
 import { DEFAULT_LLM_MODEL, getLlmModelOption, validateMaxParts, type LlmToBricksResponse } from './llmToBricksApi';
 import { getInstructionKey } from '../utils/instructionLinks';
-import { isAgentModel, isBuildingAgent, type AgentModel, type BuildingAgent } from '../utils/buildingAgents';
+import { DEFAULT_BUILDING_AGENT, isAgentModel, isBuildingAgent, type AgentModel, type BuildingAgent } from '../utils/buildingAgents';
 
 export type { AgentModel, BuildingAgent };
 
@@ -56,15 +56,15 @@ export class NovaInstructionPlanError extends Error {
 }
 
 export class NovaToBricksApiService {
-  /** The agents this account may choose, in the order to offer them. Nova is always available. */
+  /** The agents this account may choose, in the order to offer them. */
   static async buildingAgents(authToken: string, signal: AbortSignal): Promise<BuildingAgentChoices> {
     const response = await apiFetch(`${NOVA_API_BASE_URL}/generation-settings/building-agents`, {
       headers: { Authorization: `Bearer ${authToken}` }, signal, cache: 'no-store',
     });
-    if (!response.ok) return { agents: ['nova'], models: {}, examples: [] };
+    if (!response.ok) return { agents: [DEFAULT_BUILDING_AGENT], models: {}, examples: [] };
     const data = await response.json();
     const listed: BuildingAgent[] = Array.isArray(data.agents) ? data.agents.filter(isBuildingAgent) : [];
-    const agents = listed.includes('nova') ? listed : ['nova' as const, ...listed];
+    const agents = listed.length ? listed : [DEFAULT_BUILDING_AGENT];
     const models: BuildingAgentChoices['models'] = {};
     const offered = data.models && typeof data.models === 'object' ? data.models as Record<string, unknown> : {};
     for (const agent of agents) {
@@ -128,7 +128,7 @@ export class NovaToBricksApiService {
         max_parts: request.maxParts,
         model: request.model,
         auth_mode: request.authMode,
-        building_agent: request.buildingAgent,
+        building_agent: request.buildingAgent ?? DEFAULT_BUILDING_AGENT,
         agent_model: request.agentModel,
         use_examples: request.useExamples || undefined,
       }),

@@ -30,7 +30,7 @@ describe('building agents', () => {
     expect(isBuildingAgent('constructor')).toBe(false);
   });
 
-  it('offers only agents the backend lists and this app knows, and always Nova', async () => {
+  it('offers only agents the backend lists and this app knows, using Pip if the list is unavailable', async () => {
     const reply = (body: unknown, ok = true) => vi.stubGlobal('fetch', vi.fn(async () => ({
       ok, status: ok ? 200 : 500, json: async () => body, headers: new Headers(),
     })));
@@ -43,11 +43,11 @@ describe('building agents', () => {
     expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer token');
 
     reply({ agents: ['fable-gpt-6.2-sol'] });
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova', 'fable-gpt-6.2-sol'], models: {}, examples: [] });
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['fable-gpt-6.2-sol'], models: {}, examples: [] });
     reply({ agents: 'nova' });
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova'], models: {}, examples: [] });
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['pip-agent'], models: {}, examples: [] });
     reply({}, false);
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova'], models: {}, examples: [] });
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['pip-agent'], models: {}, examples: [] });
     // Models are kept only for listed agents, and only models this app knows.
     reply({ agents: ['nova', 'pip-agent'], models: {
       'pip-agent': ['gpt-6.2-sol', 'claude-opus-5-5', 'model-from-the-future'], 'fable-gpt-6.1-sol': ['gpt-6.2-sol'],
@@ -55,7 +55,7 @@ describe('building agents', () => {
     expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({
       agents: ['nova', 'pip-agent'], models: { 'pip-agent': ['gpt-6.2-sol', 'claude-opus-5-5'] }, examples: [] });
     reply({ agents: ['pip-agent'], models: 'all' });
-    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['nova', 'pip-agent'], models: {}, examples: [] });
+    expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({ agents: ['pip-agent'], models: {}, examples: [] });
     // Example builds are offered only for listed agents this app knows.
     reply({ agents: ['nova', 'pip-agent'], examples: ['pip-agent', 'fable-gpt-6.1-sol', 'agent-from-the-future', 7] });
     expect(await NovaToBricksApiService.buildingAgents('token', signal)).toEqual({
@@ -74,4 +74,13 @@ describe('building agents', () => {
     expect(bodies[0].use_examples).toBe(true);
     expect('use_examples' in bodies[1]).toBe(false);
   });
+  it('sends Pip for edits without a selection and preserves an explicit Nova selection', async () => {
+    const sent = vi.fn(async () => ({ ok: true, status: 200, json: async () => ({ generation_id: 'g' }), headers: new Headers() }));
+    vi.stubGlobal('fetch', sent);
+    await NovaToBricksApiService.edit('old-build', 'Add a brick');
+    await NovaToBricksApiService.generate({ prompt: 'Build a tower', model: 'claude-opus-5-5', authMode: 'api_key', buildingAgent: 'nova' });
+    expect(sent.mock.calls.map(call => JSON.parse(String((call as unknown as [string, RequestInit])[1].body)).building_agent))
+      .toEqual(['pip-agent', 'nova']);
+  });
+
 });

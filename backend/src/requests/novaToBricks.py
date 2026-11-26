@@ -26,8 +26,9 @@ from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.building_agents import FABLE_AGENTS, RETIRED_AGENTS, in_process_agent, open_to_everyone
+from ..utils.building_agents import FABLE_AGENTS, PIP_AGENT, RETIRED_AGENTS, in_process_agent, open_to_everyone
 from ..utils.nova_service import NovaService, NovaDraftError, INSTRUCTIONS_FILE
+from ..utils.saved_parts_inventory import load_inventory, save_inventory
 from ..utils.parts_inventory import PartsInventory
 from ..utils.prompt_parts_limit import tighter_parts_limit
 from ..utils.storage_upload import upload_artifact
@@ -56,7 +57,7 @@ def _generation_timeout() -> float | None:
 
 
 class NovaToBricksRequest(LlmToBricksRequest):
-    building_agent: str = "nova"
+    building_agent: str = PIP_AGENT
     # The model for an agent that offers a choice (the Pip agent). None uses the agent's default.
     agent_model: str | None = Field(default=None, max_length=64)
     # Show the agent the example builds closest to the request first (Generation settings; the Pip agent).
@@ -111,15 +112,8 @@ async def _prepare_edit(request: NovaToBricksRequest, auth_info: dict, source=No
     if source.get('endpoint') == 'llmToBricks':
         raise HTTPException(409, 'This model uses Basic bricks mode. Keep that mode when editing it.')
     if owned and source.get('has_parts_inventory'):
-        try:
-            bucket = generation_storage.client.storage.from_('generation-output')
-            inventory_id = source.get('restored_from_id') or request.generation_id
-            data = await asyncio.to_thread(bucket.download, f'{inventory_id}/parts-inventory.json')
-            if len(data) > 2 * 1024 * 1024:
-                raise ValueError('Oversized inventory')
-            request.parts_inventory = PartsInventory.model_validate_json(data)
-        except Exception:
-            raise HTTPException(409, 'The original parts inventory is unavailable. Upload it again to start a new build.') from None
+        request.parts_inventory = await load_inventory(
+            generation_storage, source.get('restored_from_id') or request.generation_id)
     request._nova_input_type = source.get('input_type') or infer_input_type(source.get('endpoint'))
     request._nova_input_format = source.get('input_format')
     request._nova_uploaded_source = source.get('endpoint') in {'uploadLdraw', 'glbToBricks', 'objToBricks'}
@@ -294,6 +288,8 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
 
 
 async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends(get_user_with_optional_auth), http_request=None) -> ImageToBricksResponse:
+    if request.building_agent == "nova" and not astrology_allowed(auth_info):
+        raise HTTPException(403, "Nova is unavailable for this account.")
     if request.building_agent == AGENT and not astrology_allowed(auth_info):
         raise HTTPException(403, "Astrology is unavailable for this account.")
     if (request.building_agent in FABLE_AGENTS and not fable_allowed(auth_info)
@@ -304,9 +300,10 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
     source = await generation_storage.get_generation(request.generation_id) if request.generation_id else None
     if request.generation_id and not source:
         raise HTTPException(404, 'Generation not found')
-    if request.building_agent == AGENT or (source and source.get("model_used_3d") == AGENT):
+    agent = (in_process_agent(source.get("model_used_3d")) if source else None) or request.building_agent
+    if agent == AGENT:
         return await astrology_to_bricks(request, auth_info, source)
-    if request.building_agent in FABLE_AGENTS or (source and source.get("model_used_3d") in FABLE_AGENTS):
+    if agent in FABLE_AGENTS:
         return await fable_to_bricks(request, auth_info, source)
     await resolve_provider_key(request, auth_info, SUPPORTED_MODELS[request.model].provider)
     if request.generation_id:
@@ -339,17 +336,7 @@ async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends
         input_format=request._nova_input_format, entry_page=request.entry_page,
         edit_generation_id=request.generation_id,
     )
-    if request.parts_inventory is not None:
-        try:
-            bucket = generation_storage.client.storage.from_('generation-output')
-            await upload_artifact(bucket, path=f'{generation_id}/parts-inventory.json',
-                file=request.parts_inventory.model_dump_json().encode(), content_type='application/json')
-            await asyncio.to_thread(lambda: generation_storage.client.table('generations').update({
-                'has_parts_inventory': True
-            }).eq('id', generation_id).execute())
-        except Exception:
-            await generation_storage.update_status(generation_id, 'failed', 'Could not save the parts inventory. Please try again.')
-            raise HTTPException(503, 'Could not save the parts inventory. Please try again.') from None
+    await save_inventory(generation_storage, generation_id, request.parts_inventory)
     task = start_generation_task(generation_id, run_with_output(generation_id, process_nova_to_bricks_task, request, user_info, auth_info, native_progress=True))
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)

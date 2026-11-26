@@ -569,7 +569,7 @@ it('submits a focused model edit on the first touch before the order banner retu
     send.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 1 }));
   });
   expect(touch.defaultPrevented).toBe(true);
-  expect(edit).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined, undefined, { model: 'claude-opus-5-5', authMode: 'api_key' });
+  expect(edit).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined, undefined, { model: 'claude-opus-5-5', authMode: 'api_key', buildingAgent: 'pip-agent' });
   expect(container.querySelector('[aria-label="Building your edited model"]')).not.toBeNull();
 });
 
@@ -785,7 +785,7 @@ it.each(['novaToBricks', 'llmToBricks', 'uploadLdraw'])('edits %s with animation
     expect(llm).toHaveBeenCalledExactlyOnceWith({ sourceGenerationId: 'castle', prompt: 'Add a drawbridge', model: 'claude-opus-5-5' }, undefined);
     expect(nova).not.toHaveBeenCalled();
   } else {
-    expect(nova).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined, undefined, { model: 'claude-opus-5-5', authMode: 'api_key' });
+    expect(nova).toHaveBeenCalledExactlyOnceWith('castle', 'Add a drawbridge', undefined, undefined, { model: 'claude-opus-5-5', authMode: 'api_key', buildingAgent: 'pip-agent' });
     expect(llm).not.toHaveBeenCalled();
   }
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
@@ -1361,7 +1361,7 @@ it.each(['novaToBricks', 'llmToBricks'])('sends an attached edit image to %s wit
   type('Match these colors');
   await submit();
   const image = { imageBase64: 'cGl4ZWxz', imageMediaType: 'image/png' };
-  if (endpoint === 'novaToBricks') expect(nova).toHaveBeenCalledWith('castle', 'Match these colors', undefined, image, { model: 'claude-opus-5-5', authMode: 'api_key' });
+  if (endpoint === 'novaToBricks') expect(nova).toHaveBeenCalledWith('castle', 'Match these colors', undefined, image, { model: 'claude-opus-5-5', authMode: 'api_key', buildingAgent: 'pip-agent' });
   else expect(llm).toHaveBeenCalledWith({ sourceGenerationId: 'castle', prompt: 'Match these colors', model: 'claude-opus-5-5', ...image }, undefined);
 });
 

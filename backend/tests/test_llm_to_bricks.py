@@ -821,9 +821,9 @@ def test_basic_inventory_is_saved_for_future_edits(monkeypatch):
     storage.client = Mock()
     upload = AsyncMock()
     monkeypatch.setattr(module, 'generation_storage', storage)
-    monkeypatch.setattr(module, 'upload_artifact', upload)
+    monkeypatch.setattr('src.utils.saved_parts_inventory.upload_artifact', upload)
     request = LlmToBricksRequest(prompt='Model', parts_inventory=_owned_bricks())
-    asyncio.run(module._save_parts_inventory('new-build', request))
+    asyncio.run(module.save_inventory(storage, 'new-build', request.parts_inventory))
     assert upload.call_args.kwargs['path'] == 'new-build/parts-inventory.json'
     assert module.PartsInventory.model_validate_json(upload.call_args.kwargs['file']) == request.parts_inventory
     storage.client.table.return_value.update.assert_called_once_with({'has_parts_inventory': True})

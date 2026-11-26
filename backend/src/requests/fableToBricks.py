@@ -32,12 +32,15 @@ from ..utils import auth
 from ..utils.auth import handle_auth_and_tracking
 from ..utils.authorization import require_generation_access
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.building_agents import FABLE_AGENTS, FableVariant, open_to_everyone
+from ..utils.building_agents import FABLE_AGENTS, PIP_AGENT, FableVariant, open_to_everyone
 from ..utils.generation_budget import current_generation_usage
 from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
+from ..utils.pip_source_model import source_script
 from ..utils.nova_service import INSTRUCTIONS_FILE
+from ..utils.parts_inventory import PartsInventory
+from ..utils.saved_parts_inventory import load_inventory, save_inventory
 from ..utils.prompt_parts_limit import tighter_parts_limit
 from ..utils.storage_upload import upload_artifact
 from .astrologyToBricks import astrology_allowed
@@ -117,6 +120,23 @@ class Built:
 fable_allowed = astrology_allowed
 
 
+async def _import_geometry(source: dict, auth_info: dict) -> Design:
+    """A completed Nova build or upload can be edited from its public geometry."""
+    if source.get("status") != "completed":
+        require_generation_access(source, auth_info)
+        raise HTTPException(409, "Pip needs a completed model. Start a new build to use Pip.")
+    if source.get("endpoint") not in {"novaToBricks", "uploadLdraw", "glbToBricks", "objToBricks"}:
+        raise HTTPException(409, "Keep the original build mode when editing this model.")
+    if not source.get("ldr_url"):
+        raise HTTPException(409, "This model has no saved geometry to edit.")
+    content = await generation_storage.download_file_from_storage(source["ldr_url"])
+    try:
+        script = await asyncio.to_thread(source_script, content, MAX_PARTS)
+    except ValueError as exc:
+        raise HTTPException(409, str(exc)) from None
+    return Design(script, ())
+
+
 async def _source_design(source: dict, auth_info: dict) -> Design:
     require_generation_access(source, auth_info)
     if source.get("model_used_3d") not in FABLE_AGENTS or source.get("status") != "completed":
@@ -139,7 +159,8 @@ async def _source_design(source: dict, auth_info: dict) -> Design:
 
 
 def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | None, script: str | None,
-         key: str, on_event, examples: bool = False, example_query: str | None = None) -> Built:
+         key: str, on_event, examples: bool = False, example_query: str | None = None,
+         inventory: PartsInventory | None = None) -> Built:
     """Run one build to the end in a scratch directory. Blocking: call it from a worker thread.
 
     ``example_query`` is what examples are searched for: the customer's own request, without the
@@ -151,7 +172,15 @@ def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | 
         if reference:
             picture = root / "reference-upload"
             picture.write_bytes(reference)
-        options = Options(model=variant.model, method=variant.method, effort=variant.effort,
+        inventory_csv = None
+        if inventory is not None:
+            inventory_csv = inventory.catalog().to_palette_csv()
+            # Keep the brief bounded on large sets. Every row is also accessible through lookup.
+            rows = [f"{p.part_id} {p.color_id} {p.quantity}" for p in inventory.parts[:150]]
+            prompt += ("\n\nBuild only with the supplied parts. You may use fewer pieces. "
+                       "Each row gives part ID, LDraw color and available quantity. "
+                       "Use look_up for additional parts and exact quantities.\n" + "\n".join(rows))
+        options = Options(inventory_csv=inventory_csv, model=variant.model, method=variant.method, effort=variant.effort,
                           max_parts=max_parts, api_key=key, max_seconds=BUILD_SECONDS,
                           examples=examples and variant.method in EXAMPLE_METHODS, example_query=example_query)
         result = start_build(prompt, root / "session", options, reference=picture, on_event=on_event,
@@ -215,7 +244,7 @@ async def _build(generation_id, request, agent_id, variant, design, reference, k
         clock["hard_stop"] = time.monotonic() + HARD_STOP_SECONDS
         return _run(_change_request(guided_build_prompt(prompt), design), variant, request.max_parts, reference,
                     design.script if design else None, key, on_event, request.use_examples,
-                    request.prompt or "")
+                    request.prompt or "", request.parts_inventory)
 
     pulse = asyncio.create_task(heartbeat())
     prompt = request.prompt or "Build the subject in the photo."
@@ -280,7 +309,8 @@ def _ready() -> bool:
 
 
 async def fable_to_bricks(request, auth_info, source=None):
-    agent_id = source.get("model_used_3d") if source else request.building_agent
+    source_agent = source.get("model_used_3d") if source else None
+    agent_id = source_agent if source_agent in FABLE_AGENTS else request.building_agent
     # A change is built with the model that built the original, so only a new build's choice is checked here.
     if not fable_allowed(auth_info) and not open_to_everyone(agent_id, None if source else request.agent_model):
         raise HTTPException(403, "Fable is unavailable for this account.")
@@ -289,18 +319,34 @@ async def fable_to_bricks(request, auth_info, source=None):
         raise HTTPException(422, "Unknown building agent.")
     if request.auth_mode != "api_key" or request.billing_source == "personal":
         raise HTTPException(422, "Fable uses BrickBuilder credits and its configured AI connections.")
-    if request.parts_inventory is not None:
-        raise HTTPException(422, "Fable builds from the BrickBuilder catalog and cannot use a parts inventory yet.")
+    if request.parts_inventory is not None and agent_id != PIP_AGENT:
+        raise HTTPException(422, "Choose Pip to build from a parts inventory with this method.")
     if generation_storage is None or not _ready():
         raise HTTPException(503, "Fable is temporarily unavailable.")
     if _in_flight >= MAX_BUILDS + MAX_WAITING:
         raise HTTPException(503, "Fable is busy right now. Try again in a few minutes.")
-    design = await _source_design(source, auth_info) if source else None
+    design = None
+    if source:
+        if source_agent in FABLE_AGENTS:
+            design = await _source_design(source, auth_info)
+            owned = True
+        elif agent_id == PIP_AGENT:
+            design = await _import_geometry(source, auth_info)
+            try:
+                require_generation_access(source, auth_info)
+                owned = True
+            except HTTPException:
+                owned = False
+        else:
+            raise HTTPException(409, "Choose Pip to edit this model.")
+        if owned and source.get("has_parts_inventory"):
+            request.parts_inventory = await load_inventory(
+                generation_storage, source.get("restored_from_id") or request.generation_id)
     # A change is built with the model that built the original; a new build with the one chosen.
     try:
-        variant = variant.using(design.model if design else request.agent_model)
+        variant = variant.using(design.model if source_agent in FABLE_AGENTS else request.agent_model)
     except ValueError:
-        if not design:
+        if source_agent not in FABLE_AGENTS:
             raise HTTPException(422, "This building agent does not offer that model.") from None
         # The saved model is no longer offered: change it with the agent's default model.
     key = os.getenv(variant.key_env)
@@ -321,10 +367,13 @@ async def fable_to_bricks(request, auth_info, source=None):
         "use_examples": request.use_examples and variant.method in EXAMPLE_METHODS,
         "is_edit": bool(source)})
     job_id = await generation_storage.create_generation(
-        user_id=auth_info["user_id"], user_type="authenticated", prompt=request.prompt or "Image reference",
+        user_id=auth_info["user_id"], user_type="anonymous" if auth_info.get("is_anonymous") else "authenticated",
+        guest_ip_hash=auth_info.get("rate_limit_id"), prompt=request.prompt or "Image reference",
         detail_level=request.detail_level, endpoint="novaToBricks", model_3d=agent_id,
-        max_parts=request.max_parts, input_type="image" if reference else "text",
+        max_parts=request.max_parts, input_type=(source or {}).get("input_type") or ("image" if reference else "text"),
+        input_format=(source or {}).get("input_format"),
         entry_page=request.entry_page, edit_generation_id=request.generation_id)
+    await save_inventory(generation_storage, job_id, request.parts_inventory)
     start_generation_task(job_id, run_with_output(job_id, _build, request, agent_id, variant, design, reference,
                                                   key, native_progress=True))
     return ImageToBricksResponse(generation_id=job_id, message="Fable generation started.")

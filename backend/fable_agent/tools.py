@@ -290,7 +290,9 @@ class Toolbox:
         colors = self._palette.colors_for(part_id)
         if colors:
             lines.append(f"Available in {len(colors)} colors: "
-                         + ", ".join(f"{names.get(c, c)} ({c})" for c in colors))
+                         + ", ".join(f"{names.get(c, c)} ({c})"
+                                     + (f" × {limit}" if (limit := self._palette.quantity_limit(part_id, c)) is not None else "")
+                                     for c in colors))
         else:
             lines.append("NOT AVAILABLE in the parts catalog: do not use it.")
         return "\n".join(lines)
