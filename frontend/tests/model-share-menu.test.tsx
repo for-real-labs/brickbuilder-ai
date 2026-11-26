@@ -20,9 +20,9 @@ afterEach(() => { act(() => root.unmount()); container.remove(); });
 const open = () => act(() => container.querySelector('button')!.click());
 const button = (label: string) => [...container.querySelectorAll('button')].find(item => item.textContent?.includes(label))!;
 
-it('shares the exact displayed revision through the root model URL', async () => {
+it('copies the exact model with a fresh preview cache key', async () => {
   open();
-  const url = `${window.location.origin}/?id=revision%20%26%202`;
+  const url = `${window.location.origin}/?id=revision+%26+2&card=4`;
   const facebook = container.querySelector<HTMLAnchorElement>('a[href*="facebook"]')!;
   const twitter = container.querySelector<HTMLAnchorElement>('a[href*="twitter"]')!;
   expect(new URL(facebook.href).searchParams.get('u')).toBe(url);
@@ -78,7 +78,7 @@ it('leaves the social anchors available to the browser and resets the menu when 
   act(() => root.render(<ModelShareMenu generationId="next" modelName="Next" />));
   expect(container.querySelector('[role="dialog"]')).toBeNull();
   open();
-  expect(container.querySelector('input')!.value).toBe(`${window.location.origin}/?id=next`);
+  expect(container.querySelector('input')!.value).toBe(`${window.location.origin}/?id=next&card=4`);
 });
 
 it.each(['Copy link', 'Instagram'])('keeps %s actionable after Safari blurs without a focus target', async label => {
@@ -132,7 +132,7 @@ it('uses the native copy action when the browser omits clipboardData', async () 
   const legacyCopy = vi.fn(() => {
     const input = container.querySelector('input')!;
     expect(input.value.slice(input.selectionStart!, input.selectionEnd!)).toBe(
-      `${window.location.origin}/?id=revision%20%26%202`,
+      `${window.location.origin}/?id=revision+%26+2&card=4`,
     );
     const event = new Event('copy', { bubbles: true, cancelable: true });
     input.dispatchEvent(event);
@@ -168,7 +168,7 @@ it('adds the signed-in sender ID to copied and social links', async () => {
   act(() => root.render(<ModelShareMenu generationId="model" modelName="Model" />));
   open();
   const url = container.querySelector('input')!.value;
-  expect(url).toBe(`${window.location.origin}/?id=model&ref=${auth.user.id}`);
+  expect(url).toBe(`${window.location.origin}/?id=model&card=4&ref=${auth.user.id}`);
   const [facebook, twitter] = container.querySelectorAll<HTMLAnchorElement>('a');
   expect(new URL(facebook.href).searchParams.get('u')).toBe(url);
   expect(new URL(twitter.href).searchParams.get('url')).toBe(url);

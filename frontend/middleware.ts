@@ -1,3 +1,4 @@
+import { MODEL_SHARE_CARD_VERSION } from './src/utils/generationRoutes';
 import { maintenanceResponse } from './maintenance';
 import { isMaintenanceHost } from './src/maintenanceRoutes';
 
@@ -5,10 +6,12 @@ const AUTH_PATH = '/__preview-auth';
 const AUTH_COOKIE = 'brickbuilder_preview_auth';
 const COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7;
 const MODEL_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const SHARE_IMAGE_PATH = /^\/share-image\/([0-9a-f-]{36})\.png$/i;
+const SHARE_IMAGE_PATH = /^\/share-image\/([0-9a-f-]{36})(?:\/card-v[0-9]+)?\.png$/i;
 const PREVIEW_STORAGE_HOST = 'smzdytfghwslpbqnwdov.supabase.co';
 const SOCIAL_CRAWLER = /LinkedInBot|facebookexternalhit|Facebot|Twitterbot|Slackbot|Discordbot|TelegramBot|WhatsApp|Pinterestbot|redditbot|Applebot|Googlebot|Google-InspectionTool|GoogleOther|SkypeUriPreview|Embedly|Iframely/i;
 const SHARE_LOOKUP_TIMEOUT_MS = 12000;
+const BRANDED_CARD_TIMEOUT_MS = 2000;
+const MAX_SHARE_IMAGE_BYTES = 10_000_000;
 
 function unavailableShareResponse(): Response {
   return new Response('Model preview temporarily unavailable. Please retry.', {
@@ -71,50 +74,64 @@ async function loadShareModel(id: string): Promise<{ name?: unknown; preview_ima
   }
 }
 
+async function readSharePng(url: string, timeout: number): Promise<ArrayBuffer | undefined> {
+  try {
+    const response = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(timeout) });
+    if (!response.ok || response.headers.get('content-type')?.split(';')[0] !== 'image/png') return undefined;
+    if (Number(response.headers.get('content-length') || 0) > MAX_SHARE_IMAGE_BYTES) return undefined;
+    const bytes = await response.arrayBuffer();
+    return bytes.byteLength > 0 && bytes.byteLength <= MAX_SHARE_IMAGE_BYTES ? bytes : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+function sharePngResponse(bytes: ArrayBuffer, branded: boolean): Response {
+  return new Response(bytes, {
+    headers: {
+      'Content-Type': 'image/png',
+      'Content-Length': String(bytes.byteLength),
+      'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30',
+    },
+  });
+}
+
+async function modelShareImage(id: string): Promise<Response> {
+  const backend = backendBase();
+  if (backend) {
+    const card = await readSharePng(
+      `${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}/share-card.png`,
+      BRANDED_CARD_TIMEOUT_MS,
+    );
+    if (card) return sharePngResponse(card, true);
+  }
+
+  const model = await loadShareModel(id);
+  if (typeof model?.preview_image_url !== 'string') return unavailableShareResponse();
+  const imageUrl = new URL(model.preview_image_url);
+  if (imageUrl.protocol !== 'https:' || imageUrl.hostname !== PREVIEW_STORAGE_HOST || !imageUrl.pathname.endsWith('.png')) {
+    return unavailableShareResponse();
+  }
+  const preview = await readSharePng(imageUrl.href, SHARE_LOOKUP_TIMEOUT_MS);
+  return preview ? sharePngResponse(preview, false) : unavailableShareResponse();
+}
+
 async function modelShareResponse(request: Request): Promise<Response | undefined> {
   const url = new URL(request.url);
   const imageMatch = SHARE_IMAGE_PATH.exec(url.pathname);
   if (request.method !== 'GET' && request.method !== 'HEAD') return undefined;
-  // Vercel strips the body on the wire for HEAD, but drops content headers if
-  // the middleware returns a Response without a body.
   const id = imageMatch?.[1] || url.searchParams.get('id');
   if (!id || !MODEL_ID.test(id)) return undefined;
   if (!imageMatch && !['/', '/generated-model'].includes(url.pathname)) return undefined;
-  const model = await loadShareModel(id);
-  if (!model || typeof model.preview_image_url !== 'string') {
-    return imageMatch || SOCIAL_CRAWLER.test(request.headers.get('user-agent') || '')
-      ? unavailableShareResponse()
-      : undefined;
-  }
   try {
+    if (imageMatch) return await modelShareImage(id);
+    const model = await loadShareModel(id);
+    if (typeof model?.preview_image_url !== 'string') {
+      return SOCIAL_CRAWLER.test(request.headers.get('user-agent') || '') ? unavailableShareResponse() : undefined;
+    }
     const imageUrl = new URL(model.preview_image_url);
     if (imageUrl.protocol !== 'https:') return unavailableShareResponse();
     const isHostedPreview = imageUrl.hostname === PREVIEW_STORAGE_HOST && imageUrl.pathname.endsWith('.png');
-    if (imageMatch) {
-      if (!isHostedPreview) return unavailableShareResponse();
-      const backend = backendBase();
-      let cardResponse: Response | undefined;
-      try {
-        if (backend) cardResponse = await fetch(`${backend.replace(/\/$/, '')}/generation/${encodeURIComponent(id)}/share-card.png`, {
-          signal: AbortSignal.timeout(SHARE_LOOKUP_TIMEOUT_MS),
-        });
-      } catch { /* A raw preview is still available if the card service is unavailable. */ }
-      const branded = Boolean(cardResponse?.ok && cardResponse.headers.get('content-type')?.split(';')[0] === 'image/png');
-      const imageResponse = branded
-        ? cardResponse!
-        : await fetch(imageUrl.href, { redirect: 'error', signal: AbortSignal.timeout(SHARE_LOOKUP_TIMEOUT_MS) });
-      if (!imageResponse.ok || imageResponse.headers.get('content-type')?.split(';')[0] !== 'image/png') return unavailableShareResponse();
-      if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return unavailableShareResponse();
-      const bytes = await imageResponse.arrayBuffer();
-      if (bytes.byteLength > 10_000_000) return unavailableShareResponse();
-      return new Response(bytes, {
-        headers: {
-          'Content-Type': 'image/png',
-          'Content-Length': String(bytes.byteLength),
-          'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30',
-        },
-      });
-    }
     const shellUrl = new URL('/share-shell.html', request.url);
     const shellResponse = await fetch(shellUrl, { headers: { cookie: request.headers.get('cookie') || '' }, signal: AbortSignal.timeout(4000) });
     if (!shellResponse.ok) return SOCIAL_CRAWLER.test(request.headers.get('user-agent') || '')
@@ -124,10 +141,13 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     const name = typeof model.name === 'string' && model.name.trim() ? model.name.trim().slice(0, 90) : 'Generated model';
     const canonical = `https://brickbuilder.ai/?id=${encodeURIComponent(id)}`;
     const image = isHostedPreview
-      ? `https://brickbuilder.ai/share-image/${id}.png?card=3&v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
+      ? `https://brickbuilder.ai/share-image/${id}/card-v${MODEL_SHARE_CARD_VERSION}.png?v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
       : imageUrl.href;
     const referrer = url.searchParams.get('ref');
     const socialUrl = new URL(canonical);
+    if (url.searchParams.get('card') === MODEL_SHARE_CARD_VERSION) {
+      socialUrl.searchParams.set('card', MODEL_SHARE_CARD_VERSION);
+    }
     if (referrer && MODEL_ID.test(referrer)) socialUrl.searchParams.set('ref', referrer);
     let document = modelDocument(shell, name, image, canonical, socialUrl.href);
     if (isHostedPreview) {

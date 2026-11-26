@@ -3,7 +3,7 @@ import React, { useEffect, useId, useRef, useState } from 'react';
 import { Check, ChevronDown, Coins, Facebook, Instagram, Link, Share2 } from 'lucide-react';
 import posthog from 'posthog-js';
 import { copyShareLink, selectShareLink } from '../utils/copyShareLink';
-import { getGeneratedModelPath } from '../utils/generationRoutes';
+import { getGeneratedModelPath, MODEL_SHARE_CARD_VERSION } from '../utils/generationRoutes';
 
 interface Props { generationId: string; modelName: string; placement?: 'above' | 'below' }
 
@@ -18,6 +18,7 @@ export function ModelShareMenu({ generationId, modelName, placement = 'below' }:
   const input = useRef<HTMLInputElement>(null);
   const signedIn = Boolean(user && !user.is_anonymous);
   const shareUrl = new URL(getGeneratedModelPath(generationId), window.location.origin);
+  shareUrl.searchParams.set('card', MODEL_SHARE_CARD_VERSION);
   if (signedIn && user) shareUrl.searchParams.set('ref', user.id);
   const url = shareUrl.href;
   const text = `Check out ${modelName} on BrickBuilder!`;

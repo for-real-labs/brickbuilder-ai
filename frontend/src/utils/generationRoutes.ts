@@ -1,3 +1,5 @@
+export const MODEL_SHARE_CARD_VERSION = '4';
+
 export const getGeneratedModelPath = (generationId: string, exact = false): string =>
   `/?id=${encodeURIComponent(generationId)}${exact ? '&exact=1' : ''}`;
 
