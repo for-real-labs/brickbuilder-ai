@@ -3,7 +3,7 @@
 The ordinary overlap check compares coarse part shapes, so a script may waive it for glass in
 its frame. This review cannot be waived. It finds pairs of placements whose inscribed solids
 (see ``solids``) share space, at any rotation, and neighbours whose real surface passes through
-a seat back or a dish rim. No hit is not proof that parts outside that cover fit.
+a seat back or a dish rim. It also tests tyre surfaces against measured solid plastic.
 """
 
 from __future__ import annotations
@@ -75,11 +75,45 @@ class MaterialReview:
                 entries.append((index, solids, low, high, tuple(low.min(axis=0)), tuple(high.max(axis=0))))
         found = self._intersecting(entries)
         if len(found) < MAX_REPORTED_PAIRS:
+            found.extend(self._tyre_collisions(placements, entries, MAX_REPORTED_PAIRS - len(found)))
+        if len(found) < MAX_REPORTED_PAIRS:
             try:
                 found += self._cut_into(placements, {tuple(sorted(pair)) for pair in found},
                                         MAX_REPORTED_PAIRS - len(found))
             except (LDrawError, ValueError):
                 pass  # a neighbour that cannot be read is left to the ordinary overlap check
+        return found
+
+    def _tyre_collisions(self, placements, entries, room: int) -> list[tuple[int, int]]:
+        """A tyre surface cutting into known plastic is a collision even on a build with no vehicle prompt."""
+        if not entries:
+            return []
+        part_lows = np.array([entry[4] for entry in entries])
+        part_highs = np.array([entry[5] for entry in entries])
+        found = []
+        for tyre, placement in enumerate(placements):
+            if not self._library.description(placement.part).lstrip("~_=").startswith("Tyre"):
+                continue
+            try:
+                local = self._library.surface(placement.part)
+            except LDrawError:
+                continue
+            if not len(local):
+                continue
+            matrix = np.array(placement.matrix).reshape(3, 3)
+            faces = local @ matrix.T + np.array(placement.position)
+            face_low, face_high = faces.min(axis=1), faces.max(axis=1)
+            low, high = face_low.min(axis=0), face_high.max(axis=0)
+            candidates = ((part_lows < high) & (part_highs > low)).all(axis=1)
+            for slot in np.flatnonzero(candidates):
+                index, solids, lows, highs, _, _ = entries[slot]
+                for solid, start, end in zip(solids, lows, highs):
+                    nearby = ((face_low < end) & (face_high > start)).all(axis=1)
+                    if nearby.any() and faces_enter(faces[nearby], solid):
+                        found.append((tyre, index))
+                        break
+                if len(found) >= room:
+                    return found
         return found
 
     @staticmethod

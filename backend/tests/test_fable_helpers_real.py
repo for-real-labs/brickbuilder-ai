@@ -247,3 +247,18 @@ def test_a_chassis_floor_is_at_its_deck_and_it_stands_on_a_baseplate(bench, styl
     wheels = [index for index in placed if kit.build.placements[index].allow_overlap
               and kit.build.placements[index].part not in ("3022",)]
     assert abs(-extent(bench, kit, wheels)[1][1] / 8 - 1) < 0.6  # tyres on the baseplate's top
+
+
+@pytest.mark.parametrize("facing", FACINGS)
+def test_truck_tyres_clear_the_deck_and_still_fit_the_axle(strict, facing):
+    from fable_agent.vehicle import WheelReview
+    kit = fresh(strict, ground=False)
+    bind(kit)["chassis"](0, 0, 0, style="truck", facing=facing)
+    parts = kit.build.placements
+    measured = strict.checker._assembly.measure(parts)
+    for a, b, note in kit.build.links:
+        if note in ("wheel on its axle", "tyre on its rim"):
+            assert tuple(sorted((a, b))) in measured.fits
+    findings = WheelReview(strict.library).review(parts, {}, measured.fits, str, "road")
+    assert not any(item.code == "vehicle.wheel_space" for item in findings)
+    assert strict.checker.check(kit.build).ok

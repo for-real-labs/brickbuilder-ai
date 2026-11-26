@@ -57,7 +57,8 @@ STYLES: dict[str, WheelStyle] = {
     "sport": WheelStyle("pins", Wheel("66727", "18977", (0, 0, -6))),
     "street": WheelStyle("pins", Wheel("55981", "89201"), rim_offset=(0, 10, -30), rim_turn=HALF_TURN),
     "offroad": WheelStyle("pins", Wheel("55981", "92402"), rim_offset=(0, 10, -30), rim_turn=HALF_TURN, drop=3),
-    "truck": WheelStyle("axle", Wheel("56904", "56898"), drop=5),
+    # Half the carrier is 10 LDU and half this tyre is 18. Leave 2 LDU beside the chassis.
+    "truck": WheelStyle("axle", Wheel("56904", "56898"), out=30, drop=5),
     # Added from official sets (docs/fable-helpers.md): the large rim with its three tyres, and trolley wheels.
     "big": WheelStyle("axle", Wheel("56145", "44309"), out=40, drop=5),
     "tall": WheelStyle("axle", Wheel("56145", "15413"), out=40, drop=6),
