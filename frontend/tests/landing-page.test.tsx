@@ -1085,7 +1085,7 @@ describe('LandingPage', () => {
       openSettings();
       const close = panel.querySelector<HTMLButtonElement>('[aria-label="Dismiss generation settings"]')!;
       expect(document.activeElement).toBe(close);
-      act(() => panel.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+      expect(panel.querySelector('button[value="llm"]')).toBeNull();
       expect(panel.querySelector('#landing-render-model')).toBeNull();
       act(() => close.click());
       expect(panel.hidden).toBe(true);
