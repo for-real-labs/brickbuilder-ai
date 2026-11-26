@@ -20,11 +20,9 @@ afterEach(() => { act(() => root.unmount()); container.remove(); });
 const open = () => act(() => container.querySelector('button')!.click());
 const button = (label: string) => [...container.querySelectorAll('button')].find(item => item.textContent?.includes(label))!;
 
-it('shares the exact displayed revision through the refreshed card URL', async () => {
+it('shares the exact displayed revision through the root model URL', async () => {
   open();
-  const expected = new URL('/generated-model?id=revision%20%26%202&exact=1', window.location.origin);
-  expected.searchParams.set('card', '3');
-  const url = expected.href;
+  const url = `${window.location.origin}/?id=revision%20%26%202`;
   const facebook = container.querySelector<HTMLAnchorElement>('a[href*="facebook"]')!;
   const twitter = container.querySelector<HTMLAnchorElement>('a[href*="twitter"]')!;
   expect(new URL(facebook.href).searchParams.get('u')).toBe(url);
@@ -80,7 +78,7 @@ it('leaves the social anchors available to the browser and resets the menu when 
   act(() => root.render(<ModelShareMenu generationId="next" modelName="Next" />));
   expect(container.querySelector('[role="dialog"]')).toBeNull();
   open();
-  expect(container.querySelector('input')!.value).toContain('id=next&exact=1');
+  expect(container.querySelector('input')!.value).toBe(`${window.location.origin}/?id=next`);
 });
 
 it.each(['Copy link', 'Instagram'])('keeps %s actionable after Safari blurs without a focus target', async label => {
@@ -129,6 +127,29 @@ it.each(['Copy link', 'Instagram'])('writes the exact link with the selected-inp
   }
 });
 
+it('uses the native copy action when the browser omits clipboardData', async () => {
+  writeText.mockRejectedValue(new Error('Permission denied'));
+  const legacyCopy = vi.fn(() => {
+    const input = container.querySelector('input')!;
+    expect(input.value.slice(input.selectionStart!, input.selectionEnd!)).toBe(
+      `${window.location.origin}/?id=revision%20%26%202`,
+    );
+    const event = new Event('copy', { bubbles: true, cancelable: true });
+    input.dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    return true;
+  });
+  Object.defineProperty(document, 'execCommand', { configurable: true, value: legacyCopy });
+  try {
+    open();
+    await act(async () => button('Copy link').click());
+    expect(legacyCopy).toHaveBeenCalledWith('copy');
+    expect(container.querySelector('[role="status"]')?.textContent).toBe('Link copied!');
+  } finally {
+    Reflect.deleteProperty(document, 'execCommand');
+  }
+});
+
 it('offers manual copying when the command reports success without a copy event', async () => {
   writeText.mockRejectedValue(new Error('Permission denied'));
   Object.defineProperty(document, 'execCommand', { configurable: true, value: vi.fn(() => true) });
@@ -147,7 +168,7 @@ it('adds the signed-in sender ID to copied and social links', async () => {
   act(() => root.render(<ModelShareMenu generationId="model" modelName="Model" />));
   open();
   const url = container.querySelector('input')!.value;
-  expect(new URL(url).searchParams.get('ref')).toBe(auth.user.id);
+  expect(url).toBe(`${window.location.origin}/?id=model&ref=${auth.user.id}`);
   const [facebook, twitter] = container.querySelectorAll<HTMLAnchorElement>('a');
   expect(new URL(facebook.href).searchParams.get('u')).toBe(url);
   expect(new URL(twitter.href).searchParams.get('url')).toBe(url);

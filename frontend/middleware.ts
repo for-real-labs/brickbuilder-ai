@@ -30,13 +30,13 @@ function escapeAttribute(value: string): string {
 function setMeta(document: string, attribute: 'name' | 'property', key: string, value: string): string {
   const expression = new RegExp(`<meta\\b[^>]*${attribute}="${key}"[^>]*>`, 'i');
   const tag = `<meta ${attribute}="${key}" content="${escapeAttribute(value)}" />`;
-  return expression.test(document) ? document.replace(expression, tag) : document.replace('</head>', `${tag}</head>`);
+  return expression.test(document) ? document.replace(expression, () => tag) : document.replace('</head>', () => `${tag}</head>`);
 }
 
 function modelDocument(shell: string, name: string, image: string, url: string, socialUrl = url): string {
-  const title = `Check out my model: ${name}`;
+  const title = `See my model: ${name}`;
   const description = `Check out my ${name} brick model on BrickBuilder AI. Explore the 3D model, see the preview, and get inspired to build your own creation.`;
-  let document = shell.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, `<title>${escapeAttribute(title)}</title>`);
+  let document = shell.replace(/<title\b[^>]*>[\s\S]*?<\/title>/i, () => `<title>${escapeAttribute(title)}</title>`);
   for (const [attribute, key, value] of [
     ['name', 'title', title], ['name', 'description', description],
     ['property', 'og:title', title], ['property', 'og:description', description],
@@ -46,7 +46,7 @@ function modelDocument(shell: string, name: string, image: string, url: string, 
     ['name', 'twitter:image', image], ['name', 'twitter:url', socialUrl],
     ['name', 'twitter:image:alt', `${name} brick model preview on BrickBuilder AI`],
   ] as const) document = setMeta(document, attribute, key, value);
-  document = document.replace(/<meta\b[^>]*property="og:image:(?:width|height)"[^>]*>\s*/gi, '');
+  document = document.replace(/<meta\b[^>]*property="og:image:(?:secure_url|type|width|height)"[^>]*>\s*/gi, '');
   return document.replace(/<link\b[^>]*rel="canonical"[^>]*>/i, `<link rel="canonical" href="${escapeAttribute(url)}" />`);
 }
 
@@ -74,7 +74,8 @@ async function loadShareModel(id: string): Promise<{ name?: unknown; preview_ima
 async function modelShareResponse(request: Request): Promise<Response | undefined> {
   const url = new URL(request.url);
   const imageMatch = SHARE_IMAGE_PATH.exec(url.pathname);
-  if (request.method !== 'GET' && !(request.method === 'HEAD' && imageMatch)) return undefined;
+  const headOnly = request.method === 'HEAD';
+  if (request.method !== 'GET' && !headOnly) return undefined;
   const id = imageMatch?.[1] || url.searchParams.get('id');
   if (!id || !MODEL_ID.test(id)) return undefined;
   if (!imageMatch && !['/', '/generated-model'].includes(url.pathname)) return undefined;
@@ -105,8 +106,12 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
       if (Number(imageResponse.headers.get('content-length') || 0) > 10_000_000) return unavailableShareResponse();
       const bytes = await imageResponse.arrayBuffer();
       if (bytes.byteLength > 10_000_000) return unavailableShareResponse();
-      return new Response(bytes, {
-        headers: { 'Content-Type': 'image/png', 'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30' },
+      return new Response(headOnly ? null : bytes, {
+        headers: {
+          'Content-Type': 'image/png',
+          'Content-Length': String(bytes.byteLength),
+          'Cache-Control': branded ? 'public, s-maxage=3600, stale-while-revalidate=86400' : 'public, s-maxage=30',
+        },
       });
     }
     const shellUrl = new URL('/share-shell.html', request.url);
@@ -116,9 +121,7 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
       : undefined;
     const shell = await shellResponse.text();
     const name = typeof model.name === 'string' && model.name.trim() ? model.name.trim().slice(0, 90) : 'Generated model';
-    const canonical = url.pathname === '/generated-model'
-      ? `https://brickbuilder.ai/generated-model?id=${encodeURIComponent(id)}&exact=1&card=3`
-      : `https://brickbuilder.ai/?id=${encodeURIComponent(id)}`;
+    const canonical = `https://brickbuilder.ai/?id=${encodeURIComponent(id)}`;
     const image = isHostedPreview
       ? `https://brickbuilder.ai/share-image/${id}.png?card=3&v=${encodeURIComponent(imageUrl.pathname.split('/').at(-1) || 'preview')}`
       : imageUrl.href;
@@ -127,10 +130,12 @@ async function modelShareResponse(request: Request): Promise<Response | undefine
     if (referrer && MODEL_ID.test(referrer)) socialUrl.searchParams.set('ref', referrer);
     let document = modelDocument(shell, name, image, canonical, socialUrl.href);
     if (isHostedPreview) {
+      document = setMeta(document, 'property', 'og:image:secure_url', image);
+      document = setMeta(document, 'property', 'og:image:type', 'image/png');
       document = setMeta(document, 'property', 'og:image:width', '1200');
       document = setMeta(document, 'property', 'og:image:height', '630');
     }
-    return new Response(document, {
+    return new Response(headOnly ? null : document, {
       headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300' },
     });
   } catch {
