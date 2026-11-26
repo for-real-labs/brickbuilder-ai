@@ -1,0 +1,31 @@
+#: title: A large wing and deck assembly featuring paired left/right wings, a grooved 6x6 tile, a '64' numbered sticker, and ball socket plates.
+#: source: LDraw Official Model Repository, 76042-1.mpd, section 76042 - Helicarrier S091.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3747b", "Black", 2, 0, 6, rot=90)
+place("3747b", "Black", 2, 0, 8, rot=90)
+place("3747b", "Black", 2, 0, 18, rot=90)
+place("3747b", "Black", 2, 0, 20, rot=90)
+place_ldu("14704", "Light_Bluish_Grey", (50, -32, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("14704", "Light_Bluish_Grey", (50, -32, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("14704", "Light_Bluish_Grey", (50, -32, 380), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("14704", "Light_Bluish_Grey", (50, -32, 420), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "Dark_Bluish_Grey", 3, 3, 6, rot=90)
+place("3020", "Dark_Bluish_Grey", 3, 3, 18, rot=90)
+place("4282", "Black", 2, 4, 6, rot=270)
+place("3710", "Yellow", 4, 4, 6, rot=90)
+place("3710", "Yellow", 4, 4, 18, rot=90)
+place("30356", "Light_Bluish_Grey", 0, 5, 0)
+place("3020", "Dark_Bluish_Grey", 2, 5, 12, rot=270)
+place("30355", "Light_Bluish_Grey", 0, 5, 16, rot=180)
+place("3710", "Light_Bluish_Grey", 5, 5, 12, rot=90)
+place("30503", "Dark_Bluish_Grey", 0, 6, 7, rot=90)
+place("30503", "Dark_Bluish_Grey", 0, 6, 17, rot=180)
+place("10202", "Light_Bluish_Grey", 0, 6, 11)
+place_ldu("6115204b", "White", (60, -56, 280), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("54383", "Dark_Bluish_Grey", (90, -56, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("54384", "Dark_Bluish_Grey", (90, -56, 480), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3020", "Dark_Bluish_Grey", 4, 6, 7, rot=90)
+place("3020", "Dark_Bluish_Grey", 4, 6, 17, rot=90)

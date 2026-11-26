@@ -1,0 +1,31 @@
+#: title: A detailed hinged rear module with jet engine plates, round axlehole plates, grille tiles, finned round brick, and Space Police II patterned slopes.
+#: source: LDraw Official Model Repository, 6957-1.mpd, section 6957 - Spaceship - Hinge 1 - 3.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("4032a", "Black", 2, 0, 2, rot=270)
+place("4032a", "Black", 8, 0, 2, rot=270)
+place_ldu("3475a", "Black", (50, -16, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3023", "Light_Grey", 3, 1, 2, rot=90)
+place("3023", "Light_Grey", 8, 1, 2, rot=90)
+place("3475a", "Black", 9, 0, 1, rot=90)
+place("3035", "Black", 2, 2, 1)
+place_ldu("3831", "Black", (40, -48, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3004", "Black", 2, 3, 3, rot=90)
+place("3665", "Black", 3, 3, 0)
+place("3665", "Black", 8, 3, 0)
+place("3004", "Black", 9, 3, 3, rot=90)
+place_ldu("3830", "Black", (200, -48, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3956", "Black", (120, -52, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4591", "Black", (120, -52, 108), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("2450", "Black", 0, 6, 2, rot=90)
+place("3023", "Black", 2, 6, 1)
+place("3023", "Black", 8, 6, 1)
+place("2450", "Black", 9, 6, 2)
+place("2434", "Light_Grey", 5, 3, 1, rot=270)
+place("3298p69", "Black", 2, 7, 1)
+place("2412b", "Red", 5, 9, 1, rot=270)
+place("2412b", "Red", 6, 9, 1, rot=270)
+place("3298p69", "Black", 8, 7, 1)
+place("3460", "Light_Grey", 2, 10, 3)

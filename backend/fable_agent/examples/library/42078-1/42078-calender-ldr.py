@@ -1,0 +1,33 @@
+#: title: Flat plates and tiles forming a calendar-style display plate.
+#: source: LDraw Official Model Repository, 42078-1.mpd, section 42078 - calender.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3024", "Dark_Bluish_Grey", 0, 0, 0)
+place("3031", "Dark_Bluish_Grey", 0, 0, 1)
+place("3623", "Black", 1, 0, 0, rot=180)
+place("3023", "Black", 4, 0, 0, rot=180)
+place("11212", "Dark_Bluish_Grey", 4, 0, 1, rot=180)
+place("3623", "Dark_Bluish_Grey", 4, 0, 4, rot=180)
+place("3024", "Dark_Bluish_Grey", 6, 0, 0, rot=180)
+place("11477", "Pearl_Silver", 0, 2, 0)
+place("3710", "Dark_Bluish_Grey", 0, 1, 0, rot=90)
+place("3024", "Dark_Bluish_Grey", 0, 1, 4)
+place("85984", "Black", 1, 2, 0)
+place("3021", "Black", 1, 1, 0, rot=90)
+place("3022", "Black", 1, 1, 3)
+place("54200", "Black", 3, 2, 0)
+place("11212", "Black", 3, 1, 0, rot=180)
+place("3021", "Black", 3, 1, 3, rot=180)
+place("85984", "Black", 4, 2, 0)
+place("11477", "Pearl_Silver", 6, 2, 0)
+place("3710", "Dark_Bluish_Grey", 6, 1, 0, rot=90)
+place("3024", "Dark_Bluish_Grey", 6, 1, 4, rot=180)
+place("3710", "Dark_Bluish_Grey", 0, 2, 1, rot=90)
+place("15573", "Black", 1, 2, 3)
+place("3070b", "Black", 3, 2, 3)
+place("15573", "Black", 4, 2, 3)
+place("3710", "Dark_Bluish_Grey", 6, 2, 1, rot=90)
+place("63864", "Pearl_Silver", 0, 3, 2, rot=90)
+place("63864", "Pearl_Silver", 6, 3, 2, rot=90)

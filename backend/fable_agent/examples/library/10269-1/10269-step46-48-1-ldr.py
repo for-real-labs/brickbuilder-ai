@@ -1,0 +1,30 @@
+#: title: Wheel hub and fender subassembly with round plates, corner plates, clips, and handle plates forming a wheel area structure.
+#: source: LDraw Official Model Repository, 10269-1.mpd, section 10269 - step46-48-1.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("60478", "Black", 2, 0, 0)
+place("60478", "Black", 2, 0, 3)
+place("3023", "Light_Bluish_Grey", 2, 1, 0)
+place("3023", "Light_Bluish_Grey", 2, 1, 3)
+place("60897", "Light_Bluish_Grey", 2, 3, 3, rot=180)
+place("3023", "Light_Bluish_Grey", 2, 3, 0)
+place("60897", "Light_Bluish_Grey", 3, 3, 3, rot=180)
+place("32802", "Black", 1, 2, 0, rot=90)
+place("3023", "Black", 2, 4, 0, rot=180)
+place("32802", "Black", 1, 2, 3, rot=90)
+place("3023", "Black", 2, 4, 3, rot=180)
+place("2420", "Light_Bluish_Grey", 1, 5, 0)
+place("2420", "Light_Bluish_Grey", 1, 5, 2, rot=90)
+place("2420", "Light_Bluish_Grey", 3, 5, 0, rot=270)
+place("2420", "Light_Bluish_Grey", 3, 5, 2, rot=180)
+place("11833", "Black", 1, 6, 0)
+place_ldu("18677", "Light_Bluish_Grey", (20, -64, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2420", "Light_Bluish_Grey", 1, 7, 2, rot=90)
+place("3023", "Light_Bluish_Grey", 1, 7, 0)
+place("2420", "Light_Bluish_Grey", 3, 7, 0, rot=270)
+place("2420", "Light_Bluish_Grey", 3, 7, 2, rot=180)
+place("6141", "Black", 0, 8, 1, rot=180)
+place("11833", "Black", 1, 8, 0)
+place("2420", "Light_Bluish_Grey", 0, 9, 1, rot=270)

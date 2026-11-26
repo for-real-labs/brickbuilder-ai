@@ -1,0 +1,32 @@
+#: title: Small space vehicle with a competition cannon, technic liftarms, and engine scoop, built on a black plate base.
+#: source: LDraw Official Model Repository, 5979-1.mpd, section 5979 - 5979-1.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3795", "Black", 1, 0, 10, rot=90)
+place_ldu("3062b", "Trans_Red", (40, -14, 340), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3023", "Black", 1, 1, 15)
+place_ldu("6632", "Red", (15, -22, 190), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32002", "Dark_Grey", (20, -22, 210), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32074c01", "Black", (40, -22, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Grey", (40, -22, 190), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Grey", (40, -22, 230), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32002", "Dark_Grey", (60, -22, 210), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6632", "Red", (65, -22, 190), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("10247", "Light_Grey", (40, -24, 320), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("32000", "Red", 1, 1, 10, rot=90)
+place("3665", "Dark_Grey", 0, 1, 14, rot=90)
+place("3710", "Dark_Grey", 0, 3, 15)
+place("32000", "Red", 2, 1, 10, rot=90)
+place("3665", "Dark_Grey", 2, 1, 14, rot=270)
+place("3794b", "Red", 0, 4, 14, rot=90)
+place_ldu("4592c01", "Red", (30, -40, 230), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3069b", "Dark_Grey", 1, 4, 10)
+place_ldu("4592c01", "Red", (50, -40, 230), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3794b", "Red", 3, 4, 14, rot=90)
+place_ldu("57028a", "Light_Grey", (40, -42, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2555", "Dark_Grey", 0, 5, 14.5)
+place("3048b", "Black", 1, 3, 16, rot=180)
+place("2555", "Dark_Grey", 3, 5, 14.5)
+place("50943", "Dark_Grey", 1, 4, 14)

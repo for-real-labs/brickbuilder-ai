@@ -1,0 +1,31 @@
+#: title: A small construction vehicle set featuring a car with a movable tipper bucket and a construction worker minifig with a red helmet.
+#: source: LDraw Official Model Repository, 6507-1.mpd
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("6141", "Yellow", (40, -25, 11), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4288", "Black", (40, -25, 19), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3749", "Light_Grey", (40, -25, 36), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Light_Grey", (40, -25, 82), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4288", "Black", (40, -25, 99), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Yellow", (40, -25, 107), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Yellow", (120, -25, 11), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4288", "Black", (120, -25, 19), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3749", "Light_Grey", (120, -25, 36), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Light_Grey", (120, -25, 82), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4288", "Black", (120, -25, 99), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Yellow", (120, -25, 107), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2817", "Black", (40, -35, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2817", "Black", (120, -35, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3795", "Black", (80, -43, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3021", "Black", (110, -51, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4531", "Black", (60, -59, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4531", "Black", (60, -59, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3710", "Yellow", (90, -59, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4592c01", "Black", (90, -67, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3829c01", "Yellow", (90, -67, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3787", "Yellow", (120, -67, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2512", "Yellow", (32.66, -70.392, 60), (0, 0.5, -0.866, 0, 0.866, 0.5, 1, 0, 0))
+place_ldu("4275b", "Yellow", (53.98, -73.464, 50), (-0.866, 0.5, 0, 0.5, 0.866, 0, 0, 0, -1))
+place_ldu("4275b", "Yellow", (53.98, -73.464, 70), (-0.866, 0.5, 0, 0.5, 0.866, 0, 0, 0, -1))

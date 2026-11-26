@@ -1,0 +1,30 @@
+#: title: Gearbox section with cross blocks, worm gear, axles, and short liftarms forming a reduction drive unit.
+#: source: LDraw Official Model Repository, 8258-1.mpd, section 8258 - m-1j.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32291", "Red", (60, -29, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (60, -29, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Yellow", (60, -29, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32291", "Red", (60, -29, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6632", "Light_Bluish_Grey", (60, -69, 65), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3705", "Black", (60, -69, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Black", (60, -69, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6632", "Light_Bluish_Grey", (60, -69, 95), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (80, -69, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (80, -69, 65), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32073", "Light_Bluish_Grey", (80, -69, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3647", "Dark_Bluish_Grey", (80, -69, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (80, -69, 95), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59443", "Light_Bluish_Grey", (80, -69, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2825", "Red", (120, -69, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6536", "Black", (120, -69, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3705", "Black", (120, -69, 90), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2825", "Red", (120, -69, 100), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("42003", "Red", (140, -69, 120), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (20, -89, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("76019", "White", (40, -89, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("44294", "Light_Bluish_Grey", (80, -89, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4716", "Light_Bluish_Grey", (90, -89, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (140, -89, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))

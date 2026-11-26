@@ -1,0 +1,30 @@
+#: title: Outdoor rooftop terrace on a bright blue baseplate with white and pink round tables, lime railings, lattice fences, cupcake stands, and goblets.
+#: source: LDraw Official Model Repository, 3061-1.mpd, section 3061 - terasse.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("92438", "Bright_Light_Blue", 1, 0, 0, rot=90)
+place("3005", "Bright_Pink", 1, 1, 9, rot=180)
+place("6143", "Lime", 1, 1, 14, rot=90)
+place("6143", "White", 4, 1, 3, rot=180)
+place("6143", "White", 4, 1, 7, rot=180)
+place("6143", "White", 4, 1, 11, rot=180)
+place("3005", "Bright_Pink", 7, 1, 15, rot=180)
+place("4032a", "Reddish_Brown", 1, 4, 14, rot=180)
+place("4150", "Red", 4, 4, 3, rot=180)
+place("3022", "Red", 4, 4, 7, rot=180)
+place("4150", "Red", 4, 4, 11, rot=180)
+place("60474", "Red", 3, 5, 6, rot=180)
+place_ldu("97784", "Yellow", (110, -48, 130), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("97784", "Yellow", (130, -48, 170), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3005", "Bright_Pink", 1, 4, 9, rot=180)
+place("3185", "White", 1, 1, 10, rot=90)
+place("3185", "White", 3, 1, 15, rot=180)
+place("3005", "Bright_Pink", 7, 4, 15, rot=180)
+place("6141", "Reddish_Brown", 5, 7, 6, rot=180)
+place("6141", "Trans_Dark_Pink", 6, 7, 8, rot=180)
+place_ldu("32474", "Red", (30, -65.25, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32474", "Red", (150, -65.25, 310), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6141", "Trans_Dark_Pink", (90, -91, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6141", "Reddish_Brown", (90, -91, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

@@ -1,0 +1,31 @@
+#: title: A large side body panel module with an 11-stud panel, long fairing, cross blocks, and liftarms forming a mirrored structural body section.
+#: source: LDraw Official Model Repository, 41999-1.mpd, section 41999 - step94.ldr
+#: author: LDCad
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("11954", "Dark_Blue", (120, -10, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (40, -10, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (200, -10, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32525", "Dark_Blue", (120, -10, 100), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (180, -10, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (140, -10, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("64681", "Dark_Blue", (220, -10, 120), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (100, -20, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (140, -20, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (180, -20, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Black", (220, -30, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (120, -30, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6553", "Light_Bluish_Grey", (150, -30, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (230, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Black", (240, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32054", "Black", (240, -10, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32073", "Light_Bluish_Grey", (240, -10, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("41677", "Black", (240, -10, 75), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("41677", "Black", (240, -10, 85), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (240, -10, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("42003", "Dark_Blue", (200, -30, 80), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32062", "Red", (220, -30, 70), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("60483", "Light_Bluish_Grey", (220, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (240, -30, 70), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32062", "Red", (150, -40, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))

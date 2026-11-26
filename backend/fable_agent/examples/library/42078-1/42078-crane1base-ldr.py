@@ -1,0 +1,33 @@
+#: title: Support base for the first crane featuring an open-center beam frame, triangular liftarms, and perpendicular connectors.
+#: source: LDraw Official Model Repository, 42078-1.mpd, section 42078 - crane1base.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("60485", "Yellow", (100, -29, 140), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (120, -29, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (120, -29, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("99773", "Black", (135, -29, 80), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("99773", "Black", (145, -29, 80), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (150, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (160, -29, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("74695", "Dark_Bluish_Grey", (180, -29, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (200, -29, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("64179", "Light_Bluish_Grey", (200, -29, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("26287", "Red", (200, -29, 140), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("74695", "Dark_Bluish_Grey", (220, -29, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (240, -29, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (250, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32524", "Black", (260, -29, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32073", "Yellow", (260, -29, 140), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (270, -29, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (270, -29, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("59443", "Dark_Bluish_Grey", (130, -49, 160), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (150, -49, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (200, -49, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("15462", "Reddish_Brown", (100, -69, 80), (1, 0, 0, 0, -0.927, 0.374, 0, -0.374, -0.927))
+place_ldu("2780", "Black", (160, -69, 170), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (240, -69, 170), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("11478", "Light_Bluish_Grey", (115, -106.095, 65.034), (0, -1, 0, 0.374, 0, 0.927, -0.927, 0, 0.374))
+place_ldu("11478", "Light_Bluish_Grey", (125, -106.095, 65.034), (0, -1, 0, 0.374, 0, 0.927, -0.927, 0, 0.374))
+place_ldu("43093", "Blue", (110, -143.19, 50.068), (1, 0, 0, 0, 0.374, 0.927, 0, -0.927, 0.374))

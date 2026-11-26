@@ -1,0 +1,32 @@
+#: title: An interior cab wall with smooth Technic Panels, bent liftarms, and a Beam 13 forming the cabin side lining.
+#: source: LDraw Official Model Repository, 42110-1.mpd, section 42110 - cabinside1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("24119", "Black", (60, -9, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -9, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("24119", "Black", (60, -9, 220), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -9, 260), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -9, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -9, 240), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32009", "Black", (80, -9, 300), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (20, -29, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32140", "Olive_Green", (40, -49, 300), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("11214", "Red", (60, -49, 300), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (30, -89, 300), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("43093", "Blue", (70, -89, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -109, 300), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32526", "Black", (60, -129, 300), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("11214", "Red", (80, -129, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("32184", "Dark_Bluish_Grey", 4.5, 15, 14.5)
+place_ldu("11214", "Red", (80, -169, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (70, -209, 300), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("41239", "Black", (80, -229, 300), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("18651", "Black", (100, -269, 300), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (70, -289, 300), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (90, -309, 300), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32009", "Black", (100, -349, 300), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("11214", "Red", (120, -349, 140), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32316", "Black", (120, -349, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (120, -349, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))

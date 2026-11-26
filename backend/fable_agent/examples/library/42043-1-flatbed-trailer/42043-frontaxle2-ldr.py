@@ -1,0 +1,31 @@
+#: title: Secondary front axle assembly using cross blocks, bent liftarms, axle stops, and towball joints.
+#: source: LDraw Official Model Repository, 42043-1_Flatbed-Trailer.mpd, section 42043 - frontaxle2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("63869", "Black", (80, -10, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (100, -10, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6536", "Light_Bluish_Grey", (100, -10, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32034", "Light_Bluish_Grey", (140, -10, 40), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (180, -10, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("63869", "Black", (180, -10, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("63869", "Black", (200, -10, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("42003", "Dark_Bluish_Grey", (40, -30, 20), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6628", "Black", (40, -30, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (100, -30, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32524", "Light_Bluish_Grey", (140, -30, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (180, -30, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (200, -30, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("42003", "Dark_Bluish_Grey", (240, -30, 20), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6628", "Black", (240, -30, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (80, -40, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (200, -40, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (60, -42, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (220, -42, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32140", "Light_Bluish_Grey", (40, -50, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("60483", "Dark_Bluish_Grey", (80, -50, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60483", "Dark_Bluish_Grey", (200, -50, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32140", "Light_Bluish_Grey", (240, -50, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123a", "Light_Bluish_Grey", (60, -75, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (220, -75, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))

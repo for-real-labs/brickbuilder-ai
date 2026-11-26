@@ -1,0 +1,32 @@
+#: title: Artist's easel in reddish brown with a 6x6 backing tile, paintbrush, and four colored paint dab tiles.
+#: source: LDraw Official Model Repository, 10271-1.mpd, section 10271 - easel-1.ldr
+#: author: Magnus Forsberg [MagFors]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("4162", "Reddish_Brown", (111.841, 62.608, 1.372), (-0.814, -0.47, -0.342, -0.5, 0.866, 0, 0.296, 0.171, -0.94))
+place_ldu("22890", "Dark_Bluish_Grey", (59.255, 39.536, 20.512), (-0.814, -0.47, -0.342, -0.5, 0.866, 0, 0.296, 0.171, -0.94))
+place_ldu("14418", "Light_Bluish_Grey", (4.771, 24, 40.342), (0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94))
+place_ldu("2429", "Dark_Bluish_Grey", (-20, 16, 60), (-0.94, 0, -0.342, 0, 1, 0, 0.342, 0, -0.94))
+place_ldu("2430", "Dark_Bluish_Grey", (-20, 16, 60), (0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94))
+place_ldu("60479", "Reddish_Brown", (89.343, 8, 9.561), (0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94))
+place_ldu("60479", "Reddish_Brown", (89.343, 8, 110.439), (0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94))
+place_ldu("3069b", "Reddish_Brown", (-4.626, 0, 43.763), (0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94))
+place_ldu("3069b", "Reddish_Brown", (-4.626, 0, 76.237), (0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94))
+place_ldu("3794b", "Reddish_Brown", (32.961, 0, 30.082), (0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94))
+place_ldu("3794b", "Reddish_Brown", (32.961, 0, 89.918), (0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94))
+place_ldu("63864", "Reddish_Brown", (79.946, 0, 12.981), (0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94))
+place_ldu("63864", "Reddish_Brown", (79.946, 0, 107.019), (0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94))
+place_ldu("3794b", "Reddish_Brown", (145.724, 0, -10.961), (0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94))
+place_ldu("3794b", "Reddish_Brown", (145.724, 0, 130.961), (0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94))
+place_ldu("3069b", "Reddish_Brown", (183.312, 0, -24.641), (0.94, 0, 0.342, 0, 1, 0, -0.342, 0, 0.94))
+place_ldu("3069b", "Reddish_Brown", (183.312, 0, 144.641), (0.94, 0, -0.342, 0, 1, 0, 0.342, 0, 0.94))
+place_ldu("10202", "Light_Bluish_Grey", (63.581, -8, 60.446), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3176", "Tan", (175.61, -8, -13.575), (-0.087, 0, 0.996, 0, 1, 0, -0.996, 0, -0.087))
+place_ldu("6231", "Reddish_Brown", (117.534, -16, -0.7), (-0.94, 0, -0.342, 0, 1, 0, 0.342, 0, -0.94))
+place_ldu("6231", "Reddish_Brown", (117.534, -16, 120.7), (0.342, 0, 0.94, 0, 1, 0, -0.94, 0, 0.342))
+place_ldu("98138", "Yellow", (164.777, -16, -22.666), (-0.342, 0, 0.94, 0, 1, 0, -0.94, 0, -0.342))
+place_ldu("98138", "Red", (166.52, -16, -2.742), (-0.342, 0, 0.94, 0, 1, 0, -0.94, 0, -0.342))
+place_ldu("98138", "Bright_Green", (184.701, -16, -24.409), (-0.342, 0, 0.94, 0, 1, 0, -0.94, 0, -0.342))
+place_ldu("98138", "Medium_Blue", (186.444, -16, -4.485), (-0.342, 0, 0.94, 0, 1, 0, -0.94, 0, -0.342))
+place_ldu("23950", "Light_Bluish_Grey", (145.289, -24, 110.942), (0, 0, 1, 0, 1, 0, -1, 0, 0))

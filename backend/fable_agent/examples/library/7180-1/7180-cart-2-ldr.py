@@ -1,0 +1,32 @@
+#: title: A wheeled cart with towball couplings, grille tiles, neon green panels, and grab bars.
+#: source: LDraw Official Model Repository, 7180-1.mpd, section 7180 - Cart 2.ldr
+#: author: Merlijn Wissink [Legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("2654", "Black", 0, 0, 2, rot=270)
+place("2654", "Black", 0, 0, 6, rot=270)
+place("2654", "Black", 2, 0, 2, rot=270)
+place("2654", "Black", 2, 0, 6, rot=270)
+place("3032", "White", 0, 1, 2, rot=270)
+place_ldu("3731", "Light_Grey", (40, -24, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3730", "Black", (40, -24, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3795", "Blue", 1, 3, 2, rot=270)
+place("3023", "Trans_Neon_Green", 1, 4, 2, rot=180)
+place("3068b", "Dark_Grey", 1, 4, 3, rot=180)
+place("3068b", "Dark_Grey", 1, 4, 5, rot=180)
+place("3023", "Trans_Neon_Green", 1, 4, 7, rot=180)
+place("2412b", "Dark_Grey", 1, 5, 2, rot=180)
+place("3020", "Light_Grey", 1, 5, 3, rot=270)
+place("2412b", "Dark_Grey", 1, 5, 7, rot=180)
+place("3710", "Black", 1, 6, 3, rot=270)
+place_ldu("4083", "Light_Grey", (10, -64, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4085c", "Blue", (30, -64, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Trans_Neon_Green", 1, 7, 4, rot=270)
+place("4085c", "Blue", 1, 7, 6, rot=180)
+place_ldu("4083", "Light_Grey", (70, -64, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4085c", "Blue", 1, 8, 3, rot=270)
+place("4085c", "Blue", 1, 8, 4, rot=270)
+place("4085c", "Blue", 1, 8, 5, rot=270)
+place("4085c", "Blue", 1, 8, 6, rot=270)
+place("2431ps1", "Dark_Grey", 1, 9, 3, rot=270)

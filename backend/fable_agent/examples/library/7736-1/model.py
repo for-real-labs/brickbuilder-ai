@@ -1,0 +1,33 @@
+#: title: A coastguard quad bike set featuring an orange all-terrain vehicle with a mounted blue flag and a coastguard minifigure rider.
+#: source: LDraw Official Model Repository, 7736-1.mpd
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("6015", "Rubber_Black", 0.5, 0, 0.75, rot=90)
+place("6015", "Rubber_Black", 0.5, 0, 4.75, rot=90)
+place_ldu("6014", "White", (30, -25, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6014", "White", (30, -25, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6014", "White", (90, -25, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6014", "White", (90, -25, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6015", "Rubber_Black", (96, -25, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6015", "Rubber_Black", (96, -25, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4600", "Black", (60, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4600", "Black", (60, -30, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("4032b", "Light_Bluish_Grey", 2, 3.75, 1, rot=270)
+place("4032b", "Light_Bluish_Grey", 2, 3.75, 5, rot=270)
+place("3795", "Dark_Bluish_Grey", 2, 4.75, 1, rot=270)
+place_ldu("2540", "Dark_Bluish_Grey", (60, -54, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Light_Bluish_Grey", 2, 5.75, 2, rot=180)
+place("3023", "Light_Bluish_Grey", 2, 5.75, 5, rot=180)
+place("2540", "Dark_Bluish_Grey", 2, 5.75, 6, rot=180)
+place_ldu("44674", "Orange", (60, -62, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("44674", "Orange", (60, -62, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3794a", "White", 2, 7.75, 1, rot=180)
+place("54200", "Trans_Yellow", 2.5, 8.75, 1)
+place("3794a", "White", 2, 7.75, 2, rot=180)
+place("2412b", "White", 2, 7.75, 5, rot=180)
+place("3794a", "White", 2, 7.75, 6, rot=180)
+place("2555", "Dark_Bluish_Grey", 2.5, 8.75, 2, rot=90)
+place_ldu("3957a", "Light_Bluish_Grey", (60, -78, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2335", "Blue", (60, -158, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))

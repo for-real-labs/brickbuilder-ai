@@ -19,6 +19,7 @@ from dataclasses import dataclass, field
 from .catalog import PartFinder
 from .ldraw import LDrawError, LDrawLibrary, normalize_part_id
 from .palette import RESERVED_COLORS, Palette, nearest_color
+from .seats import seat
 from .shape import PLATE, STUD, PartShape, ShapeLibrary
 
 MAX_PLACEMENTS = 6000
@@ -348,18 +349,21 @@ class Kit:
     def inset(self, part, color, host: int, note: str = "") -> int:
         """Seat a part made to nest in another (glass in its window frame, a door in its frame).
 
-        The part takes the host's orientation and is centered in the host's width and height,
-        because frames have equal borders. It keeps its own depth where that lies inside the
-        host. The pair is recorded as an intended overlap and a connection.
+        The part takes the host's orientation and the seat the connector data gives for the pair.
+        A pair the data does not know is centered in the host's width and height, because frames
+        have equal borders, and keeps its own depth where that lies inside the host. The pair is
+        recorded as an intended overlap and a connection.
         """
         if isinstance(host, bool) or not isinstance(host, int) or not 0 <= host < len(self.build.placements):
             raise KitError("inset() needs the id of the part to sit in, as returned by place()")
         part_id, inner = self._shape(part)
         frame = self.build.placements[host]
         outer = self._shapes.get(frame.part)
-        shift = [(outer.lo[axis] + outer.hi[axis] - inner.lo[axis] - inner.hi[axis]) / 2 for axis in range(3)]
-        if outer.lo[2] <= inner.lo[2] and inner.hi[2] <= outer.hi[2]:
-            shift[2] = 0.0
+        shift = seat(frame.part, part_id)  # the seat the connector data gives, when it has one
+        if shift is None:
+            shift = [(outer.lo[axis] + outer.hi[axis] - inner.lo[axis] - inner.hi[axis]) / 2 for axis in range(3)]
+            if outer.lo[2] <= inner.lo[2] and inner.hi[2] <= outer.hi[2]:
+                shift[2] = 0.0
         m = frame.matrix
         position = tuple(frame.position[row] + sum(m[3 * row + col] * shift[col] for col in range(3))
                          for row in range(3))

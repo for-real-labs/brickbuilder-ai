@@ -1,0 +1,30 @@
+#: title: A small LEGO bat model consisting of a single bat submodel.
+#: source: LDraw Official Model Repository, 40014-1.mpd
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3004", "Black", 0, 0, 1, rot=90)
+place("3004", "Black", 8, 0, 1, rot=90)
+place("3003", "Black", 0, 3, 1)
+place("3003", "Black", 7, 3, 1)
+place("3010", "Black", 0, 6, 2)
+place("3021", "Black", 3, 5, 1)
+place("3023", "White", 3, 4, 1, rot=90)
+place("3023", "White", 3, 3, 1, rot=90)
+place("3023", "White", 5, 4, 1, rot=90)
+place("3023", "White", 5, 3, 1, rot=90)
+place("3004", "Black", 4, 6, 1, rot=90)
+place("87087", "Black", 3, 6, 1)
+place_ldu("6141", "Yellow", (70, -62, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("87087", "Black", 5, 6, 1)
+place_ldu("6141", "Yellow", (110, -62, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3010", "Black", 5, 6, 2)
+place("3004", "Black", 0, 6, 1)
+place("3004", "Black", 7, 6, 1)
+place("3002", "Black", 3, 9, 1)
+place("3003", "Black", 0, 9, 1)
+place("3003", "Black", 7, 9, 1)
+place("3004", "Black", 0, 12, 1, rot=90)
+place("3004", "Black", 4, 12, 1, rot=90)
+place("3004", "Black", 8, 12, 1, rot=90)

@@ -1,0 +1,31 @@
+#: title: Hood panel of large blue and grey plates with curved and angled slopes forming the contoured engine cover.
+#: source: LDraw Official Model Repository, 5893-1.mpd, section 5893 - 4WD hood.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("85984", "White", 1, 1, 7, rot=180)
+place("3035", "Blue", 0, 0, 2)
+place("3795", "Light_Bluish_Grey", 1, 0, 6, rot=180)
+place("85984", "White", 3, 1, 7, rot=180)
+place("85984", "White", 5, 1, 7, rot=180)
+place("3023", "Dark_Bluish_Grey", 0, 1, 3, rot=90)
+place("60478", "Black", 0, 1, 5, rot=270)
+place("61409", "Dark_Bluish_Grey", 3, 2, 5)
+place("3032", "Light_Bluish_Grey", 1, 1, 3, rot=180)
+place("61409", "Dark_Bluish_Grey", 4, 2, 5)
+place("3023", "Dark_Bluish_Grey", 7, 1, 3, rot=90)
+place("60478", "Black", 7, 1, 5, rot=270)
+place("61678", "Blue", 0, 0, 0)
+place("3021", "Blue", 0, 2, 4, rot=270)
+place("61678", "Blue", 1, 0, 0)
+place("61678", "White", 2, 0, 0)
+place("3023", "White", 2, 2, 5, rot=270)
+place("61678", "White", 3, 0, 0)
+place("2431", "White", 2, 2, 4)
+place("61678", "White", 4, 0, 0)
+place("61678", "White", 5, 0, 0)
+place("3023", "White", 5, 2, 5, rot=270)
+place("61678", "Blue", 6, 0, 0)
+place("3021", "Blue", 6, 2, 4, rot=270)
+place("61678", "Blue", 7, 0, 0)

@@ -1,0 +1,30 @@
+#: title: Mirrored curved rear bodywork assembly with sloped panels, log bricks and corner plates forming contoured detailing.
+#: source: LDraw Official Model Repository, 76139-1.mpd, section 76139 - 1989 Batmobile - step500-510.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("34103", "Black", 0, 0, 2.5, rot=90)
+place("2450", "Black", 1, 0, 0, rot=90)
+place("11212", "Black", 1, 0, 3, rot=270)
+place("3022", "Black", 1, 1, 5, rot=270)
+place("3023", "Tan", 3, 1, 2, rot=90)
+place("3021", "Dark_Bluish_Grey", 3, 1, 4, rot=270)
+place_ldu("24201", "Black", (10, -24, 130), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3021", "Dark_Bluish_Grey", 1, 2, 6, rot=270)
+place("2420", "Reddish_Brown", 3, 2, 3, rot=90)
+place("3021", "Dark_Bluish_Grey", 3, 2, 6, rot=270)
+place("93606", "Black", 0, 1, 3)
+place("3020", "Black", 0, 3, 7, rot=180)
+place("61678", "Dark_Bluish_Grey", 2, 1, 3)
+place("50950", "Black", 3, 1, 0)
+place("3022", "Black", 3, 3, 3)
+place("3023", "Tan", 4, 3, 7, rot=90)
+place_ldu("30136", "Light_Bluish_Grey", (80, -40, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3022", "Tan", 3, 4, 7)
+place_ldu("30136", "Light_Bluish_Grey", (80, -48, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("85984", "Black", (80, -50, 180), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("41749", "Black", 0, 1, 1)
+place("93606", "Black", 3, 4, 3)
+place("3069b", "Black", 3, 6, 7)
+place("99206", "Black", 3, 5, 7, rot=180)

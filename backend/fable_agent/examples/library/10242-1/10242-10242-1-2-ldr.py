@@ -1,0 +1,33 @@
+#: title: Technic suspension and steering linkage of pins, pin joiners, beams and a curved slope on studded technic bricks
+#: source: LDraw Official Model Repository, 10242-1.mpd, section 10242 - 10242-1-2.ldr
+#: author: Magnus Forsberg [MagFors]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3024", "Light_Bluish_Grey", (12, -14, 30), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("11477", "Metallic_Silver", (20, -14, 40), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (20, -14, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("62462", "Metallic_Silver", (40, -14, 50), (1, 0, 0, 0, -0.707107, -0.707107, 0, 0.707107, -0.707107))
+place_ldu("32523", "Metallic_Silver", (70, -14, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (70, -14, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (70, -14, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (80, -14, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("62462", "Metallic_Silver", (100, -14, 50), (1, 0, 0, 0, -0.707107, -0.707107, 0, 0.707107, -0.707107))
+place_ldu("62462", "Metallic_Silver", (140, -14, 50), (1, 0, 0, 0, -0.707107, -0.707107, 0, 0.707107, -0.707107))
+place_ldu("2780", "Black", (140, -14, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (160, -14, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("62462", "Metallic_Silver", (180, -14, 50), (1, 0, 0, 0, -0.707107, -0.707107, 0, 0.707107, -0.707107))
+place_ldu("2780", "Black", (200, -14, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("62462", "Metallic_Silver", (220, -14, 50), (1, 0, 0, 0, -0.707107, -0.707107, 0, 0.707107, -0.707107))
+place_ldu("2780", "Black", (240, -14, 10), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32523", "Metallic_Silver", (250, -14, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (250, -14, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (250, -14, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("62462", "Metallic_Silver", (280, -14, 50), (1, 0, 0, 0, -0.707107, -0.707107, 0, 0.707107, -0.707107))
+place_ldu("11477", "Metallic_Silver", (300, -14, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (300, -14, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3024", "Light_Bluish_Grey", (308, -14, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("6541", "Black", 2, 0, 1, rot=90)
+place("32000", "Black", 4, 0, 0, rot=90)
+place("32000", "Black", 11, 0, 0, rot=90)
+place("6541", "Black", 13, 0, 1, rot=90)

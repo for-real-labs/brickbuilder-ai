@@ -1,0 +1,31 @@
+#: title: Rocket storage rack on the base with towball mounts, car roof holders, and steering links.
+#: source: LDraw Official Model Repository, 6983-1.mpd, section 6983 - Base - Rocket Holder.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3315", "Black", 2, 0, 0)
+place_ldu("2739a", "Black", (22, -12, 80), (-0.0045, -0.9998, -0.0169, 0.2588, -0.0175, 0.9658, -0.9659, 0, 0.2588))
+place_ldu("2739a", "Black", (98, -12, 80), (-0.0045, 0.9998, 0.0169, -0.2588, -0.0175, 0.9658, 0.9659, 0, 0.2588))
+place_ldu("3184", "Black", (50, -16, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4590", "Blue", (60, -16, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3184", "Black", 3, 0.5, 2, rot=270)
+place_ldu("6141", "Trans_Neon_Orange", (30, -24, 20), (0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588))
+place("3832", "Blue", 2, 2, 2, rot=270)
+place_ldu("6141", "Trans_Neon_Orange", (90, -24, 20), (0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588))
+place_ldu("4315", "Blue", (50, -32, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3022", "Blue", 2, 3, 9, rot=270)
+place("4315", "Blue", 3, 3, 3, rot=270)
+place("3023", "Black", 2, 4, 3)
+place("3023", "Black", 2, 4, 6)
+place("4871", "Black", 1, 4, 9, rot=270)
+place_ldu("6141", "White", (30, -64, 190), (0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588))
+place_ldu("6141", "White", (30, -64, 210), (0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588))
+place_ldu("6141", "White", (90, -64, 190), (0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588))
+place_ldu("6141", "White", (90, -64, 210), (0.2588, 0, 0.9659, 0, 1, 0, -0.9659, 0, 0.2588))
+place_ldu("3710", "Black", (45.5854, -92.6828, 100), (0, 0.2588, 0.9659, 0, 0.9659, -0.2588, -1, 0, 0))
+place_ldu("3710", "Black", (74.4146, -92.6828, 100), (0, -0.2588, -0.9659, 0, 0.9659, -0.2588, 1, 0, 0))
+place_ldu("2582", "Trans_Neon_Orange", (43.515, -100.41, 100), (0, 0.2588, 0.9659, 0, 0.9659, -0.2588, -1, 0, 0))
+place_ldu("2582", "Trans_Neon_Orange", (76.485, -100.41, 100), (0, -0.2588, -0.9659, 0, 0.9659, -0.2588, 1, 0, 0))
+place_ldu("3069bp13", "White", (41.4446, -108.137, 100), (0, 0.2588, -0.9659, 0, 0.9659, 0.2588, 1, 0, 0))
+place_ldu("3069bp13", "White", (78.5554, -108.137, 100), (0, -0.2588, 0.9659, 0, 0.9659, 0.2588, -1, 0, 0))

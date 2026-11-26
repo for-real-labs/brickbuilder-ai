@@ -1,0 +1,33 @@
+#: title: Reinforced gearbox section using paired open-center beams and long liftarms pinned together to form a rigid mounting cage.
+#: source: LDraw Official Model Repository, 42114-1.mpd, section 42114 - gearbox4.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("32525", "Yellow", (120, -10, 280), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (80, -30, 280), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("64179", "Black", 3.5, 2.5, 7.5)
+place_ldu("2780", "Black", (140, -30, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (100, -30, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (170, -30, 180), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (170, -30, 260), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (70, -30, 260), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (70, -30, 180), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6558", "Blue", (160, -30, 280), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (120, -30, 290), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32278", "Yellow", (60, -30, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (60, -30, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (160, -50, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (80, -50, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place("64179", "Light_Bluish_Grey", 3.5, 5, 7.5, rot=180)
+place_ldu("18651", "Black", (60, -50, 260), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("18651", "Black", (180, -50, 260), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place("64179", "Light_Bluish_Grey", 3.5, 7.5, 7.5, rot=180)
+place_ldu("60484", "Yellow", (120, -70, 140), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (70, -70, 260), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (70, -70, 180), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (170, -70, 260), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (170, -70, 180), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (120, -70, 290), (0, 1, 0, 0, 0, 1, 1, 0, 0))

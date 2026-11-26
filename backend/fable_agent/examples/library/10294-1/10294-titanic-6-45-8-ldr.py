@@ -1,0 +1,31 @@
+#: title: A white deck section with lattice fences, panels, tiles, and zip line handles forming a railing or platform detail.
+#: source: LDraw Official Model Repository, 10294-1.mpd, section 10294 - Titanic - 6.45.8.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3062b", "Light_Bluish_Grey", 10, 0, 0, rot=90)
+place("3062b", "Light_Bluish_Grey", 5, 0, 0, rot=90)
+place("3004", "White", 12, 0, 2, rot=90)
+place("3004", "White", 3, 0, 2, rot=90)
+place("6141", "White", 10, 3, 0, rot=90)
+place("6141", "White", 5, 3, 0, rot=90)
+place("3023", "White", 12, 3, 2, rot=90)
+place("3023", "White", 3, 3, 2, rot=90)
+place("4282", "White", 0, 4, 2)
+place("3022", "White", 5, 4, 0, rot=270)
+place("3022", "White", 9, 4, 0, rot=270)
+place("63864", "White", 5, 5, 1, rot=270)
+place("63864", "White", 10, 5, 1, rot=270)
+place("3068b", "White", 6, 5, 1, rot=270)
+place("14719", "White", 8, 5, 1, rot=180)
+place("15712", "White", 5, 5, 0, rot=90)
+place("15712", "White", 10, 5, 0, rot=90)
+place("23969", "White", 0, 5, 2, rot=270)
+place("23969", "White", 15, 5, 2, rot=90)
+place("3633", "White", 1, 5, 3, rot=180)
+place("3633", "White", 1, 5, 2)
+place("3633", "White", 11, 5, 2)
+place("3633", "White", 11, 5, 3, rot=180)
+place("3633", "White", 6, 5, 3, rot=180)
+place("3633", "White", 6, 5, 0)

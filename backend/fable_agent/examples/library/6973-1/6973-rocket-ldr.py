@@ -1,0 +1,32 @@
+#: title: Cylindrical finned rocket built on a Technic axle with a magnet base, blue dish, and a black hollow-stud nose cone.
+#: source: LDraw Official Model Repository, 6973-1.mpd, section 6973 - Rocket.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("4591", "Black", 0, 0, 0)
+place("6143", "Trans_Neon_Orange", 1, 6, 1)
+place("6143", "Trans_Neon_Orange", 1, 9, 1)
+place("6143", "White", 1, 12, 1)
+place_ldu("3700", "White", (40, -134, 50), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2654", "Blue", (40, -144, 26), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3708", "Black", (40, -144, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2609a", "White", (40, -144, 58), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2959c01", "Black", (40, -144, 64.6), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3700", "White", (40, -154, 50), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("6143", "White", 1, 20.5, 1, rot=90)
+place("4032a", "Blue", 1, 23.5, 1, rot=90)
+place("6143", "Trans_Neon_Orange", 1, 24.5, 1, rot=90)
+place("3942b", "Black", 1, 27.5, 1, rot=90)
+place_ldu("3957a", "Black", (40, -276, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4740", "White", 1, 41, 1, rot=90)
+place_ldu("4592", "White", (22, -350, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4593", "Black", (22, -350, 40), (0, 0.5, -0.866, 0, -0.866, -0.5, -1, 0, 0))
+place_ldu("4592", "White", (40, -350, 22), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4593", "Black", (40, -350, 22), (1, 0, 0, 0, -0.866, -0.5, 0, 0.5, -0.866))
+place_ldu("4592", "White", (40, -350, 58), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4593", "Black", (40, -350, 58), (-1, 0, 0, 0, -0.866, -0.5, 0, -0.5, 0.866))
+place_ldu("4592", "White", (58, -350, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4593", "Black", (58, -350, 40), (0, -0.5, 0.866, 0, -0.866, -0.5, 1, 0, 0))
+place("4733", "Black", 1.5, 42, 1.5, rot=90)
+place("4740", "Trans_Neon_Orange", 1, 45, 1, rot=90)

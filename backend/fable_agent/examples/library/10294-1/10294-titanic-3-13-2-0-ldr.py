@@ -1,0 +1,32 @@
+#: title: Titanic - 3.13.2.0
+#: source: LDraw Official Model Repository, 10294-1.mpd, section 10294 - Titanic - 3.13.2.0.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3023", "Light_Bluish_Grey", 0, 0, 1)
+place("3024", "Light_Bluish_Grey", 4, 0, 1, rot=270)
+place("3024", "Light_Bluish_Grey", 0, 1, 1)
+place_ldu("4070", "Dark_Bluish_Grey", (30, -18, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4070", "Dark_Bluish_Grey", (90, -18, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("26047", "Black", (10, -24, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30136", "Light_Bluish_Grey", (60, -24, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Light_Bluish_Grey", 5, 0, 1, rot=270)
+place("3023", "Light_Bluish_Grey", 0, 3, 1)
+place_ldu("26047", "Black", (10, -40, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3024", "Light_Bluish_Grey", 1, 4, 1)
+place("3023", "Light_Bluish_Grey", 0, 5, 1)
+place("3010", "Light_Bluish_Grey", 2, 3, 1)
+place_ldu("26047", "Black", (10, -56, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3020", "Dark_Bluish_Grey", 1, 6, 0)
+place("3024", "Light_Bluish_Grey", 5, 6, 1, rot=270)
+place("3023", "Light_Bluish_Grey", 0, 7, 1)
+place_ldu("26047", "Black", (10, -72, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3024", "Light_Bluish_Grey", 1, 8, 1, rot=270)
+place("3023", "Light_Bluish_Grey", 0, 9, 1)
+place("3633", "Dark_Bluish_Grey", 1, 7, 0)
+place("3010", "Light_Bluish_Grey", 2, 7, 1)
+place("3666", "Light_Bluish_Grey", 0, 10, 1)
+place("3023", "Light_Bluish_Grey", 0, 11, 1)
+place("3023", "Light_Bluish_Grey", 2, 11, 1)
+place_ldu("30136", "Light_Bluish_Grey", (100, -112, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))

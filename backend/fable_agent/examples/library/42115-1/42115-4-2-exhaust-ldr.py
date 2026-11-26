@@ -1,0 +1,30 @@
+#: title: 4-2-exhaust
+#: source: LDraw Official Model Repository, 42115-1.mpd, section 42115 - 4-2-exhaust.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3713", "Light_Bluish_Grey", (10, -29.7, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("3705", "Black", (10, -29.7, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("11947", "Black", (10, -29.7, 70), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (30, -29.7, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32054", "Black", (30, -29.7, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("62462", "Light_Bluish_Grey", (30, -29.7, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (30, -29.7, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("62462", "Light_Bluish_Grey", (30, -29.7, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (50, -29.7, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("3705", "Black", (50, -29.7, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6632", "Black", (50, -29.7, 45), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6632", "Black", (50, -29.7, 55), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("11946", "Black", (50, -29.7, 70), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4274", "Blue", (10, -39.7, 110), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (10, -39.7, 130), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (50, -39.7, 110), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4274", "Blue", (50, -39.7, 130), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("15672", "Black", (20, -47.7, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("15672", "Black", (20, -47.7, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("15672", "Black", (20, -47.7, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3623", "Black", (30, -55.7, 130), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("28192", "Black", (30, -63.7, 110), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("28192", "Black", (30, -63.7, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("28192", "Black", (30, -63.7, 150), (0, 0, -1, 0, 1, 0, 1, 0, 0))

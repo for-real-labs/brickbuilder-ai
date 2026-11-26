@@ -1,0 +1,31 @@
+#: title: Tall tapered chimney structure assembled from stacked 2x3, 1x4, and 1x6 bricks topped with small plates.
+#: source: LDraw Official Model Repository, 396-1.mpd, section 396 - Chimney.ldr
+#: author: Willy Tschager [Holly-Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3024", "Black", 2, 0, 4)
+place("3023", "Black", 3, 0, 4)
+place("3021", "Black", 2, 0, 2)
+place("3002", "Black", 2, 1, 3)
+place("3004", "Black", 2, 1, 2)
+place("3005", "Black", 4, 1, 2)
+place("3031", "Black", 1.5, 4, 1.5)
+place("3004", "Black", 2.5, 5, 4.5)
+place("3010", "Black", 1.5, 5, 1.5, rot=270)
+place("3010", "Black", 4.5, 5, 1.5, rot=270)
+place("3004", "Black", 2.5, 5, 1.5)
+place("3002", "Black", 0.5, 8, 3.5, rot=270)
+place("3002", "Black", 2.5, 8, 3.5, rot=270)
+place("3002", "Black", 4.5, 8, 3.5, rot=270)
+place("3002", "Black", 0.5, 8, 0.5, rot=270)
+place("3002", "Black", 2.5, 8, 0.5, rot=270)
+place("3002", "Black", 4.5, 8, 0.5, rot=270)
+place("3009", "Black", 0.5, 11, 5.5, rot=180)
+place("3010", "Black", 0.5, 11, 1.5, rot=270)
+place("3010", "Black", 5.5, 11, 1.5, rot=270)
+place("3009", "Black", 0.5, 11, 0.5, rot=180)
+place("3010", "Black", 1.5, 14, 5.5, rot=180)
+place("3009", "Black", 0.5, 14, 0.5, rot=90)
+place("3009", "Black", 5.5, 14, 0.5, rot=90)
+place("3010", "Black", 1.5, 14, 0.5, rot=180)

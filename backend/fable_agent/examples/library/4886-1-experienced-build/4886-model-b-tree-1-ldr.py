@@ -1,0 +1,31 @@
+#: title: A leafy tree built from green sloped bricks on a brown trunk with a green core.
+#: source: LDraw Official Model Repository, 4886-1_Experienced-Build.mpd, section 4886 - model B - tree 1.ldr
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("2453a", "Reddish_Brown", 2.5, 0, 2.5, rot=90)
+place("3020", "Green", 2, 15, 1, rot=90)
+place("3747a", "Green", 0, 16, 2, rot=90)
+place("3660", "Green", 2, 16, 4, rot=180)
+place("3660", "Green", 2, 16, 0)
+place("3747a", "Green", 3, 16, 2, rot=270)
+place_ldu("3004", "Green", (10.05, -176, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3004", "Green", (110.05, -176, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3001", "Green", (80.05, -176, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3001", "Green", (40.05, -176, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3040b", "Green", 1, 22, 1, rot=90)
+place("3040b", "Green", 4, 22, 1)
+place("3040b", "Green", 3, 22, 4, rot=270)
+place("3040b", "Green", 1, 22, 3, rot=180)
+place("3040b", "Green", 3, 22, 0)
+place_ldu("3004", "Green", (60.05, -176, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3040b", "Green", 4, 22, 3, rot=270)
+place("3040b", "Green", 2, 22, 4, rot=180)
+place("3004", "Green", 2, 19, 5)
+place("3040b", "Green", 0, 22, 2, rot=90)
+place_ldu("3003", "Green", (60.05, -200, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3040b", "Green", 3, 25, 1)
+place("3040b", "Green", 3, 25, 3, rot=270)
+place("3040b", "Green", 2, 25, 3, rot=180)
+place("3040b", "Green", 1, 25, 2, rot=90)

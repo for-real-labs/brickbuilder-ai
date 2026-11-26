@@ -1,0 +1,33 @@
+#: title: Secondary gearbox section with 8-tooth and 16-tooth gears, a clutch gear, and axles providing additional gear ratios.
+#: source: LDraw Official Model Repository, 42083-1.mpd, section 42083 - gearbox2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("32526", "Light_Bluish_Grey", (60, -21.6, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (80, -21.6, 170), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("18948", "White", (100, -21.6, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("94925", "Light_Bluish_Grey", (100, -21.6, 140), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3706", "Red", (100, -21.6, 170), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (100, -21.6, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (100, -21.6, 220), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("10928", "Dark_Bluish_Grey", (140, -21.6, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("15462", "Reddish_Brown", (140, -21.6, 180), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (140, -21.6, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32316", "Lime", (60, -41.6, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (60, -41.6, 190), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (80, -41.6, 170), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("99008", "Tan", (140, -41.6, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("59443", "Black", (140, -41.6, 90), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("94925", "Light_Bluish_Grey", (140, -41.6, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32073", "Light_Bluish_Grey", (140, -41.6, 140), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("10928", "Dark_Bluish_Grey", (140, -41.6, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32526", "Light_Bluish_Grey", (60, -61.6, 140), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("60484", "Light_Bluish_Grey", (80, -61.6, 160), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (80, -61.6, 160), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("26287", "Light_Bluish_Grey", (100, -61.6, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("87083", "Dark_Bluish_Grey", (100, -61.6, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("43857", "Yellow", (110, -61.6, 160), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (120, -61.6, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("43093", "Blue", (140, -61.6, 150), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32054", "Orange", (140, -61.6, 180), (0, 0, -1, 0, 1, 0, 1, 0, 0))

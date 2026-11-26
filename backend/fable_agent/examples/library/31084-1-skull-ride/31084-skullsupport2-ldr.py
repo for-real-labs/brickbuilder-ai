@@ -1,0 +1,30 @@
+#: title: An extended skull support structure with round technic plates, handles, log-textured bricks, and a central bar tube.
+#: source: LDraw Official Model Repository, 31084-1_Skull-ride.mpd, section 31084 - skullsupport2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("60474", "Dark_Bluish_Grey", 1, 0, 1)
+place("3709b", "Black", 1, 1, 2)
+place("3023", "Dark_Bluish_Grey", 0, 2, 2)
+place("3023", "Dark_Bluish_Grey", 4, 2, 2)
+place("48336", "Dark_Bluish_Grey", 0, 2, 3, rot=180)
+place("48336", "Dark_Bluish_Grey", 4, 2, 3, rot=180)
+place("4032a", "Tan", 2, 2, 2, rot=180)
+place_ldu("30136", "Dark_Bluish_Grey", (60, -32, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("32001", "Light_Bluish_Grey", 0, 3, 2, rot=180)
+place("3010", "Light_Bluish_Grey", 1, 1, 1, rot=180)
+place("3020", "Tan", 0, 4, 1, rot=270)
+place("6143", "Dark_Bluish_Grey", 4, 4, 2, rot=270)
+place("6143", "Dark_Azure", 2, 4, 2, rot=270)
+place("3010", "Light_Bluish_Grey", 2, 4, 4, rot=180)
+place("3010", "Light_Bluish_Grey", 2, 4, 1, rot=180)
+place_ldu("30136", "White", (20, -64, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30136", "White", (20, -64, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30136", "White", (20, -64, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30136", "White", (20, -64, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3709b", "Black", 2, 7, 1, rot=270)
+place("3022", "Light_Bluish_Grey", 4, 7, 2, rot=270)
+place_ldu("60470b", "Medium_Nougat", (100, -64, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60470b", "Medium_Nougat", (100, -64, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("23443", "Black", (110, -62, 110), (0, 0, -1, 0, -1, 0, -1, 0, 0))

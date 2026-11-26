@@ -1,0 +1,30 @@
+#: title: A red motorcycle with clear wheels and red taillight.
+#: source: LDraw Official Model Repository, 6541-1.mpd, section 6541 - container 2.ldr
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("2420", "Light_Grey", 1, 0, 1)
+place("2420", "Light_Grey", 1, 0, 3, rot=90)
+place_ldu("3020", "Light_Grey", (99.999, -8, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2420", "Light_Grey", 7, 0, 1, rot=270)
+place("2420", "Light_Grey", 7, 0, 3, rot=180)
+place("3023", "Light_Grey", 1, 1, 2, rot=90)
+place("3460", "Light_Grey", 1, 1, 1)
+place("2431", "Light_Grey", 3, 1, 2)
+place("2431", "Light_Grey", 3, 1, 3)
+place("3460", "Light_Grey", 1, 1, 4)
+place("3023", "Light_Grey", 8, 1, 2, rot=90)
+place_ldu("3641", "Black", (55.001, -32, 59.998), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3464", "Trans_Clear", (55.001, -32, 59.998), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Black", (145.001, -32, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3464", "Trans_Clear", (145.001, -32, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2432", "White", (99.999, -48, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2432", "White", (99.999, -48, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3070a", "Trans_Red", (173.001, -52.2, 60.003), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6141", "Trans_Yellow", (52.001, -75.2, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4215a", "White", (29.999, -88, 59.998), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4215a", "White", (169.999, -88, 59.998), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3460", "White", 1, 11, 1)
+place("3460", "White", 1, 11, 4)
+place_ldu("3020", "White", (99.999, -104, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))

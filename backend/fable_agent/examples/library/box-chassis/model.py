@@ -1,0 +1,23 @@
+#: title: Box chassis; static structure, stage 1
+#: source: ldraw-nova example atlas, box-chassis.mpd
+#: author: ldraw-nova structural examples
+#: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 18 of 18 parts kept (minifigures left out)
+place_ldu("2780", "Black", (30, -10, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("64179", "Yellow", 1.5, 0, 4.5)
+place_ldu("2780", "Black", (30, -10, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (130, -10, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (130, -10, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("64179", "Light_Bluish_Grey", (20, -70, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("64179", "Light_Bluish_Grey", (140, -70, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (30, -130, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -130, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("64179", "Yellow", 1.5, 15, 4.5)
+place_ldu("2780", "Black", (130, -130, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (130, -130, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (120, -140, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (120, -140, 220), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (40, -140, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (40, -140, 220), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32278", "White", (40, -150, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32278", "White", (120, -150, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))

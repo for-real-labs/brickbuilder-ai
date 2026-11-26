@@ -1,0 +1,31 @@
+#: title: Grey wheeled vehicle with four small rubber tyres, a steering wheel, and blue storage elements on a plate chassis.
+#: source: LDraw Official Model Repository, 6951-1.mpd, section 6951 - Rover.ldr
+#: author: Ignacio Fernandez Galvan [jellby]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("20", "Red", (9, -18, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("20", "Red", (9, -18, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (10, -18, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3641", "Rubber_Black", (10, -18, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("u9132", "Electric_Contact_Alloy", (40, -18, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("u9132", "Electric_Contact_Alloy", (40, -18, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Rubber_Black", (70, -18, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (70, -18, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("20", "Red", (71, -18, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("20", "Red", (71, -18, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("422", "Light_Grey", (40, -24, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("422", "Light_Grey", (40, -24, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3795", "Light_Grey", 1, 3, 0, rot=90)
+place("3829a", "Light_Grey", 1, 4, 0)
+place("3021", "Light_Grey", 1, 4, 3, rot=90)
+place_ldu("4590", "Light_Grey", (40, -48, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3020", "Light_Grey", 0, 5, 4, rot=180)
+place("3794a", "Light_Grey", 1, 6, 3, rot=270)
+place("3794a", "Light_Grey", 2, 6, 3, rot=270)
+place_ldu("3062b", "Trans_Yellow", (10, -62, 82), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3749", "Light_Grey", (40, -62, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3062b", "Trans_Yellow", (70, -62, 82), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3828", "Black", (40, -66.32, 9.76), (1, 0, 0, 0, 0.6, 0.8, 0, -0.8, 0.6))
+place("3700", "Light_Grey", 1, 6, 5, rot=180)
+place("3794a", "Light_Grey", 1, 9, 5, rot=180)

@@ -1,0 +1,32 @@
+#: title: Liftarm assembly with a clutch gear mechanism mounted along a long black beam.
+#: source: LDraw Official Model Repository, 8275-1.mpd, section 8275 - m-1j.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32525", "Black", (160, -10, 330), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (170, -10, 330), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (170, -10, 350), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Black", (180, -10, 270), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Black", (180, -10, 290), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("42003", "Yellow", (180, -10, 290), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32526", "Black", (180, -10, 410), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("48989", "Light_Bluish_Grey", (200, -10, 390), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32523", "Yellow", (220, -10, 390), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (200, -20, 410), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6536", "Light_Bluish_Grey", (200, -30, 410), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("58121", "Light_Bluish_Grey", (130, -50, 310), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("43857", "Yellow", (140, -50, 260), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Black", (140, -50, 270), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (140, -50, 310), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4019", "Light_Bluish_Grey", (140, -50, 310), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6542a", "Dark_Bluish_Grey", (140, -50, 350), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (150, -50, 250), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3705", "Black", (150, -50, 350), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32525", "Black", (160, -50, 330), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (170, -50, 330), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (170, -50, 370), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("41677", "Blue", (175, -50, 350), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("41677", "Blue", (185, -50, 350), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("58124c01", "Dark_Bluish_Grey", 2, 40.5, 0, rot=270)
+place("3069b", "Blue", 2, 42.5, 0)

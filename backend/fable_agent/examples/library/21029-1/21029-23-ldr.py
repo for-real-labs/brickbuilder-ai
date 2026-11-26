@@ -1,0 +1,31 @@
+#: title: A round light bluish grey platform base with a central white round plate, framed by trans-clear tiles and plates.
+#: source: LDraw Official Model Repository, 21029-1.mpd, section 21029 - 23.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("30565", "Light_Bluish_Grey", 0, 0, 0, rot=90)
+place("30565", "Light_Bluish_Grey", 0, 0, 4, rot=180)
+place("30565", "Light_Bluish_Grey", 4, 0, 0)
+place("30565", "Light_Bluish_Grey", 4, 0, 4, rot=270)
+place("3022", "Yellow", 3, 1, 3)
+place("3023", "Trans_Clear", 2, 1, 3, rot=270)
+place("3023", "Trans_Clear", 1, 1, 3, rot=270)
+place("3023", "Trans_Clear", 5, 1, 3, rot=270)
+place("3023", "Trans_Clear", 6, 1, 3, rot=270)
+place("3023", "Trans_Clear", 3, 1, 2, rot=180)
+place("3023", "Trans_Clear", 3, 1, 5, rot=180)
+place("3069b", "Trans_Clear", 1, 1, 2, rot=180)
+place("3069b", "Trans_Clear", 2, 1, 1, rot=180)
+place("3069b", "Trans_Clear", 4, 1, 1, rot=180)
+place("3069b", "Trans_Clear", 5, 1, 2, rot=180)
+place("3069b", "Trans_Clear", 1, 1, 5)
+place("3069b", "Trans_Clear", 5, 1, 5)
+place("3069b", "Trans_Clear", 4, 1, 6)
+place("3069b", "Trans_Clear", 2, 1, 6)
+place("3069b", "Light_Bluish_Grey", 3, 1, 0)
+place("3069b", "Light_Bluish_Grey", 3, 1, 7)
+place("3069b", "Light_Bluish_Grey", 7, 1, 3, rot=270)
+place("3069b", "Light_Bluish_Grey", 0, 1, 3, rot=270)
+place("60474", "Light_Bluish_Grey", 2, 2, 2, rot=270)
+place("18674", "White", 3, 3, 3, rot=270)

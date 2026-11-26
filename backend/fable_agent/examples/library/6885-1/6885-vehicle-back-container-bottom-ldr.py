@@ -1,0 +1,30 @@
+#: title: The lower half of the cargo container, constructed from white plates, concave corner panels, headlight bricks, and trans-red round plates.
+#: source: LDraw Official Model Repository, 6885-1.mpd, section 6885 - Vehicle - Back - Container - Bottom.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("6141", "Trans_Red", 1, 0, 1, rot=90)
+place("6141", "Trans_Red", 1, 0, 2, rot=90)
+place("6141", "Trans_Red", 1, 0, 5, rot=90)
+place("6141", "Trans_Red", 1, 0, 6, rot=90)
+place("3023", "White", 1, 1, 1, rot=90)
+place("3023", "White", 1, 1, 5, rot=90)
+place_ldu("4590", "Black", (70, -24, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4070", "White", (40, -26, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4070", "White", (40, -26, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4070", "White", (40, -26, 110), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4070", "White", (40, -26, 130), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3020", "White", 1, 3, 3)
+place("2467", "White", 1, 4, 0)
+place("2467", "White", 1, 4, 4, rot=270)
+place("3460", "White", 1, 21, 0, rot=90)
+place("3794a", "White", 2, 21, 3, rot=90)
+place("3794a", "White", 3, 21, 3, rot=90)
+place("4276b", "White", 2, 22, 3.5)
+place_ldu("4070", "White", (40, -186, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4070", "White", (40, -186, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4070", "White", (40, -186, 110), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4070", "White", (40, -186, 130), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3023", "Black", 1, 24, 1, rot=90)
+place("3023", "Black", 1, 24, 5, rot=90)

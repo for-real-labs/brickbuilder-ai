@@ -1,0 +1,30 @@
+#: title: Hand-of-God steering support bracket using bevel gears, axles, beams, and a toggle joint connector for steering linkage.
+#: source: LDraw Official Model Repository, 42123-1.mpd, section 42123 - hogsupport.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (30, -9, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (40, -9, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32054", "Light_Bluish_Grey", (80, -9, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("43093", "Blue", (80, -9, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("32034", "Red", 2.5, 0, 4.5, rot=90)
+place_ldu("11214", "Dark_Bluish_Grey", (120, -9, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (130, -9, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6589", "Tan", (80, -32, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (50, -49, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("59443", "Dark_Bluish_Grey", (80, -49, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32316", "Black", (80, -49, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("24316", "Reddish_Brown", (80, -49, 62), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("18171", "Black", (80, -49, 70), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6589", "Tan", (80, -49, 83), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (110, -49, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (80, -59, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32316", "Black", (60, -89, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (80, -89, 70), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32316", "Black", (100, -89, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("59443", "Dark_Bluish_Grey", (80, -99, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32054", "Light_Bluish_Grey", (40, -109, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("6536", "Black", 3.5, 10, 3.5)
+place_ldu("4519", "Yellow", (80, -109, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32054", "Light_Bluish_Grey", (120, -109, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))

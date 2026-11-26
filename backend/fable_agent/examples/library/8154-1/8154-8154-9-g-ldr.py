@@ -1,0 +1,33 @@
+#: title: A large light blue and white platform structure with brackets, long plates, and grooved tiles.
+#: source: LDraw Official Model Repository, 8154-1.mpd, section 8154 - 8154-9-g.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("2431", "White", (8, -10, 260), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2431", "White", (272, -10, 260), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3023", "Light_Blue", 1, 1.5, 0, rot=90)
+place("4477", "Light_Blue", 1, 1.5, 2, rot=90)
+place_ldu("2436a", "Light_Blue", (30, -20, 260), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4477", "Light_Blue", 1, 1.5, 14, rot=90)
+place("3023", "Light_Blue", 2, 1.5, 23)
+place("4477", "Light_Blue", 2, 1.5, 0)
+place("3032", "Light_Blue", 4, 1.5, 4)
+place("3023", "Light_Blue", 10, 1.5, 23)
+place("3023", "Light_Blue", 12, 1.5, 0, rot=90)
+place("4477", "Light_Blue", 12, 1.5, 2, rot=90)
+place("2436a", "Light_Blue", 12, 0, 11, rot=270)
+place("4477", "Light_Blue", 12, 1.5, 14, rot=90)
+place("3028", "White", 1, 2.5, 0)
+place("3028", "White", 1, 2.5, 6)
+place("3028", "White", 1, 2.5, 12)
+place("3028", "White", 1, 2.5, 18)
+place("3068b", "White", 6, 3.5, 5)
+place("3068b", "White", 6, 3.5, 11)
+place("3068b", "White", 6, 3.5, 17)
+place("3245a", "White", 2, 3.5, 2, rot=90)
+place("3245a", "White", 11, 3.5, 2, rot=90)
+place_ldu("6180", "White", (28, -84, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("44728", "White", (50, -84, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("44728", "White", 11, 5.5, 2, rot=270)
+place_ldu("6180", "White", (252, -84, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))

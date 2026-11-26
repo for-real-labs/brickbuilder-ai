@@ -1,0 +1,31 @@
+#: title: m-1q''
+#: source: LDraw Official Model Repository, 8275-1.mpd, section 8275 - m-1q''.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("6632", "Yellow", (15, -10, 220), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32123b", "Yellow", (25, -10, 220), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (30, -10, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("53178", "Yellow", (40, -10, 220), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6632", "Black", (40, -15, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41677", "Blue", (40, -15, 240), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("40490", "Light_Bluish_Grey", (40, -30, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32062", "Red", (40, -30, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Black", (40, -30, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (40, -30, 200), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (40, -30, 240), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (40, -30, 260), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32039", "Black", (40, -30, 280), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3705", "Black", (40, -30, 310), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3941", "Yellow", (40, -30, 314), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3941", "Yellow", (40, -30, 338), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3941", "Yellow", (40, -30, 362), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3941", "Yellow", (40, -30, 386), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4150", "Yellow", (40, -30, 394), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32140", "Yellow", (78.73, -30, 249.999), (0.556351, 0, -0.830948, 0, -1, 0, -0.830948, 0, -0.556351))
+place_ldu("6632", "Black", (40, -45, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41677", "Blue", (40, -45, 240), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Yellow", (25, -50, 220), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (30, -50, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("53178", "Yellow", (40, -50, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))

@@ -1,0 +1,32 @@
+#: title: Axle and beam linkage assembly with inline axle joiners and long beams connected by friction axle pins, forming an articulated strut.
+#: source: LDraw Official Model Repository, 42023-1_Dump-Truck.mpd, section 42023 - Sub09.ldr
+#: author: Faramond Florent [Makou]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (20, -9, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("43093", "Blue", (180, -9, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32039", "Light_Bluish_Grey", (20, -29, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32039", "Light_Bluish_Grey", (180, -29, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("43093", "Blue", (20, -39, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (180, -39, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("40490", "Light_Bluish_Grey", (100, -49, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("43093", "Blue", (20, -69, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("42003", "Light_Bluish_Grey", (40, -69, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (60, -69, 20), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (140, -69, 20), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("42003", "Light_Bluish_Grey", (160, -69, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("43093", "Blue", (180, -69, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (40, -89, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("40490", "Light_Bluish_Grey", (100, -89, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (160, -89, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32015", "Light_Bluish_Grey", (40, -129, 20), (-1, 0, 0, 0, -0.924, 0.383, 0, 0.383, 0.924))
+place_ldu("43093", "Blue", (50, -129, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (70, -129, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (100, -129, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (130, -129, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (150, -129, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32015", "Light_Bluish_Grey", (160, -129, 20), (-1, 0, 0, 0, -0.924, 0.383, 0, 0.383, 0.924))
+place_ldu("3749", "Blue", (40, -140.49, -7.72), (0, 0, 1, 0.383, -0.924, 0, 0.924, 0.383, 0))
+place_ldu("3749", "Blue", (160, -140.49, -7.72), (0, 0, 1, 0.383, -0.924, 0, 0.924, 0.383, 0))
+place_ldu("32524", "Light_Bluish_Grey", (100, -144.32, -16.96), (0, 0, 1, 0.924, 0.383, 0, -0.383, 0.924, 0))

@@ -1,0 +1,32 @@
+#: title: A detailed head with round black eyes, sloped reddish brown face features, and tan corner plates forming a beak-like snout.
+#: source: LDraw Official Model Repository, 30027-1.mpd, section 30027 - Head.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3021", "White", 1, 0, 2)
+place("3022", "White", 2, 1, 2)
+place_ldu("6141", "Black", (8, -22, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3794a", "Reddish_Brown", (16, -22, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place("60470a", "Light_Bluish_Grey", 3, 1.75, 2, rot=270)
+place("4070", "Reddish_Brown", 1, 1, 2, rot=90)
+place("54200", "Reddish_Brown", 1, 4, 2, rot=90)
+place("4070", "Reddish_Brown", 1, 1, 3, rot=90)
+place("54200", "Reddish_Brown", 1, 4, 3, rot=90)
+place_ldu("6141", "Black", (70, -38, 28), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6141", "White", (70, -38, 36), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6141", "White", (70, -38, 84), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6141", "Black", (70, -38, 92), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("54200", "Reddish_Brown", 2, 5, 2, rot=90)
+place("3004", "Reddish_Brown", 2, 2, 2, rot=90)
+place("54200", "Reddish_Brown", 2, 5, 3, rot=90)
+place("4070", "Reddish_Brown", 3, 3, 2)
+place("4070", "Reddish_Brown", 3, 3, 3, rot=180)
+place("3023", "Reddish_Brown", 3, 6, 2, rot=90)
+place("2420", "Tan", 3, 7, 1)
+place("2420", "Tan", 3, 7, 3, rot=90)
+place("3023", "Tan", 3, 8, 2, rot=90)
+place("2420", "Tan", 3, 8, 0, rot=180)
+place("2420", "Tan", 3, 8, 4, rot=270)
+place_ldu("2420", "Tan", (90, -80, 30), (0.788011, 0, 0.615661, 0, 1, 0, -0.615661, 0, 0.788011))
+place_ldu("2420", "Tan", (90, -80, 90), (0.615661, 0, 0.788011, 0, 1, 0, -0.788011, 0, 0.615661))

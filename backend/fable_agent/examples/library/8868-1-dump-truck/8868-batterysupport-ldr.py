@@ -1,0 +1,31 @@
+#: title: Battery box support structure made of plates, corner plates, technic bricks, and inverted slope bricks.
+#: source: LDraw Official Model Repository, 8868-1_Dump-Truck.mpd, section 8868 - batterysupport.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3024", "Black", 2, 0, 0, rot=270)
+place("3023", "Black", 2, 0, 1, rot=270)
+place("4477", "Black", 2, 0, 3)
+place("3024", "Black", 11, 0, 0, rot=270)
+place("3023", "Black", 11, 0, 1, rot=270)
+place("3023", "Black", 2, 1, 0, rot=270)
+place("2420", "Black", 2, 1, 2, rot=90)
+place("3023", "Black", 11, 1, 0, rot=270)
+place("2420", "Black", 10, 1, 2, rot=180)
+place_ldu("4265a", "Light_Grey", (35, -30, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Black", (60, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Black", (220, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4265a", "Light_Grey", (245, -30, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("4287", "Black", 0, 2, 0, rot=90)
+place("3700", "Black", 2, 2, 1, rot=90)
+place("4287", "Black", 0, 2, 3, rot=90)
+place("3702", "Black", 3, 2, 3)
+place("4287", "Black", 11, 2, 0, rot=270)
+place("3700", "Black", 11, 2, 1, rot=90)
+place("4287", "Black", 11, 2, 3, rot=270)
+place("3023", "Black", 2, 5, 0, rot=270)
+place("2420", "Black", 2, 5, 2, rot=90)
+place("3666", "Black", 4, 5, 3, rot=180)
+place("3023", "Black", 11, 5, 0, rot=270)
+place("2420", "Black", 10, 5, 2, rot=180)

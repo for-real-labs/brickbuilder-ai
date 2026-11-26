@@ -1,0 +1,32 @@
+#: title: Conservatory Roof
+#: source: LDraw Official Model Repository, 75969-1.mpd, section 75969 - Conservatory Roof.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("30503", "Tan", 0, 0, 1, rot=180)
+place("3024", "Dark_Orange", 0, 1, 1, rot=180)
+place("2450", "Medium_Nougat", 1, 1, 1, rot=180)
+place("3024", "Dark_Orange", 3, 1, 4, rot=180)
+place("3005", "Dark_Orange", 3, 2, 1, rot=180)
+place("3005", "Dark_Orange", 3, 5, 1, rot=180)
+place_ldu("51266", "Trans_Clear", (30, -84, 25), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("51266", "Trans_Clear", (75, -84, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3005", "Dark_Orange", 3, 8, 1, rot=180)
+place_ldu("61252", "Pearl_Gold", (10, -96, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2450", "Medium_Nougat", 1, 11, 1, rot=180)
+place_ldu("61252", "Pearl_Gold", (70, -96, 90), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3024", "Dark_Orange", 0, 12, 1, rot=180)
+place("2450", "Medium_Nougat", 1, 12, 1, rot=180)
+place("3024", "Dark_Orange", 3, 12, 4, rot=180)
+place("3005", "Dark_Orange", 3, 13, 1, rot=180)
+place("3005", "Dark_Orange", 3, 16, 1, rot=180)
+place_ldu("51266", "Trans_Clear", (30, -172, 25), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("51266", "Trans_Clear", (75, -172, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3005", "Dark_Orange", 3, 19, 1, rot=180)
+place("3024", "Dark_Orange", 0, 22, 1, rot=180)
+place("2450", "Medium_Nougat", 1, 22, 1, rot=180)
+place("3024", "Dark_Orange", 3, 22, 4, rot=180)
+place("3069b", "Tan", 0, 23, 1, rot=180)
+place("14719", "Tan", 2, 23, 1, rot=270)
+place("3069b", "Tan", 3, 23, 3, rot=270)

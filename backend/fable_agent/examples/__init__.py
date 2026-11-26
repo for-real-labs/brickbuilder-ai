@@ -1,127 +1,115 @@
-"""Finished build scripts a v2 agent can be shown before it writes its own, sorted by subject.
+"""Finished builds a v2 agent can be shown before it writes its own.
 
-``library/<category>/`` holds the scripts. Some were written for BrickBuilder with the helpers.
-The rest are official sets from the LDraw Official Model Repository, converted to plain
-``place`` calls by ``importer`` and credited in ``SOURCES.md``. Every script passes the checks a
-Pip build must pass, which ``tests/test_fable_examples.py`` proves on the real parts.
+``library/`` holds build scripts converted from public model files: official sets from the LDraw
+Official Model Repository, each model and each described submodel on its own, and the example
+models of the toolkit's atlases. ``importer`` converts them and ``scripts/build_fable_examples.py``
+builds the folder; ``NOTICE.md`` and ``SOURCES.md`` in it give the licences and credit every
+file. ``index.jsonl`` lists every example with the plain-English description it is found by.
 
-Examples are an option of a build, off unless asked for. When it is on, the model first names
-the category that fits the request (see ``chooser``), and that category's scripts are added to
-its prompt, as many as fit ``PROMPT_BUDGET``.
+An example keeps the parts its set uses, stocked or not. It is a reference, not a build Pip may
+copy: many use joints Pip's checks cannot follow (clips, hinges, most Technic, parts set at an
+angle). ``checked`` says whether one also passes every check a Pip build must pass, apart from the
+catalog; ``tests/test_fable_examples.py`` holds those to it on the real parts.
 
-A script may start with ``#:`` lines (``#: title: ...``). They describe the file and are not
-shown to the model.
+Examples are an option of a build, off unless asked for. When it is on, the examples closest to
+the request are found by ``retrieval`` and added to the prompt, as many as fit ``PROMPT_BUDGET``.
+
+A script starts with ``#:`` lines (``#: title: ...``). They credit the file and are not shown to
+the model.
 """
 
 from __future__ import annotations
 
+import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
 
 LIBRARY = Path(__file__).parent / "library"
-# Characters of example scripts one build is shown: about 8,500 tokens, which costs about 2 cents
-# on the first round and a tenth of a cent on each later one at Pip's default model.
-PROMPT_BUDGET = 30_000
-OFFICIAL = "LDraw Official Model Repository"
+INDEX = "index.jsonl"
+MOST_PARTS = 1200  # the largest example a prompt can hold whole; larger models are shown by their submodels
+# Characters of example scripts one build is shown: about 11,000 tokens. At Pip's default model
+# that is up to 3 cents on a first round that misses the provider's cache and a tenth of a cent
+# on each later one.
+PROMPT_BUDGET = 40_000
+MOST_SHOWN = 5
 
 
 @dataclass(frozen=True)
-class Category:
-    id: str
-    covers: str  # what the model is told the category holds, when it chooses
-    shows: str  # what its examples are worth reading for
+class Entry:
+    """One line of the index: what an example is, without its script."""
 
-
-CATEGORIES = (
-    Category("cars", "cars, taxis, police cars, jeeps, pickups, vans, tractors and race cars",
-             "where the body starts on the chassis, what the windscreen stands on, which cells to leave free for "
-             "lights and seats, and how the roof is carried"),
-    Category("aircraft", "planes, seaplanes and helicopters",
-             "how wings, a tail and a cockpit are stacked on a narrow body"),
-    Category("boats", "boats and ships", "how a hull is layered and where the cabin sits on it"),
-    Category("trains", "locomotives and trains", "how a long body is carried and where its details go"),
-    Category("spacecraft", "spaceships and star fighters", "how a wedge or wing shape is layered in plates"),
-    Category("houses", "houses, cabins, cottages and lake houses",
-             "what the walls stand on, which walls cover the corners, how each opening gets its window or door, "
-             "what the roof rests on, and how porches and decks meet the floor"),
-    Category("buildings", "shops, stations, hospitals, towers, skyscrapers, lighthouses and windmills",
-             "what each floor and wall stands on, how a second floor or a tower is stacked, and what the roof "
-             "rests on"),
-    Category("castles", "castles and forts",
-             "how towers, curtain walls and a gate meet, and what a keep stands on"),
-    Category("animals", "animals and creatures", "how a body, legs, a head and a tail are told apart in few parts"),
-    Category("characters", "figures, mascots and seasonal characters such as a pumpkin or a ghost",
-             "how a face and a rounded body are suggested with plain bricks"),
-    Category("flat", "flags and other flat pictures", "how a picture is laid out in rows of plates"),
-)
-BY_ID = {category.id: category for category in CATEGORIES}
+    id: str  # "<set>/<name>", also its path under ``library`` without ".py"
+    title: str  # the description it is found by
+    kind: str  # "model" for a whole file, "submodel" for one section of it
+    set: str  # the file it comes from; examples of one set share it
+    parts: int
+    chars: int  # the length of its script
+    atlas: bool = False  # from the toolkit's example atlases, not an official set
+    checked: bool = True  # also passes every check a Pip build must pass, apart from the catalog
 
 
 @dataclass(frozen=True)
 class Example:
-    category: str
-    name: str
-    title: str
+    entry: Entry
     source: str
+    author: str
+    licence: str
     script: str  # without its ``#:`` lines
 
-    @property
-    def official(self) -> bool:
-        return self.source.startswith(OFFICIAL)
+
+@lru_cache(maxsize=4)
+def entries(library: Path = LIBRARY) -> tuple[Entry, ...]:
+    """Every example of a library, in the order of its index. Empty when there is no index."""
+    try:
+        text = (library / INDEX).read_text(encoding="utf-8")
+    except OSError:
+        return ()
+    return tuple(Entry(**json.loads(line)) for line in text.splitlines() if line.strip())
 
 
-def _read(path: Path) -> Example:
+@lru_cache(maxsize=4)
+def _by_id(library: Path = LIBRARY) -> dict[str, Entry]:
+    return {entry.id: entry for entry in entries(library)}
+
+
+def load(identity: str, library: Path = LIBRARY) -> Example:
+    """One example with its script. Only an id the index lists is read, never a path."""
+    entry = _by_id(library).get(identity)
+    if entry is None:
+        raise KeyError(identity)
     facts, body = {}, []
-    for line in path.read_text(encoding="utf-8").splitlines():
+    for line in (library / f"{entry.id}.py").read_text(encoding="utf-8").splitlines():
         if line.startswith("#:") and not body:
             key, _, value = line[2:].partition(":")
             facts[key.strip()] = value.strip()
         else:
             body.append(line)
-    return Example(path.parent.name, path.stem, facts.get("title") or path.stem.replace("_", " "),
-                   facts.get("source", ""), "\n".join(body).strip() + "\n")
+    return Example(entry, facts.get("source", ""), facts.get("author", ""), facts.get("licence", ""),
+                   "\n".join(body).strip() + "\n")
 
 
-@lru_cache(maxsize=None)
-def load(category: str) -> tuple[Example, ...]:
-    """Every example of a category: the written ones first, then the official sets from small to large."""
-    if category not in BY_ID:
-        raise KeyError(category)
-    found = [_read(path) for path in sorted((LIBRARY / category).glob("*.py"))]
-    return tuple(sorted(found, key=lambda example: (example.official, len(example.script) if example.official else 0,
-                                                   example.name)))
-
-
-def shown(category: str, budget: int = PROMPT_BUDGET) -> tuple[Example, ...]:
-    """The examples of a category that a build is shown: in order, as many as fit the budget."""
-    chosen, used = [], 0
-    for example in load(category):
-        if used + len(example.script) <= budget:
-            chosen.append(example)
-            used += len(example.script)
-    return tuple(chosen)
-
-
-def stocked_categories() -> tuple[Category, ...]:
-    """The categories that have at least one example."""
-    return tuple(category for category in CATEGORIES if load(category.id))
-
-
-def prompt_section(category: str) -> str:
-    """What is added to the prompt of a build that was given this category's examples."""
-    examples = shown(category)
-    kind = BY_ID[category]
-    sets = sum(example.official for example in examples)
-    origin = ""
-    if sets:
-        origin = (f" {sets} of them {'is an official LEGO set' if sets == 1 else 'are official LEGO sets'}, "
-                  "written as plain `place` calls in building order, without the parts the checks cannot join "
-                  "(minifigures, clipped and hinged parts).")
-    parts = [f"# Example scripts: {kind.covers}\n\nBelow {'is' if len(examples) == 1 else 'are'} {len(examples)} "
-             f"finished script{'' if len(examples) == 1 else 's'}. Each passes every check.{origin} Read them to see "
-             f"{kind.shows}. Do not copy a design: build what the request asks, in its colors and details, and "
-             "use the helpers where they fit."]
+def prompt_section(examples: Sequence[Example]) -> str:
+    """What is added to the prompt of a build that was given these examples."""
+    if not examples:
+        return ""
+    count = len(examples)
+    parts = [
+        f"# Example builds\n\nBelow {'is' if count == 1 else 'are'} {count} finished build"
+        f"{'' if count == 1 else 's'} found for this request, written as plain `place` calls in building order. "
+        "Each is a real LEGO set, or one section of one: a reference for how such a thing is built, what stands "
+        "on what, how wide and tall it is, which parts shape it and how its details are attached. A whole model "
+        "shows proportions and colors; a section shows how one piece of it is put together. Some use joints your "
+        "report cannot verify (clips, hinges, Technic parts it has not measured, parts set at an angle): where "
+        "one is marked so, build the same idea with joints the report accepts.\n\n"
+        "An example may use parts and colors the catalog does not stock. Your own build may use catalog parts "
+        "only: the report refuses anything else. When you want a part from an example, look it up first, and use "
+        "the closest stocked part if it is not sold. Do not copy a design. Build what the request asks, in its "
+        "colors and details, and use the helpers where they fit."]
     for example in examples:
-        parts.append(f"## {example.title}\n\n```python\n{example.script.strip()}\n```")
+        what = "whole model" if example.entry.kind == "model" else "one section of a model"
+        checked = "" if example.entry.checked else "; uses joints your report cannot verify"
+        parts.append(f"## {example.entry.title}\n\n({what}, {example.entry.parts} parts{checked})\n\n"
+                     f"```python\n{example.script.strip()}\n```")
     return "\n\n".join(parts)

@@ -1,0 +1,32 @@
+#: title: A white and medium blue horse trailer with rounded panels, wheels, and a license plate sticker.
+#: source: LDraw Official Model Repository, 3185-1.mpd, section 3185 - Trailer.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3795", "Dark_Bluish_Grey", 5, 1.75, 3)
+place("6014c01", "White", 7.75, 0, 0.25)
+place_ldu("6014c01", "White", (180, -25, 135), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6141", "Trans_Red", (232, -28, 50), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3069b", "Yellow", (232, -28, 80), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6141", "Trans_Red", (232, -28, 110), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("3020", "Light_Bluish_Grey", 5, 2.75, 2, rot=90)
+place("3710", "Light_Bluish_Grey", 7, 2.75, 2, rot=90)
+place_ldu("4488", "Black", (180, -30, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4488", "Black", 8, 1.75, 4, rot=270)
+place("3710", "Light_Bluish_Grey", 10, 2.75, 2, rot=90)
+place_ldu("2508", "Black", (110, -38, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3710", "Medium_Blue", 5, 3.75, 2)
+place("3710", "Medium_Blue", 5, 3.75, 5)
+place("3020", "Light_Bluish_Grey", 6, 3.75, 3)
+place("3023", "Medium_Blue", 9, 3.75, 2)
+place("3023", "Medium_Blue", 9, 3.75, 5)
+place("2436b", "White", 10, 2.25, 2, rot=270)
+place("87580", "Medium_Blue", 6, 4.75, 3)
+place("87580", "Medium_Blue", 8, 4.75, 3)
+place("91501", "White", 5, 4.75, 2, rot=270)
+place("91501", "White", 5, 4.75, 4)
+place("4865b", "White", 7, 4.75, 2, rot=180)
+place("4865b", "White", 7, 4.75, 5)
+place("91501", "White", 9, 4.75, 2, rot=180)
+place("91501", "White", 9, 4.75, 4, rot=90)

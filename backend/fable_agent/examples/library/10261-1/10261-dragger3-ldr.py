@@ -1,0 +1,33 @@
+#: title: A mechanized wheel assembly with Technic liftarms, universal joints, towball pins, gears, a red wheel rim, and a rubber tyre for pulling the coaster.
+#: source: LDraw Official Model Repository, 10261-1.mpd, section 10261 - dragger3.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("41677", "White", (50, -5, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("41677", "White", (50, -15, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (50, -30, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("63869", "Light_Bluish_Grey", (50, -30, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3705", "Black", (50, -40, 40), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3705", "Black", (50, -40, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6589", "Tan", (-67.468, -50, 78.376), (0, 0.602, 0.799, 1, 0, 0, 0, 0.799, -0.602))
+place_ldu("15462", "Reddish_Brown", (-37.918, -50, 56.109), (-0.799, 0.602, 0, 0, 0, 1, 0.602, 0.799, 0))
+place_ldu("18654", "Reddish_Brown", (-21.945, -50, 44.073), (0, 0.799, -0.602, 1, 0, 0, 0, -0.602, -0.799))
+place_ldu("62520", "Light_Bluish_Grey", (10, -50, 20), (-0.602, 0, -0.799, 0, -1, 0, -0.799, 0, 0.602))
+place_ldu("62520", "Light_Bluish_Grey", (10, -50, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("62519", "Light_Bluish_Grey", (10, -50, 20), (-0.602, 0, -0.799, 0, -1, 0, -0.799, 0, 0.602))
+place_ldu("74695", "Light_Bluish_Grey", (50, -50, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("24316", "Reddish_Brown", (52, -50, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32270", "Black", (70, -50, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6628", "Black", (30, -60, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32056", "Light_Bluish_Grey", (50, -65, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6589", "Tan", (-53.891, -67, 68.145), (0.602, 0.799, 0, 0, 0, 1, 0.799, -0.602, 0))
+place_ldu("32056", "Light_Bluish_Grey", (50, -75, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("18171", "Black", (-53.891, -80, 68.145), (0.602, 0, 0.799, 0, -1, 0, 0.799, 0, -0.602))
+place_ldu("6628", "Black", (-5.973, -80, 32.036), (0, 0.602, -0.799, -1, 0, 0, 0, 0.799, 0.602))
+place_ldu("3749", "Tan", (10, -80, 20), (0, 0.602, 0.799, 1, 0, 0, 0, 0.799, -0.602))
+place_ldu("32063", "Black", (-29.932, -85, 50.091), (0.602, 0, 0.799, 0, -1, 0, 0.799, 0, -0.602))
+place_ldu("32063", "Black", (-29.932, -95, 50.091), (0.602, 0, 0.799, 0, -1, 0, 0.799, 0, -0.602))
+place_ldu("87083", "Dark_Bluish_Grey", (-53.891, -98, 68.145), (0, 0.602, 0.799, 1, 0, 0, 0, 0.799, -0.602))
+place_ldu("55982", "Light_Bluish_Grey", (-53.891, -140, 68.145), (0.602, 0.799, 0, 0, 0, 1, 0.799, -0.602, 0))
+place_ldu("89201", "Rubber_Black", (-53.891, -140, 68.145), (0.602, 0.799, 0, 0, 0, 1, 0.799, -0.602, 0))

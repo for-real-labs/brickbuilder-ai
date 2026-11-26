@@ -1,0 +1,30 @@
+#: title: Front suspension assembly with suspension arms, steering linkage, bevel gears and liftarms for steering and wheel mounting.
+#: source: LDraw Official Model Repository, 10265-1_B-Model.mpd, section 10265 - Front Axle.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("32184", "Black", 5.5, 0, 2.5, rot=270)
+place("32184", "Black", 11.5, 0, 2.5, rot=90)
+place_ldu("57515", "Dark_Bluish_Grey", (160, -9, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("18651", "Black", (120, -9, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("57515", "Dark_Bluish_Grey", (200, -9, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("18651", "Black", (240, -9, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32054", "Red", (140, -9, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32017", "Light_Bluish_Grey", (180, -9, 55), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32017", "Light_Bluish_Grey", (180, -9, 65), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Red", (220, -9, 50), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (200, -9, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (160, -9, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("43093", "Blue", (220, -9, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (140, -9, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (110, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32039", "Red", (100, -29, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (250, -29, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32039", "Red", (260, -29, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("15460", "Dark_Bluish_Grey", (60, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("15460", "Dark_Bluish_Grey", (300, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("24316", "Reddish_Brown", (320, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("24316", "Reddish_Brown", (40, -29, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32198", "Tan", (43, -29, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32198", "Tan", (317, -29, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))

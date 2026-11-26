@@ -1,0 +1,27 @@
+#: title: A large detailed blaster cannon or mechanical greeble assembly built from round bricks, cylinders, gears, axles, a ribbed hose, and an antenna.
+#: source: ldraw-nova example atlas, preview.mpd
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures left out)
+place_ldu("3956", "Light_Grey", (20, -20, 620), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4871", "Light_Grey", (20, -40, 86), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3957a", "Light_Grey", (20, -40, 94), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3941", "Light_Grey", (20, -40, 110), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3708", "Light_Grey", (20, -40, 230), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6538b", "Light_Grey", (20, -40, 350), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3707", "Black", (20, -40, 430), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("71944", "Light_Grey", (20, -40, 430), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6538b", "Light_Grey", (20, -40, 510), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6589", "Light_Grey", (20, -40, 539), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32007", "Light_Grey", (20, -40, 556), (0.923785, -0.382911, 0, 0.382911, 0.923785, 0, 0, 0, 1))
+place_ldu("32060", "Light_Grey", (20, -40, 578), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3707", "Black", (20, -40, 590), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3941", "Light_Grey", (20, -40, 600), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4032a", "Light_Grey", (20, -40, 624), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6589", "Light_Grey", (20, -40, 639), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3941", "Light_Grey", (20, -40, 646), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("30361a", "Light_Grey", (20, -40, 680), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3941", "Light_Grey", (20, -40, 719), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6587", "Dark_Grey", (20, -40, 722), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6589", "Light_Grey", (20, -40, 743), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("30367a", "Light_Grey", (20, -40, 776), (1, 0, 0, 0, 0, 1, 0, -1, 0))

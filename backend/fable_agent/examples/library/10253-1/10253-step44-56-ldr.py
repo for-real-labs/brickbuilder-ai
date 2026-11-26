@@ -1,0 +1,31 @@
+#: title: A tall window section with door rail plates, trans-brown glass elements, brackets, and a grooved decorative tile.
+#: source: LDraw Official Model Repository, 10253-1.mpd, section 10253 - step44-56.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3710", "Tan", 1, 0, 0, rot=270)
+place_ldu("32028", "Tan", (30, -16, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32028", "Tan", (30, -16, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3023", "Trans_Brown", 1, 2, 0, rot=90)
+place("3023", "Trans_Brown", 1, 2, 2, rot=90)
+place_ldu("32028", "Tan", (30, -32, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32028", "Tan", (30, -32, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3024", "Trans_Brown", 1, 4, 0, rot=90)
+place("99780", "Black", 1, 4, 1, rot=270)
+place("3024", "Trans_Brown", 1, 4, 3, rot=90)
+place_ldu("32028", "Tan", (30, -48, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32028", "Tan", (30, -48, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3710", "Tan", 1, 6, 0, rot=270)
+place_ldu("32028", "Tan", (30, -64, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32028", "Tan", (30, -64, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3024", "Trans_Brown", 1, 8, 0, rot=90)
+place("99781", "Black", 1, 6.5, 1, rot=270)
+place("3024", "Trans_Brown", 1, 8, 3, rot=90)
+place_ldu("32028", "Tan", (30, -80, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32028", "Tan", (30, -80, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3023", "Trans_Brown", 1, 10, 0, rot=90)
+place("3023", "Trans_Brown", 1, 10, 2, rot=90)
+place_ldu("32028", "Tan", (30, -96, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32028", "Tan", (30, -96, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2431", "Tan", 1, 12, 0, rot=90)

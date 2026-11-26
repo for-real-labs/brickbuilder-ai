@@ -1,0 +1,33 @@
+#: title: A small Shell-themed set featuring a red and white race car with a numbered racing stripe and a blue-clad minifig driver wearing a white helmet.
+#: source: LDraw Official Model Repository, 6503-1.mpd
+#: author: TotalyWicked [TotalyWicked]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3020", "Yellow", (40, -15, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (8, -18, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4624", "White", 0, 1, 2.5, rot=90)
+place_ldu("3641", "Black", (8, -18, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4624", "White", 0, 1, 7.5, rot=90)
+place_ldu("3641", "Black", (72, -18, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "White", (72, -18, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3641", "Black", (72, -18, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "White", (72, -18, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3623", "Red", (10, -23, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3069b", "Red", (40, -23, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3710", "Red", (40, -23, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3829c01", "Red", (40, -23, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2441", "Yellow", (40, -23, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3623", "Red", (70, -23, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3022", "Red", (40, -31, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3021", "Red", (40, -39, 170), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4286", "White", (10, -47, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3298p54", "White", (40, -47, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Black", (40, -47, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2412a", "Black", (40, -47, 170), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3020", "Red", (40, -47, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4286", "White", (70, -47, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3068bp60", "White", (40, -55, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4865a", "White", (10, -71, 200), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4865a", "White", (70, -71, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2432", "Black", (40, -79, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))

@@ -1,0 +1,33 @@
+#: title: The cobra's hooded head with a dark blue and pearl gold curved hood, dark tan face plate with printed eyes, a red mouth, and white Viking horn fangs.
+#: source: LDraw Official Model Repository, 7325-1.mpd, section 7325 - Cobra Head.ldr
+#: author: Christian Neumann [Wesley]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("43723", "Dark_Bluish_Grey", (58.3597, 11.1962, 20), (0, 0.5, 0.866, 0, 0.866, -0.5, -1, 0, 0))
+place_ldu("43722", "Dark_Bluish_Grey", (58.3597, 11.1962, 60), (0, 0.5, 0.866, 0, 0.866, -0.5, -1, 0, 0))
+place_ldu("3022", "Black", (45.6997, 9.2682, 40), (0, 0.5, -0.866, 0, 0.866, 0.5, 1, 0, 0))
+place_ldu("3794a", "Black", (33.0397, 7.3402, 40), (0, 0.5, -0.866, 0, 0.866, 0.5, 1, 0, 0))
+place_ldu("4085c", "Red", (29.0397, 0.4122, 40), (0, 0.5, 0.866, 0, 0.866, -0.5, -1, 0, 0))
+place_ldu("60471", "Black", (71.6797, -5.7318, 40), (0, 0.5, -0.866, 0, 0.866, 0.5, 1, 0, 0))
+place_ldu("3068b", "Red", (59.0197, -7.6598, 40), (0, 0.5, 0.866, 0, 0.866, -0.5, -1, 0, 0))
+place("3021", "Dark_Bluish_Grey", 5, 0, 1)
+place("6141", "Pearl_Gold", 4, 1, 0)
+place("6141", "Pearl_Gold", 4, 1, 3)
+place_ldu("44567", "Light_Bluish_Grey", (110, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2654", "Red", 1, 2, 1, rot=90)
+place("2420", "Black", 4, 2, 0, rot=270)
+place("2420", "Black", 4, 2, 2, rot=180)
+place_ldu("4085c", "Red", (30, -32, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4085c", "Red", (30, -32, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "Red", 2, 3, 1)
+place("57909", "Dark_Bluish_Grey", 6, 1, 1)
+place("3795", "Black", 2, 4, 1)
+place("3023", "Tan", 3, 5, 1, rot=90)
+place_ldu("51739", "Dark_Blue", (140, -48, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("47753pq2", "Dark_Tan", 0, 4, 0, rot=90)
+place("6091", "Pearl_Gold", 4, 3, 0)
+place("6091", "Pearl_Gold", 4, 3, 2, rot=180)
+place("6091", "Pearl_Gold", 5, 3, 0)
+place("6091", "Pearl_Gold", 5, 3, 2, rot=180)
+place("3020", "Dark_Tan", 4, 6, 1, rot=180)

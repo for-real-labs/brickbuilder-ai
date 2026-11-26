@@ -1,0 +1,33 @@
+#: title: A small yellow submarine with socket joints, towball connectors, curved slopes, a dome-topped clear viewport, and a steering wheel.
+#: source: LDraw Official Model Repository, 31045-1.mpd, section 31045 - Submarine.ldr
+#: author: Tomas Kralicek [RabbiT_CZ]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("48729b", "Light_Bluish_Grey", (13, -10, 25), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6628", "Black", (13, -10, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("48729b", "Light_Bluish_Grey", (68, -10, 25), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6628", "Black", (68, -10, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("11477", "Yellow", (16, -20, 110), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("11477", "Yellow", (64, -20, 110), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3004", "White", 1, 0, 4)
+place("3660", "Yellow", 1, 0, 5, rot=180)
+place_ldu("30151", "Trans_Clear", (40, -28, 36), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Trans_Green", (0, -30, 90), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4081b", "Dark_Bluish_Grey", (8, -30, 90), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4081b", "Dark_Bluish_Grey", (72, -30, 90), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6141", "Trans_Red", (80, -30, 90), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3022", "Yellow", 1, 3, 4)
+place_ldu("4274", "Blue", (40, -38, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("30663", "Black", (40, -38, 148), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("44728", "Light_Bluish_Grey", (30, -40, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("44728", "Light_Bluish_Grey", 2, 0, 4, rot=270)
+place("15068", "Yellow", 1, 6, 2)
+place_ldu("44728", "Light_Bluish_Grey", (40, -48, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Yellow", 1, 5, 5)
+place("15068", "Yellow", 1, 6, 5, rot=180)
+place("3700", "Yellow", 1, 3, 6, rot=180)
+place_ldu("6141", "Trans_Clear", (10, -50, 78), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6141", "Trans_Clear", (70, -50, 78), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place("3021", "Yellow", 1, 6, 3, rot=270)
+place("2432", "Yellow", 1, 7, 4)

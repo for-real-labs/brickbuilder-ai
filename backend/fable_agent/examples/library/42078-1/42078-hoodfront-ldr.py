@@ -1,0 +1,30 @@
+#: title: Axles and cross blocks forming the front support frame of the hood.
+#: source: LDraw Official Model Repository, 42078-1.mpd, section 42078 - hoodfront.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32000", "Black", (32, 0, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32000", "Black", (32, 0, 100), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32000", "Black", (72, 0, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32000", "Black", (72, 0, 100), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (22, -10, 80), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("18654", "Dark_Bluish_Grey", (22, -10, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (42, -10, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (42, -10, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32054", "Light_Bluish_Grey", (62, -10, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("11214", "Red", (62, -10, 100), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (82, -10, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (82, -10, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (12, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6536", "Light_Bluish_Grey", (12, -30, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123b", "Light_Bluish_Grey", (27, -30, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (27, -30, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (40, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("87083", "Dark_Bluish_Grey", (40, -30, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6536", "Light_Bluish_Grey", (42, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6536", "Light_Bluish_Grey", (42, -30, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123b", "Light_Bluish_Grey", (57, -30, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (57, -30, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32291", "Light_Bluish_Grey", (72, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32291", "Light_Bluish_Grey", (72, -30, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))

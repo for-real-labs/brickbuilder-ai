@@ -1,0 +1,28 @@
+#: title: driveline-6
+#: source: LDraw Official Model Repository, 852-1.mpd, section 852 - driveline-6.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures left out)
+place_ldu("3708", "Black", (80, -119.5, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3709b", "Blue", (80, -134.5, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3700", "Blue", (110, -158.5, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3673", "Light_Grey", (120, -148.5, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3700", "Blue", (50, -158.5, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3673", "Light_Grey", (40, -148.5, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3651", "Light_Grey", (130, -168.5, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3651", "Light_Grey", (30, -168.5, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3704", "Black", (130, -178.5, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3704", "Black", (30, -178.5, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3713", "Light_Grey", (80, -184.5, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3651", "Light_Grey", (130, -188.5, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3651", "Light_Grey", (30, -188.5, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3709b", "Blue", (80, -202.5, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Grey", (140, -208.5, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3673", "Light_Grey", (20, -208.5, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3713", "Light_Grey", (80, -212.5, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3701", "Blue", (110, -226.5, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3673", "Light_Grey", (120, -216.5, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3701", "Blue", (50, -226.5, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3673", "Light_Grey", (40, -216.5, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3709b", "Blue", (80, -234.5, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))

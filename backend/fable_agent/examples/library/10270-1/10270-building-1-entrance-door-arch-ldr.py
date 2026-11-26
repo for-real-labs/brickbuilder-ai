@@ -1,0 +1,32 @@
+#: title: Curved entrance arch - a white 1x6x2 curved-top arch framed by light-bluish-grey round-ended plates, headlight bricks and tile details over the doorway.
+#: source: LDraw Official Model Repository, 10270-1.mpd, section 10270 - Building-1_Entrance_Door_Arch.ldr
+#: author: Ulrich Röder [UR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("24246", "Light_Bluish_Grey", (10, -10, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6141", "Light_Bluish_Grey", (10, -10, 28), (-0.766, 0, -0.643, -0.643, 0, 0.766, 0, 1, 0))
+place_ldu("6141", "Light_Bluish_Grey", (10, -10, 44), (-0.766, 0, -0.643, -0.643, 0, 0.766, 0, 1, 0))
+place_ldu("4070", "Light_Bluish_Grey", (10, -10, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("24246", "Light_Bluish_Grey", (110, -10, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6141", "Light_Bluish_Grey", (110, -10, 36), (-0.766, 0, 0.643, 0.643, 0, 0.766, 0, 1, 0))
+place_ldu("6141", "Light_Bluish_Grey", (110, -10, 52), (-0.766, 0, 0.643, 0.643, 0, 0.766, 0, 1, 0))
+place_ldu("4070", "Light_Bluish_Grey", (110, -10, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (16.428, -17.66, 36), (-0.643, 0, 0.766, 0.766, 0, 0.643, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (16.428, -17.66, 52), (-0.643, 0, 0.766, 0.766, 0, 0.643, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (103.572, -17.66, 28), (0.643, 0, 0.766, 0.766, 0, -0.643, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (103.572, -17.66, 44), (0.643, 0, 0.766, 0.766, 0, -0.643, 0, 1, 0))
+place_ldu("3070b", "Light_Bluish_Grey", (22.856, -25.321, 20), (-0.766, 0, 0.643, 0.643, 0, 0.766, 0, 1, 0))
+place_ldu("3070b", "Light_Bluish_Grey", (97.144, -25.321, 20), (0.766, 0, 0.643, 0.643, 0, -0.766, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (31.516, -30.321, 28), (0.866, 0, -0.5, -0.5, 0, -0.866, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (31.516, -30.321, 44), (0.866, 0, -0.5, -0.5, 0, -0.866, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (88.484, -30.321, 36), (-0.866, 0, -0.5, -0.5, 0, 0.866, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (88.484, -30.321, 52), (-0.866, 0, -0.5, -0.5, 0, 0.866, 0, 1, 0))
+place_ldu("24246", "Light_Bluish_Grey", (40.176, -35.321, 20), (0.94, 0, -0.342, -0.342, 0, -0.94, 0, 1, 0))
+place_ldu("24246", "Light_Bluish_Grey", (79.824, -35.321, 20), (0.94, 0, 0.342, 0.342, 0, -0.94, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (50.024, -37.057, 36), (-0.985, 0, 0.174, 0.174, 0, 0.985, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (50.024, -37.057, 52), (-0.985, 0, 0.174, 0.174, 0, 0.985, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (69.976, -37.057, 28), (0.985, 0, 0.174, 0.174, 0, -0.985, 0, 1, 0))
+place_ldu("35480", "Light_Bluish_Grey", (69.976, -37.057, 44), (0.985, 0, 0.174, 0.174, 0, -0.985, 0, 1, 0))
+place_ldu("15712", "Light_Bluish_Grey", (60.128, -38.794, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("6183", "White", 0, 2, 3, rot=180)

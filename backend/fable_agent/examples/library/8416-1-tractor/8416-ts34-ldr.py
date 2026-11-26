@@ -1,0 +1,32 @@
+#: title: Dual liftarm arm assembly using triangle and bent liftarms joined by axles and smooth bushes.
+#: source: LDraw Official Model Repository, 8416-1_Tractor.mpd, section 8416 - TS34.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32123a", "Light_Bluish_Grey", (25, -10, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (40, -10, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6536", "Black", (40, -10, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (55, -10, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (40, -30, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6629", "Light_Bluish_Grey", (0, -50, 20), (0, 1, 0, 0.342, 0, 0.94, 0.94, 0, -0.342))
+place_ldu("6629", "Light_Bluish_Grey", (0, -50, 60), (0, -1, 0, 0.259, 0, 0.966, -0.966, 0, 0.259))
+place_ldu("2905", "Dark_Bluish_Grey", (15, -50, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32123a", "Light_Bluish_Grey", (25, -50, 20), (0, 0, 1, 0.94, 0.342, 0, -0.342, 0.94, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (25, -50, 60), (0, 0, 1, 0.966, -0.259, 0, 0.259, 0.966, 0))
+place_ldu("32073", "Light_Bluish_Grey", (40, -50, 20), (1, 0, 0, 0, 0.342, -0.94, 0, 0.94, 0.342))
+place_ldu("3647", "Light_Bluish_Grey", (40, -50, 20), (0, 0, 1, 0.94, 0.342, 0, -0.342, 0.94, 0))
+place_ldu("32073", "Light_Bluish_Grey", (40, -50, 60), (1, 0, 0, 0, -0.259, -0.966, 0, 0.966, -0.259))
+place_ldu("3647", "Light_Bluish_Grey", (40, -50, 60), (0, 0, 1, 0.966, -0.259, 0, 0.259, 0.966, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (55, -50, 20), (0, 0, 1, 0.94, 0.342, 0, -0.342, 0.94, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (55, -50, 60), (0, 0, 1, 0.966, -0.259, 0, 0.259, 0.966, 0))
+place_ldu("2905", "Dark_Bluish_Grey", (65, -50, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6629", "Light_Bluish_Grey", (80, -50, 20), (0, 1, 0, 0.342, 0, 0.94, 0.94, 0, -0.342))
+place_ldu("6629", "Light_Bluish_Grey", (80, -50, 60), (0, -1, 0, 0.259, 0, 0.966, -0.966, 0, 0.259))
+place_ldu("3706", "Black", (40, -60, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4716", "Light_Bluish_Grey", (40, -60, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (25, -90, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (40, -90, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6536", "Black", (40, -90, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32123a", "Light_Bluish_Grey", (55, -90, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6538b", "Light_Bluish_Grey", (40, -120, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

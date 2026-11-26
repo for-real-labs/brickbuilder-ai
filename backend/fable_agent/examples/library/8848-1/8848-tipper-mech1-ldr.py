@@ -1,0 +1,26 @@
+#: title: Tipper lifting linkage mechanism built from toggle joints, axles, and pin connectors.
+#: source: LDraw Official Model Repository, 8848-1.mpd, section 8848 - tipper_mech1.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 20 of 20 parts kept (minifigures left out)
+place_ldu("4265a", "Light_Bluish_Grey", (-14, -14, 20), (0, 0, 1, -0.866026, -0.5, 0, 0.5, -0.866026, 0))
+place_ldu("3705", "Black", (20, -14, 20), (1, 0, 0, 0, 0.866026, 0.5, 0, -0.5, 0.866026))
+place_ldu("4265a", "Light_Bluish_Grey", (54, -14, 20), (0, 0, -1, -0.866026, 0.5, 0, 0.5, 0.866026, 0))
+place_ldu("4273a", "Light_Bluish_Grey", (-10, -23.999, 2.68), (-1, 0, 0, 0, 0.866026, -0.5, 0, -0.5, -0.866026))
+place_ldu("4273a", "Light_Bluish_Grey", (50, -23.999, 2.68), (1, 0, 0, 0, -0.866026, -0.5, 0, 0.5, -0.866026))
+place("3700", "Black", 0, 0, 0, rot=270)
+place("3700", "Black", 1, 0, 0, rot=270)
+place_ldu("3704", "Black", (-10, -29, -5.983), (0, 0, -1, 0.5, 0.866026, 0, 0.866026, -0.5, 0))
+place_ldu("3704", "Black", (50, -29, -5.983), (0, 0, -1, 0.5, 0.866026, 0, 0.866026, -0.5, 0))
+place_ldu("3651", "Light_Bluish_Grey", (-10, -34.001, -14.641), (1, 0, 0, 0, 0.866026, 0.5, 0, -0.5, 0.866026))
+place_ldu("3651", "Light_Bluish_Grey", (50, -34.001, -14.641), (1, 0, 0, 0, 0.866026, 0.5, 0, -0.5, 0.866026))
+place_ldu("3713", "Light_Bluish_Grey", (-30, -43.997, -31.96), (0, 0, 1, -0.5, 0.866026, 0, -0.866026, -0.5, 0))
+place_ldu("3713", "Light_Bluish_Grey", (10, -43.997, -31.96), (0, 0, -1, 0.5, 0.866026, 0, 0.866026, -0.5, 0))
+place_ldu("3706", "Black", (20, -43.997, -31.96), (1, 0, 0, 0, 0.866026, 0.5, 0, -0.5, 0.866026))
+place_ldu("4265a", "Light_Bluish_Grey", (74, -44.35, -32.077), (0, 0, -1, 0.48481, 0.87462, 0, 0.87462, -0.48481, 0))
+place_ldu("4273a", "Light_Bluish_Grey", (70, -47.368, -12.699), (1, 0, 0, 0, 0.987689, -0.156434, 0, 0.156434, 0.987689))
+place_ldu("3705", "Black", (70, -52.061, 16.927), (0, 0, 1, -0.156434, -0.987689, 0, 0.987689, -0.156434, 0))
+place_ldu("3651", "Light_Bluish_Grey", (30, -54.478, -50.082), (-1, 0, 0, 0, 0.857168, -0.515038, 0, -0.515038, -0.857168))
+place_ldu("3651", "Light_Bluish_Grey", (70, -56.919, 47.552), (1, 0, 0, 0, -0.987689, 0.156434, 0, -0.156434, -0.987689))
+place_ldu("3704", "Black", (30, -60.567, -59.4), (0, 0, -1, 0.515038, 0.857168, 0, 0.857168, -0.515038, 0))

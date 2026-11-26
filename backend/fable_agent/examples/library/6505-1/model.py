@@ -1,0 +1,31 @@
+#: title: A fire-themed set featuring a red fire-fighter minifigure and a small wheeled vehicle.
+#: source: LDraw Official Model Repository, 6505-1.mpd
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3641", "Black", (40, -18, 93), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3641", "Black", (120, -18, 93), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3641", "Black", (40, -19, 25), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (120, -19, 25), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("122c02", "Black", (40, -25, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("122c02", "Black", (120, -25, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3795", "Black", (80, -33, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3024", "Trans_Yellow", (8, -39, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3024", "Trans_Yellow", (8, -39, 90), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2412b", "White", (9, -39, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2436a", "Red", (30, -49, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3788", "Red", (40, -49, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3829c01", "Red", (70, -49, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Red", (80, -49, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Red", (80, -49, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4211", "Red", (120, -49, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3024", "Trans_Red", (150, -49, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3024", "Trans_Red", (150, -49, 90), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3710", "Red", (30, -57, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3666", "Red", (100, -57, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3666", "Red", (100, -57, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3823", "Trans_Clear", (70, -105, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4083", "Red", (150, -105, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6141", "Trans_Dark_Blue", (70, -113, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6141", "Trans_Dark_Blue", (70, -113, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))

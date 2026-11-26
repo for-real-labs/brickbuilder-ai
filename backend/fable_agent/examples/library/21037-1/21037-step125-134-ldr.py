@@ -1,0 +1,32 @@
+#: title: White wall structure with rounded corner and side panels, featuring bright light yellow accent tiles forming a yellow-colored zone.
+#: source: LDraw Official Model Repository, 21037-1.mpd, section 21037 - step125-134.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("11212", "White", 0, 0, 0)
+place("3710", "White", 0, 0, 3)
+place("3023", "White", 2, 1, 0, rot=90)
+place("2420", "White", 2, 1, 2, rot=90)
+place("3710", "White", 2, 2, 0, rot=90)
+place("3024", "White", 3, 2, 3)
+place("3001", "White", 0, 1, 0, rot=90)
+place("3023", "White", 2, 3, 3)
+place("3023", "Trans_Clear", 2, 3, 2)
+place("3023", "Trans_Clear", 2, 3, 1)
+place("3023", "White", 2, 3, 0)
+place("3023", "Tan", 1, 4, 1)
+place("3069b", "White", 1, 4, 2)
+place("3070b", "White", 0, 4, 3)
+place("3070b", "White", 3, 4, 3)
+place("3021", "White", 0.5, 5, 0.5)
+place("6231", "White", 3, 4, 0, rot=180)
+place("6231", "White", 0, 4, 0, rot=270)
+place("4865b", "White", 0, 4, 1, rot=270)
+place("4865b", "White", 1, 4, 0, rot=180)
+place("4865b", "White", 1, 4, 3)
+place("4865b", "White", 3, 4, 1, rot=90)
+place("3069b", "Bright_Light_Yellow", 0.5, 6, 0.5, rot=270)
+place("3069b", "Bright_Light_Yellow", 2.5, 6, 0.5, rot=270)
+place("63864", "Bright_Light_Yellow", 1.5, 6, 0.5, rot=270)
+place("15573", "Bright_Light_Yellow", 1, 5, 2.5)

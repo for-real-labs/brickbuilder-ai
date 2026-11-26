@@ -1,0 +1,30 @@
+#: title: A LEGO scene combining a police helicopter and a policeman minifigure.
+#: source: LDraw Official Model Repository, 4991-1.mpd
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3795", "Black", 2, 1, 5, rot=180)
+place("52501", "White", 2, 0, 3, rot=180)
+place("52501", "White", 7, 0, 3, rot=180)
+place("6141", "Trans_Dark_Blue", 2, 3, 8, rot=180)
+place_ldu("3829c01", "White", (100, -32, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6141", "Trans_Dark_Blue", 7, 3, 8, rot=180)
+place("43713", "Black", 3, 2, 1)
+place("3023", "White", 3, 5, 5, rot=270)
+place("3022", "White", 4, 5, 1)
+place_ldu("30602", "White", (100, -48, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3004", "Black", 4, 3, 6)
+place("3023", "White", 6, 5, 5, rot=270)
+place_ldu("6141", "Trans_Yellow", (167.4, -50, 60.5), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("3710", "White", 3, 6, 6)
+place_ldu("32013", "White", (100, -70, 247), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32209", "Dark_Bluish_Grey", (100.1, -70, 177), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3673", "Light_Bluish_Grey", (110, -70, 247), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4617b", "Black", (120, -70, 247), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("32064a", "White", 4, 7, 6)
+place("3937", "Black", 4, 10, 6, rot=180)
+place("3938", "White", 4, 11, 6, rot=180)
+place("6070", "Trans_Brown", 4, 9, 2)
+place("2460", "White", 4, 14, 5)
+place_ldu("30332", "Black", (100, -130, 120), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

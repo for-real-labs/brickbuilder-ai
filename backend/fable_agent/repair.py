@@ -4,6 +4,8 @@ Two kinds of mistake cost a model a whole turn although fixing them takes no jud
 
 * a plain brick, plate or tile that runs into another part, usually because two sections of the
   script claim the same cells. The plain part is cut back to the cells that are free;
+* a part that is not stocked at all. It is replaced by the same mould under another number, or
+  by a stocked part that measures the same, when there is one;
 * a part asked for in a color it is not sold in. It gets the closest color it is sold in.
 
 Nothing else is touched. Shaped parts (slopes, windows, fences, plants) are never cut, parts are
@@ -22,6 +24,7 @@ from .kit import KIND_HEIGHT, Build, Kit, KitError, Placement
 from .ldraw import LDrawError, LDrawLibrary
 from .palette import Palette, nearest_color
 from .shape import PLATE, STUD, ShapeLibrary
+from .stock import StockedParts
 
 MAX_PASSES = 3
 
@@ -33,9 +36,10 @@ class Repairs:
     recolored: Counter = field(default_factory=Counter)  # (part, from color, to color) -> parts
     trimmed: Counter = field(default_factory=Counter)  # module -> plain parts cut back
     removed: Counter = field(default_factory=Counter)  # module -> plain parts wholly inside another part
+    restocked: Counter = field(default_factory=Counter)  # (part, stocked part used instead) -> parts
 
     def __bool__(self) -> bool:
-        return bool(self.recolored or self.trimmed or self.removed)
+        return bool(self.recolored or self.trimmed or self.removed or self.restocked)
 
     def notes(self, color_names: dict[int, str]) -> list[str]:
         notes = []
@@ -46,6 +50,9 @@ class Repairs:
             notes.append(f"Automatic repair: {cut + gone} plain part(s) overlapped another part and were cut back "
                          f"to the free cells ({gone} had no free cell and were removed). By module: {listed}. "
                          "Look at those places in the pictures.")
+        for (part, stocked), count in sorted(self.restocked.items()):
+            notes.append(f"Automatic repair: {count} part(s) {part} are not stocked and were replaced by {stocked}, "
+                         "which measures the same.")
         for (part, old, new), count in sorted(self.recolored.items()):
             notes.append(f"Automatic repair: {part} does not come in {color_names.get(old, old)}; {count} placed in "
                          f"{color_names.get(new, new)} instead.")
@@ -59,15 +66,34 @@ class BuildRepairer:
         self._palette = palette
         self._finder = finder
         self._plain: dict[str, str] | None = None
+        self._stock = StockedParts(library, shapes, palette)
 
     def repair(self, build: Build) -> tuple[Build, Repairs]:
         repairs = Repairs()
+        build = self._restock(build, repairs)
         build = self._recolor(build, repairs)
         for _ in range(MAX_PASSES):
             build, changed = self._trim(build, repairs)
             if not changed:
                 break
         return build, repairs
+
+    # ----- parts ----------------------------------------------------------
+
+    def _restock(self, build: Build, repairs: Repairs) -> Build:
+        """Swap each part the catalog stocks in no color for the most similar part it does stock.
+
+        A part with no safe stand-in is left as it is, so the report still names it.
+        """
+        placements = []
+        for placement in build.placements:
+            if not self._palette.colors_for(placement.part):
+                stocked = self._stock.find(placement.part) or self._stock.similar(placement.part)
+                if stocked is not None and stocked != placement.part:
+                    repairs.restocked[(placement.part, stocked)] += 1
+                    placement = replace(placement, part=stocked)
+            placements.append(placement)
+        return Build(placements, list(build.links))
 
     # ----- colors ---------------------------------------------------------
 

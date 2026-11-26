@@ -1,0 +1,30 @@
+#: title: Body sub-assembly featuring a 40-tooth gear drive with technic bricks, axles, and colored plate detailing.
+#: source: LDraw Official Model Repository, 75253-1.mpd, section 75253 - body3.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3460", "White", 3, 0, 3)
+place("6541", "Blue", 3, 1, 3)
+place("3004", "Blue", 4, 1, 3)
+place("3004", "Red", 8, 1, 3)
+place("6541", "Red", 10, 1, 3)
+place("6141", "Tan", 5, 4, 3)
+place("6141", "Tan", 8, 4, 3)
+place_ldu("15462", "Reddish_Brown", (50, -46, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("15462", "Reddish_Brown", (230, -46, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123b", "Yellow", (140, -54, 35), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("87083", "Dark_Bluish_Grey", (140, -54, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3649", "Light_Bluish_Grey", (140, -54, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6541", "Blue", 3, 4, 3, rot=90)
+place("6541", "Blue", 4, 4, 3, rot=90)
+place("6541", "Red", 9, 4, 3, rot=90)
+place("6541", "Red", 10, 4, 3, rot=90)
+place("3023", "Light_Bluish_Grey", 3, 7, 3, rot=180)
+place("3701", "Light_Bluish_Grey", 5, 5, 3, rot=180)
+place("3023", "Light_Bluish_Grey", 9, 7, 3, rot=180)
+place("3009", "Light_Bluish_Grey", 3, 8, 3, rot=180)
+place("3700", "Tan", 9, 8, 3, rot=180)
+place("3460", "White", 3, 11, 3)
+place("3022", "Reddish_Brown", 3, 12, 2)
+place("3022", "Reddish_Brown", 9, 12, 2)

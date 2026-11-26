@@ -1,0 +1,31 @@
+#: title: A left-side vehicle door panel with blue curved slopes, tiles, plates, a technic angle connector, and a decorative dish detail.
+#: source: LDraw Official Model Repository, 31070-1.mpd, section 31070 - Door Left.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("4519", "Light_Bluish_Grey", (170, -4.193, 106.955), (0, 0, 1, 0.383, -0.924, 0, 0.924, 0.383, 0))
+place_ldu("6558", "Blue", (150, -19.5, 30), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (150, -19.5, 70), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("22961", "Light_Bluish_Grey", (170, -19.5, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32016", "White", (170, -19.5, 70), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2654a", "Dark_Bluish_Grey", (40, -21.5, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("18677", "Light_Bluish_Grey", (130, -29.5, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("18677", "Light_Bluish_Grey", (130, -29.5, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("18677", "Light_Bluish_Grey", (150, -29.5, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("18677", "Light_Bluish_Grey", (150, -29.5, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("15068", "Blue", (160, -29.5, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("15068", "Blue", (160, -29.5, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("54200", "Blue", (20, -31.5, 10), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("85984", "Blue", (20, -31.5, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("54200", "Blue", (20, -31.5, 70), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("99206", "Light_Bluish_Grey", (30, -37.5, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("99206", "Light_Bluish_Grey", (30, -37.5, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3032", "Light_Bluish_Grey", (100, -37.5, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60478", "Blue", (30, -45.5, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3068b", "Blue", (40, -45.5, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3069b", "Blue", (50, -45.5, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87079", "Blue", (100, -45.5, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("87079", "Blue", (100, -45.5, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("11477", "Blue", (26, -53.5, 90), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("60897", "Blue", (26, -63.5, 90), (0, 1, 0, 0, 0, -1, -1, 0, 0))

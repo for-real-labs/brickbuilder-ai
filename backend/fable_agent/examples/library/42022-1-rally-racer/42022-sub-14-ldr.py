@@ -1,0 +1,30 @@
+#: title: Rear suspension subassembly of bent liftarms, axles, and axle joiners forming a structural arm.
+#: source: LDraw Official Model Repository, 42022-1_Rally-Racer.mpd, section 42022 - Sub 14.ldr
+#: author: Faramond Florent [Makou]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("60485", "Light_Bluish_Grey", (120, -17, 224), (-1, 0, 0, 0, 0.799999, 0.600001, 0, 0.600001, -0.799999))
+place_ldu("32526", "Blue", (20, -49, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (30, -49, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -49, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32271", "Medium_Blue", (40, -49, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (40, -49, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -49, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32013", "Light_Bluish_Grey", (60, -49, 160), (1, 0, 0, 0, -0.829, 0.559, 0, -0.559, -0.829))
+place_ldu("59443", "Black", (70, -49, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32073", "Light_Bluish_Grey", (120, -49, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("59443", "Black", (170, -49, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32013", "Light_Bluish_Grey", (180, -49, 160), (1, 0, 0, 0, -0.829, 0.559, 0, -0.559, -0.829))
+place_ldu("2780", "Black", (190, -49, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (200, -49, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (200, -49, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32271", "Medium_Blue", (200, -49, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (210, -49, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32526", "Blue", (220, -49, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6587", "Dark_Tan", (60, -71.36, 193.16), (0, 0, -1, -0.559, 0.829, 0, 0.829, 0.559, 0))
+place_ldu("32525", "Black", (120, -71.36, 193.16), (0, 0, -1, -0.829, -0.559, 0, -0.559, 0.829, 0))
+place_ldu("6587", "Dark_Tan", (180, -71.36, 193.16), (0, 0, -1, -0.559, 0.829, 0, 0.829, 0.559, 0))
+place_ldu("2780", "Black", (20, -76.95, 201.45), (0, 0, -1, -0.559, 0.829, 0, 0.829, 0.559, 0))
+place_ldu("2780", "Black", (220, -76.95, 201.45), (0, 0, -1, -0.559, 0.829, 0, 0.829, 0.559, 0))
+place_ldu("32525", "Black", (120, -82.54, 209.74), (0, 0, -1, -0.829, -0.559, 0, -0.559, 0.829, 0))

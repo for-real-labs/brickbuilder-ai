@@ -1,0 +1,32 @@
+#: title: A desert rover vehicle with four knobby tires, mudguards, a sloped front grille, steering stand, and an included explorer minifigure armed with a revolver.
+#: source: LDraw Official Model Repository, 30091-1.mpd
+#: author: Christian Neumann [Wesley]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("3795", "Black", (40, -13.9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "Light_Bluish_Grey", (10, -17.9, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("87414", "Black", (10, -17.9, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4624", "Light_Bluish_Grey", (10, -17.9, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("87414", "Black", (10, -17.9, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4624", "Light_Bluish_Grey", (70, -17.9, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87414", "Black", (70, -17.9, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4624", "Light_Bluish_Grey", (70, -17.9, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87414", "Black", (70, -17.9, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4600", "Light_Bluish_Grey", (40, -21.9, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3020", "Black", (40, -21.9, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4600", "Light_Bluish_Grey", (40, -21.9, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("50947", "Dark_Bluish_Grey", (10, -29.9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3710", "Dark_Red", (30, -29.9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3710", "Dark_Red", (50, -29.9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("50947", "Dark_Bluish_Grey", (70, -29.9, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("50946", "Light_Bluish_Grey", (40, -37.9, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3829c01", "Light_Bluish_Grey", (40, -37.9, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Dark_Red", (40, -45.9, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3004", "Dark_Red", (40, -45.9, 130), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6141", "Trans_Clear", (10, -51.9, 38), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Trans_Clear", (70, -51.9, 38), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4081b", "Dark_Bluish_Grey", (30, -53.9, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4081b", "Dark_Bluish_Grey", (50, -53.9, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3794b", "Dark_Red", (40, -61.9, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6141", "Black", (40, -69.9, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))

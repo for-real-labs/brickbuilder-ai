@@ -1,0 +1,30 @@
+#: title: Red liftarms and cross blocks linked with pins and a long axle to form a articulated structural linkage.
+#: source: LDraw Official Model Repository, 41999-1.mpd, section 41999 - step70.ldr
+#: author: LDCad
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (100, -20, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (140, -20, 100), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (180, -20, 20), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32054", "Light_Bluish_Grey", (40, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("87082", "Light_Bluish_Grey", (60, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("87082", "Light_Bluish_Grey", (60, -30, 80), (1, 0, 0, 0, 0.008, -1, 0, 1, 0.008))
+place_ldu("60483", "Light_Bluish_Grey", (80, -30, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("62462", "Black", (90, -30, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6536", "Light_Bluish_Grey", (100, -30, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32316", "Red", (120, -30, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (120, -30, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (140, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60483", "Light_Bluish_Grey", (140, -30, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("60485", "Light_Bluish_Grey", (140, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (140, -30, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("42003", "Light_Bluish_Grey", (140, -30, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32316", "Red", (160, -30, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (170, -30, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Light_Bluish_Grey", (180, -30, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("62462", "Black", (190, -30, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("60483", "Light_Bluish_Grey", (200, -30, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("87082", "Light_Bluish_Grey", (220, -30, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("87082", "Light_Bluish_Grey", (220, -30, 80), (1, 0, 0, 0, 0.008, -1, 0, 1, 0.008))
+place_ldu("32054", "Light_Bluish_Grey", (240, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))

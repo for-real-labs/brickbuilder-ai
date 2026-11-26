@@ -1,0 +1,31 @@
+#: title: Roof rack bars assembly using liftarms, angle connectors, axles, and round plates forming a cross-bar cargo support frame.
+#: source: LDraw Official Model Repository, 42122-1.mpd, section 42122 - roofbars.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32123b", "Yellow", (15, -10, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32123b", "Yellow", (15, -10, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("11478", "Black", (25, -10, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Red", (30, -10, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6141", "Trans_Clear", (40, -10, 2), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (40, -10, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("27940", "Dark_Bluish_Grey", (40, -10, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (50, -10, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32034", "Black", (80, -10, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Yellow", (80, -10, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6536", "Light_Bluish_Grey", (80, -10, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4519", "Yellow", (120, -10, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("18654", "Dark_Bluish_Grey", (120, -10, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("26287", "Black", (120, -10, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32034", "Black", (160, -10, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4519", "Yellow", (160, -10, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6536", "Light_Bluish_Grey", (160, -10, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (190, -10, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6141", "Trans_Clear", (200, -10, 2), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (200, -10, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("27940", "Dark_Bluish_Grey", (200, -10, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32062", "Red", (210, -10, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("11478", "Black", (215, -10, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32123b", "Yellow", (225, -10, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32123b", "Yellow", (225, -10, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))

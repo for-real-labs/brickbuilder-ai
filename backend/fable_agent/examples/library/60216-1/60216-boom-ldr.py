@@ -1,0 +1,30 @@
+#: title: Yellow crane boom arm with grey technic beams, axles, and a hose reel.
+#: source: LDraw Official Model Repository, 60216-1.mpd, section 60216 - boom.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("30395", "Dark_Bluish_Grey", (60, -52, 573), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("11203", "Dark_Bluish_Grey", 2, 27.25, 9)
+place("3832", "Yellow", 2, 28.25, 1, rot=90)
+place_ldu("32316", "Dark_Bluish_Grey", (60, -248, 520), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Black", (60, -248, 540), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32062", "Black", (60, -248, 560), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place("2456", "Light_Bluish_Grey", 0, 29.25, 0)
+place("2456", "Light_Bluish_Grey", 0, 29.25, 2)
+place("3002", "Yellow", 2, 29.25, 4, rot=270)
+place("30000", "Dark_Bluish_Grey", 1, 29.25, 7, rot=180)
+place("3832", "Yellow", 2, 32.25, 1, rot=90)
+place("57779", "Yellow", 2, 29.25, 9, rot=270)
+place_ldu("92907", "Black", (60, -268, 560), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3001", "Light_Bluish_Grey", 0, 32.25, 0, rot=90)
+place("3001", "Light_Bluish_Grey", 4, 32.25, 0, rot=90)
+place("87079", "Light_Bluish_Grey", 0, 35.25, 0, rot=90)
+place("3039", "Yellow", 2, 33.25, 6)
+place("3039", "Yellow", 2, 33.25, 8, rot=180)
+place("87079", "Light_Bluish_Grey", 4, 35.25, 0, rot=90)
+place("2584", "Black", 2, 36.25, 7)
+place_ldu("2585", "Light_Bluish_Grey", (60, -320, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3705", "Black", (68, -320, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3941", "Light_Bluish_Grey", (104, -320, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("14769", "Red", (112, -320, 160), (0, -1, 0, -1, 0, 0, 0, 0, -1))

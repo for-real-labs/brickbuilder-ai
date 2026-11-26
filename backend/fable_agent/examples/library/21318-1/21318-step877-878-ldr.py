@@ -1,0 +1,10 @@
+#: title: Reddish brown bar with black clip holding green and dark green leaves forming a small foliage branch.
+#: source: LDraw Official Model Repository, 21318-1.mpd, section 21318 - step877-878.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 4 of 4 parts kept (minifigures left out)
+place_ldu("63965a", "Reddish_Brown", (110, -7.3, 116), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("48729b", "Black", (110, -7.3, 110), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2417", "Dark_Green", (110, -25.3, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2417", "Bright_Green", (50, -33.3, 110), (0, 0, -1, 0, 1, 0, 1, 0, 0))

@@ -1,0 +1,30 @@
+#: title: Helicarrier S139
+#: source: LDraw Official Model Repository, 76042-1.mpd, section 76042 - Helicarrier S139.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("2654", "Black", 4, 0, 14, rot=180)
+place_ldu("63965", "Black", (18, -14, 330), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("11399", "Dark_Bluish_Grey", (40, -16, 280), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2419", "Dark_Bluish_Grey", 3, 1, 0, rot=90)
+place("3021", "Black", 4, 1, 12, rot=270)
+place_ldu("11476", "Light_Bluish_Grey", (100, -16, 310), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("11477", "Dark_Bluish_Grey", 5, 2, 0)
+place("30356", "Light_Bluish_Grey", 0, 2, 4)
+place("2450", "Light_Bluish_Grey", 3, 2, 1, rot=90)
+place("50305", "Light_Bluish_Grey", 0, 3, 14, rot=180)
+place("3023", "Trans_Light_Blue", 3, 3, 13)
+place("50304", "Dark_Bluish_Grey", 3, 3, 5)
+place("63864", "Dark_Bluish_Grey", 5, 3, 2, rot=90)
+place("3666", "Dark_Bluish_Grey", 5, 3, 13, rot=90)
+place("3023", "Trans_Light_Blue", 2, 4, 15, rot=90)
+place("85984", "Dark_Bluish_Grey", 2, 5, 15, rot=90)
+place("3023", "Trans_Light_Blue", 5, 4, 15, rot=270)
+place("85984", "Dark_Bluish_Grey", 5, 5, 15, rot=270)
+place_ldu("6115204c", "White", (80, -46, 250), (0, 0, 1, 0.316, 0.949, 0, -0.949, 0.316, 0))
+place("3001", "Black", 3, 3, 14, rot=270)
+place("48933", "Dark_Bluish_Grey", 2, 4, 11)
+place("2412b", "Pearl_Silver", 3, 6, 15)
+place("2412b", "Pearl_Silver", 3, 6, 16)
+place_ldu("4861", "Dark_Bluish_Grey", (80, -56, 350), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

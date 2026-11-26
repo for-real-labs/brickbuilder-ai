@@ -1,0 +1,31 @@
+#: title: A reddish brown clock structure built from plates, bricks, and slopes, with a clip and signal holder for mounting.
+#: source: LDraw Official Model Repository, 30201-1.mpd, section 30201 - Clock.ldr
+#: author: Michael Heidemann [mikeheide]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("6141", "Reddish_Brown", 0, 0, 3, rot=90)
+place("6141", "Reddish_Brown", 1, 0, 3, rot=90)
+place("6141", "Reddish_Brown", 1, 0, 0, rot=90)
+place("6141", "Reddish_Brown", 0, 0, 0, rot=90)
+place("3020", "Reddish_Brown", 0, 1, 0, rot=90)
+place("54200", "Reddish_Brown", 0, 2, 0)
+place("54200", "Reddish_Brown", 0, 2, 3, rot=180)
+place("3069b", "Reddish_Brown", 1, 2, 1, rot=270)
+place("3004", "Reddish_Brown", 0, 2, 1, rot=90)
+place("3004", "Reddish_Brown", 0, 5, 1, rot=90)
+place("30237", "Reddish_Brown", 0, 8, 1, rot=270)
+place("3710", "Reddish_Brown", 0, 11, 0, rot=90)
+place("3023", "Reddish_Brown", 0, 12, 1, rot=90)
+place("6141", "Reddish_Brown", 0, 12, 3, rot=90)
+place("6141", "Reddish_Brown", 0, 12, 0, rot=90)
+place("3062b", "Reddish_Brown", 0, 13, 3, rot=90)
+place("3062b", "Reddish_Brown", 0, 13, 0, rot=90)
+place("87087", "Reddish_Brown", 0, 13, 1, rot=270)
+place_ldu("4032a", "Tan", (28, -108, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4150p03", "White", (36, -108, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("87087", "Reddish_Brown", 0, 13, 2, rot=270)
+place("3710", "Reddish_Brown", 0, 16, 0, rot=270)
+place("3023", "Reddish_Brown", 0, 17, 1, rot=270)
+place("54200", "Reddish_Brown", 0, 18, 2, rot=180)
+place("54200", "Reddish_Brown", 0, 18, 1)

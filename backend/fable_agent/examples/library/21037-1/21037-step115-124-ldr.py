@@ -1,0 +1,28 @@
+#: title: White structural framework with rounded corner panels, clear elements, and green accent tiles forming a green-colored pod.
+#: source: LDraw Official Model Repository, 21037-1.mpd, section 21037 - step115-124.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures left out)
+place("3021", "White", 0, 0, 0, rot=90)
+place("3020", "White", 2, 0, 0, rot=90)
+place("3023", "Trans_Clear", 0, 1, 0, rot=90)
+place("3024", "Trans_Clear", 0, 1, 2)
+place("3623", "White", 1, 1, 0)
+place("3023", "White", 2, 1, 3)
+place("3023", "Trans_Clear", 3, 1, 1, rot=90)
+place("3024", "Trans_Clear", 0, 2, 0)
+place("3023", "Trans_Clear", 0, 2, 1, rot=90)
+place("3023", "White", 1, 2, 0)
+place("3023", "White", 2, 2, 3)
+place("3023", "White", 3, 2, 0, rot=90)
+place("3024", "Trans_Clear", 3, 2, 2)
+place("3003", "Trans_Clear", 1, 1, 1)
+place("11212", "White", 0.5, 4, 0.5, rot=270)
+place("91501", "White", 0, 3, 0, rot=270)
+place("91501", "White", 0, 3, 2)
+place("63864", "Green", 0.5, 5, 0.5)
+place("63864", "Green", 0.5, 5, 1.5)
+place("63864", "Green", 0.5, 5, 2.5)
+place("91501", "White", 2, 3, 0, rot=180)
+place("91501", "White", 2, 3, 2, rot=90)

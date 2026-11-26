@@ -1,0 +1,26 @@
+#: title: engine-1
+#: source: LDraw Official Model Repository, 8859-1.mpd, section 8859 - engine-1.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 20 of 20 parts kept (minifigures left out)
+place_ldu("3647", "Light_Grey", (40, -100, 150), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3749", "Light_Grey", (40, -100, 160), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3647", "Light_Grey", (40, -120, 150), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3749", "Light_Grey", (40, -120, 160), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3895", "Black", (50, -120, 170), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3705", "Black", (40, -144, 60), (0, -0.707107, 0.707107, 0, 0.707107, 0.707107, -1, 0, 0))
+place_ldu("3704", "Black", (40.122, -159.908, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3648a", "Light_Grey", (40, -160, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3648a", "Light_Grey", (40, -160, 90), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3648a", "Light_Grey", (40, -160, 150), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3749", "Light_Grey", (40, -160, 160), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3651", "Light_Grey", (40, -164, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3704", "Black", (40, -174, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3705", "Black", (40, -176, 120), (0, -0.707107, 0.707107, 0, 0.707107, 0.707107, -1, 0, 0))
+place_ldu("3651", "Light_Grey", (40, -184, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3651", "Light_Grey", (40, -196, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("3652", "Light_Grey", 1, 24.75, 2)
+place_ldu("3704", "Black", (40, -206, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3651", "Light_Grey", (40, -216, 120), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("3652", "Light_Grey", 1, 28.75, 5)

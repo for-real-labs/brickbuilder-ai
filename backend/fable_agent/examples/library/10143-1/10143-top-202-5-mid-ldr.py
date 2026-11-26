@@ -1,0 +1,31 @@
+#: title: Middle band of the 202.5-degree upper-hemisphere cap
+#: source: LDraw Official Model Repository, 10143-1.mpd, section 10143 - Top-202.5_Mid.ldr
+#: author: Jude Parrill [theJudeAbides]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3832", "Black", 3, 0, 1, rot=90)
+place_ldu("44301", "Light_Bluish_Grey", (90, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("44302", "Dark_Bluish_Grey", 3, 1, 10, rot=270)
+place_ldu("44301", "Light_Bluish_Grey", (70, -4.3673, 278.482), (0, 0, 1, -0.382683, 0.92388, 0, -0.92388, -0.382683, 0))
+place_ldu("3034", "Black", (80, 11.2027, 336.976), (0, 0, 1, -0.382683, 0.92388, 0, -0.92388, -0.382683, 0))
+place_ldu("3710", "Light_Bluish_Grey", (70, 26.7726, 395.47), (0, 0, 1, -0.382683, 0.92388, 0, -0.92388, -0.382683, 0))
+place_ldu("47398", "Light_Bluish_Grey", (110, 11.4653, 358.515), (-1, 0, 0, 0, 0.92388, -0.382683, 0, -0.382683, -0.92388))
+place_ldu("3023", "Light_Bluish_Grey", (60, 7.6385, 349.276), (-1, 0, 0, 0, 0.92388, -0.382683, 0, -0.382683, -0.92388))
+place_ldu("44301", "Light_Bluish_Grey", (90, -4.3673, 278.482), (0, 0, 1, -0.382683, 0.92388, 0, -0.92388, -0.382683, 0))
+place_ldu("3623", "Light_Bluish_Grey", (70, -7.6689, 312.321), (0, 0, 1, -0.382683, 0.92388, 0, -0.92388, -0.382683, 0))
+place("44302", "Dark_Bluish_Grey", 4, 1, 10, rot=270)
+place_ldu("44301", "Light_Bluish_Grey", (70, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3030", "Black", 3, 2, 1, rot=270)
+place_ldu("3021", "Light_Bluish_Grey", (50, -26.803, 266.127), (-1, 0, 0, 0, 0.92388, -0.382683, 0, -0.382683, -0.92388))
+place("3623", "Light_Bluish_Grey", 2, 3, 2)
+place("3020", "Light_Bluish_Grey", 1, 3, 0)
+place("3710", "Light_Bluish_Grey", 0, 3, 3)
+place("3023", "Light_Bluish_Grey", 3, 3, 4)
+place("3623", "Light_Bluish_Grey", 1, 3, 5)
+place("3623", "Light_Bluish_Grey", 2, 3, 6)
+place("3022", "Light_Bluish_Grey", 3, 3, 7)
+place("3710", "Light_Bluish_Grey", 1, 3, 9)
+place("3020", "Light_Bluish_Grey", 2, 3, 10)
+place("3623", "Light_Bluish_Grey", 5, 3, 0, rot=90)
+place("47398", "Light_Bluish_Grey", 6, 3, 0, rot=180)

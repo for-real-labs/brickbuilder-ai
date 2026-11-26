@@ -1,0 +1,30 @@
+#: title: Rear upper bodywork with bent orange beams, cross blocks, transparent round tiles, and connector hubs forming the back detailing.
+#: source: LDraw Official Model Repository, 42120-1.mpd, section 42120 - backtop.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32524", "Black", (80, -10, 80), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("64683", "Orange", (20, -30, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("92907", "Light_Bluish_Grey", (80, -30, 80), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("24316", "Reddish_Brown", (82, -30, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Yellow", (105, -30, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("64391", "Orange", (140, -30, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("24316", "Reddish_Brown", (82, -50, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Yellow", (105, -50, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32291", "Black", (60, -70, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32140", "Orange", (60, -70, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32073", "Light_Bluish_Grey", (80, -70, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32184", "Black", (80, -70, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4519", "Yellow", (80, -70, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4519", "Yellow", (80, -70, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32291", "Black", (100, -70, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32140", "Orange", (100, -70, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("98138", "Trans_Clear", (50, -90, 22), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (50, -90, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Trans_Clear", (70, -90, 22), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (70, -90, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Trans_Clear", (90, -90, 22), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (90, -90, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Trans_Clear", (110, -90, 22), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (110, -90, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))

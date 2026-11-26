@@ -1,0 +1,31 @@
+#: title: A castle wall section built from black corner panels and arch with light grey technic bricks, slopes, and a green baseplate foundation.
+#: source: LDraw Official Model Repository, 6034-1.mpd, section 6034 - Wall.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3958", "Green", 0, 0, 1, rot=90)
+place("2431", "Light_Grey", 4, 1, 2, rot=90)
+place_ldu("3673", "Light_Grey", (80, -22, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3039", "Light_Grey", 0, 1, 3, rot=90)
+place("3700", "Light_Grey", 3, 1, 1)
+place("3700", "Light_Grey", 3, 1, 6)
+place("3581", "Black", 4, 4, 1, rot=270)
+place("3581", "Black", 4, 4, 6, rot=270)
+place("3024", "Black", 4, 10, 6, rot=270)
+place("4085b", "Black", 4, 11, 6, rot=180)
+place("3005", "Black", 4, 10, 1, rot=270)
+place("3024", "Black", 4, 12, 6, rot=180)
+place("3004", "Light_Grey", 1, 16, 3, rot=90)
+place("2345", "Black", 1, 1, 1, rot=90)
+place("2345", "Black", 1, 1, 4, rot=180)
+place("3005", "Light_Grey", 3, 16, 1, rot=90)
+place("3005", "Light_Grey", 3, 16, 6, rot=90)
+place("3307", "Black", 4, 13, 1, rot=90)
+place_ldu("2554", "Brown", (100, -152, 30), (-0.5, 0, 0.866, 0, 1, 0, -0.866, 0, -0.5))
+place_ldu("2554", "Brown", (100, -152, 130), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3004", "Black", 1, 19, 3, rot=90)
+place("2357", "Black", 3, 19, 1, rot=270)
+place_ldu("2546", "Dark_Grey", (90, -176, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2357", "Black", 3, 19, 5, rot=180)
+place_ldu("4495a", "Blue", (90, -240, 150), (0, 0, -1, 0, 1, 0, 1, 0, 0))

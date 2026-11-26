@@ -1,0 +1,23 @@
+#: title: Complete table assembly combining a round base and a small transparent tabletop with goblets.
+#: source: LDraw Official Model Repository, 75948-1.mpd, section 75948 - Table 2.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 17 of 17 parts kept (minifigures left out)
+place("3941", "Light_Bluish_Grey", 2, 0, 2)
+place_ldu("89522", "White", (20, -32, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("89522", "White", (60, -32, 20), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("11212", "Light_Bluish_Grey", 1.5, 3, 1.5)
+place_ldu("89522", "White", (60, -32, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("89522", "White", (100, -32, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("15070", "White", (40, -40, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60897", "White", (40, -40, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("15070", "White", (40, -40, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60897", "White", (60, -40, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("60897", "White", 2.5, 4, 3.5, rot=180)
+place("15070", "White", 3.5, 2, 1.5, rot=270)
+place("60897", "White", 3.5, 4, 2.5, rot=270)
+place("15070", "White", 3.5, 2, 3.5, rot=180)
+place("60474", "White", 1, 5, 1)
+place("3062b", "Trans_Clear", 2.5, 6, 2.5)
+place("22388", "Trans_Clear", 2.5, 9, 2.5)

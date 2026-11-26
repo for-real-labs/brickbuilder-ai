@@ -183,7 +183,7 @@ def test_a_build_far_past_its_time_limit_is_abandoned_with_a_message(monkeypatch
     storage, _ = web_storage(monkeypatch)
     monkeypatch.setattr(fable, "HARD_STOP_SECONDS", -1)
 
-    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False):
+    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False, example_query=None):
         on_event("thinking", {"text": "."})  # the first step after the limit raises
         raise AssertionError("the build should have been stopped")
 
@@ -405,7 +405,7 @@ def test_cancelling_a_generation_stops_the_agent_at_its_next_step(monkeypatch):
     storage, _ = web_storage(monkeypatch)
     entered, stopped = threading.Event(), threading.Event()
 
-    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False):
+    def run(prompt, variant, max_parts, reference, script, key, on_event, examples=False, example_query=None):
         entered.set()
         try:
             while True:

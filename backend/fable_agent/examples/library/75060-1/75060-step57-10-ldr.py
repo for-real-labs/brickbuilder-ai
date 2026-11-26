@@ -1,0 +1,31 @@
+#: title: Technic framework subassembly using long beams, peghole plates, door rails, and friction pins.
+#: source: LDraw Official Model Repository, 75060-1.mpd, section 75060 - step57-10.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("2780", "Black", (20, -14, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -14, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6541", "Dark_Bluish_Grey", 1, 0, 2, rot=90)
+place("6541", "Dark_Bluish_Grey", 2, 0, 2, rot=90)
+place("32028", "Light_Bluish_Grey", 1, 3, 2, rot=180)
+place("32028", "Light_Bluish_Grey", 1, 4, 2, rot=180)
+place_ldu("2780", "Black", (20, -54, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -54, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6541", "Dark_Bluish_Grey", 1, 5, 2, rot=90)
+place("6541", "Dark_Bluish_Grey", 2, 5, 2, rot=90)
+place("32028", "Light_Bluish_Grey", 1, 8, 2, rot=180)
+place_ldu("32524", "Dark_Bluish_Grey", (10, -74, 50), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32524", "Dark_Bluish_Grey", (70, -74, 50), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("32028", "Light_Bluish_Grey", 1, 9, 2, rot=180)
+place_ldu("2780", "Black", (20, -94, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -94, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6541", "Dark_Bluish_Grey", 1, 10, 2, rot=90)
+place("6541", "Dark_Bluish_Grey", 2, 10, 2, rot=90)
+place("2540", "Dark_Bluish_Grey", 1, 13, 2, rot=180)
+place("3023", "Dark_Tan", 1, 14, 1, rot=90)
+place_ldu("63868", "Light_Bluish_Grey", (50, -120, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("11458", "Dark_Bluish_Grey", 1, 15, 1, rot=270)
+place("11458", "Dark_Bluish_Grey", 2, 15, 1, rot=270)
+place_ldu("2780", "Black", (20, -134, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -134, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))

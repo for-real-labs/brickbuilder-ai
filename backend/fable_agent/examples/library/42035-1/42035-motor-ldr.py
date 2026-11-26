@@ -1,0 +1,32 @@
+#: title: Technic engine assembly with cylinder head, pistons, connecting rods, crankshafts, and a gear connected to a wheel rim via an exhaust pipe.
+#: source: LDraw Official Model Repository, 42035-1.mpd, section 42035 - motor.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("42610", "Light_Bluish_Grey", (50, -10, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (50, -20, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("62462", "Yellow", (50, -40, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2851", "Yellow", (90, -40, 70), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -50, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (70, -50, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (110, -50, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (110, -50, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (50, -60, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6536", "Yellow", (50, -70, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6536", "Yellow", (70, -70, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Yellow", (70, -70, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Yellow", (90, -70, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6536", "Yellow", (90, -70, 100), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6536", "Yellow", (110, -70, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60485", "Light_Bluish_Grey", (110, -70, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("60485", "Light_Bluish_Grey", (110, -70, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Yellow", (110, -70, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("14682", "Light_Bluish_Grey", (130, -70, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6536", "Yellow", (130, -70, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (130, -70, 100), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2853", "Yellow", (90, -80, 40), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2852", "Light_Bluish_Grey", (90, -80, 70), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2853", "Yellow", (90, -90, 70), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (90, -90, 110), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (90, -90, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))

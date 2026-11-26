@@ -1,0 +1,26 @@
+#: title: truck-fender
+#: source: LDraw Official Model Repository, 8859-1.mpd, section 8859 - truck-fender.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 20 of 20 parts kept (minifigures left out)
+place_ldu("u1125", "Red", (10, 6.369, -18.63), (0, 0, -1, -0.573576, 0.819152, 0, 0.819152, 0.573576, 0))
+place_ldu("u1125", "Red", (70, 6.369, -18.63), (0, 0, -1, -0.573576, 0.819152, 0, 0.819152, 0.573576, 0))
+place_ldu("u1125", "Red", (250, 6.369, -18.63), (0, 0, -1, -0.573576, 0.819152, 0, 0.819152, 0.573576, 0))
+place_ldu("u1125", "Red", (310, 6.369, -18.63), (0, 0, -1, -0.573576, 0.819152, 0, 0.819152, 0.573576, 0))
+place_ldu("3020", "Red", (40, -0.184, -23.22), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("3020", "Red", (280, -0.184, -23.22), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("3024", "Trans_Yellow", (30, -1, -36), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("3024", "Trans_Red", (50, -1, -36), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("3024", "Trans_Red", (70, -1, -36), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("3024", "Trans_Red", (250, -1, -36), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("3024", "Trans_Red", (270, -1, -36), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("3024", "Trans_Yellow", (290, -1, -36), (1, 0, 0, 0, 0.819152, -0.573576, 0, 0.573576, 0.819152))
+place_ldu("u1126", "Red", (10, -8, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3623", "Red", 0, 0, 3, rot=90)
+place_ldu("u1126", "Red", (70, -8, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("u1126", "Red", (250, -8, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("u1126", "Red", (310, -8, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3623", "Red", 15, 0, 3, rot=90)
+place("3032", "Red", 0, 1, 0, rot=90)
+place("3032", "Red", 12, 1, 0, rot=90)

@@ -1,0 +1,32 @@
+#: title: A structural chassis sub-assembly combining plates, a long technic brick, triangle liftarms, and axles joined with pins and cross blocks.
+#: source: LDraw Official Model Repository, 8448-1_Wing-Doors.mpd, section 8448 - box8step2.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3176", "Black", 13, 0.25, 0)
+place_ldu("2905", "Black", (71.716, -17, 1.716), (0.707, 0, 0.707, 0, 1, 0, -0.707, 0, 0.707))
+place_ldu("32123a", "Light_Grey", (100, -17, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place("2450", "Light_Grey", 13, 1.25, 0, rot=90)
+place_ldu("6558", "Black", (280, -30, 10), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (20, -32, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (60, -32, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32183c02", "Black", (99.9965, -32, -26.5517), (0.199, -0.98, 0, 0, 0, 1, -0.98, -0.199, 0))
+place_ldu("32062", "Black", (100, -32, -26.569), (0, 0.707, 0.707, -1, 0, 0, 0, -0.707, 0.707))
+place_ldu("6536", "Black", (100, -32, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Black", (100, -32, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6536", "Black", (100, -32, 70), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Black", (120, -32, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32181c01", "Black", (191.8, -32, -7.91), (0.199, -0.98, 0, 0, 0, 1, -0.98, -0.199, 0))
+place_ldu("2780", "Black", (260, -32, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Black", (300, -32, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (100, -42, 70), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place("3703", "Black", 0, 2.25, 2)
+place("3700", "Black", 14, 2.25, 1)
+place("3005", "Black", 15, 2.25, 0)
+place_ldu("2905", "Black", (71.716, -47, 1.716), (0.707, 0, 0.707, 0, 1, 0, -0.707, 0, 0.707))
+place("2450", "Light_Grey", 13, 5.25, 0, rot=90)
+place("3176", "Black", 13, 6.25, 0)
+place("6141", "Light_Grey", 15, 6.25, 2)
+place_ldu("2780", "Black", (300, -72, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3700", "Black", 14, 7.25, 2)

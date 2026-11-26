@@ -1,0 +1,30 @@
+#: title: A rear wheel arch assembly with a Beam 15, bent liftarms, a fairing panel, and pins forming the curved wheel housing.
+#: source: LDraw Official Model Repository, 42110-1.mpd, section 42110 - backwheelarch1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32140", "Olive_Green", (100, -46, 280), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (40, -56, 300), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("74695", "Olive_Green", (40, -66, 280), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("22961", "Red", (100, -66, 280), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32054", "Light_Bluish_Grey", (100, -66, 280), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (40, -76, 280), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("11946", "Olive_Green", (40, -86, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32184", "Dark_Bluish_Grey", (40, -86, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (40, -86, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32184", "Dark_Bluish_Grey", (40, -86, 240), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (40, -86, 240), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("74695", "Olive_Green", (40, -86, 280), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (40, -96, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (40, -96, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (40, -96, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (40, -96, 220), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (40, -96, 260), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32278", "Olive_Green", (40, -106, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (40, -116, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (40, -116, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (40, -116, 140), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (40, -116, 160), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (40, -116, 240), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("61184", "Light_Bluish_Grey", (40, -116, 300), (0, 1, 0, -1, 0, 0, 0, 0, 1))

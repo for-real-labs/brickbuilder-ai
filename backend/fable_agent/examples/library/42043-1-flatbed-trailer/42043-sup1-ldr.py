@@ -1,0 +1,30 @@
+#: title: Support subassembly built from bent liftarms, suspension arms, long beams, and angle connectors.
+#: source: LDraw Official Model Repository, 42043-1_Flatbed-Trailer.mpd, section 42043 - sup1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (30, -9, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("40490", "Black", (40, -9, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (40, -9, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -9, 180), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32054", "Light_Bluish_Grey", (60, -9, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32140", "Light_Bluish_Grey", (60, -9, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32073", "Light_Bluish_Grey", (80, -9, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3713", "Light_Bluish_Grey", (80, -9, 120), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (100, -9, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32140", "Light_Bluish_Grey", (100, -9, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("40490", "Black", (120, -9, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (120, -9, 160), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (120, -9, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (130, -9, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32556", "Tan", (80, -29, 180), (1, 0, 0, 0, -0.97, -0.243, 0, 0.243, -0.97))
+place_ldu("15459", "Light_Bluish_Grey", (80, -29.243, 179.03), (-1, 0, 0, 0, -0.97, 0.243, 0, 0.243, 0.97))
+place_ldu("2780", "Black", (20, -69, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32013", "Black", (20, -69, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32140", "Light_Bluish_Grey", (60, -69, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32073", "Light_Bluish_Grey", (80, -69, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -69, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32140", "Light_Bluish_Grey", (100, -69, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (140, -69, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("32013", "Black", 5.5, 7.5, 1.5, rot=90)

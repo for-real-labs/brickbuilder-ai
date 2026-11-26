@@ -1,0 +1,30 @@
+#: title: Axle steering linkage subassembly using an open-center beam, angle connectors, axle-pin cross blocks, and a 7-stud axle connecting the wheel hubs to steering.
+#: source: LDraw Official Model Repository, 42082-1.mpd, section 42082 - axle1c.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32062", "Red", (40, -19.5, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32062", "Red", (40, -19.5, 180), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32034", "Red", (40, -49.5, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (40, -49.5, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6632", "Red", (40, -49.5, 115), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6632", "Red", (40, -49.5, 125), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (40, -49.5, 170), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32034", "Red", (40, -49.5, 180), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("74695", "Light_Bluish_Grey", (60, -49.5, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("63869", "Black", (60, -49.5, 80), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("64179", "Light_Bluish_Grey", (60, -49.5, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("44294", "Yellow", (60, -49.5, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6536", "Red", (60, -49.5, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6558", "Blue", (80, -49.5, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32062", "Red", (80, -49.5, 130), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32054", "Black", (80, -49.5, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("15100", "Black", (120, -49.5, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15100", "Black", (120, -49.5, 140), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15462", "Reddish_Brown", (40, -69.5, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("94925", "Light_Bluish_Grey", (40, -69.5, 140), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("11214", "Red", (40, -89.5, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("40490", "Dark_Bluish_Grey", (40, -89.5, 100), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("11214", "Red", (40, -89.5, 180), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("18654", "White", (40, -109.5, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

@@ -1,0 +1,9 @@
+#: title: Small connector assembly using an angle connector and two friction axle pins.
+#: source: LDraw Official Model Repository, 8275-1.mpd, section 8275 - m-1y.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 3 of 3 parts kept (minifigures left out)
+place_ldu("32034", "Black", (60, -9, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("43093", "Blue", (90, -9, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("43093", "Blue", (30, -9, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))

@@ -1,0 +1,30 @@
+#: title: The rear trunk assembly featuring a white tile with sticker detail, yellow and white plates, black grille tiles, trans-red light elements, and black headlight bricks.
+#: source: LDraw Official Model Repository, 76897-1.mpd, section 76897 - Back trunk.ldr
+#: author: Adrien Pennamen [Adrien Pennamen]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("33909", "Yellow", 0, 0, 1, rot=180)
+place("33909", "Yellow", 2, 0, 1, rot=180)
+place("33909", "Yellow", 4, 0, 1, rot=180)
+place_ldu("3666", "White", (60, -18, 48), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3666", "White", (60, -18, 56), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6636", "White", (60, -18, 64), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("99206", "Light_Bluish_Grey", 1, 1, 0, rot=180)
+place("99206", "Light_Bluish_Grey", 3, 1, 0, rot=180)
+place_ldu("3710", "Yellow", (60, -38, 44.4), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3070a", "Trans_Red", (0, -38.0909, 53.9091), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3024", "Trans_Red", (8, -38.0909, 53.9091), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("36840", "White", (30, -38.0909, 51.9091), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3023", "Black", (40, -38.0909, 59.9091), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2412b", "Black", (40, -38.0909, 67.9091), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3023", "Black", (60, -38.0909, 51.9091), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3023", "Black", (80, -38.0909, 59.9091), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2412b", "Black", (80, -38.0909, 67.9091), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("36840", "White", (90, -38.0909, 51.9091), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3024", "Trans_Red", (112, -38.0909, 53.9091), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3070a", "Trans_Red", (120, -38.0909, 53.9091), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4070", "Black", (30, -48, 30.4), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4070", "Black", (50, -48, 30.4), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4070", "Black", (70, -48, 30.4), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4070", "Black", (90, -48, 30.4), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

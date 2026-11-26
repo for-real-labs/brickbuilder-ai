@@ -1,0 +1,11 @@
+#: title: Orange thin fairing panel mounted alongside a black medium panel using axle and friction pins.
+#: source: LDraw Official Model Repository, 42026-1.mpd, section 42026 - step16.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 5 of 5 parts kept (minifigures left out)
+place_ldu("11947", "Orange", (20, -9, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (20, -9, 150), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("64391", "Black", (20, -9, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32556", "Tan", (20, -29, 140), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (60, -29, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))

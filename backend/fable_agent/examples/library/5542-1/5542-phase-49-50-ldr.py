@@ -1,0 +1,32 @@
+#: title: Rear body section with hinged car roof panels, grille tiles, ladder plates, and a control stick mechanism.
+#: source: LDraw Official Model Repository, 5542-1.mpd, section 5542 - Phase 49-50.ldr
+#: author: Ulrich Röder {UR}
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2873", "Light_Grey", (3.301, -23.246, 180), (0, 0.927, 0.375, 0, 0.375, -0.927, -1, 0, 0))
+place_ldu("2873", "Light_Grey", (116.699, -23.246, 180), (0, -0.927, -0.375, 0, 0.375, -0.927, 1, 0, 0))
+place("3710", "Blue", 1, 4, 4, rot=270)
+place("3710", "Blue", 1, 4, 8)
+place("3710", "Blue", 4, 4, 4, rot=270)
+place("4286", "Black", 1, 3, 1)
+place("3024", "Black", 1, 5, 4)
+place_ldu("4175", "Black", (30, -48, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4315", "Light_Grey", (30, -48, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3298", "Black", 2, 3, 0)
+place("3032", "Black", 1, 5, 11, rot=270)
+place("4286", "Black", 4, 3, 1)
+place("3024", "Black", 4, 5, 4)
+place("4175", "Black", 4, 0, 5, rot=270)
+place("4315", "Light_Grey", 4, 5, 7, rot=270)
+place("2412b", "Black", 1, 6, 5, rot=270)
+place("2412b", "Black", 1, 6, 7, rot=270)
+place("2431", "Black", 1, 6, 9, rot=270)
+place("3022", "Black", 2, 6, 12, rot=270)
+place("3020", "Black", 2, 6, 14, rot=270)
+place("2412b", "Black", 4, 6, 5, rot=270)
+place("2412b", "Black", 4, 6, 7, rot=270)
+place("2431", "Black", 4, 6, 9, rot=270)
+place("6141", "Light_Grey", 2.5, 7, 14.5, rot=270)
+place_ldu("4592", "Light_Grey", (60, -72, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4593", "Light_Grey", (60, -72, 300), (1, 0, 0, 0, 0.574, 0.819, 0, -0.819, 0.574))

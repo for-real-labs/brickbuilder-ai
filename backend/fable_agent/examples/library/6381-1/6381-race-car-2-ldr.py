@@ -1,0 +1,31 @@
+#: title: A white race car with blue and red accents, numbered 2, built on a 7x4 car base with four wheels and sloped body panels.
+#: source: LDraw Official Model Repository, 6381-1.mpd, section 6381 - race car 2.ldr
+#: author: [Strikeman]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3020", "Blue", (200, -15, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "White", (60, -18, 10), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (60, -18, 10), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4624", "White", (60, -18, 70), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3641", "Black", (60, -18, 70), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4624", "White", (160, -18, 10), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (160, -18, 10), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4624", "White", (160, -18, 70), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3641", "Black", (160, -18, 70), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3623", "Red", (110, -23, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2441", "White", (110, -23, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3623", "Red", (110, -23, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3829c01", "White", (130, -23, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3710", "Red", (190, -23, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3069b", "Blue", (210, -23, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3021", "White", (50, -31, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3022", "Red", (60, -39, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3839a", "Black", (50, -47, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4286", "Blue", (90, -47, 10), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4286", "Blue", (90, -47, 70), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3298p55", "Blue", (150, -47, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3938", "Red", (34.181, -54.323, 40), (0, -0.406737, -0.913546, 0, 0.913546, -0.406737, 1, 0, 0))
+place_ldu("3937", "Red", (30, -55, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3020", "White", (28.3, -65.7, 40), (0, -0.406737, -0.913546, 0, 0.913546, -0.406737, 1, 0, 0))
+place_ldu("2432", "Blue", (70, -71, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))

@@ -1,0 +1,33 @@
+#: title: Narrow upper section built from long plates with tan grille tiles continuing the windowed facade pattern.
+#: source: LDraw Official Model Repository, 21046-1.mpd, section 21046 - step171-174.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("4477", "Light_Bluish_Grey", 0, 0, 3)
+place_ldu("2412b", "Tan", (20, -10, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2412b", "Tan", (60, -10, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2412b", "Tan", (100, -10, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2412b", "Tan", (140, -10, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2412b", "Tan", (180, -10, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("99206", "Light_Bluish_Grey", 0, 0, 1)
+place("99206", "Light_Bluish_Grey", 2, 0, 1)
+place("99206", "Light_Bluish_Grey", 4, 0, 1)
+place("3832", "Light_Bluish_Grey", 0, 1, 2)
+place("99206", "Light_Bluish_Grey", 6, 0, 1)
+place("99206", "Light_Bluish_Grey", 8, 0, 1)
+place("2412b", "Tan", 0, 2, 1)
+place("2412b", "Tan", 0, 2, 2)
+place("2412b", "Tan", 0, 2, 3)
+place("2412b", "Tan", 2, 2, 1)
+place("2412b", "Tan", 2, 2, 2)
+place("2412b", "Tan", 2, 2, 3)
+place("2412b", "Tan", 4, 2, 1)
+place("2412b", "Tan", 4, 2, 2)
+place("2412b", "Tan", 4, 2, 3)
+place("2412b", "Tan", 6, 2, 1)
+place("2412b", "Tan", 6, 2, 2)
+place("2412b", "Tan", 6, 2, 3)
+place("2412b", "Tan", 8, 2, 1)
+place("2412b", "Tan", 8, 2, 2)
+place("2412b", "Tan", 8, 2, 3)

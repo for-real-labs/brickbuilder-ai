@@ -1,0 +1,31 @@
+#: title: A small LEGO building set featuring a single submodel structure.
+#: source: LDraw Official Model Repository, 30023-1.mpd
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3031", "Green", 1, 0, 1)
+place("3001", "Reddish_Brown", 2, 1, 0, rot=90)
+place("3039", "Light_Bluish_Grey", 0, 1, 2, rot=90)
+place("3039", "Light_Bluish_Grey", 4, 1, 2, rot=270)
+place("3700", "Light_Bluish_Grey", 2, 1, 4)
+place("54200", "Black", 2, 4, 0, rot=90)
+place("54200", "Black", 3, 4, 0, rot=270)
+place("87081", "White", 1, 4, 1)
+place("85080", "Red", 3, 7, 1)
+place("85080", "Red", 3, 7, 3, rot=270)
+place("85080", "Red", 1, 7, 3, rot=180)
+place("85080", "Red", 1, 7, 1, rot=90)
+place("87081", "White", 1, 10, 1)
+place("85080", "Red", 3, 13, 1)
+place("85080", "Red", 3, 13, 3, rot=270)
+place("85080", "Red", 1, 13, 3, rot=180)
+place("85080", "Red", 1, 13, 1, rot=90)
+place("87081", "White", 1, 16, 1)
+place("2419", "Light_Bluish_Grey", 0, 19, 3, rot=180)
+place("2419", "Light_Bluish_Grey", 0, 19, 0)
+place("87081", "Black", 1, 20, 1)
+place("3941", "Trans_Yellow", 2, 23, 2)
+place("3941", "Trans_Yellow", 2, 26, 2)
+place("6141", "White", 2.5, 29, 2.5)
+place("43898", "Black", 1.5, 29, 1.5)

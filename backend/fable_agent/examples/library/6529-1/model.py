@@ -1,0 +1,31 @@
+#: title: A small airplane model with two minifigures, featuring a red and white biplane-style aircraft with wings, propeller, tail, and two pilots.
+#: source: LDraw Official Model Repository, 6529-1.mpd
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3139", "Black", (25, -18, 159), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3464", "Trans_Clear", (25, -18, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "Light_Grey", (140, -27, 129), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3139", "Black", (140, -27, 129), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4624", "Light_Grey", (140, -27, 189), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3139", "Black", (140, -27, 189), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4600", "Light_Grey", (140, -31, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2415", "Light_Grey", (45, -39, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3022", "Light_Grey", (140, -39, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2445", "White", (120, -47, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4859", "Red", (20, -55, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4859", "Red", (100, -55, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4592c01", "Red", (30, -63, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4592c01", "Red", (30, -63, 170), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2432", "White", (10, -87, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3479", "Red", (240, -95, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4864b", "White", (100, -103, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4864b", "White", (100, -103, 170), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3020", "White", (240, -103, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3022", "White", (100, -111, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3934", "White", (100, -119, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3933", "White", (100, -119, 240), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2421", "Black", (169, -122, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2412b", "Light_Grey", (110, -127, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4488", "Light_Grey", (140, -127, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))

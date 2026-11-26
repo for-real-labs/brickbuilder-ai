@@ -1,0 +1,32 @@
+#: title: Complex multi-beam assembly with bent liftarms, cross blocks, and assorted axles forming an articulated mechanism.
+#: source: LDraw Official Model Repository, 8273-1.mpd, section 8273 - m-1l'.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("43857", "Light_Bluish_Grey", (20, -10, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("42003", "Light_Bluish_Grey", (20, -10, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (30, -10, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32054", "Black", (40, -10, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32316", "Light_Bluish_Grey", (40, -10, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (40, -10, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6538b", "Dark_Bluish_Grey", (70, -10, 100), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("44294", "Light_Bluish_Grey", (120, -10, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32073", "Light_Bluish_Grey", (120, -10, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6538b", "Dark_Bluish_Grey", (170, -10, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32054", "Black", (200, -10, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32316", "Light_Bluish_Grey", (200, -10, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Light_Bluish_Grey", (200, -10, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43857", "Light_Bluish_Grey", (220, -10, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("42003", "Light_Bluish_Grey", (220, -10, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (20, -20, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (220, -20, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Black", (20, -30, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32526", "Light_Bluish_Grey", (20, -30, 100), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Black", (220, -30, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32526", "Light_Bluish_Grey", (220, -30, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (40, -40, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (60, -40, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (180, -40, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (200, -40, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("40490", "Dark_Bluish_Grey", (120, -50, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))

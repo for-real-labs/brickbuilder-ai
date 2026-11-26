@@ -1,0 +1,31 @@
+#: title: Black and yellow engine hood framing using trapezium panels, beams, and cross blocks forming the roof cover.
+#: source: LDraw Official Model Repository, 42131-1.mpd, section 42131 - engineroof.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32524", "Yellow", (40, -69, 280), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32524", "Yellow", (200, -69, 280), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32140", "Yellow", (20, -129, 340), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("43857", "Yellow", (40, -129, 310), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("11214", "Red", (40, -129, 340), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43857", "Yellow", (40, -129, 350), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("44809", "Black", (60, -129, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("18945", "Black", (60, -129, 160), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32056", "Black", (115, -129, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32316", "Black", (120, -129, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("18651", "Black", (120, -129, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("18651", "Black", (120, -129, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32316", "Black", (120, -129, 220), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32056", "Black", (125, -129, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("44809", "Black", (180, -129, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("18945", "Black", (180, -129, 160), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("43857", "Yellow", (200, -129, 310), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("11214", "Red", (200, -129, 340), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("43857", "Yellow", (200, -129, 350), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32140", "Yellow", (220, -129, 340), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("41677", "Black", (105, -149, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32062", "Red", (120, -149, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("41677", "Black", (135, -149, 120), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("43093", "Blue", (100, -169, 120), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("43093", "Blue", (140, -169, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))

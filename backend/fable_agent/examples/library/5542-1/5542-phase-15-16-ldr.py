@@ -1,0 +1,32 @@
+#: title: Headlight bricks, control sticks, grille tiles, and a patterned slope with lamps forming dashboard and cockpit controls.
+#: source: LDraw Official Model Repository, 5542-1.mpd, section 5542 - Phase 15-16.ldr
+#: author: Ulrich Röder {UR}
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("6141", "Yellow", (6, -14, 250), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2412b", "Light_Grey", (6, -14, 280), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3070b", "Black", (6, -14, 310), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6141", "Yellow", (174, -14, 250), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2412b", "Light_Grey", (174, -14, 280), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3070b", "Black", (174, -14, 310), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("3710", "Yellow", 0.5, 1, 0, rot=90)
+place_ldu("4592", "Light_Grey", (60, -16, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4593", "Light_Grey", (60, -16, 30), (1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966))
+place_ldu("4592", "Light_Grey", (120, -16, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4593", "Light_Grey", (120, -16, 30), (1, 0, 0, 0, 0.966, 0.259, 0, -0.259, 0.966))
+place("3710", "Yellow", 7.5, 1, 0, rot=90)
+place("4070", "Yellow", 0.5, 0, 12, rot=90)
+place("4070", "Yellow", 0.5, 0, 13, rot=90)
+place("4070", "Yellow", 0.5, 0, 14, rot=90)
+place("4070", "Black", 0.5, 0, 15, rot=90)
+place("3795", "Yellow", 3.5, 2, 18, rot=270)
+place("4070", "Yellow", 7.5, 0, 12, rot=270)
+place("4070", "Yellow", 7.5, 0, 13, rot=270)
+place("4070", "Yellow", 7.5, 0, 14, rot=270)
+place("4070", "Black", 7.5, 0, 15, rot=270)
+place("3040p01", "Black", 4, 1, 2)
+place("4287a", "Black", 0.5, 2, 16, rot=180)
+place("3665a", "Black", 1.5, 2, 19, rot=180)
+place("3665a", "Black", 6.5, 2, 19, rot=180)
+place("4287a", "Black", 7.5, 2, 16, rot=180)

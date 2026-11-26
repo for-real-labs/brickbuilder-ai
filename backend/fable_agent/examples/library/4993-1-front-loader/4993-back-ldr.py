@@ -1,0 +1,33 @@
+#: title: Engine compartment back panel with grille tiles, curved slopes, and exhaust port plates.
+#: source: LDraw Official Model Repository, 4993-1_Front-Loader.mpd, section 4993 - Back.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3666", "White", 3, 0, 0)
+place("3036", "White", 2, 0, 1)
+place("61068", "White", 4, 1, 5, rot=180)
+place("54200", "Trans_Red", 2, 2, 3, rot=90)
+place_ldu("48336", "White", (50, -16, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("6141", "Black", 3, 1, 5, rot=90)
+place("3460", "Dark_Bluish_Grey", 2, 1, 3, rot=180)
+place("6141", "Black", 8, 1, 5, rot=90)
+place("54200", "Trans_Red", 9, 2, 3, rot=270)
+place("48336", "White", 9, 1, 5, rot=270)
+place("50950", "White", 0, 0, 2, rot=90)
+place("50950", "White", 0, 0, 4, rot=90)
+place_ldu("61072", "Pearl_Light_Grey", (120, -24, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3666", "White", 3, 2, 3, rot=180)
+place_ldu("61072", "Pearl_Light_Grey", (120, -24, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("50950", "White", 9, 0, 2, rot=270)
+place("50950", "White", 9, 0, 4, rot=270)
+place("50950", "White", 3, 1, 5, rot=180)
+place("2412b", "Light_Bluish_Grey", 3, 3, 3, rot=180)
+place("41748", "White", 0, 1, 0, rot=90)
+place("2412b", "Light_Bluish_Grey", 5, 3, 2, rot=180)
+place("2412b", "Light_Bluish_Grey", 5, 3, 3, rot=180)
+place("2412b", "Light_Bluish_Grey", 5, 3, 4, rot=180)
+place("41747", "White", 6, 1, 0, rot=270)
+place("2412b", "Light_Bluish_Grey", 7, 3, 3, rot=180)
+place("50950", "White", 8, 1, 5, rot=180)
+place("2431", "Dark_Red", 4, 4, 1)

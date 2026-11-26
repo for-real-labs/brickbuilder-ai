@@ -1,0 +1,30 @@
+#: title: Roof assembly using beams, pin joiners, and three curved panels forming the canopy and roofline of the car.
+#: source: LDraw Official Model Repository, 42093-1.mpd, section 42093 - top.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (30, -29, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32523", "Black", (40, -29, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -29, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32140", "Black", (60, -29, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (80, -29, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("4519", "Yellow", (80, -29, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32140", "Black", (100, -29, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (110, -29, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (110, -29, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32523", "Black", (120, -29, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (130, -29, 40), (-1, 0, 0, 0, -0.923, -0.385, 0, -0.385, 0.923))
+place_ldu("32316", "Black", (-20, -34.303, -229.02), (0, -1, 0, -0.774, 0, 0.633, -0.633, 0, -0.774))
+place_ldu("32316", "Black", (180, -34.303, -229.02), (0, -1, 0, -0.774, 0, 0.633, -0.633, 0, -0.774))
+place_ldu("18944", "Black", (20, -44.303, -79.02), (-1, 0, 0, 0, 0.992, -0.128, 0, -0.128, -0.992))
+place_ldu("18944", "Black", (80, -44.303, -79.02), (-1, 0, 0, 0, 0.992, -0.128, 0, -0.128, -0.992))
+place_ldu("18944", "Black", (140, -44.303, -79.02), (-1, 0, 0, 0, 0.992, -0.128, 0, -0.128, -0.992))
+place_ldu("43093", "Blue", (-10, -59.606, -198.04), (1, 0, 0, 0, 0.992, 0.128, 0, -0.128, 0.992))
+place_ldu("32054", "Black", (20, -59.606, -198.04), (1, 0, 0, 0, 0.992, 0.128, 0, -0.128, 0.992))
+place_ldu("62462", "Black", (50, -59.606, -198.04), (1, 0, 0, 0, -0.992, -0.128, 0, 0.128, -0.992))
+place_ldu("6558", "Blue", (80, -59.606, -198.04), (1, 0, 0, 0, -0.992, -0.128, 0, 0.128, -0.992))
+place_ldu("62462", "Black", (110, -59.606, -198.04), (1, 0, 0, 0, -0.992, -0.128, 0, 0.128, -0.992))
+place_ldu("32054", "Black", (140, -59.606, -198.04), (-1, 0, 0, 0, 0.992, -0.128, 0, -0.128, -0.992))
+place_ldu("43093", "Blue", (170, -59.606, -198.04), (-1, 0, 0, 0, 0.992, -0.128, 0, -0.128, -0.992))

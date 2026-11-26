@@ -1,0 +1,31 @@
+#: title: Detailed section with light bluish grey plates and corner pieces plus tan grille tiles forming a setback facade.
+#: source: LDraw Official Model Repository, 21046-1.mpd, section 21046 - step68-75.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("2420", "Light_Bluish_Grey", 1, 0, 3)
+place("2420", "Light_Bluish_Grey", 1, 0, 5, rot=90)
+place("3623", "Light_Bluish_Grey", 3, 0, 1, rot=270)
+place("3623", "Light_Bluish_Grey", 3, 0, 6, rot=270)
+place_ldu("3070b", "Tan", (30, -10, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3070b", "Tan", (30, -10, 188), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2412b", "Tan", (60, -10, 12), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2412b", "Tan", (60, -10, 188), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32028", "Tan", (30, -16, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("99206", "Light_Bluish_Grey", 1, 0, 1)
+place("99206", "Light_Bluish_Grey", 1, 0, 7, rot=180)
+place("3021", "Light_Bluish_Grey", 1, 1, 2)
+place("3021", "Light_Bluish_Grey", 1, 1, 6, rot=180)
+place("3024", "Light_Bluish_Grey", 3, 1, 1, rot=270)
+place("3024", "Light_Bluish_Grey", 3, 1, 8, rot=270)
+place("2412b", "Tan", 1, 2, 1, rot=90)
+place("2412b", "Tan", 1, 2, 3, rot=90)
+place("2412b", "Tan", 1, 2, 5, rot=90)
+place("2412b", "Tan", 1, 2, 7, rot=90)
+place("2412b", "Tan", 2, 2, 1)
+place("2412b", "Tan", 2, 2, 2)
+place("2412b", "Tan", 2, 2, 3)
+place("2412b", "Tan", 2, 2, 6)
+place("2412b", "Tan", 2, 2, 7)
+place("2412b", "Tan", 2, 2, 8)

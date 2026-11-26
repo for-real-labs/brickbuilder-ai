@@ -1,0 +1,32 @@
+#: title: Rear section assembly with a connector block, panel, gears, and bent liftarms forming the rear structural and drivetrain mount.
+#: source: LDraw Official Model Repository, 42111-1.mpd, section 42111 - rear.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("18575", "Black", (120, -19, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32123b", "Yellow", (120, -34, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (120, -41, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32526", "Black", (40, -49, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -49, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32054", "Black", (40, -49, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32054", "Black", (40, -49, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("11214", "Red", (80, -49, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("27940", "Dark_Bluish_Grey", (80, -49, 80), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("32013", "Black", 3.5, 5, 4.5)
+place_ldu("11214", "Red", (80, -49, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("24119", "Black", (120, -49, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11214", "Red", (160, -49, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("27940", "Dark_Bluish_Grey", (160, -49, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32013", "Black", (160, -49, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("11214", "Red", (160, -49, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32526", "Black", (200, -49, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (200, -49, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32054", "Black", (200, -49, 80), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32054", "Black", (200, -49, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("48496", "Black", (120, -59, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6589", "Tan", (120, -72, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6589", "Tan", (120, -89, 83), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("15462", "Reddish_Brown", (120, -89, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("26287", "Light_Bluish_Grey", (120, -89, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (120, -109, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

@@ -1,0 +1,30 @@
+#: title: Level crossing boom barrier: hose reel base with technic axle and a chain of alternating red/white pin joiners forming the striped barrier arm
+#: source: LDraw Official Model Repository, 10128-1.mpd, section 10128 - level crossing - barrier.ldr
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("6553", "Light_Grey", (20, -13.9, 25), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2585", "Black", (20, -13.9, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3705", "Black", (20, -13.9, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6536", "Light_Grey", (20, -13.9, 95), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("4459", "Black", (30, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "White", (50, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (70, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "Red", (90, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (110, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "White", (130, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (150, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "Red", (170, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (190, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "White", (210, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (230, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "Red", (250, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (270, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "White", (290, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (310, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "Red", (330, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (350, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("75535", "White", (370, -33.9, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4274", "Light_Grey", (392, -33.9, 95), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Yellow", (400, -33.9, 95), (0, -1, 0, 1, 0, 0, 0, 0, 1))

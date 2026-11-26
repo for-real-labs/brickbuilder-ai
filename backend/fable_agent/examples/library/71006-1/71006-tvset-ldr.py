@@ -1,0 +1,31 @@
+#: title: Blue retro television set on a black reinforced panel with light bluish grey bracket stand.
+#: source: LDraw Official Model Repository, 71006-1.mpd, section 71006 - tvset.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("88072", "Light_Bluish_Grey", (40, -16, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3023", "Light_Bluish_Grey", (70, -16, 30), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("88072", "Light_Bluish_Grey", (70, -16, 50), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("88072", "Light_Bluish_Grey", (100, -16, 40), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("44728", "Blue", (30, -38, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("4070", "Blue", (60, -38, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("44728", "Blue", (110, -38, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("87552", "Black", (38, -48, 30), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3023", "Light_Bluish_Grey", (38, -48, 50), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3023", "Light_Bluish_Grey", (46, -48, 50), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("47457", "Blue", (60, -48, 76), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("11211", "Tan", (70, -48, 50), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("47457", "Blue", (80, -48, 76), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("99781", "Black", (86, -48, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("44728", "Blue", (30, -58, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4070", "Blue", (60, -58, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("44728", "Blue", (110, -58, 40), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3069b", "Blue", 1.5, 9, 1, rot=270)
+place("3794b", "Blue", 2.5, 9, 1)
+place("3794b", "Blue", 2.5, 9, 2)
+place("3069b", "Blue", 4.5, 9, 1, rot=270)
+place_ldu("4593", "Black", (70, -88, 30), (0, -0.7073, 0.7071, 0, 0.7071, 0.7073, -1, 0, 0))
+place_ldu("4592", "Light_Bluish_Grey", (70, -88, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4593", "Black", (70, -88, 50), (0, 0.7073, -0.7071, 0, 0.7071, 0.7073, 1, 0, 0))
+place_ldu("4592", "Light_Bluish_Grey", (70, -88, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))

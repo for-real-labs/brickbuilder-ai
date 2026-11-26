@@ -1,0 +1,30 @@
+#: title: Long dual-beam structural assembly with thirteen-stud beams and numerous connecting pins
+#: source: LDraw Official Model Repository, 8273-1_Utility-Cargo-Truck.mpd, section 8273 - a-1h.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("6538b", "Dark_Bluish_Grey", (60, 81, 140), (-0.707107, -0.707107, 0, 0, 0, 1, -0.707107, 0.707107, 0))
+place_ldu("32073", "Light_Bluish_Grey", (60, 31, 140), (0, -0.707107, 0.707107, 1, 0, 0, 0, 0.707107, 0.707107))
+place_ldu("6538b", "Dark_Bluish_Grey", (60, -19, 140), (-0.707107, -0.707107, 0, 0, 0, -1, 0.707107, -0.707107, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -49, 140), (0, -0.707107, -0.707107, 1, 0, 0, 0, -0.707107, 0.707107))
+place_ldu("32184", "Light_Bluish_Grey", (60, -49, 140), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("43093", "Blue", (50, -49, 120), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("41239", "Blue", (40, -49, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -49, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (50, -49, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (30, -49, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (30, -49, 260), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("43093", "Blue", (50, -49, 160), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32140", "Black", (60, -69, 220), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (50, -9, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("41239", "Dark_Bluish_Grey", (40, -9, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -9, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (50, -9, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (50, -9, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (50, -9, 240), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (30, -9, 260), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32140", "Black", (60, -69, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32072", "Yellow", (60, -69, 140), (-0.707107, -0.707107, 0, 0, 0, -1, 0.707107, -0.707107, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -69, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -69, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

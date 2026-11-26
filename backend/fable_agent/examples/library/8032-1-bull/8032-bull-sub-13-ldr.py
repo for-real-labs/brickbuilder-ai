@@ -1,0 +1,31 @@
+#: title: A large multi-piece structural and drive sub-assembly with red technic bricks, a long axle, gears, and white grille tiles forming part of the bull's body.
+#: source: LDraw Official Model Repository, 8032-1_Bull.mpd, section 8032 - Bull Sub 13.ldr
+#: author: Charles Farmer [farmer]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3023", "Red", (80, 88.099, 75.508), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("4274", "Light_Grey", (60, 84.666, 94.904), (0, 0, -1, -0.829, -0.559, 0, -0.559, 0.829, 0))
+place_ldu("4274", "Light_Grey", (100, 84.666, 94.904), (0, 0, -1, -0.829, -0.559, 0, -0.559, 0.829, 0))
+place_ldu("3701", "Red", (80, 83.626, 82.14), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("3710", "Red", (80, 58.098, 84.221), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("3021", "Red", (80, 45.991, 66.405), (0, 0, 1, 0.829, -0.559, 0, 0.559, 0.829, 0))
+place_ldu("3709b", "Red", (80, 33.227, 67.445), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("3894", "Red", (50, 28.753, 74.077), (0, 0, 1, 0.829, -0.559, 0, 0.559, 0.829, 0))
+place_ldu("3894", "Red", (110, 28.753, 74.077), (0, 0, 1, 0.829, -0.559, 0, 0.559, 0.829, 0))
+place_ldu("4150p01", "White", (60, 17.96, 18.548), (0, 0, -1, -0.829, -0.559, 0, -0.559, 0.829, 0))
+place_ldu("4150p01", "White", (100, 17.96, 18.548), (0, 0, -1, -0.829, -0.559, 0, -0.559, 0.829, 0))
+place_ldu("3701", "Red", (80, 17.303, 37.405), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("3022", "Red", (60, 13.486, 25.18), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("3022", "Red", (100, 13.486, 25.18), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("3704", "Black", (60, 6.581, 71.184), (-1, 0, 0, 0, -0.829, -0.559, 0, -0.559, 0.829))
+place_ldu("6538a", "Light_Grey", (80, 6.581, 71.184), (0, 0, 1, -0.559, -0.829, 0, 0.829, -0.559, 0))
+place_ldu("3704", "Black", (100, 6.581, 71.184), (-1, 0, 0, 0, -0.829, -0.559, 0, -0.559, 0.829))
+place_ldu("3701", "Red", (80, 0.722, 26.221), (-1, 0, 0, 0, -0.559, 0.829, 0, 0.829, 0.559))
+place_ldu("6553", "Light_Grey", (10, -10, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3713", "Light_Grey", (30, -10, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3707", "Black", (80, -10, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6553", "Light_Grey", (80, -10, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("6538a", "Light_Grey", 3.5, 0, 4.5, rot=180)
+place_ldu("3713", "Light_Grey", (130, -10, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6553", "Light_Grey", (150, -10, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))

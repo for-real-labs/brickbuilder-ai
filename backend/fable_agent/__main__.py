@@ -117,7 +117,7 @@ def main(argv: list[str] | None = None) -> int:
                             "The -v2 methods add ready-made trees and automatic repair; thorough-v2 also "
                             "has part measurements up front and batched edits")
     build.add_argument("--examples", action="store_true",
-                       help="v2 methods: let the model pick a category of example scripts to read first")
+                       help="v2 methods: show the model the example builds closest to the request first")
     common(build)
 
     edit = commands.add_parser("edit", help="Continue an existing build with a change request")

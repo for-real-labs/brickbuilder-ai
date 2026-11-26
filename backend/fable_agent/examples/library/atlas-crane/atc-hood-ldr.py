@@ -1,0 +1,22 @@
+#: title: Carrier engine hood: 8x8 plate with grille tiles; hinge line at local z=0
+#: source: ldraw-nova example atlas, atlas-crane.mpd, section atc-hood.ldr
+#: author: Atlas AT-90 generator (Claude Code, Claude Opus 5.5) for anteloc
+#: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 17 of 17 parts kept (minifigures left out)
+place("41539", "Black", 0, 0, 0)
+place("2412b", "Dark_Bluish_Grey", 0.5, 1, 0, rot=270)
+place("2412b", "Dark_Bluish_Grey", 2.5, 1, 0, rot=270)
+place("2412b", "Dark_Bluish_Grey", 4.5, 1, 0, rot=270)
+place("2412b", "Dark_Bluish_Grey", 6.5, 1, 0, rot=270)
+place("2412b", "Dark_Bluish_Grey", 0.5, 1, 2, rot=270)
+place("2412b", "Dark_Bluish_Grey", 2.5, 1, 2, rot=270)
+place("2412b", "Dark_Bluish_Grey", 4.5, 1, 2, rot=270)
+place("2412b", "Dark_Bluish_Grey", 6.5, 1, 2, rot=270)
+place("2412b", "Dark_Bluish_Grey", 0.5, 1, 4, rot=270)
+place("2412b", "Dark_Bluish_Grey", 2.5, 1, 4, rot=270)
+place("2412b", "Dark_Bluish_Grey", 4.5, 1, 4, rot=270)
+place("2412b", "Dark_Bluish_Grey", 6.5, 1, 4, rot=270)
+place("2412b", "Dark_Bluish_Grey", 0.5, 1, 6, rot=270)
+place("2412b", "Dark_Bluish_Grey", 2.5, 1, 6, rot=270)
+place("2412b", "Dark_Bluish_Grey", 4.5, 1, 6, rot=270)
+place("2412b", "Dark_Bluish_Grey", 6.5, 1, 6, rot=270)

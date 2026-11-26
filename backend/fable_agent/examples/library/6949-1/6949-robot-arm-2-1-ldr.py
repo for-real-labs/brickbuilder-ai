@@ -1,0 +1,31 @@
+#: title: Upper arm segment built from plates and red hinge tops with a dark grey wing panel and Spyrius machinery patterned tile.
+#: source: LDraw Official Model Repository, 6949-1.mpd, section 6949 - Robot - Arm 2 - 1.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3021", "Black", (12.929, -8, -15.355), (0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, 0.7071))
+place("3020", "Black", 1, 0, 1, rot=270)
+place_ldu("4589", "Trans_Neon_Green", (-32.3254, -10, -23.8402), (-0.7071, -0.7071, 0, 0, 0, -1, 0.7071, -0.7071, 0))
+place_ldu("4589", "Trans_Neon_Green", (4.4438, -10, -60.6094), (-0.7071, -0.7071, 0, 0, 0, -1, 0.7071, -0.7071, 0))
+place_ldu("4220b", "Black", (-53.5752, -14, -66.303), (0, 0.258799, 0.965899, -1, 0, 0, 0, -0.965899, 0.258799))
+place_ldu("4221", "Black", (-53.5752, -14, -66.303), (0, 0.707069, 0.707069, -1, 0, 0, 0, -0.707069, 0.707069))
+place_ldu("4221", "Black", (-53.5752, -14, -66.303), (0, 1e-06, 0.999939, 1, 0, 0, 0, 0.999939, -1e-06))
+place_ldu("6048", "Black", (-23.8402, -14, -52.1242), (-0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, -0.7071))
+place_ldu("3839b", "Black", (-1.213, -16, -29.497), (0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, 0.7071))
+place_ldu("2430", "Red", (20, -16, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2429", "Red", (20, -16, 20), (-0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, -0.7071))
+place("3023", "Red", 1, 1, 2)
+place_ldu("2444", "Black", (-8.284, -24, -36.568), (-0.7071, 0, 0.7071, 0, 1, 0, -0.7071, 0, -0.7071))
+place_ldu("3023", "Black", (27.071, -24, -1.213), (-0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, -0.7071))
+place("4859", "Dark_Grey", 0, 2, 1)
+place_ldu("3020", "Black", (5.858, -32, -22.426), (0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, 0.7071))
+place("3022", "Black", 1, 3, 1)
+place("4730", "Red", 1, 1, 3, rot=270)
+place_ldu("3794a", "Red", (-15.355, -40, -43.639), (-0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, -0.7071))
+place_ldu("3794a", "Red", (-1.213, -40, -29.497), (-0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, -0.7071))
+place_ldu("2430", "Red", (20, -40, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2429", "Red", (20, -40, 20), (-0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, -0.7071))
+place("3068bp51", "Black", 1, 4, 2, rot=180)
+place("2412b", "Black", 1, 4, 4)
+place_ldu("4595", "Black", (-8.284, -56, -36.568), (-0.7071, 0, -0.7071, 0, 1, 0, 0.7071, 0, -0.7071))

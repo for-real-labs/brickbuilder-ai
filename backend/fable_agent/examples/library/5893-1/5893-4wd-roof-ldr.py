@@ -1,0 +1,33 @@
+#: title: Roof structure of technic and standard plates in blue and white forming the cabin top with clip attachments.
+#: source: LDraw Official Model Repository, 5893-1.mpd, section 5893 - 4WD roof.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("32001", "Black", 0, 0, 2, rot=90)
+place("32001", "Black", 8, 0, 2, rot=90)
+place("32001", "Black", 4, 0, 2, rot=90)
+place("3023", "Dark_Bluish_Grey", 2, 0, 7, rot=180)
+place("3023", "Dark_Bluish_Grey", 6, 0, 7, rot=180)
+place("4477", "Black", 0, 0, 1, rot=180)
+place("3832", "Blue", 0, 1, 6, rot=180)
+place("3738", "Blue", 1, 1, 4, rot=180)
+place("3460", "Blue", 1, 1, 3, rot=180)
+place("3738", "Blue", 1, 1, 1, rot=180)
+place_ldu("63868", "Blue", (10, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60478", "Black", (10, 8.8, -9.6), (0, 0, -1, -0.8, 0.6, 0, 0.6, 0.8, 0))
+place_ldu("2431", "Blue", (10, 20, -28), (0, 0, 1, 0.8, 0.6, 0, -0.6, 0.8, 0))
+place_ldu("60478", "Black", (10, 40.8, -33.6), (0, 0, 1, 0.8, 0.6, 0, -0.6, 0.8, 0))
+place_ldu("63868", "Blue", (190, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60478", "Black", (190, 8.8, -9.6), (0, 0, -1, -0.8, 0.6, 0, 0.6, 0.8, 0))
+place_ldu("2431", "Blue", (190, 20, -28), (0, 0, 1, 0.8, 0.6, 0, -0.6, 0.8, 0))
+place_ldu("60478", "Black", (190, 40.8, -33.6), (0, 0, 1, 0.8, 0.6, 0, -0.6, 0.8, 0))
+place("3623", "Blue", 0, 1, 3, rot=90)
+place("3623", "Blue", 9, 1, 3, rot=90)
+place("3795", "Blue", 0, 2, 1, rot=90)
+place("3795", "White", 2, 2, 1, rot=90)
+place("3795", "White", 6, 2, 1, rot=90)
+place("3795", "Blue", 8, 2, 1, rot=90)
+place("3021", "White", 4, 2, 1, rot=90)
+place("3666", "White", 2, 2, 7, rot=180)
+place("3023", "White", 4, 2, 6, rot=180)

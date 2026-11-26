@@ -1,0 +1,32 @@
+#: title: Detailed architectural element with plates, embossed bricks, door-rail plates, window panels, clip plates, slope bricks, and a centre-stud plate forming a decorated wall section.
+#: source: LDraw Official Model Repository, 10276-1.mpd, section 10276 - bk3-step122-129.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3020", "Tan", 0, 0, 2)
+place("15533", "Tan", 0, 1, 3, rot=180)
+place("3010", "Tan", 0, 1, 2, rot=180)
+place("3710", "Tan", 0, 4, 2, rot=180)
+place("32028", "Dark_Tan", 0, 4, 3, rot=180)
+place("32028", "Dark_Tan", 2, 4, 3, rot=180)
+place("3020", "Tan", 0, 5, 0, rot=90)
+place("3020", "Tan", 2, 5, 0, rot=90)
+place("4032a", "Tan", 1, 6, 2, rot=90)
+place("3023", "Tan", 0, 6, 2, rot=90)
+place("3023", "Tan", 3, 6, 2, rot=90)
+place("35480", "Tan", 3, 7, 2, rot=270)
+place("35480", "Tan", 0, 7, 2, rot=270)
+place("3023", "Tan", 3, 8, 2, rot=270)
+place("3023", "Tan", 0, 8, 2, rot=270)
+place("35480", "Tan", 3, 9, 2, rot=270)
+place("35480", "Tan", 0, 9, 2, rot=270)
+place("90195", "Tan", 1, 7, 2, rot=90)
+place("90195", "Tan", 2, 7, 2, rot=270)
+place("3004", "Tan", 3, 10, 2, rot=270)
+place("3004", "Tan", 0, 10, 2, rot=270)
+place_ldu("61252", "Tan", (10, -112, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("61252", "Tan", (70, -112, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("11476", "Tan", (40, -112, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("60477", "Tan", 0, 13, 2, rot=90)
+place("54200", "Tan", 3, 16, 2)

@@ -1,0 +1,30 @@
+#: title: Skybridge or rooftop structure spanning the towers, using a long white plate with transparent light blue window tiles and grille detailing.
+#: source: LDraw Official Model Repository, 21021-1.mpd, section 21021 - 5.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("2445", "White", 1, 0, 1, rot=90)
+place("3023", "Trans_Light_Blue", 1, 0, 0, rot=180)
+place("3020", "White", 0, 1, 11, rot=180)
+place("3021", "White", 0, 1, 0, rot=90)
+place("3021", "White", 2, 1, 0, rot=90)
+place("2431", "Trans_Light_Blue", 0, 1, 10, rot=180)
+place("2431", "Trans_Light_Blue", 0, 1, 9, rot=180)
+place("2431", "Trans_Light_Blue", 0, 1, 8, rot=180)
+place("2431", "Trans_Light_Blue", 0, 1, 7, rot=180)
+place("2431", "Trans_Light_Blue", 0, 1, 6, rot=180)
+place("2431", "Trans_Light_Blue", 0, 1, 5, rot=180)
+place("2431", "Trans_Light_Blue", 0, 1, 4, rot=180)
+place("2431", "Trans_Light_Blue", 0, 1, 3, rot=180)
+place("3023", "Trans_Light_Blue", 0, 2, 0, rot=90)
+place("3023", "Trans_Light_Blue", 3, 2, 0, rot=90)
+place("3023", "Trans_Light_Blue", 1, 2, 0)
+place("3023", "Trans_Light_Blue", 1, 2, 1)
+place("2431", "Trans_Light_Blue", 0, 2, 12, rot=180)
+place("2431", "Trans_Light_Blue", 0, 2, 11, rot=180)
+place("2431", "Trans_Light_Blue", 0, 2, 2, rot=180)
+place("2412b", "White", 0, 3, 0, rot=90)
+place("2412b", "White", 1, 3, 0, rot=90)
+place("2412b", "White", 2, 3, 0, rot=90)
+place("2412b", "White", 3, 3, 0, rot=90)

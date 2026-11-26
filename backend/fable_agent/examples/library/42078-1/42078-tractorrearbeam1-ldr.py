@@ -1,0 +1,32 @@
+#: title: A bent liftarm and brick beam framework forming one side of the tractor's rear structural support, reinforced with pins and cross blocks.
+#: source: LDraw Official Model Repository, 42078-1.mpd, section 42078 - tractorrearbeam1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("11214", "Red", (40, -9, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -9, 360), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (30, -29, 380), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32054", "Black", (60, -29, 380), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32000", "Black", (20, -39, 390), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32000", "Black", (80, -39, 390), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (15, -49, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (25, -49, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (30, -49, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (30, -49, 380), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32525", "Black", (40, -49, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32526", "Black", (40, -49, 280), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -49, 260), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -49, 280), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -49, 300), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (50, -49, 320), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (50, -49, 360), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("11214", "Red", (60, -49, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32278", "Black", (60, -49, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32140", "Black", (60, -49, 320), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32054", "Black", (60, -49, 380), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32184", "Black", (80, -49, 80), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("60485", "Yellow", (100, -49, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3713", "Red", (100, -49, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32184", "Black", (120, -49, 80), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("11214", "Red", (140, -49, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))

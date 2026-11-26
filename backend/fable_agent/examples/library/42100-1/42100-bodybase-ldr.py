@@ -1,0 +1,30 @@
+#: title: bodybase
+#: source: LDraw Official Model Repository, 42100-1.mpd, section 42100 - bodybase.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("6536", "Dark_Bluish_Grey", (40, -9, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (40, -9, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("63869", "Light_Bluish_Grey", (40, -9, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("26287", "Light_Bluish_Grey", (40, -9, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (40, -9, 140), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (40, -9, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32054", "Orange", (60, -9, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32054", "Orange", (60, -9, 160), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("11478", "Light_Bluish_Grey", (80, -9, 35), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11478", "Light_Bluish_Grey", (80, -9, 45), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11478", "Light_Bluish_Grey", (80, -9, 155), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11478", "Light_Bluish_Grey", (80, -9, 165), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32054", "Orange", (100, -9, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32054", "Orange", (100, -9, 160), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6536", "Dark_Bluish_Grey", (120, -9, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (120, -9, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("63869", "Light_Bluish_Grey", (120, -9, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("26287", "Light_Bluish_Grey", (120, -9, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Light_Bluish_Grey", (120, -9, 140), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3705", "Black", (120, -9, 150), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (30, -29, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (30, -29, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (130, -29, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (130, -29, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

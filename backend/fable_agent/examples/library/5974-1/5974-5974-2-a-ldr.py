@@ -1,0 +1,30 @@
+#: title: Wheeled rover chassis built from plates, brackets, tyres, and a steering stand with airtanks detail.
+#: source: LDraw Official Model Repository, 5974-1.mpd, section 5974 - 5974-2-a.ldr
+#: author: Massimo Maso
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("55982", "Black", (20, -38, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("30391", "Rubber_Black", (20, -38, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Tan", (40, -38, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3749", "Tan", (80, -38, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("55982", "Black", (100, -38, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("30391", "Rubber_Black", (100, -38, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2817", "Light_Grey", 2, 3.5, 1)
+place("3020", "White", 2, 6, 1, rot=90)
+place_ldu("88072", "Black", (60, -64, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3829c01", "White", (60, -72, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123a", "Light_Grey", (60, -73, 10), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("55982", "Black", (20, -94, 119.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("30391", "Rubber_Black", (20, -94, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Tan", (40, -94, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3749", "Tan", (80, -94, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("55982", "Black", (100, -94, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("30391", "Rubber_Black", (100, -94, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2817", "Light_Grey", 2, 10.5, 5)
+place("6087", "Black", 2, 7, 2)
+place("47457", "White", 2, 14, 4)
+place("2555", "Dark_Grey", 2, 16, 5, rot=90)
+place("3937", "White", 2, 14, 6, rot=180)
+place("2555", "Dark_Grey", 3, 16, 5, rot=90)
+place_ldu("4697b", "Light_Grey", (60, -142, 110), (0, 0, 1, -1, 0, 0, 0, -1, 0))

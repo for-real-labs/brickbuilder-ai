@@ -1,0 +1,30 @@
+#: title: Wheel bogie assembly: plates, turntable, axle-hole rounds, control-stick hinge, single-axle train wheelsets, buffer beam, magnet casing and train coupling
+#: source: LDraw Official Model Repository, 10183-1_German-Standard-Electric-Locomotive-2.mpd, section 10183 - 16 - wheels.ldr
+#: author: Bert Van Raemdonck [BEAVeR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("6141", "Black", (70, -33, 148), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6141", "Black", (90, -33, 13), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3710", "Black", (80, -39, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3710", "Black", (80, -39, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4032a", "Black", (80, -43, 21), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3680c01", "Black", (80, -43, 29), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3022", "Black", (80, -43, 132), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4032a", "Black", (80, -43, 140), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2959c01", "Black", (222, -43, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2920", "Black", (190, -47, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4592", "Black", (70, -53, 148), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4593", "Black", (70, -53, 148), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3023", "Red", (80, -53, 36), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3023", "Red", (80, -53, 124), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3034", "Black", (100, -55, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2878c02", "Black", 0, 0, 1, rot=270)
+place_ldu("4070", "Black", (70, -63, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4070", "Black", (70, -63, 110), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3795", "Black", (80, -63, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4070", "Black", (90, -63, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4070", "Black", (90, -63, 110), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2878c02", "Black", 5, 0, 1, rot=270)
+place_ldu("4022", "Black", (160, -63, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4092b", "Black", (80, -71, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))

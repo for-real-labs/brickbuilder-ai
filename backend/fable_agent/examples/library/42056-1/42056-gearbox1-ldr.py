@@ -1,0 +1,31 @@
+#: title: Multi-speed gearbox stage using clutch gears, 16-tooth gears, and a 20-tooth double bevel gear on axles for gear selection.
+#: source: LDraw Official Model Repository, 42056-1.mpd, section 42056 - gearbox1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("94925", "Light_Bluish_Grey", (40, -27, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("18946", "Red", (40, -27, 100), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("18946", "Red", (40, -27, 180), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (40, -27, 220), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32054", "Red", (60, -27, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("41239", "Light_Bluish_Grey", (60, -27, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32054", "Red", (60, -27, 260), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3706", "Black", (70, -27, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3706", "Black", (70, -27, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -27, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -27, 100), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("44294", "Light_Bluish_Grey", (80, -27, 100), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("44294", "Light_Bluish_Grey", (80, -27, 180), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32269", "Black", (80, -27, 180), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -27, 220), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("18946", "Red", (100, -27, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (100, -27, 100), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("94925", "Light_Bluish_Grey", (100, -27, 180), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("18946", "Red", (100, -27, 220), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("10928", "Dark_Bluish_Grey", (120, -27, 100), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (120, -27, 180), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("26287", "Red", (140, -27, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("26287", "Red", (140, -27, 220), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("4519", "Light_Bluish_Grey", (180, -27, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (180, -27, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

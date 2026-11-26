@@ -1,0 +1,33 @@
+#: title: A complex yellow winch-drive assembly with axles, 24-tooth gears, universal joints, worm gear, and an 8-tooth gear forming a multi-stage geared crane mechanism.
+#: source: LDraw Official Model Repository, 8062-1_Crane.mpd, section 8062 - Crane Sub 20.ldr
+#: author: Charles Farmer [farmer]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3023", "Yellow", (70, -10.39, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Yellow", (70, -10.39, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Yellow", (70, -10.39, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Yellow", (70, -18.39, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Yellow", (70, -18.39, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Yellow", (70, -18.39, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4185", "Light_Grey", (35, -32.39, 180), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("4185", "Light_Grey", (45, -32.39, 180), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3648a", "Light_Grey", (50, -32.39, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3648a", "Light_Grey", (50, -32.39, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Black", (70, -32.39, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3713", "Light_Grey", (90, -32.39, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3712", "Light_Grey", (90, -32.39, 120), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Grey", (90, -32.39, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3707", "Black", (110, -32.39, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3707", "Black", (120, -32.39, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3647", "Light_Grey", (120, -32.39, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3326a", "Light_Grey", (120, -32.39, 120), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("4716", "Black", (120, -32.39, 180), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3712", "Light_Grey", (150, -32.39, 120), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3713", "Light_Grey", (150, -32.39, 180), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3706", "Black", (200, -32.39, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6538a", "Light_Grey", (260, -32.39, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3707", "Black", (340, -32.39, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3895", "Yellow", (70, -42.39, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3460", "Yellow", (70, -50.39, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3673", "Light_Grey", (30, -52.39, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))

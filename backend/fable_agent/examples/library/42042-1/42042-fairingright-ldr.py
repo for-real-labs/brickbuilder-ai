@@ -1,0 +1,33 @@
+#: title: Right-side body fairing made of blue smooth panels and fairing pieces mounted on a long white liftarm beam.
+#: source: LDraw Official Model Repository, 42042-1.mpd, section 42042 - fairingright.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("11954", "Blue", (20, -49, 300), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (20, -69, 220), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (20, -69, 300), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (20, -69, 380), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("41239", "White", (20, -69, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32526", "White", (20, -69, 340), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (20, -79, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (20, -79, 400), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("11954", "Blue", (20, -89, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (20, -89, 330), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -89, 110), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("87086", "Blue", (20, -89, 340), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("87080", "Blue", (20, -89, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (20, -69, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("87086", "Blue", (20, -49, 100), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32526", "White", (100, -69, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (80, -69, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("87080", "Blue", (120, -49, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (130, -49, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("18654", "Dark_Bluish_Grey", (140, -49, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6558", "Blue", (60, -69, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -69, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("87086", "Blue", (120, -89, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (40, -129, 330), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2780", "Black", (40, -129, 110), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4274", "Light_Bluish_Grey", (100, -129, 30), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6141", "Trans_Orange", (100, -129, 27), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

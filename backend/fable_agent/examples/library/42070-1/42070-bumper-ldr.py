@@ -1,0 +1,32 @@
+#: title: Dark azure front bumper featuring fairing panels, beams, angle connectors, and a commemorative '40 1977-2017' text beam.
+#: source: LDraw Official Model Repository, 42070-1.mpd, section 42070 - bumper.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2780", "Black", (220, -20, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("64782", "Dark_Azure", (240, -70, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (260, -20, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (360, -50, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (120, -50, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (360, -70, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (120, -70, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32316", "Dark_Azure", (120, -70, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32316", "Dark_Azure", (360, -70, 20), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("87086", "Dark_Azure", (100, -110, 20), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (60, -90, 50), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("87080", "Dark_Azure", (380, -110, 20), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (420, -90, 50), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("43093", "Blue", (320, -110, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("43093", "Blue", (160, -110, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32054", "Black", (160, -110, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32054", "Black", (320, -110, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32013", "Red", (320, -110, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32013", "Red", (160, -110, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6536", "Black", (60, -110, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6536", "Black", (420, -110, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("44294", "Light_Bluish_Grey", (80, -110, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("44294", "Light_Bluish_Grey", (400, -110, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (180, -120, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (300, -120, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32525", "Dark_Azure", (240, -130, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))

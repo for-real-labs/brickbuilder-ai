@@ -1,0 +1,32 @@
+#: title: An ice cream cart scene featuring a wheeled vendor cart with decorative toppings and a chef minifigure.
+#: source: LDraw Official Model Repository, 6601-1.mpd
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("3641", "Black", (60, -18, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (60, -18, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("122c01", "Black", (60, -24, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3937", "White", (110.001, -24, 59.998), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3938", "White", (110.001, -24, 59.998), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3795", "White", 1, 3, 2)
+place_ldu("3839b", "White", (130, -40, 59.999), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4211", "White", (60, -48, 59.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3957a", "Yellow", (130, -48, 49.999), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3004p07", "White", (30, -64, 59.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3005", "White", (30.001, -64, 29.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3005", "White", (30.001, -64, 89.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3010", "White", 4, 5, 1, rot=90)
+place_ldu("4599a", "Red", (109.999, -64, 30.001), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4599a", "Red", (109.999, -64, 90.001), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3069b", "Blue", (29.999, -72, 39.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3069b", "Blue", (29.999, -72, 79.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3938", "White", (60, -72, 29.999), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3937", "White", (60, -72, 29.999), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3938", "White", (60, -72, 89.999), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3937", "White", (60, -72, 89.999), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3069b", "Blue", (89.999, -72, 39.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3069b", "Blue", (89.999, -72, 79.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3068bp67", "White", (60.003, -80, 39.999), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3068bp67", "White", (60.003, -80, 79.999), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3960", "White", (130, -144, 49.999), (0, 0, -1, 0, 1, 0, 1, 0, 0))

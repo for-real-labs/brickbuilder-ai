@@ -1,0 +1,32 @@
+#: title: Front hood panel with smooth panels, plates, and tiles creating the hood surface.
+#: source: LDraw Official Model Repository, 42125-1.mpd, section 42125 - front1c.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("22961", "White", (20, -4.193, 3.045), (0, 0, 1, -0.383, -0.924, 0, 0.924, -0.383, 0))
+place_ldu("22961", "White", (180, -4.193, 3.045), (0, 0, 1, -0.383, -0.924, 0, 0.924, -0.383, 0))
+place_ldu("4274", "Light_Bluish_Grey", (20, -13.431, -0.782), (0, 0, -1, -0.924, -0.383, 0, -0.383, 0.924, 0))
+place_ldu("4274", "Light_Bluish_Grey", (180, -13.431, -0.782), (0, 0, -1, -0.924, -0.383, 0, -0.383, 0.924, 0))
+place_ldu("32016", "Red", (20, -19.5, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (20, -19.5, 80), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("41678", "Red", (20, -19.5, 90), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (30, -19.5, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (170, -19.5, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32016", "Red", (180, -19.5, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (180, -19.5, 80), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("41678", "Red", (180, -19.5, 90), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3666", "Black", (70, -20.822, -3.843), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))
+place_ldu("3623", "Black", (160, -20.822, -3.843), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))
+place_ldu("3623", "Black", (40, -28.214, -6.905), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))
+place_ldu("3666", "Black", (130, -28.214, -6.905), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))
+place_ldu("4162", "Red", (90, -35.605, -9.966), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))
+place_ldu("3070b", "Red", (180, -35.605, -9.966), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))
+place_ldu("2780", "Black", (10, -39.5, 100), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))
+place_ldu("2780", "Black", (30, -39.5, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32002", "Tan", (60, -39.5, 90), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("24119", "Red", (100, -39.5, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32065", "White", (100, -39.5, 95), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32002", "Tan", (140, -39.5, 90), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (170, -39.5, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (190, -39.5, 100), (1, 0, 0, 0, 0.924, -0.383, 0, 0.383, 0.924))

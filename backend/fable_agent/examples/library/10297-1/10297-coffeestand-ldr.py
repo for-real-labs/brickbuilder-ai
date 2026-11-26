@@ -1,0 +1,32 @@
+#: title: Small red coffee stand with yellow cups, brown telescopes, and a hinged counter.
+#: source: LDraw Official Model Repository, 10297-1.mpd, section 10297 - coffeestand.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("87994", "Black", (30, -20, 10), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("16091", "Black", (30, -20, 12), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("16091", "Black", (30, -20, 68), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("61252", "Tan", (10, -22, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("61252", "Tan", (10, -22, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3022", "Tan", 2, 1.75, 1)
+place("3023", "Red", 0, 2.75, 1, rot=90)
+place_ldu("3839b", "Black", (88, -32, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("3021", "Red", 0, 3.75, 1)
+place("99206", "Red", 2, 2.75, 1, rot=270)
+place("3020", "Red", 0, 4.75, 1, rot=180)
+place("3021", "Tan", 0, 5.75, 1, rot=180)
+place("48336", "Tan", 3, 5.75, 1, rot=270)
+place("3023", "Light_Bluish_Grey", 1, 6.75, 2, rot=180)
+place("59900", "Reddish_Brown", 0, 6.75, 2, rot=180)
+place("59900", "Reddish_Brown", 3, 6.75, 2, rot=180)
+place("15068", "Light_Bluish_Grey", 1, 10.75, 1, rot=180)
+place("3937", "Light_Bluish_Grey", 1, 7.75, 2, rot=180)
+place("6134", "Black", 1, 8.75, 1, rot=180)
+place("32828", "Black", 1, 10.75, 0, rot=90)
+place("32828", "Black", 2, 10.75, 0, rot=90)
+place("11477", "Yellow", 0, 15.25, 1)
+place("11477", "White", 1, 15.25, 1)
+place("11477", "Yellow", 2, 15.25, 1)
+place("11477", "White", 3, 15.25, 1)
+place("3710", "Yellow", 0, 15.25, 2, rot=180)

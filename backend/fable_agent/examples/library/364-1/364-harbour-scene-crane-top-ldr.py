@@ -1,0 +1,30 @@
+#: title: A red rotating crane superstructure with a winch, windscreen, and hinged boom arm assemblies.
+#: source: LDraw Official Model Repository, 364-1.mpd, section 364 - Harbour Scene - Crane Top.ldr
+#: author: Willy Tschager [Holly-Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3404bc02", "Red", (80, -24, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3030", "Red", 2, 3, 0, rot=90)
+place("3020", "Red", 2, 4, 0, rot=180)
+place("3021", "Red", 3, 4, 4, rot=90)
+place_ldu("3148", "Red", (80, -46, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("313", "Red", (80, -46, 70), (-1, 0, 0, 0, -0.5, 0.866, 0, 0.866, 0.5))
+place_ldu("3324e", "Red", (80, -46, 70), (-1, 0, 0, 0, -0.5, 0.866, 0, 0.866, 0.5))
+place("3020", "Red", 3, 5, 4, rot=90)
+place("3010", "Red", 2, 4, 2, rot=180)
+place("3005", "Red", 2, 7, 2)
+place("21", "Trans_Clear", 2, 5, 0)
+place("586c01", "Red", 0, 4, 7)
+place("3005", "Red", 4, 7, 7)
+place("3005", "Red", 5, 7, 2)
+place("3023", "Red", 2, 10, 1, rot=90)
+place("3023", "Red", 3, 10, 1)
+place("3031", "Red", 2, 10, 7)
+place("3023", "Red", 5, 10, 1, rot=90)
+place_ldu("3062a", "Black", (60, -114.079, 179.781), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3034", "Red", (80, -188.224, -23.66), (0, 0, -1, -0.866, -0.5, 0, -0.5, 0.866, 0))
+place_ldu("3491", "Red", (80, -258.902, -100.732), (0, 0, -1, -0.208, 0.978, 0, 0.978, 0.208, 0))
+place_ldu("314d", "Red", (80, -275.167, -53.072), (1, 0, 0, 0, -0.5, -0.866, 0, 0.866, -0.5))
+place_ldu("313", "Red", (80, -275.167, -53.072), (1, 0, 0, 0, 0.978, -0.208, 0, 0.208, 0.978))
+place_ldu("3149d", "Red", (80, -275.167, -53.072), (1, 0, 0, 0, 0.978, -0.208, 0, 0.208, 0.978))

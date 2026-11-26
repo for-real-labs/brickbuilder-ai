@@ -1,0 +1,30 @@
+#: title: A brown and grey wheeled landing gear unit with four wide rubber tyres, rims, hinges, and orange accent slopes.
+#: source: LDraw Official Model Repository, 5980-1.mpd, section 5980 - 5980-4-a.ldr
+#: author: Massimo Maso
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3021", "Brown", 2, 1.75, 1, rot=90)
+place("6015", "Rubber_Black", 0.5, 0, 0.75, rot=90)
+place_ldu("6014", "Black", (30, -25, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6014", "Black", (90, -25, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6015", "Rubber_Black", (96, -25, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4600", "Light_Grey", (60, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Light_Grey", 2, 2.75, 3)
+place("3023", "Light_Grey", 2, 3.75, 1)
+place("3021", "Brown", 2, 4.75, 1, rot=90)
+place("6015", "Rubber_Black", 0.5, 4, 4.75, rot=90)
+place_ldu("6014", "Black", (30, -57, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6014", "Black", (90, -57, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6015", "Rubber_Black", (96, -57, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4600", "Light_Grey", (60, -62, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3937", "Light_Grey", 2, 5.75, 1)
+place("3022", "Black", 2, 7.75, 5)
+place("3023", "Light_Grey", 2, 8.75, 5)
+place("2540", "Orange", 2, 8.75, 6, rot=180)
+place("54200", "Orange", 2, 10.75, 4)
+place("6087", "Black", 2, 3.75, 2)
+place("54200", "Orange", 3, 10.75, 4)
+place("2458", "Light_Grey", 2, 10.75, 5, rot=180)
+place_ldu("61072", "Black", (60, -118, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2412b", "Light_Grey", 2, 14.75, 5)

@@ -1,0 +1,32 @@
+#: title: A Blacktron space meteor monitor composed of a small spaceship with hinged folding wings, a black-suited minifig astronaut with air tanks, and a standard helmet with visor.
+#: source: LDraw Official Model Repository, 1875-1.mpd
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("2419", "Black", 0, 0, 0, rot=90)
+place("2419", "Black", 3, 0, 0, rot=270)
+place_ldu("4276b", "White", (30, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3023", "White", 1, 1, 3, rot=90)
+place("4598", "Black", 2, 1, 0)
+place("3710", "White", 1, 1, 5)
+place_ldu("4276b", "White", (90, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3023", "White", 4, 1, 3, rot=90)
+place_ldu("2433", "Black", (90, -36.321, -16.541), (0, 0, 1, 0.737277, 0.67559, 0, -0.67559, 0.737277, 0))
+place_ldu("2433", "Black", (30, -36.323, -16.541), (0, 0, 1, 0.737277, 0.67559, 0, -0.67559, 0.737277, 0))
+place_ldu("3938", "White", (22.929, -37.071, 60), (0, 0.707107, 0.707107, 0, 0.707107, -0.707107, -1, 0, 0))
+place_ldu("3938", "White", (22.929, -37.071, 100), (0, 0.707107, 0.707107, 0, 0.707107, -0.707107, -1, 0, 0))
+place_ldu("3938", "White", (97.071, -37.071, 60), (0, -0.707107, 0.707107, 0, 0.707107, 0.707107, -1, 0, 0))
+place_ldu("3938", "White", (97.071, -37.071, 100), (0, -0.707107, 0.707107, 0, 0.707107, 0.707107, -1, 0, 0))
+place("3937", "Black", 1, 2, 2, rot=90)
+place("3937", "Black", 1, 2, 4, rot=90)
+place("3937", "Black", 4, 2, 2, rot=270)
+place("3937", "Black", 4, 2, 4, rot=270)
+place_ldu("6141", "Trans_Red", (30, -41.724, -22.44), (0, 0, 1, 0.737277, 0.67559, 0, -0.67559, 0.737277, 0))
+place_ldu("6141", "Trans_Red", (90, -41.724, -22.44), (0, 0, 1, 0.737277, 0.67559, 0, -0.67559, 0.737277, 0))
+place_ldu("2340", "Black", (-27.9827, -87.9827, 120), (0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0, 1))
+place_ldu("2340", "Black", (147.983, -87.9827, 120), (0.707107, -0.707107, 0, 0.707107, 0.707107, 0, 0, 0, 1))
+place_ldu("4740", "Trans_Red", (-32.2253, -92.2253, 84), (0.707107, 0, 0.707107, -0.707107, 0, 0.707107, 0, -1, 0))
+place_ldu("4740", "Trans_Red", (152.225, -92.2253, 84), (0.707107, 0, -0.707107, 0.707107, 0, 0.707107, 0, -1, 0))
+place_ldu("4595", "White", (-39.2964, -99.2964, 120), (0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0, 1))
+place_ldu("4595", "White", (159.296, -99.2964, 120), (0.707107, -0.707107, 0, 0.707107, 0.707107, 0, 0, 0, 1))

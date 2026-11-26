@@ -1,0 +1,30 @@
+#: title: Red Technic plate assembly with liftarms, axle joiners, cross blocks, and a 24-tooth crown gear forming a geared pivot mechanism.
+#: source: LDraw Official Model Repository, 8032-1_Gymnast.mpd, section 8032 - Gymnast Sub 5.ldr
+#: author: Charles the Farmer [farmer]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3710", "Red", (60, -18.98, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3709b", "Red", (60, -18.98, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2825", "Black", (10, -32.98, 220), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3749", "Light_Grey", (20, -32.98, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3749", "Light_Grey", (40, -32.98, 140), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6536", "Light_Grey", (50, -32.98, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3705", "Black", (50, -32.98, 50), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6538a", "Light_Grey", (50, -32.98, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6553", "Light_Grey", (50, -32.98, 140), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3713", "Light_Grey", (60, -32.98, 210), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3705", "Black", (60, -32.98, 240), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Grey", (60, -32.98, 250), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("3650c", "Light_Grey", (60, -32.98, 272), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6536", "Light_Grey", (70, -32.98, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3705", "Black", (70, -32.98, 50), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6538a", "Light_Grey", (70, -32.98, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6553", "Light_Grey", (70, -32.98, 140), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3749", "Light_Grey", (80, -32.98, 140), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3749", "Light_Grey", (100, -32.98, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2825", "Black", (110, -32.98, 220), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3894", "Red", (30, -42.98, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3700", "Red", (60, -42.98, 230), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3894", "Red", (90, -42.98, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3709b", "Red", (60, -50.98, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))

@@ -1,0 +1,32 @@
+#: title: Gear cluster of reinforced 16-tooth gears, bent beams, and axle joiners forming one stage of the transmission.
+#: source: LDraw Official Model Repository, 42114-1.mpd, section 42114 - gearbox2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("94925", "Light_Bluish_Grey", (40, -21.64, 200), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("99008", "Tan", (40, -21.64, 210), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -21.64, 180), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("87083", "Dark_Bluish_Grey", (80, -21.64, 190), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (80, -21.64, 200), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32526", "Yellow", (120, -21.64, 220), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (120, -21.64, 220), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("26287", "Light_Bluish_Grey", (40, -61.64, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18946", "Red", (40, -61.64, 160), (0.985, 0.174, 0, -0.174, 0.985, 0, 0, 0, 1))
+place_ldu("15462", "Reddish_Brown", (40, -61.64, 180), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (40, -61.64, 200), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("99008", "Tan", (80, -61.64, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3713", "Light_Bluish_Grey", (80, -61.64, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("59443", "Yellow", (80, -61.64, 90), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Red", (80, -61.64, 110), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("59443", "Yellow", (80, -61.64, 130), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("94925", "Light_Bluish_Grey", (80, -61.64, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("99008", "Tan", (80, -61.64, 170), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("59443", "Yellow", (80, -61.64, 210), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("99008", "Tan", (80, -61.64, 250), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (120, -61.64, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32526", "Yellow", (120, -61.64, 180), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32524", "Yellow", (120, -81.64, 200), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("23948", "Yellow", (120, -101.64, 140), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (120, -101.64, 180), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("94925", "Light_Bluish_Grey", (120, -101.64, 220), (0, 1, 0, 1, 0, 0, 0, 0, -1))

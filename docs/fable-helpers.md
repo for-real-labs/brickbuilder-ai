@@ -155,6 +155,12 @@ side bricks and between a brick and the far wheel, parts that do not meet, and t
 studs wide got no axle at all. They now record brick to axle and axle to wheel, with an axle
 that reaches both rims at every width.
 
+Since then the v2 checks measure most of these joints themselves (`fable_agent/fits.py`): a
+pin or axle in a hole, a bar in a clip, a hinge pin, a wheel on its pin, a tyre on its rim. Of
+the 332 joints the wheel helper records across its styles, 328 are measured on the real parts.
+A helper still records every joint, so that a part the library draws without a peg or a hole
+(a pane in its frame, a door on its hinges, a trolley wheel) stays joined.
+
 | Joint | Position used, in the first part's own LDraw units | Seen in |
 |---|---|---|
 | Door leaf in a 1 x 4 x 6 frame (`60596`) | offset (-32, 0, 5), or (32, 0, 5) turned half way for the other hinge | 470 doors; 45 official sets |

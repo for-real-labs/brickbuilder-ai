@@ -1,0 +1,32 @@
+#: title: Medium-azure and dark-blue gondola boat with curved inverted wedge hull, pearl-gold ornamental trim, a crystal-like transparent head ornament, and dark-pink accent studs.
+#: source: LDraw Official Model Repository, 41181-1.mpd, section 41181-1 - gondola.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3460", "Medium_Azure", 2, 1, 3, rot=90)
+place_ldu("93092", "Dark_Pink", (60, -16, 170), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3460", "Medium_Azure", 3, 1, 3, rot=90)
+place("15068", "Medium_Azure", 2, 3, 2, rot=180)
+place("3023", "Reddish_Brown", 2, 2, 3, rot=180)
+place("3068b", "Medium_Azure", 2, 2, 4, rot=180)
+place("43713", "Reddish_Brown", 1, 0, 1)
+place("43713", "Reddish_Brown", 1, 0, 7, rot=180)
+place("3023", "Reddish_Brown", 2, 2, 10, rot=180)
+place("15068", "Medium_Azure", 2, 3, 10)
+place("92593", "Dark_Blue", 1, 3, 5, rot=270)
+place("43719", "Dark_Blue", 1, 3, 1)
+place("43719", "Dark_Blue", 1, 3, 9, rot=180)
+place("92593", "Dark_Blue", 4, 3, 5, rot=270)
+place_ldu("30153", "Trans_Bright_Green", (53, -35, 167), (0.668, 0.418, 0.616, -0.53, 0.848, 0, -0.522, -0.326, 0.788))
+place_ldu("30153", "Trans_Bright_Green", (66, -35, 172), (-0.848, -0.53, 0, -0.53, 0.848, 0, 0, 0, -1))
+place_ldu("11090", "Pearl_Gold", (60, -38, 10), (0, 0, 1, -0.719, -0.695, 0, 0.695, -0.719, 0))
+place_ldu("15070", "Medium_Azure", (30, -40, 110), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2540", "Medium_Azure", (60, -40, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("93095", "Medium_Azure", 2, 2, 6)
+place("15070", "Medium_Azure", 4, 2, 5, rot=270)
+place_ldu("33291", "Dark_Pink", (30, -48, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("15573", "Pearl_Gold", 2, 5, 1)
+place("47458", "Pearl_Gold", 2, 4, 12, rot=180)
+place_ldu("33291", "Dark_Pink", (90, -48, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("6141", "Pearl_Gold", 2.5, 9, 1)

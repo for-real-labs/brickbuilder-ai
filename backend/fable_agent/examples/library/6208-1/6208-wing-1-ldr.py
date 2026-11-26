@@ -1,0 +1,33 @@
+#: title: One of the fighter's large wings constructed from a 6x12 wing element, curved wedges, locking hinges, and support plates.
+#: source: LDraw Official Model Repository, 6208-1.mpd, section 6208 - Wing 1.ldr
+#: author: Merlijn Wissink [Legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3623", "Light_Bluish_Grey", 11, 0, 1, rot=180)
+place("3021", "Light_Bluish_Grey", 8, 0, 0, rot=180)
+place("2458", "Tan", 12, 1, 1, rot=180)
+place_ldu("2444", "Light_Bluish_Grey", (260, -32, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "Dark_Bluish_Grey", 10, 2, 3)
+place("30355", "Dark_Bluish_Grey", 11, 3, 4)
+place("47398", "Light_Bluish_Grey", 8, 3, 4)
+place_ldu("2444", "Light_Bluish_Grey", (220, -32, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2458", "Tan", 10, 1, 1, rot=180)
+place("30359b", "Black", 2, 1, 1, rot=90)
+place_ldu("4589", "Dark_Bluish_Grey", (40, -22, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6141", "Trans_Neon_Orange", (16, -22, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("2877", "Light_Bluish_Grey", 9, 1, 0)
+place("4070", "Black", 8, 1, 0, rot=90)
+place_ldu("4095", "Black", (60, -22, 10), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("42060", "Light_Bluish_Grey", 9, 4, 2)
+place("3039", "Light_Bluish_Grey", 9, 4, 14, rot=90)
+place("3039", "Light_Bluish_Grey", 15, 4, 14, rot=270)
+place("30389b", "Light_Bluish_Grey", 11, 4, 14, rot=270)
+place("30389b", "Light_Bluish_Grey", 13, 4, 14, rot=270)
+place("42061", "Light_Bluish_Grey", 13, 4, 2)
+place("3009", "Dark_Bluish_Grey", 12, 4, 8, rot=270)
+place("42022", "Tan", 12, 4, 2)
+place("41747", "Dark_Bluish_Grey", 8, 4, 0, rot=270)
+place("3020", "Dark_Bluish_Grey", 11, 7, 15)
+place("2419", "Dark_Bluish_Grey", 10, 7, 12)
+place("4150", "Light_Bluish_Grey", 11, 7, 7)

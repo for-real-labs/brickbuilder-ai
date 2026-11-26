@@ -1,0 +1,31 @@
+#: title: Roof sub-section of brown plates with dark blue and blue angled tiles and inverted curved slope edges.
+#: source: LDraw Official Model Repository, 21325-1.mpd, section 21325 - Steps 242 to 249.ldr
+#: author: Vincent Messenet [Cheenzo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("24201", "Reddish_Brown", (90, -15.9, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3023", "Dark_Brown", (100, -15.9, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24201", "Reddish_Brown", (110, -15.9, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3032", "Reddish_Brown", (60, -23.9, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63864", "Dark_Blue", (10, -31.9, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("22385", "Black", (40, -31.9, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3795", "Reddish_Brown", (60, -31.9, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("22385", "Black", (80, -31.9, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("63864", "Dark_Blue", (110, -31.9, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("22385", "Dark_Blue", (20, -39.9, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("22385", "Black", (60, -39.9, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3032", "Reddish_Brown", (60, -39.9, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("22385", "Dark_Blue", (100, -39.9, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63864", "Blue", (10, -47.9, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Dark_Brown", (10, -47.9, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("22385", "Dark_Blue", (40, -47.9, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("14704", "Light_Bluish_Grey", (40, -47.9, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3710", "Sand_Green", (60, -47.9, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("22385", "Dark_Blue", (80, -47.9, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("14704", "Light_Bluish_Grey", (80, -47.9, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("63864", "Dark_Blue", (110, -47.9, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "Dark_Brown", (110, -47.9, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("22385", "Blue", (20, -55.9, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("22385", "Dark_Blue", (60, -55.9, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("22385", "Dark_Blue", (100, -55.9, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))

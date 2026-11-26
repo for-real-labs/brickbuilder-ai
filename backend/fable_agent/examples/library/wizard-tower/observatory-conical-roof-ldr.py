@@ -1,0 +1,20 @@
+#: title: Two complementary tiled half-cones form a supported circular spire
+#: source: ldraw-nova example atlas, wizard-tower.mpd, section observatory-conical-roof.ldr
+#: author: ldraw-nova building atlas
+#: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 15 of 15 parts kept (minifigures left out)
+place("3034", "Dark_Bluish_Grey", 0, 0, 0)
+place("3034", "Dark_Bluish_Grey", 0, 0, 2)
+place("3034", "Dark_Bluish_Grey", 0, 0, 4)
+place("3034", "Dark_Bluish_Grey", 0, 0, 6)
+place("3034", "Dark_Bluish_Grey", 0, 0, 8)
+place("3034", "Dark_Bluish_Grey", 0, 0, 10)
+place("3020", "Dark_Bluish_Grey", 8, 0, 0)
+place("3020", "Dark_Bluish_Grey", 8, 0, 2)
+place("3020", "Dark_Bluish_Grey", 8, 0, 4)
+place("3020", "Dark_Bluish_Grey", 8, 0, 6)
+place("3020", "Dark_Bluish_Grey", 8, 0, 8)
+place("3020", "Dark_Bluish_Grey", 8, 0, 10)
+place("1746", "Medium_Lilac", 2, 1, 2)
+place("1746", "Medium_Lilac", 2, 1, 6, rot=180)
+place("3942c", "Pearl_Gold", 5, 19, 5)

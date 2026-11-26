@@ -1,0 +1,33 @@
+#: title: A dark turquoise and black Technic arrow assembly made of thin liftarm beams and three-quarter pins.
+#: source: LDraw Official Model Repository, 8257-1.mpd, section 8257 - arrow-teal.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("32065", "Dark_Turquoise", (20, -5, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (39.0352, -5, 96.8908), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (58.0707, -5, 93.7815), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (77.1056, -5, 90.6724), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (96.1408, -5, 87.5632), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32017", "Dark_Turquoise", (136.963, -5, 110.908), (0.8386, 0, 0.5447, 0, -1, 0, 0.5447, 0, -0.8386))
+place_ldu("32065", "Black", (20, -15, 100), (0.9483, 0, 0.3173, 0, 1, 0, -0.3173, 0, 0.9483))
+place_ldu("32065", "Black", (39.0352, -15, 96.8908), (0.9483, 0, 0.3173, 0, 1, 0, -0.3173, 0, 0.9483))
+place_ldu("32065", "Black", (58.0707, -15, 93.7815), (0.9483, 0, 0.3173, 0, 1, 0, -0.3173, 0, 0.9483))
+place_ldu("32065", "Black", (77.1056, -15, 90.6724), (0.9483, 0, 0.3173, 0, 1, 0, -0.3173, 0, 0.9483))
+place_ldu("32065", "Black", (96.1408, -15, 87.5632), (0.9483, 0, 0.3173, 0, 1, 0, -0.3173, 0, 0.9483))
+place_ldu("32002", "Dark_Grey", (39.0323, -20, 36.882), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (39.0353, -20, 156.891), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (58.0673, -20, 33.7729), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (58.0707, -20, 153.781), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (77.1056, -20, 150.672), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (96.1408, -20, 27.5632), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (96.1408, -20, 87.5632), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (96.1408, -20, 147.563), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (115.176, -20, 144.454), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32002", "Dark_Grey", (158.748, -20, 77.354), (0, 0.7932, -0.6086, -1, 0, 0, 0, 0.6086, 0.7932))
+place_ldu("32065", "Dark_Turquoise", (20, -25, 100), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (39.0352, -25, 96.8908), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (58.0707, -25, 93.7815), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (77.1056, -25, 90.6724), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32065", "Dark_Turquoise", (96.1408, -25, 87.5632), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32017", "Dark_Turquoise", (136.963, -25, 110.908), (0.8386, 0, 0.5447, 0, -1, 0, 0.5447, 0, -0.8386))

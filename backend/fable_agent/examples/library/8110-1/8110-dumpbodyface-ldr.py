@@ -1,0 +1,33 @@
+#: title: Dump body wall face built from light bluish grey panels and beams joined by pins and cross blocks.
+#: source: LDraw Official Model Repository, 8110-1.mpd, section 8110 - dumpBodyFace.ldr
+#: author: Tomas Kralicek [RabbiT_CZ]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3749", "Blue", (20, -10, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Dark_Bluish_Grey", (20, -10, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32556", "Blue", (80, -10, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3673", "Black", (120, -10, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3673", "Black", (280, -10, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32556", "Blue", (320, -10, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3749", "Blue", (380, -10, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Dark_Bluish_Grey", (380, -10, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32556", "Blue", (40, -30, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32556", "Blue", (360, -30, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Black", (30, -50, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32316", "Light_Bluish_Grey", (40, -50, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32316", "Light_Bluish_Grey", (60, -50, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32316", "Light_Bluish_Grey", (80, -50, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("64782", "Light_Bluish_Grey", (200, -50, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32316", "Light_Bluish_Grey", (320, -50, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32316", "Light_Bluish_Grey", (340, -50, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32316", "Light_Bluish_Grey", (360, -50, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3673", "Black", (370, -50, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("42003", "Dark_Bluish_Grey", (20, -70, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32556", "Blue", (40, -70, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32556", "Blue", (360, -70, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("42003", "Dark_Bluish_Grey", (380, -70, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Blue", (20, -90, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32556", "Blue", (80, -90, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32556", "Blue", (320, -90, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3749", "Blue", (380, -90, 30), (0, 0, -1, 0, 1, 0, 1, 0, 0))

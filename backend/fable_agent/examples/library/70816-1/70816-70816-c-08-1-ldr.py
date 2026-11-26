@@ -1,0 +1,31 @@
+#: title: Landing gear assembly with a large spoked wheel rim, technic axle, gears and structural technic bricks.
+#: source: LDraw Official Model Repository, 70816-1.mpd, section 70816 - 70816-C-08-1.ldr
+#: author: Christophe Mitillo [Christophe_Mitillo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("98138", "Trans_Orange", (50, -37, 33), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (50, -37, 41), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Trans_Orange", (70, -37, 33), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (70, -37, 41), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3034", "Blue", 2, 4, 4, rot=90)
+place_ldu("6558", "Blue", (40, -54, 70), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6589", "Tan", (60, -54, 30), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("56908", "Light_Bluish_Grey", (60, -54, 50), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32123a", "Yellow", (60, -54, 76), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("55013", "Dark_Bluish_Grey", (60, -54, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32291", "Red", (60, -54, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32062", "Red", (60, -54, 220), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (80, -54, 70), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3673", "Light_Bluish_Grey", (50, -64, 240), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("3701", "Dark_Bluish_Grey", 1, 5, 4)
+place("32064a", "Light_Bluish_Grey", 2, 5, 5)
+place("32064a", "Light_Bluish_Grey", 2, 5, 6)
+place("32064a", "Light_Bluish_Grey", 2, 5, 7)
+place("32064a", "Light_Bluish_Grey", 2, 5, 8)
+place("85943", "Dark_Bluish_Grey", 2, 5, 9, rot=180)
+place_ldu("3673", "Light_Bluish_Grey", (70, -64, 240), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("98138", "Trans_Orange", (50, -71, 33), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (50, -71, 41), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Trans_Orange", (70, -71, 33), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (70, -71, 41), (0, 0, 1, 0, 1, 0, -1, 0, 0))

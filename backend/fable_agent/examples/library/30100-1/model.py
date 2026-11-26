@@ -1,0 +1,33 @@
+#: title: A beach play scene featuring Andrea minifigure swimming in the ocean with sand castles, a flag, telescope, and a bucket filled with a fish and crab.
+#: source: LDraw Official Model Repository, 30100-1.mpd
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("92250p05", "Light_Aqua", (130, -3.1, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("64648", "Orange", (20, -11.1, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("48245", "Dark_Pink", (60, -11.1, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3032", "Tan", (160, -11.1, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("33121", "Bright_Light_Orange", (40, -19.1, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Dark_Blue", (110, -19.1, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Light_Blue", (110, -19.1, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Dark_Blue", (110, -19.1, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Light_Blue", (110, -19.1, 170), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Dark_Blue", (130, -19.1, 130), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Trans_Light_Blue", (130, -19.1, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Tan", (190, -19.1, 110), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Tan", (60, -23.1, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6141", "Tan", (60, -31.1, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("59900", "Tan", (190, -35.1, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59900", "Tan", (190, -35.1, 170), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59900", "Tan", (210, -35.1, 150), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59900", "Tan", (210, -35.1, 170), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4032a", "Tan", (200, -43.1, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("92248", "Light_Aqua", (130, -50.5, 52.7), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59900", "Tan", (200, -67.1, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("92245", "Medium_Nougat", (119, -79.9, 53.9), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("92241p16", "Medium_Nougat", (130, -79.9, 53.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("92244", "Medium_Nougat", (141, -79.9, 53.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4495b", "Dark_Pink", (200, -91.1, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("93352", "Dark_Brown", (130, -113.1, 50.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("92198p04", "Medium_Nougat", (130, -113.1, 53.9), (1, 0, 0, 0, 1, 0, 0, 0, 1))

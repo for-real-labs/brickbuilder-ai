@@ -1,0 +1,31 @@
+#: title: An orange and white motorboat with a windscreen, curved bow, bright pink trim panels, trans-clear dishes, and a life preserver tile.
+#: source: LDraw Official Model Repository, 3937-1.mpd, section 3937 - Motorboat.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("2654a", "Trans_Clear", 4, 0, 3)
+place("2654a", "Trans_Clear", 13, 0, 2)
+place("2654a", "Trans_Clear", 13, 0, 4)
+place("3020", "Medium_Blue", 13, 1, 2, rot=90)
+place("3034", "White", 6, 2, 2)
+place("3034", "White", 6, 2, 4)
+place_ldu("3957a", "White", (210, -24, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("87611", "Orange", 0, 1, 1, rot=90)
+place("32059", "Orange", 10, 3, 1, rot=270)
+place_ldu("60897", "White", (210, -40, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("60897", "White", 10, 4, 6, rot=180)
+place("2431", "Bright_Pink", 11, 4, 2, rot=90)
+place("2431", "Bright_Pink", 12, 4, 2, rot=90)
+place("85984", "Medium_Lilac", 13, 5, 2, rot=270)
+place("85984", "Medium_Lilac", 13, 5, 4, rot=270)
+place("4150p08", "White", 1, 5, 3)
+place("3001", "Light_Bluish_Grey", 8, 3, 2, rot=270)
+place("6081", "White", 13, 2, 2, rot=270)
+place("87615", "White", 0, 4, 1, rot=90)
+place("93095", "Bright_Pink", 10, 4, 2, rot=270)
+place("93095", "Bright_Pink", 10, 4, 4, rot=270)
+place("50950", "White", 10, 4, 1, rot=270)
+place("50950", "White", 10, 4, 6, rot=270)
+place("57783", "Trans_Light_Blue", 7, 7, 2, rot=90)
+place_ldu("4495b", "Dark_Pink", (210, -104, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))

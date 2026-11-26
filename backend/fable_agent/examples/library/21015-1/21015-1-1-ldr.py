@@ -1,0 +1,13 @@
+#: title: A dark bluish grey and black plate strip with white clip plates, forming a base support or mounting element.
+#: source: LDraw Official Model Repository, 21015-1.mpd, section 21015 - 1 - 1.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 7 of 7 parts kept (minifigures left out)
+place("3460", "Dark_Bluish_Grey", 0, 0, 2)
+place("3023", "Black", 0, 0, 1)
+place("3023", "Black", 6, 0, 1)
+place("3023", "Black", 1, 1, 1, rot=270)
+place("3023", "Black", 6, 1, 1, rot=270)
+place_ldu("63868", "White", (10, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("63868", "White", (150, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))

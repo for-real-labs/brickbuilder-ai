@@ -1,0 +1,31 @@
+#: title: Blossoming cherry tree with a brown technic trunk and reddish brown tail-section foliage on a green base.
+#: source: LDraw Official Model Repository, 10315-1.mpd, section 10315 - cherry-tree-1.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Licenced under CC BY 4.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3700", "Green", (20, -10, 112), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3022", "Green", (20, -20, 88), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3068b", "Green", (20, -20, 120), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("11214", "Red", (20, -30, 102), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3700", "Green", (20, -30, 112), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("65473", "Reddish_Brown", (20, -40, 102), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32062", "Red", (41.0883, -90.9117, 102), (0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 0, 0, 1))
+place_ldu("40379", "Reddish_Brown", (104.728, -240.919, 82), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("18651", "Black", (104.728, -240.919, 102), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("24122", "Reddish_Brown", (104.728, -240.919, 102), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("40379", "Reddish_Brown", (104.728, -240.919, 122), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("40379", "Reddish_Brown", (104.728, -280.919, 88), (-0.707107, 0.707107, 0, 0.707107, 0.707107, 0, 0, 0, -1))
+place_ldu("89678", "Dark_Bluish_Grey", (104.728, -280.919, 92), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32016", "Reddish_Brown", (104.728, -280.919, 102), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("40379", "Reddish_Brown", (70.943, -310.22, 102), (0, 0.382683, -0.92388, 0, 0.92388, 0.382683, 1, 0, 0))
+place_ldu("24122", "Reddish_Brown", (89.4206, -317.874, 102), (0.92388, 0, 0.382683, -0.382683, 0, 0.92388, 0, -1, 0))
+place_ldu("18651", "Black", (89.4206, -317.874, 102), (0.382683, 0, -0.92388, 0.92388, 0, 0.382683, 0, -1, 0))
+place_ldu("40379", "Reddish_Brown", (107.898, -325.528, 102), (0, 0.382683, 0.92388, 0, 0.92388, -0.382683, -1, 0, 0))
+place_ldu("62462", "Reddish_Brown", (77.9401, -345.591, 102), (0.382683, 0, -0.92388, 0.92388, 0, 0.382683, 0, -1, 0))
+place_ldu("40379", "Reddish_Brown", (66.4596, -373.307, 82), (-0.92388, 0.382683, 0, 0.382683, 0.92388, 0, 0, 0, -1))
+place_ldu("40379", "Reddish_Brown", (66.4596, -373.307, 122), (0.92388, 0.382683, 0, -0.382683, 0.92388, 0, 0, 0, 1))
+place_ldu("18651", "Black", (66.4596, -373.307, 102), (-0.382683, 0, 0.92388, -0.92388, 0, -0.382683, 0, -1, 0))
+place_ldu("24122", "Reddish_Brown", (66.4596, -373.307, 102), (0, 0.92388, 0.382683, 0, -0.382683, 0.92388, 1, 0, 0))
+place_ldu("59900", "Reddish_Brown", (51.9176, -408.414, 102), (0, 0.382683, -0.92388, 0, 0.92388, 0.382683, 1, 0, 0))
+place_ldu("78258", "Reddish_Brown", (48.8562, -415.805, 102), (0, 0.382683, -0.92388, 0, 0.92388, 0.382683, 1, 0, 0))

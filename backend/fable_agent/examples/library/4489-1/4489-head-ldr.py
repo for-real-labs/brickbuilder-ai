@@ -1,0 +1,30 @@
+#: title: A compact articulated head with a curved-top slope, grille tile, headlight bricks, and hinge-mounted control sticks forming the walker's facial features.
+#: source: LDraw Official Model Repository, 4489-1.mpd, section 4489 - Head.ldr
+#: author: Evert-Jan Boer [ejboer]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("4081b", "Light_Grey", (60, -10, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4592", "Light_Grey", (72, -8, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4593", "Black", (72, -8, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4592", "Light_Grey", (48, -8, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4593", "Black", (48, -8, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("6141", "Light_Grey", 2.5, 1.25, 2.5, rot=270)
+place("3020", "Light_Grey", 2, 2.25, 1, rot=90)
+place("3023", "Light_Grey", 2, 3.25, 2, rot=180)
+place("3023", "Light_Grey", 2, 3.25, 1, rot=180)
+place_ldu("30602", "Dark_Grey", (60, -34, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4070", "Dark_Grey", 3, 3.25, 3, rot=270)
+place_ldu("6141", "Black", (84, -40, 70), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4740", "Dark_Grey", (91, -40, 70), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4592", "Light_Grey", (99, -40, 70), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4593", "Black", (99, -40, 70), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("4070", "Dark_Grey", 2, 3.25, 3, rot=90)
+place_ldu("6141", "Black", (36, -40, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4740", "Dark_Grey", (29, -40, 70), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4592", "Light_Grey", (21, -40, 70), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4593", "Black", (21, -40, 70), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("3700", "Light_Grey", 2, 3.25, 4)
+place_ldu("43093", "Blue", (60, -40, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("2412b", "Dark_Grey", 2, 6.25, 3)
+place("3023", "Light_Grey", 2, 6.25, 4)

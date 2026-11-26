@@ -139,8 +139,12 @@ async def _source_design(source: dict, auth_info: dict) -> Design:
 
 
 def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | None, script: str | None,
-         key: str, on_event, examples: bool = False) -> Built:
-    """Run one build to the end in a scratch directory. Blocking: call it from a worker thread."""
+         key: str, on_event, examples: bool = False, example_query: str | None = None) -> Built:
+    """Run one build to the end in a scratch directory. Blocking: call it from a worker thread.
+
+    ``example_query`` is what examples are searched for: the customer's own request, without the
+    design guidance the app adds to ``prompt``.
+    """
     with tempfile.TemporaryDirectory(prefix="fable-generation-") as scratch:
         root = Path(scratch)
         picture = None
@@ -149,7 +153,7 @@ def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | 
             picture.write_bytes(reference)
         options = Options(model=variant.model, method=variant.method, effort=variant.effort,
                           max_parts=max_parts, api_key=key, max_seconds=BUILD_SECONDS,
-                          examples=examples and variant.method in EXAMPLE_METHODS)
+                          examples=examples and variant.method in EXAMPLE_METHODS, example_query=example_query)
         result = start_build(prompt, root / "session", options, reference=picture, on_event=on_event,
                              script=script)
         if result.published is None:
@@ -210,7 +214,8 @@ async def _build(generation_id, request, agent_id, variant, design, reference, k
         """Runs on a build thread once one is free; time spent waiting for it does not count."""
         clock["hard_stop"] = time.monotonic() + HARD_STOP_SECONDS
         return _run(_change_request(guided_build_prompt(prompt), design), variant, request.max_parts, reference,
-                    design.script if design else None, key, on_event, request.use_examples)
+                    design.script if design else None, key, on_event, request.use_examples,
+                    request.prompt or "")
 
     pulse = asyncio.create_task(heartbeat())
     prompt = request.prompt or "Build the subject in the photo."

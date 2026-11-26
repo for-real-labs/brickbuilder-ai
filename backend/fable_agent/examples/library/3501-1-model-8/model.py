@@ -1,0 +1,32 @@
+#: title: A small Znap wheeled vehicle built from angled beams, multi-way connectors, and four yellow wheels.
+#: source: LDraw Official Model Repository, 3501-1_MOdel-8.mpd
+#: author: Michael Heidemann [mikeheide]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32207", "Dark_Grey", (120, -30, 320), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32207", "Dark_Grey", (120, -30, 400), (-0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, -0.707107))
+place_ldu("32207", "Dark_Grey", (280, -30, 320), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32207", "Dark_Grey", (280, -30, 400), (0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107))
+place("32208", "Black", 1.5, 3.5, 9.5, rot=270)
+place_ldu("32211", "Purple", (200, -38, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32210", "Yellow", (200, -38, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32212", "Light_Grey", (200, -38, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32210", "Yellow", (200, -38, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32212", "Light_Grey", (200, -38, 200), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32211", "Purple", (200, -38, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32211", "Purple", (200, -38, 360), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32212", "Light_Grey", (200, -38, 360), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32208", "Black", (240, -38, 360), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3749", "Light_Grey", (40, -48, 480), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3749", "Light_Grey", (120, -48, 240), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3749", "Light_Grey", (280, -48, 240), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3749", "Light_Grey", (360, -48, 480), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32219", "Yellow", (40, -78, 480), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32219", "Yellow", (120, -78, 240), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32219", "Yellow", (280, -78, 240), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32219", "Yellow", (360, -78, 480), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32214", "Black", (200, -118, 360), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32211", "Purple", (200, -198, 360), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32214", "Black", (200, -198, 440), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32212", "Light_Grey", (200, -198, 520), (0, -1, 0, 1, 0, 0, 0, 0, 1))

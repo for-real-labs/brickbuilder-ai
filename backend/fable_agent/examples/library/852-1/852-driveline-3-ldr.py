@@ -1,0 +1,28 @@
+#: title: driveline-3
+#: source: LDraw Official Model Repository, 852-1.mpd, section 852 - driveline-3.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 22 parts kept (minifigures left out)
+place("3738", "Red", 1, 0, 0, rot=270)
+place("3020", "Red", 1, 0, 8, rot=90)
+place("3010", "Red", 0, 1, 2)
+place("3010", "Red", 0, 1, 5)
+place("3004", "Red", 1, 1, 10)
+place("3660", "Red", 1, 1, 11, rot=180)
+place("3003", "Red", 1, 1, 0)
+place("3001", "Red", 1, 1, 6, rot=270)
+place("3738", "Red", 1, 4, 0, rot=270)
+place("3020", "Red", 1, 4, 8, rot=90)
+place("3024", "Red", 3, 4, 5)
+place("3024", "Red", 3, 4, 2)
+place("3024", "Red", 0, 4, 2)
+place("3024", "Red", 0, 4, 5)
+place("3039", "Red", 1, 5, 0)
+place("3039", "Red", 1, 5, 11, rot=180)
+place("3023", "Red", 1, 4, 12)
+place("3010", "Red", 0, 5, 2)
+place("3010", "Red", 0, 5, 5)
+place("3004", "Red", 1, 5, 10)
+place("3001", "Red", 1, 5, 6, rot=270)
+place("3738", "Red", 1, 8, 1, rot=270)

@@ -1,0 +1,33 @@
+#: title: Side-mounted gearbox structure of long beams, cross blocks, angle connectors, and bushes supporting the drivetrain.
+#: source: LDraw Official Model Repository, 42107-1.mpd, section 42107 - gearboxside.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("41678", "Light_Bluish_Grey", (80, -20, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6536", "Light_Bluish_Grey", (100, -30, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32123b", "Light_Bluish_Grey", (125, -30, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3706", "Red", (150, -30, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6536", "Light_Bluish_Grey", (180, -30, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32013", "Blue", (220, -30, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32073", "Yellow", (80, -50, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6536", "Light_Bluish_Grey", (80, -50, 80), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32184", "Light_Bluish_Grey", (140, -50, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("63869", "Black", (80, -70, 80), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (100, -70, 70), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("11478", "Light_Bluish_Grey", (115, -70, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("99008", "Tan", (150, -70, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("42003", "Black", (80, -90, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32556", "Tan", (100, -90, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("15100", "Black", (100, -90, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("42003", "Black", (100, -90, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32524", "Light_Bluish_Grey", (160, -90, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32184", "Light_Bluish_Grey", (180, -90, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32016", "Black", (50, -110, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (85, -110, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("11478", "Light_Bluish_Grey", (125, -110, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3707", "Black", (140, -110, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("48989", "Light_Bluish_Grey", (140, -110, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("60483", "Black", (200, -110, 60), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18651", "Black", (140, -150, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("63869", "Black", (140, -150, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))

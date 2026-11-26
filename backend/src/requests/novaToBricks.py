@@ -59,7 +59,7 @@ class NovaToBricksRequest(LlmToBricksRequest):
     building_agent: str = "nova"
     # The model for an agent that offers a choice (the Pip agent). None uses the agent's default.
     agent_model: str | None = Field(default=None, max_length=64)
-    # Let the agent read example scripts of the request's kind first (Generation settings; the Pip agent).
+    # Show the agent the example builds closest to the request first (Generation settings; the Pip agent).
     use_examples: bool = False
     auth_mode: Literal["api_key", "native"] = "api_key"
     parts_inventory: PartsInventory | None = None

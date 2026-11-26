@@ -1,0 +1,31 @@
+#: title: Roller assembly with eight grooved wheel rims mounted on a blue beam frame for smooth tread guidance.
+#: source: LDraw Official Model Repository, 42042-1.mpd, section 42042 - rollers.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32524", "Blue", (20, -14, 240), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -14, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -14, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -14, 260), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -14, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32525", "Blue", (40, -14, 120), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32525", "Blue", (40, -14, 360), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 120), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 160), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 280), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 320), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 360), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -14, 440), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -14, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -14, 340), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 160), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 280), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 320), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 360), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("42610", "Light_Bluish_Grey", (60, -14, 440), (0, 0, 1, 0, 1, 0, -1, 0, 0))

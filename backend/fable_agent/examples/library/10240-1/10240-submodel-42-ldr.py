@@ -1,0 +1,30 @@
+#: title: Cannon/nozzle mount assembly with sloped armor, black tiles and an axlehole plate
+#: source: LDraw Official Model Repository, 10240-1.mpd, section 10240 - subModel-42.ldr
+#: author: Roland Dahl [RolandD]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("11212", "Light_Bluish_Grey", 0, 0, 1)
+place_ldu("11090", "Dark_Bluish_Grey", (30, -14.0019, 9.9993), (0, 0, -1, 0.2588, -0.9659, 0, -0.9659, -0.2588, 0))
+place("85984", "Black", 0, 2, 1, rot=270)
+place("3623", "Black", 0, 1, 1, rot=270)
+place("54200", "Black", 0, 2, 3, rot=270)
+place_ldu("60478", "Dark_Bluish_Grey", (30, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("61252", "Light_Bluish_Grey", (30, -16, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("85984", "Black", 2, 2, 1, rot=90)
+place("3623", "Black", 2, 1, 1, rot=270)
+place("54200", "Black", 2, 2, 3, rot=90)
+place("63864", "Black", 1, 2, 1, rot=270)
+place_ldu("3070b", "Black", (10, -35.4326, 83.6249), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("3070b", "Black", (50, -35.4326, 83.6249), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("60478", "Dark_Bluish_Grey", (30, -43.8915, 93.2398), (0, 0, 1, 0.9848, 0.1736, 0, -0.1736, 0.9848, 0))
+place_ldu("60897", "Black", (30, -48.1549, 21.5533), (-1, 0, 0, 0, -0.9659, -0.2588, 0, -0.2588, 0.9659))
+place_ldu("4032a", "Dark_Bluish_Grey", (30, -50.9612, 110.733), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("11212", "Light_Bluish_Grey", (30, -52.3504, 102.855), (1, 0, 0, 0, 0.1736, -0.9848, 0, 0.9848, 0.1736))
+place_ldu("3623", "Black", (10, -53.7396, 94.9763), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("3623", "Black", (50, -53.7396, 94.9763), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("63864", "Black", (30, -55.1288, 87.0978), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("85984", "Black", (10, -63.5877, 96.7128), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("85984", "Black", (50, -63.5877, 96.7128), (0, 0, 1, 0.9848, 0.1736, 0, -0.1736, 0.9848, 0))
+place_ldu("3023", "Tan", (30, -83.2838, 100.186), (0, 0, -1, -0.9848, 0.1736, 0, 0.1736, 0.9848, 0))
+place_ldu("3069b", "Black", (30, -94.5211, 94.0438), (-1, 0, 0, 0, 0.1736, 0.9848, 0, 0.9848, -0.1736))

@@ -1,0 +1,30 @@
+#: title: A LEGO model composed of a red car with black wheels, a clear windscreen, and a minifigure driver wearing a police hat.
+#: source: LDraw Official Model Repository, 555-2_Car.mpd
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3137c05", "Black", (40, -40, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3032", "Red", 2, 5, 0)
+place_ldu("3137c05", "Black", (120, -40, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3004", "Black", 4, 2, 0, rot=90)
+place("3004", "Black", 4, 2, 2, rot=90)
+place("3004", "Black", 7, 2, 0, rot=90)
+place("3004", "Black", 7, 2, 2, rot=90)
+place("3010", "Black", 3, 2, 0, rot=90)
+place("3020", "Red", 0, 5, 0, rot=90)
+place("3010", "Black", 0, 2, 0, rot=90)
+place("3020", "Yellow", 0, 6, 1)
+place("3020", "Red", 6, 6, 0, rot=90)
+place("3666", "Red", 0, 6, 3)
+place("3666", "Red", 0, 6, 0)
+place("3003", "Red", 2, 7, 2)
+place("3003", "Red", 2, 7, 0)
+place("3004", "Black", 6, 7, 1, rot=90)
+place("3004", "Red", 7, 7, 1, rot=90)
+place("3004", "Red", 6, 7, 0)
+place("3004", "Red", 6, 7, 3)
+place("3039", "Red", 0, 7, 0)
+place("3039", "Red", 0, 7, 2, rot=180)
+place("3823", "Trans_Clear", 2, 10, 0, rot=90)
+place("3710", "Red", 3, 16, 0, rot=90)

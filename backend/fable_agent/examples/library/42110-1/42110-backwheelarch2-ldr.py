@@ -1,0 +1,30 @@
+#: title: A rear wheel arch assembly built from olive green Technic beams and a smooth fairing panel.
+#: source: LDraw Official Model Repository, 42110-1.mpd, section 42110 - backwheelarch2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32140", "Olive_Green", (20, -46, 280), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (80, -56, 300), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("22961", "Red", (20, -66, 280), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32054", "Light_Bluish_Grey", (20, -66, 280), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("74695", "Olive_Green", (80, -66, 280), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("87083", "Dark_Bluish_Grey", (80, -76, 280), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("11947", "Olive_Green", (80, -86, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32184", "Dark_Bluish_Grey", (80, -86, 80), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -86, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32184", "Dark_Bluish_Grey", (80, -86, 240), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (80, -86, 240), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("74695", "Olive_Green", (80, -86, 280), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("43093", "Blue", (80, -96, 20), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -96, 60), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -96, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -96, 220), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -96, 260), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32278", "Olive_Green", (80, -106, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4274", "Light_Bluish_Grey", (80, -116, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (80, -116, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (80, -116, 140), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (80, -116, 160), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (80, -116, 240), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("61184", "Light_Bluish_Grey", (80, -116, 300), (0, -1, 0, -1, 0, 0, 0, 0, -1))

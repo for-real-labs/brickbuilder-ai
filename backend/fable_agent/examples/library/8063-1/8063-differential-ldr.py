@@ -1,0 +1,31 @@
+#: title: A differential gear mechanism with a 16/24 tooth differential casing and bevel gears mounted on triangle liftarms.
+#: source: LDraw Official Model Repository, 8063-1.mpd, section 8063 - Differential.ldr
+#: author: Tomas Kralicek [RabbiT_CZ]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("43093", "Blue", (100, -12.4, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("43093", "Blue", (100, -12.4, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2905", "Black", (105, -12.4, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32054", "Red", (110, -12.4, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32054", "Red", (110, -12.4, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2905", "Black", (115, -12.4, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2905", "Black", (265, -12.4, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32054", "Red", (270, -12.4, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32054", "Red", (270, -12.4, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2905", "Black", (275, -12.4, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("43093", "Blue", (280, -12.4, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43093", "Blue", (280, -12.4, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6589", "Tan", (200, -15.4, 60), (0.259, -0.966, 0, 0, 0, -1, 0.966, 0.259, 0))
+place_ldu("3705", "Black", (40, -32.4, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("59443", "Light_Bluish_Grey", (80, -32.4, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (130, -32.4, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("3706", "Black", (140, -32.4, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3713", "Light_Bluish_Grey", (150, -32.4, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6589", "Tan", (183, -32.4, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6573", "Dark_Bluish_Grey", (200, -32.4, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6589", "Tan", (217, -32.4, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32073", "Light_Bluish_Grey", (250, -32.4, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (250, -32.4, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("59443", "Light_Bluish_Grey", (300, -32.4, 60), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3705", "Black", (340, -32.4, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))

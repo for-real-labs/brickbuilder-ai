@@ -1,0 +1,31 @@
+#: title: Left-side fuselage panel assembly with a large white panel, a red beam 11 and connector blocks.
+#: source: LDraw Official Model Repository, 42040-1.mpd, section 42040 - leftside.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32123a", "Yellow", (100, -10, 55), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (100, -10, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("32123a", "Yellow", (100, -10, 65), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("63869", "Light_Bluish_Grey", (120, -10, 120), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("11478", "Black", (140, -10, 35), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("11478", "Black", (140, -10, 45), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32316", "Red", (140, -10, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("15462", "Dark_Tan", (140, -10, 80), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("59443", "Red", (140, -10, 130), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2736", "Light_Bluish_Grey", (140, -10, 150), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("63869", "Light_Bluish_Grey", (180, -10, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("18651", "Black", (180, -10, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (200, -20, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (200, -20, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32062", "Red", (200, -20, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (60, -30, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6558", "Blue", (100, -30, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("15458", "White", 0.5, 2.5, 1.5)
+place_ldu("6558", "Blue", (140, -30, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (160, -30, 100), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (180, -30, 90), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32525", "Red", (180, -30, 100), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (220, -30, 110), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("42003", "Black", (220, -30, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (240, -30, 110), (0, 0, -1, 0, 1, 0, 1, 0, 0))

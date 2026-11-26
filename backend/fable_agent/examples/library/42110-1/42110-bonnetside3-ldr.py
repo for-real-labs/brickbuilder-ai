@@ -1,0 +1,30 @@
+#: title: An extended bonnet side structure with long olive green beam 15s, a beam 9, and a black tile.
+#: source: LDraw Official Model Repository, 42110-1.mpd, section 42110 - bonnetside3.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (50, -29.5, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (60, -29.5, 240), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32291", "Red", (60, -39.5, 240), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2780", "Black", (50, -49.5, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("74695", "Olive_Green", (40, -58.902, 336.961), (0, 1, 0, 0.848, 0, -0.53, -0.53, 0, -0.848))
+place_ldu("4519", "Light_Bluish_Grey", (60, -58.902, 336.961), (1, 0, 0, 0, -0.848, -0.53, 0, 0.53, -0.848))
+place_ldu("18654", "Olive_Green", (60, -58.902, 336.961), (0, -1, 0, -0.848, 0, -0.53, 0.53, 0, -0.848))
+place_ldu("74695", "Olive_Green", (80, -58.902, 336.961), (0, 1, 0, 0.848, 0, -0.53, -0.53, 0, -0.848))
+place_ldu("32278", "Olive_Green", (20, -69.5, 160), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("3673", "Light_Bluish_Grey", (30, -69.5, 40), (-1, 0, 0, 0, 0.628, -0.778, 0, -0.778, -0.628))
+place_ldu("2780", "Black", (30, -69.5, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (30, -69.5, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32524", "Olive_Green", (40, -69.5, 140), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32526", "Olive_Green", (40, -69.5, 300), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (50, -69.5, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (50, -69.5, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -69.5, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3673", "Light_Bluish_Grey", (50, -69.5, 300), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32278", "Olive_Green", (60, -69.5, 180), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -69.5, 320), (-1, 0, 0, 0, 0.848, -0.53, 0, -0.53, -0.848))
+place_ldu("4274", "Light_Bluish_Grey", (30, -100.621, 14.871), (-1, 0, 0, 0, 0.628, -0.778, 0, -0.778, -0.628))
+place_ldu("40490", "Black", (40, -131.742, -10.258), (0, 1, 0, 0.628, 0, -0.778, -0.778, 0, -0.628))
+place_ldu("6636", "Black", (22, -139.523, -16.54), (0, 1, 0, 0.778, 0, 0.628, 0.628, 0, -0.778))
+place_ldu("4274", "Light_Bluish_Grey", (30, -178.424, -47.952), (-1, 0, 0, 0, 0.628, -0.778, 0, -0.778, -0.628))

@@ -1,0 +1,32 @@
+#: title: Front seat assembly of plates, curved-top bricks, slope bricks and grooved tiles
+#: source: LDraw Official Model Repository, 10242-1.mpd, section 10242 - 10242-3-2.ldr
+#: author: Magnus Forsberg [MagFors]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3020", "Tan", 0, 0, 1, rot=90)
+place("3020", "Tan", 3, 0, 1, rot=90)
+place("3023", "Tan", 0, 1, 1, rot=90)
+place("54200", "White", 1, 2, 3, rot=180)
+place("92280", "Black", 1, 1, 4, rot=90)
+place("11212", "Dark_Bluish_Grey", 1, 1, 1, rot=90)
+place("54200", "Tan", 2, 2, 3, rot=180)
+place("54200", "White", 3, 2, 3, rot=180)
+place("92280", "Black", 3, 1, 4, rot=90)
+place("3023", "Tan", 4, 1, 1, rot=90)
+place("3070b", "Light_Bluish_Grey", 1, 2, 5, rot=90)
+place("3623", "Dark_Green", 1, 2, 2, rot=180)
+place("3070b", "Light_Bluish_Grey", 3, 2, 5, rot=90)
+place("6091", "Tan", 0, 0, 0)
+place("61678", "Tan", 0, 1, 1, rot=180)
+place("6091", "White", 1, 0, 0)
+place("3070b", "Dark_Tan", 1, 3, 1, rot=180)
+place("3070b", "Tan", 1, 3, 2, rot=180)
+place("6091", "Tan", 2, 0, 0)
+place("3070b", "White", 2, 3, 1, rot=180)
+place("3070b", "Dark_Tan", 2, 3, 2, rot=180)
+place("6091", "White", 3, 0, 0)
+place("3070b", "Dark_Tan", 3, 3, 1, rot=180)
+place("3070b", "Tan", 3, 3, 2, rot=180)
+place("6091", "Tan", 4, 0, 0)
+place("61678", "Tan", 4, 1, 1, rot=180)

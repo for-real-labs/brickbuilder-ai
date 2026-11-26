@@ -1,0 +1,30 @@
+#: title: Gear train module with bent liftarms, 8-tooth gears, a yellow knob gear, and cross-block pin joints.
+#: source: LDraw Official Model Repository, 8274-1.mpd, section 8274 - m-1md.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("48989", "Light_Bluish_Grey", (100, -10, 160), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3713", "Light_Bluish_Grey", (100, -30, 140), (0.707107, 0.707107, 0, 0, 0, -1, -0.707107, 0.707107, 0))
+place_ldu("3705", "Black", (100, -40, 140), (0, 0.707107, -0.707107, 1, 0, 0, 0, -0.707107, -0.707107))
+place_ldu("6558", "Black", (40, -50, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6558", "Black", (40, -50, 120), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("40490", "Light_Bluish_Grey", (60, -50, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("43093", "Blue", (70, -50, 40), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (70, -50, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32034", "Light_Bluish_Grey", (100, -50, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32072", "Yellow", (100, -50, 140), (0.707107, 0.707107, 0, 0, 0, 1, 0.707107, -0.707107, 0))
+place_ldu("48989", "Light_Bluish_Grey", (100, -50, 180), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("43093", "Blue", (130, -50, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("2780", "Black", (130, -50, 180), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("40490", "Light_Bluish_Grey", (140, -50, 100), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Black", (160, -50, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6558", "Black", (160, -50, 120), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32072", "Yellow", (100, -70, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3647", "Light_Bluish_Grey", (100, -70, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3706", "Black", (100, -70, 210), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3647", "Light_Bluish_Grey", (100, -70, 220), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3713", "Light_Bluish_Grey", (100, -70, 240), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6538b", "Light_Bluish_Grey", (100, -80, 140), (-0.707107, 0.707107, 0, 0, 0, -1, -0.707107, -0.707107, 0))
+place_ldu("32526", "Light_Bluish_Grey", (80, -90, 180), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32526", "Light_Bluish_Grey", (120, -90, 180), (0, -1, 0, 0, 0, 1, -1, 0, 0))

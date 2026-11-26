@@ -1,0 +1,30 @@
+#: title: A compact podracer built with clear inverted dishes for cockpits, yellow palm-top cones for engines, and blue control sticks for the pilot's controls.
+#: source: LDraw Official Model Repository, 4485-1.mpd, section 4485 - Anakin's Podracer.ldr
+#: author: Merlijn Wissink [Legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("4740", "Trans_Clear", 2.5, 0, 0.5)
+place("4740", "Trans_Clear", 2.5, 0, 7.5)
+place("30359b", "Trans_Clear", 3, 1, 1, rot=180)
+place("2555", "Light_Grey", 3, 4, 8, rot=90)
+place_ldu("30374", "Trans_Neon_Orange", (110, -46, 170), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("4733", "Dark_Grey", (104, -46, 170), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4733", "Dark_Grey", (36, -46, 170), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6141", "Yellow", (128, -46, 170), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6141", "Yellow", (12, -46, 170), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6141", "Blue", (26, -46, 152), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Blue", (114, -46, 152), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Light_Grey", (114, -46, 144), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Light_Grey", (26, -46, 144), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4589", "Dark_Grey", (26, -46, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4589", "Dark_Grey", (114, -46, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2566", "Yellow", (26, -46, 208), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2566", "Yellow", (114, -46, 208), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("4733", "Dark_Grey", 3, 4, 1)
+place_ldu("4070", "Blue", (70, -46, 64), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4592", "Blue", (88, -46, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4592", "Blue", (52, -46, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4593", "Black", (88, -46, 30), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("4593", "Black", (52, -48, 30), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place("6141", "Light_Grey", 3, 7, 1, rot=270)

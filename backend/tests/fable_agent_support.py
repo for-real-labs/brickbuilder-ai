@@ -217,17 +217,28 @@ HELPER_COLORS = {72: "Dark_Bluish_Grey", 70: "Reddish_Brown", 19: "Tan", 14: "Ye
                  43: "Trans_Light_Blue", 272: "Dark_Blue"}
 
 
-# A Technic pin and a brick with a hole for it, drawn with the library's connector primitives
-# (``World(extra=TECHNIC_PARTS)``). The pin lies along x; the hole runs through the brick along z.
+# Parts joined by a peg in a hole, drawn as the library draws them: with cylinder primitives, a
+# hole's turned inside out by "0 BFC INVERTNEXT" (``World(extra=TECHNIC_PARTS)``). The pin and the
+# bar lie along x from their origin; the hole runs through the brick along z; the clip grips a
+# bar that stands upright in front of its plate.
+INSIDE_OUT = "0 BFC INVERTNEXT"
 TECHNIC_PARTS = {
     "3673": "\n".join(["0 Technic Pin"] + _shell(-20, -6, -6, 20, 6, 6, bottom=True)
                       + ["1 16 0 0 0 0 1 0 -1 0 0 0 0 1 connect.dat"]) + "\n",
-    "3700": _block("Technic Brick  1 x  2 with Hole", 2, 1, 24) + "1 16 0 10 0 1 0 0 0 0 1 0 -1 0 peghole.dat\n",
+    "3700": _block("Technic Brick  1 x  2 with Hole", 2, 1, 24) + "1 16 0 10 10 1 0 0 0 0 1 0 -1 0 peghole.dat\n",
+    "30374": "\n".join(["0 Bar  4L"] + _shell(0, -4, -4, 80, 4, 4, bottom=True)
+                       + ["1 16 0 0 0 0 80 0 4 0 0 0 0 4 4-4cyli.dat"]) + "\n",
+    "4085c": _block("Plate  1 x  1 with Clip Vertical", 1, 1, 8)
+             + f"{INSIDE_OUT}\n1 16 0 0 -14 4 0 0 0 8 0 0 0 4 2-4cyli.dat\n",
 }
+_ROUND = "\n".join(_shell(-1, 0, -1, 1, 1, 1, bottom=True)) + "\n"
 PRIMITIVES = {
     "stud.dat": STUD,
-    "connect.dat": "\n".join(["0 Technic Pin 1.0"] + _shell(-6, 0, -6, 6, 20, 6)) + "\n",
-    "peghole.dat": "\n".join(["0 Technic Peg Hole"] + _shell(-6, 0, -6, 6, 2, 6)) + "\n",
+    "4-4cyli.dat": "0 Cylinder 1.0\n" + _ROUND,
+    "2-4cyli.dat": "0 Cylinder 0.5\n" + _ROUND,
+    "1-8cyli.dat": "0 Cylinder 0.125\n" + _ROUND,
+    "connect.dat": "0 Technic Pin 1.0\n1 16 0 0 0 6 0 0 0 20 0 0 0 6 4-4cyli.dat\n",
+    "peghole.dat": f"0 Technic Peg Hole\n{INSIDE_OUT}\n1 16 0 0 0 6 0 0 0 20 0 0 0 6 4-4cyli.dat\n",
 }
 
 

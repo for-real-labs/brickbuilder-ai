@@ -1,0 +1,30 @@
+#: title: A complete piston-crankshaft assembly with crankshafts, connecting rods, and pistons for an 8-cylinder engine.
+#: source: LDraw Official Model Repository, 8258-1.mpd, section 8258 - m-1z'a.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32062", "Red", (20, -9, 70), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2852", "Light_Bluish_Grey", (20, -9, 70), (-0.747868, 0.663848, 0, 0.663848, 0.747868, 0, 0, 0, -1))
+place_ldu("2852", "Light_Bluish_Grey", (20, -9, 150), (0.747868, -0.663848, 0, 0.663848, 0.747868, 0, 0, 0, 1))
+place_ldu("2852", "Light_Bluish_Grey", (20, -9, 150), (-0.747868, 0.663848, 0, 0.663848, 0.747868, 0, 0, 0, -1))
+place_ldu("2852", "Light_Bluish_Grey", (20.001, -9.001, 70), (0.747868, -0.663848, 0, 0.663848, 0.747868, 0, 0, 0, 1))
+place_ldu("2853", "Yellow", (20, -19, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Dark_Bluish_Grey", (20, -19, 50), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Dark_Bluish_Grey", (20, -19, 90), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2854", "Dark_Bluish_Grey", (20, -19, 130), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2853", "Yellow", (20, -19, 150), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Red", (20, -19, 180), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2852", "Light_Bluish_Grey", (20, -29, 30), (-0.427863, 0.903844, 0, 0.903844, 0.427863, 0, 0, 0, -1))
+place_ldu("2852", "Light_Bluish_Grey", (20, -29, 30), (0.427863, -0.903844, 0, 0.903844, 0.427863, 0, 0, 0, 1))
+place_ldu("32062", "Red", (20, -29, 110), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2852", "Light_Bluish_Grey", (20, -29, 110), (0.427863, -0.903844, 0, 0.903844, 0.427863, 0, 0, 0, 1))
+place_ldu("2852", "Light_Bluish_Grey", (20, -29, 110), (-0.427863, 0.903844, 0, 0.903844, 0.427863, 0, 0, 0, -1))
+place_ldu("2851", "Yellow", (-6.554, -38.915, 70), (-0.600001, 0.799999, 0, 0.799999, 0.600001, 0, 0, 0, -1))
+place_ldu("2851", "Yellow", (-6.554, -38.915, 150), (-0.600001, 0.799999, 0, 0.799999, 0.600001, 0, 0, 0, -1))
+place_ldu("2851", "Yellow", (46.554, -38.915, 70), (0.600001, -0.799999, 0, 0.799999, 0.600001, 0, 0, 0, 1))
+place_ldu("2851", "Yellow", (46.554, -38.915, 150), (0.600001, -0.799999, 0, 0.799999, 0.600001, 0, 0, 0, 1))
+place_ldu("2851", "Yellow", (-16.154, -46.115, 30), (-0.600001, 0.799999, 0, 0.799999, 0.600001, 0, 0, 0, -1))
+place_ldu("2851", "Yellow", (-16.154, -46.115, 110), (-0.600001, 0.799999, 0, 0.799999, 0.600001, 0, 0, 0, -1))
+place_ldu("2851", "Yellow", (56.154, -46.115, 30), (0.600001, -0.799999, 0, 0.799999, 0.600001, 0, 0, 0, 1))
+place_ldu("2851", "Yellow", (56.154, -46.115, 110), (0.600001, -0.799999, 0, 0.799999, 0.600001, 0, 0, 0, 1))

@@ -1,0 +1,30 @@
+#: title: Black wedge plates, headlight bricks, grille tiles, and grille stickers forming detailed engine or vent detailing.
+#: source: LDraw Official Model Repository, 5542-1.mpd, section 5542 - Phase 21-22.ldr
+#: author: Ulrich Röder {UR}
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("6141", "Light_Grey", (10, -10, 58), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Light_Grey", (190, -10, 58), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4081b", "Black", (30, -12, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("4081b", "Black", 8, 0.25, 3, rot=270)
+place_ldu("2412b", "Light_Grey", (16, -18, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2412b", "Light_Grey", (184, -18, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("4070", "Black", 1, 0.5, 4, rot=90)
+place("4070", "Black", 1, 0.5, 5, rot=90)
+place("3005", "Black", 1, 0.5, 6, rot=270)
+place("3040b", "Black", 2, 0.5, 0)
+place("3040b", "Black", 7, 0.5, 0)
+place("4070", "Black", 8, 0.5, 4, rot=270)
+place("4070", "Black", 8, 0.5, 5, rot=270)
+place("3005", "Black", 8, 0.5, 6, rot=270)
+place("3010", "Yellow", 1, 1.5, 15, rot=270)
+place("6091", "Black", 1, 0.5, 2, rot=90)
+place("3021", "Black", 1, 3.5, 19)
+place("3021", "Blue", 4, 3.5, 23, rot=270)
+place("6091", "Black", 7, 0.5, 2, rot=270)
+place("3021", "Black", 6, 3.5, 19)
+place("3010", "Yellow", 8, 1.5, 15, rot=270)
+place("3023", "Blue", 4, 4.5, 21)
+place("6565", "Black", 1, 3.5, 21, rot=180)
+place("6564", "Black", 7, 3.5, 21, rot=180)

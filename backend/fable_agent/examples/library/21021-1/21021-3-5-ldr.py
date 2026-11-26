@@ -1,0 +1,32 @@
+#: title: A hinged wall panel combining hinge plates, side-stud bricks, and grooved tiles for articulation.
+#: source: LDraw Official Model Repository, 21021-1.mpd, section 21021 - 3 - 5.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3666", "White", 2, 0, 1, rot=270)
+place("3023", "White", 2, 1, 3, rot=270)
+place_ldu("2430", "White", (60, -16, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2431", "White", (16, -22, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("63864", "White", (16, -22, 120), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("6091", "White", (16, -22, 140), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2436a", "White", (24, -22, 50), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3623", "White", (24, -22, 100), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3666", "White", (32, -22, 90), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3023", "Trans_Light_Blue", (68, -22, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3710", "White", (68, -22, 110), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3023", "Trans_Light_Blue", (76, -22, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("3623", "White", (76, -22, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6636", "White", (84, -22, 90), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6091", "White", (84, -22, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place("3710", "White", 2, 2, 1, rot=270)
+place("2431", "White", 2, 3, 1, rot=270)
+place("52107", "White", 2, 1, 5, rot=270)
+place("3623", "White", 2, 4, 5, rot=270)
+place_ldu("98138", "Olive_Green", (34, -44, 20), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Olive_Green", (34, -44, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Olive_Green", (34, -44, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("98138", "Olive_Green", (34, -44, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3023", "White", 2, 5, 5, rot=270)
+place("3070b", "White", 2, 5, 7, rot=270)
+place("3069b", "White", 2, 6, 5, rot=270)

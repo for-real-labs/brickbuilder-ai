@@ -1,0 +1,30 @@
+#: title: Rear end nose: red plate base with 45-degree sloped end, clear round light and decorative 31-degree slope details
+#: source: LDraw Official Model Repository, 10183-1_Diesel-electric-American-locomotive.mpd, section 10183 - 4 - back nose.ldr
+#: author: Bert Van Raemdonck [BEAVeR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3795", "Red", 0, 0, 1)
+place("3710", "Red", 6, 0, 0, rot=90)
+place("3666", "Red", 0, 0, 3)
+place("3666", "Red", 0, 0, 0)
+place("3040b", "Red", 2, 1, 0)
+place("3039", "Red", 0, 1, 0)
+place("3037", "Red", 3, 1, 0)
+place("3040b", "Red", 2, 1, 2, rot=180)
+place("3039", "Red", 0, 1, 2, rot=180)
+place("3037", "Red", 3, 1, 2, rot=180)
+place("54200", "Red", 2, 4, 1)
+place("54200", "Red", 2, 4, 2, rot=180)
+place("54200", "Red", 3, 4, 2, rot=180)
+place("54200", "Red", 3, 4, 1)
+place("54200", "Red", 5, 4, 2, rot=180)
+place("54200", "Red", 5, 4, 1)
+place("54200", "Red", 4, 4, 2, rot=180)
+place("54200", "Red", 4, 4, 1)
+place("54200", "Red", 6, 4, 2, rot=180)
+place("54200", "Red", 6, 4, 1)
+place("3794a", "Red", 0, 4, 1, rot=270)
+place("3794a", "Red", 1, 4, 1, rot=270)
+place("6141", "Trans_Clear", 0, 5, 1.5, rot=270)
+place("6141", "Trans_Clear", 1, 5, 1.5, rot=270)

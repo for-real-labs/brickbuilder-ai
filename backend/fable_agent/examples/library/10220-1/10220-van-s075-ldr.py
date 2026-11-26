@@ -1,0 +1,32 @@
+#: title: Window/panel unit of studs-on-side bricks, medium-blue tiled glazing and hinged black tops
+#: source: LDraw Official Model Repository, 10220-1.mpd, section 10220 - Van S075.ldr
+#: author: Stan Isachenko [angmarec]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3938", "Black", 1, 0, 1, rot=180)
+place("3938", "Black", 7, 0, 1, rot=180)
+place_ldu("3069b", "Medium_Blue", (40, -30, 12), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3069b", "Medium_Blue", (80, -30, 12), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3069b", "Medium_Blue", (120, -30, 12), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("3069b", "Medium_Blue", (160, -30, 12), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place("3024", "Dark_Red", 0, 3, 1)
+place("3024", "Dark_Red", 9, 3, 1, rot=180)
+place("30414", "Black", 1, 2, 1)
+place("30414", "Black", 5, 2, 1)
+place("3460", "Red", 1, 5, 1, rot=180)
+place("3005", "Dark_Red", 0, 4, 1)
+place("3460", "Red", 1, 6, 1, rot=180)
+place("3005", "Dark_Red", 9, 4, 1, rot=180)
+place_ldu("3068b", "Medium_Blue", (40, -60, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3068b", "Medium_Blue", (80, -60, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3068b", "Medium_Blue", (120, -60, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("3068b", "Medium_Blue", (160, -60, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("3024", "Dark_Red", 0, 7, 1)
+place("3024", "Dark_Red", 9, 7, 1, rot=180)
+place("30414", "Black", 1, 7, 1)
+place("30414", "Black", 5, 7, 1)
+place("3666", "Dark_Red", 2, 10, 1, rot=180)
+place("6091", "Dark_Red", 0, 8, 1, rot=90)
+place("4162", "Dark_Red", 1, 11, 1)
+place("6091", "Dark_Red", 8, 8, 1, rot=270)

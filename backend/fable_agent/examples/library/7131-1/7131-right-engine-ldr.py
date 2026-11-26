@@ -1,0 +1,30 @@
+#: title: A red-and-blue podracer engine with a horizontal cylinder body and headlight bricks.
+#: source: LDraw Official Model Repository, 7131-1.mpd, section 7131 - Right Engine.ldr
+#: author: Daniel Goerner [TK-949]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("3023", "Red", 2, 0, 6, rot=270)
+place("3021", "Red", 1, 0, 8)
+place("3023", "Red", 2, 0, 10, rot=270)
+place_ldu("30407", "Yellow", (8, -22, 160), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("30383", "Dark_Grey", (16, -22, 180), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("30383", "Dark_Grey", (84, -22, 180), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("30407", "Yellow", (92, -22, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("4070", "Black", 1, 1, 8, rot=90)
+place("4070", "Black", 1, 1, 9, rot=90)
+place("3004", "Yellow", 2, 1, 8, rot=270)
+place("4070", "Black", 3, 1, 8, rot=270)
+place("4070", "Black", 3, 1, 9, rot=270)
+place_ldu("30151", "Yellow", (50, -42, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3941", "Blue", (50, -42, 120), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("30360", "Dark_Grey", 1, 1, 6)
+place_ldu("3022", "Light_Grey", (50, -42.5, 240), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3941", "Blue", (50, -42.5, 248), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6248", "Light_Grey", (50, -42.5, 281), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Black", (50, -42.5, 291.5), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6248", "Light_Grey", (50, -42.5, 301), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3941", "Blue", (50, -42.5, 334), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3942c", "Light_Grey", (50, -42.5, 382), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("4865a", "Blue", 1, 6, 8, rot=90)
+place("2555", "Light_Grey", 2, 9, 10)

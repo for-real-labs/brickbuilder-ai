@@ -1,0 +1,33 @@
+#: title: A light blue and white racetrack surface section built from large base plates, fences, and corner bricks.
+#: source: LDraw Official Model Repository, 8211-1.mpd, section 8211 - 8211-7-b.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3033", "Dark_Grey", 0, 0, 0, rot=90)
+place("3033", "Dark_Grey", 6, 0, 0, rot=90)
+place("3794b", "Light_Grey", 0, 1, 6, rot=90)
+place("3794b", "Light_Grey", 0, 1, 4, rot=90)
+place("3794b", "Light_Grey", 0, 1, 2, rot=90)
+place("2357", "White", 0, 1, 8, rot=90)
+place("6111", "White", 2, 1, 9)
+place("2357", "White", 0, 1, 0)
+place("6111", "White", 2, 1, 0)
+place("2357", "Dark_Grey", 0, 4, 8, rot=90)
+place("3005", "Dark_Grey", 10, 4, 9)
+place("2921", "Dark_Grey", 11, 4, 9, rot=270)
+place("2357", "Dark_Grey", 0, 4, 0)
+place("3005", "Dark_Grey", 10, 4, 0)
+place("2921", "Dark_Grey", 11, 4, 0, rot=270)
+place("2357", "White", 0, 7, 8, rot=90)
+place("30055", "Dark_Grey", 2, 4, 9)
+place("30055", "Dark_Grey", 6, 4, 9)
+place("3004", "White", 10, 7, 9)
+place("2357", "White", 0, 7, 0)
+place("30055", "Dark_Grey", 2, 4, 0)
+place("30055", "Dark_Grey", 6, 4, 0)
+place("3004", "White", 10, 7, 0)
+place("4477", "White", 1, 10, 9)
+place("4477", "White", 1, 10, 0)
+place("4162", "Light_Blue", 2, 11, 9)
+place("4162", "Light_Blue", 2, 11, 0)

@@ -1,0 +1,30 @@
+#: title: A four-wheeled trailer with a towball hitch, black and light-grey plates, and red light pieces.
+#: source: LDraw Official Model Repository, 6351-1.mpd, section 6351 - trailer.ldr
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("4624", "Light_Grey", (8, -19, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3139", "Black", (8, -19, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4624", "Light_Grey", (8, -19, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3139", "Black", (8, -19, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4624", "Light_Grey", (112, -19, 50), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3139", "Black", (112, -19, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4624", "Light_Grey", (112, -19, 90), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3139", "Black", (112, -19, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4715", "White", (60, -20, 210), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4276b", "Light_Grey", 2, 2, 8, rot=270)
+place_ldu("2926", "Light_Grey", (59.999, -24, 50.001), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2926", "Light_Grey", (59.999, -24, 90.001), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("4276b", "Light_Grey", 3, 2, 8, rot=270)
+place_ldu("6141", "Trans_Red", (30.004, -32, 10.001), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3021", "Black", (40.001, -32, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "Black", 1, 3, 8)
+place_ldu("3021", "Black", (80.001, -32, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6141", "Trans_Red", (90.004, -32, 10.001), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4477", "Light_Grey", (30.002, -40, 100.001), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2508", "Light_Grey", (59.999, -40, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2412b", "Light_Grey", 2, 4, 4)
+place("2412b", "Light_Grey", 2, 4, 8)
+place_ldu("3794a", "Light_Grey", (60.002, -40, 50.001), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4477", "Light_Grey", (90.002, -40, 100.001), (0, 0, 1, 0, 1, 0, -1, 0, 0))

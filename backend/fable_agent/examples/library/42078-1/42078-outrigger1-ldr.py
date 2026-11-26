@@ -1,0 +1,32 @@
+#: title: First outrigger stabilizer with gear racks, bent liftarms, and cross blocks for extendable support legs.
+#: source: LDraw Official Model Repository, 42078-1.mpd, section 42078 - outrigger1.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("32526", "Black", (20, -9, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32056", "Light_Bluish_Grey", (35, -9, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("18651", "Black", (40, -9, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("18651", "Black", (40, -9, 60), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32056", "Light_Bluish_Grey", (45, -9, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32526", "Black", (60, -9, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("18651", "Black", (40, -49, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32316", "Black", (60, -63.558, 261.369), (0, 1, 0, 0.975, 0, -0.224, -0.224, 0, -0.975))
+place_ldu("2780", "Black", (70, -72.509, 222.383), (-1, 0, 0, 0, 0.975, -0.224, 0, -0.224, -0.975))
+place_ldu("40490", "Dark_Bluish_Grey", (80, -72.509, 222.383), (0, -1, 0, 0.794, 0, -0.608, 0.608, 0, 0.794))
+place_ldu("6632", "Dark_Bluish_Grey", (60, -86.01, 0.179), (0, 0, -1, -0.5, 0.866, 0, 0.866, 0.5, 0))
+place_ldu("6558", "Blue", (40, -89, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6558", "Blue", (40, -89, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("18940", "Light_Bluish_Grey", (40, -89, 180), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6536", "Light_Bluish_Grey", (20, -99, -7.321), (0, 0, -1, -0.866, -0.5, 0, -0.5, 0.866, 0))
+place_ldu("32062", "Red", (20, -99, -7.321), (0, 0, -1, -0.866, -0.5, 0, -0.5, 0.866, 0))
+place_ldu("6536", "Light_Bluish_Grey", (60, -99, -7.321), (0, 0, -1, -0.866, -0.5, 0, -0.5, 0.866, 0))
+place_ldu("32062", "Red", (60, -99, -7.321), (0, 0, -1, -0.866, -0.5, 0, -0.5, 0.866, 0))
+place_ldu("4519", "Light_Bluish_Grey", (40, -109, 10), (1, 0, 0, 0, 0.5, 0.866, 0, -0.866, 0.5))
+place_ldu("18942", "Dark_Bluish_Grey", (40, -109, 140), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("87083", "Dark_Bluish_Grey", (60, -109, 270), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123b", "Light_Bluish_Grey", (65, -109, 270), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32123b", "Light_Bluish_Grey", (95, -109, 270), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6632", "Dark_Bluish_Grey", (60, -111.99, -14.821), (0, 0, -1, -0.5, 0.866, 0, 0.866, 0.5, 0))
+place_ldu("4274", "Light_Bluish_Grey", (90, -121.17, 285.881), (1, 0, 0, 0, -0.131, 0.991, 0, -0.991, -0.131))
+place_ldu("98138", "Trans_Orange", (98, -121.17, 285.881), (0, -1, 0, -0.991, 0, -0.131, 0.131, 0, -0.991))

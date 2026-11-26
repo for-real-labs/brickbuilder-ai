@@ -1,0 +1,30 @@
+#: title: Long upper hull section made of turquoise curved-top bricks and plating on a black base plate with accent detailing.
+#: source: LDraw Official Model Repository, 75253-1_Gong.mpd, section 75253 - topside2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32557", "Light_Bluish_Grey", (39.667, 10.93, 30), (0, 0.083, -0.997, 0, 0.997, 0.083, 1, 0, 0))
+place_ldu("32557", "Light_Bluish_Grey", (39.667, 10.93, 190), (0, 0.083, -0.997, 0, 0.997, 0.083, 1, 0, 0))
+place_ldu("2780", "Black", (38, -9, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (38, -9, 170), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("18654", "Tan", (38, -9, 170), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6091", "Dark_Turquoise", (12, -19, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6091", "Dark_Turquoise", (12, -19, 290), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("91988", "Dark_Turquoise", (12, -29, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("30157", "Reddish_Brown", (28, -49, 100), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6081", "Dark_Turquoise", (12, -69, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("91988", "Dark_Turquoise", (12, -69, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6081", "Dark_Turquoise", (12, -69, 290), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3029", "Black", (20, -69, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("3710", "Reddish_Brown", (28, -69, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("3666", "Dark_Bluish_Grey", (28, -69, 290), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3020", "Dark_Bluish_Grey", (36, -69, 100), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32524", "Yellow", (38, -69, 50), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32524", "Yellow", (38, -69, 150), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3666", "Dark_Bluish_Grey", (44, -69, 10), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("30157", "Reddish_Brown", (28, -89, 100), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("91988", "Dark_Turquoise", (12, -109, 160), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6091", "Dark_Turquoise", (12, -119, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("6091", "Dark_Turquoise", (12, -119, 290), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (38, -129, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))

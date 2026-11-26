@@ -1,0 +1,33 @@
+#: title: Nose-front submodel: front cab end with red slope and curved-top bricks, a white buffer plate, trans-yellow headlamp rounds and red grille/vent tiles
+#: source: LDraw Official Model Repository, 10183-1_German-Standard-Electric-Locomotive.mpd, section 10183 - 11 - nose front.ldr
+#: author: Bert Van Raemdonck [BEAVeR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3666", "Red", 0, 0, 0, rot=270)
+place("3710", "White", 1, 0, 1)
+place("3666", "Red", 5, 0, 0, rot=270)
+place("54200", "Red", 0, 2, 4, rot=90)
+place("3023", "Red", 0, 1, 4, rot=270)
+place("54200", "Red", 0, 2, 5, rot=90)
+place("3023", "Red", 0, 1, 1)
+place("3022", "Black", 2, 1, 0, rot=270)
+place("3023", "Red", 4, 1, 1)
+place("54200", "Red", 5, 2, 4, rot=270)
+place("3023", "Red", 5, 1, 4, rot=270)
+place("54200", "Red", 5, 2, 5, rot=270)
+place("3023", "White", 2, 2, 0)
+place("3666", "Red", 0, 2, 1)
+place("6141", "Trans_Yellow", 0, 3, 1, rot=90)
+place("3023", "Dark_Red", 2, 3, 0, rot=270)
+place("3023", "Dark_Red", 3, 3, 0, rot=270)
+place("6141", "Trans_Yellow", 5, 3, 1, rot=90)
+place("6091", "Red", 0, 1, 0, rot=90)
+place("2431", "Red", 1, 4, 0, rot=90)
+place("6091", "Red", 0, 1, 2, rot=90)
+place("6091", "Red", 0, 1, 3, rot=90)
+place("3068b", "Red", 2, 4, 0, rot=90)
+place("6091", "Red", 4, 1, 0, rot=270)
+place("2431", "Red", 4, 4, 0, rot=90)
+place("6091", "Red", 4, 1, 2, rot=270)
+place("6091", "Red", 4, 1, 3, rot=270)

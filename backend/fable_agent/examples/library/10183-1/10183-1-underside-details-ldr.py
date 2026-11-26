@@ -1,0 +1,30 @@
+#: title: Underbody detail: plates, brackets, curved bricks, door rails, handles, mechanical arms and bars representing pipes and linkages
+#: source: LDraw Official Model Repository, 10183-1.mpd, section 10183 - 1 - underside details.ldr
+#: author: Bert Van Raemdonck [BEAVeR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("30374", "Black", (25.329, -4, 80), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("30374", "Black", (134.671, -4, 0), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6091", "Black", (50, -7, 10), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("6081", "Black", (50, -7, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3020", "Black", (80, -7, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3020", "Black", (80, -7, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("6091", "Black", (110, -7, 10), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("6081", "Black", (110, -7, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2436b", "Black", (80, -15, 90), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3020", "Black", (80, -23, 20), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3020", "Black", (80, -23, 60), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3710", "Dark_Red", (80, -23, 90), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6141", "Black", (19, -25, 111), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("4085c", "Black", (27, -25, 111), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3010", "Black", (80, -25, 128), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2926", "Black", (80, -25, 136), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4085c", "Black", (133, -25, 111), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6141", "Black", (141, -25, 111), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2540", "Black", (30, -39, 20), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("32028", "Black", (30, -39, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2540", "Black", (130, -39, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("32028", "Black", (130, -39, 60), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("52107", "Black", (60, -41, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("52107", "Black", (100, -41, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

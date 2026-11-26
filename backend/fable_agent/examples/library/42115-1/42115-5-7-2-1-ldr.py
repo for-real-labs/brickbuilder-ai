@@ -1,0 +1,31 @@
+#: title: Right door internal frame with lime body panels, beams, and a gear tooth element
+#: source: LDraw Official Model Repository, 42115-1.mpd, section 42115 - 5-7-2-1.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32140", "Black", (60, -49, 210), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43093", "Blue", (60, -49, 220), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("64394", "Black", (40, -89, 230), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -89, 220), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("2780", "Black", (20, -109, 220), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("41669", "Black", (20, -109, 330), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Black", (30, -109, 330), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3705", "Red", (40, -109, 240), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("60483", "Black", (40, -109, 250), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("59443", "Black", (40, -109, 280), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Red", (40, -109, 300), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32039", "Black", (40, -109, 310), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -109, 230), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62531", "Lime", (60, -129, 110), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (60, -129, 220), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("64683", "Lime", (60, -129, 230), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (70, -129, 30), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -129, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -129, 110), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -129, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -129, 190), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -129, 270), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32063", "Black", (75, -129, 220), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32316", "Black", (80, -129, 50), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32063", "Black", (85, -129, 220), (0, -1, 0, -1, 0, 0, 0, 0, -1))

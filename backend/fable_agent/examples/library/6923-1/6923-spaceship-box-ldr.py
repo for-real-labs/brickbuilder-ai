@@ -1,0 +1,32 @@
+#: title: A red and black storage container assembly with an M:Tron-patterned door, clip mounts, inverted slopes, and an internal mallet tool.
+#: source: LDraw Official Model Repository, 6923-1.mpd, section 6923 - Spaceship - Box.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3031", "Red", 0, 0, 1)
+place("3004", "Black", 1, 1, 2, rot=90)
+place("3665", "Red", 0, 1, 0)
+place("3665", "Red", 3, 1, 0)
+place("3665", "Red", 3, 1, 4, rot=180)
+place("3665", "Red", 0, 1, 4, rot=180)
+place_ldu("4085b", "Black", (30, -40, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4085b", "Black", (30, -40, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3710", "Light_Grey", 0, 4, 1)
+place("3710", "Light_Grey", 0, 4, 4)
+place_ldu("2569", "Trans_Neon_Green", (70, -48, 90), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("4345a", "Red", 2, 1, 2, rot=270)
+place_ldu("4588", "Trans_Neon_Green", (60, -40, 60), (0.707107, 0, -0.707107, 0, 1, 0, 0.707107, 0, 0.707107))
+place_ldu("4346p68", "Light_Grey", (60, -56, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4735", "Black", (10, -57, 66), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3004", "Black", 1, 5, 2, rot=270)
+place("3023", "Black", 2, 7, 2, rot=270)
+place_ldu("4085b", "Black", (70, -64, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2433", "Black", (70, -48, 30), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place("4085b", "Black", 3, 7, 3, rot=180)
+place("3039", "Red", 1, 5, 0)
+place("3039", "Red", 1, 5, 4, rot=180)
+place("3020", "Red", 1, 8, 1, rot=270)
+place("2412a", "Red", 3, 8, 2, rot=270)
+place("2609a", "Black", 1, 9, 2, rot=270)
+place_ldu("2959c01", "Black", (40, -86.5, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))

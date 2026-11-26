@@ -1,0 +1,32 @@
+#: title: A collection of farm tools including a hand truck, taps, wheels, and small implements.
+#: source: LDraw Official Model Repository, 7637-1.mpd, section 7637 - Tool.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2496", "Black", (40, -10, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2496", "Black", (80, -10, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("2655", "Light_Bluish_Grey", 1, 0.75, 1, rot=270)
+place("2655", "Light_Bluish_Grey", 3, 0.75, 1, rot=270)
+place("3062b", "Blue", 10, 0.75, 4)
+place("3062b", "Yellow", 11, 0.75, 4)
+place("3020", "Dark_Bluish_Grey", 1, 3, 1)
+place_ldu("48336", "Black", (30, -40, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3022", "Dark_Bluish_Grey", 2, 4, 1)
+place("4085c", "Black", 4, 4, 1, rot=270)
+place("4085c", "Black", 4, 4, 2, rot=270)
+place("3069b", "Red", 1, 5, 1, rot=180)
+place("3794a", "Red", 1, 5, 2, rot=180)
+place("3068b", "Red", 3, 5, 1, rot=180)
+place("3062b", "Blue", 10, 3.75, 4)
+place("3062b", "Yellow", 11, 3.75, 4)
+place("6141", "Dark_Bluish_Grey", 1.5, 6, 2, rot=180)
+place("32028", "Black", 10, 6.75, 4, rot=180)
+place("6141", "Dark_Bluish_Grey", 1.5, 7, 2, rot=180)
+place("6141", "Dark_Bluish_Grey", 1.5, 8, 2, rot=180)
+place_ldu("4592", "Light_Bluish_Grey", (60, -78, 38), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4593", "Black", (60, -78, 38), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4081b", "Black", 1.5, 8.75, 2, rot=270)
+place_ldu("4599a", "Blue", (210, -86, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4599a", "Yellow", (230, -86, 90), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2555", "Dark_Bluish_Grey", 1.5, 10, 2)

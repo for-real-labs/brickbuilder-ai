@@ -1,0 +1,33 @@
+#: title: White roof ornament with curved slopes and a croissant detail
+#: source: LDraw Official Model Repository, 10243-1.mpd, section 10243 - Roof - Ornament2.ldr
+#: author: Willy Tschager [Holly Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3034", "White", 0, 0, 0, rot=270)
+place("11477", "White", 1, 1, 0, rot=180)
+place("11477", "White", 1, 1, 6)
+place("92280", "White", 0, 1, 2, rot=90)
+place("92280", "White", 0, 1, 4, rot=270)
+place_ldu("61252", "White", (30, -16, 10), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("92280", "White", 1, 1, 2, rot=90)
+place("92280", "White", 1, 1, 4, rot=270)
+place_ldu("61252", "White", (30, -16, 150), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3022", "White", 0, 2, 3)
+place("3069b", "Light_Bluish_Grey", 0, 3, 3, rot=270)
+place("15573", "White", 1, 3, 3, rot=270)
+place("3024", "White", 1, 4, 3.5)
+place_ldu("48336", "White", (20, -42, 48), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("48336", "White", (20, -42, 112), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3068b", "White", (20, -52, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("98282", "White", (20, -52, 56), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("98282", "White", (20, -52, 104), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("3068b", "White", (20, -52, 120), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6091", "White", (10, -62, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6091", "White", (10, -62, 120), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6091", "White", (30, -62, 40), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6091", "White", (30, -62, 120), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("87087", "White", 1, 5, 3.5, rot=270)
+place("3070b", "White", 1, 8, 3.5, rot=270)
+place_ldu("48336", "White", (20, -82, 72), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("48336", "White", (20, -82, 88), (1, 0, 0, 0, 0, 1, 0, -1, 0))

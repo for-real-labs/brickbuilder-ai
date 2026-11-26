@@ -1,0 +1,32 @@
+#: title: The left hand mechanism using technic liftarms, axles, and a pneumatic connector to form a hinged grabbing appendage.
+#: source: LDraw Official Model Repository, 21303-1.mpd, section 21303 - Main gauche.ldr
+#: author: Christophe Mitillo [Christophe_Mitillo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("2335", "Light_Bluish_Grey", (37.999, 11.698, 36.1065), (0, 1, 0, 1.00023, 0, -0.000246, -0.000246, 0, -1.00023))
+place_ldu("2540", "Dark_Bluish_Grey", (58, 5.892, 55.3495), (-1, 0, 0, 0, -0.92388, -0.382684, 0, -0.382684, 0.92388))
+place_ldu("2540", "Dark_Bluish_Grey", (58, -1.499, 52.288), (1, 0, 0, 0, -0.92388, 0.382684, 0, -0.382684, -0.92388))
+place_ldu("48729a", "Dark_Bluish_Grey", (58, -11, 70), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("99021", "Dark_Bluish_Grey", (58, -31, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41677", "Light_Bluish_Grey", (58, -31, 85), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6587", "Dark_Tan", (58, -31, 88), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6587", "Dark_Tan", (58, -31, 88), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("41677", "Light_Bluish_Grey", (58, -31, 95), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32054", "Black", (58, -31, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32187", "Light_Bluish_Grey", (58, -31, 131), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32187", "Light_Bluish_Grey", (58, -31, 131), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2654", "Light_Bluish_Grey", (36, -45, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2654", "Light_Bluish_Grey", (80, -45, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3005", "Light_Bluish_Grey", (19, -51, 70), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2335", "Light_Bluish_Grey", (56, -51, 10), (0, -1, 0, -0.924, 0, 0.383, -0.383, 0, -0.924))
+place_ldu("3005", "Light_Bluish_Grey", (98, -51, 70), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2335", "Light_Bluish_Grey", (100, -51, 10), (0, -1, 0, -0.924, 0, 0.383, -0.383, 0, -0.924))
+place_ldu("3024", "Dark_Bluish_Grey", (26, -53, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2540", "Dark_Bluish_Grey", (36, -53, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4081b", "Dark_Bluish_Grey", (46, -53, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4081b", "Dark_Bluish_Grey", (70, -53, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2540", "Dark_Bluish_Grey", (80, -53, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3024", "Dark_Bluish_Grey", (90, -53, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3068b", "Light_Bluish_Grey", (36, -61, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3068b", "Light_Bluish_Grey", (80, -61, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

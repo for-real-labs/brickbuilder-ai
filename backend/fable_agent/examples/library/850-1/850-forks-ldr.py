@@ -1,0 +1,30 @@
+#: title: A vertical lift fork assembly using long technic bricks, stacked plates, and gear racks driven by pins for raising and lowering loads.
+#: source: LDraw Official Model Repository, 850-1.mpd, section 850 - Forks.ldr
+#: author: Merlijn Wissink [legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("3673", "Light_Grey", (20, -20, 260), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3673", "Light_Grey", (20, -20, 300), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3700", "Yellow", (30, -20, 250), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3700", "Yellow", (30, -20, 290), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3020", "Yellow", (60, -20, 274), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3700", "Yellow", (90, -20, 250), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3700", "Yellow", (90, -20, 290), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3673", "Light_Grey", (100, -20, 260), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3673", "Light_Grey", (100, -20, 300), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3703", "Yellow", 0, 0.75, 0, rot=90)
+place("3703", "Yellow", 5, 0.75, 0, rot=90)
+place_ldu("3743", "Light_Grey", (30, -80, 274), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3460", "Yellow", (30, -80, 282), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3743", "Light_Grey", (90, -80, 274), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3460", "Yellow", (90, -80, 282), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3743", "Light_Grey", (30, -160, 274), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3743", "Light_Grey", (90, -160, 274), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3743", "Light_Grey", (30, -240, 274), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3460", "Yellow", (30, -240, 282), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3743", "Light_Grey", (90, -240, 274), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3460", "Yellow", (90, -240, 282), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3710", "Yellow", (60, -310, 274), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3023", "Yellow", (60, -310, 282), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("3710", "Yellow", (60, -310, 290), (1, 0, 0, 0, 0, -1, 0, 1, 0))

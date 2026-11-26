@@ -1,0 +1,33 @@
+#: title: Gear train subassembly with multiple bevel and clutch gears on beams and axles for power transmission.
+#: source: LDraw Official Model Repository, 42112-1.mpd, section 42112 - chassis3.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("48989", "Light_Bluish_Grey", 0.5, 0, 1.5, rot=270)
+place_ldu("18946", "Red", (40, -49, 20), (-0.259, -0.966, 0, 0.966, -0.259, 0, 0, 0, 1))
+place_ldu("15462", "Reddish_Brown", (40, -49, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32270", "Black", (40, -49, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("60483", "Orange", (40, -49, 80), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("26287", "Light_Bluish_Grey", (40, -49, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("55013", "Dark_Bluish_Grey", (40, -49, 210), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6589", "Tan", (40, -49, 217), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32270", "Black", (40, -49, 240), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("60483", "Orange", (40, -49, 260), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32523", "Light_Bluish_Grey", (40, -49, 280), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32524", "White", (20, -69, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("39793", "White", (40, -69, 160), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("4274", "Light_Bluish_Grey", (40, -69, 170), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32270", "Black", (40, -69, 200), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32524", "White", (60, -69, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("94925", "Light_Bluish_Grey", (40, -89, 20), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("87082", "Red", (40, -89, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("18654", "White", (40, -89, 60), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("60483", "Orange", (40, -89, 80), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("55013", "Dark_Bluish_Grey", (40, -89, 90), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("60483", "Orange", (40, -89, 100), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("60483", "Orange", (40, -89, 120), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("60483", "Orange", (40, -89, 140), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4519", "Yellow", (40, -89, 200), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("87408", "Black", (40, -99, 200), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("59443", "Red", (40, -119, 200), (0, 1, 0, 0, 0, -1, -1, 0, 0))

@@ -1,0 +1,31 @@
+#: title: The tail boom built from long Technic bricks and plates pinned together with friction pins.
+#: source: LDraw Official Model Repository, 8855-1.mpd, section 8855 - Tail body.ldr
+#: author: Ignacio Fernandez Galvan [jellby]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3020", "Yellow", 0, 0, 0, rot=180)
+place("3894", "Yellow", 1, 1, 0, rot=270)
+place_ldu("4459", "Black", (40, -22, 40), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (40, -22, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3895", "Yellow", 2, 1, 0, rot=270)
+place_ldu("4459", "Black", (40, -22, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (60, -22, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (40, -22, 220), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3895", "Yellow", 1, 1, 6, rot=270)
+place_ldu("4459", "Black", (20, -22, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (40, -22, 260), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4459", "Black", (40, -22, 320), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3894", "Yellow", 2, 1, 12, rot=270)
+place("3700", "Yellow", 3, 1, 0, rot=270)
+place("3700", "Yellow", 0, 1, 0, rot=270)
+place("3020", "Yellow", 0, 4, 0, rot=180)
+place("3021", "Yellow", 1, 4, 8, rot=90)
+place("3795", "Yellow", 1, 4, 2, rot=90)
+place("3794a", "Yellow", 1, 4, 11, rot=180)
+place("3794a", "Yellow", 1, 4, 12, rot=180)
+place("3794a", "Yellow", 1, 4, 13, rot=180)
+place("3794a", "Yellow", 1, 4, 14, rot=180)
+place("3794a", "Yellow", 1, 4, 15, rot=180)
+place("3794a", "Yellow", 1, 4, 16, rot=180)
+place("3794a", "Yellow", 1, 4, 17, rot=180)

@@ -1,0 +1,31 @@
+#: title: A medieval supply wagon pulled by a horse, accompanied by a hooded peasant armed with a shortsword.
+#: source: LDraw Official Model Repository, 6010-1.mpd
+#: author: Antony Lodge
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("3022", "Black", 3, 4, 12, rot=270)
+place_ldu("4489a", "Light_Brown", (30, -43, 260), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4489a", "Light_Brown", (130, -43, 260), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4488", "Black", (60, -48, 260), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("4488", "Black", 4, 4, 12)
+place_ldu("4587", "Blue", (80, -52, 200), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4085a", "Black", (50, -56, 250), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4623", "Black", 2, 6, 13, rot=180)
+place_ldu("251c01", "Black", (80, -56, 240), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4623", "Black", 4, 6, 13, rot=180)
+place_ldu("4085a", "Black", (110, -56, 250), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4493c02", "White", (80, -57, 102), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3021", "Red", (80, -57, 322), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3023", "Black", 3, 7, 11)
+place("3020", "Black", 2, 7, 12)
+place_ldu("4085a", "Red", (60, -65, 312), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4085a", "Red", (60, -65, 332), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3023", "White", (80, -65, 102), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4085a", "Red", (80, -65, 332), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4085a", "Red", (100, -65, 312), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4085a", "Red", (100, -65, 332), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3021", "Red", (80, -73, 322), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Blue", (80, -81, 102), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3023", "Blue", (80, -89, 102), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3042", "Red", (80, -97, 322), (1, 0, 0, 0, 1, 0, 0, 0, 1))

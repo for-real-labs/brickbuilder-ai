@@ -1,0 +1,31 @@
+#: title: Front deck section with angled connectors, bent orange beams, and axle joiners forming the forward bodywork frame.
+#: source: LDraw Official Model Repository, 42120-1.mpd, section 42120 - deckfront.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("6536", "Dark_Bluish_Grey", (40, -10, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (50, -10, 60), (1, 0, 0, 0, -0.707, 0.707, 0, -0.707, -0.707))
+place_ldu("59443", "Black", (70, -10, 60), (0, 0, 1, -0.707, -0.707, 0, 0.707, -0.707, 0))
+place_ldu("63869", "Black", (100, -10, 60), (-1, 0, 0, 0, -0.707, 0.707, 0, 0.707, 0.707))
+place_ldu("4519", "Yellow", (100, -10, 60), (-1, 0, 0, 0, -0.707, 0.707, 0, 0.707, 0.707))
+place_ldu("59443", "Black", (130, -10, 60), (0, 0, 1, -0.707, -0.707, 0, 0.707, -0.707, 0))
+place_ldu("43093", "Blue", (150, -10, 60), (-1, 0, 0, 0, -0.707, -0.707, 0, -0.707, 0.707))
+place_ldu("6536", "Dark_Bluish_Grey", (160, -10, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Yellow", (20, -30, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11214", "Red", (20, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("11214", "Red", (40, -30, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32140", "Orange", (80, -30, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("32140", "Orange", (120, -30, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("11214", "Red", (160, -30, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4519", "Yellow", (180, -30, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11214", "Red", (180, -30, 60), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("43093", "Blue", (80, -40, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("43093", "Blue", (120, -40, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32524", "Black", (100, -50, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("11214", "Red", (20, -70, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32016", "Orange", (20, -70, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32016", "Orange", (20, -70, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("11214", "Red", (180, -70, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32016", "Orange", (180, -70, 40), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32016", "Orange", (180, -70, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))

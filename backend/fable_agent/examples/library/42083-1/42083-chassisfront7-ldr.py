@@ -1,0 +1,30 @@
+#: title: A front chassis subassembly combining bent liftarms, a cross block, and a reinforced 8-tooth gear for angled drivetrain connections.
+#: source: LDraw Official Model Repository, 42083-1.mpd, section 42083 - chassisfront7.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32062", "Red", (30, -29, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32526", "Light_Bluish_Grey", (20, -49, 140), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("6558", "Blue", (20, -49, 160), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("42003", "Black", (20, -49, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (60, -49, 160), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("87082", "Light_Bluish_Grey", (60, -49, 180), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (100, -49, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32316", "Black", (100, -49, 160), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("62462", "Orange", (60, -69, 130), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("6558", "Blue", (60, -69, 160), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2780", "Black", (60, -89, 170), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32523", "Light_Bluish_Grey", (60, -89, 180), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("2780", "Black", (100, -89, 150), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("32009", "Black", (40, -109, 180), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32123b", "Yellow", (60, -109, 55), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32123b", "Yellow", (60, -109, 65), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("3705", "Black", (60, -109, 70), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("87082", "Light_Bluish_Grey", (60, -109, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("18948", "White", (60, -109, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59426", "Dark_Bluish_Grey", (60, -109, 187), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("10928", "Dark_Bluish_Grey", (60, -109, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32009", "Black", (80, -109, 180), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("15100", "Blue", (60, -129, 140), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32526", "Light_Bluish_Grey", (60, -129, 160), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

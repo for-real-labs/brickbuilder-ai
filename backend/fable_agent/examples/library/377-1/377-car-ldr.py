@@ -1,0 +1,32 @@
+#: title: A red town car built from red plates and bricks with a chrome grille, four black rubber tyres on grey wheels, transparent clear windshield slopes, and black lattice fencing details.
+#: source: LDraw Official Model Repository, 377-1.mpd, section 377 - Car.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("3641", "Rubber_Black", (40, -18, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Rubber_Black", (40, -18, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Rubber_Black", (140, -18, 10), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Rubber_Black", (140, -18, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("122c01", "Light_Grey", (40, -24, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("122c01", "Light_Grey", (140, -24, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3022", "Red", 1, 3, 1)
+place("3022", "Red", 6, 3, 1)
+place("3010p0d", "Red", 0, 3, 0, rot=90)
+place("3788", "Red", 1, 4, 0, rot=90)
+place("3002", "Red", 3, 3, 0)
+place("3002", "Red", 3, 3, 2)
+place("3788", "Red", 6, 4, 0, rot=90)
+place("3001", "Red", 8, 3, 0, rot=270)
+place("3030", "Red", 0, 6, 0)
+place("3037", "Trans_Clear", 3, 7, 0, rot=90)
+place("3004", "Trans_Clear", 5, 7, 0)
+place("3004", "Trans_Clear", 5, 7, 3)
+place("3040b", "Black", 7, 7, 0, rot=270)
+place("3039", "Trans_Clear", 7, 7, 1, rot=270)
+place("3040b", "Black", 7, 7, 3, rot=270)
+place("3020", "Black", 4, 10, 1)
+place("3633", "Black", 4, 10, 0, rot=180)
+place("3633", "Black", 4, 10, 3)
+place("3062b", "Blue", 4, 11, 2)
+place("3004", "Yellow", 5, 11, 1)

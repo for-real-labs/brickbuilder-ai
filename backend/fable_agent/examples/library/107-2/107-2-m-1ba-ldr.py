@@ -1,0 +1,32 @@
+#: title: A black wheeled vehicle or trailer module with four grey wheels, hinges, and red light elements.
+#: source: LDraw Official Model Repository, 107-2.mpd, section 107-2 - m-1ba.ldr
+#: author: Michael Heidemann [mikeheide]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("4624", "Light_Grey", (30, -25, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4084", "Black", (30, -25, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4624", "Light_Grey", (30, -25, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4084", "Black", (30, -25, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4624", "Light_Grey", (90, -25, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4084", "Black", (90, -25, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "Light_Grey", (90, -25, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4084", "Black", (90, -25, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4600", "Light_Grey", (60, -30, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4600", "Light_Grey", (60, -30, 120), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3062b", "Black", (50, -36.092, 196.195), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3062b", "Black", (70, -36.092, 196.195), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("3710", "Black", (60, -36.093, 172.195), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3937", "Black", (60, -36.093, 220.195), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place("3022", "Black", 2, 3.75, 2, rot=270)
+place("3022", "Black", 2, 3.75, 5, rot=270)
+place_ldu("6141", "Trans_Red", (30, -44, 0), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("6141", "Trans_Red", (90, -44, 0), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4081a", "Black", (50, -46, 10), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "Black", 2, 4.75, 1, rot=270)
+place("3022", "Black", 2, 4.75, 5, rot=270)
+place("3938", "Black", 2, 3.75, 10, rot=180)
+place("4081a", "Black", 3, 4.5, 0, rot=270)
+place("3022", "Black", 2, 5.75, 0, rot=90)
+place("3034", "Black", 2, 5.75, 2, rot=90)
+place("3023", "Black", 2, 5.75, 10, rot=180)

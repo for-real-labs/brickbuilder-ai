@@ -1,0 +1,30 @@
+#: title: A black grille brick with axle, cone, and a reddish brown bar with stop, likely a small grill or lamp post top.
+#: source: LDraw Official Model Repository, 10264-1.mpd, section 10264 - 135.ldr
+#: author: Jaco van der Molen [Jaco van der Molen]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32062", "Red", (40, -20, 40), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("92947", "Black", (40, -24, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("59900", "Reddish_Brown", 1.5, 3, 1.5)
+place_ldu("63965", "Reddish_Brown", (40, -144, 40), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32607", "Green", (12, -154, 40), (0, 1, 0, -0.866, 0, 0.5, 0.5, 0, 0.866))
+place_ldu("32607", "Green", (20, -154, 40), (0, 1, 0, 0.866, 0, -0.5, -0.5, 0, -0.866))
+place_ldu("32607", "Green", (40, -154, 12), (-0.5, 0, -0.866, -0.866, 0, 0.5, 0, 1, 0))
+place_ldu("32607", "Green", (40, -154, 20), (0.5, 0, 0.866, 0.866, 0, -0.5, 0, 1, 0))
+place_ldu("48723", "Reddish_Brown", (40, -154, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32607", "Green", (40, -154, 60), (-0.5, 0, -0.866, 0.866, 0, -0.5, 0, -1, 0))
+place_ldu("32607", "Green", (40, -154, 68), (0.5, 0, 0.866, -0.866, 0, 0.5, 0, -1, 0))
+place_ldu("32607", "Green", (60, -154, 40), (0, -1, 0, 0.866, 0, -0.5, 0.5, 0, 0.866))
+place_ldu("32607", "Green", (68, -154, 40), (0, -1, 0, -0.966, 0, 0.259, -0.259, 0, -0.966))
+place_ldu("32556", "Tan", (40, -178, 40), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("18654", "Reddish_Brown", (40, -178, 40), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32607", "Green", (12, -202, 40), (0, 1, 0, 0.866, 0, -0.5, -0.5, 0, -0.866))
+place_ldu("32607", "Green", (20, -202, 40), (0, 1, 0, -0.866, 0, 0.5, 0.5, 0, 0.866))
+place_ldu("32607", "Green", (40, -202, 12), (0.259, 0, 0.966, 0.966, 0, -0.259, 0, 1, 0))
+place_ldu("32607", "Green", (40, -202, 20), (-0.5, 0, -0.866, -0.866, 0, 0.5, 0, 1, 0))
+place("48723", "Reddish_Brown", 0.5, 23.5, 0.5, rot=180)
+place_ldu("32607", "Green", (40, -202, 60), (0.5, 0, 0.866, -0.866, 0, 0.5, 0, -1, 0))
+place_ldu("32607", "Green", (40, -202, 68), (-0.259, 0, -0.966, 0.966, 0, -0.259, 0, -1, 0))
+place_ldu("32607", "Green", (60, -202, 40), (0, -1, 0, -0.866, 0, 0.5, -0.5, 0, -0.866))
+place_ldu("32607", "Green", (68, -202, 40), (0, -1, 0, 0.966, 0, -0.259, 0.259, 0, 0.966))

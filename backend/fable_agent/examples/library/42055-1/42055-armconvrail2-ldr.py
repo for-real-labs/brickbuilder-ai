@@ -1,0 +1,30 @@
+#: title: Larger conveyor rail section with four dark blue panels mounted on a reinforced beam frame.
+#: source: LDraw Official Model Repository, 42055-1.mpd, section 42055 - armconvrail2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (20, -20, 80), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("15458", "Dark_Blue", (20, -50, 140), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -20, 200), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -30, 260), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -30, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("15458", "Dark_Blue", (20, -50, 380), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -20, 320), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (20, -20, 440), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -30, 500), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("15458", "Dark_Blue", (20, -50, 620), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -20, 560), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (20, -20, 680), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -30, 740), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("32523", "Dark_Bluish_Grey", (20, -50, 500), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32523", "Dark_Bluish_Grey", (20, -50, 260), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("32523", "Dark_Bluish_Grey", (20, -50, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("15458", "Dark_Blue", (20, -50, 860), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -20, 920), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2780", "Black", (20, -20, 800), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32523", "Dark_Bluish_Grey", (20, -50, 740), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Blue", (20, -70, 500), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (20, -70, 260), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("2780", "Black", (20, -70, 30), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("6558", "Blue", (20, -70, 740), (0, -1, 0, 0, 0, 1, -1, 0, 0))

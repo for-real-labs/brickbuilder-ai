@@ -1,0 +1,30 @@
+#: title: Structural frame section of long beams and bent liftarms connected by pins and angle connectors.
+#: source: LDraw Official Model Repository, 42029-1.mpd, section 42029 - Pickup A015.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("2780", "Black", (50, -10, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -10, 180), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (50, -10, 260), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("41239", "Black", (60, -10, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("11214", "Dark_Bluish_Grey", (60, -10, 320), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("48989", "Light_Bluish_Grey", (80, -10, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("41239", "Black", (100, -10, 200), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32054", "Red", (100, -10, 320), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (110, -10, 140), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (110, -10, 180), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (110, -10, 260), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32524", "Dark_Bluish_Grey", (40, -58, 224), (0, -1, 0, 0.6, 0, 0.8, -0.8, 0, 0.6))
+place_ldu("32524", "Dark_Bluish_Grey", (120, -58, 224), (0, -1, 0, 0.6, 0, 0.8, -0.8, 0, 0.6))
+place_ldu("41239", "Black", (20, -90, 140), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -90, 240), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (30, -90, 260), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32526", "Light_Bluish_Grey", (40, -90, 140), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (40, -90, 140), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("11214", "Dark_Bluish_Grey", (40, -90, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("32034", "Black", (80, -90, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32034", "Black", (80, -90, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (120, -90, 140), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32526", "Light_Bluish_Grey", (120, -90, 140), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("11214", "Dark_Bluish_Grey", (120, -90, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

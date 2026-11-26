@@ -1,0 +1,33 @@
+#: title: A mirrored large wing built from a 6x12 wing element, rounded wedges, locking hinges, and support plates, mirroring Wing 1.
+#: source: LDraw Official Model Repository, 6208-1.mpd, section 6208 - Wing 3.ldr
+#: author: Merlijn Wissink [Legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place("3623", "Light_Bluish_Grey", 3, 0, 1, rot=180)
+place("3021", "Light_Bluish_Grey", 6, 0, 0, rot=180)
+place("2458", "Tan", 3, 1, 1, rot=180)
+place_ldu("2444", "Light_Bluish_Grey", (80, -32, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3020", "Dark_Bluish_Grey", 3, 2, 3)
+place("30356", "Dark_Bluish_Grey", 0, 3, 4)
+place("47397", "Light_Bluish_Grey", 6, 3, 4)
+place_ldu("2444", "Light_Bluish_Grey", (120, -32, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("2458", "Tan", 5, 1, 1, rot=180)
+place("30359b", "Black", 7, 1, 1, rot=270)
+place_ldu("4589", "Dark_Bluish_Grey", (300, -22, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("6141", "Trans_Neon_Orange", (324, -22, 30), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place("2877", "Light_Bluish_Grey", 6, 1, 0)
+place("4070", "Black", 8, 1, 0, rot=270)
+place_ldu("4095", "Black", (280, -22, 10), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place("42061", "Light_Bluish_Grey", 5, 4, 2)
+place("3039", "Light_Bluish_Grey", 6, 4, 14, rot=270)
+place("3039", "Light_Bluish_Grey", 0, 4, 14, rot=90)
+place("30389b", "Light_Bluish_Grey", 4, 4, 14, rot=270)
+place("30389b", "Light_Bluish_Grey", 2, 4, 14, rot=270)
+place("42060", "Light_Bluish_Grey", 1, 4, 2)
+place("3009", "Dark_Bluish_Grey", 4, 4, 8, rot=90)
+place("42022", "Tan", 4, 4, 2)
+place("41748", "Dark_Bluish_Grey", 3, 4, 0, rot=90)
+place("3020", "Dark_Bluish_Grey", 2, 7, 15)
+place("2419", "Dark_Bluish_Grey", 1, 7, 12)
+place("4150", "Light_Bluish_Grey", 4, 7, 7)

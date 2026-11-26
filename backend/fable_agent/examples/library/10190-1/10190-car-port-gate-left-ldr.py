@@ -1,0 +1,31 @@
+#: title: Left arched gate (1x4x9 with bars) framed in tan bricks and corner plates with clip, headlight brick and groove-tile details
+#: source: LDraw Official Model Repository, 10190-1.mpd, section 10190 - Car port - Gate left.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("3070b", "Tan", (30, -30, 16), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3004", "Tan", 0, 2, 2)
+place("4070", "Tan", 1, 2, 1)
+place("3005", "Tan", 2, 2, 1)
+place("2420", "Tan", 1, 5, 1)
+place("4085c", "Light_Bluish_Grey", 1, 6, 2, rot=270)
+place("3023", "Tan", 1, 6, 1)
+place("3005", "Tan", 0, 5, 2)
+place("2420", "Tan", 1, 7, 1)
+place_ldu("42448", "Black", (50, -77, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("6141", "Tan", (62, -77, 110), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3070b", "Tan", (64, -78, 30), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("3004", "Tan", 0, 8, 2)
+place("3005", "Tan", 1, 8, 1)
+place("4070", "Tan", 2, 8, 1, rot=270)
+place("2420", "Tan", 1, 11, 1)
+place("4085c", "Light_Bluish_Grey", 1, 12, 2, rot=270)
+place("3023", "Tan", 1, 12, 1)
+place("3005", "Tan", 0, 11, 2)
+place("2420", "Tan", 1, 13, 1)
+place_ldu("3070b", "Tan", (30, -126, 16), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3004", "Tan", 0, 14, 2)
+place("4070", "Tan", 1, 14, 1)
+place("3005", "Tan", 2, 14, 1)
+place("3004", "Tan", 1, 17, 1)

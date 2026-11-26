@@ -1,0 +1,32 @@
+#: title: Rocket
+#: source: LDraw Official Model Repository, 6898-1.mpd, section 6898 - Rocket.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("3943b", "Black", 0, 0, 0)
+place("6143", "Trans_Neon_Orange", 1, 6, 1)
+place("6143", "Trans_Neon_Orange", 1, 9, 1)
+place("6143", "White", 1, 12, 1)
+place_ldu("3700", "White", (50, -134, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2654", "Blue", (26, -144, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2609a", "White", (58, -144, 40), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2959c01", "Black", (64.6, -144, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("3700", "White", (50, -154, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3708", "Black", (40, -155, 40), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place("6143", "White", 1, 20.5, 1)
+place("6143", "Trans_Neon_Orange", 1, 23.5, 1)
+place("4591", "Black", 0, 26.5, 0)
+place("3942b", "Black", 1, 32.5, 1)
+place_ldu("3957a", "Black", (40, -316, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4740", "White", 1, 46, 1)
+place_ldu("4592", "White", (22, -390, 40), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("4593", "Black", (22, -390, 40), (0, 0.5, -0.866, 0, -0.866, -0.5, -1, 0, 0))
+place_ldu("4592", "White", (39, -390, 22), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4593", "Black", (39, -390, 22), (1, 0, 0, 0, -0.866, -0.5, 0, 0.5, -0.866))
+place_ldu("4592", "White", (39, -390, 58), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4593", "Black", (39, -390, 58), (-1, 0, 0, 0, -0.866, -0.5, 0, -0.5, 0.866))
+place_ldu("4592", "White", (58, -390, 40), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4593", "Black", (58, -390, 40), (0, -0.5, 0.866, 0, -0.866, -0.5, 1, 0, 0))
+place("4733", "Black", 1.5, 47, 1.5)
+place("4740", "Trans_Neon_Orange", 1, 50, 1)

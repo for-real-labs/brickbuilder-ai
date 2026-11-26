@@ -1,0 +1,32 @@
+#: title: Worm gear-driven winch mechanism with 24-tooth and 12-tooth gears mounted on bent liftarms and axles for raising and lowering loads.
+#: source: LDraw Official Model Repository, 42031-1_Tow-Truck.mpd, section 42031 - Lifting Mechanism.ldr
+#: author: Merlijn Wissink [legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("4519", "Light_Bluish_Grey", (60, -9, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123a", "Yellow", (60, -24, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32184", "Black", (60, -29, 100), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32123a", "Yellow", (60, -34, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32056", "Yellow", (35, -49, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("11478", "Light_Bluish_Grey", (45, -49, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Red", (60, -49, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4519", "Light_Bluish_Grey", (60, -49, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("6536", "Yellow", (60, -49, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("4519", "Light_Bluish_Grey", (60, -49, 100), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("11478", "Light_Bluish_Grey", (75, -49, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32056", "Yellow", (85, -49, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32123a", "Yellow", (60, -64, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("43093", "Blue", (30, -89, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32249", "Light_Bluish_Grey", (45, -89, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("4716", "Light_Bluish_Grey", (60, -89, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3705", "Black", (60, -89, 80), (-1, 0, 0, 0, 0.848, 0.53, 0, 0.53, -0.848))
+place_ldu("3648b", "Dark_Bluish_Grey", (60, -89, 80), (0, 0, -1, -0.53, 0.848, 0, 0.848, 0.53, 0))
+place_ldu("32249", "Light_Bluish_Grey", (75, -89, 60), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("43093", "Blue", (90, -89, 60), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("55013", "Dark_Bluish_Grey", (60, -97, 40), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32123a", "Yellow", (60, -114, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6536", "Yellow", (60, -129, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32062", "Red", (60, -129, 60), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("32123a", "Yellow", (60, -144, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32270", "Black", (60, -159, 40), (-1, 0, 0, 0, 0, -1, 0, -1, 0))

@@ -1,0 +1,30 @@
+#: title: Articulated right arm with angle connectors, fan liftarms, a changeover catch, and a magnet holder attachment.
+#: source: LDraw Official Model Repository, 8001-1.mpd, section 8001 - rightarm.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("32177", "Tan", (60, -80, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("2959c01", "Black", (70, -93.41, 121), (-1, 0, 0, 0, 0.829, 0.559, 0, 0.559, -0.829))
+place_ldu("6632", "Tan", (20, -120, 125), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32062", "Black", (20, -120, 130), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32016", "Tan", (20, -120, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Black", (31.481, -120, 187.716), (0.383, -0.924, 0, 0, 0, -1, 0.924, 0.383, 0))
+place_ldu("2607", "Black", (70, -120, 130), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2780", "Black", (70, -130, 120), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32039", "Tan", (60, -139.998, 180), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("32062", "Black", (60, -139.998, 190), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6536", "Tan", (20, -140, 140), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("6558", "Black", (20, -140, 160), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("32177", "Tan", (40, -140, 80), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Black", (50, -140, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3705", "Black", (50, -140, 140), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6632", "Tan", (55, -140, 100), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("4519", "Black", (60, -140, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("6536", "Black", (70, -140, 140), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32062", "Black", (70, -140, 160), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("2825", "Black", (80, -140, 160), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("32062", "Black", (20, -160, 130), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32015", "Tan", (20, -160, 160), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32062", "Black", (47.716, -160, 171.481), (0.924, -0.383, 0, 0, 0, -1, 0.383, 0.924, 0))
+place_ldu("6641", "Tan", (70, -160, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))

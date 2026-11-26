@@ -1,0 +1,31 @@
+#: title: A dashboard or interior panel assembly with grille tiles forming vents, red wings and tiles, and brackets, suggesting a grille and instrument panel detail.
+#: source: LDraw Official Model Repository, 10258-1.mpd, section 10258 - calender.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place("43723", "Red", 0, 0, 2, rot=90)
+place_ldu("99780", "Light_Bluish_Grey", (80, -8, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3710", "Red", 3, 0, 3)
+place("3832", "Black", 0, 0, 4)
+place_ldu("99780", "Light_Bluish_Grey", (120, -8, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("43722", "Red", 7, 0, 2, rot=270)
+place_ldu("99780", "Light_Bluish_Grey", (80, -10, 28), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("99780", "Light_Bluish_Grey", (120, -10, 28), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place("63864", "Red", 1, 1, 3, rot=90)
+place("3032", "Light_Bluish_Grey", 2, 1, 2)
+place("63864", "Red", 8, 1, 3, rot=90)
+place("2412b", "Dark_Bluish_Grey", 2, 2, 2)
+place("2412b", "Dark_Bluish_Grey", 2, 2, 3)
+place("2412b", "Dark_Bluish_Grey", 2, 2, 4)
+place("2412b", "Dark_Bluish_Grey", 2, 2, 5)
+place("15573", "Dark_Bluish_Grey", 4, 2, 2)
+place("15573", "Dark_Bluish_Grey", 4, 2, 3)
+place("15573", "Dark_Bluish_Grey", 4, 2, 4)
+place("15573", "Dark_Bluish_Grey", 4, 2, 5)
+place("2412b", "Dark_Bluish_Grey", 6, 2, 2)
+place("2412b", "Dark_Bluish_Grey", 6, 2, 3)
+place("2412b", "Dark_Bluish_Grey", 6, 2, 4)
+place("2412b", "Dark_Bluish_Grey", 6, 2, 5)
+place("63864", "Light_Bluish_Grey", 4.5, 3, 2, rot=90)
+place("24246", "Light_Bluish_Grey", 4.5, 3, 5)

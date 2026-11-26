@@ -1,0 +1,32 @@
+#: title: A LEGO set composed of a car submodel and a minifigure, forming a complete vehicle scene.
+#: source: LDraw Official Model Repository, 6501-1.mpd
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("4624", "Light_Grey", 1.5, 1, 4.25, rot=180)
+place_ldu("3641", "Black", (40, -18, 93), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4624", "Light_Grey", (40, -19, 25), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (40, -19, 25), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4624", "Light_Grey", (140, -19, 25), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3641", "Black", (140, -19, 25), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4624", "Light_Grey", (141, -19, 93), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3641", "Black", (141, -19, 93), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3829c01", "Light_Grey", (70, -23, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3623", "Light_Grey", (90, -23, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2441", "Black", (90, -23, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3623", "Light_Grey", (90, -23, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3022", "Black", (40, -31, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3022", "Black", (140, -31, 60), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3024", "Trans_Yellow", (8, -37, 30), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3024", "Trans_Yellow", (8, -37, 90), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2412b", "Light_Grey", (9, -37, 60), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("2436a", "Black", (30, -47, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3788", "Black", (40, -47, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3023", "Black", (50, -47, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3822", "Black", (70, -47, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3821", "Black", (70, -47, 90), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3788", "Black", (140, -47, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3823", "Trans_Clear", (70, -95, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4083", "Black", (130, -95, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2431", "Black", (70, -103, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))

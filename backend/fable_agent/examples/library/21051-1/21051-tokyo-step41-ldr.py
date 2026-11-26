@@ -1,0 +1,32 @@
+#: title: Tall red and white tower section with a pearl gold bar and grille tiles, evoking a skyscraper like Mode Gakuen Cocoon Tower.
+#: source: LDraw Official Model Repository, 21051-1.mpd, section 21051 - Tokyo - step41.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place("85861", "White", 1, 0, 1)
+place("85861", "White", 1, 1, 1)
+place_ldu("63965", "Pearl_Gold", (30, -28.5, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4733", "White", 1, 2, 1)
+place_ldu("2412b", "Red", (30, -20, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2412b", "Red", (30, -20, 48), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Red", (48, -20, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2412b", "Red", (12, -20, 30), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place("85861", "White", 1, 5, 1)
+place("85861", "White", 1, 6, 1)
+place("4733", "White", 1, 7, 1)
+place_ldu("2412b", "White", (30, -60, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("2412b", "White", (30, -60, 48), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "White", (48, -60, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2412b", "White", (12, -60, 30), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place("85861", "White", 1, 10, 1)
+place("85861", "White", 1, 11, 1)
+place("4733", "White", 1, 12, 1)
+place_ldu("32028", "Red", (30, -100, 12), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("2412b", "Red", (30, -100, 4), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("32028", "Red", (30, -100, 48), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("2412b", "Red", (30, -100, 56), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("32028", "Red", (48, -100, 30), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2412b", "Red", (56, -100, 30), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32028", "Red", (12, -100, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2412b", "Red", (4, -100, 30), (0, 1, 0, 1, 0, 0, 0, 0, -1))

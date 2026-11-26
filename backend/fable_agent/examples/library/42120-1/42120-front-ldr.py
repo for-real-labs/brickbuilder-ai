@@ -1,0 +1,30 @@
+#: title: Front bodywork assembly with curved panels, T-shaped beams, and orange plates forming the nose and front detailing.
+#: source: LDraw Official Model Repository, 42120-1.mpd, section 42120 - front.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("50950", "Orange", (100, 0, 198.174), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("24866", "Orange", (100, -16, 178.174), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3623", "Orange", (100, -24, 198.174), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("3040b", "Trans_Clear", (80, -26, 198.174), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("32062", "Red", (100, -26, 148.174), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("32123b", "Yellow", (100, -26, 153.174), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32124", "Black", (100, -26, 166.174), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3040b", "Trans_Clear", (120, -26, 198.174), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("61184", "Light_Bluish_Grey", (100, -36, 178.174), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (100, -36, 218.174), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("11214", "Red", (60, -46, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("40490", "Orange", (100, -46, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("60484", "Black", (100, -46, 178.174), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("11214", "Red", (140, -46, 40), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("18944", "Black", (30, -66, 109.087), (0, 0.909, -0.417, 1, 0, 0, 0, -0.417, -0.909))
+place_ldu("60484", "Black", (60, -66, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("11214", "Red", (100, -66, 138.174), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("32316", "Black", (100, -66, 178.174), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("60484", "Black", (140, -66, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("18944", "Black", (170, -66, 109.087), (0, -0.909, -0.417, 1, 0, 0, 0, -0.417, 0.909))
+place_ldu("10197", "Black", (80, -86, 218.174), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("18654", "White", (100, -86, 178.174), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32184", "Black", (100, -86, 198.174), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("10197", "Black", (120, -86, 218.174), (1, 0, 0, 0, 0, -1, 0, 1, 0))

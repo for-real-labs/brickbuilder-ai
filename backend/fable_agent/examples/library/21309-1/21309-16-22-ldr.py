@@ -1,0 +1,32 @@
+#: title: Repeating bracket-and-brick structural module with red and dark grey brackets, tan bricks, grooved jumpers, and yellow clip plates for attachment points.
+#: source: LDraw Official Model Repository, 21309-1.mpd, section 21309 - 16-22.ldr
+#: author: Jaco van der Molen [Jaco]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures left out)
+place_ldu("99207", "Red", (60, -8, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("99207", "Red", 2, 0, 3, rot=180)
+place_ldu("92280", "Yellow", (20, -10, 70), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("15573", "Light_Bluish_Grey", (28, -10, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("92280", "Yellow", (50, -10, 20), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (60, -10, 28), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (60, -10, 92), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("92280", "Yellow", (70, -10, 100), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (92, -10, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("92280", "Yellow", (100, -10, 50), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("15573", "Light_Bluish_Grey", (12, -20, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("15573", "Light_Bluish_Grey", (60, -20, 12), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (60, -20, 108), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (108, -20, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("92280", "Yellow", (20, -30, 50), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("15573", "Light_Bluish_Grey", (28, -30, 60), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place_ldu("92280", "Yellow", (50, -30, 100), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (60, -30, 28), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (60, -30, 92), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("92280", "Yellow", (70, -30, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("15573", "Light_Bluish_Grey", (92, -30, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("92280", "Yellow", (100, -30, 70), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("3003", "Tan", 2, 1, 2)
+place_ldu("44728", "Dark_Bluish_Grey", (50, -40, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("44728", "Dark_Bluish_Grey", 3, 0, 2, rot=270)
+place("3003", "Tan", 2, 5, 2, rot=90)

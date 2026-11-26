@@ -1,0 +1,13 @@
+#: title: Roof chimney built from brown plates and grey bricks with black grille vent details.
+#: source: LDraw Official Model Repository, 31038-1_Winter.mpd, section 31038 - Chimney.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 7 of 7 parts kept (minifigures left out)
+place("3022", "Reddish_Brown", 0, 0, 0)
+place("3004", "Light_Bluish_Grey", 0, 1, 1)
+place("3062b", "Dark_Bluish_Grey", 0, 1, 0)
+place("3062b", "Dark_Bluish_Grey", 1, 1, 0)
+place("3022", "Reddish_Brown", 0, 4, 0)
+place("2412b", "Black", 0, 5, 0, rot=90)
+place("2412b", "Black", 1, 5, 0, rot=90)

@@ -65,7 +65,7 @@ OFFERED_AGENTS = tuple(agent for agent in IN_PROCESS_AGENTS if agent not in RETI
 
 
 # Agents whose Generation settings offer example builds: the v2 methods, which are the ones told
-# how to use a category of example scripts.
+# how to use the example builds found for a request.
 EXAMPLE_AGENTS = tuple(agent for agent in OFFERED_AGENTS
                        if agent in FABLE_AGENTS and FABLE_AGENTS[agent].method.endswith("-v2"))
 

@@ -1,0 +1,30 @@
+#: title: Engine assembly with pistons, connecting rods, crankshaft, and cylinder heads.
+#: source: LDraw Official Model Repository, 8836-1_Autogyro.mpd, section 8836 - Substep_Step-8.ldr
+#: author: Max Martin Richter [MMR1988]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("4519", "Black", (40, -10, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3749", "Light_Grey", (60, -10, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4265a", "Light_Grey", (60, -10, 35), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2780", "Black", (80, -10, 20), (0, 0, -1, 0, -1, 0, -1, 0, 0))
+place_ldu("2905", "Black", (80, -10, 25), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3749", "Light_Grey", (100, -10, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4265a", "Light_Grey", (100, -10, 35), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4519", "Black", (120, -10, 60), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2850a", "Light_Grey", (14, -30, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (33.56, -30, 60), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2853", "Light_Grey", (80, -30, 60), (0.707, 0.707, 0, 0.707, -0.707, 0, 0, 0, -1))
+place_ldu("4519", "Black", (80, -30, 100), (0, -0.707, 0.707, 0, 0.707, 0.707, -1, 0, 0))
+place_ldu("3713", "Light_Grey", (80, -30, 100), (0.707, -0.707, 0, 0.707, 0.707, 0, 0, 0, 1))
+place_ldu("2851", "Dark_Grey", (112.3, -30, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2850a", "Light_Grey", (146, -30, 60), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2852", "Light_Grey", (72.93, -37.07, 60), (0.177, -0.984, 0, -0.984, -0.177, 0, 0, 0, -1))
+place_ldu("2852", "Light_Grey", (72.93, -37.07, 60), (-0.177, 0.984, 0, -0.984, -0.177, 0, 0, 0, 1))
+place_ldu("2853", "Light_Grey", (72.929, -37.071, 30), (-0.707, -0.707, 0, -0.707, 0.707, 0, 0, 0, -1))
+place_ldu("3705", "Black", (40, -50, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4265a", "Light_Grey", (40, -50, 95), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("2905", "Black", (80, -50, 35), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2905", "Black", (80, -50, 85), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("3705", "Black", (120, -50, 60), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("4265a", "Light_Grey", (120, -50, 95), (0, 1, 0, -1, 0, 0, 0, 0, 1))

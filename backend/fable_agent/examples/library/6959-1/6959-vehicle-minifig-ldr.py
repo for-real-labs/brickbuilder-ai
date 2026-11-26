@@ -1,0 +1,33 @@
+#: title: A wheeled rover submodel combined with a minifigure.
+#: source: LDraw Official Model Repository, 6959-1.mpd, section 6959 - Vehicle + Minifig.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures left out)
+place_ldu("3641", "Rubber_Black", (70, -18, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3641", "Rubber_Black", (70, -18, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3641", "Rubber_Black", (70, -18, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "Light_Grey", (70, -18, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "Light_Grey", (70, -18, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4624", "Light_Grey", (70, -18, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4600", "Black", (40, -23, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4624", "Light_Grey", (10, -18, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (10, -18, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4600", "Black", (40, -23, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4624", "Light_Grey", (10, -18, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (10, -18, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4600", "Black", (40, -23, 120), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("4624", "Light_Grey", (10, -18, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3641", "Rubber_Black", (10, -18, 120), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2540", "Black", (40, -31, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3020", "Black", (40, -31, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3022", "Black", (40, -39, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("4598", "Black", (40, -39, 90), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3069bp28", "Black", (40, -47, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("4592", "Red", (50, -47, 30), (-0.980785, 0, -0.19509, 0, 1, 0, 0.19509, 0, -0.980785))
+place_ldu("4592", "Red", (30, -47, 30), (-0.980785, 0, 0.19509, 0, 1, 0, -0.19509, 0, -0.980785))
+place_ldu("4593", "Black", (30, -47, 30), (-0.980785, 0.03806, 0.191342, 0, 0.980785, -0.19509, -0.19509, -0.191342, -0.96194))
+place_ldu("4593", "Black", (50, -47, 30), (-0.980785, -0.074658, -0.18024, 0, 0.92388, -0.382683, 0.19509, -0.37533, -0.906127))
+place_ldu("6019", "Black", (40, -47.404, 18.0822), (-1, 0, 0, 0, -0.309, -0.9511, 0, -0.9511, 0.309))
+place_ldu("4740", "Trans_Dark_Blue", (40, -49.876, 10.4734), (-1, 0, 0, 0, -0.309, -0.9511, 0, -0.9511, 0.309))
+place_ldu("4032a", "Red", (40, -59, 128), (-1, 0, 0, 0, 0, 1, 0, 1, 0))

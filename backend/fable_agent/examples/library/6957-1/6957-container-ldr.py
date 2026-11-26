@@ -1,0 +1,30 @@
+#: title: A compact cargo container module featuring a black base plate, red corner bricks, light grey arches and slopes, grille tiles, and a trans-green helicopter windscreen canopy.
+#: source: LDraw Official Model Repository, 6957-1.mpd, section 6957 - Container.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place("4032a", "Black", 4, 0, 4)
+place("4032a", "Black", 0, 0, 4)
+place("4032a", "Black", 4, 0, 0)
+place("4032a", "Black", 0, 0, 0)
+place("3958", "Black", 0, 1, 0)
+place("2357", "Red", 0, 2, 0)
+place("2357", "Red", 0, 2, 4)
+place("2357", "Red", 4, 2, 0, rot=270)
+place("2357", "Red", 4, 2, 4, rot=270)
+place("3659", "Light_Grey", 0, 5, 1, rot=270)
+place("3659", "Light_Grey", 5, 5, 1, rot=270)
+place("4864a", "Black", 2, 2, 0, rot=180)
+place("3005", "Light_Grey", 0, 5, 5, rot=180)
+place("3005", "Light_Grey", 5, 5, 5, rot=180)
+place("3004", "Light_Grey", 0, 5, 0, rot=180)
+place("3004", "Light_Grey", 4, 5, 0, rot=180)
+place("4625", "Black", 1, 8, 0)
+place_ldu("2483p50", "Trans_Green", (60, -76, 16), (-1, 0, 0, 0, 0.7826, 0.6225, 0, 0.6225, -0.7826))
+place("4286", "Light_Grey", 0, 8, 0)
+place("4286", "Light_Grey", 0, 8, 3, rot=180)
+place("4286", "Light_Grey", 5, 8, 0)
+place("4286", "Light_Grey", 5, 8, 3, rot=180)
+place("2412b", "Black", 0, 11, 2, rot=90)
+place("2412b", "Black", 5, 11, 2, rot=90)

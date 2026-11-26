@@ -1,0 +1,31 @@
+#: title: Roof section composed of white and dark blue body panels, beams, and fairing panels mounted with pins.
+#: source: LDraw Official Model Repository, 42109-1.mpd, section 42109 - roof.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures left out)
+place_ldu("32009", "Black", (220, -9, 140), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("6558", "Blue", (240, -9, 180), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("11214", "Red", (200, -49, 300), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("11946", "Dark_Blue", (40, -89, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (50, -89, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6558", "Blue", (60, -89, 80), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32525", "Dark_Blue", (60, -89, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (70, -89, 200), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (80, -89, 250), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62462", "Black", (90, -89, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("15100", "Black", (120, -89, 20), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6558", "Blue", (120, -89, 20), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("64782", "White", (120, -89, 140), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("24119", "White", (120, -89, 260), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place_ldu("62462", "Black", (150, -89, 20), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("2780", "Black", (160, -89, 250), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2780", "Black", (170, -89, 200), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("6558", "Blue", (180, -89, 80), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("32525", "Dark_Blue", (180, -89, 120), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2780", "Black", (190, -89, 60), (1, 0, 0, 0, 0, 1, 0, -1, 0))
+place_ldu("2780", "Black", (190, -89, 260), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("11947", "Dark_Blue", (200, -89, 120), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("18651", "Black", (200, -89, 140), (1, 0, 0, 0, -1, 0, 0, 0, -1))
+place_ldu("32009", "Black", (200, -89, 300), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("2780", "Black", (210, -89, 200), (-1, 0, 0, 0, -1, 0, 0, 0, 1))

@@ -1,0 +1,30 @@
+#: title: A red gearbox housing of Technic bricks and plates with friction pins providing the drive connection to the liftarm.
+#: source: LDraw Official Model Repository, 8854-1.mpd, section 8854 - Liftarm Gearbox.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures left out)
+place_ldu("4459", "Black", (60, -20, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4459", "Black", (60, -20, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3700", "Red", 2, 0.75, 1)
+place("3700", "Red", 2, 0.75, 6)
+place("3023", "Red", 2, 3.75, 1, rot=180)
+place("3710", "Red", 1, 3.75, 6)
+place_ldu("4265a", "Light_Grey", (60, -40, 65), (-0.924, 0.383, 0, -0.383, -0.924, 0, 0, 0, 1))
+place_ldu("3705", "Black", (60, -40, 80), (0, -0.383, -0.924, 0, 0.924, -0.383, 1, 0, 0))
+place_ldu("3647", "Light_Grey", (60, -40, 80), (-0.924, 0.383, 0, -0.383, -0.924, 0, 0, 0, 1))
+place_ldu("4265a", "Light_Grey", (60, -40, 95), (-0.924, -0.383, 0, -0.383, 0.924, 0, 0, 0, -1))
+place_ldu("3701", "Red", (70, -40, 50), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place_ldu("3701", "Red", (70, -40, 110), (0, -1, 0, 1, 0, 0, 0, 0, 1))
+place("3623", "Red", 1, 4.75, 4, rot=270)
+place("3666", "Red", 0, 4.75, 1, rot=180)
+place("3023", "Red", 2, 4.75, 6, rot=180)
+place("3623", "Red", 4, 4.75, 4, rot=270)
+place_ldu("3647", "Light_Grey", (60, -60, 10), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4265a", "Light_Grey", (60, -60, 65), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("3707", "Black", (60, -60, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3647", "Light_Grey", (60, -60, 80), (-1, 0, 0, 0, -1, 0, 0, 0, 1))
+place_ldu("4265a", "Light_Grey", (60, -60, 95), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3713", "Light_Grey", (60, -60, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3701", "Red", 1, 5.75, 1)
+place("3701", "Red", 1, 5.75, 6)
