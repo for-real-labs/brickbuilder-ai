@@ -149,7 +149,7 @@ beside the model, and nothing tells it so. The helpers place these parts at the 
 customers' models or official sets use most, and record each joint (`kit.attach`, `kit.inset`).
 The v2 methods then ask for evidence of every recorded joint: the two parts must touch, and a
 Technic pin or axle must lie in a hole of the other part
-([docs/fable-agent.md](fable-agent.md#novas-publication-rules-the-v2-methods)). That check found
+([docs/fable-agent.md](fable-agent.md#publication-rules-the-v2-methods)). That check found
 that the axle wheels (`truck`, `big`, `tall`, `balloon`) recorded their joints between the two
 side bricks and between a brick and the far wheel, parts that do not meet, and that a truck four
 studs wide got no axle at all. They now record brick to axle and axle to wheel, with an axle

@@ -96,7 +96,7 @@ class Workbench:
         palette = load_palette(library, settings.get("catalog_path"), open_palette=bool(settings.get("open_palette")))
         kit_settings = KitSettings(str(library.root), settings.get("catalog_path"),
                                    bool(settings.get("open_palette")), str(cache))
-        # Whether Nova's publication rules apply is fixed when the session starts, like repair.
+        # Whether the publication rules apply is fixed when the session starts, like repair.
         assembly = AssemblyReview(library, shapes) if settings.get("assembly_rules") else None
         return cls(library, shapes, PartFinder(library, palette),
                    ModelChecker(library, shapes, palette, max_parts=int(settings.get("max_parts", 1500)),

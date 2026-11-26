@@ -46,7 +46,7 @@ class Report:
     warnings: list[Issue] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     estimated_parts_cost: str | None = None
-    plan: Plan | None = None  # the building order, when the build was put through Nova's rules
+    plan: Plan | None = None  # the building order, when the build was held to the publication rules
 
     @property
     def ok(self) -> bool:
@@ -218,7 +218,7 @@ class ModelChecker:
         self._shapes = shapes
         self._palette = palette
         self._max_parts = max_parts
-        self._assembly = assembly  # Nova's publication rules, for the methods that ask for them
+        self._assembly = assembly  # the publication rules, for the methods that ask for them
 
     def _label(self, index: int, placement: Placement, boxes: dict[int, list]) -> str:
         own = boxes.get(index)

@@ -472,7 +472,7 @@ class Toolbox:
         return True
 
     def save_rejected(self, reason: str) -> str | None:
-        """Keep the latest build when no revision passed the checks, as Nova keeps a rejected draft.
+        """Keep the latest build when no revision passed the checks.
 
         It is not published: the files go to ``rejected/`` with the failed checks beside them, so
         the customer can still open the model and see what has to be repaired.

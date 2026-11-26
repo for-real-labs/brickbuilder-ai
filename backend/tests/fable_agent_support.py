@@ -274,7 +274,7 @@ class World:
         self.shapes = ShapeLibrary(self.library)
         self.palette = load_palette(self.library, self.catalog_path)
         self.finder = PartFinder(self.library, self.palette)
-        self.assembly = assembly  # hold builds to Nova's publication rules, as the v2 methods do
+        self.assembly = assembly  # hold builds to the publication rules, as the v2 methods do
         self.checker = ModelChecker(self.library, self.shapes, self.palette, max_parts=max_parts,
                                     assembly=AssemblyReview(self.library, self.shapes) if assembly else None)
 

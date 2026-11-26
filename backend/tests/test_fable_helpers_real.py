@@ -32,7 +32,7 @@ def bench():
 
 @pytest.fixture(scope="module")
 def strict():
-    """The same parts held to Nova's publication rules, as the v2 methods check a build."""
+    """The same parts held to the publication rules, as the v2 methods check a build."""
     from fable_agent.app import Workbench
     return Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 6000,
                            "assembly_rules": True})
@@ -147,7 +147,7 @@ def test_every_style_builds_clean_with_real_parts(bench, strict, name, style):
 
 @pytest.mark.parametrize("name", sorted(HELPERS))
 def test_every_helper_can_be_built_in_small_connected_steps(strict, name):
-    """On a bonded ground each helper's first buildable case passes Nova's rules and gets its instructions."""
+    """On a bonded ground each helper's first buildable case passes the publication rules and gets its instructions."""
     for style in HELPERS[name].styles[:3]:
         for arguments in cases(name, style)[:2]:
             kit = Kit(strict.library, strict.shapes, strict.palette, strict.finder)

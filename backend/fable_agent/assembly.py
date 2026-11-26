@@ -1,6 +1,7 @@
-"""What Nova requires of a model before it is published, applied to a Fable build.
+"""What a v2 build must also pass before it is published.
 
-Three reviews run after the ordinary checks and add to the same report:
+The rules began as Nova's publication checks and now belong to the Fable agents. Three reviews
+run after the ordinary checks and add to the same report:
 
 * solid plastic that intersects, which no script can declare intended (``material``);
 * declared joints that have no evidence (``joints``);
@@ -68,7 +69,7 @@ class AssemblyReview:
 
     @staticmethod
     def _require_one_model(report: Report) -> None:
-        """Nova publishes one connected model; free-standing pieces cannot share its building order."""
+        """A model is one connected piece; free-standing pieces cannot share a building order."""
         separate = [issue for issue in report.warnings if issue.kind == "separate"]
         report.warnings[:] = [issue for issue in report.warnings if issue.kind != "separate"]
         report.errors += [Issue(issue.kind, issue.message.replace(" unless they are meant to be separate", "")

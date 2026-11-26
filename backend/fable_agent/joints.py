@@ -1,7 +1,7 @@
 """Evidence for the joints a script declares with ``connect()``.
 
-A declared joint used to be taken on trust. Nova does not publish a joint without evidence, so
-here each one must at least be two parts that touch. A Technic pin or axle must also lie in a
+A declared joint used to be taken on trust. A v2 build must show evidence for each one: at
+least, two parts that touch. A Technic pin or axle must also lie in a
 hole of the other part: both have connectors the parts library names, so a pin beside its hole
 is caught. Clips, bars, tyres on rims and panes in frames have no such names in the library; for
 those, touching is all that is checked, and the report says how many.

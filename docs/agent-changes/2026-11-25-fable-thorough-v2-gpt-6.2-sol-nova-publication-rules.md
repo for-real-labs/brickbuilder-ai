@@ -32,6 +32,11 @@ Thorough v2 is now held to what Nova requires before it publishes. The rules are
   rims, or a short axle through each brick when the body is too wide for one.
 - The prompt grew by about 200 tokens: a section on what the report now requires.
 
+**Update, 2026-11-26:** the rules were then copied into the Fable agents' own code
+(`fable_agent/solids.py`, `material.py`, `sequence.py`) and are no longer loaded from
+`backend/nova-service`, so the two can change apart. Building orders and collision results were
+identical on 63 saved builds. PRLINK2
+
 ## Why
 
 Over six weeks Nova gained checks for the ways it had published wrong builds and instructions:
@@ -78,10 +83,10 @@ ten test buildings had waived 3 to 46.
 
 ## Where it lives
 
-- `backend/fable_agent/nova_rules.py`, `assembly.py`, `material.py`, `joints.py`, `sequence.py`
+- `backend/fable_agent/assembly.py`, `material.py`, `solids.py`, `joints.py`, `sequence.py`
 - `backend/fable_agent/checks.py` (the optional review), `kit.py` (`to_ldraw` with a plan),
   `tools.py` (`save_rejected`), `helpers/cars.py` (axle wheels)
 - `backend/src/requests/fableToBricks.py` (draft upload, 3D default), `novaToBricks.py` (draft download)
 - Tests: `backend/tests/test_fable_assembly.py`, `test_fable_agent_assist.py`, `test_fable_helpers_real.py`,
   `test_fable_web.py`
-- Guide: [docs/fable-agent.md](../fable-agent.md#novas-publication-rules-the-v2-methods)
+- Guide: [docs/fable-agent.md](../fable-agent.md#publication-rules-the-v2-methods)

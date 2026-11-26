@@ -1,4 +1,4 @@
-"""What the v2 methods add to a build: ready-made trees, automatic repair and Nova's publication rules."""
+"""What the v2 methods add to a build: ready-made trees, automatic repair and the publication rules."""
 
 import json
 
@@ -213,7 +213,7 @@ def test_the_second_versions_share_their_limits_and_kinds_with_the_first():
     assert Options(method="lean-v2").resolved("lean-v2").max_steps == 8
 
 
-def test_the_v2_methods_are_held_to_novas_rules_and_the_first_versions_are_not(tmp_path):
+def test_the_v2_methods_are_held_to_the_publication_rules_and_the_first_versions_are_not(tmp_path):
     world = World(tmp_path / "world")
     for method in ("lean-v2", "thorough-v2", "lean", "thorough"):
         client = FakeClient([reply({"type": "text", "text": "No."})] * 2)
