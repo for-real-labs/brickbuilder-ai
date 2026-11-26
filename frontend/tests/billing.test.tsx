@@ -1,3 +1,4 @@
+import { BillingPaymentNotice } from '../src/components/BillingPaymentNotice';
 import React, { act, useEffect } from 'react';
 import { readFileSync } from 'node:fs';
 import { createRoot } from 'react-dom/client';
@@ -19,8 +20,14 @@ vi.mock('../src/components/PetCompanion', () => ({ PetAvatar: ({ id = 'pip' }) =
 vi.mock('../src/components/LoginModal', () => ({ default: ({ open }: { open: boolean }) => open ? <div role="dialog">Sign in to build</div> : null }));
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
 vi.mock('../src/services/billingApi', async importOriginal => ({ ...await importOriginal<typeof import('../src/services/billingApi')>(),
-  billingApi: { redeemPromo: vi.fn(), creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
+  billingApi: { failedPayment: vi.fn(), redeemPromo: vi.fn(), creditCheckout: vi.fn(), appleCreditPrepare: vi.fn(), applePrepare: vi.fn(), appleSync: vi.fn(), plans: vi.fn(), account: vi.fn(), checkout: vi.fn(), portal: vi.fn(), sync: vi.fn() }, openStripe: vi.fn(),
 }));
+
+const realtime = vi.hoisted(() => {
+  const channel = { on: vi.fn(), subscribe: vi.fn() };
+  return { channel: vi.fn(() => channel), removeChannel: vi.fn(), handlers: channel };
+});
+vi.mock('../src/lib/supabase', () => ({ isSupabaseConfigured: true, supabase: realtime }));
 
 function OpenPlansPopup() {
   const { openUpgrade } = useBilling();
@@ -47,6 +54,8 @@ const selectPlan = async (name: string) => act(async () => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  realtime.handlers.on.mockReturnValue(realtime.handlers);
+  realtime.handlers.subscribe.mockReturnValue(realtime.handlers);
   delete window.__BRICKBUILDER_NATIVE_APP__;
   delete window.ReactNativeWebView;
   auth.user = { id: 'builder-1' };
@@ -689,4 +698,34 @@ it('keeps billing focused on one Explore plans action without extra promo copy',
   expect(container.textContent).not.toContain('Your saved LEGO® sets');
   expect(container.textContent).not.toContain('Compare all plans & credit details');
   expect(container.querySelector('.billing-plan-benefit')).toBeNull();
+});
+
+it('pushes a failed renewal into the open page and clears it after payment', async () => {
+  account = { ...account, subscription_provider: 'stripe', subscription_status: 'active' };
+  vi.mocked(billingApi.failedPayment).mockResolvedValue({ amount_due_cents: 1999, card_declined: true });
+  await render(<BillingPaymentNotice />);
+  expect(container.querySelector('[role="alert"]')).toBeNull();
+  expect(realtime.handlers.on).toHaveBeenCalledWith('postgres_changes', { schema: 'public', table: 'billing_status_updates', filter: 'user_id=eq.builder-1', event: 'INSERT' }, expect.any(Function));
+  const notify = realtime.handlers.on.mock.calls[0][2];
+  account = { ...account, subscription_status: 'past_due' };
+  await act(async () => notify());
+  expect(container.querySelector('[role="alert"]')?.textContent).toContain('Your $19.99 subscription payment failed. Your card was declined.');
+  const link = container.querySelector<HTMLAnchorElement>('a')!;
+  expect(link.getAttribute('href')).toBe('/billing');
+  await act(async () => link.click());
+  expect(posthog.capture).toHaveBeenCalledWith('billing_payment_notice_clicked', { source: '/' });
+  account = { ...account, subscription_status: 'active' };
+  await act(async () => notify());
+  expect(container.querySelector('[role="alert"]')).toBeNull();
+});
+
+it('shows the outstanding payment on return when Stripe details are unavailable, and hides it on sign-out', async () => {
+  account = { ...account, subscription_provider: 'stripe', subscription_status: 'unpaid' };
+  vi.mocked(billingApi.failedPayment).mockRejectedValue(new Error('Offline'));
+  await render(<BillingPaymentNotice />);
+  expect(container.querySelector('[role="alert"]')?.textContent).toBe('Your subscription payment failed. Check your payment method in billing.');
+  auth.user = null;
+  await render(<BillingPaymentNotice />);
+  expect(container.querySelector('[role="alert"]')).toBeNull();
+  expect(realtime.removeChannel).toHaveBeenCalled();
 });

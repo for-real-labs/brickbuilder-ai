@@ -8,8 +8,10 @@ import { readApiError } from './apiError';
 export type PlanKey = 'free' | 'builder' | 'creator' | 'master';
 export type PaidFeature = 'ldraw' | 'io' | 'instructions';
 export type FeatureAccess = 'loading' | 'unavailable' | 'locked' | 'allowed';
+export interface FailedPayment { amount_due_cents: number; card_declined: boolean }
 export interface CreditPlan { key: PlanKey; name: string; monthly_cents: number; credits: number }
 export interface BillingAccount {
+  payment_status_version?: number | null;
   trial_expires_at?: string | null;
   purchase_confirmed?: boolean;
   subscription_checkout_confirmed?: boolean;
@@ -41,6 +43,7 @@ async function request<T>(path: string, body?: object): Promise<T> {
 export const billingApi = {
   redeemPromo: (code: string) => request<{ type: 'builder'; account: BillingAccount }>('promo', { code }),
   plans: () => request<{ plans: CreditPlan[]; apple_ready?: boolean; enabled: boolean; ready?: boolean; available?: boolean; checkout_available?: boolean }>('plans'),
+  failedPayment: () => request<FailedPayment | null>('failed-payment'),
   account: () => request<BillingAccount>('account'),
   creditCheckout: (pack_key: CreditPackKey) => isAppleApp() ? Promise.reject(new Error('Use Apple purchases in the iOS app.')) : request<{ session_id: string; client_secret: string }>('credits/checkout', { pack_key, ui_mode: 'elements' }),
   appleCreditPrepare: () => request<{ app_account_token: string }>('apple/credits/prepare', {}),

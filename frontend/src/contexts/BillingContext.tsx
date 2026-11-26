@@ -1,3 +1,4 @@
+import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { appleCreditProduct, findCreditPack, type AppleCreditPackKey } from '../utils/creditPurchase';
 import { GENERATION_SUBSCRIPTION_EVENT, GENERATION_SUBSCRIPTION_SOURCE } from '../utils/generationSubscription';
 import { APPLE_EVENT, appleRequest, appleProduct, isAppleApp, hasApplePurchases, type AppleProduct } from '../services/applePurchases';
@@ -43,14 +44,17 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
   const [upgradeSource, setUpgradeSource] = useState('');
   const [loginOpen, setLoginOpen] = useState(false);
   const [lockedFeature, setLockedFeature] = useState<{ feature: PaidFeature; source: string; generationId?: string | null } | null>(null);
+  const refreshVersion = useRef(0);
   const refresh = useCallback(async () => {
     const owner = user?.id;
     if (!owner) return;
+    const version = ++refreshVersion.current;
+    const current = () => identity.current === owner && version === refreshVersion.current;
     try {
       const result = await billingApi.account();
-      if (identity.current === owner) { setAccount(result); setAccountOwner(owner); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); }
-    } catch { if (identity.current === owner) { setAccount(null); setAccountOwner(undefined); setError('Could not load your credits. Please refresh to try again.'); } }
-    finally { if (identity.current === owner) setLoading(false); }
+      if (current()) { setAccount(result); setAccountOwner(owner); setEnabled(result.enabled); setCheckoutAvailable(result.checkout_available ?? result.enabled); setError(''); }
+    } catch { if (current()) { setAccount(null); setAccountOwner(undefined); setError('Could not load your credits. Please refresh to try again.'); } }
+    finally { if (current()) setLoading(false); }
   }, [user?.id]);
   const refreshPlans = useCallback(async () => {
     try {
@@ -77,6 +81,17 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     const interval = window.setInterval(update, 30000);
     return () => { window.clearInterval(interval); window.removeEventListener('focus', update); window.removeEventListener('brickbuilder:credits-changed', update); };
   }, [refresh]);
+  const stripeOwner = accountOwner === user?.id && account?.subscription_provider === 'stripe' ? accountOwner : undefined;
+  useEffect(() => {
+    if (!isSupabaseConfigured || !stripeOwner) return;
+    const changes = { schema: 'public', table: 'billing_status_updates', filter: `user_id=eq.${stripeOwner}` };
+    const update = () => { void refresh(); };
+    const channel = supabase.channel(`billing-status:${stripeOwner}`)
+      .on('postgres_changes', { ...changes, event: 'INSERT' }, update)
+      .on('postgres_changes', { ...changes, event: 'UPDATE' }, update)
+      .subscribe(status => { if (status === 'SUBSCRIBED') void refresh(); });
+    return () => { void supabase.removeChannel(channel); };
+  }, [stripeOwner, refresh]);
   const refreshProducts = useCallback(async () => {
     if (!hasApplePurchases()) return;
     try { setAppleProducts(await appleRequest<AppleProduct[]>('products')); }
@@ -242,7 +257,7 @@ export function BillingProvider({ children }: { children: React.ReactNode }) {
     catch (e) { setError(e instanceof Error ? e.message : 'Could not open billing. Please try again.'); }
     finally { setBusy(false); }
   };
-  return <BillingContext.Provider value={{ account, plans, enabled, appleProducts, restore, checkoutAvailable: checkoutAvailable && (!isAppleApp() || (appleReady && hasApplePurchases() && appleProducts.length > 0)), loading, busy, error, upgradeSource, loginOpen,
+  return <BillingContext.Provider value={{ account: accountOwner === user?.id ? account : null, plans, enabled, appleProducts, restore, checkoutAvailable: checkoutAvailable && (!isAppleApp() || (appleReady && hasApplePurchases() && appleProducts.length > 0)), loading, busy, error, upgradeSource, loginOpen,
     featureAccess, getFeatureAccess, lockedFeature, requireFeature, closeLockedFeature,
     retryAccess: async () => { await Promise.all([refreshPlans(), refresh(), refreshProducts()]); },
     redeemPromo, refresh, sync, openUpgrade, closeUpgrade, subscribe, buyCredits, manage,
