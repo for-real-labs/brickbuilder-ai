@@ -98,6 +98,39 @@ const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus =
 });
 
 describe('LandingPage', () => {
+  it('builds with the Pip agent on its default model, examples on, for an account that cannot choose', async () => {
+    vi.stubEnv('VITE_API_MODE', 'production');
+    const outsider = { id: 'outsider' };
+    authSettings.session = { user: outsider, access_token: 'outsider-token' };
+    authSettings.user = outsider;
+    vi.spyOn(NovaToBricksApiService, 'buildingAgents').mockResolvedValue({ agents: ['nova'], models: {}, examples: ['pip-agent'] });
+    const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockResolvedValue({ generation_id: 'pip-build', message: 'Started' });
+    vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
+    vi.spyOn(GetUserGenerationsApiService, 'getResumableNovaGenerations').mockResolvedValue([]);
+    const container = document.createElement('div');
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    try {
+      await act(async () => root.render(<LandingPage />));
+      act(() => container.querySelector<HTMLButtonElement>('form [aria-label="Generation settings"]')!.click());
+      expect(container.querySelector('#landing-building-agent')).toBeNull(); // no agent or model to choose
+      expect(container.querySelector('#landing-agent-model')).toBeNull();
+      const input = container.querySelector<HTMLInputElement>('input[aria-label="Describe your model"]')!;
+      act(() => {
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red boat');
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+      });
+      await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Generate"]')!.click());
+      expect(generate).toHaveBeenCalledWith(expect.objectContaining({
+        buildingAgent: 'pip-agent', agentModel: undefined, useExamples: true, prompt: 'A red boat',
+      }), 'outsider-token');
+    } finally {
+      act(() => root.unmount());
+      container.remove();
+      vi.unstubAllEnvs();
+    }
+  });
+
   it.each(['astrology', 'fable-gpt-6.1-sol'] as const)('shows the agent selector to the approved account and submits %s', async agent => {
     const approved = { id: 'approved' };
     authSettings.session = { user: approved, access_token: 'approved-token' };
@@ -180,13 +213,15 @@ describe('LandingPage', () => {
       expect(container.querySelector('#landing-agent-examples')).toBeNull(); // only agents that offer examples
       choose(agents, 'pip-agent');
       expect(container.querySelector<HTMLSelectElement>('#landing-agent-model')!.value).toBe('claude-opus-5-5');
-      // Example builds are off until the account turns them on.
+      // Example builds are on until the account turns them off.
       const examples = container.querySelector<HTMLInputElement>('#landing-agent-examples')!;
-      expect(examples.checked).toBe(false);
+      expect(examples.checked).toBe(true);
       expect(examples.labels?.[0].textContent).toContain('Show example builds first');
       act(() => examples.click());
+      expect(container.querySelector<HTMLInputElement>('#landing-agent-examples')!.checked).toBe(false);
+      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_agent_examples_toggled', { building_agent: 'pip-agent', enabled: false });
+      act(() => container.querySelector<HTMLInputElement>('#landing-agent-examples')!.click());
       expect(container.querySelector<HTMLInputElement>('#landing-agent-examples')!.checked).toBe(true);
-      expect((await import('posthog-js')).default.capture).toHaveBeenCalledWith('landing_agent_examples_toggled', { building_agent: 'pip-agent', enabled: true });
       const input = container.querySelector<HTMLInputElement>('input[aria-label="Describe your model"]')!;
       act(() => {
         Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, 'A red boat');

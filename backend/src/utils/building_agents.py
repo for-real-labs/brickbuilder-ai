@@ -1,7 +1,8 @@
 """Building agents that run inside the API process for All parts generations.
 
-Nova runs in its own service. Astrology and the Fable variants run here. They are
-chosen in Generation settings and offered only to the accounts on the allowlist.
+Nova runs in its own service. Astrology and the Fable variants run here. The Pip agent on its
+default model is every account's default All parts agent. Choosing another agent or model is
+offered only to the accounts on the allowlist.
 """
 
 from __future__ import annotations
@@ -68,6 +69,11 @@ OFFERED_AGENTS = tuple(agent for agent in IN_PROCESS_AGENTS if agent not in RETI
 # how to use the example builds found for a request.
 EXAMPLE_AGENTS = tuple(agent for agent in OFFERED_AGENTS
                        if agent in FABLE_AGENTS and FABLE_AGENTS[agent].method.endswith("-v2"))
+
+
+def open_to_everyone(agent: str | None, model: str | None = None) -> bool:
+    """Whether an account off the allowlist may build with this agent and model: the Pip agent on its default."""
+    return agent == PIP_AGENT and model in (None, FABLE_AGENTS[PIP_AGENT].model)
 
 
 def in_process_agent(value) -> str | None:

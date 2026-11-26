@@ -26,7 +26,7 @@ from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.building_agents import FABLE_AGENTS, RETIRED_AGENTS, in_process_agent
+from ..utils.building_agents import FABLE_AGENTS, RETIRED_AGENTS, in_process_agent, open_to_everyone
 from ..utils.nova_service import NovaService, NovaDraftError, INSTRUCTIONS_FILE
 from ..utils.parts_inventory import PartsInventory
 from ..utils.prompt_parts_limit import tighter_parts_limit
@@ -60,6 +60,7 @@ class NovaToBricksRequest(LlmToBricksRequest):
     # The model for an agent that offers a choice (the Pip agent). None uses the agent's default.
     agent_model: str | None = Field(default=None, max_length=64)
     # Show the agent the example builds closest to the request first (Generation settings; the Pip agent).
+    # The website sends it on unless the customer turned it off.
     use_examples: bool = False
     auth_mode: Literal["api_key", "native"] = "api_key"
     parts_inventory: PartsInventory | None = None
@@ -295,7 +296,8 @@ async def process_nova_to_bricks_task(generation_id, request, user_info, auth_in
 async def nova_to_bricks(request: NovaToBricksRequest, auth_info: dict = Depends(get_user_with_optional_auth), http_request=None) -> ImageToBricksResponse:
     if request.building_agent == AGENT and not astrology_allowed(auth_info):
         raise HTTPException(403, "Astrology is unavailable for this account.")
-    if request.building_agent in FABLE_AGENTS and not fable_allowed(auth_info):
+    if (request.building_agent in FABLE_AGENTS and not fable_allowed(auth_info)
+            and not open_to_everyone(request.building_agent, request.agent_model)):
         raise HTTPException(403, "Fable is unavailable for this account.")
     if generation_storage is None:
         raise HTTPException(status_code=503, detail="Generation storage is unavailable")

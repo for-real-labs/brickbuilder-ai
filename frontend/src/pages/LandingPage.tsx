@@ -52,7 +52,7 @@ import { LocalProviderSettings } from "../components/LocalProviderSettings";
 import { NovaProviderLoginModal, type NovaLoginProvider } from '../components/NovaProviderLoginModal';
 import { DEFAULT_NOVA_OPTIONS, NovaToBricksApiService, type NovaBuilderOptions as NovaOptions } from "../services/novaToBricksApi";
 import { AGENT_MODEL_LABELS, BUILDING_AGENT_LABELS, inProcessAgent, isAgentModel, isBuildingAgent,
-  type AgentModel, type BuildingAgent } from "../utils/buildingAgents";
+  type AgentModel, type BuildingAgent, DEFAULT_BUILDING_AGENT } from "../utils/buildingAgents";
 import { isLocalDevelopment, LocalProvidersApiService } from "../services/localProvidersApi";
 import {
   DEFAULT_LLM_MODEL,
@@ -167,16 +167,19 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const accessToken = session?.access_token;
   const selectableAgents = accountId && agentChoices?.account === accountId ? agentChoices.agents : [];
   const canSelectAgent = selectableAgents.length > 1;
+  // The Pip agent builds All parts models unless an allowlisted account chose another agent. Running
+  // locally, Nova stays the default: the ChatGPT and Claude account connections there are Nova's.
   const buildingAgent: BuildingAgent = canSelectAgent && agentChoice?.account === accountId
-    && selectableAgents.includes(agentChoice.agent) ? agentChoice.agent : 'nova';
+    && selectableAgents.includes(agentChoice.agent) ? agentChoice.agent
+    : isLocalDevelopment() ? 'nova' : DEFAULT_BUILDING_AGENT;
   // An agent that offers a choice of model (the Pip agent); the first model is its default.
   const agentModels = (accountId && agentChoices?.account === accountId ? agentChoices.models[buildingAgent] : undefined) ?? [];
   const agentModel: AgentModel | undefined = modelChoice?.account === accountId && modelChoice?.agent === buildingAgent
     && agentModels.includes(modelChoice.model) ? modelChoice.model : agentModels[0];
-  // An agent that can read example builds first (the Pip agent). Off unless this account turned it on.
+  // An agent that can read example builds first (the Pip agent). On unless this account turned it off.
   const offersExamples = Boolean(accountId && agentChoices?.account === accountId
     && agentChoices.examples.includes(buildingAgent));
-  const useExamples = offersExamples && examplesChoice?.account === accountId && examplesChoice.on;
+  const useExamples = offersExamples && (examplesChoice?.account === accountId ? examplesChoice.on : true);
   useEffect(() => {
     if (!accessToken || !accountId) return;
     const controller = new AbortController();
@@ -692,16 +695,18 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       // Trellis (non-streamed).
       const stream3d = threeDModel === 'sam3d';
 
+      // Pip builds from the catalog only, so a build from a parts inventory goes to Nova.
+      const agentForBuild: BuildingAgent = partsInventory && buildingAgent === DEFAULT_BUILDING_AGENT ? 'nova' : buildingAgent;
       if (generationMethod === 'nova') {
         postResponse = await NovaToBricksApiService.generate({
           ...novaOptions,
           partsInventory: partsInventory ?? undefined,
           maxParts,
           model: llmModel,
-          authMode: buildingAgent === 'nova' && localDevelopment ? novaAuthMode : 'api_key',
-          buildingAgent: inProcessAgent(buildingAgent),
-          agentModel: agentModels.length ? agentModel : undefined,
-          useExamples,
+          authMode: agentForBuild === 'nova' && localDevelopment ? novaAuthMode : 'api_key',
+          buildingAgent: inProcessAgent(agentForBuild),
+          agentModel: agentForBuild === buildingAgent && agentModels.length ? agentModel : undefined,
+          useExamples: agentForBuild === buildingAgent && useExamples,
           prompt: requestedPrompt.trim() || undefined,
           imageBase64,
           imageMediaType: requestedImage?.type || 'image/png',
@@ -777,7 +782,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       if (generationMethod === 'llm' || generationMethod === 'nova') {
         openModel(generationId);
         trackGeneration({ id: generationId, prompt: modelName, status: 'started', endpoint: generationMethod === 'nova' ? 'novaToBricks' : 'llmToBricks',
-          buildingAgent: generationMethod === 'nova' ? inProcessAgent(buildingAgent) : undefined, createdAt: generationStartedAt });
+          buildingAgent: generationMethod === 'nova' ? inProcessAgent(agentForBuild) : undefined, createdAt: generationStartedAt });
         setNotificationPromptId(generationId);
         setCreateNewStage(null);
         setLoading(false);
@@ -1373,7 +1378,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                       disabled={generationMethod !== 'nova' || Boolean(landingModel.model) || loading || modelBusy || buddyChat.routing}
                       className="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 text-sm disabled:opacity-50"
                       onChange={event => {
-                        const agent = isBuildingAgent(event.target.value) ? event.target.value : 'nova';
+                        const agent = isBuildingAgent(event.target.value) ? event.target.value : DEFAULT_BUILDING_AGENT;
                         setAgentChoice(accountId ? { account: accountId, agent } : undefined);
                         posthog.capture('landing_building_agent_selected', { building_agent: agent });
                       }}>
