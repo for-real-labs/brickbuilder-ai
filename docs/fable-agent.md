@@ -74,11 +74,18 @@ can be compared. Both add two things:
   builds them from parts that are known to fit together. What no style can make is
   still built by hand. See [docs/fable-helpers.md](fable-helpers.md).
 - **Automatic repair.** Before a build is checked, a plain brick, plate or tile that
-  runs into another part is cut back to its free cells, and a part asked for in a
-  color it is not sold in gets the closest color it is sold in. The report says what
-  was repaired. Shaped parts are never cut, nothing is moved, parts built sideways
+  runs into another part is cut back to its free cells, a part the catalog does not
+  stock is replaced by the same mould under another number or by a stocked part that
+  measures the same (outline, height, studs and surfaces; `backend/fable_agent/stock.py`),
+  and a part asked for in a color it is not sold in gets the closest color it is sold
+  in. A part with no safe stand-in stays an error. The report says what was repaired. Shaped parts are never cut, nothing is moved, parts built sideways
   and unattached parts are left to the model, and the repaired build still goes
   through every check (`backend/fable_agent/repair.py`).
+
+- **Building guides.** The v2 prompts carry four short guides on design, vehicles,
+  spacecraft and joints that are not studs. They are adapted from the Nova toolkit's
+  agent guides and live in `backend/fable_agent/guides/` (CC BY-SA 4.0), about 6,500
+  characters together.
 
 Thorough v2 is also asked to take fewer turns. Its prompt carries the measured size
 and facing of every part on the catalog sheet, as lean's does, `inspect_part` takes
@@ -153,7 +160,7 @@ Useful options: `--method thorough|thorough-v2|lean|lean-v2`, `--model claude-fa
 high, $8 and 60 turns for thorough; medium, $2 and 8 rounds for lean. The v2 methods
 use the limits of their first versions.
 
-`--examples` (v2 methods) lets the model pick a category of example scripts to read
+`--examples` (v2 methods) shows the model the example builds closest to the request
 first; see [Example builds](#example-builds).
 
 `python -m fable_agent script build.py --out DIR --repair` rebuilds a v2 model's script
@@ -252,51 +259,45 @@ in [docs/agent-changes](agent-changes/README.md).
 
 ### Example builds
 
-The v2 agents (Pip and Thorough v2) can read finished build scripts before they start.
+The v2 agents (Pip and Thorough v2) can be shown finished builds before they start.
 It is an option, **off by default**: a checkbox in Generation settings, `use_examples` on
 the request, and `--examples` on the command line.
 
-1. The model is asked once which kind of subject the request is closest to: cars,
-   aircraft, boats, spacecraft, houses, buildings, castles, animals, characters or flat
-   pictures, or none (`fable_agent/examples/chooser.py`). This is a short model call,
-   charged to the build like any other.
-2. The examples of that category are added to the end of the prompt, up to a budget of
-   120,000 characters (about 34,000 tokens): the written ones first, then the official
-   sets from small to large. Every category fits whole except buildings, where 16 of 22
-   fit and the six largest sets wait. With no fitting category the build runs without
-   examples.
+1. The request is matched against a plain-English description of every example
+   (`fable_agent/examples/retrieval.py`). A keyword search shortlists up to 300 descriptions
+   that share words with the request, and [Jev](https://docs.typesafe.ai/models), a semantic
+   reranker, scores how well each matches. This is how the Nova toolkit finds its references.
+2. The best five that fit are added to the end of the prompt, at most two from one set, up
+   to 40,000 characters (about 11,000 tokens). A whole model shows proportions and colors; a
+   submodel, such as a bogie or a roof, shows how one piece is built.
 
-The scripts are in `backend/fable_agent/examples/library/<category>/`:
+Jev is a paid service reached through the `jev-rerank` command (installed in the API image)
+and needs `TYPESAFE_API_KEY`. One search costs about half a cent ($0.042 per million input
+tokens) and takes about five seconds; the cost is charged to the build and listed with its
+model calls. When the command, the key or the service is missing, the keyword ranking is used
+alone and the build's record says so (`settings.example_search` in `session.json`). A search
+never stops a build.
 
-- 13 written for BrickBuilder with the helpers (eight cars, three houses, a hospital,
-  a castle).
-- 62 official LEGO sets from the [LDraw Official Model Repository](https://library.ldraw.org/omr),
-  converted to `place` calls in building order. A set is kept only if at least 80% of
-  its own pieces survive and what is left passes every check a Pip build must pass. A set
-  may be any size a build may be: the largest kept is Tower Bridge, 3,462 pieces.
-  The pieces that do not survive are minifigures, pieces the parts catalog does not stock
-  and has no equivalent for, and pieces whose joint the checks cannot measure.
+The examples are in `backend/fable_agent/examples/library/`, one script per example and
+`index.jsonl` with the descriptions:
 
-  Of 1,830 model files, 62 pass. The sets themselves are ordinary buildable sets; the
-  rest are left out for what Pip can use and check. Among sets of up to 400 pieces, where
-  this was counted, the two large causes are about equal: over 20% of the pieces are not
-  in the catalog (old wheels and tyres, flexible hoses, electric parts), or over 20% are
-  lost with a joint that is still not measured or with coarse part shapes that overlap
-  (brackets, curved slopes, tyres under mudguards). 74 files are licensed for
-  non-commercial use only and are never used. Only written examples exist for cars: official
-  car sets mostly use wheels the catalog does not stock.
-  `backend/scripts/build_fable_examples.py` rebuilds them from a folder of downloaded
-  files; the files themselves are not in the repository. Each set and its model file's
-  author and licence are credited in `fable_agent/examples/SOURCES.md`.
+- **Official sets** from the [LDraw Official Model Repository](https://library.ldraw.org/omr),
+  each model and each described submodel on its own, with the descriptions written for the
+  annotated copies in ldraw-nova.
+- **The example atlases** of ldraw-nova: buildings, vehicles, spaceships and mechanisms.
 
-Rebrickable offers part lists and themes but no model files, LEGO.com only printed
-instructions, and BrickLink's models need an account and carry no licence for reuse, so
-none of those could supply examples. Rebrickable's free set table names the sets and
-their themes.
+An example keeps the parts its set uses, whether or not BrickBuilder stocks them, and is held
+to every check a Pip build must pass apart from the catalog. The prompt says so, and says that
+the build itself may use catalog parts only. Minifigures, parts that overlap and parts nothing
+joins are left out; an example is kept only if at least 80% of its pieces survive. Models of
+more than 1,200 pieces are not kept whole, because they would not fit a prompt; their
+submodels are. Files licensed for non-commercial use only are never used.
 
-`tests/test_fable_examples.py` builds every example with the real parts under the
-publication rules. To add one, put a script in the category's folder with `#: title:`
-and `#: source:` lines at its top.
+`backend/scripts/build_fable_examples.py --source <checkout>` rebuilds the library from a
+local checkout of the annotated models. `NOTICE.md` and `SOURCES.md` in the folder give the
+licences and credit every file, and each script repeats its own credit in its first lines.
+`tests/test_fable_examples.py` checks the credits of every script and builds a spread of the
+examples with the real parts under the publication rules.
 
 `backend/src/requests/fableToBricks.py` is the whole integration. The build itself
 runs in a scratch directory that is deleted afterwards.
@@ -401,27 +402,42 @@ Nova's publication checks and are now the Fable agents' own code: nothing is loa
 | Rule | What it refuses | Code |
 |---|---|---|
 | Solid plastic | Two plain bricks, plates or tiles in the same place at any rotation, and anything that cuts into a seat back, dish rim, curved tile or side stud. `allow_overlap` does not excuse it. | `material.py`, `solids.py` |
-| Measured joints | Nothing: these are found, not refused. A peg of one part inside a hole of another counts as attached without `connect()`, and the space the two share is not called an overlap. Found this way: a Technic pin or axle in a hole, a bar in a clip or a hollow stud, a hinge pin in its base, a wheel on its pin or axle, a tyre on its rim. | `fits.py` |
-| Declared joints | A `connect()` between parts that do not touch, or a Technic pin or axle that is in none of the other part's holes. | `joints.py` |
+| Measured joints | Nothing: these are found, not refused. A connector of one part seated in a connector of another counts as attached without `connect()`, and the space the two share is not called an overlap: a Technic pin or axle in a hole, a bar in a clip or a hollow stud, hinge halves, a wheel on its pin or axle, a tyre on its rim, a pane or door in its frame. | `connectors.py`, `fits.py` |
+| Fit | A tyre on a rim of another size and a pane in a frame it was not made for, however well it is centred (`[fit]`). | `connectors.py` |
+| Technic seating | A pin that is not centred in its holes, an axle that does not reach through a hole, two parts in one hole (`[technic]`). An axle with no stop at both ends and a single pin that leaves a pivot are warnings. | `toolkit/technic.py`, `toolkit/technic_review.py` |
+| Wheels | Nothing: warnings only (`[vehicle]`). A tyre that does not stand on the ground the others stand on, an axle that is not a mirrored pair, bodywork that reaches below the tyres. | `vehicle.py`, `toolkit/vehicle_review.py` |
+| Declared joints | A `connect()` between parts that do not touch, between parts whose seats do not fit, or a Technic pin or axle that is in none of the other part's holes. | `joints.py` |
 | One model | Free-standing pieces. They were a warning; a model needs one building order. | `assembly.py` |
-| Building order | A model that cannot be built one piece at a time: each piece must attach to what is already built and must not be closed in first. | `sequence.py` |
+| Building order | A model that cannot be built one piece at a time: each piece must attach to what is already built, must not be closed in first, and must go onto an axle before parts sit on both sides of its place. | `sequence.py` |
 
 A build that passes gets its instructions from the planner: the pieces on the ground first,
 then upward, in steps of at most five connected pieces. A piece that hangs under its support is
 shown as built together with it (`0 !BRICKBUILDER BUILD_TOGETHER`, which the instruction viewer
 already reads). `step()` and `module()` only suggest where steps break.
 
-Joints are measured from the parts library itself. It draws a peg as a cylinder seen from
-outside and a hole or clip as one seen from inside, so `fits.py` joins two parts when a peg
-and a hole of the same radius lie on one line and overlap. No list of part numbers is kept.
-Axles are cross-shaped and are matched by the library's own names for them. Many rims and
-tyres are drawn without cylinders, so wheels are recognized by name and by how they sit.
+Joints are measured from connector data first. `backend/fable_agent/data/shadow/` is Pip's own
+copy of the LDCad shadow library, which names the connectors of about 4,600 parts: studs, clips
+and bars, pins and axles with their holes, hinge fingers, and the seats of tyres, panes and
+doors with the groups that say which fits which. `connectors.py` reads it with the
+[pyldraw3](https://github.com/hbmartin/pyldraw3) library. For 51 Technic parts the holes and
+grips were measured by hand (`toolkit/data/technic-parts.json`); those are used instead, and
+each is tied to the exact geometry of the part, so a different release of the parts library
+turns that part's checks off, and the report says how many parts that is. `Kit.inset()` puts a
+pane or door on the seat the data gives (`data/shadow/seats.json`).
 
-What this still does not prove: a pane in its frame, a door on its hinges and a trolley wheel
-in its holder have nothing the library draws as a peg in a hole, so they are still declared
-and checked for touching only; the report counts them. A measured joint says the parts line
-up, not that the joint is strong enough. Balance and whether a hand can reach a part are not
-checked.
+Only seats prove a misfit: a tyre whose rim is not the size of any rim it is sold on, a pane
+whose group is not the frame's. A pin or bar beside a hole it could fit is left to the other
+checks. Where the data knows nothing about a part, `fits.py` still measures the joint from the
+part's shape, as before: a peg and a hole of the same radius on one line.
+
+The code in `toolkit/` was copied from the Nova toolkit and is licensed AGPL-3.0; the connector
+data is CC BY-SA 4.0. See the [README](../README.md#license). Pip imports nothing from the Nova
+service or its toolkit, and a test keeps it that way.
+
+What this still does not prove: a frame the data has no seat for (the 1 x 4 x 3 window and
+some doors) and a trolley wheel in its holder are still declared and checked for touching only;
+the report counts them. A measured joint says the parts line up, not that the joint is strong
+enough. Strength, balance and whether a hand can reach a part are not checked.
 
 When no revision passes, the last build is kept in `rejected/` with its failed checks, and the
 website offers it as an unverified draft.
@@ -476,8 +492,15 @@ that too and is the stronger design if Fable becomes a main path.
   wrote it, and a customer's parts inventory is not supported.
 - The first-version methods (Fable, Fable Lean) still group instruction steps by height and
   take `connect()` on trust. Only the v2 methods use the publication rules.
-- Doors hung in frames and other clip or hinge connections are placed by `inset`
-  or `connect` and are verified only as two parts that touch.
+- In the first-version methods a door hung in its frame, and any other clip or hinge
+  connection, is placed by `inset` or `connect` and verified only as two parts that
+  touch. The v2 methods measure these from connector data where the data has a seat for
+  the pair.
+- The Technic checks cover the 51 parts whose holes were measured. Other Technic parts
+  are joined from their shape only, and a build with more than 300 measured Technic
+  parts is told its seating was not reviewed.
+- Example retrieval has no whole model for many subjects: of 1,821 annotated official
+  sets, 139 survive conversion whole, and the rest are represented by their submodels.
 
 ## Tests
 
