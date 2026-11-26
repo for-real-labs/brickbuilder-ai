@@ -1,0 +1,4121 @@
+{
+  "version": 1,
+  "units": "LDU",
+  "parts": {
+    "3700": {
+      "description": "Technic Brick 1 x 2 with Hole",
+      "bounds": {
+        "min": [
+          -20.0,
+          -4.0,
+          -10.0
+        ],
+        "max": [
+          20.0,
+          24.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "8d0639d4f1437542650e59d7ef2d4d6324e48c67766890e097a85765281abd67",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "aab94d41a047fa287bc57ca70c17ce23db2793dc4e87bb50a9c86caac89ce452"
+    },
+    "3701": {
+      "description": "Technic Brick 1 x 4 with Holes",
+      "bounds": {
+        "min": [
+          -40.0,
+          -4.0,
+          -10.0
+        ],
+        "max": [
+          40.0,
+          24.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "83a02e75a92e9eb6a53ccbcf38511e94be94606ae5fcd45232c9d32a041796a0",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -20.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            20.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "957f388f2c2a36332793ee86fc1ec4d926918fa697820c8471d0c17c7711bb58"
+    },
+    "3702": {
+      "description": "Technic Brick 1 x 8 with Holes",
+      "bounds": {
+        "min": [
+          -80.0,
+          -4.0,
+          -10.0
+        ],
+        "max": [
+          80.0,
+          24.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "2136ad2e57f6564d754676d552c718a1ccb478b91c116e3419ec7c3f1e43ef94",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -60.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            -20.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            20.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            60.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "bb168a05e9a19bc7f592cb4fd3570ab5fcd33796b38ba17ec4c81df3455273b5"
+    },
+    "3894": {
+      "description": "Technic Brick 1 x 6 with Holes",
+      "bounds": {
+        "min": [
+          -60.0,
+          -4.0,
+          -10.0
+        ],
+        "max": [
+          60.0,
+          24.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "d3156c12c95586eba8d12d4d7d077ace27f8106d4d97d9c8a44b7abfa6a0736e",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            -20.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            20.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "a2b6e4d347bde8ee66fc910865ea7e599b09f2fb262daf1cadb68877f7d6604b"
+    },
+    "6541": {
+      "description": "Technic Brick 1 x 1 with Hole",
+      "bounds": {
+        "min": [
+          -10.0,
+          -4.0,
+          -10.0
+        ],
+        "max": [
+          10.0,
+          24.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "55cbe96e67e0891872f24f4fa19fffd3d9d4d455fe9caa421fc1127ba02b99d5",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "5db3d8117237a5271959ead1bbddeac94f05eb4b118558fade9056258b8591cf"
+    },
+    "32000": {
+      "description": "Technic Brick 1 x 2 with Holes",
+      "bounds": {
+        "min": [
+          -20.0,
+          -4.0,
+          -10.0
+        ],
+        "max": [
+          20.0,
+          24.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "480f020f1cff08e388c69b809e2fd2f52fe8cdddf90ed64e66d60f7a103f94c3",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -10.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            10.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "3aa4ffced473ca85e3f89c838fca3ff425ecd93fdf120f408f2e4de6388aef81"
+    },
+    "32064a": {
+      "description": "Technic Brick 1 x 2 with Axlehole with Open Sides and Stud Blocker",
+      "bounds": {
+        "min": [
+          -20.0,
+          -4.0,
+          -10.0
+        ],
+        "max": [
+          20.0,
+          24.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "24ce1a93ea1662f2678b43515e9f938cac1f73855a409d2c825bd17c2a5f9874",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "axle_hole",
+          "at": [
+            0.0,
+            10.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "6657584433296e861a7129dca918e924514f4d317879337fbe35426e6b41ce13"
+    },
+    "32523": {
+      "description": "Technic Beam 3",
+      "bounds": {
+        "min": [
+          -9.0,
+          -10.0,
+          -29.0
+        ],
+        "max": [
+          9.0,
+          10.0,
+          29.0
+        ]
+      },
+      "geometry_sha256": "7dc0d7534d5186a9a5d6a052b383850e02647055f1617ff1a43626b345279a77",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "ec4150636f777898c2078a8c9f187e925508887d26d6f4317af9922e982e091e"
+    },
+    "32316": {
+      "description": "Technic Beam 5",
+      "bounds": {
+        "min": [
+          -9.0,
+          -10.0,
+          -49.0
+        ],
+        "max": [
+          9.0,
+          10.0,
+          49.0
+        ]
+      },
+      "geometry_sha256": "ce734b7c10caef68aa391798ae70aea18ef69879e9135788a65fff40a6d85298",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -40.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "cbe5e60e9d550d50eac97a4148e8ac384ae4275c7aac5dca53b299edbb13c48a"
+    },
+    "32524": {
+      "description": "Technic Beam 7",
+      "bounds": {
+        "min": [
+          -9.0,
+          -10.0,
+          -69.0
+        ],
+        "max": [
+          9.0,
+          10.0,
+          69.0
+        ]
+      },
+      "geometry_sha256": "eadab77e299ccef0f0c86c331e1c3f58d2f502b7e8c7aac04b64afe590da0cb8",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -40.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "d16e7ab90455ebbdc5d660034a3c67e77d6fd0354cac6c3ca5efe54e8f2df954"
+    },
+    "32525": {
+      "description": "Technic Beam 11",
+      "bounds": {
+        "min": [
+          -9.0,
+          -10.0,
+          -109.0
+        ],
+        "max": [
+          9.0,
+          10.0,
+          109.0
+        ]
+      },
+      "geometry_sha256": "8dcffc88ccbc6060d3788fa97dac6270fe794215ce8cd69ade6d7d10f873a47f",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -100.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -80.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -40.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-7",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-8",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-9",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            80.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-10",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            100.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "476208c35b1082dc9deaf912a431785457c5041a666d106ae1615e368b10cc07"
+    },
+    "32278": {
+      "description": "Technic Beam 15",
+      "bounds": {
+        "min": [
+          -9.0,
+          -10.0,
+          -149.0
+        ],
+        "max": [
+          9.0,
+          10.0,
+          149.0
+        ]
+      },
+      "geometry_sha256": "84b46d5df29e8f8766c87d12ccb2ec2d6d023a5783e4c7d3b6c16785131e8d24",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -140.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -120.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -100.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -80.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -40.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-7",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-8",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-9",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-10",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-11",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            80.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-12",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            100.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-13",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-14",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            140.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "00a09fb64fe391a826b071556431e9e296f9640e536ac90d0e40d4817f099e46"
+    },
+    "41239": {
+      "description": "Technic Beam 13",
+      "bounds": {
+        "min": [
+          -9.0,
+          -10.0,
+          -129.0
+        ],
+        "max": [
+          9.0,
+          10.0,
+          129.0
+        ]
+      },
+      "geometry_sha256": "c3b80d28532a54bb4ded3c344a708b7901c34e7a39caf62de698258f03ee96e7",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -120.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -100.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -80.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -40.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-7",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-8",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            40.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-9",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-10",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            80.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-11",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            100.0
+          ],
+          "axis": [
+            0.0,
+            1.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-12",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            120.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "b53412f9817ccf5266ef89f556bda27a09ff98b9438624d545600186c2a1094b"
+    },
+    "32063": {
+      "description": "Technic Beam 6 x 0.5",
+      "bounds": {
+        "min": [
+          -9.0,
+          -5.0,
+          -59.0
+        ],
+        "max": [
+          9.0,
+          5.0,
+          59.0
+        ]
+      },
+      "geometry_sha256": "220f0d904473476262f08ccc73ff06e69f9c419f19831e20732b81d7a5e73036",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -50.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 10.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -30.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 10.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -10.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 10.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            10.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 10.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            30.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 10.0
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            50.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 10.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "eec035ff43b3e9fba0f829907f8434c93cb5c42af8a910e6273c9a0ed705a11a"
+    },
+    "64179": {
+      "description": "Technic Beam 7 x 5 with Open Center 5 x 3",
+      "bounds": {
+        "min": [
+          -50.0,
+          -10.0,
+          -70.0
+        ],
+        "max": [
+          50.0,
+          10.0,
+          70.0
+        ]
+      },
+      "geometry_sha256": "19e063f9fffe87d5b71cffa310f7f178197dc15ae78ed686eab446ca657648b7",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            0.0,
+            -40.0
+          ],
+          "axis": [
+            1.0,
+            -0.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            1.0,
+            -0.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            0.0,
+            40.0
+          ],
+          "axis": [
+            1.0,
+            -0.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            -40.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-7",
+          "kind": "pin_hole",
+          "at": [
+            -20.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-8",
+          "kind": "pin_hole",
+          "at": [
+            -20.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-9",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-10",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-11",
+          "kind": "pin_hole",
+          "at": [
+            20.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-12",
+          "kind": "pin_hole",
+          "at": [
+            20.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-13",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            0.0,
+            -60.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-14",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            0.0,
+            -40.0
+          ],
+          "axis": [
+            1.0,
+            -0.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-15",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            0.0,
+            -20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-16",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            1.0,
+            -0.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-17",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            0.0,
+            20.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-18",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            0.0,
+            40.0
+          ],
+          "axis": [
+            1.0,
+            -0.0,
+            -0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-19",
+          "kind": "pin_hole",
+          "at": [
+            40.0,
+            0.0,
+            60.0
+          ],
+          "axis": [
+            -0.0,
+            1.0,
+            -0.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "bd027d3fe5d44981e611701489a7f06284e919dbb0b4a3971e8dc9928fe81894"
+    },
+    "6536": {
+      "description": "Technic Cross Block 1 x 2 (Axle/Pin)",
+      "bounds": {
+        "min": [
+          -10.0,
+          -9.0,
+          -10.0
+        ],
+        "max": [
+          10.0,
+          29.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "8ceda42e833242e3a3c68ec19fc856c38be95b29b55118e29b7b2e384491dfc2",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "axle_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            1.0,
+            0.0,
+            0.0
+          ],
+          "length": 20.0
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0.0,
+            20.0,
+            0.0
+          ],
+          "axis": [
+            0.0,
+            0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "member",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "2d85f4f37106b7970e4b6422a2d93c34c696a986c4846370c506b110cd379c8c"
+    },
+    "3713": {
+      "description": "Technic Bush with Two Flanges",
+      "bounds": {
+        "min": [
+          -9.0,
+          -9.0,
+          -10.0
+        ],
+        "max": [
+          9.0,
+          9.0,
+          10.0
+        ]
+      },
+      "geometry_sha256": "48a1f0f2456e526df7883cbaa829ed83f3e68bf4cc977f71b6838aaa4ae2ed6c",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "axle_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            -0.0,
+            -0.0,
+            1.0
+          ],
+          "length": 20.0
+        }
+      ],
+      "role": "retainer",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "c29e6097d1168b8e27c8f499a3a19f183d7fac87bfca7d0d9b8d76a089033d1b"
+    },
+    "32123a": {
+      "description": "Technic Bush 1/2 Smooth with Axle Hole Reduced",
+      "bounds": {
+        "min": [
+          -9.0,
+          -9.0,
+          -5.0
+        ],
+        "max": [
+          9.0,
+          9.0,
+          5.0
+        ]
+      },
+      "geometry_sha256": "97dc1e57083cfc0dd0bc8b7c01a8a336161a7a0b52c2f6075fe70ca96d52f8c7",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "axle_hole",
+          "at": [
+            0.0,
+            0.0,
+            0.0
+          ],
+          "axis": [
+            -0.0,
+            -0.0,
+            1.0
+          ],
+          "length": 10.0
+        }
+      ],
+      "role": "retainer",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "ef4bc8d309297fd3b642d60a2394c8c7642f04b36db1f63f26a724d90222b8c7"
+    },
+    "2780": {
+      "description": "Technic Pin with Friction and Slots",
+      "bounds": {
+        "min": [
+          -20.0,
+          -7.801,
+          -8.0005308
+        ],
+        "max": [
+          20.0,
+          7.801,
+          8.0005308
+        ]
+      },
+      "geometry_sha256": "8bd50ea59162748510cb6ae2284c304983d52bc499589f9d8bc1e7192632b85d",
+      "ports": [
+        {
+          "id": "grip-0",
+          "kind": "pin",
+          "at": [
+            -10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        },
+        {
+          "id": "grip-1",
+          "kind": "pin",
+          "at": [
+            10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        }
+      ],
+      "role": "connector",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "dc2b9e6280a993af66d697c00e64acaf0b85f7eef3b8e22f55eee751645d9bbc"
+    },
+    "3673": {
+      "description": "Technic Pin",
+      "bounds": {
+        "min": [
+          -20.0,
+          -8.0,
+          -8.0
+        ],
+        "max": [
+          20.0,
+          8.0,
+          8.0
+        ]
+      },
+      "geometry_sha256": "a46a59a50c1c95b75678695bae84c322c90717e602dae7b2118da24c4b2e7d31",
+      "ports": [
+        {
+          "id": "grip-0",
+          "kind": "pin",
+          "at": [
+            -10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        },
+        {
+          "id": "grip-1",
+          "kind": "pin",
+          "at": [
+            10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        }
+      ],
+      "role": "connector",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "047fab06d072da0676949384741bc0712b9d9e71c81ef699501987f14a75a17b"
+    },
+    "6558": {
+      "description": "Technic Pin Long with Friction and Slot",
+      "bounds": {
+        "min": [
+          -30.0,
+          -7.801,
+          -8.0005308
+        ],
+        "max": [
+          30.0,
+          7.801,
+          8.0005308
+        ]
+      },
+      "geometry_sha256": "4eccc068bf2f8875b1d078fdca925ee63c680b08d34cba287f56b05a22b53897",
+      "ports": [
+        {
+          "id": "grip-0",
+          "kind": "pin",
+          "at": [
+            -20,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        },
+        {
+          "id": "grip-1",
+          "kind": "pin",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        },
+        {
+          "id": "grip-2",
+          "kind": "pin",
+          "at": [
+            20,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        }
+      ],
+      "role": "connector",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "f13c229c35158abaf28986603c300aafa84aa2a96c9bb824144d63016996dd29"
+    },
+    "32556a": {
+      "description": "Technic Pin Long without Friction with Single Slot",
+      "bounds": {
+        "min": [
+          -30.0,
+          -8.0,
+          -8.0
+        ],
+        "max": [
+          30.0,
+          7.3912,
+          8.0
+        ]
+      },
+      "geometry_sha256": "de0be1a0cb6aeee3c34b1cd68511bc6259643f66ab58b73e8e549c3f9b0e9907",
+      "ports": [
+        {
+          "id": "grip-0",
+          "kind": "pin",
+          "at": [
+            -20,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        },
+        {
+          "id": "grip-1",
+          "kind": "pin",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        },
+        {
+          "id": "grip-2",
+          "kind": "pin",
+          "at": [
+            20,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        }
+      ],
+      "role": "connector",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "9e45dbf3f464394826580084942da8227e25e7ee6a81c4b540092b7013b62e46"
+    },
+    "4274": {
+      "description": "Technic Pin 1/2",
+      "bounds": {
+        "min": [
+          -20.0,
+          -8.0,
+          -8.0
+        ],
+        "max": [
+          4.0,
+          8.0,
+          8.0
+        ]
+      },
+      "geometry_sha256": "13cde7ea4fcbee7030e4c609cad30f002e43c95befff161339a2236e2a2cc3e8",
+      "ports": [
+        {
+          "id": "grip",
+          "kind": "pin",
+          "at": [
+            -10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        },
+        {
+          "id": "stud",
+          "kind": "stud",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 4,
+          "friction": true
+        }
+      ],
+      "role": "bridge",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "a08a38a9ed98bf71554aba478bafe7a015bd9e8b3623c1ba3b1e6a6e77740658"
+    },
+    "43093": {
+      "description": "Technic Axle Pin with Friction",
+      "bounds": {
+        "min": [
+          -20.0,
+          -8.0,
+          -8.0
+        ],
+        "max": [
+          19.5,
+          8.0,
+          8.0
+        ]
+      },
+      "geometry_sha256": "528c1eb7c7de4779fbe22d2636cdf56fad4d29c9cd23152543994e0520ae0d40",
+      "ports": [
+        {
+          "id": "pin-end",
+          "kind": "pin",
+          "at": [
+            -10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        },
+        {
+          "id": "axle-end",
+          "kind": "axle",
+          "at": [
+            10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        }
+      ],
+      "role": "connector",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "15605717f753e423490833958f16cd75930fbc7c9c985d88a65635f3a693ac3d"
+    },
+    "3749": {
+      "description": "Technic Axle Pin",
+      "bounds": {
+        "min": [
+          -20.0,
+          -8.0,
+          -8.0
+        ],
+        "max": [
+          19.5,
+          8.0,
+          8.0
+        ]
+      },
+      "geometry_sha256": "49170048e6c582d0396aec11b16e4a67c05178e0ebf1d9ceb7a391c1fcba8667",
+      "ports": [
+        {
+          "id": "pin-end",
+          "kind": "pin",
+          "at": [
+            -10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        },
+        {
+          "id": "axle-end",
+          "kind": "axle",
+          "at": [
+            10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        }
+      ],
+      "role": "connector",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "de493a70fc264a7613f3fa116bd358801381b1ddd1cf33482b2c3771fb91c2a0"
+    },
+    "11214": {
+      "description": "Technic Axle Pin Long with Friction with 2L Pin",
+      "bounds": {
+        "min": [
+          -30.0,
+          -8.0,
+          -8.0
+        ],
+        "max": [
+          29.5,
+          8.0,
+          8.0
+        ]
+      },
+      "geometry_sha256": "bf33bcf11a0d77c7b1f045a47cce1dee0b84c438d8655d9d36e99121216b63b1",
+      "ports": [
+        {
+          "id": "pin-outer",
+          "kind": "pin",
+          "at": [
+            -20,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        },
+        {
+          "id": "pin-inner",
+          "kind": "pin",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        },
+        {
+          "id": "axle-end",
+          "kind": "axle",
+          "at": [
+            20,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": false
+        }
+      ],
+      "role": "connector",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "399cd8948a81f6f9be6c7438497337f10dc02dfbccd730ac8be0793ad6d1a7ef"
+    },
+    "32062": {
+      "description": "Technic Axle 2 Notched",
+      "bounds": {
+        "min": [
+          -19.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          19.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "462758751985aa3948cdae4b9f6f29748b63929caf7d68e37f1bf8073f2d93f6",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 40,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "01aad11f0dbe21bf66a4dfea8024122c9c76990bb3843e5beabd8cae55ca2b26"
+    },
+    "4519": {
+      "description": "Technic Axle 3",
+      "bounds": {
+        "min": [
+          -29.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          29.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "6dbc3b179d9d9728da4680226c96f01e2de75776903299b3426d2c60773a4974",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 60,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "7d3f16115b941b6e85d00b4c3807a4f4a4418396331375c40bc6ccd4a862ecb1"
+    },
+    "3705": {
+      "description": "Technic Axle 4",
+      "bounds": {
+        "min": [
+          -39.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          39.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "775601aa7c9b343d49cb4b0046eb67b79b6773d18d9559dfcf0cef403830e717",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 80,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "85776cc477492a18528748bf9705c2b6c1751a739d25e82bc95dbedaeb04be99"
+    },
+    "32073": {
+      "description": "Technic Axle 5",
+      "bounds": {
+        "min": [
+          -49.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          49.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "3503b420a6acef8da1716cd90f34272ae9a8e265509dbd0225e1383927bc1a96",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 100,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "e20f36bc0b3c4307b8981ef08556ff95c5b6bc99de6134f28646af38e0a0f628"
+    },
+    "3706": {
+      "description": "Technic Axle 6",
+      "bounds": {
+        "min": [
+          -59.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          59.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "91ab22218b606683761b7ea84886391b368d4cbed0d446baeb4f55ce4100bdb8",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 120,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "66e9db1a74701b8366f6fc42847e9ef72653f2e1eebaf019cd9d1d96012259e3"
+    },
+    "3707": {
+      "description": "Technic Axle 8",
+      "bounds": {
+        "min": [
+          -79.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          79.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "b15c9bee031ca41094e1c2ebb5cf85ed8854ff72234766463e7e02cc253896df",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 160,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "1a1e419268e966153edfa6dd9f6d8b5c117df01ccd430f444fa3e4e9f821ddf6"
+    },
+    "3737": {
+      "description": "Technic Axle 10",
+      "bounds": {
+        "min": [
+          -99.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          99.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "63aa7662e5bb07642102794903c76246de44905757d4b274ff55426b806ad09a",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 200,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "55ce64d049a458b79ce68112f81c28e24de51e589a2a81467c607914cd4c7699"
+    },
+    "3708": {
+      "description": "Technic Axle 12",
+      "bounds": {
+        "min": [
+          -119.5,
+          -6.0,
+          -6.0
+        ],
+        "max": [
+          119.5,
+          6.0,
+          6.0
+        ]
+      },
+      "geometry_sha256": "c3e9fb881c16c5ba12c73d2e04bd244b36e9af44d80b8d4947d8f78b0e677b96",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 240,
+          "friction": false
+        }
+      ],
+      "role": "shaft",
+      "evidence": "Installed LDraw geometry and authored connhole/axleHole frames; checked for nominal pitch and bore depth. See docs/reports/technic-structure-readiness.md.",
+      "geometry_points_sha256": "8c20b26cd965d414805f73ca58efc1d246b5998439dfc4edcb50ce8ed186c674"
+    },
+    "44294": {
+      "description": "Technic Axle 7",
+      "geometry_sha256": "0c1fe2cea1032e1d84b286567b0011c98d5e50ced0f63c5086b2799bf2daab27",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 140
+        }
+      ],
+      "role": "connector",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "b5873a46c4d4399bb60b17a3e281aab76fe9b6beb4a9c89b009ae97db4348d07"
+    },
+    "50451": {
+      "description": "Technic Axle 16",
+      "geometry_sha256": "947a948bb11089f47dacea84b46000c6b59ecc8b8f872a43a5cfa640866d7efd",
+      "ports": [
+        {
+          "id": "shaft",
+          "kind": "axle",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 320
+        }
+      ],
+      "role": "connector",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "fa6b07e11c0af575df23388bac7c6434b9b5035703d3553e5bd5a6d145022581"
+    },
+    "32270": {
+      "description": "Technic Gear 12 Tooth Double Bevel",
+      "geometry_sha256": "e6b6fa5bec7d006f951b90fbb7fae748981dec534dd09102f46bc2dbea29e1f8",
+      "ports": [
+        {
+          "id": "hub",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "57e647ce91ec56aa83894d108abed35f3c192783bf5174b639e1ca0e94c2ad89"
+    },
+    "4716": {
+      "description": "Technic Worm Gear 2L",
+      "geometry_sha256": "df7e207da4501a908899b1599f524a66f0b76f6a7e7abe6fa7d6d8fbba54892c",
+      "ports": [
+        {
+          "id": "hub",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 40
+        }
+      ],
+      "role": "member",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "2392cd592d0bde46799671ece848d0e43b3e52acb61dd148f460e3e3b957e408"
+    },
+    "32449": {
+      "description": "Technic Beam 4 x 0.5 Liftarm",
+      "geometry_sha256": "b3f7f302e0eeb37f7f49af350dcb2d945d661c9864e505ab1027c493dfb370f3",
+      "ports": [
+        {
+          "id": "hole--30",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            -30
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 10
+        },
+        {
+          "id": "hole--10",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            -10
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 10
+        },
+        {
+          "id": "hole-10",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            10
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 10
+        },
+        {
+          "id": "hole-30",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            30
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 10
+        }
+      ],
+      "role": "member",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "052725d05772833c9c6957e88d38709dec466dc0b07ffa18484401785b35c924"
+    },
+    "6632": {
+      "description": "Technic Beam 3 x 0.5 Liftarm",
+      "geometry_sha256": "f94d863e23030dddedc04111b23c2b1166b25260a88b27f49148077735ad5253",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 10
+        },
+        {
+          "id": "hole-20",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 10
+        },
+        {
+          "id": "hole-40",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            40
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 10
+        }
+      ],
+      "role": "member",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "851917f4e069f146ab6df5e4ca5d55050e862c342b45c2d3e7481a8df8507b50"
+    },
+    "32498": {
+      "description": "Technic Gear 36 Tooth Double Bevel",
+      "geometry_sha256": "4116d2ac4b65c24ca81a0c799a34c0bbaa0c45493e0682fbd4ad221d0ca9e77c",
+      "ports": [
+        {
+          "id": "hub--20",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            -20,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hub-0",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hub-20",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            20,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole--20",
+          "kind": "pin_hole",
+          "at": [
+            -20,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-20",
+          "kind": "pin_hole",
+          "at": [
+            20,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "08e2b7085b984efaa7c3eed44acb31f80fb65bdedb444774b99b5955cf82c25e"
+    },
+    "40490": {
+      "description": "Technic Beam 9",
+      "geometry_sha256": "5c6e260749baee76c571e52be9c519aeec993637e07d1aaf814cd85855db3b47",
+      "ports": [
+        {
+          "id": "hole--80",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            -80
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole--60",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            -60
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole--40",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            -40
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole--20",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            -20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-20",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-40",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            40
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-60",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            60
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-80",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            80
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "4ee8b870a3451306a54cceb8892dd97f73d7d274981a24e097b2f43335cf0822"
+    },
+    "3648b": {
+      "description": "Technic Gear 24 Tooth with Single Axle Hole",
+      "geometry_sha256": "549002d2d87ad85f0d93452332c4b1dab69c4063d9f732037fe2b64eefac897c",
+      "ports": [
+        {
+          "id": "hub",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 19.25
+        }
+      ],
+      "role": "member",
+      "evidence": "Official LDraw axle and bore primitives, measured in part coordinates. Regression covers card caddy shaft, liftarm and gear mounting.",
+      "geometry_points_sha256": "0d516bb8f8aac016b6a9b5529c43e4d7c545b27b65b0a04f6ec62a2ca4c4eb07"
+    },
+    "3703": {
+      "description": "Technic Brick  1 x 16 with Holes",
+      "geometry_sha256": "2a238c9c11bc1a1508de8ff35ccdba3f2a882bf92dbf2db8ea5c06750dba0926",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -140,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            -120,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            -100,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            -80,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            -60,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            -40,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            -20,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-7",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-8",
+          "kind": "pin_hole",
+          "at": [
+            20,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-9",
+          "kind": "pin_hole",
+          "at": [
+            40,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-10",
+          "kind": "pin_hole",
+          "at": [
+            60,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-11",
+          "kind": "pin_hole",
+          "at": [
+            80,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-12",
+          "kind": "pin_hole",
+          "at": [
+            100,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-13",
+          "kind": "pin_hole",
+          "at": [
+            120,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-14",
+          "kind": "pin_hole",
+          "at": [
+            140,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official Technic brick and matching connhole shadow grid at Y=10. Through bores span 20 LDU on Z.",
+      "geometry_points_sha256": "20e71e3f819d9db6cd454bb1b632f594329faa32ce14054e8586d424c62a90a3"
+    },
+    "3895": {
+      "description": "Technic Brick  1 x 12 with Holes",
+      "geometry_sha256": "89b49b9b70b2293362ecd5861a5199f12e4ae82687a41f679f4829f32fc6c1a6",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -100,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            -80,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            -60,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            -40,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            -20,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            20,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-7",
+          "kind": "pin_hole",
+          "at": [
+            40,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-8",
+          "kind": "pin_hole",
+          "at": [
+            60,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-9",
+          "kind": "pin_hole",
+          "at": [
+            80,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-10",
+          "kind": "pin_hole",
+          "at": [
+            100,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official Technic brick and matching connhole shadow grid at Y=10. Through bores span 20 LDU on Z.",
+      "geometry_points_sha256": "b0e412180007465b660a363d5c45cea76b225356abbc126cb71f7f938d4b327d"
+    },
+    "57519": {
+      "description": "Technic Sprocket Wheel  40.4",
+      "geometry_sha256": "4022b7b634d762e1aab0ff782e66afceb89945f874ea71150ff344c683ee19f2",
+      "ports": [
+        {
+          "id": "hub",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            20,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            17.32050808,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            17.32050808,
+            -10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            -20,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            -17.32050808,
+            -10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            -17.32050808,
+            10,
+            0
+          ],
+          "axis": [
+            0,
+            0,
+            1
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official 57519 axlehole primitive extends from Z=-10 to +10. Six radial peghole subparts and connhole shadows locate the parallel pin holes.",
+      "geometry_points_sha256": "b88334443a330d475bfefb842452a1d84ff10f7ee3984a5dd129817f137f6e8f"
+    },
+    "4459": {
+      "description": "Technic Pin with Friction",
+      "geometry_sha256": "a8f50ef06201129141e9779a716f31f569ee530da969e0b2c8bfbbf85ceac2ec",
+      "ports": [
+        {
+          "id": "grip-0",
+          "kind": "pin",
+          "at": [
+            -10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        },
+        {
+          "id": "grip-1",
+          "kind": "pin",
+          "at": [
+            10,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 20,
+          "friction": true
+        }
+      ],
+      "role": "connector",
+      "evidence": "Two opposed confric.dat grips on local X; each seats one 20 LDU pin bore.",
+      "geometry_points_sha256": "a40fa5b512e77f5b2eafe010cb90a92849dcb6c81b907be7278b5f967e598d8b"
+    },
+    "32209": {
+      "description": "Technic Axle  5.5 with Stop Type 1",
+      "geometry_sha256": "0c97d13404212a4de48f62e13fb9104b9a0380e8e30f800e2ddc5e1363af366b",
+      "ports": [
+        {
+          "id": "long-shaft",
+          "kind": "axle",
+          "at": [
+            13,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 80
+        },
+        {
+          "id": "short-shaft",
+          "kind": "axle",
+          "at": [
+            -46,
+            0,
+            0
+          ],
+          "axis": [
+            1,
+            0,
+            0
+          ],
+          "length": 18
+        }
+      ],
+      "role": "connector",
+      "evidence": "Official stepped shaft and LDCad A18/R2/R8/A80 profile: keyed spans X=-55..-37 and -27..53. Excludes the collar.",
+      "geometry_points_sha256": "f1f3eb2c5a18ba3b04ad4e1534db4a1dc77cbe2d914bb808f741d667ba8cff76"
+    },
+    "6629": {
+      "description": "Technic Beam 4 x 6 Liftarm Bent 53.13",
+      "geometry_sha256": "96da51ad45bc8348bbfdc54099669af9148105592d3d6cd39e31f92adc6da833",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "axle_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            40
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            60
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            80
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            100
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            16,
+            0,
+            112
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-7",
+          "kind": "pin_hole",
+          "at": [
+            32,
+            0,
+            124
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-8",
+          "kind": "axle_hole",
+          "at": [
+            48,
+            0,
+            136
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20,
+          "roll_degrees": -53.13010235415598
+        }
+      ],
+      "role": "member",
+      "evidence": "Official beamhole, connhole, peghole and axlehol4 placements. The far keyed bore follows the bent leg (3:4 slope).",
+      "geometry_points_sha256": "188059e689717e16da1f80a7438848f1ace1f6772ac37bf961754348d970e6ba"
+    },
+    "15458": {
+      "description": "Technic Panel 3 x 11",
+      "geometry_sha256": "34a11b69964c54b1cddab1f90076d3ae50870ead4b94daa09e5324b1393ba3e2",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            -80,
+            0,
+            -20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            -80,
+            0,
+            20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            80,
+            0,
+            -20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            80,
+            0,
+            20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official geometry with full 20 LDU connhole centers measured in the local XZ plane.",
+      "geometry_points_sha256": "8d4e73984b4fbd4b07494d948fb653b5a9bd691a5351875c73f296c3f4566566",
+      "preserve_side_bores": true
+    },
+    "32526": {
+      "description": "Technic Beam 3 x 5 Bent 90",
+      "geometry_sha256": "26af4d981a502bbca04282f22ab6b22102f8547e2f57d902593f7ecb544997ae",
+      "ports": [
+        {
+          "id": "hole-0",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            0
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-1",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            20
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-2",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            40
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-3",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            60
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-4",
+          "kind": "pin_hole",
+          "at": [
+            0,
+            0,
+            80
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-5",
+          "kind": "pin_hole",
+          "at": [
+            20,
+            0,
+            80
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        },
+        {
+          "id": "hole-6",
+          "kind": "pin_hole",
+          "at": [
+            40,
+            0,
+            80
+          ],
+          "axis": [
+            0,
+            1,
+            0
+          ],
+          "length": 20
+        }
+      ],
+      "role": "member",
+      "evidence": "Official geometry with full 20 LDU connhole centers measured in the local XZ plane.",
+      "geometry_points_sha256": "8f454cda65b5487fd1db9e83feed320aefd20aa44f28e99602ea593c2c264542"
+    }
+  },
+  "aliases": {
+    "32064": "32064a",
+    "32123": "32123a",
+    "4265c": "32123a",
+    "32556": "32556a",
+    "3648": "3648b"
+  }
+}

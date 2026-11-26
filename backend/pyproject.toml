@@ -3,6 +3,9 @@ name = "brickai-backend-api"
 version = "0.1.0"
 description = "Convert a 3D object into a brick structure."
 readme = "README.md"
+# The backend as a whole, as run: it includes AGPL-3.0 code (fable_agent/toolkit) and uses a GPL-3.0-or-later
+# library. Files written for BrickBuilder are also offered under MIT. See the License section of the root README.
+license = "AGPL-3.0-only AND MIT AND CC-BY-SA-4.0"
 authors = [
     { name = "Jake Johnson", email = "jake@frlabs.dev" }
 ]
@@ -39,6 +42,8 @@ dependencies = [
     "rtree>=1.4.1",
     "mcp>=1.30,<2",
     "app-store-server-library>=3.1.2",
+    # Reads LEGO connector data for the Fable agents' checks (GPL-3.0-or-later; see the README's License section).
+    "pyldraw3==1.7.0; python_full_version >= '3.12'",
 ]
 
 [project.scripts]

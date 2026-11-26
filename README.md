@@ -98,4 +98,35 @@ Each run writes a session directory with `published/001/model.ldr`, its build sc
 
 ## License
 
-[MIT](LICENSE). LEGO® is a trademark of the LEGO Group, which does not sponsor, authorize, or endorse this project.
+BrickBuilder is open source. Different parts of it carry different licences:
+
+| What | Licence |
+|---|---|
+| Everything not listed below: the website, the iOS app, the API and the building agents | [MIT](LICENSE), Copyright (c) 2026 Jake Johnson |
+| `backend/fable_agent/toolkit/`: connector, Technic and vehicle review code copied from [ldraw-nova](https://github.com/anteloc/ldraw-nova) by Carlos Antelo and contributors | [AGPL-3.0](LICENSE-AGPL-3.0); see its [NOTICE](backend/fable_agent/toolkit/NOTICE.md) |
+| The data folders under "Third-party data" | CC BY-SA 4.0 |
+
+**The backend as a whole is offered under AGPL-3.0.** It runs the AGPL-3.0 code above and uses the
+[pyldraw3](https://github.com/hbmartin/pyldraw3) library (GPL-3.0-or-later), so when you run it, or a modified
+version of it, as a service, you must offer your users its source under AGPL-3.0, as BrickBuilder does: the service at
+brickbuilder.ai is built from the `main` branch of this repository. Commercial use is allowed. The MIT files stay
+MIT: you may reuse any of them on their own under MIT.
+
+The "All parts" agent (Nova) runs as its own service, built from two pinned forks whose source is public:
+[jjohnson5253/ldraw-nova](https://github.com/jjohnson5253/ldraw-nova) (AGPL-3.0 code, CC BY-SA 4.0 material) and
+[jjohnson5253/ldraw-nova-docker](https://github.com/jjohnson5253/ldraw-nova-docker). The exact commits are in
+[`backend/setup_nova.cjs`](backend/setup_nova.cjs).
+
+### Third-party data
+
+These folders hold material adapted from other projects. Each has the licence text, a `NOTICE.md` that names the
+authors, the source and what was changed, and a list of its files. They are licensed CC BY-SA 4.0, and nothing in
+this repository restricts reusing them under that licence. Everything else stays under the licences above.
+
+| Folder | What it is |
+|---|---|
+| `backend/fable_agent/data/shadow/` | The LDCad shadow library: connector data for LEGO parts, and a seat table derived from it |
+| `backend/fable_agent/examples/library/` | Example build scripts converted from official-set models of the LDraw Official Model Repository and from ldraw-nova's example atlases |
+| `backend/fable_agent/guides/` | Building guides adapted from ldraw-nova's agent guides |
+
+LEGO® is a trademark of the LEGO Group, which does not sponsor, authorize, or endorse this project.
