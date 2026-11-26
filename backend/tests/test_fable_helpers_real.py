@@ -262,3 +262,21 @@ def test_truck_tyres_clear_the_deck_and_still_fit_the_axle(strict, facing):
     findings = WheelReview(strict.library).review(parts, {}, measured.fits, str, "road")
     assert not any(item.code == "vehicle.wheel_space" for item in findings)
     assert strict.checker.check(kit.build).ok
+
+
+@pytest.mark.parametrize("facing", FACINGS)
+def test_truck_instructions_install_both_axle_bricks_before_the_wheels(strict, facing):
+    kit = fresh(strict, ground=False)
+    bind(kit)["chassis"](0, 0, 0, style="truck", facing=facing)
+    report = strict.checker.check(kit.build)
+    assert report.ok
+    steps = dict(zip(report.plan.order, report.plan.steps))
+    placements = kit.build.placements
+    axles = [i for i, p in enumerate(placements) if p.part == "60485"]
+    assert len(axles) == 2
+    for axle in axles:
+        attached = [b if a == axle else a for a, b, _ in kit.build.links if axle in (a, b)]
+        carriers = [steps[i] for i in attached if placements[i].part == "32064a"]
+        wheels = [steps[i] for i in attached if placements[i].part == "56904"]
+        assert len(carriers) == len(wheels) == 2
+        assert max(carriers) < min(wheels)

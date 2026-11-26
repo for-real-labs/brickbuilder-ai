@@ -35,6 +35,13 @@ WHEEL_SLACK = 12.0  # a rim may sit this far along its pin from where the pin is
 PIN_RADIUS = 6.6  # the widest peg a wheel turns on
 
 
+def shaft_station(point, axis) -> float:
+    """Distance along the shaft in model space, using the same direction for either connector convention."""
+    direction = np.asarray(axis)
+    dominant = np.argmax(np.abs(direction).round(6))
+    return float(np.dot(point, direction) * np.sign(direction[dominant]))
+
+
 def around_a_fit(fits: set[tuple[int, int]]) -> set[tuple[int, int]]:
     """The fitted pairs, and every two parts that are both fitted to the same third part.
 
@@ -58,8 +65,8 @@ class FitFinder:
         self._library = library
         self._rounds: dict[str, tuple | None] = {}
 
-    def find(self, placements: list[Placement]) -> set[tuple[int, int]]:
-        """Pairs of placements, lower id first, where a peg or axle of one sits in a hole of the other."""
+    def find(self, placements: list[Placement], *, shaft_seats: dict[tuple[int, int], float] | None = None) -> set[tuple[int, int]]:
+        """Seated pairs, lower id first. If requested, also record each receiver's position on a single axle."""
         pegs, holes = [], []
         for index, placement in enumerate(placements):
             matrix = np.array(placement.matrix, dtype=float).reshape(3, 3)
@@ -75,8 +82,9 @@ class FitFinder:
                 axis = matrix @ np.array(surface.axis)
                 (holes if surface.inside else pegs).append((index, start, axis, surface.length, surface.radius))
         found = self._seated(pegs, holes)
-        axles = self._axle_fits(placements, pegs)
-        return found | axles | self._wheels(placements, pegs)
+        axle_pegs = []
+        axles = self._axle_fits(placements, axle_pegs, shaft_seats)
+        return found | axles | self._wheels(placements, pegs, axle_pegs, shaft_seats)
 
     @staticmethod
     def _seated(pegs: list, holes: list) -> set[tuple[int, int]]:
@@ -111,10 +119,10 @@ class FitFinder:
                     found.add(pair)
         return found
 
-    def _axle_fits(self, placements: list[Placement], pegs: list) -> set[tuple[int, int]]:
+    def _axle_fits(self, placements: list[Placement], axle_pegs: list, shaft_seats) -> set[tuple[int, int]]:
         """Axles in axle holes and pin holes, by the connectors the library names.
 
-        Each axle is also added to ``pegs``, so a wheel can be found on it.
+        Keep the axle pegs for measuring wheels, including rims drawn without a named hole.
         """
         axles, holes = [], defaultdict(list)
         for index, placement in enumerate(placements):
@@ -126,31 +134,34 @@ class FitFinder:
                 continue
             matrix = np.array(placement.matrix, dtype=float).reshape(3, 3)
             origin = np.array(placement.position, dtype=float)
+            single = sum(port.kind == "axle" for port in ports) == 1
             for port in ports:
                 point, axis = matrix @ np.array(port.position) + origin, matrix @ np.array(port.axis)
                 if port.kind == "axle":
-                    axles.append((index, point, axis, port.length + AXLE_END))
-                    pegs.append((index, point, axis, port.length, AXLE_RADIUS))
+                    axles.append((index, point, axis, port.length + AXLE_END, single))
+                    axle_pegs.append((index, point, axis, port.length, AXLE_RADIUS, single))
                 elif ("axle", port.kind) in AXLE_FITS:
-                    holes[tuple(int(v) for v in point // AXLE_CELL)].append((index, point, axis))
+                    holes[tuple(int(v) for v in point // AXLE_CELL)].append((index, point, axis, port.length))
         found: set[tuple[int, int]] = set()
-        for owner, start, axis, reach in axles:
+        for owner, start, axis, reach, single in axles:
             near = set()
             for step in range(int(reach // AXLE_CELL) + 2):
                 cx, cy, cz = (int(v) for v in (start + axis * step * AXLE_CELL) // AXLE_CELL)
                 near.update((cx + dx, cy + dy, cz + dz) for dx in (-1, 0, 1) for dy in (-1, 0, 1) for dz in (-1, 0, 1))
             for cell in near:
-                for other, point, line in holes.get(cell, ()):
+                for other, point, line, depth in holes.get(cell, ()):
                     offset = point - start
                     along = float(offset @ axis)
                     if (other != owner and abs(float(axis @ line)) >= PARALLEL and -AXLE_END <= along <= reach
                             and np.linalg.norm(offset - along * axis) <= OFF_LINE):
                         found.add((min(owner, other), max(owner, other)))
+                        if single and shaft_seats is not None:
+                            shaft_seats[owner, other] = shaft_station(point + line * depth / 2, axis)
         return found
 
     # ----- wheels ---------------------------------------------------------
 
-    def _wheels(self, placements: list[Placement], pegs: list) -> set[tuple[int, int]]:
+    def _wheels(self, placements: list[Placement], pegs: list, axle_pegs: list, shaft_seats) -> set[tuple[int, int]]:
         """Tyres on their rims, and wheels on the pin or axle they turn on.
 
         The library draws many rims and tyres without a single cylinder, so they are recognized by
@@ -170,20 +181,25 @@ class FitFinder:
             entry = (index, matrix @ centre + np.array(placement.position, dtype=float), matrix @ axis, across)
             (tyres if name.startswith("Tyre") else wheels).append(entry)
         found: set[tuple[int, int]] = set()
+        if not wheels:
+            return found
         for tyre, centre, axis, across in tyres:
             for wheel, middle, line, width in wheels:
                 apart = centre - middle
                 if (width < across and abs(float(axis @ line)) >= PARALLEL and np.linalg.norm(apart) <= WHEEL_SLACK
                         and np.linalg.norm(apart - float(apart @ line) * line) <= OFF_LINE * 2):
                     found.add((min(tyre, wheel), max(tyre, wheel)))
+        wheel_pegs = [(*peg, False) for peg in pegs] + axle_pegs
         for wheel, middle, line, _ in wheels:
-            for owner, start, axis, length, radius in pegs:
+            for owner, start, axis, length, radius, single_axle in wheel_pegs:
                 if owner == wheel or radius > PIN_RADIUS or abs(float(axis @ line)) < PARALLEL:
                     continue
                 offset = middle - start
                 along = float(offset @ axis)
                 if -WHEEL_SLACK <= along <= length + WHEEL_SLACK and np.linalg.norm(offset - along * axis) <= OFF_LINE * 2:
                     found.add((min(owner, wheel), max(owner, wheel)))
+                    if single_axle and shaft_seats is not None:
+                        shaft_seats[owner, wheel] = shaft_station(middle, axis)
         return found
 
     def _round(self, part: str) -> tuple[np.ndarray, np.ndarray, float] | None:

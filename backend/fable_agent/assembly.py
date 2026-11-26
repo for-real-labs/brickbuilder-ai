@@ -60,14 +60,20 @@ class AssemblyReview:
         Connector data decides wherever both parts have it. A pair that only looks seated by its
         shape, and whose connectors do not fit each other, is not joined; the reason is kept.
         """
-        shaped = self._fits.find(placements)
+        seats = {}
+        shaped = self._fits.find(placements, shaft_seats=seats)
         found = self._connectors.review(placements) if self._connectors is not None else ConnectorFindings()
         refuted = {}
         for pair in shaped - found.joints:
             reason = found.misfit(*pair)
             if reason is not None:
                 refuted[pair] = reason
-        return Measured((shaped - set(refuted)) | found.joints, refuted, len(found.joints), found)
+        fits = (shaped - set(refuted)) | found.joints
+        registered = {(shaft, part) for shaft, stack in found.shafts.items() for _, part in stack}
+        for (shaft, part), station in seats.items():
+            if (shaft, part) not in registered and (min(shaft, part), max(shaft, part)) in fits:
+                found.shafts.setdefault(shaft, []).append((station, part))
+        return Measured(fits, refuted, len(found.joints), found)
 
     def fits(self, placements) -> set[tuple[int, int]]:
         """The joined pairs of ``measure``."""
