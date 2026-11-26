@@ -65,15 +65,22 @@ def test_the_agents_are_listed_and_usable_only_on_the_shared_allowlist(monkeypat
     # The v2 agents can read example builds first; Generation settings show the switch only for them.
     assert offered["examples"] == ["fable-thorough-v2-gpt-6.2-sol", PIP_AGENT]
 
+    # Off the allowlist an account cannot choose an agent or a model; it builds with Pip on its default
+    # model, and example builds are offered to it.
     outsider = {**ACCOUNT, "user_email": "outsider@example.test"}
-    assert asyncio.run(building_agents(Response(), outsider)) == {"agents": ["nova"]}
+    assert asyncio.run(building_agents(Response(), outsider)) == {"agents": ["nova"], "models": {},
+                                                                  "examples": [PIP_AGENT]}
     create, _ = start_recorder(monkeypatch)
     for identity in (outsider, {**ACCOUNT, "auth_method": "api_key"}, {**ACCOUNT, "is_anonymous": True}):
-        with pytest.raises(HTTPException) as denied:
-            asyncio.run(nova.nova_to_bricks(nova.NovaToBricksRequest(prompt="A boat", building_agent=AGENT),
-                                            identity))
-        assert denied.value.status_code == 403
+        for chosen in (dict(building_agent=AGENT), dict(building_agent="fable-gpt-6.2-sol"),
+                       dict(building_agent=PIP_AGENT, agent_model="claude-opus-5-5")):
+            with pytest.raises(HTTPException) as denied:
+                asyncio.run(nova.nova_to_bricks(nova.NovaToBricksRequest(prompt="A boat", **chosen), identity))
+            assert denied.value.status_code == 403, chosen
     create.assert_not_called()
+    from src.utils.building_agents import open_to_everyone
+    assert open_to_everyone(PIP_AGENT) and open_to_everyone(PIP_AGENT, "gpt-6.2-sol")
+    assert not open_to_everyone(PIP_AGENT, "gpt-6.2-astra") and not open_to_everyone("fable-gpt-6.2-sol")
     with pytest.raises(ValidationError, match="Unknown building agent"):
         nova.NovaToBricksRequest(prompt="A boat", building_agent="fable-mystery")
 

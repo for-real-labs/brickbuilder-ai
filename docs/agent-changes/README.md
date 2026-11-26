@@ -8,6 +8,7 @@ New documents are written with the `agent-change-log` skill
 
 | Date | Agent | Change |
 |---|---|---|
+| 2026-11-27 | Pip agent | [The default All parts agent for every account, with example builds on](2026-11-27-pip-agent-default-for-everyone.md) |
 | 2026-11-26 | Pip agent | [Nova's connector data, Technic checks, vehicle review, guides and example retrieval](2026-11-26-pip-agent-nova-toolkit-checks.md) |
 | 2026-11-26 | Fable Thorough v2 · GPT-6.2 Sol | [Nova's connector data, Technic checks, vehicle review, guides and example retrieval](2026-11-26-fable-thorough-v2-gpt-6.2-sol-nova-toolkit-checks.md) |
 | 2026-11-26 | Pip agent | [Pins, clips, hinges and wheels are measured, and examples have no size cap](2026-11-26-pip-agent-measured-joints.md) |

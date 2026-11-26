@@ -1,7 +1,7 @@
 /**
- * Agents that can build an "All parts" model. Nova is the default and runs in its own service.
- * The others run in the API and are offered only to accounts on the backend's allowlist, which
- * decides what a signed-in account may choose (GET /generation-settings/building-agents).
+ * Agents that can build an "All parts" model. The Pip agent is the default for every account. Nova
+ * runs in its own service; the others run in the API. Choosing an agent or a model is offered only
+ * to accounts on the backend's allowlist (GET /generation-settings/building-agents).
  */
 export const BUILDING_AGENT_LABELS = {
   nova: 'Nova',
@@ -20,6 +20,8 @@ export const BUILDING_AGENT_LABELS = {
 } as const;
 
 export type BuildingAgent = keyof typeof BUILDING_AGENT_LABELS;
+
+export const DEFAULT_BUILDING_AGENT: BuildingAgent = 'pip-agent';
 export type InProcessAgent = Exclude<BuildingAgent, 'nova'>;
 
 export const isBuildingAgent = (value: unknown): value is BuildingAgent =>

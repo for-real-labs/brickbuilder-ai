@@ -32,7 +32,7 @@ from ..utils import auth
 from ..utils.auth import handle_auth_and_tracking
 from ..utils.authorization import require_generation_access
 from ..utils.build_design_guidance import guided_build_prompt
-from ..utils.building_agents import FABLE_AGENTS, FableVariant
+from ..utils.building_agents import FABLE_AGENTS, FableVariant, open_to_everyone
 from ..utils.generation_budget import current_generation_usage
 from ..utils.generation_storage import generation_storage
 from ..utils.generation_tasks import start_generation_task
@@ -280,9 +280,10 @@ def _ready() -> bool:
 
 
 async def fable_to_bricks(request, auth_info, source=None):
-    if not fable_allowed(auth_info):
-        raise HTTPException(403, "Fable is unavailable for this account.")
     agent_id = source.get("model_used_3d") if source else request.building_agent
+    # A change is built with the model that built the original, so only a new build's choice is checked here.
+    if not fable_allowed(auth_info) and not open_to_everyone(agent_id, None if source else request.agent_model):
+        raise HTTPException(403, "Fable is unavailable for this account.")
     variant = FABLE_AGENTS.get(agent_id)
     if variant is None:
         raise HTTPException(422, "Unknown building agent.")
