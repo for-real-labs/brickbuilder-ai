@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { createRoot } from 'react-dom/client';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { act } from 'react-dom/test-utils';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('posthog-js', () => ({
   default: {
@@ -91,6 +91,8 @@ beforeEach(() => {
   authSettings.session = null; authSettings.loading = false;
   vi.spyOn(BuildBuddyApi, 'classify').mockResolvedValue({ intent: 'generate', confidence: 1 });
 });
+
+afterEach(() => vi.unstubAllEnvs());
 
 const connectedProvider = (id: LocalProviderStatus['id']): LocalProviderStatus => ({
   id, label: id, api_key_configured: false, cli_available: true, cli_connected: true,
@@ -307,7 +309,7 @@ describe('LandingPage', () => {
     { saved: undefined, expected: 'nova' },
     { saved: 'unknown', expected: 'nova' },
     { saved: 'nova', expected: 'nova' },
-    { saved: 'llm', expected: 'llm' },
+    { saved: 'llm', expected: 'nova' },
     { saved: '3d', expected: 'nova' },
   ])('restores saved mode $saved as $expected after login', async ({ saved, expected }) => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
@@ -352,7 +354,7 @@ describe('LandingPage', () => {
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
 
-    const generate = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
+    const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('Test basic request'));
     sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Blue car', generationMethod: 'llm', llmModel: savedModel }));
     const container = document.createElement('div');
     document.body.append(container);
@@ -384,7 +386,7 @@ describe('LandingPage', () => {
       accept = resolve;
       reject = fail;
     });
-    const start = vi.spyOn(LlmToBricksApiService, 'generate')
+    const start = vi.spyOn(NovaToBricksApiService, 'generate')
       .mockImplementationOnce(() => pending)
       .mockResolvedValue({ generation_id: 'next', message: 'Started' });
     const container = document.createElement('div');
@@ -392,7 +394,6 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      act(() => container.querySelector<HTMLButtonElement>('#landing-builder-mode button[value="llm"]')!.click());
       const prompt = container.querySelector('[aria-label="Describe your model"]') as HTMLInputElement;
       const fileInput = container.querySelector('input[type="file"]') as HTMLInputElement;
       await act(async () => {
@@ -562,7 +563,7 @@ describe('LandingPage', () => {
     vi.spyOn(BuildBuddyApi, 'randomIdea').mockResolvedValue('A tiny lighthouse');
     let resolveStart!: (value: { generation_id: string; message: string }) => void;
     let rejectStart!: (reason: Error) => void;
-    const start = vi.spyOn(LlmToBricksApiService, 'generate').mockImplementation(() => new Promise((resolve, reject) => {
+    const start = vi.spyOn(NovaToBricksApiService, 'generate').mockImplementation(() => new Promise((resolve, reject) => {
       resolveStart = resolve; rejectStart = reject;
     }));
     const capture = (await import('posthog-js')).default.capture;
@@ -571,7 +572,6 @@ describe('LandingPage', () => {
     const root = createRoot(container);
     try {
       await act(async () => root.render(<LandingPage />));
-      act(() => container.querySelector<HTMLButtonElement>('#landing-builder-mode button[value="llm"]')!.click());
       await act(async () => container.querySelector<HTMLButtonElement>('.landing-random-idea')!.click());
       expect(capture).toHaveBeenCalledWith('landing_random_build_requested', { source: 'initial' });
       expect(container.textContent).toContain('A tiny lighthouse');
@@ -583,7 +583,7 @@ describe('LandingPage', () => {
         else rejectStart(new Error('Generation unavailable'));
       });
       if (success) {
-        expect(capture).toHaveBeenCalledWith('landing_random_build_started', { generation_id: 'random-one', generation_method: 'llm' });
+        expect(capture).toHaveBeenCalledWith('landing_random_build_started', { generation_id: 'random-one', generation_method: 'nova' });
         expect(capture).toHaveBeenCalledWith('generation_started', expect.objectContaining({ generation_id: 'random-one', generation_source: 'random_suggestion' }));
       } else {
         expect(capture).not.toHaveBeenCalledWith('landing_random_build_started', expect.anything());
@@ -592,6 +592,7 @@ describe('LandingPage', () => {
   });
 
   it('starts LLM jobs in the background and allows another submission while they run', async () => {
+    vi.stubEnv('VITE_ENABLE_BASIC_BRICKS', 'true');
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
     const start = vi.spyOn(LlmToBricksApiService, 'generate')
@@ -656,6 +657,7 @@ describe('LandingPage', () => {
   });
 
   it.each(['image-to-lego', 'photo-to-lego'] as const)('uses the shared upload and generation flow on /%s', async path => {
+    vi.stubEnv('VITE_ENABLE_BASIC_BRICKS', 'true');
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -701,6 +703,7 @@ describe('LandingPage', () => {
   });
 
   it('defaults to All parts, routes through Pip, and keeps the model when switching to Basic bricks', async () => {
+    vi.stubEnv('VITE_ENABLE_BASIC_BRICKS', 'true');
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 12, brick_count: 400 });
@@ -768,6 +771,7 @@ describe('LandingPage', () => {
   });
 
   it.each(['llm', 'nova'])('sends the uploaded reference to the %s workflow from the shared bar', async modeValue => {
+    vi.stubEnv('VITE_ENABLE_BASIC_BRICKS', 'true');
     vi.spyOn(GenerationEmailApi, 'status').mockResolvedValue({ subscribed: false, email: null });
     vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
@@ -1002,6 +1006,7 @@ describe('LandingPage', () => {
   });
 
   it('opens settings without submitting, preserves selections when closed, and dismisses with Escape', async () => {
+    vi.stubEnv('VITE_ENABLE_BASIC_BRICKS', 'true');
     vi.spyOn(globalThis, 'fetch').mockResolvedValue({ ok: true, json: async () => ({ stargazers_count: 0 }) } as Response);
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -1240,7 +1245,7 @@ it.each(['claude-haiku-5-5', 'gpt-6-astra'])('selects %s for either generation m
 });
 
 
-it('starts the free trial in All parts without a credit caption and allows Basic selection', async () => {
+it('locks new free-trial builds to All parts', async () => {
   billingSettings.enabled = true;
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -1251,8 +1256,11 @@ it('starts the free trial in All parts without a credit caption and allows Basic
     expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.billing-generation-quote')).toBeNull();
     expect([...container.querySelectorAll('header button')].some(button => button.textContent === 'Plans')).toBe(false);
-    act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
-    expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+    const basic = container.querySelector<HTMLButtonElement>('button[value="llm"]')!;
+    expect(basic.disabled).toBe(true);
+    act(() => basic.click());
+    expect(basic.getAttribute('aria-pressed')).toBe('false');
+    expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.billing-generation-quote')).toBeNull();
   } finally { act(() => root.unmount()); }
 });
@@ -1309,7 +1317,8 @@ it('returns from a parts upload to the existing composer and submits its exact i
     Object.defineProperty(picker, 'files', { value: [new File(['parts'], 'owned.csv')] });
     await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
     expect(container.querySelector('h1')?.textContent).toContain('Using owned.csv to design a new LEGO');
-    expect(container.querySelector<HTMLButtonElement>('button[value="llm"]')!.disabled).toBe(false);
+    expect(container.querySelector<HTMLButtonElement>('button[value="llm"]')!.disabled).toBe(true);
+    expect(PartsInventoryApi.basicCompatibility).not.toHaveBeenCalled();
     const prompt = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
     act(() => {
       Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(prompt, 'A tiny car');
@@ -1320,7 +1329,7 @@ it('returns from a parts upload to the existing composer and submits its exact i
   } finally { act(() => root.unmount()); container.remove(); }
 });
 
-it('preserves the inventory and selected Basic bricks mode through a login redirect', async () => {
+it('preserves a saved Basic inventory and opens its draft in All parts', async () => {
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   const inventory = { name: 'My set', source: 'set', parts: [{ part_id: '3001', color_id: 4, quantity: 2 }] };
   sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Car', generationMethod: 'llm', partsInventory: inventory }));
@@ -1328,12 +1337,13 @@ it('preserves the inventory and selected Basic bricks mode through a login redir
   try {
     await act(async () => root.render(<LandingPage />));
     expect(container.querySelector('h1')?.textContent).toContain('Using My set to design a new LEGO');
-    expect(container.querySelector('button[value="llm"]')?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
   } finally { act(() => root.unmount()); sessionStorage.removeItem('pendingLandingState'); }
 });
 
 describe('generation signup gate', () => {
   it.each(['llm', 'nova'])('blocks guest %s creation, preserves the request, and resumes with the account token', async method => {
+    vi.stubEnv('VITE_ENABLE_BASIC_BRICKS', 'true');
     authSettings.isSupabaseConfigured = true;
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
@@ -1361,13 +1371,14 @@ describe('generation signup gate', () => {
     } finally { act(() => root.unmount()); container.remove(); authSettings.isSupabaseConfigured = false; authSettings.session = null; sessionStorage.clear(); }
   });
 
-  it('restores an image and model choice after signup redirect and waits for authentication', async () => {
+  it('restores an older Basic image draft and waits for the user to start the All parts build', async () => {
     authSettings.isSupabaseConfigured = true; authSettings.loading = true;
     Object.defineProperty(URL, 'createObjectURL', { configurable: true, value: vi.fn(() => 'blob:signup-image') });
     Object.defineProperty(URL, 'revokeObjectURL', { configurable: true, value: vi.fn() });
     vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
     vi.spyOn(GetGenerationStatsApiService, 'getGenerationStats').mockResolvedValue({ generation_count: 0, brick_count: 0 });
-    const generate = vi.spyOn(LlmToBricksApiService, 'generate').mockRejectedValue(new Error('stop after submission'));
+    const basic = vi.spyOn(LlmToBricksApiService, 'generate');
+    const generate = vi.spyOn(NovaToBricksApiService, 'generate').mockRejectedValue(new Error('stop after submission'));
     sessionStorage.setItem('pendingLandingState', JSON.stringify({ prompt: 'Blue robot', generationMethod: 'llm', llmModel: 'gpt-6-astra', resumeGeneration: true,
       image: { name: 'robot.png', type: 'image/png', base64: btoa('robot-image') } }));
     const container = document.createElement('div'); document.body.append(container); const root = createRoot(container);
@@ -1376,6 +1387,10 @@ describe('generation signup gate', () => {
       expect(generate).not.toHaveBeenCalled();
       authSettings.loading = false; authSettings.session = { access_token: 'redirect-token', user: { id: 'returning-builder' } };
       await act(async () => root.render(<LandingPage />));
+      expect(generate).not.toHaveBeenCalled();
+      expect(basic).not.toHaveBeenCalled();
+      expect(container.textContent).toContain('Select Generate to build with All parts for 20 credits');
+      await act(async () => container.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
       await act(async () => { await vi.waitFor(() => expect(generate).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ prompt: 'Blue robot', model: 'gpt-6-astra', imageBase64: btoa('robot-image') }), 'redirect-token')); });
       expect(sessionStorage.getItem('pendingLandingState')).toBeNull();
     } finally { act(() => root.unmount()); container.remove(); authSettings.isSupabaseConfigured = false; authSettings.session = null; authSettings.loading = false; sessionStorage.clear(); }
@@ -1455,6 +1470,7 @@ it.each(['image', 'text'] as const)('keeps the %s form visible until the server 
 });
 
 it.each([2, 0])('uses only %s compatible pieces in Basic bricks mode and retains the full All parts inventory', async available => {
+  vi.stubEnv('VITE_ENABLE_BASIC_BRICKS', 'true');
   vi.spyOn(LocalProvidersApiService, 'getProviderStatus').mockImplementation(async id => connectedProvider(id));
   vi.spyOn(GetUserGenerationsApiService, 'getProcessingGenerations').mockResolvedValue([]);
   const inventory = { name: 'Mixed set', source: 'set' as const, parts: [
@@ -1475,7 +1491,7 @@ it.each([2, 0])('uses only %s compatible pieces in Basic bricks mode and retains
     const picker = container.querySelector<HTMLInputElement>('input[aria-label="Upload parts list"]')!;
     Object.defineProperty(picker, 'files', { value: [new File(['parts'], 'mixed.csv')] });
     await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
-    act(() => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+    await act(async () => container.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
     expect(container.textContent).toContain(available + ' pieces available in Basic bricks mode · 5 outside its palette.');
     expect(container.textContent).toContain('5 × 3020, LDraw color 4');
     const prompt = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
