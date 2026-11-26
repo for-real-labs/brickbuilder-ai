@@ -1,0 +1,30 @@
+#: title: Truck cab with windows, windscreen, glazed glass, and sloped roof
+#: source: LDraw Official Model Repository, 10183-1_Flatcar-with-Truck.mpd, section 10183 - 3 - cabin.ldr
+#: author: Bert Van Raemdonck [BEAVeR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+place("3710", "Red", 2, 0, 1)
+place("3710", "Red", 2, 0, 6)
+place("3004", "Red", 2, 1, 1)
+place("3004", "Red", 2, 1, 6)
+place("3005", "Red", 5, 1, 1)
+place("3005", "Red", 5, 1, 6)
+place_ldu("2921", "Red", (90, -32, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("2921", "Red", 4, 1, 6, rot=180)
+place("3004", "Red", 4, 4, 1)
+place("3004", "Red", 4, 4, 6)
+place("60032", "Red", 2, 4, 1)
+place("3004", "Red", 4, 7, 1)
+place_ldu("4862", "Trans_Clear", (60, -80, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("60032", "Red", 2, 4, 6, rot=180)
+place_ldu("4862", "Trans_Clear", (60, -80, 130), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3004", "Red", 4, 7, 6)
+place("3666", "Red", 5, 10, 1, rot=90)
+place("54200", "Dark_Bluish_Grey", 5, 11, 1)
+place("54200", "Dark_Bluish_Grey", 5, 11, 6, rot=180)
+place("52031", "Dark_Bluish_Grey", 1, 10, 1, rot=90)
+place("4176", "Trans_Clear", 0, 4, 1, rot=90)
+place("3710", "Black", 5, 11, 2, rot=90)
+place("2412b", "Black", 5, 12, 2, rot=270)
+place("2412b", "Black", 5, 12, 4, rot=270)

@@ -1,0 +1,32 @@
+#: title: model A - tree
+#: source: LDraw Official Model Repository, 4886-1_Quick-Build.mpd, section 4886 - model A - tree.ldr
+#: author: Robert Paciorek [bercik]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("3020", "Brown", 3, 0, 2, rot=90)
+place("2453a", "Reddish_Brown", 3, 1, 3, rot=90)
+place("3020", "Green", 2.5, 16, 1.5, rot=90)
+place("3747a", "Green", 3.5, 17, 2.5, rot=270)
+place("3660", "Green", 2.5, 17, 0.5)
+place("3660", "Green", 2.5, 17, 4.5, rot=180)
+place("3747a", "Green", 0.5, 17, 2.5, rot=90)
+place_ldu("3001", "Green", (50.05, -184, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3001", "Green", (90.05, -184, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3004", "Green", (120.05, -184, 70), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3004", "Green", (20.05, -184, 70), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3003", "Green", (70.05, -208, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3040b", "Green", 0.5, 23, 2.5, rot=90)
+place("3040b", "Green", 2.5, 23, 4.5, rot=180)
+place("3004", "Green", 2.5, 20, 5.5)
+place("3040b", "Green", 4.5, 23, 3.5, rot=270)
+place("3040b", "Green", 3.5, 23, 0.5)
+place_ldu("3004", "Green", (70.05, -184, 20), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3040b", "Green", 1.5, 23, 3.5, rot=180)
+place("3040b", "Green", 3.5, 23, 4.5, rot=270)
+place("3040b", "Green", 4.5, 23, 1.5)
+place("3040b", "Green", 1.5, 23, 1.5, rot=90)
+place("3040b", "Green", 1.5, 26, 2.5, rot=90)
+place("3040b", "Green", 2.5, 26, 3.5, rot=180)
+place("3040b", "Green", 3.5, 26, 3.5, rot=270)
+place("3040b", "Green", 3.5, 26, 1.5)

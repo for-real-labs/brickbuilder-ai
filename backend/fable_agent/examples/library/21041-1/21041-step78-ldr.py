@@ -1,0 +1,31 @@
+#: title: A tan watchtower roof or upper structure with door rails, corner panels, and grooved tiles forming a detailed cap.
+#: source: LDraw Official Model Repository, 21041-1.mpd, section 21041 - step78.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("3622", "Tan", 2.5, 0, 1.5, rot=90)
+place("3031", "Tan", 1, 3, 1)
+place("3068b", "Dark_Tan", 2, 4, 2)
+place_ldu("32028", "Tan", (60, -40, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("32028", "Tan", 4, 4, 1, rot=270)
+place("32028", "Tan", 4, 4, 3, rot=270)
+place("32028", "Tan", 2, 4, 4, rot=180)
+place_ldu("32028", "Tan", (30, -40, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32028", "Tan", (30, -40, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("15573", "Tan", 4, 5, 2, rot=90)
+place("15573", "Tan", 1, 5, 2, rot=90)
+place("15573", "Tan", 2, 5, 1)
+place("15573", "Tan", 2, 5, 4)
+place("3024", "Tan", 4, 6, 2.5, rot=90)
+place("3024", "Tan", 2.5, 6, 1, rot=90)
+place("3024", "Tan", 1, 6, 2.5, rot=90)
+place("3024", "Tan", 2.5, 6, 4, rot=90)
+place("6231", "Tan", 1, 5, 4)
+place("6231", "Tan", 4, 5, 1, rot=180)
+place("6231", "Tan", 1, 5, 1, rot=270)
+place("6231", "Tan", 4, 5, 4, rot=90)
+place("3070b", "Tan", 4, 7, 2.5, rot=90)
+place("3070b", "Tan", 2.5, 7, 1, rot=90)
+place("3070b", "Tan", 1, 7, 2.5, rot=90)
+place("3070b", "Tan", 2.5, 7, 4, rot=90)

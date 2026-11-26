@@ -1,0 +1,21 @@
+#: title: Four-stud stone planter with a layered leaf canopy and small flowers. Bottom plane Y=0. Reserve its foliage envelope, not just the base footprint.
+#: source: ldraw-nova example atlas, copper-lane.mpd, section lane-tall-tree.ldr
+#: author: ldraw-nova example generator
+#: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+place("3031", "Tan", 2, 0, 2)
+place("3022", "Reddish_Brown", 3, 1, 3)
+place_ldu("24866", "Bright_Pink", (50, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24866", "Bright_Pink", (90, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24866", "Bright_Pink", (110, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Reddish_Brown", 3, 2, 3)
+place("3062b", "Reddish_Brown", 3, 5, 3)
+place("3062b", "Reddish_Brown", 3, 8, 3)
+place("3062b", "Reddish_Brown", 3, 11, 3)
+place("3062b", "Reddish_Brown", 3, 14, 3)
+place_ldu("2417", "Green", (70, -144, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Reddish_Brown", 3, 18, 3)
+place_ldu("2417", "Green", (70, -176, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3062b", "Reddish_Brown", 3, 22, 3)
+place_ldu("2423", "Green", (70, -208, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2423", "Bright_Green", (70, -216, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))

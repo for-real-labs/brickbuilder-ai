@@ -1,0 +1,33 @@
+#: title: A small 1955 Town Plan building with white bricks, a printed name plate, slotted windows, and doors.
+#: source: LDraw Official Model Repository, 1210-2.mpd
+#: author: N. W. Perry [Plastikean]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("u8203", "White", 0, 0, 0)
+place("u8001b", "White", 3, 1, 5)
+place("3005", "White", 5, 1, 5)
+place("u8002b", "White", 6, 1, 4, rot=90)
+place("u8001b", "White", 7, 1, 2, rot=90)
+place("u8001b", "White", 7, 1, 0, rot=90)
+place("u8001b", "White", 0, 1, 0, rot=270)
+place("u8001b", "White", 0, 1, 2, rot=270)
+place("u8001b", "White", 0, 1, 4, rot=270)
+place("3005", "White", 7, 4, 5)
+place("u8001b", "White", 7, 4, 3, rot=90)
+place("u8001b", "White", 7, 4, 1, rot=90)
+place("u9026", "Blue", 7, 4, 0)
+place("u9026", "Blue", 0, 4, 0)
+place("u8001b", "White", 0, 4, 1, rot=270)
+place("3005", "White", 0, 4, 3)
+place("u8001b", "White", 0, 4, 4, rot=270)
+place("u8001b", "White", 7, 7, 4, rot=90)
+place("u8001b", "White", 7, 7, 2, rot=90)
+place("3005", "White", 7, 7, 1)
+place("u9026", "Blue", 7, 7, 0)
+place("u9026", "Blue", 0, 7, 0)
+place("3005", "White", 0, 7, 1)
+place("u8001b", "White", 0, 7, 2, rot=270)
+place("u8001b", "White", 0, 7, 4, rot=270)
+place("u8203", "White", 0, 10, 0)
+place("3067b", "White", 1, 11, 5)

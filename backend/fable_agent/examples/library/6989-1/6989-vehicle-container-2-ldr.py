@@ -1,0 +1,29 @@
+#: title: A larger red MTron container module with control panels, computer displays, grilles, and a magnet coupling.
+#: source: LDraw Official Model Repository, 6989-1.mpd, section 6989 - Vehicle - Container 2.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("3710", "Black", 1, 0, 2, rot=180)
+place("3710", "Black", 1, 0, 5, rot=180)
+place("3666", "Black", 0, 1, 2, rot=180)
+place("3666", "Black", 0, 1, 5, rot=180)
+place("3032", "Black", 1, 2, 1, rot=90)
+place("3022", "Red", 2, 1, 3, rot=180)
+place("4070", "Red", 1, 3, 1)
+place("4070", "Red", 4, 3, 1)
+place("2432", "Red", 1, 3, 6, rot=180)
+place("2432", "Red", 3, 3, 6, rot=180)
+place("4864a", "Red", 4, 3, 4, rot=90)
+place("4864a", "Red", 1, 3, 4, rot=270)
+place("4864a", "Red", 1, 3, 2, rot=270)
+place("4864a", "Red", 4, 3, 2, rot=90)
+place("3031", "Red", 1, 9, 2, rot=270)
+place("2609a", "Black", 2, 10, 3)
+place_ldu("4315", "Red", (60, -88, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2582p68", "Light_Grey", (60, -17.531, 6.301), (-1, 0, 0, 0, -0.707107, 0.707107, 0, 0.707107, 0.707107))
+place("4315", "Red", 1, 10, 5, rot=180)
+place_ldu("2582p68", "Light_Grey", (60, -17.531, 153.699), (1, 0, 0, 0, -0.707107, 0.707107, 0, -0.707107, -0.707107))
+place("2412b", "Black", 4, 10, 3, rot=270)
+place("2412b", "Black", 1, 10, 3, rot=270)
+place_ldu("2959c01", "Black", (60, -94.5, 80), (1, 0, 0, 0, 0, -1, 0, 1, 0))

@@ -1,0 +1,23 @@
+#: title: Layered garden tree; bottom Y=0; foliage needs a nine-stud clearing
+#: source: ldraw-nova example atlas, winter-lodge.mpd, section leaf-tree-288-15.ldr
+#: author: ldraw-nova building atlas
+#: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 18 of 18 parts kept (minifigures, overlapping and unattached parts left out)
+place("3020", "Tan", 2, 0, 2)
+place("3020", "Tan", 2, 0, 4)
+place("3022", "Reddish_Brown", 3, 1, 3)
+place_ldu("24866", "White", (50, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24866", "White", (90, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24866", "White", (110, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Reddish_Brown", 3, 2, 3)
+place("3062b", "Reddish_Brown", 3, 5, 3)
+place("3062b", "Reddish_Brown", 3, 8, 3)
+place("3062b", "Reddish_Brown", 3, 11, 3)
+place("3062b", "Reddish_Brown", 3, 14, 3)
+place_ldu("2417", "Dark_Green", (70, -144, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Reddish_Brown", 3, 18, 3)
+place_ldu("2417", "Green", (70, -176, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3062b", "Reddish_Brown", 3, 22, 3)
+place_ldu("2423", "Dark_Green", (70, -208, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3062b", "Reddish_Brown", 3, 26, 3)
+place_ldu("2423", "Green", (70, -240, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))

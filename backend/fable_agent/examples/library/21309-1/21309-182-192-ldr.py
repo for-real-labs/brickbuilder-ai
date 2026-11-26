@@ -1,0 +1,32 @@
+#: title: White lever or appendage assembly with pins, joiners, a lightsaber bar, slope pieces, and clip tiles.
+#: source: LDraw Official Model Repository, 21309-1.mpd, section 21309 - 182-192.ldr
+#: author: Jaco van der Molen [Jaco]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures, overlapping and unattached parts left out)
+place("6141", "Black", 1, 0, 10)
+place("3023", "Blue", 1, 0, 0, rot=90)
+place("4477", "Tan", 0, 0, 1, rot=90)
+place("60478", "Dark_Bluish_Grey", 1, 0, 11, rot=270)
+place("60478", "Dark_Bluish_Grey", 0, 0, 11, rot=270)
+place("11458", "White", 0, 1, 11)
+place("11458", "White", 0, 1, 10)
+place("11458", "White", 0, 1, 1)
+place("3460", "Light_Bluish_Grey", 0, 1, 2, rot=90)
+place("3023", "Blue", 0, 1, 12)
+place("54200", "White", 0, 2, 8)
+place("54200", "White", 1, 2, 12, rot=180)
+place_ldu("6558", "Blue", (30, -22, 210), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("62462", "White", (30, -22, 180), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (30, -22, 160), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("62462", "White", (30, -22, 140), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (30, -22, 120), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("62462", "White", (30, -22, 100), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (30, -22, 80), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("62462", "White", (30, -22, 60), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place_ldu("2780", "Black", (30, -22, 40), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place("3069b", "White", 0, 2, 6, rot=270)
+place("15712", "Black", 0, 2, 9)
+place("3069b", "Black", 0, 2, 10, rot=270)
+place("15712", "Black", 0, 2, 12)
+place_ldu("30374", "White", (10, -30, 180), (1, 0, 0, 0, 0, -1, 0, 1, 0))

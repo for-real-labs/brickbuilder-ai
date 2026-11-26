@@ -1,0 +1,29 @@
+#: title: Pitched reddish-brown and dark red roof section with white gable details, arch, and an attached antenna made from handlebars and clips.
+#: source: LDraw Official Model Repository, 31025-1_Mountaintop-Lockout.mpd, section 31025 - Roof.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("3032", "Reddish_Brown", 2, 0, 2)
+place("3659", "Dark_Bluish_Grey", 3, 1, 5)
+place("3040b", "White", 3, 1, 4, rot=270)
+place("3040b", "White", 5, 1, 4, rot=90)
+place("3004", "Reddish_Brown", 4, 1, 3)
+place("3004", "Reddish_Brown", 6, 1, 2, rot=270)
+place("3004", "Reddish_Brown", 3, 1, 2, rot=270)
+place("4070", "Tan", 4, 1, 2)
+place("4070", "Tan", 5, 1, 2)
+place("3297", "Dark_Red", 0, 1, 3, rot=90)
+place("3298", "Red", 0, 1, 1, rot=90)
+place("3298", "Red", 7, 1, 5, rot=270)
+place("3297", "Dark_Red", 7, 1, 1, rot=270)
+place("3298", "Red", 2, 4, 5, rot=90)
+place("3297", "Dark_Red", 2, 4, 1, rot=90)
+place("3297", "Dark_Red", 5, 4, 3, rot=270)
+place("3298", "Red", 5, 4, 1, rot=270)
+place("3023", "Reddish_Brown", 4, 7, 6, rot=180)
+place("6141", "Lime", 5, 7, 5, rot=180)
+place("3023", "Reddish_Brown", 4, 7, 4, rot=180)
+place("6141", "Green", 5, 7, 3, rot=180)
+place("3023", "Reddish_Brown", 4, 7, 2, rot=180)
+place("6141", "Green", 4, 7, 1, rot=180)

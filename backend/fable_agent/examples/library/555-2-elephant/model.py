@@ -1,0 +1,30 @@
+#: title: A LEGO elephant model composed of a blue and yellow brick-built animal figure accompanied by a red-hatted minifigure.
+#: source: LDraw Official Model Repository, 555-2_Elephant.mpd
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+place("3001", "Yellow", 4, 0, 1, rot=90)
+place("3001", "Yellow", 8, 0, 1, rot=90)
+place("3003", "Blue", 2, 0, 2)
+place("3001", "Blue", 4, 3, 1, rot=90)
+place("3001", "Blue", 8, 3, 1, rot=90)
+place("3003", "Blue", 1, 3, 2)
+place("3001", "Blue", 4, 6, 1, rot=90)
+place("3001", "Blue", 6, 6, 3)
+place("3001", "Blue", 6, 6, 1)
+place("3003", "Blue", 1, 6, 2)
+place("3001", "Blue", 3, 9, 3)
+place("3010", "White", 0, 6, 4)
+place("3001", "Blue", 3, 9, 1)
+place("3010", "White", 0, 6, 1)
+place("3002", "Blue", 7, 9, 3)
+place("3002", "Blue", 7, 9, 1)
+place("3003", "Blue", 1, 9, 2)
+place("3002", "Blue", 1, 12, 2)
+place("3002", "Blue", 6, 12, 2)
+place("3003", "Blue", 4, 12, 2)
+place("3004", "Blue", 4, 12, 4, rot=90)
+place("3004", "Blue", 4, 12, 0, rot=90)
+place("3003", "Blue", 2, 15, 2)
+place("3010", "Blue", 4, 15, 1, rot=90)

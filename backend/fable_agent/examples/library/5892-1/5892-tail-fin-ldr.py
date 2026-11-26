@@ -1,0 +1,31 @@
+#: title: Red vertical tail fin with angled slope bricks, a curved white tip, and translucent red accent plates.
+#: source: LDraw Official Model Repository, 5892-1.mpd, section 5892 - Tail fin.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 26 parts kept (minifigures, overlapping and unattached parts left out)
+place("4477", "Red", 0, 0, 0)
+place("3004", "Red", 4, 1, 0)
+place("3622", "Red", 6, 1, 0)
+place("60477", "Red", 0, 1, 0, rot=90)
+place("3665b", "Red", 9, 1, 0, rot=270)
+place("3040b", "Red", 3, 4, 0, rot=90)
+place("3004", "Red", 5, 4, 0)
+place("3622", "Red", 7, 4, 0)
+place("3040b", "Red", 4, 7, 0, rot=90)
+place("3010", "Red", 6, 7, 0)
+place("3040b", "Red", 5, 10, 0, rot=90)
+place("3622", "Red", 7, 10, 0)
+place("2449", "Dark_Bluish_Grey", 10, 4, 0, rot=270)
+place("3040b", "Red", 6, 13, 0, rot=90)
+place("3004", "Red", 8, 13, 0)
+place("3005", "Dark_Bluish_Grey", 10, 13, 0)
+place("3040b", "Red", 7, 16, 0, rot=90)
+place("3005", "Red", 9, 16, 0, rot=90)
+place("3005", "Dark_Bluish_Grey", 10, 16, 0)
+place("3040b", "Red", 8, 19, 0, rot=90)
+place("3005", "Dark_Bluish_Grey", 10, 19, 0)
+place("2449", "Dark_Bluish_Grey", 11, 13, 0, rot=270)
+place("3024", "Trans_Red", 12, 22, 0)
+place("3070b", "White", 11, 22, 0)
+place("3024", "Trans_Red", 12, 23, 0)

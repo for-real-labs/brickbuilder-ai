@@ -1,0 +1,32 @@
+#: title: A red and black engine module with exhaust pipes, air scoop, technic bricks, and angled flags forming a rear thruster unit.
+#: source: LDraw Official Model Repository, 5980-1.mpd, section 5980 - 5980-3-a.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures, overlapping and unattached parts left out)
+place("3020", "Light_Grey", 3, 0, 5, rot=90)
+place_ldu("40620", "Light_Grey", (90, -22, 130), (0, 0, 1, -0.707107, 0.707107, 0, -0.707107, -0.707107, 0))
+place("3747b", "Red", 3, 1, 8, rot=180)
+place("32000", "Red", 3, 1, 6, rot=90)
+place_ldu("40620", "Light_Grey", (70, -22, 130), (0, 0, -1, 0.707107, 0.707107, 0, 0.707107, -0.707107, 0))
+place("32000", "Red", 4, 1, 6, rot=90)
+place("3660", "Black", 3, 1, 4)
+place("3034", "Black", 3, 4, 4, rot=90)
+place_ldu("2540", "Yellow", (70, -48, 200), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("44676", "Dark_Grey", (50, -46, 180), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("2540", "Yellow", 4, 5, 9, rot=270)
+place_ldu("44676", "Dark_Grey", (110, -46, 180), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place_ldu("48336", "Red", (70, -48, 100), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("48336", "Red", 4, 5, 4, rot=270)
+place("6141", "Yellow", 3, 6, 5)
+place("6141", "Yellow", 4, 6, 5)
+place_ldu("10247", "Black", (80, -56, 80), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3749", "Blue", (80, -46, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32054", "Black", (80, -46, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3062b", "Light_Grey", 3, 5, 11)
+place("3062b", "Light_Grey", 4, 5, 11)
+place("3021", "Red", 3, 7, 3, rot=90)
+place_ldu("30602", "Trans_Very_Light_Blue", (80, -64, 80), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3794b", "Red", 3, 8, 5)
+place("50943", "Light_Grey", 3, 6, 9)
+place("2555", "Dark_Grey", 3.5, 9, 5, rot=90)

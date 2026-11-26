@@ -1,0 +1,21 @@
+#: title: Terrace table pierced for a parasol mast: four round legs on real studs, top surface 64 LDU above its own base
+#: source: ldraw-nova example atlas, copper-bean.mpd, section cafe-table.ldr
+#: author: ldraw-nova copper-bean generator
+#: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+place("3062b", "White", 0, 0, 0)
+place("3062b", "White", 0, 0, 3)
+place("3062b", "White", 4, 0, 0)
+place("3062b", "White", 4, 0, 3)
+place("3062b", "White", 0, 3, 0)
+place("3062b", "White", 0, 3, 3)
+place("3062b", "White", 4, 3, 0)
+place("3062b", "White", 4, 3, 3)
+place("3710", "White", 0, 6, 0)
+place("3024", "White", 4, 6, 0)
+place("3710", "White", 0, 6, 3)
+place("3024", "White", 4, 6, 3)
+place("3020", "Reddish_Brown", 0, 7, 0, rot=90)
+place("3020", "Reddish_Brown", 3, 7, 0, rot=90)
+place("3024", "Reddish_Brown", 2, 7, 0)
+place("3024", "Reddish_Brown", 2, 7, 3)

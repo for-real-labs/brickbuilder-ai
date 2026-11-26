@@ -1,0 +1,30 @@
+#: title: A large grille-facade section with multiple grille tiles, side-stud bricks, and dark bluish grey structural elements.
+#: source: LDraw Official Model Repository, 21042-1.mpd, section 21042 - step34.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+place("3032", "Blue", 0, 0, 0)
+place("6141", "Red", 4, 1, 0)
+place("2431", "Dark_Bluish_Grey", 5, 1, 0, rot=270)
+place("3069b", "Dark_Bluish_Grey", 3, 1, 0, rot=270)
+place("3069b", "Black", 3, 1, 2, rot=270)
+place("2431", "Dark_Bluish_Grey", 1, 1, 0, rot=270)
+place("6141", "Red", 2, 1, 0, rot=270)
+place("6141", "Red", 0, 1, 0, rot=270)
+place("3622", "Dark_Bluish_Grey", 4, 1, 1, rot=270)
+place("3622", "Dark_Bluish_Grey", 2, 1, 1, rot=270)
+place("3622", "Dark_Bluish_Grey", 0, 1, 1, rot=270)
+place("87087", "Tan", 0, 2, 0)
+place("87087", "Tan", 2, 2, 0)
+place("87087", "Tan", 4, 2, 0)
+place("3023", "Tan", 0, 4, 1, rot=90)
+place("3023", "Tan", 2, 4, 1, rot=90)
+place("3023", "Tan", 4, 4, 1, rot=90)
+place("6636", "Tan", 0, 4, 3, rot=180)
+place("2412b", "Tan", 0, 5, 0, rot=90)
+place("2412b", "Tan", 0, 5, 2, rot=90)
+place("2412b", "Tan", 2, 5, 2, rot=90)
+place("2412b", "Tan", 2, 5, 0, rot=90)
+place("2412b", "Tan", 4, 5, 2, rot=90)
+place("2412b", "Tan", 4, 5, 0, rot=90)

@@ -1,0 +1,26 @@
+#: title: equipment2
+#: source: LDraw Official Model Repository, 851-1.mpd, section 851 - equipment2.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 20 of 20 parts kept (minifigures, overlapping and unattached parts left out)
+place("3298", "Red", 1, 0, 4)
+place("3004", "Red", 1, 0, 7)
+place("3003", "Red", 1, 3, 6)
+place("3003", "Red", 1, 6, 6)
+place("3020", "Red", 0, 9, 6)
+place("3004", "Red", 1, 10, 6, rot=90)
+place("3004", "Red", 2, 10, 6, rot=90)
+place("3702", "Red", 0, 10, 0, rot=90)
+place("3702", "Red", 3, 10, 0, rot=90)
+place("3709b", "Red", 0, 13, 6)
+place("3709b", "Red", 0, 13, 4)
+place("3021", "Red", 1, 14, 4, rot=90)
+place("3701", "Red", 0, 13, 0, rot=90)
+place("3701", "Red", 3, 13, 0, rot=90)
+place("3710", "Red", 0, 16, 0, rot=270)
+place("3710", "Red", 3, 16, 0, rot=270)
+place("3700", "Red", 0, 17, 0, rot=90)
+place("3700", "Red", 3, 17, 0, rot=90)
+place("3700", "Red", 0, 20, 0, rot=90)
+place("3700", "Red", 3, 20, 0, rot=90)

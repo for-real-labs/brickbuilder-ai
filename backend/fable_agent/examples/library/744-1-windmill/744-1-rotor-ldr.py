@@ -1,0 +1,30 @@
+#: title: A yellow windmill rotor of long plates arranged around a central round brick.
+#: source: LDraw Official Model Repository, 744-1_Windmill.mpd, section 744-1 - Rotor.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+place("3941", "Light_Grey", 17, 0, 17)
+place("3022", "Black", 17, 3, 17)
+place("3832", "Yellow", 18, 4, 18)
+place("3460", "Yellow", 24, 3, 18)
+place("3832", "Yellow", 8, 4, 16)
+place("3460", "Yellow", 4, 3, 16)
+place("3832", "Yellow", 18, 4, 8, rot=90)
+place("3460", "Yellow", 18, 3, 4, rot=90)
+place("3832", "Yellow", 16, 4, 18, rot=90)
+place("3460", "Yellow", 17, 3, 24, rot=90)
+place("3034", "Yellow", 16, 4, 28, rot=90)
+place("3034", "Yellow", 18, 4, 0, rot=90)
+place("3034", "Yellow", 0, 4, 16)
+place("3034", "Yellow", 28, 4, 18)
+place("3666", "Yellow", 25, 5, 18)
+place("3666", "Yellow", 5, 5, 17)
+place("3666", "Yellow", 17, 5, 25, rot=90)
+place("3666", "Yellow", 18, 5, 5, rot=90)
+place("3710", "Yellow", 16, 5, 19)
+place("3710", "Yellow", 16, 5, 16)
+place("3023", "Yellow", 16, 5, 17, rot=90)
+place("3023", "Yellow", 19, 5, 17, rot=90)
+place("3022", "Black", 17, 5, 17, rot=90)
+place("3062b", "Yellow", 17.5, 6, 17.5, rot=90)

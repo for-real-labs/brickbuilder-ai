@@ -1,135 +1,195 @@
-"""Rebuild the official-set examples of the Fable agents from downloaded model files.
+"""Build the Fable example library from a local checkout of annotated set models.
 
-    cd backend
-    uv run python scripts/build_fable_examples.py MODELS_DIR [--sets sets.csv.gz --themes themes.csv.gz]
+    python scripts/build_fable_examples.py --source /path/to/checkout [--only 50] [--jobs 8]
 
-MODELS_DIR holds .mpd or .ldr files from the LDraw Official Model Repository
-(https://library.ldraw.org/omr). The set number is read from each file name (``4903-1``), and a
-name after it (``..._Jet.mpd``) is taken as the model's own name when a set builds several.
-``--sets`` and ``--themes`` are Rebrickable's free tables (https://rebrickable.com/downloads/):
-they give each set its official name and theme, which decide its category.
-
-Every file that is licensed for reuse is converted by ``fable_agent.examples.importer`` and kept
-only if it passes the checks a Pip build must pass. The kept scripts replace the official-set
-examples in ``fable_agent/examples/library``; examples written by hand are left alone.
-``fable_agent/examples/SOURCES.md`` is rewritten with the credit each licence asks for.
-
-Nothing is downloaded here, and the model files themselves are never copied into the repository.
+``--source`` is a folder with ``data/models-annotated/*.mpd`` (official sets, each model and
+submodel described), ``data/ldraw-info.db`` (the same descriptions as a table) and
+``examples/**/*.mpd`` (the example atlases). Every described model and submodel is converted to
+a build script, held to the checks a Pip build must pass apart from the catalog, and written to
+``fable_agent/examples/library`` with its credit. ``index.jsonl`` lists what was kept, and
+``SOURCES.md`` credits every file. Nothing here runs during a build.
 """
 
 from __future__ import annotations
 
 import argparse
-import csv
-import gzip
+import hashlib
+import json
+import multiprocessing
 import re
+import sqlite3
 import sys
-from collections import Counter
+import time
+from collections import Counter, defaultdict
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+BACKEND = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(BACKEND))
 
-from fable_agent.app import Workbench  # noqa: E402
-from fable_agent.examples import BY_ID, LIBRARY, OFFICIAL, _read  # noqa: E402
-from fable_agent.examples.importer import SetImporter, categorize, read_model  # noqa: E402
+from fable_agent.examples import LIBRARY, MOST_PARTS  # noqa: E402
+from fable_agent.examples.importer import Limits, SetImporter, flatten, read_file  # noqa: E402
 
-SET_NUMBER = re.compile(r"(?<![0-9a-z])(\d{3,7}[a-z]?-\d+)(?:_([^.]+))?\.(?:mpd|ldr)$", re.IGNORECASE)
-MAX_BYTES = 8 * 1024 * 1024
+ATLAS_LICENCE = "CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)"
+ANNOTATED = "LDraw Official Model Repository"
+ATLAS = "ldraw-nova example atlas"
+MAX_BYTES = 40 * 1024 * 1024
+_importer = None
 
 
-def _table(path: Path | None) -> list[dict]:
-    if path is None:
+def records(source: Path) -> dict[Path, list[tuple[str | None, str]]]:
+    """Each file with the sections that are described: ``(section or None for the model, description)``."""
+    found: dict[Path, list] = defaultdict(list)
+    models = source / "data" / "models-annotated"
+    with sqlite3.connect((source / "data" / "ldraw-info.db").as_uri() + "?mode=ro", uri=True) as database:
+        for (text,) in database.execute("SELECT full_description FROM MODELS_DESCRIPTIONS_JEV"):
+            name, _, description = text.partition("|")
+            found[models / name].append((None, description.strip()))
+        for (text,) in database.execute("SELECT full_description FROM SUBMODELS_DESCRIPTIONS_JEV"):
+            name, section, description = (text.split("|", 2) + ["", ""])[:3]
+            found[models / name].append((section.strip(), description.strip()))
+    for path in sorted((source / "examples").rglob("*.mpd")):
+        found[path].append(("*", ""))  # an atlas file: every section, described by its own title
+    return {path: wanted for path, wanted in found.items() if path.is_file()}
+
+
+def _open() -> SetImporter:
+    from fable_agent.assembly import AssemblyReview
+    from fable_agent.catalog import PartFinder
+    from fable_agent.checks import ModelChecker
+    from fable_agent.connectors import ConnectorLibrary, ConnectorReview
+    from fable_agent.ldraw import LDrawLibrary
+    from fable_agent.palette import load_palette
+    from fable_agent.shape import ShapeLibrary, default_cache_dir
+    library = LDrawLibrary()
+    shapes = ShapeLibrary(library, default_cache_dir())
+    palette = load_palette(library, None, open_palette=True)  # examples are not held to the catalog
+    assembly = AssemblyReview(library, shapes, ConnectorReview(ConnectorLibrary(library.root, default_cache_dir())))
+    checker = ModelChecker(library, shapes, palette, max_parts=MOST_PARTS, assembly=assembly)
+    return SetImporter(library, shapes, palette, PartFinder(library, palette), checker,
+                       Limits(least_parts=8, most_parts=MOST_PARTS), assembly)
+
+
+def convert_file(job: tuple[str, str, list]) -> list[dict]:
+    """Every wanted section of one file that survives, as rows for the index with their script."""
+    global _importer
+    if _importer is None:
+        _importer = _open()
+    path, origin, wanted = Path(job[0]), job[1], job[2]
+    try:
+        raw = path.read_bytes()
+    except OSError:
         return []
-    opener = gzip.open if path.suffix == ".gz" else open
-    with opener(path, "rt", encoding="utf-8", newline="") as handle:
-        return list(csv.DictReader(handle))
-
-
-def official_names(sets: Path | None, themes: Path | None) -> dict[str, tuple[str, str]]:
-    """Set number -> (official name, theme with its parents), from Rebrickable's tables."""
-    by_id = {row["id"]: row for row in _table(themes)}
-
-    def theme(identifier: str) -> str:
-        names = []
-        while identifier in by_id and len(names) < 5:
-            names.append(by_id[identifier]["name"])
-            identifier = by_id[identifier].get("parent_id") or ""
-        return " / ".join(reversed(names))
-
-    return {row["set_num"].lower(): (row["name"], theme(row.get("theme_id", ""))) for row in _table(sets)}
-
-
-def _slug(text: str) -> str:
-    return re.sub(r"[^a-z0-9]+", "_", text.lower()).strip("_")[:48] or "model"
-
-
-def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("models", type=Path)
-    parser.add_argument("--sets", type=Path)
-    parser.add_argument("--themes", type=Path)
-    args = parser.parse_args()
-    names = official_names(args.sets, args.themes)
-    bench = Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 5000,
-                            "assembly_rules": True})
-    importer = SetImporter(bench.library, bench.shapes, bench.palette, bench.finder, bench.checker)
-
-    for old in LIBRARY.glob("*/*.py"):  # the official sets are rebuilt from scratch; written examples stay
-        if _read(old).official:
-            old.unlink()
-    outcome, credits, scripts = Counter(), [], set()
-    for path in sorted(args.models.iterdir()):
-        named = SET_NUMBER.search(path.name)
-        if not named or not path.is_file() or path.is_symlink() or path.stat().st_size > MAX_BYTES:
+    if len(raw) > MAX_BYTES:
+        return []
+    import fable_agent.examples.importer as importer
+    importer.MAX_FILE_BYTES = MAX_BYTES
+    file = read_file(raw.decode("utf-8", errors="replace"), licence=ATLAS_LICENCE if origin == ATLAS else "")
+    if file is None:
+        return []
+    if wanted and wanted[0][0] == "*":
+        wanted = [(None if key == file.first else section.name, section.title)
+                  for key, section in file.sections.items() if not key.endswith(".dat")]
+    rows = []
+    for section, description in wanted:
+        key = (section or file.first).lower().strip()
+        key = key if key in file.sections else next((k for k in file.sections if k.strip() == key), None)
+        if key is None:
             continue
-        model = read_model(path.read_text(encoding="utf-8", errors="replace"))
-        if model is None:
-            outcome["not licensed for reuse, or unreadable"] += 1
-            continue
-        number = named.group(1).lower()
-        official, theme = names.get(number, (model.title, model.theme))
-        own = (named.group(2) or "").replace("-", " ").replace("_", " ").strip()
-        title = f"{own} (from {official})" if own and own.lower() not in official.lower() else official
-        category = categorize(own or official, theme or model.theme)
-        if category is None:
-            outcome["no category"] += 1
+        model = flatten(file, key)
+        if model is None or not (description or model.title):
             continue
         try:
-            converted = importer.convert(model)
-        except Exception:  # noqa: BLE001 - one odd file must not stop the rest
-            converted = None
+            converted, reason = _importer.verdict(model)
+        except Exception as exc:  # one odd file must not stop the run
+            converted, reason = None, f"error: {type(exc).__name__}"
         if converted is None:
-            outcome["does not pass Pip's checks intact"] += 1
+            rows.append({"refused": reason})
             continue
-        if converted.script in scripts:  # the same model released under two set numbers
-            outcome["same as another set"] += 1
-            continue
-        scripts.add(converted.script)
-        target = LIBRARY / category / f"set_{_slug(number)}_{_slug(own or official)}.py"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        credit = f"{OFFICIAL}, set {number}, model file by {model.author or 'an LDraw contributor'}"
-        target.write_text(f"#: title: {title}, official set {number}\n#: source: {credit}\n"
-                          f"#: licence: {model.licence}\n"
-                          f"#: changes: converted to a build script; {converted.of - converted.parts} of "
-                          f"{converted.of} parts left out\n{converted.script}", encoding="utf-8")
-        outcome["kept"] += 1
-        credits.append((category, number, title, model.author, model.licence, converted.parts, converted.of))
+        rows.append({"file": path.name, "section": file.sections[key].name, "kind": "model" if section is None else "submodel",
+                     "origin": origin, "title": (description or model.title).strip(), "author": model.author,
+                     "licence": model.licence, "parts": converted.parts, "of": converted.of, "script": converted.script})
+    return rows
 
-    lines = ["# Sources of the example scripts", "",
-             "The scripts under `library/` whose first lines name the " + OFFICIAL + " are adaptations of",
-             "model files from https://library.ldraw.org/omr, used under the licence each file carries",
-             "(Creative Commons Attribution, CCAL 2.0 or CC BY 4.0). Each was converted to a BrickBuilder build",
-             "script by `importer.py`: parts the catalog does not stock or the checks cannot join were left out,",
-             "and colors were moved to the nearest stocked one. LEGO is a trademark of the LEGO Group, which",
-             "does not sponsor or endorse BrickBuilder. The other scripts were written for BrickBuilder.", "",
-             "| Category | Set | Example | Model file by | Licence | Parts kept |", "|---|---|---|---|---|---|"]
-    lines += [f"| {category} | {number} | {title} | {author or 'an LDraw contributor'} | {licence} | {kept} of {of} |"
-              for category, number, title, author, licence, kept, of in sorted(credits)]
-    (LIBRARY.parent / "SOURCES.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    print(dict(outcome))
-    print({category: len(list((LIBRARY / category).glob("*.py"))) for category in BY_ID})
-    return 0
+
+def slug(text: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")[:60] or "model"
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("--source", required=True, type=Path)
+    parser.add_argument("--only", type=int, help="convert only this many files, for a trial run")
+    parser.add_argument("--jobs", type=int, default=max(1, multiprocessing.cpu_count() - 2))
+    parser.add_argument("--out", type=Path, default=LIBRARY)
+    args = parser.parse_args()
+    if any(args.out.glob("*/*.py")):
+        # Stale scripts must not outlive the files they came from, and this script deletes nothing.
+        parser.error(f"{args.out} already holds example scripts; move that folder away and run again")
+    wanted = records(args.source.resolve())
+    examples_root = args.source.resolve() / "examples"
+    jobs = [(str(path), ATLAS if examples_root in path.parents else ANNOTATED, sections)
+            for path, sections in sorted(wanted.items())]
+    if args.only:
+        jobs = jobs[:: max(1, len(jobs) // args.only)][: args.only]
+    started = time.time()
+    asked = sum(len(sections) for _, _, sections in jobs)
+    kept: list[dict] = []
+    refused: Counter = Counter()
+    with multiprocessing.Pool(args.jobs) as pool:
+        for done, rows in enumerate(pool.imap_unordered(convert_file, jobs, chunksize=1), 1):
+            refused.update(row["refused"] for row in rows if "refused" in row)
+            kept += [row for row in rows if "refused" not in row]
+            if done % 25 == 0 or done == len(jobs):
+                print(f"{done}/{len(jobs)} files, {len(kept)} examples, {time.time() - started:.0f}s", flush=True)
+    write(kept, args.out)
+    print(f"{len(kept)} of about {asked} described sections converted "
+          f"({dict(Counter(row['kind'] for row in kept))}) in {time.time() - started:.0f}s")
+    for reason, count in refused.most_common():
+        print(f"  not used, {reason}: {count}")
+
+
+def write(rows: list[dict], out: Path) -> None:
+    """One script per example, without two that are the same build, and the index and credits."""
+    rows.sort(key=lambda row: (row["origin"], row["file"], row["kind"] != "model", row["section"]))
+    seen: set[str] = set()
+    index, credits = [], []
+    for row in rows:
+        digest = hashlib.sha256(row["script"].encode()).hexdigest()
+        if digest in seen:
+            continue
+        seen.add(digest)
+        folder = slug(Path(row["file"]).stem)
+        name = slug(row["section"] if row["kind"] == "submodel" else "model")
+        target = out / folder / f"{name}.py"
+        number = 2
+        while target.exists() or f"{folder}/{target.stem}" in {entry["id"] for entry in index[-50:]}:
+            target = out / folder / f"{name}-{number}.py"
+            number += 1
+        target.parent.mkdir(parents=True, exist_ok=True)
+        official = row["origin"] == ANNOTATED
+        changes = ("converted to a BrickBuilder build script; moved to stand on the ground; "
+                   f"{row['parts']} of {row['of']} parts kept (minifigures, overlapping and unattached parts left out)")
+        header = [f"#: title: {row['title']}",
+                  f"#: source: {row['origin']}, {row['file']}" + (f", section {row['section']}" if row["kind"] == "submodel" else ""),
+                  f"#: author: {row['author'] or 'not named in the file'}",
+                  f"#: licence: {row['licence']}",
+                  *(["#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0"] if official else []),
+                  f"#: changes: {changes}"]
+        target.write_text("\n".join(header) + "\n" + row["script"], encoding="utf-8")
+        identity = f"{folder}/{target.stem}"
+        index.append({"id": identity, "title": row["title"], "kind": row["kind"], "set": folder, "parts": row["parts"],
+                      "chars": len(row["script"]), "atlas": not official})
+        credits.append(f"| `{identity}.py` | {row['file']} | {row['author'] or '-'} | {row['licence']} | "
+                       f"{row['parts']} of {row['of']} |")
+    (out / "index.jsonl").write_text("".join(json.dumps(entry, ensure_ascii=False) + "\n" for entry in index),
+                                     encoding="utf-8")
+    (out / "SOURCES.md").write_text(
+        "# Sources of the example scripts\n\n"
+        "Every script in this folder is an adaptation of a model file, converted by `examples/importer.py`.\n"
+        "See `NOTICE.md` for the licences and what was changed.\n\n"
+        "| Example | Model file | Model file by | Licence of the file | Parts kept |\n|---|---|---|---|---|\n"
+        + "\n".join(credits) + "\n", encoding="utf-8")
 
 
 if __name__ == "__main__":
-    raise SystemExit(main())
+    main()

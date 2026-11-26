@@ -1,0 +1,31 @@
+#: title: A small yellow boat with tan side bricks, yellow slopes, trans-yellow dishes, and a reddish brown oar.
+#: source: LDraw Official Model Repository, 5766-1.mpd, section 5766 - Boat.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 29 parts kept (minifigures, overlapping and unattached parts left out)
+place("2654", "Trans_Yellow", 2, 0, 1, rot=180)
+place("3034", "Yellow", 2, 1, 1, rot=270)
+place("2654", "Trans_Yellow", 2, 0, 7, rot=180)
+place("3069b", "Light_Bluish_Grey", 2, 2, 2)
+place("3023", "Reddish_Brown", 2, 2, 4, rot=90)
+place("3023", "Reddish_Brown", 3, 2, 4, rot=90)
+place("3069b", "Light_Bluish_Grey", 2, 2, 7)
+place("87087", "Tan", 2, 2, 1)
+place_ldu("54200", "Yellow", (50, -30, 20), (0, 0, 1, 1, 0, 0, 0, 1, 0))
+place("87087", "Tan", 3, 2, 1)
+place_ldu("54200", "Yellow", (70, -30, 20), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("87087", "Tan", 3, 2, 3, rot=270)
+place_ldu("3710", "Yellow", (88, -30, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("3023", "Yellow", (96, -30, 100), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place("87087", "Tan", 2, 2, 3, rot=90)
+place_ldu("3710", "Yellow", (32, -30, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3023", "Yellow", (24, -30, 100), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place("87087", "Tan", 3, 2, 6, rot=270)
+place("87087", "Tan", 2, 2, 6, rot=90)
+place("87087", "Tan", 3, 2, 8, rot=180)
+place_ldu("54200", "Yellow", (70, -30, 180), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("87087", "Tan", 2, 2, 8, rot=180)
+place_ldu("54200", "Yellow", (50, -30, 180), (0, 0, 1, -1, 0, 0, 0, -1, 0))
+place("3069b", "Yellow", 2, 5, 3, rot=180)
+place("3069b", "Yellow", 2, 5, 6, rot=180)

@@ -1,0 +1,27 @@
+#: title: Dark red curved sofa with black base plates and rounded corner details.
+#: source: LDraw Official Model Repository, 10297-1.mpd, section 10297 - sofa.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 21 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("85861", "Black", 0, 0, 0)
+place("85861", "Black", 7, 0, 0)
+place("85861", "Black", 7, 0, 2)
+place("85861", "Black", 0, 0, 2)
+place("3460", "Black", 0, 1, 2)
+place("3034", "Black", 0, 1, 0)
+place("3020", "Dark_Red", 4, 2, 1)
+place("3020", "Dark_Red", 0, 2, 1)
+place("3710", "Dark_Red", 4, 2, 0)
+place("3710", "Dark_Red", 0, 2, 0)
+place("3710", "Dark_Red", 2, 3, 2)
+place("3024", "Dark_Red", 7, 3, 1)
+place("3024", "Dark_Red", 0, 3, 1)
+place("3024", "Dark_Red", 7, 4, 1)
+place("3024", "Dark_Red", 0, 4, 1)
+place("3004", "Dark_Red", 6, 3, 2)
+place("3004", "Dark_Red", 0, 3, 2)
+place("37352", "Dark_Red", 4, 4, 2)
+place("37352", "Dark_Red", 2, 4, 2)
+place("25269", "Dark_Red", 1, 6, 2)
+place("25269", "Dark_Red", 6, 6, 2, rot=90)

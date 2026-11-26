@@ -1,0 +1,30 @@
+#: title: A red and white sloped roof section with 45-degree slope bricks, brackets, and a red flag mounted on a round grille base.
+#: source: LDraw Official Model Repository, 40195-1.mpd, section 40195 - Roof.ldr
+#: author: Stefan Frenz [smf]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("3037", "White", 1, 0, 6)
+place("3037", "White", 1, 0, 14, rot=180)
+place("3037", "White", 5, 0, 14, rot=180)
+place("3037", "White", 5, 0, 6)
+place("3034", "Red", 1, 3, 7, rot=90)
+place("3710", "Red", 3, 3, 14)
+place("3710", "Red", 3, 3, 7)
+place("3034", "Red", 7, 3, 7, rot=90)
+place("3460", "Yellow", 1, 4, 14)
+place("3710", "Yellow", 1, 4, 10, rot=270)
+place("3710", "Yellow", 8, 4, 10, rot=270)
+place("99207", "Red", 8, 4, 8, rot=270)
+place_ldu("99207", "Red", (30, -40, 180), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3460", "Yellow", 1, 4, 7)
+place_ldu("63868", "Red", (8, -42, 180), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place("3020", "White", 1, 5, 13)
+place("3020", "White", 5, 5, 13)
+place("3034", "White", 1, 5, 11)
+place_ldu("3068b", "White", (0, -52, 180), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("3068b", "White", (192, -52, 180), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("30292a", "Red", (10, -52, 150), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("63868", "Red", (8, -62, 180), (0, 1, 0, 0, 0, -1, -1, 0, 0))
+place_ldu("92947", "Light_Bluish_Grey", (100, -72, 220), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("14769", "Dark_Bluish_Grey", 4, 9, 10)

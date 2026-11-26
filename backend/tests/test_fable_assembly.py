@@ -10,7 +10,7 @@ from pathlib import Path
 
 import numpy as np
 from fable_agent import solids
-from fable_agent.kit import Placement
+from fable_agent.kit import Build, Placement
 from fable_agent.material import MAX_REPORTED_PAIRS, MaterialReview
 from fable_agent.sequence import MAX_PARTS_PER_STEP, NoSequence, SequencePlanner
 
@@ -36,10 +36,62 @@ PLAIN = {"3022": {"x_studs": 2, "z_studs": 2, "height": 8}, "3021": {"x_studs": 
 
 
 def test_nothing_in_the_agent_is_loaded_from_another_service():
+    """Pip has its own copy of everything it uses. Its code may credit where a copy came from, in
+    comments and notices, but never imports, reads or calls the Nova service or its toolkit."""
     import fable_agent
-    for source in Path(fable_agent.__file__).parent.rglob("*.py"):
-        assert "nova-service" not in source.read_text(encoding="utf-8"), source.name
+    root = Path(fable_agent.__file__).parent
+    foreign = ("nova-service", "nova_service", "ldraw_tools", "ldraw-nova", "setup_nova", "NOVA_SERVICE")
+    checked = 0
+    for source in root.rglob("*"):
+        if source.suffix not in (".py", ".json", ".jsonl", ".toml", ".cfg", ".sh") or "__pycache__" in source.parts:
+            continue
+        checked += 1
+        for number, line in enumerate(source.read_text(encoding="utf-8").splitlines(), 1):
+            if source.suffix == ".py" and line.lstrip().startswith("#"):
+                continue  # a credit line: where the file or the example came from
+            assert not any(name in line for name in foreign), f"{source.relative_to(root)}:{number}"
+    assert checked > 50
     assert MAX_PARTS_PER_STEP == 5 and solids.EXPOSED_PARTS == {"4079", "3960", "4740"}
+
+
+def test_copied_code_keeps_its_notice_and_shared_data_its_licence_and_credit():
+    """What was copied from other projects stays under its own licence, with credit that cannot be dropped quietly."""
+    import fable_agent
+    root = Path(fable_agent.__file__).parent
+    repository = root.parents[1]
+    agpl = (repository / "LICENSE-AGPL-3.0").read_text(encoding="utf-8")
+    assert "GNU AFFERO GENERAL PUBLIC LICENSE" in agpl and "Version 3, 19 November 2007" in agpl
+    readme = (repository / "README.md").read_text(encoding="utf-8")
+    assert "AGPL-3.0" in readme and "### Third-party data" in readme and "setup_nova.cjs" in readme
+    # Copied code: every file says where it came from, its licence and what was changed.
+    toolkit = root / "toolkit"
+    notice = (toolkit / "NOTICE.md").read_text(encoding="utf-8")
+    for source in sorted(toolkit.glob("*.py")):
+        head = source.read_text(encoding="utf-8")[:900]
+        assert "Carlos Antelo" in head and "GNU Affero General Public License" in head, source.name
+        assert "Modified by BrickBuilder, 20" in head, source.name
+        assert f"`{source.name}`" in notice or source.name == "__init__.py", source.name
+    for data in sorted((toolkit / "data").iterdir()):
+        assert f"`data/{data.name}`" in notice, data.name
+    # Shared data: the licence text, a notice with the credit, and every file accounted for.
+    for folder in ("data/shadow", "guides", "examples/library"):
+        legal = (root / folder / "LICENSE-CC-BY-SA-4.0.md").read_text(encoding="utf-8")
+        assert "Attribution-ShareAlike 4.0 International" in legal and "Section 1 -- Definitions" in legal, folder
+        credit = (root / folder / "NOTICE.md").read_text(encoding="utf-8")
+        assert "https://creativecommons.org/licenses/by-sa/4.0/" in credit and "Changes" in credit, folder
+        assert "CC BY-SA 4.0" in credit and "Nothing in this repository restricts" in " ".join(credit.split()), folder
+        assert f"backend/fable_agent/{folder}/" in readme, folder
+    listed = (root / "data/shadow/SOURCES.md").read_text(encoding="utf-8")
+    files = sorted((root / "data/shadow").rglob("*.dat"))
+    assert len(files) > 4000
+    for path in files:
+        assert f"`{path.relative_to(root / 'data/shadow').as_posix()}`" in listed, path.name
+        assert "!LICENSE CC BY-SA 4.0" in path.read_text(encoding="utf-8", errors="replace")[:600], path.name
+    assert "seats.json" in (root / "data/shadow/NOTICE.md").read_text(encoding="utf-8")
+    guides = (root / "guides/NOTICE.md").read_text(encoding="utf-8")
+    for path in sorted((root / "guides").glob("*.md")):
+        if path.name not in ("NOTICE.md", "LICENSE-CC-BY-SA-4.0.md"):
+            assert f"`{path.name}`" in guides and path.read_text(encoding="utf-8").startswith("<!-- Adapted from"), path.name
 
 
 def hit(*placed) -> bool:
@@ -272,11 +324,14 @@ def test_parts_seated_on_the_same_part_may_share_coarse_space_but_are_not_joined
 @pytest.mark.skipif(not (default_library_dir() / "LDConfig.ldr").is_file(), reason="needs an LDraw parts library")
 def test_every_wheel_the_helper_mounts_is_measured_on_the_real_parts():
     from fable_agent.app import Workbench
-    from fable_agent.fits import FitFinder
+    from fable_agent.assembly import AssemblyReview
+    from fable_agent.connectors import ConnectorLibrary, ConnectorReview
     from fable_agent.helpers import HELPERS, bind
     from fable_agent.kit import Kit, KitError
+    from fable_agent.shape import default_cache_dir
     bench = Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 500})
-    finder = FitFinder(bench.library)
+    review = AssemblyReview(bench.library, bench.shapes,
+                            ConnectorReview(ConnectorLibrary(bench.library.root, default_cache_dir())))
     for style in HELPERS["wheels"].styles:
         for width in (4, 6, 12):
             kit = Kit(bench.library, bench.shapes, bench.palette, bench.finder)
@@ -286,11 +341,12 @@ def test_every_wheel_the_helper_mounts_is_measured_on_the_real_parts():
                 continue
             placed = kit.build.placements
             declared = {(min(a, b), max(a, b)) for a, b, _ in kit.build.links}
-            found = finder.find(placed)
-            unmeasured = {(placed[a].part, placed[b].part) for a, b in declared - found}
+            measured = review.measure(placed)
+            unmeasured = {(placed[a].part, placed[b].part) for a, b in declared - measured.fits}
             # Only the trolley wheel, which clips into its holder, is taken on the helper's word.
             assert unmeasured <= {("2655", "2496")}, (style, width, unmeasured)
-            assert found <= declared, (style, width)  # and nothing is joined that the helper did not join
+            # Nothing the helper mounts is called a misfit by the connector data.
+            assert not measured.refuted and not measured.connectors.unseated(), (style, width)
 
 
 @pytest.mark.skipif(not (default_library_dir() / "LDConfig.ldr").is_file(), reason="needs an LDraw parts library")
@@ -366,7 +422,9 @@ def test_real_pins_axles_and_holes_are_read_from_the_parts_library():
     from fable_agent.ldraw import LDrawLibrary
     library = LDrawLibrary()
     assert {port.kind for port in library.ports("3673")} == {"pin"}
-    assert {port.kind for port in library.ports("43093")} == {"pin", "axle"}
+    # Newer releases of the library draw this part's axle end with another primitive, which is why
+    # joints are taken from connector data first (see test_fable_connectors).
+    assert {"pin"} <= {port.kind for port in library.ports("43093")} <= {"pin", "axle"}
     assert [port.kind for port in library.ports("3700")] == ["pin_hole", "pin_hole"]
     assert library.ports("3001") == () and library.ports("32062") == ()  # an axle's profile is not a hole
     assert len(library.surface("3001")) > len(library.geometry("3001").triangles)  # studs included
@@ -509,6 +567,23 @@ def test_a_piece_is_not_placed_over_one_that_would_be_closed_in(tmp_path):
     above, below = [{1}, {2}, set()], [set(), {0}, {1}]
     assert _trapped(2, {0}, above, below) == {1} and _trapped(0, {2}, above, below) == {1}
     assert _trapped(1, {0}, above, below) == set() and _trapped(2, {0, 1}, above, below) == set()
+
+
+def test_a_piece_is_slid_onto_an_axle_before_pieces_sit_on_both_sides_of_its_place():
+    from fable_agent.sequence import _Joints, _shaft_stacks, _trapped_on_shaft
+    # Axle 0 carries three parts: 1 at 10 LDU along it, 2 at 30 and 3 at 50.
+    stacks = _shaft_stacks({0: [(10.0, 1), (30.0, 2), (50.0, 3)]})
+    assert _trapped_on_shaft(3, {0, 1}, stacks) == {2}  # the far one now would close in the middle one
+    assert _trapped_on_shaft(2, {0, 1}, stacks) == set() and _trapped_on_shaft(3, {0, 1, 2}, stacks) == set()
+    assert _trapped_on_shaft(3, {1}, stacks) == set()  # the axle itself is not in yet: nothing is on it
+    assert _trapped_on_shaft(0, {1, 3}, stacks) == {2}  # nor may the axle go in through two parts and miss one
+    # The order found respects it, and one that does not is refused.
+    joints = _Joints([{1, 2, 3}, {0}, {0}, {0}], [set()] * 4, [set()] * 4, stacks)
+    order = SequencePlanner._order(Build([Placement("3001", 0, (0, 0, 0), IDENTITY)] * 4), joints, {0})
+    assert order.index(2) < max(order.index(1), order.index(3))
+    SequencePlanner._verify(order, joints, {0})
+    with pytest.raises(NoSequence, match="closed in"):
+        SequencePlanner._verify([0, 1, 3, 2], joints, {0})
 
 
 def test_what_rests_on_the_ground_is_seated_first_and_a_tyre_is_not_a_foundation(tmp_path):

@@ -1,0 +1,30 @@
+#: title: Deckhouse wall section with orange and white plates, inverted arch, and clip tiles forming a windowed structure.
+#: source: LDraw Official Model Repository, 10294-1.mpd, section 10294 - Titanic - 1.4.3.ldr
+#: author: Jens Brühl [jb70]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+place("3710", "Bright_Light_Orange", 0, 0, 24, rot=270)
+place("3460", "Bright_Light_Orange", 0, 0, 16, rot=270)
+place("3460", "Bright_Light_Orange", 0, 0, 8, rot=270)
+place("3460", "Bright_Light_Orange", 0, 0, 0, rot=270)
+place("4162", "White", 0, 1, 20, rot=270)
+place("6541", "White", 0, 1, 17, rot=270)
+place("3622", "White", 0, 1, 14, rot=270)
+place("6541", "White", 0, 1, 13, rot=270)
+place("3622", "White", 0, 1, 10, rot=270)
+place("6541", "White", 0, 1, 9, rot=270)
+place("3622", "White", 0, 1, 6, rot=270)
+place("6541", "White", 0, 1, 5, rot=270)
+place("3622", "White", 0, 1, 2, rot=270)
+place("6541", "White", 0, 1, 1, rot=270)
+place("6541", "White", 0, 1, 0, rot=180)
+place("15712", "White", 0, 4, 15, rot=180)
+place("63864", "White", 0, 4, 16, rot=270)
+place("63864", "White", 0, 4, 12, rot=270)
+place("15712", "White", 0, 4, 11, rot=180)
+place("63864", "White", 0, 4, 8, rot=270)
+place("15712", "White", 0, 4, 7, rot=180)
+place("63864", "White", 0, 4, 4, rot=270)
+place("15712", "White", 0, 4, 3, rot=180)
+place("63864", "White", 0, 4, 0, rot=270)

@@ -1,0 +1,31 @@
+#: title: 5
+#: source: LDraw Official Model Repository, 21033-1.mpd, section 21033 - 5.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("11212", "Dark_Bluish_Grey", 0, 0, 0)
+place("3023", "Trans_Brown", 1, 1, 0)
+place("3023", "Trans_Brown", 0, 1, 0, rot=270)
+place("3023", "Trans_Brown", 0, 1, 2, rot=180)
+place("3023", "Trans_Brown", 2, 1, 1, rot=90)
+place("11212", "Black", 0, 2, 0, rot=90)
+place("3023", "Trans_Brown", 2, 3, 1, rot=90)
+place("3023", "Trans_Brown", 0, 3, 2, rot=180)
+place("3023", "Trans_Brown", 0, 3, 0, rot=270)
+place("3023", "Trans_Brown", 1, 3, 0)
+place("11212", "Black", 0, 4, 0, rot=90)
+place("3023", "Trans_Brown", 2, 5, 1, rot=90)
+place("3023", "Trans_Brown", 0, 5, 2, rot=180)
+place("3023", "Trans_Brown", 0, 5, 0, rot=270)
+place("3023", "Trans_Brown", 1, 5, 0)
+place("11212", "Black", 0, 6, 0, rot=90)
+place("3023", "Trans_Brown", 2, 7, 1, rot=90)
+place("3023", "Trans_Brown", 0, 7, 2, rot=180)
+place("3023", "Trans_Brown", 0, 7, 0, rot=270)
+place("3023", "Trans_Brown", 1, 7, 0)
+place("3623", "Black", 1, 8, 0, rot=90)
+place("3023", "Black", 0, 8, 1, rot=90)
+place("3023", "Black", 2, 8, 0, rot=90)
+place("3070b", "Black", 0, 8, 0, rot=90)
+place("3070b", "Black", 2, 8, 2, rot=90)

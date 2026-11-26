@@ -1,0 +1,32 @@
+#: title: Hull panel section: tiles, wing plates and dishes on edged plates
+#: source: LDraw Official Model Repository, 10179-1.mpd, section 10179 - subModel-117.ldr
+#: author: Roland Dahl [RolandD]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures, overlapping and unattached parts left out)
+place_ldu("43093", "Blue", (120, -20, 270), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("32013", "Dark_Bluish_Grey", (120, -50, 270), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("6558", "Black", (120, -50, 270), (0, 0, 1, 0, -1, 0, 1, 0, 0))
+place("2817", "Black", 5, 5, 11, rot=90)
+place_ldu("6558", "Black", (120, -50, 210), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("32013", "Dark_Bluish_Grey", (120, -50, 210), (0, -1, 0, 0, 0, -1, 1, 0, 0))
+place_ldu("43093", "Blue", (120, -20, 210), (0, -1, 0, -1, 0, 0, 0, 0, -1))
+place_ldu("2444", "White", (120, -60, 300), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2444", "White", (120, -60, 180), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3030", "Light_Bluish_Grey", 6, 7.5, 3, rot=90)
+place("2654", "Black", 5, 6.5, 2, rot=90)
+place("2654", "Black", 7, 6.5, 2, rot=90)
+place("3021", "Light_Bluish_Grey", 6, 7.5, 0, rot=90)
+place("43723", "Light_Bluish_Grey", 8, 7.5, 0)
+place("30356", "Light_Bluish_Grey", 0, 7.5, 0)
+place("3666", "Light_Bluish_Grey", 2, 6.5, 11, rot=90)
+place("3832", "Black", 3, 6.5, 8, rot=90)
+place("6179", "Light_Bluish_Grey", 0, 7.5, 12, rot=90)
+place("6179", "Light_Bluish_Grey", 0, 7.5, 16, rot=90)
+place("3035", "Light_Bluish_Grey", 4, 7.5, 13, rot=180)
+place("54384", "Light_Bluish_Grey", 4, 7.5, 17, rot=270)
+place("3068b", "Light_Bluish_Grey", 7, 8.5, 2)
+place("3068b", "Light_Bluish_Grey", 5, 8.5, 2)
+place("6180", "Light_Bluish_Grey", 3, 8.5, 11, rot=90)
+place("54384", "Light_Bluish_Grey", 7, 8.5, 16, rot=270)
+place("30355", "Light_Bluish_Grey", 7, 8.5, 4)

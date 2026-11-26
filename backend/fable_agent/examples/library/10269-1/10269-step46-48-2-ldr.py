@@ -1,0 +1,26 @@
+#: title: Mirror of step46-48-1; second wheel hub and fender subassembly with identical round plates and corner pieces.
+#: source: LDraw Official Model Repository, 10269-1.mpd, section 10269 - step46-48-2.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 20 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+place("60478", "Black", 2, 0, 1)
+place("60478", "Black", 2, 0, 4)
+place("3023", "Light_Bluish_Grey", 2, 1, 1, rot=180)
+place("3023", "Light_Bluish_Grey", 2, 1, 4, rot=180)
+place("32802", "Black", 1, 2, 1, rot=90)
+place_ldu("60897", "Light_Bluish_Grey", (70, -32, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("32802", "Black", 1, 2, 4, rot=90)
+place("2420", "Light_Bluish_Grey", 3, 5, 1, rot=270)
+place("2420", "Light_Bluish_Grey", 1, 5, 1)
+place("2420", "Light_Bluish_Grey", 3, 5, 3, rot=180)
+place("2420", "Light_Bluish_Grey", 1, 5, 3, rot=90)
+place("11833", "Black", 1, 6, 1, rot=180)
+place("2420", "Light_Bluish_Grey", 3, 7, 1, rot=270)
+place("2420", "Light_Bluish_Grey", 1, 7, 3, rot=90)
+place("2420", "Light_Bluish_Grey", 3, 7, 3, rot=180)
+place("3023", "Light_Bluish_Grey", 1, 7, 1)
+place_ldu("18677", "Light_Bluish_Grey", (20, -64, 50), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("6141", "Black", 0, 8, 2, rot=180)
+place("11833", "Black", 1, 8, 1, rot=180)
+place("2420", "Light_Bluish_Grey", 0, 9, 2, rot=270)

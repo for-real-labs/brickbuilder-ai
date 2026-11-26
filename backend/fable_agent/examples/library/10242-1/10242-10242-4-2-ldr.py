@@ -1,0 +1,33 @@
+#: title: Left door panel with hinge plates, white-striped curved-top bricks, tan trim tiles and a minifig-skate detail
+#: source: LDraw Official Model Repository, 10242-1.mpd, section 10242 - 10242-4-2.ldr
+#: author: Magnus Forsberg [MagFors]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 30 parts kept (minifigures, overlapping and unattached parts left out)
+place("3666", "Dark_Green", 1, 0, 1, rot=90)
+place("3623", "Dark_Green", 1, 0, 7, rot=90)
+place("3005", "Dark_Green", 1, 1, 1, rot=90)
+place("3010", "Dark_Green", 1, 1, 2, rot=90)
+place("3010", "Dark_Green", 1, 1, 6, rot=90)
+place("3023", "Dark_Green", 1, 4, 1, rot=90)
+place_ldu("2430", "Dark_Green", (40, -48, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3005", "Dark_Green", 1, 4, 9, rot=90)
+place("87087", "Dark_Green", 1, 4, 8, rot=90)
+place_ldu("3070b", "Tan", (12, -46, 170), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place("87087", "Dark_Green", 1, 4, 7, rot=90)
+place_ldu("6636", "Tan", (12, -46, 100), (0, 1, 0, 0, 0, 1, 1, 0, 0))
+place("30414", "Dark_Green", 1, 4, 3, rot=90)
+place("3004", "Dark_Green", 1, 6, 1, rot=90)
+place("87087", "Dark_Green", 1, 7, 3, rot=90)
+place("87087", "Dark_Green", 1, 7, 4, rot=90)
+place("30414", "Dark_Green", 1, 7, 5, rot=90)
+place("6541", "Black", 1, 7, 9, rot=90)
+place_ldu("3024", "Dark_Green", (40, -70, 190), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("2430", "Dark_Green", (40, -80, 20), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3069b", "Tan", (12, -80, 170), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3068b", "Tan", (12, -80, 140), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3068b", "Tan", (12, -80, 100), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place_ldu("3068b", "Tan", (12, -80, 60), (0, 1, 0, 1, 0, 0, 0, 0, -1))
+place("3005", "Dark_Green", 1, 10, 1, rot=270)
+place("6191p01", "Dark_Green", 1, 10, 6, rot=270)
+place("6191p01", "Dark_Green", 1, 10, 2, rot=270)

@@ -1,0 +1,29 @@
+#: title: A red freight train wagon built on a black wheeled train base, detailed with yellow plates and black buffers.
+#: source: LDraw Official Model Repository, 166-1.mpd, section 166 - Freight wagon.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 23 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place_ldu("736c02", "Black", (200, -70, 80), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3710", "Yellow", 5, 8.75, 2, rot=90)
+place("3710", "Yellow", 10, 8.75, 2, rot=90)
+place("3460", "Yellow", 4, 9.75, 5)
+place("3460", "Yellow", 4, 9.75, 2)
+place("3010", "Red", 2, 8.75, 2, rot=90)
+place("3010", "Red", 17, 8.75, 2, rot=90)
+place("3008", "Red", 2, 8.75, 6)
+place("3008", "Red", 10, 8.75, 6)
+place("3710", "Yellow", 5, 10.75, 2, rot=90)
+place("3710", "Yellow", 10, 10.75, 2, rot=90)
+place("3008", "Red", 2, 8.75, 1)
+place("3008", "Red", 10, 8.75, 1)
+place("3460", "Yellow", 4, 11.75, 5)
+place("3069b", "White", 7, 12.75, 5)
+place("3062b", "Black", 2, 11.75, 6)
+place("3062b", "Black", 17, 11.75, 6)
+place("3062b", "Black", 17, 11.75, 1)
+place("3062b", "Black", 2, 11.75, 1)
+place("3062b", "Black", 2, 14.75, 1)
+place("3062b", "Black", 2, 14.75, 6)
+place("3062b", "Black", 17, 14.75, 6)
+place("3062b", "Black", 17, 14.75, 1)

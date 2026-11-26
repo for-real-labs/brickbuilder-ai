@@ -1,0 +1,30 @@
+#: title: A blue hinged right-side hatch panel with grille bricks, inverted slopes, arrow pattern, and a trans-green indicator plate.
+#: source: LDraw Official Model Repository, 928-1.mpd, section 928 - Space Ship - Hatch Right.ldr
+#: author: Willy Tschager [Holly-Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 28 parts kept (minifigures, overlapping and unattached parts left out)
+place("3023", "Blue", 3, 0, 8, rot=90)
+place("3623", "Blue", 3, 0, 5, rot=90)
+place("3710", "Blue", 0, 0, 4, rot=180)
+place("3623", "Blue", 0, 1, 4, rot=180)
+place("3666", "Blue", 3, 1, 4, rot=270)
+place("3660", "Blue", 0, 2, 3)
+place("3660", "Blue", 2, 2, 3)
+place("3622", "Blue", 3, 2, 5, rot=90)
+place("3831", "Blue", 3, 2, 8, rot=270)
+place("3622", "Blue", 0, 5, 4)
+place("3010p04", "Blue", 3, 5, 6, rot=270)
+place("3004p20", "Blue", 3, 5, 4, rot=270)
+place("3831", "Blue", 3, 8, 8, rot=270)
+place("3622", "Blue", 3, 8, 5, rot=270)
+place("3001", "Blue", 0, 8, 3)
+place("3010", "Blue", 0, 5, 3)
+place("3032", "Blue", 0, 11, 4, rot=90)
+place("3710", "Blue", 0, 11, 3, rot=180)
+place("3710", "Blue", 0, 12, 5, rot=180)
+place("3022", "Blue", 0, 12, 3, rot=180)
+place("3010", "Blue", 0, 12, 9)
+place("3479", "Blue", 0, 13, 2, rot=180)
+place("3479", "Blue", 2, 13, 2, rot=180)
+place("3795", "Blue", 0, 19, 2, rot=180)

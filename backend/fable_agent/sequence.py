@@ -13,7 +13,7 @@ a part are outside it.
 from __future__ import annotations
 
 import heapq
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 
 from .kit import Build
 from .ldraw import LDrawError
@@ -50,6 +50,9 @@ class _Joints:
     neighbours: list[set[int]]
     above: list[set[int]]  # the parts studded onto each part
     below: list[set[int]]  # the parts each part is studded onto
+    # For an axle and for each part on it: the axle, where this part sits along it (None for the
+    # axle itself) and everything on that axle as (place along the axle, part).
+    stacks: dict[int, list[tuple[int, float | None, list[tuple[float, int]]]]] = field(default_factory=dict)
 
 
 def _upright(matrix) -> bool:
@@ -84,16 +87,49 @@ def _trapped(index: int, placed: set[int], above: list[set[int]], below: list[se
     return enclosed(above) | enclosed(below)
 
 
+def _shaft_stacks(shafts: dict[int, list[tuple[float, int]]]) -> dict:
+    """Index, for every axle and every part on one, what else is on that axle and where."""
+    found: dict[int, list] = {}
+    for shaft, stack in shafts.items():
+        found.setdefault(shaft, []).append((shaft, None, stack))
+        for at, receiver in stack:
+            found.setdefault(receiver, []).append((shaft, at, stack))
+    return found
+
+
+def _trapped_on_shaft(index: int, placed: set[int], stacks: dict) -> set[int]:
+    """Unplaced pieces on an axle that placing ``index`` now would leave between two seated pieces.
+
+    A piece slides onto an axle from an end, so it cannot be added once pieces sit on both sides
+    of its place.
+    """
+    blocked: set[int] = set()
+    for shaft, at, stack in stacks.get(index, ()):
+        if shaft != index and shaft not in placed:
+            continue
+        seated = [other for other, receiver in stack if receiver in placed]
+        if at is not None:
+            seated.append(at)
+        if len(seated) > 1:
+            low, high = min(seated), max(seated)
+            blocked.update(receiver for other, receiver in stack
+                           if low + 1e-6 < other < high - 1e-6 and receiver not in placed and receiver != index)
+    return blocked
+
+
 class SequencePlanner:
     def __init__(self, shapes: ShapeLibrary):
         self._shapes = shapes
 
-    def plan(self, build: Build, contacts, boxes: dict[int, list], fits=frozenset()) -> Plan:
-        """``contacts`` are the checker's stud contacts, ``boxes`` its model-space boxes per placement
-        and ``fits`` the pairs joined by a measured peg in a hole."""
+    def plan(self, build: Build, contacts, boxes: dict[int, list], fits=frozenset(), shafts=None) -> Plan:
+        """``contacts`` are the checker's stud contacts, ``boxes`` its model-space boxes per placement,
+        ``fits`` the pairs joined by a measured peg in a hole, and ``shafts`` what sits where along
+        each measured axle (see ``connectors``)."""
         if not build.placements:
             raise NoSequence("There are no pieces to place")
         joints = self._joints(build, contacts, fits)
+        if shafts:
+            joints = replace(joints, stacks=_shaft_stacks(shafts))
         foundation = self._foundation(build, boxes)
         order = self._order(build, joints, foundation)
         self._verify(order, joints, foundation)
@@ -179,7 +215,8 @@ class SequencePlanner:
         while frontier:
             index = heapq.heappop(frontier)[2]
             scheduled.remove(index)
-            blockers = _trapped(index, placed, joints.above, joints.below)
+            blockers = (_trapped(index, placed, joints.above, joints.below)
+                        | _trapped_on_shaft(index, placed, joints.stacks))
             if blockers:
                 for middle in blockers:
                     waiting[middle].add(index)
@@ -211,7 +248,7 @@ class SequencePlanner:
                 raise NoSequence("Pieces on the ground must be placed before building above them")
             if placed and index not in foundation and not joints.neighbours[index] & placed:
                 raise NoSequence("A piece is placed before anything that holds it", (index,))
-            if _trapped(index, placed, joints.above, joints.below):
+            if _trapped(index, placed, joints.above, joints.below) or _trapped_on_shaft(index, placed, joints.stacks):
                 raise NoSequence("A piece is closed in before it is placed", (index,))
             placed.add(index)
 

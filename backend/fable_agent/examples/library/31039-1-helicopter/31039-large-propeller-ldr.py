@@ -1,0 +1,30 @@
+#: title: A large four-blade rotor with white and grey plate blades accented by red and dark blue trim tiles.
+#: source: LDraw Official Model Repository, 31039-1_Helicopter.mpd, section 31039 - Large Propeller.ldr
+#: author: Merlijn Wissink [legolijntje]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 24 parts kept (minifigures, overlapping and unattached parts left out)
+place("32124", "Black", 2, 0, 19, rot=270)
+place("3460", "Light_Bluish_Grey", 2, 1, 13, rot=270)
+place("3460", "Light_Bluish_Grey", 2, 1, 22, rot=270)
+place("32124", "Black", 2, 2, 19, rot=270)
+place("3034", "White", 2, 2, 11, rot=270)
+place("3460", "Light_Bluish_Grey", 2, 1, 5, rot=270)
+place("3034", "White", 1, 2, 24, rot=270)
+place("3460", "Light_Bluish_Grey", 2, 1, 30, rot=270)
+place("3034", "White", 1, 2, 32, rot=270)
+place("3710", "Light_Bluish_Grey", 2, 1, 38, rot=270)
+place("3034", "White", 2, 2, 3, rot=270)
+place("3710", "Light_Bluish_Grey", 2, 1, 1, rot=270)
+place("30357", "White", 0, 2, 40, rot=270)
+place("30357", "White", 2, 2, 0, rot=90)
+place("6636", "White", 2, 3, 15, rot=90)
+place("6636", "White", 2, 3, 22, rot=90)
+place("3070b", "Dark_Blue", 2, 3, 14, rot=90)
+place("3070b", "Dark_Blue", 2, 3, 28, rot=90)
+place("6636", "White", 2, 3, 8, rot=90)
+place("6636", "White", 2, 3, 29, rot=90)
+place("6636", "White", 2, 3, 35, rot=90)
+place("6636", "White", 2, 3, 2, rot=90)
+place("3069b", "Red", 2, 3, 0, rot=90)
+place("3069b", "Red", 2, 3, 41, rot=90)

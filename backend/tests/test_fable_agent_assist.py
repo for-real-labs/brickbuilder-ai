@@ -60,6 +60,53 @@ def test_the_closest_color_is_one_the_part_comes_in(tmp_path):
 # ----- repair ----------------------------------------------------------------
 
 
+def unstocked(*parts):
+    """Catalog rows to leave out so these parts are sold in no color."""
+    from fable_agent_support import COLORS
+    return {(part, color) for part in parts for color in COLORS}
+
+
+def test_repair_swaps_an_unstocked_part_for_its_twin_its_new_number_or_a_part_that_measures_the_same(tmp_path):
+    from fable_agent.kit import Placement
+    from fable_agent_support import PARTS
+    identity = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+    extra = {
+        "3001a": PARTS["3001"].replace("Brick  2 x  4", "Brick  2 x  4 Old Mould"),  # an older variant of 3001
+        "9944": PARTS["3020"].replace("Plate  2 x  4", "Plate  2 x  4 Retired"),  # the same shape, another number
+        "9955": "\n".join(["0 Wedge  9 x  9 Odd"] + PARTS["3001"].splitlines()[1:3]) + "\n",  # like nothing stocked
+    }
+    world = World(tmp_path, extra=extra, skip=unstocked("3001a", "9944", "9955"))
+    build = Build([Placement("3001a", 4, (0.0, -24.0, 0.0), identity), Placement("3660", 4, (100.0, -24.0, 0.0), identity),
+                   Placement("9944", 4, (200.0, -8.0, 0.0), identity), Placement("9944", 4, (300.0, -8.0, 0.0), identity),
+                   Placement("9955", 4, (400.0, -24.0, 0.0), identity)], [(0, 1, "kept")])
+    fixed, repairs = repairer(world).repair(build)
+    assert [p.part for p in fixed.placements] == ["3001", "3039", "3020", "3020", "9955"]
+    assert [p.position for p in fixed.placements] == [p.position for p in build.placements]  # nothing is moved
+    assert fixed.links == build.links
+    assert repairs.restocked == {("3001a", "3001"): 1, ("3660", "3039"): 1, ("9944", "3020"): 2}
+    assert any("2 part(s) 9944 are not stocked and were replaced by 3020" in note for note in repairs.notes({}))
+    # The part with no safe stand-in stays, and the report still refuses it.
+    report = world.checker.check(fixed)
+    assert [issue.kind for issue in report.errors if "9955" in issue.message] == ["palette"]
+
+
+def test_a_stand_in_must_fill_the_same_space_with_the_same_studs_and_a_like_named_part_is_preferred(tmp_path):
+    from fable_agent.stock import StockedParts
+    from fable_agent_support import PARTS
+    extra = {
+        "8801": PARTS["3022"].replace("Plate  2 x  2", "Brick  2 x  2 Thin"),  # measures like 3022, named a brick
+        "8802": PARTS["3022"].replace("Plate  2 x  2", "Plate  2 x  2 Reissue"),  # measures like 3022, a plate
+        "8803": PARTS["3022"].replace("Plate  2 x  2", "Plate  2 x  2 Gone"),  # the unstocked part
+        "8804": PARTS["3070b"].replace("Tile  1 x  1 with Groove", "Plate  1 x  1 Smooth Gone"),  # no studs: a tile
+    }
+    world = World(tmp_path, extra=extra, skip=unstocked("8803", "8804"))
+    stock = StockedParts(world.library, world.shapes, world.palette)
+    assert stock.similar("8803") in ("3022", "8802")  # a plate, never the brick-named 8801
+    assert stock.similar("8804") == "3070b"  # the tile it measures like, not a studded 1 x 1
+    assert stock.similar("3659") is None and stock.similar("no-such-part") is None
+
+
+
 def built(world, script: str) -> Build:
     outcome = InlineRunner(world).run(script)
     assert outcome.build is not None, outcome.error

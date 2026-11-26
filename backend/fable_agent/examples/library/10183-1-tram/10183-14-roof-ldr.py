@@ -1,0 +1,31 @@
+#: title: Roof section with transparent skylight bricks and black plates
+#: source: LDraw Official Model Repository, 10183-1_Tram.mpd, section 10183 - 14 - roof.ldr
+#: author: Bert Van Raemdonck [BEAVeR]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("3666", "Black", 2, 0, 0)
+place("3666", "Black", 8, 0, 0)
+place("3024", "Black", 14, 0, 0)
+place("3024", "Black", 1, 0, 0)
+place("3024", "Black", 1, 0, 3)
+place("3666", "Black", 2, 0, 3)
+place("3666", "Black", 8, 0, 3)
+place("3024", "Black", 14, 0, 3)
+place("3065", "Trans_Clear", 13, 1, 0)
+place("3004", "Black", 11, 1, 0)
+place("3004", "Black", 7, 1, 0)
+place("3065", "Trans_Clear", 9, 1, 0)
+place("3004", "Black", 3, 1, 0)
+place("3065", "Trans_Clear", 5, 1, 0)
+place("3065", "Trans_Clear", 1, 1, 0)
+place("3065", "Trans_Clear", 1, 1, 3)
+place("3004", "Black", 3, 1, 3)
+place("3065", "Trans_Clear", 5, 1, 3)
+place("3004", "Black", 7, 1, 3)
+place("3065", "Trans_Clear", 9, 1, 3)
+place("3004", "Black", 11, 1, 3)
+place("3065", "Trans_Clear", 13, 1, 3)
+place("3035", "Black", 8, 4, 0)
+place("3035", "Black", 0, 4, 0)
+place("3034", "Black", 4, 5, 1)

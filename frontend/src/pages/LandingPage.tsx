@@ -1407,8 +1407,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                         <span className="min-w-0">
                           <span className="block">Show example builds first</span>
                           <span className="mt-0.5 block break-words text-xs font-normal text-slate-500">
-                            {BUILDING_AGENT_LABELS[buildingAgent]} picks the closest kind of example, such as cars or
-                            houses, and reads those builds before it starts. Adds a little AI cost.
+                            {BUILDING_AGENT_LABELS[buildingAgent]} is shown the real LEGO sets closest to your request
+                            before it starts, to see how such a model is built. Adds a little AI cost.
                           </span>
                         </span>
                       </label>

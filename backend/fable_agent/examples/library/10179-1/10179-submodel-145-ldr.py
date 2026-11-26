@@ -1,0 +1,22 @@
+#: title: Panel/hatch section: hinge plates and dishes on grooved tiles and plates
+#: source: LDraw Official Model Repository, 10179-1.mpd, section 10179 - subModel-145.ldr
+#: author: Roland Dahl [RolandD]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 16 of 16 parts kept (minifigures, overlapping and unattached parts left out)
+place("2654", "Black", 1, 0, 18, rot=90)
+place("44301", "Dark_Bluish_Grey", 2, 1, 19)
+place("3460", "Light_Bluish_Grey", 2, 1, 11, rot=90)
+place("2654", "Black", 1, 0, 10, rot=90)
+place("44301", "Dark_Bluish_Grey", 2, 1, 10)
+place("4477", "Light_Bluish_Grey", 1, 1, 3, rot=90)
+place("2654", "Black", 1, 0, 3, rot=90)
+place("44301", "Dark_Bluish_Grey", 2, 1, 3)
+place("3023", "Light_Bluish_Grey", 2, 1, 4, rot=90)
+place("3023", "Light_Bluish_Grey", 1, 1, 18, rot=90)
+place("3032", "Dark_Bluish_Grey", 0, 2, 6, rot=270)
+place("6180", "Light_Bluish_Grey", 0, 2, 0, rot=270)
+place("3035", "Light_Bluish_Grey", 0, 2, 12, rot=270)
+place("3068b", "Light_Bluish_Grey", 2, 3, 5, rot=270)
+place("3068b", "Light_Bluish_Grey", 1, 3, 17, rot=270)
+place("3068b", "Light_Bluish_Grey", 1, 3, 14, rot=270)

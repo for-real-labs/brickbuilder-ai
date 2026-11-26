@@ -1,0 +1,33 @@
+#: title: A spacecraft submodel combined with a minifigure.
+#: source: LDraw Official Model Repository, 6959-1.mpd, section 6959 - Spaceship + Minifig.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 33 parts kept (minifigures, overlapping and unattached parts left out)
+place("4032a", "Red", 5, 0, 7)
+place("4032a", "Red", 3, 0, 7)
+place("4032a", "Red", 5, 0, 3)
+place("4032a", "Red", 3, 0, 3)
+place("4597", "Black", 2, 1, 3)
+place("3068b", "Light_Grey", 4, 2, 6)
+place_ldu("3475b", "Black", (50, -48, 120), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3475b", "Black", 7, 4, 4, rot=90)
+place("2540", "Red", 4, 5, 8, rot=180)
+place("3936", "Black", 6, 5, 8, rot=270)
+place_ldu("3936", "Black", (40, -48, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("3935", "Black", (160, -48, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place("3935", "Black", 0, 5, 8, rot=90)
+place_ldu("2452", "Red", (100, -48, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2555", "Black", (100, -49.3334, 194.989), (0, 0, 1, 0.83147, -0.55557, 0, 0.55557, 0.83147, 0))
+place_ldu("4589", "Trans_Dark_Blue", (100, -53.778, 201.641), (0, 0, 1, 0.83147, -0.55557, 0, 0.55557, 0.83147, 0))
+place("3666", "Black", 7, 6, 3, rot=90)
+place("3666", "Black", 2, 6, 3, rot=90)
+place("3710", "Black", 3, 6, 3)
+place("3710", "Black", 3, 6, 8)
+place("2412a", "Red", 2, 6, 1, rot=90)
+place("2412a", "Red", 7, 6, 1, rot=90)
+place("2412a", "Red", 2, 6, 9, rot=90)
+place("2412a", "Red", 7, 6, 9, rot=90)
+place("3937", "Black", 4, 7, 8, rot=180)
+place("2418b", "Trans_Dark_Blue", 2, 7, 3)
+place("3068bp51", "Black", 4, 13, 5, rot=180)

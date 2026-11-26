@@ -1,0 +1,32 @@
+#: title: A left front fender assembly with curved round corners, wing elements, and transparent yellow light accents mirroring the right side.
+#: source: LDraw Official Model Repository, 76139-1.mpd, section 76139 - 1989 Batmobile - step392-400.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 30 parts kept (minifigures, overlapping and unattached parts left out)
+place("3024", "Trans_Yellow", 1, 0, 0, rot=180)
+place("3024", "Trans_Yellow", 2, 0, 0, rot=180)
+place("3024", "Trans_Yellow", 3, 0, 0, rot=180)
+place("3005", "Trans_Yellow", 1, 1, 0, rot=180)
+place("3005", "Trans_Yellow", 2, 1, 0, rot=180)
+place("3005", "Trans_Yellow", 3, 1, 0, rot=180)
+place("6003", "Black", 2, 4, 0)
+place("6134", "Light_Bluish_Grey", 5, 2, 5, rot=180)
+place("6134", "Light_Bluish_Grey", 3, 2, 5, rot=180)
+place_ldu("24299", "Black", (20, -40, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3710", "Dark_Bluish_Grey", 3, 4, 6, rot=180)
+place("3021", "Black", 6, 5, 4, rot=270)
+place("3021", "Black", 4, 5, 4, rot=270)
+place_ldu("51739", "Black", (40, -48, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("41770", "Black", 1, 5, 2, rot=180)
+place("3024", "Tan", 3, 5, 4, rot=270)
+place("41770", "Black", 1, 6, 2, rot=180)
+place_ldu("24299", "Black", (20, -56, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3022", "Black", 2, 6, 0, rot=180)
+place("3022", "Tan", 3, 6, 4, rot=180)
+place("3021", "Black", 5, 6, 4, rot=180)
+place("2577", "Black", 4, 5, 0)
+place_ldu("24299", "Black", (20, -64, 20), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("2431", "Black", 4, 7, 4, rot=180)
+place("3069b", "Black", 2, 7, 0, rot=180)
+place("87079", "Black", 2, 7, 1, rot=90)

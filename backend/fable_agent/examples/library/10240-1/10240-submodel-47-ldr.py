@@ -1,0 +1,33 @@
+#: title: Upper X-wing wing panel assembly with wings, plates, metallic grilles and a locking hinge
+#: source: LDraw Official Model Repository, 10240-1.mpd, section 10240 - subModel-47.ldr
+#: author: Roland Dahl [RolandD]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 32 parts kept (minifigures, overlapping and unattached parts left out)
+place("4282", "Red", 2, 0, 0, rot=90)
+place("32059", "White", 0, 1, 15)
+place("3032", "White", 1, 1, 9, rot=90)
+place("2413", "White", 1, 1, 0)
+place("32059", "White", 0, 2, 17)
+place("3666", "White", 0, 1, 19, rot=270)
+place("3666", "White", 5, 1, 19, rot=270)
+place("3795", "Tan", 2, 2, 11, rot=90)
+place("6636", "White", 4, 2, 11, rot=90)
+place("6636", "White", 1, 2, 11, rot=90)
+place("4162", "White", 5, 2, 21, rot=90)
+place("3460", "White", 5, 1, 25, rot=270)
+place("4162", "White", 0, 2, 21, rot=90)
+place("3460", "White", 0, 1, 25, rot=270)
+place("41769", "White", 1, 2, 7)
+place("41770", "White", 3, 2, 7)
+place("3623", "White", 0, 2, 29, rot=270)
+place("3623", "White", 5, 2, 29, rot=270)
+place("2420", "Light_Bluish_Grey", 0, 2, 32, rot=270)
+place("3020", "Black", 1, 1, 32, rot=180)
+place("2420", "Light_Bluish_Grey", 4, 2, 32)
+place("4032a", "Dark_Bluish_Grey", 2, 2, 32)
+place("2431", "Light_Bluish_Grey", 1, 3, 19)
+place("3710", "Light_Bluish_Grey", 1, 3, 33)
+place("2420", "Light_Bluish_Grey", 3, 3, 31, rot=90)
+place("2420", "Light_Bluish_Grey", 1, 3, 31, rot=180)
+place("3020", "Black", 1, 4, 32, rot=180)

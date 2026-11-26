@@ -1,0 +1,33 @@
+#: title: Front bonnet with a radiator-grille and Mini Cooper logo sticker, the yellow R682 AHS plate, a rounded curved slope and supporting plates
+#: source: LDraw Official Model Repository, 10242-1.mpd, section 10242 - 10242-4-1.ldr
+#: author: Magnus Forsberg [MagFors]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 31 parts kept (minifigures, overlapping and unattached parts left out)
+place("3832", "Dark_Bluish_Grey", 0, 0, 2)
+place("3034", "Light_Bluish_Grey", 1, 0, 0, rot=180)
+place("54200", "Dark_Green", 1, 1, 0)
+place("54200", "Dark_Green", 2, 1, 0)
+place("54200", "Dark_Green", 3, 1, 0)
+place("54200", "Dark_Green", 4, 1, 0)
+place("54200", "Dark_Green", 5, 1, 0)
+place("54200", "Dark_Green", 6, 1, 0)
+place("54200", "Dark_Green", 7, 1, 0)
+place("54200", "Dark_Green", 8, 1, 0)
+place("3020", "Dark_Green", 4, 1, 1, rot=90)
+place("3021", "Light_Bluish_Grey", 1, 1, 1, rot=180)
+place("3021", "Light_Bluish_Grey", 6, 1, 1, rot=180)
+place("3020", "Dark_Green", 0, 1, 3, rot=180)
+place("3020", "Dark_Green", 6, 1, 3, rot=180)
+place("54200", "Dark_Green", 3, 2, 4, rot=180)
+place("54200", "Dark_Green", 4, 2, 4, rot=180)
+place("54200", "Dark_Green", 5, 2, 4, rot=180)
+place("54200", "Dark_Green", 6, 2, 4, rot=180)
+place_ldu("63868", "Black", (10, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("63868", "Black", (190, -16, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3710", "Tan", 3, 2, 3, rot=180)
+place("2431", "Dark_Green", 3, 2, 2, rot=180)
+place("2431", "Dark_Green", 3, 2, 1, rot=180)
+place("93604", "Dark_Green", 0, 2, 1, rot=90)
+place("93604", "Dark_Green", 7, 2, 1, rot=270)
+place("2431", "Dark_Green", 3, 3, 3, rot=180)

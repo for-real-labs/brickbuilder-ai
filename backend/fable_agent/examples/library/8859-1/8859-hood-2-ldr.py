@@ -1,0 +1,28 @@
+#: title: hood-2
+#: source: LDraw Official Model Repository, 8859-1.mpd, section 8859 - hood-2.ldr
+#: author: Allard van Efferen (rabbitdesign.nl)
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 26 parts kept (minifigures, overlapping and unattached parts left out)
+place("3666", "Blue", 0, 0, 1)
+place("3023", "Black", 2, 1, 1)
+place("3023", "Blue", 2, 2, 1)
+place("4070", "Black", 1, 1, 1)
+place("4070", "Black", 0, 1, 1)
+place("4070", "Black", 4, 1, 1)
+place("4070", "Black", 5, 1, 1)
+place("3023", "Black", 2, 3, 1)
+place("3666", "Blue", 0, 4, 1)
+place("3710", "Black", 1, 5, 1)
+place("3710", "Blue", 1, 6, 1)
+place("3710", "Black", 1, 7, 1)
+place("3005", "Blue", 0, 5, 1)
+place("3005", "Blue", 5, 5, 1)
+place("3795", "Blue", 4, 8, 1, rot=90)
+place("3795", "Blue", 0, 8, 1, rot=90)
+place("3023", "Blue", 2, 8, 1)
+place("3710", "Blue", 1, 9, 1)
+place("3029", "Blue", 1, 9, 2, rot=90)
+place("3795", "Blue", 0, 8, 7, rot=90)
+place("3795", "Blue", 4, 8, 7, rot=90)
+place("3666", "Blue", 0, 8, 13)

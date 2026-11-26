@@ -14,8 +14,9 @@ from .agent import BuildAgent, Event, RunResult
 from .assembly import AssemblyReview
 from .catalog import PartFinder
 from .examples import prompt_section as example_section
-from .examples.chooser import choose_category
+from .examples.retrieval import ExampleFinder
 from .checks import ModelChecker
+from .connectors import ConnectorLibrary, ConnectorReview
 from .ldraw import LDrawLibrary
 from .lean import LEAN_TOOLS, LeanAgent
 from .palette import load_palette
@@ -65,7 +66,8 @@ class Options:
     api_key: str | None = None
     method: str = "thorough"
     max_seconds: float | None = None  # stop starting model calls after this long; the best result is kept
-    examples: bool = False  # let the model pick a category of example scripts to read first (v2 methods)
+    examples: bool = False  # show the example builds closest to the request first (v2 methods)
+    example_query: str | None = None  # what to find examples for; the customer's own words, without added guidance
 
     def resolved(self, method: str) -> Options:
         if method not in METHODS:
@@ -97,7 +99,8 @@ class Workbench:
         kit_settings = KitSettings(str(library.root), settings.get("catalog_path"),
                                    bool(settings.get("open_palette")), str(cache))
         # Whether the publication rules apply is fixed when the session starts, like repair.
-        assembly = AssemblyReview(library, shapes) if settings.get("assembly_rules") else None
+        assembly = (AssemblyReview(library, shapes, ConnectorReview(ConnectorLibrary(library.root, cache)))
+                    if settings.get("assembly_rules") else None)
         return cls(library, shapes, PartFinder(library, palette),
                    ModelChecker(library, shapes, palette, max_parts=int(settings.get("max_parts", 1500)),
                                 assembly=assembly),
@@ -184,8 +187,7 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
         content.append(session.image_block(save_reference(Path(reference), session)))
     budget = Budget(Decimal(str(options.budget_usd)), client.model)
     if settings["examples"]:
-        asked = [*content, {"type": "text", "text": f"Request: {prompt.strip()}"}]
-        _add_examples(session, client, budget, asked, on_event)
+        _add_examples(session, budget, prompt if options.example_query is None else options.example_query, on_event)
     agent = _agent(options, session, client, bench, on_event, budget)
     existing = agent.load(script) if script and script.strip() else None
     content.append({"type": "text", "text": build_request(prompt, has_reference=reference is not None,
@@ -193,22 +195,25 @@ def start_build(prompt: str, run_dir: Path | str, options: Options, *, reference
     return agent.run(content)
 
 
-def _add_examples(session: Session, client: ModelClient, budget: Budget, asked: list[dict],
-                  on_event: Event | None) -> None:
-    """Let the model name a category of examples, and add that category's scripts to its prompt.
+def _add_examples(session: Session, budget: Budget, request: str, on_event: Event | None,
+                  finder: ExampleFinder | None = None) -> None:
+    """Find the example builds closest to the request and add them to the prompt.
 
     This happens once, before the first round, so the prompt is then fixed for the whole session
-    like any other. The choice is a model call: it is charged to the run and reported like a turn.
+    like any other. The search is a paid call when Jev ranks it: its cost is charged to the run
+    and reported like a turn. What was found, how, and at what cost is kept in the session.
     """
-    choice = choose_category(client, session.inflate(asked))
-    if choice.reply is not None:
-        budget.record(choice.reply, carried=False)
+    found = (finder or ExampleFinder(default_cache_dir())).find(request)
+    if found.cost_usd:
+        budget.charge(found.cost_usd, {"model": "jev-1.13.0", "input_tokens": found.input_tokens, "output_tokens": 0,
+                                       "cache_read_tokens": 0, "cache_write_tokens": 0,
+                                       "estimated_cost_usd": str(found.cost_usd), "purpose": "example search"})
         session.meta["usage"] = session.meta.get("usage", []) + budget.calls[-1:]
         if on_event is not None:
             on_event("turn", {"step": 0, "spent_usd": str(budget.spent), "usage": budget.calls[-1]})
-    session.meta["settings"]["example_category"] = choice.category
-    if choice.category is not None:
-        session.meta["system"] += "\n\n" + example_section(choice.category)
+    session.meta["settings"]["example_search"] = found.record()
+    if found.examples:
+        session.meta["system"] += "\n\n" + example_section(found.examples)
     session.save()
 
 

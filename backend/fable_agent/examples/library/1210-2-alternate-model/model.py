@@ -1,0 +1,33 @@
+#: title: Alternate model of the 1955 set 1210, a small town-plan shop building assembled from white bricks, printed window/door elements, and geometric structural submodels.
+#: source: LDraw Official Model Repository, 1210-2_ALternate-model.mpd
+#: author: N. W. Perry [Plastikean]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("u8203", "White", 0, 0, 0)
+place("u8001b", "White", 3, 1, 5)
+place("3005", "White", 5, 1, 5)
+place("u8002b", "White", 6, 1, 4, rot=90)
+place("u8001b", "White", 7, 1, 2, rot=90)
+place("u8001b", "White", 7, 1, 0, rot=90)
+place("u8001b", "White", 5, 1, 0, rot=180)
+place("u8001b", "White", 1, 1, 0, rot=180)
+place("u8001b", "White", 0, 1, 0, rot=270)
+place("u8001b", "White", 0, 1, 2, rot=270)
+place("u8001b", "White", 0, 1, 4, rot=270)
+place("u8001b", "White", 7, 4, 4, rot=90)
+place("u8001b", "White", 7, 4, 2, rot=90)
+place("u8001b", "White", 0, 4, 2, rot=270)
+place("u8001b", "White", 0, 4, 4, rot=270)
+place("u9026", "Blue", 7, 7, 5)
+place("3005", "White", 7, 7, 4)
+place("u8001b", "White", 7, 7, 2, rot=90)
+place("u8001b", "White", 0, 7, 2, rot=270)
+place("3005", "White", 0, 7, 4)
+place("u9026", "Blue", 0, 7, 5)
+place("u8203", "White", 0, 10, 0)
+place("3005", "White", 3, 11, 3)
+place("3005", "White", 4, 11, 3)
+place("3067b", "White", 1, 11, 5)
+place("u9026", "Blue", 3, 14, 3)
+place("u9026", "Blue", 4, 14, 3)

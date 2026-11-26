@@ -1,0 +1,30 @@
+#: title: Small brown and light grey chassis section with inverted slopes, money-patterned tiles, and a positioning rocket element.
+#: source: LDraw Official Model Repository, 5982-1.mpd, section 5982 - 5982-1.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 24 of 29 parts kept (minifigures, overlapping and unattached parts left out)
+place("4032a", "Blue", 2, 0, 2)
+place("3023", "Light_Grey", 2, 1, 3)
+place("3023", "Light_Grey", 2, 2, 3)
+place("6141", "Trans_Red", 2, 3, 3)
+place("4287a", "Brown", 0, 4, 3, rot=90)
+place("3660", "Brown", 0, 7, 2)
+place("3039", "Brown", 0, 10, 2, rot=90)
+place("4864b", "Light_Grey", 2, 7, 2, rot=270)
+place("3660", "Brown", 2, 4, 1)
+place("4864b", "Light_Grey", 3, 7, 2, rot=90)
+place("3665a", "Brown", 3, 4, 3, rot=270)
+place("3023", "Light_Grey", 2, 13, 3)
+place("48336", "Blue", 2, 14, 3, rot=180)
+place_ldu("30350a", "Dark_Grey", (60, -78, 92), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("3023", "Light_Grey", 2, 15, 3)
+place("3040b", "Brown", 1, 13, 2, rot=90)
+place("4286", "Brown", 3, 13, 2, rot=270)
+place("3660", "Brown", 4, 10, 2, rot=270)
+place("3665a", "Brown", 4, 7, 2)
+place("3040b", "Brown", 4, 13, 3, rot=270)
+place("3021", "Brown", 2, 16, 1, rot=90)
+place("4864b", "Trans_Clear", 2, 10, 1)
+place("3039", "Light_Grey", 2, 7, 0)
+place("2376", "Black", 2, 17, 2)

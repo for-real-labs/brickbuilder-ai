@@ -1,0 +1,33 @@
+#: title: A round grey support platform with tan bricks and multiple slope elements forming an elevated pedestal for the ship ride mechanism.
+#: source: LDraw Official Model Repository, 31084-1_Ship-ride.mpd, section 31084 - shiptrackbase2.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("11213", "Light_Bluish_Grey", 10, 0, 0, rot=90)
+place("3832", "Light_Bluish_Grey", 0, 0, 2)
+place("6141", "Dark_Bluish_Grey", 12, 1, 0, rot=90)
+place("6141", "Dark_Bluish_Grey", 13, 1, 5, rot=270)
+place("6143", "Dark_Azure", 12, 1, 2, rot=90)
+place("2456", "Tan", 6, 1, 2, rot=180)
+place("2456", "Tan", 14, 1, 2, rot=180)
+place("3039", "Dark_Bluish_Grey", 13, 1, 0)
+place("3040b", "Dark_Bluish_Grey", 11, 1, 1, rot=90)
+place("3040b", "Dark_Bluish_Grey", 13, 1, 4, rot=270)
+place("3039", "Dark_Bluish_Grey", 11, 1, 4, rot=180)
+place("6143", "Dark_Bluish_Grey", 4, 1, 2, rot=90)
+place("30363", "Light_Bluish_Grey", 0, 1, 2, rot=90)
+place("60474", "Dark_Bluish_Grey", 11, 4, 1, rot=270)
+place("3795", "Tan", 5, 4, 2, rot=180)
+place("3795", "Tan", 15, 4, 2, rot=180)
+place("92280", "Black", 3, 4, 3, rot=180)
+place("92280", "Black", 3, 4, 2, rot=180)
+place("4032a", "Tan", 8, 5, 2, rot=180)
+place("4032a", "Tan", 5, 5, 2, rot=180)
+place("6141", "Dark_Bluish_Grey", 7, 5, 2, rot=90)
+place("3684c", "Light_Bluish_Grey", 13, 5, 3, rot=180)
+place("4460b", "Dark_Bluish_Grey", 12, 5, 3, rot=180)
+place("4460b", "Dark_Bluish_Grey", 12, 5, 1)
+place("3684c", "Light_Bluish_Grey", 13, 5, 1)
+place("3684c", "Light_Bluish_Grey", 10, 5, 2, rot=90)
+place("3001", "Light_Bluish_Grey", 11, 14, 2, rot=180)

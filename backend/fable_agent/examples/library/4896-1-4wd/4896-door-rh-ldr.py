@@ -1,0 +1,32 @@
+#: title: Right door panel mirroring the left side with black bricks, hinge plates, trans-neon-orange light, and grooved tiles.
+#: source: LDraw Official Model Repository, 4896-1_4WD.mpd, section 4896 - Door RH.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 26 parts kept (minifigures, overlapping and unattached parts left out)
+place("3666", "Dark_Bluish_Grey", 1, 0, 3, rot=270)
+place("3024", "Dark_Bluish_Grey", 1, 0, 9, rot=270)
+place("3666", "Black", 1, 1, 4, rot=270)
+place("3024", "Black", 1, 1, 3, rot=270)
+place_ldu("2429c01", "Black", (20, -24, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3710", "Black", 1, 2, 5, rot=270)
+place("6541", "Black", 1, 2, 9)
+place_ldu("4274", "Blue", (30, -30, 200), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("3623", "Black", (30, -30, 208), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("2431", "Black", (30, -40, 216), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place("3009", "Black", 1, 3, 3, rot=270)
+place("3024", "Black", 1, 5, 9, rot=270)
+place("3005", "Black", 1, 3, 2, rot=270)
+place("3665a", "Black", 1, 3, 0)
+place("3710", "Black", 1, 6, 6, rot=270)
+place("3024", "Black", 1, 6, 5, rot=270)
+place_ldu("2429c01", "Black", (20, -56, 60), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("6141", "Trans_Neon_Orange", 1, 7, 2, rot=270)
+place_ldu("6141", "Metallic_Silver", (30, -70, 208), (0, 0, -1, 1, 0, 0, 0, -1, 0))
+place_ldu("4274", "Blue", (30, -70, 200), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("4085c", "Black", (30, -72, 50), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("6541", "Black", 1, 7, 9)
+place("3009", "Black", 1, 7, 3, rot=270)
+place("2431", "Black", 1, 10, 6, rot=270)
+place("3069b", "Black", 1, 10, 4, rot=270)
+place("3070b", "Black", 1, 10, 3, rot=270)

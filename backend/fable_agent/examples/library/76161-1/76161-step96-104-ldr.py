@@ -1,0 +1,31 @@
+#: title: An arched black housing built from bricks, inverted arches, slopes, and plates.
+#: source: LDraw Official Model Repository, 76161-1.mpd, section 76161 - step96-104.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("4282", "Black", 2, 0, 0)
+place("3023", "Black", 11, 1, 0, rot=270)
+place("2456", "Black", 2, 1, 0)
+place("3002", "Black", 15, 1, 0)
+place("3002", "Black", 2, 4, 0)
+place("3003", "Black", 5, 4, 0)
+place("3003", "Black", 16, 4, 0)
+place("3001", "Black", 2, 7, 0)
+place("3795", "Black", 0, 10, 0, rot=180)
+place("3022", "Black", 0, 9, 0, rot=180)
+place("30099", "Black", 6, 1, 1)
+place("30099", "Black", 6, 1, 0)
+place("30099", "Black", 12, 1, 1, rot=180)
+place("30099", "Black", 12, 1, 0, rot=180)
+place("3245c", "Black", 17, 7, 0, rot=270)
+place("3002", "Black", 3, 11, 0)
+place("3023", "Black", 6, 13, 0, rot=270)
+place("3022", "Black", 16, 13, 0, rot=270)
+place("3022", "Black", 16, 14, 0, rot=270)
+place("3068b", "Black", 16, 15, 0, rot=270)
+place("3004", "Black", 4, 14, 0, rot=270)
+place("3684c", "Black", 5, 14, 0, rot=270)
+place("30099", "Black", 0, 11, 0, rot=180)
+place("30099", "Black", 0, 11, 1, rot=180)
+place("3043", "Black", 4, 23, 0, rot=180)

@@ -1,0 +1,33 @@
+#: title: Technic connector module built from cross blocks, axle pins, and a holed plate for linking moving parts.
+#: source: LDraw Official Model Repository, 8031-1.mpd, section 8031 - m-1a.ldr
+#: author: Jude Parrill
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("2817", "Light_Bluish_Grey", 1, 0, 0)
+place("2817", "Light_Bluish_Grey", 1, 0, 2)
+place_ldu("3749", "Tan", (20, -10, 20), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("32184", "Light_Bluish_Grey", (10, -10, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("43093", "Blue", (20, -10, 60), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place_ldu("3749", "Tan", (60, -10, 20), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("43093", "Blue", (60, -10, 60), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("32184", "Light_Bluish_Grey", (70, -10, 40), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("4274", "Blue", (10, -20, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place_ldu("4274", "Blue", (70, -20, 40), (0, 0, -1, -1, 0, 0, 0, 1, 0))
+place("3021", "Dark_Bluish_Grey", 1, 2.5, 2, rot=90)
+place("3794a", "Dark_Red", 1, 3.5, 2, rot=180)
+place("3794a", "White", 1, 3.5, 3, rot=180)
+place("3794a", "White", 1, 3.5, 4, rot=180)
+place("3623", "White", 1.5, 4.5, 2, rot=90)
+place("3710", "White", 1.5, 5.5, 2, rot=90)
+place("54200", "White", 1.5, 6.5, 2, rot=180)
+place("3005", "White", 1.5, 6.5, 5, rot=180)
+place("3005", "White", 1.5, 9.5, 5, rot=180)
+place("4460a", "Dark_Red", 1.5, 6.5, 3)
+place("3005", "White", 1.5, 12.5, 5, rot=180)
+place("47905", "Dark_Bluish_Grey", 1.5, 15.5, 5)
+place_ldu("6141", "Light_Bluish_Grey", (40, -138, 128), (-1, 0, 0, 0, 0, -1, 0, -1, 0))
+place("4070", "Dark_Red", 1.5, 15.5, 4)
+place_ldu("6141", "Light_Bluish_Grey", (40, -138, 76), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place_ldu("6141", "Trans_Medium_Blue", (40, -138, 68), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3040b", "White", 1.5, 18.5, 4)

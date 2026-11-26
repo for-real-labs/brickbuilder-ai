@@ -1,0 +1,31 @@
+#: title: A dark red and dark blue wall structure with medium nougat bricks and clip details
+#: source: LDraw Official Model Repository, 21319-1.mpd, section 21319 - Steps 144 to 149.ldr
+#: author: Vincent Messenet [Cheenzo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("4477", "Dark_Red", 0, 0, 0)
+place("3023", "Medium_Nougat", 4, 1, 0)
+place("3004", "Dark_Red", 0, 1, 0)
+place("3005", "Medium_Nougat", 2, 1, 0)
+place("60475b", "Black", 3, 1, 0, rot=180)
+place("60475b", "Black", 6, 1, 0, rot=180)
+place("3005", "Medium_Nougat", 7, 1, 0)
+place("11211", "Dark_Red", 8, 1, 0)
+place("11211", "Dark_Red", 4, 2, 0)
+place("3023", "Medium_Nougat", 4, 5, 0)
+place("3005", "Dark_Red", 0, 4, 0)
+place("3005", "Dark_Blue", 1, 4, 0)
+place("3005", "Medium_Nougat", 2, 4, 0)
+place("3005", "Dark_Blue", 3, 4, 0)
+place("3023", "Medium_Nougat", 4, 6, 0)
+place("3005", "Dark_Blue", 6, 4, 0)
+place("3005", "Medium_Nougat", 7, 4, 0)
+place("3005", "Dark_Blue", 8, 4, 0)
+place("3005", "Dark_Red", 9, 4, 0)
+place("3024", "Dark_Red", 0, 7, 0)
+place("3460", "Dark_Blue", 1, 7, 0)
+place("3024", "Dark_Red", 9, 7, 0)
+place("4477", "Dark_Red", 0, 8, 0)
+place("6636", "Dark_Red", 0, 9, 0)
+place("2431", "Dark_Red", 6, 9, 0)

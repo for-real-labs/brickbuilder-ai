@@ -29,6 +29,7 @@ class JointFindings:
     missed: tuple[tuple[int, int, str], ...]  # a pin or axle that is in none of the other part's holes
     seated: int  # joints measured as one part seated in the other
     touching: int  # other joints, checked for contact only
+    wrong: tuple[tuple[int, int, str, str], ...] = ()  # parts whose connectors do not fit, with the reason
 
 
 class JointReview:
@@ -37,14 +38,19 @@ class JointReview:
         self._shapes = shapes
 
     def review(self, build: Build, boxes: dict[int, list], studded: set[frozenset[int]],
-               fits: set[tuple[int, int]] = frozenset()) -> JointFindings:
+               fits: set[tuple[int, int]] = frozenset(), misfit=None) -> JointFindings:
         """``boxes`` are the checker's model-space boxes, ``studded`` the pairs already joined by a
-        stud and ``fits`` the pairs measured as a peg in a hole (see ``fits``)."""
-        apart, missed, seated, touching = [], [], 0, 0
+        stud and ``fits`` the pairs measured as seated in each other. ``misfit`` says why two
+        placements cannot be joined, when connector data knows (see ``connectors``)."""
+        apart, missed, wrong, seated, touching = [], [], [], 0, 0
         for first, second, note in build.links:
             a, b = build.placements[first], build.placements[second]
             if (min(first, second), max(first, second)) in fits:
                 seated += 1
+                continue
+            reason = misfit(first, second) if misfit is not None else None
+            if reason is not None and frozenset((first, second)) not in studded:
+                wrong.append((first, second, note, reason))
                 continue
             if self._gap(self._boxes(first, a, boxes), self._boxes(second, b, boxes)) > CONTACT_GAP:
                 apart.append((first, second, note))
@@ -56,7 +62,7 @@ class JointReview:
                 missed.append((first, second, note))
             else:
                 touching += 1
-        return JointFindings(tuple(apart), tuple(missed), seated, touching)
+        return JointFindings(tuple(apart), tuple(missed), seated, touching, tuple(wrong))
 
     def _boxes(self, index: int, placement: Placement, boxes: dict[int, list]) -> list:
         if index in boxes:

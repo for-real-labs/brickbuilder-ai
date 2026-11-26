@@ -1,0 +1,31 @@
+#: title: Name: 7222 - Flyers - Helicopter.ldr
+#: source: LDraw Official Model Repository, 7222-1.mpd
+#: author: not named in the file
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("3710", "Dark_Grey", 0, 0, 0, rot=270)
+place("3710", "Dark_Grey", 3, 0, 0, rot=270)
+place("3020", "Light_Grey", 0, 1, 1, rot=180)
+place("3660", "Red", 1, 2, 0)
+place("3747a", "Red", 1, 2, 2, rot=180)
+place("41770", "Red", 2, 5, 1)
+place("41769", "Red", 0, 5, 1)
+place("6141", "Trans_Yellow", 1, 5, 0)
+place("6141", "Trans_Yellow", 2, 5, 0)
+place("3039", "Trans_Clear", 1, 6, 0)
+place("4070", "Light_Grey", 2, 6, 2, rot=270)
+place("4070", "Light_Grey", 1, 6, 2, rot=90)
+place("3005", "Red", 1, 6, 3, rot=90)
+place("3665", "Red", 1, 6, 4, rot=180)
+place("3040b", "Red", 2, 6, 3, rot=180)
+place("3460", "Light_Bluish_Grey", 1, 9, 1, rot=90)
+place("3623", "Light_Bluish_Grey", 2, 9, 1, rot=90)
+place("2460", "Dark_Grey", 1, 10, 2)
+place("4286", "Red", 1, 10, 6)
+place("6141", "Trans_Yellow", 1, 13, 8)
+place_ldu("2479", "Black", (40, -112, 60), (0.707, 0, 0.707, 0, 1, 0, -0.707, 0, 0.707))
+place_ldu("3710", "Red", (75.355, -120, 95.355), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
+place_ldu("3710", "Red", (4.645, -120, 95.355), (-0.707, 0, -0.707, 0, 1, 0, 0.707, 0, -0.707))
+place_ldu("3710", "Red", (4.645, -120, 24.645), (-0.707, 0, 0.707, 0, 1, 0, -0.707, 0, -0.707))
+place_ldu("3710", "Red", (75.355, -120, 24.645), (0.707, 0, 0.707, 0, 1, 0, -0.707, 0, 0.707))

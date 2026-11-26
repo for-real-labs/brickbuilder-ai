@@ -270,17 +270,19 @@ class ModelChecker:
                                                 "Simplify or use larger parts."))
         cells = self._hash(boxes)
         # Joints that can be measured: a peg, pin, bar or axle of one part in a hole or clip of another.
-        fits = self._assembly.fits(placements) if self._assembly is not None else set()
+        measured = self._assembly.measure(placements) if self._assembly is not None else None
+        fits = measured.fits if measured is not None else set()
         self._check_overlaps(placements, boxes, cells, report, self._assembly.seated(fits) if fits else fits)
         contacts = self._check_connections(build, boxes, cells, report, fits)
         if self._assembly is not None:
-            self._assembly.review(build, boxes, contacts, fits, report,
+            self._assembly.review(build, boxes, contacts, measured, report,
                                   lambda i: self._label(i, placements[i], boxes))
             if free_rotation:
                 report.notes.append(f"{len(free_rotation)} placements use a free rotation; only the solid plastic "
                                     "of plain bricks, plates and tiles is checked on them.")
-            report.notes.append("Checks cover overlaps, solid plastic, stud connections, declared joints and the "
-                                "building order. Balance and insertion clearance are not verified.")
+            report.notes.append("Checks cover overlaps, solid plastic, stud connections, connector fit, Technic "
+                                "seating, declared joints and the building order. Strength, balance and insertion "
+                                "clearance are not verified.")
             return report
         if free_rotation:
             report.notes.append(f"{len(free_rotation)} placements use a free rotation; their overlaps were not "
@@ -345,7 +347,7 @@ class ModelChecker:
             report.notes.append(f"{declared} overlapping pairs were declared intentional with allow_overlap.")
         if fitted:
             report.notes.append(f"{fitted} overlapping pairs are parts seated in or beside a measured joint "
-                                "(pin, bar, clip, hinge or wheel).")
+                                "(pin, bar, clip, hinge, wheel, pane or door).")
 
     def _check_connections(self, build: Build, boxes, cells, report: Report,
                            fits: set = frozenset()) -> list[StudContact]:

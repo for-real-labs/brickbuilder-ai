@@ -19,6 +19,22 @@ RUN apt-get update && \
 # Install uv
 RUN pip install --no-cache-dir uv
 
+# jev-rerank ranks the descriptions of Fable's example builds against a request
+# (fable_agent/examples/retrieval.py). https://github.com/anteloc/jev-rerank (AGPL-3.0): a pinned release whose
+# archive is checksum-verified, installed as its own tool with its own locked dependencies. It needs
+# TYPESAFE_API_KEY when it runs; without the key or the command, examples are ranked by keywords instead.
+ARG JEV_RERANK_VERSION=0.5.0
+ARG JEV_RERANK_SHA256=7a2bc86b68779e5f835026df708f4c7f38e2364f9d17bee58ff7f2c17e04f03a
+RUN set -eux; \
+    curl -fsSL "https://github.com/anteloc/jev-rerank/releases/download/v${JEV_RERANK_VERSION}/jev-rerank-${JEV_RERANK_VERSION}-source.zip" -o /tmp/jev-rerank.zip; \
+    echo "${JEV_RERANK_SHA256}  /tmp/jev-rerank.zip" | sha256sum -c -; \
+    unzip -q /tmp/jev-rerank.zip -d /tmp/jev-rerank; \
+    cd "/tmp/jev-rerank/jev-rerank-${JEV_RERANK_VERSION}"; \
+    uv export --frozen --no-dev --no-emit-project --no-hashes --output-file /tmp/jev-rerank-locked.txt; \
+    UV_TOOL_DIR=/opt/uv-tools UV_TOOL_BIN_DIR=/usr/local/bin uv tool install --constraints /tmp/jev-rerank-locked.txt .; \
+    rm -rf /tmp/jev-rerank /tmp/jev-rerank.zip /tmp/jev-rerank-locked.txt; \
+    jev-rerank --help > /dev/null
+
 # Set working directory
 WORKDIR /app
 

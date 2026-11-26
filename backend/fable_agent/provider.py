@@ -145,6 +145,11 @@ class Budget:
             raise BudgetExhausted("The run's AI budget is used up")
         return min(requested, allowance)
 
+    def charge(self, cost: Decimal, call: dict) -> None:
+        """Charge a paid call that is not a model turn (the example search), with its own record."""
+        self.spent += Decimal(cost)
+        self.calls.append(call)
+
     def record(self, reply: ModelReply, *, carried: bool = True) -> Decimal:
         """Charge one call. ``carried=False`` is for a call outside the conversation, whose tokens
         are not sent again with the next one."""

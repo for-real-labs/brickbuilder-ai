@@ -1,0 +1,32 @@
+#: title: A red-framed roof window assembly with multiple tan windows, clear glass panes, and decorative curved-top bricks.
+#: source: LDraw Official Model Repository, 5771-1.mpd, section 5771 - Roof window.ldr
+#: author: Takeshi Takahashi [RainbowDolphin]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 26 of 32 parts kept (minifigures, overlapping and unattached parts left out)
+place("2465", "Red", 0, 0, 0)
+place("60594", "Tan", 0, 3, 0, rot=180)
+place("60594", "Tan", 6, 3, 0, rot=180)
+place("60594", "Tan", 12, 3, 0, rot=180)
+place("2454a", "Red", 4, 3, 0)
+place("2454a", "Red", 10, 3, 0)
+place("60594", "Tan", 0, 12, 0, rot=180)
+place("60594", "Tan", 6, 12, 0, rot=180)
+place("60594", "Tan", 12, 12, 0, rot=180)
+place("3660", "Red", 4, 18, 0, rot=180)
+place("3660", "Red", 10, 18, 0, rot=180)
+place("3023", "Red", 0, 21, 0)
+place("3023", "Red", 14, 21, 0)
+place("60479", "Red", 2, 21, 0)
+place("3034", "Red", 0, 22, 0)
+place("3023", "Dark_Bluish_Grey", 4, 21, 1)
+place("3034", "Red", 8, 22, 0)
+place("3023", "Dark_Bluish_Grey", 10, 21, 1)
+place("60479", "Red", 2, 23, 0)
+place("92280", "Red", 0, 23, 0, rot=90)
+place("92280", "Red", 1, 23, 0, rot=90)
+place("92280", "Red", 14, 23, 0, rot=90)
+place("92280", "Red", 15, 23, 0, rot=90)
+place("6191", "Red", 2, 24, 0)
+place("6191", "Red", 6, 24, 0)
+place("6191", "Red", 10, 24, 0)

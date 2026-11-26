@@ -1,0 +1,33 @@
+#: title: A wall section of reddish brown bricks and plates with grille bricks, windows and accent round plates, including door-rail mounts.
+#: source: LDraw Official Model Repository, 10246-1.mpd, section 10246 - First floor - Wall1.ldr
+#: author: Willy Tschager [Holly-Wood]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 27 parts kept (minifigures, overlapping and unattached parts left out)
+place("3795", "Reddish_Brown", 1, 0, 0, rot=270)
+place("3666", "Reddish_Brown", 1, 1, 0, rot=270)
+place_ldu("33291", "Bright_Green", (50, -16, 10), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
+place_ldu("33291", "Bright_Green", (50, -16, 90), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
+place_ldu("33291", "Bright_Green", (50, -16, 110), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
+place_ldu("33291", "Magenta", (50, -16, 30), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
+place("32028", "Dark_Bluish_Grey", 1, 2, 2, rot=270)
+place("3023", "Reddish_Brown", 1, 2, 0, rot=270)
+place("3023", "Reddish_Brown", 1, 2, 4, rot=270)
+place_ldu("33291", "Magenta", (50, -24, 10), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
+place_ldu("33291", "Magenta", (50, -24, 90), (0.707, 0, -0.707, 0, 1, 0, 0.707, 0, 0.707))
+place("3004", "Reddish_Brown", 1, 3, 0, rot=270)
+place("2877", "Reddish_Brown", 1, 3, 4, rot=90)
+place("3004", "Reddish_Brown", 1, 6, 4, rot=270)
+place("2877", "Reddish_Brown", 1, 6, 0, rot=90)
+place("3004", "Reddish_Brown", 1, 9, 0, rot=270)
+place("2877", "Reddish_Brown", 1, 9, 4, rot=270)
+place("60593c01", "White", 1, 3, 2, rot=270)
+place("2877", "Reddish_Brown", 1, 12, 0, rot=270)
+place("3004", "Reddish_Brown", 1, 12, 4, rot=270)
+place("2877", "Reddish_Brown", 1, 15, 4, rot=90)
+place("3004", "Reddish_Brown", 1, 15, 0, rot=270)
+place("60592c01", "White", 1, 12, 2, rot=270)
+place("15573", "Reddish_Brown", 1, 18, 0, rot=270)
+place("15573", "Reddish_Brown", 1, 18, 2, rot=270)
+place("15573", "Reddish_Brown", 1, 18, 4, rot=270)
+place("3795", "Reddish_Brown", 0.5, 19, 0, rot=270)

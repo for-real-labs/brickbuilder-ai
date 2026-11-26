@@ -1,0 +1,31 @@
+#: title: Wall section with a diamond-lattice window, embossed tan bricks, scroll bricks, and a blue triple flame decoration.
+#: source: LDraw Official Model Repository, 21325-1.mpd, section 21325 - Steps 158 to 168.ldr
+#: author: Vincent Messenet [Cheenzo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("4287a", "Reddish_Brown", 2, 0, 3, rot=270)
+place("4287a", "Reddish_Brown", 2, 0, 0, rot=270)
+place("3031", "Reddish_Brown", 1, 3, 0)
+place("3023", "Dark_Brown", 1, 4, 1, rot=90)
+place("3023", "Dark_Brown", 1, 5, 1, rot=90)
+place("98283", "Tan", 4, 4, 1, rot=270)
+place("20310", "Reddish_Brown", 0, 4, 3, rot=90)
+place("20310", "Reddish_Brown", 0, 4, 0, rot=90)
+place("98283", "Tan", 2, 4, 3, rot=180)
+place("98283", "Tan", 2, 4, 0)
+place("3937", "Reddish_Brown", 1, 6, 1, rot=90)
+place_ldu("6134", "Reddish_Brown", (25.765, -71.062, 40), (0, 0.423, -0.906, 0, 0.906, 0.423, 1, 0, 0))
+place_ldu("2431", "Reddish_Brown", (4.261, -69.85, 40), (0, 0.423, 0.906, 0, 0.906, -0.423, -1, 0, 0))
+place_ldu("3023", "Reddish_Brown", (22.381, -78.31, 40), (0, 0.423, 0.906, 0, 0.906, -0.423, -1, 0, 0))
+place("3622", "White", 1, 7, 3)
+place("3622", "White", 1, 7, 0)
+place_ldu("3069bpt5", "White", (9.937, -81.328, 50), (0.906, 0.423, 0, -0.423, 0.906, 0, 0, 0, 1))
+place_ldu("6141", "Dark_Red", (18.997, -85.558, 30), (0.906, 0.423, 0, -0.423, 0.906, 0, 0, 0, 1))
+place_ldu("20482", "Trans_Clear", (15.613, -92.806, 30), (0.906, 0.423, 0, -0.423, 0.906, 0, 0, 0, 1))
+place("60592", "Reddish_Brown", 4, 7, 1, rot=270)
+place_ldu("38320", "Pearl_Gold", (100, -104, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("14716", "Reddish_Brown", 4, 4, 3)
+place("14716", "Reddish_Brown", 4, 4, 0)
+place("3004", "White", 2, 10, 3)
+place("3004", "White", 2, 10, 0)

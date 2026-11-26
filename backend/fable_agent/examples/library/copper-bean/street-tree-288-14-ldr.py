@@ -1,0 +1,20 @@
+#: title: Compact street tree: earth plinth, round trunk and three leaf tiers
+#: source: ldraw-nova example atlas, copper-bean.mpd, section street-tree-288-14.ldr
+#: author: ldraw-nova copper-bean generator
+#: licence: CC BY-SA 4.0 (ldraw-nova examples by Carlos Antelo)
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 15 of 15 parts kept (minifigures, overlapping and unattached parts left out)
+place("3020", "Green", 2, 0, 2)
+place("3020", "Green", 2, 0, 4)
+place("3022", "Reddish_Brown", 3, 1, 3)
+place_ldu("24866", "Yellow", (50, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24866", "Yellow", (90, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("24866", "Yellow", (110, -16, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Reddish_Brown", 3, 2, 3)
+place("3062b", "Reddish_Brown", 3, 5, 3)
+place("3062b", "Reddish_Brown", 3, 8, 3)
+place_ldu("2417", "Dark_Green", (70, -96, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3062b", "Reddish_Brown", 3, 12, 3)
+place_ldu("2417", "Dark_Green", (70, -128, 70), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place("3062b", "Reddish_Brown", 3, 16, 3)
+place_ldu("2423", "Yellow", (70, -160, 70), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("2423", "Dark_Green", (70, -168, 70), (1, 0, 0, 0, 1, 0, 0, 0, 1))

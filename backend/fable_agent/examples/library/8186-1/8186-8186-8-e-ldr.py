@@ -1,0 +1,33 @@
+#: title: A yellow and grey wheeled platform or vehicle with plates, T-beams, tires, and curved slopes.
+#: source: LDraw Official Model Repository, 8186-1.mpd, section 8186 - 8186-8-e.ldr
+#: author: Massimo Maso [Sirio]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 27 of 33 parts kept (minifigures, overlapping and unattached parts left out)
+place("3020", "Yellow", 2, 0, 12)
+place("3031", "Yellow", 2, 0, 2)
+place("3666", "Yellow", 1, 1, 13)
+place("3460", "Dark_Grey", 2, 1, 5, rot=90)
+place("3460", "Dark_Grey", 5, 1, 5, rot=90)
+place("3795", "Yellow", 1, 1, 3)
+place("3022", "Light_Grey", 1, 2, 12)
+place("3022", "Light_Grey", 5, 2, 12)
+place_ldu("2444", "Red", (40, -24, 200), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3673", "Black", (20, -14, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2444", "Red", (120, -24, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Black", (140, -14, 200), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2444", "Red", (40, -24, 160), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("3673", "Black", (20, -14, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("2444", "Red", (120, -24, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("3673", "Black", (140, -14, 160), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("3022", "Light_Grey", 1, 2, 4)
+place("3022", "Light_Grey", 5, 2, 4)
+place("54200", "Trans_Orange", 1, 3, 13, rot=270)
+place("54200", "Trans_Orange", 6, 3, 13, rot=90)
+place("2431", "White", 2, 3, 13)
+place("4162", "Light_Grey", 1, 3, 5, rot=90)
+place("4162", "Light_Grey", 2, 3, 5, rot=90)
+place("4162", "Light_Grey", 5, 3, 5, rot=90)
+place("4162", "Light_Grey", 6, 3, 5, rot=90)
+place_ldu("60484", "Black", (10, -54, 180), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("60484", "Black", (150, -54, 180), (0, -1, 0, 0, 0, 1, -1, 0, 0))

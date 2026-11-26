@@ -1,0 +1,31 @@
+#: title: An illuminated rear light panel built from transparent slopes, grille pieces, and loudhailer reflectors on plates.
+#: source: LDraw Official Model Repository, 6753-1_Crane.mpd, section 6753 - Truck S40.ldr
+#: author: Marc Giraudet [Mad_Marc]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("2445", "Dark_Bluish_Grey", 0, 0, 2)
+place("2445", "Dark_Bluish_Grey", 0, 0, 0)
+place("3832", "Light_Bluish_Grey", 1, 1, 1)
+place("3023", "Yellow", 3, 1, 0)
+place("3023", "Yellow", 7, 1, 0)
+place("2555", "Dark_Bluish_Grey", 1, 1, 0, rot=90)
+place("2555", "Dark_Bluish_Grey", 10, 1, 0, rot=90)
+place("54200", "Trans_Orange", 1, 2, 2, rot=90)
+place("54200", "Trans_Orange", 1, 2, 1, rot=90)
+place("54200", "Trans_Orange", 10, 2, 2, rot=270)
+place("54200", "Trans_Orange", 10, 2, 1, rot=270)
+place("54200", "Yellow", 8, 2, 0, rot=270)
+place("54200", "Yellow", 3, 2, 0, rot=90)
+place("61409", "Dark_Bluish_Grey", 4, 2, 1, rot=180)
+place("61409", "Dark_Bluish_Grey", 7, 2, 1, rot=180)
+place("3023", "White", 2, 2, 1, rot=90)
+place("3023", "White", 9, 2, 1, rot=90)
+place("3024", "Yellow", 4, 2, 0, rot=270)
+place("3024", "Yellow", 7, 2, 0, rot=270)
+place("3024", "Trans_Orange", 2, 3, 2, rot=270)
+place("3024", "Trans_Orange", 2, 3, 1, rot=270)
+place("3024", "Trans_Orange", 9, 3, 2, rot=270)
+place("3024", "Trans_Orange", 9, 3, 1, rot=270)
+place("3070b", "Light_Bluish_Grey", 4, 3, 0, rot=90)
+place("3070b", "Light_Bluish_Grey", 7, 3, 0, rot=90)

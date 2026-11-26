@@ -1,0 +1,31 @@
+#: title: Grilled black body panel section built from long tiles, plates and grille bricks with SNOT detail.
+#: source: LDraw Official Model Repository, 76139-1.mpd, section 76139 - 1989 Batmobile - step469-477.ldr
+#: author: Orion Pobursky [OrionP]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 28 parts kept (minifigures, overlapping and unattached parts left out)
+place("3710", "Black", 0, 0, 9, rot=90)
+place("3024", "Black", 0, 0, 13, rot=270)
+place("3710", "Black", 0, 0, 1, rot=90)
+place("3024", "Black", 0, 0, 0, rot=270)
+place("2877", "Black", 0, 0, 5, rot=90)
+place("2877", "Black", 0, 0, 7, rot=90)
+place("3710", "Black", 0, 1, 10, rot=90)
+place("3710", "Black", 0, 1, 0, rot=90)
+place("3710", "Black", 0, 2, 10, rot=90)
+place("3710", "Black", 0, 2, 0, rot=90)
+place("32952", "Black", 0, 1, 9, rot=270)
+place_ldu("99206", "Light_Bluish_Grey", (36, -38, 180), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("30414", "Black", 0, 3, 10, rot=270)
+place_ldu("3022", "Tan", (28, -28, 260), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place_ldu("99206", "Light_Bluish_Grey", (36, -38, 220), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("2877", "Black", 0, 3, 7, rot=90)
+place("2877", "Black", 0, 3, 5, rot=90)
+place("32952", "Black", 0, 1, 4, rot=270)
+place_ldu("99206", "Light_Bluish_Grey", (36, -38, 100), (0, -1, 0, 0, 0, 1, -1, 0, 0))
+place("3010", "Black", 0, 3, 0, rot=90)
+place("63864", "Black", 0, 6, 11, rot=270)
+place("4162", "Black", 0, 6, 3, rot=270)
+place("63864", "Black", 0, 6, 0, rot=270)
+place("4162", "Black", 1, 6, 4, rot=270)
+place_ldu("99206", "Light_Bluish_Grey", (36, -38, 140), (0, -1, 0, 0, 0, 1, -1, 0, 0))

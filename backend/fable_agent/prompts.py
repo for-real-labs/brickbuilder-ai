@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
+from pathlib import Path
 from typing import Callable
 
 from .catalog import PartEntry, PartFinder
@@ -158,12 +160,31 @@ Arguments work as everywhere else in the kit: x and z in studs, y and heights in
 
 REPAIR = """# Automatic repair
 
-Automatic repair runs on your build before it is checked. Where a plain brick, plate or tile runs into another part, it is cut back to the cells that are free, and a part asked for in a color it does not come in is placed in the closest color it does come in. The report says what was repaired. You need not subtract every cut-out by hand, but look at the repaired places in the pictures. Shaped parts (slopes, windows, fences, plants) are never cut and nothing is moved: keep those clear of each other yourself, and unattached parts are still yours to fix."""
+Automatic repair runs on your build before it is checked. Where a plain brick, plate or tile runs into another part, it is cut back to the cells that are free. A part the catalog does not stock is replaced by the same part under its current number, or by a stocked part that measures the same, when there is one; otherwise it stays an error for you to fix. A part asked for in a color it does not come in is placed in the closest color it does come in. The report says what was repaired. You need not subtract every cut-out by hand, but look at the repaired places in the pictures. Shaped parts (slopes, windows, fences, plants) are never cut and nothing is moved: keep those clear of each other yourself, and unattached parts are still yours to fix."""
+
+
+GUIDES = Path(__file__).parent / "guides"
+GUIDE_ORDER = ("design", "vehicles", "spacecraft", "joints")
+
+
+@lru_cache(maxsize=1)
+def guides() -> str:
+    """The building guides in ``guides/``, without the credit line each file starts with.
+
+    The text is adapted from another project's guides and keeps its own licence, so it lives in
+    its own files and is read from there (see ``guides/NOTICE.md``).
+    """
+    texts = []
+    for name in GUIDE_ORDER:
+        lines = (GUIDES / f"{name}.md").read_text(encoding="utf-8").splitlines()
+        texts.append("\n".join(line for line in lines if not line.startswith("<!--")).strip())
+    return "# Building guides\n\n" + "\n\n".join(texts)
 
 
 def assisted() -> str:
-    """What the v2 prompts add: the helpers a script may call, and the repair that follows it."""
-    return f"{HELPERS_INTRO}\n\n{prompt_section()}\n\n{REPAIR}\n\n{ASSEMBLY}"
+    """What the v2 prompts add: the helpers a script may call, the repair that follows it, the
+    publication rules and the building guides."""
+    return f"{HELPERS_INTRO}\n\n{prompt_section()}\n\n{REPAIR}\n\n{ASSEMBLY}\n\n{guides()}"
 
 
 # The v2 methods are held to the publication rules (see ``assembly``).
@@ -172,8 +193,10 @@ ASSEMBLY = """# What the report also requires
 These go beyond the notes under "What holds together" and cannot be argued away:
 
 - Solid plastic. Two plain bricks, plates or tiles that share space are an error at any rotation, and so is anything that cuts into a seat back, a dish rim, a curved tile or a side stud. `allow_overlap` does not excuse these: it is only for a part made to nest in another.
-- Measured joints. The report finds these itself when the two parts line up, and counts them as attached: a Technic pin or axle in a hole, a bar in a clip or in a hollow stud, a hinge pin in its base, a wheel on its pin and a tyre on its rim. They need no `connect` and no `allow_overlap`. If such a part is reported as floating or overlapping, it is not lined up with its hole.
-- Declared joints. `connect(a, b)` is for what cannot be measured, such as a pane in its frame, and it needs evidence. The two parts must touch, and a Technic pin or axle must lie in a hole of the other part, on the hole's own line. Never use `connect` to hold up a part that is not really attached.
+- Measured joints. The report finds these itself and counts them as attached: a Technic pin or axle seated in a hole, a bar in a clip or in a hollow stud, hinge halves that mesh, a wheel on its pin, a tyre on its rim, a pane or door in its frame. They need no `connect` and no `allow_overlap`. They are measured from connector data, so the part must be on its real seat: `inset()` and the helpers put it there. If such a part is reported as floating or overlapping, it is not on its seat.
+- Parts that do not fit. A tyre on a rim of another size, or a pane in a frame it was not made for, is an error marked `[fit]` however well it is centred. A Technic pin or axle that is not seated is an error marked `[technic]`. Use the part made for the seat, or seat it.
+- Declared joints. `connect(a, b)` is for what cannot be measured, and it needs evidence. The two parts must touch, their connectors must fit each other where the connector data knows them, and a Technic pin or axle must lie in a hole of the other part, on the hole's own line. Never use `connect` to hold up a part that is not really attached.
+- Wheels. Warnings marked `[vehicle]` say that a tyre does not stand on the ground the others stand on, that an axle is not a mirrored pair, or that bodywork reaches below the tyres. Fix them unless the model is meant that way.
 - One model. Everything must be one connected model. Free-standing pieces need a shared base.
 - Building order. The instructions are made for you, from the ground up, in steps of at most five connected pieces. Every piece must attach to something built before it, and must not be closed in between two pieces before it can be placed. `step()` and `module()` only suggest where steps break."""
 

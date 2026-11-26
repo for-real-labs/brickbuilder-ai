@@ -1,0 +1,31 @@
+#: title: A rooftop section with black slopes, crowbar, trans-light-blue round bricks, and a grille round brick vent.
+#: source: LDraw Official Model Repository, 10278-1.mpd, section 10278 - roof3f.ldr
+#: author: Philippe Hurbain [Philo]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("3021", "Light_Bluish_Grey", 0, 0, 5, rot=90)
+place("3021", "Light_Bluish_Grey", 2, 0, 5, rot=90)
+place("41740", "Reddish_Brown", 0, 1, 5, rot=180)
+place("3710", "Black", 0, 1, 7, rot=180)
+place("20482", "Black", 0, 2, 5, rot=180)
+place("20482", "Black", 3, 2, 5, rot=180)
+place("87552", "Reddish_Brown", 0, 1, 6)
+place("87552", "Reddish_Brown", 2, 1, 6)
+place("3678b", "Black", 0, 2, 7, rot=180)
+place("3678b", "Black", 2, 2, 7, rot=180)
+place("3020", "Light_Bluish_Grey", 0, 7, 5, rot=180)
+place("3710", "Reddish_Brown", 0, 8, 5, rot=180)
+place("3062b", "Trans_Light_Blue", 1, 9, 5, rot=180)
+place("3062b", "Trans_Light_Blue", 2, 9, 5, rot=180)
+place("6141", "White", 1, 12, 5, rot=180)
+place("6141", "White", 2, 12, 5, rot=180)
+place("3678b", "Black", 0, 8, 6, rot=180)
+place("3678b", "Black", 2, 8, 6, rot=180)
+place("3795", "Light_Bluish_Grey", 0, 13, 0, rot=270)
+place("3795", "Light_Bluish_Grey", 2, 13, 0, rot=270)
+place("3032", "Black", 0, 14, 1, rot=270)
+place("3710", "Black", 0, 14, 0)
+place("2431", "Black", 0, 15, 6)
+place_ldu("92947", "Light_Bluish_Grey", (40, -144, 40), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("15535", "Light_Bluish_Grey", 1, 18, 1)

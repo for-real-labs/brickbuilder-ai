@@ -1,0 +1,31 @@
+#: title: Combined assembly of the small spaceship with an accompanying minifigure.
+#: source: LDraw Official Model Repository, 6949-1.mpd, section 6949 - Spaceship + Minifig.ldr
+#: author: Damien Roux [Darats]
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 25 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("3710", "Red", 1, 0, 2, rot=180)
+place("3710", "Red", 1, 0, 5, rot=180)
+place("6141", "Trans_Neon_Green", 5, 0, 4, rot=180)
+place("6141", "Trans_Neon_Green", 5, 0, 3, rot=180)
+place("6141", "Trans_Neon_Green", 0, 0, 4, rot=180)
+place("6141", "Trans_Neon_Green", 0, 0, 3, rot=180)
+place("2419", "Black", 0, 1, 1, rot=90)
+place("2419", "Black", 3, 1, 1, rot=270)
+place("3795", "Dark_Grey", 0, 2, 3)
+place("4859", "Dark_Grey", 1, 2, 0, rot=180)
+place("3023", "Red", 2, 2, 5, rot=180)
+place("4598", "Black", 2, 3, 3)
+place("3794a", "Red", 0, 3, 4)
+place("3794a", "Red", 0, 3, 3)
+place("3794a", "Red", 4, 3, 4)
+place("3794a", "Red", 4, 3, 3)
+place("4595", "Black", 4.5, 3.75, 3, rot=180)
+place_ldu("4589", "Trans_Neon_Green", (100, -38, 36), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4740", "Trans_Red", (100, -38, 116), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place("4595", "Black", 0.5, 3.75, 3, rot=180)
+place_ldu("4589", "Trans_Neon_Green", (20, -38, 36), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place_ldu("4740", "Trans_Red", (20, -38, 116), (-1, 0, 0, 0, 0, 1, 0, 1, 0))
+place("3039", "Black", 2, 3, 1)
+place_ldu("4740", "Trans_Red", (60, -52, 128), (1, 0, 0, 0, 0, -1, 0, 1, 0))
+place("3069bp28", "Black", 2, 6, 2, rot=180)

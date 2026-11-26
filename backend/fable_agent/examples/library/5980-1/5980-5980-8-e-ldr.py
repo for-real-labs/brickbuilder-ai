@@ -1,0 +1,28 @@
+#: title: A red and black tool storage rack holding minifig tools including screwdriver, wrenches, and hammer with clipped wall mounts.
+#: source: LDraw Official Model Repository, 5980-1.mpd, section 5980 - 5980-8-e.ldr
+#: author: Massimo Maso
+#: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
+#: description: by Carlos Antelo (ldraw-nova annotations), CC BY-SA 4.0
+#: changes: converted to a BrickBuilder build script; moved to stand on the ground; 22 of 25 parts kept (minifigures, overlapping and unattached parts left out)
+place("4477", "Red", 6, 0, 1)
+place("4477", "Red", 6, 1, 1)
+place("6141", "Yellow", 6, 2, 1)
+place("6141", "Yellow", 15, 2, 1)
+place("3008", "Black", 7, 2, 1)
+place("6541", "Black", 6, 3, 1, rot=90)
+place_ldu("6587", "Dark_Grey", (90, -38, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("59443", "Yellow", (60, -38, 30), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("6553", "Light_Grey", (10, -38, 30), (0, 1, 0, -1, 0, 0, 0, 0, 1))
+place_ldu("4085c", "Red", (150, -48, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4085c", "Red", 8, 5, 1, rot=180)
+place_ldu("4085c", "Red", (190, -48, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4085c", "Red", 10, 5, 1, rot=180)
+place_ldu("4085c", "Red", (230, -48, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4085c", "Red", 12, 5, 1, rot=180)
+place_ldu("85940", "Black", (250, -30, 50), (-0.707107, 0, -0.707107, -0.707107, 0, 0.707107, 0, 1, 0))
+place_ldu("4085c", "Red", (270, -48, 30), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place("4085c", "Red", 14, 5, 1, rot=180)
+place("6541", "Black", 15, 3, 1, rot=90)
+place("6111", "Red", 6, 6, 1)
+place("54200", "Black", 6, 9, 1, rot=180)
+place("54200", "Black", 15, 9, 1, rot=180)
