@@ -271,9 +271,22 @@ The scripts are in `backend/fable_agent/examples/library/<category>/`:
 - 28 official LEGO sets from the [LDraw Official Model Repository](https://library.ldraw.org/omr),
   converted to plain `place` calls in building order. A set is kept only if at least 80% of
   it survives without the parts the checks cannot join (minifigures, clips, hinges,
-  wheels on pins) and what is left passes every check a Pip build must pass. Of 1,829
-  model files, 28 did: skyscrapers, small houses, animals, small planes and boats. No set
-  with wheels passes, so the car examples are all written ones.
+  wheels on pins) and what is left passes every check a Pip build must pass. Of 1,830
+  model files, 28 did: skyscrapers, small houses, animals, small planes and boats. The
+  sets themselves are ordinary buildable sets; they are left out for what Pip can use and
+  check, not for what they are:
+
+  | Files | Why it is not an example |
+  |---|---|
+  | 634 | More than 200 pieces: left out to keep the prompt small |
+  | 533 | Over 20% of its pieces are held by clips, hinges or pins, or overlap in Pip's coarse part shapes |
+  | 440 | Over 20% of its pieces are not in the parts catalog Pip builds from |
+  | 74 | Licensed for non-commercial use only, or unreadable |
+  | 61 | Fewer than 15 pieces |
+  | 60 | Nothing stands on the ground after the above, would lose a wheel, a duplicate, or no category |
+  | 28 | Kept |
+
+  No set with wheels passes, so the car examples are all written ones.
   `backend/scripts/build_fable_examples.py` rebuilds them from a folder of downloaded
   files; the files themselves are not in the repository. Each set and its model file's
   author and licence are credited in `fable_agent/examples/SOURCES.md`.
@@ -283,7 +296,7 @@ instructions, and BrickLink's models need an account and carry no licence for re
 none of those could supply examples. Rebrickable's free set table names the sets and
 their themes.
 
-`tests/test_fable_examples.py` builds every example with the real parts under Nova's
+`tests/test_fable_examples.py` builds every example with the real parts under the
 publication rules. To add one, put a script in the category's folder with `#: title:`
 and `#: source:` lines at its top.
 
@@ -381,32 +394,31 @@ whether a hand can reach a part, and parts on rotations that are not multiples o
 degrees are not overlap-checked. Reports say this, and every report carries
 `physical_validity: not_proven`.
 
-### Nova's publication rules (the v2 methods)
+### Publication rules (the v2 methods)
 
-Pip and Thorough v2 are also held to what Nova requires before it publishes. The rules are
-not copied: `fable_agent/nova_rules.py` loads Nova's own files from `backend/nova-service`
-(`flatten.py`, `material_collision.py`, `material_surfaces.py`), so a fix made for Nova
-reaches Fable too. Fable supplies the evidence its checker measured.
+Pip and Thorough v2 are held to stricter rules before a model is published. They began as
+Nova's publication checks and are now the Fable agents' own code: nothing is loaded from
+`backend/nova-service`, and the two can change apart.
 
 | Rule | What it refuses | Code |
 |---|---|---|
-| Solid plastic | Two plain bricks, plates or tiles in the same place at any rotation, and anything that cuts into a seat back, dish rim, curved tile or side stud. `allow_overlap` does not excuse it. | `material.py` |
+| Solid plastic | Two plain bricks, plates or tiles in the same place at any rotation, and anything that cuts into a seat back, dish rim, curved tile or side stud. `allow_overlap` does not excuse it. | `material.py`, `solids.py` |
 | Declared joints | A `connect()` between parts that do not touch, or a Technic pin or axle that is in none of the other part's holes. | `joints.py` |
 | One model | Free-standing pieces. They were a warning; a model needs one building order. | `assembly.py` |
 | Building order | A model that cannot be built one piece at a time: each piece must attach to what is already built and must not be closed in first. | `sequence.py` |
 
-A build that passes gets its instructions from Nova's planner: the pieces on the ground first,
+A build that passes gets its instructions from the planner: the pieces on the ground first,
 then upward, in steps of at most five connected pieces. A piece that hangs under its support is
 shown as built together with it (`0 !BRICKBUILDER BUILD_TOGETHER`, which the instruction viewer
 already reads). `step()` and `module()` only suggest where steps break.
 
 What this still does not prove: clips, bars, tyres on rims and panes in frames are checked for
 touching only, because the parts library does not name those connectors; the report counts them.
-Balance and whether a hand can reach a part are not checked. Nova's Technic connector
-fingerprints live in its private toolkit and are not used here.
+Balance and whether a hand can reach a part are not checked. Technic joints are recognized
+only where the parts library names the connector (pins, axle pins and their holes).
 
 When no revision passes, the last build is kept in `rejected/` with its failed checks, and the
-website offers it as an unverified draft, the way it does for Nova.
+website offers it as an unverified draft.
 
 ## Safety
 
@@ -457,7 +469,7 @@ that too and is the stronger design if Fable becomes a main path.
 - On the website an edit starts from the saved script, not from the conversation that
   wrote it, and a customer's parts inventory is not supported.
 - The first-version methods (Fable, Fable Lean) still group instruction steps by height and
-  take `connect()` on trust. Only the v2 methods use Nova's rules.
+  take `connect()` on trust. Only the v2 methods use the publication rules.
 - Doors hung in frames and other clip or hinge connections are placed by `inset`
   or `connect` and are verified only as two parts that touch.
 

@@ -1,4 +1,4 @@
-"""Nova's publication rules on a Fable build: solid plastic, declared joints and the building order."""
+"""The publication rules of the v2 methods: solid plastic, declared joints and the building order."""
 
 import random
 
@@ -6,9 +6,13 @@ import pytest
 from fable_agent.joints import JointReview
 from fable_agent.kit import BUILD_TOGETHER, to_ldraw
 from fable_agent.ldraw import default_library_dir
-from fable_agent.material import MaterialReview
-from fable_agent.nova_rules import RULES_DIR, nova_rules, occurrence
-from fable_agent.sequence import NoSequence, SequencePlanner
+from pathlib import Path
+
+import numpy as np
+from fable_agent import solids
+from fable_agent.kit import Placement
+from fable_agent.material import MAX_REPORTED_PAIRS, MaterialReview
+from fable_agent.sequence import MAX_PARTS_PER_STEP, NoSequence, SequencePlanner
 
 from fable_agent_support import TECHNIC_PARTS, World
 
@@ -23,23 +27,60 @@ def base(kit, width=8, depth=2):  # two studs deep: the stand-in plates bond alo
     kit.fill([(x, z) for x in range(width) for z in range(depth)], 0, "Green", kind="plate", layers=2)
 
 
-# ----- one copy of the rules ------------------------------------------------
+# ----- the rules are the Fable agents' own -----------------------------------
+
+IDENTITY = (1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0)
+QUARTER_Y = (0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0)
+PLAIN = {"3022": {"x_studs": 2, "z_studs": 2, "height": 8}, "3021": {"x_studs": 3, "z_studs": 2, "height": 8},
+         "3001": {"x_studs": 4, "z_studs": 2, "height": 24}}
 
 
-def test_the_rules_are_novas_own_files_not_a_copy():
-    rules = nova_rules()
-    assert rules.sequence.__file__ == str(RULES_DIR / "flatten.py") and rules.sequence.MAX_PARTS_PER_STEP == 5
-    assert rules.material.__file__ == str(RULES_DIR / "material_collision.py")
-    assert rules.surfaces.EXPOSED_PARTS >= {"4079", "3960", "4740"}
-    assert nova_rules() is rules
+def test_nothing_in_the_agent_is_loaded_from_another_service():
+    import fable_agent
+    for source in Path(fable_agent.__file__).parent.rglob("*.py"):
+        assert "nova-service" not in source.read_text(encoding="utf-8"), source.name
+    assert MAX_PARTS_PER_STEP == 5 and solids.EXPOSED_PARTS == {"4079", "3960", "4740"}
 
 
-def test_a_placement_reads_as_a_nova_occurrence(tmp_path):
-    kit = World(tmp_path).kit()
-    kit.place("3001", "Red", 2, 3, 1, rot=90)
-    part = occurrence(kit.build.placements[0])
-    assert part.part_code == "3001" and (part.position.x, part.position.y) == kit.build.placements[0].position[:2]
-    assert part.matrix.rows[1] == (0.0, 1.0, 0.0) and len(part.matrix.rows) == 3
+def hit(*placed) -> bool:
+    groups = [solids.placed_solids(Placement(part, 0, position, matrix), PLAIN) for part, position, matrix in placed]
+    return any(solids.intersects(a, b) for a in groups[0] for b in groups[1])
+
+
+def test_measured_parts_collide_where_their_plastic_is_and_not_where_it_is_hollow():
+    # Two curved corner tiles at the same height, one stud apart, then with clearance.
+    assert hit(("27925", (-30, -96, 30), QUARTER_Y), ("27925", (-10, -96, 30), QUARTER_Y))
+    assert not hit(("27925", (-30, -96, 30), QUARTER_Y), ("27925", (10, -96, 30), QUARTER_Y))
+    # The lower side studs of a bracket brick run into a plate, at any rotation of the pair.
+    assert hit(("22885", (-40, -120, 50), IDENTITY), ("3021", (-30, -88, 20), IDENTITY))
+    assert not hit(("22885", (-40, -120, 50), IDENTITY), ("3021", (-30, -88, 10), IDENTITY))
+    turn = np.array(QUARTER_Y).reshape(3, 3)
+    assert hit(("22885", tuple(turn @ np.array([-40, -120, 50])), QUARTER_Y),
+               ("3021", tuple(turn @ np.array([-30, -88, 20])), QUARTER_Y))
+    # A stud's bore stays empty, and stacked bricks only touch.
+    bore = solids.box((-11, 9, -13), (-9, 11, -11))
+    assert not any(solids.intersects(solid, bore) for solid in solids.local_solids("22885", PLAIN))
+    assert not hit(("3001", (0, 0, 0), IDENTITY), ("3001", (0, -24, 0), IDENTITY))
+    assert solids.local_solids("3039", PLAIN) == [] and len(solids.local_solids("4079", PLAIN)) == 13
+
+
+def test_touching_is_allowed_and_a_scaled_placement_is_refused():
+    unit = solids.box((0, 0, 0), (1, 1, 1))
+    assert not solids.intersects(unit, solids.box((1, 0, 0), (2, 1, 1)))
+    assert solids.intersects(unit, solids.box((.5, 0, 0), (2, 1, 1)))
+    rounded = (.469472, 0, -.882948, 0, 1, 0, .882948, 0, .469472)  # six decimals, as a script writes it
+    assert solids.placed_solids(Placement("3022", 0, (0, 0, 0), rounded), PLAIN)
+    for matrix in ((1.00001, 0, 0, 0, 1.00001, 0, 0, 0, 1.00001), (1, .00001, 0, 0, 1, 0, 0, 0, 1)):
+        with pytest.raises(ValueError, match="unscaled"):
+            solids.placed_solids(Placement("3022", 0, (0, 0, 0), matrix), PLAIN)
+
+
+def test_a_surface_that_passes_through_a_solid_is_found():
+    wall = solids.box((0, 0, 0), (10, 10, 10))
+    through = np.array([[[5, 5, -5], [5, 5, 15], [5, 15, 5]]], dtype=float)
+    beside = through + np.array([20, 0, 0])
+    assert solids.faces_enter(through, wall) and not solids.faces_enter(beside, wall)
+    assert not solids.faces_enter(np.empty((0, 3, 3)), wall)
 
 
 # ----- solid plastic --------------------------------------------------------
@@ -90,21 +131,22 @@ def test_only_plain_boxes_are_given_solid_walls_and_a_tile_keeps_its_groove(tmp_
     assert profiles.get("3039") is None and profiles.get("3659") is None and profiles.get("missing") is None
 
 
-def test_the_review_finds_the_same_pairs_as_novas_own_sweep(tmp_path):
+def test_the_review_finds_exactly_the_pairs_a_test_of_every_pair_finds(tmp_path):
     world = World(tmp_path)
     review = MaterialReview(world.library, world.shapes)
-    rules = nova_rules().material
     chooser = random.Random(7)
     for _ in range(6):
         kit = world.kit()
-        for _ in range(40):
-            kit.place(chooser.choice(["3001", "3020", "3004", "3022"]), "Red", chooser.randrange(8),
-                      chooser.randrange(6), chooser.randrange(8), rot=chooser.choice([0, 90, 30]), allow_overlap=True)
+        for _ in range(24):
+            kit.place(chooser.choice(["3001", "3020", "3004", "3022"]), "Red", chooser.randrange(12),
+                      chooser.randrange(8), chooser.randrange(12), rot=chooser.choice([0, 90, 30]), allow_overlap=True)
         placements = kit.build.placements
-        expected = {tuple(sorted(hit["instances"]))
-                    for hit in rules.review_material([occurrence(p) for p in placements], review._profiles)}
+        placed = [solids.placed_solids(placement, review._profiles) for placement in placements]
+        expected = {(i, j) for i in range(len(placed)) for j in range(i + 1, len(placed))
+                    if any(solids.intersects(a, b) for a in placed[i] for b in placed[j])}
         found = {tuple(sorted(pair)) for pair in review.collisions(placements)}
-        assert expected and (found == expected or len(expected) >= rules.MAX_REPORTED_PAIRS and len(found) == len(expected))
+        assert expected and (found == expected if len(expected) < MAX_REPORTED_PAIRS
+                             else found <= expected and len(found) == MAX_REPORTED_PAIRS)
 
 
 # ----- declared joints ------------------------------------------------------
@@ -258,7 +300,7 @@ def test_a_model_no_order_can_build_is_reported_with_the_pieces_left_over(tmp_pa
     assert "blocked placement" in report.errors[0].message and "#3 " in report.errors[0].message
 
 
-def test_the_planner_turns_novas_refusal_into_its_own_error(tmp_path):
+def test_pieces_that_nothing_joins_have_no_building_order(tmp_path):
     world = World(tmp_path)
     kit = world.kit()
     kit.place("3001", "Red", 0, 0, 0)
@@ -268,6 +310,40 @@ def test_the_planner_turns_novas_refusal_into_its_own_error(tmp_path):
     with pytest.raises(NoSequence) as refused:
         SequencePlanner(world.shapes).plan(kit.build, [], boxes)
     assert refused.value.remaining == (1,)
+
+
+def test_an_order_is_checked_on_its_own_and_a_wrong_one_is_refused(tmp_path):
+    world = World(tmp_path)
+    kit = world.kit()
+    base(kit, 4, 2)
+    post = kit.place("3004", "Red", 0, 2, 0)
+    cap = kit.place("3004", "White", 0, 5, 0)   # on the post
+    from fable_agent.checks import hash_boxes, stud_contacts, world_boxes
+    boxes = {i: world_boxes(world.shapes.get(p.part), p) for i, p in enumerate(kit.build.placements)}
+    contacts = stud_contacts(kit.build.placements, world.shapes, boxes, hash_boxes(boxes))
+    planner = SequencePlanner(world.shapes)
+    joints, foundation = planner._joints(kit.build, contacts), planner._foundation(kit.build, boxes)
+    order = list(planner.plan(kit.build, contacts, boxes).order)
+    assert order.index(post) < order.index(cap) and joints.above[post] == {cap} and joints.below[cap] == {post}
+    planner._verify(order, joints, foundation)
+    swapped = [index for index in order if index != post]
+    swapped.insert(swapped.index(cap) + 1, post)  # the cap before the post that holds it
+    with pytest.raises(NoSequence, match="before anything that holds it"):
+        planner._verify(swapped, joints, foundation)
+    with pytest.raises(NoSequence, match="exactly once"):
+        planner._verify(order[:-1], joints, foundation)
+    with pytest.raises(NoSequence, match="on the ground must be placed"):
+        planner._verify([cap, *[index for index in order if index != cap]], joints, foundation)
+    with pytest.raises(NoSequence, match="no pieces"):
+        planner.plan(world.kit().build, [], {})
+
+
+def test_a_piece_is_not_placed_over_one_that_would_be_closed_in(tmp_path):
+    from fable_agent.sequence import _trapped
+    # A stack of three: with the bottom and the top built, the middle one could no longer go in.
+    above, below = [{1}, {2}, set()], [set(), {0}, {1}]
+    assert _trapped(2, {0}, above, below) == {1} and _trapped(0, {2}, above, below) == {1}
+    assert _trapped(1, {0}, above, below) == set() and _trapped(2, {0, 1}, above, below) == set()
 
 
 def test_what_rests_on_the_ground_is_seated_first_and_a_tyre_is_not_a_foundation(tmp_path):

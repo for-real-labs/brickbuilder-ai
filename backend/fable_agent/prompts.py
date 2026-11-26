@@ -166,7 +166,7 @@ def assisted() -> str:
     return f"{HELPERS_INTRO}\n\n{prompt_section()}\n\n{REPAIR}\n\n{ASSEMBLY}"
 
 
-# The v2 methods are held to what Nova requires before it publishes (see ``assembly``).
+# The v2 methods are held to the publication rules (see ``assembly``).
 ASSEMBLY = """# What the report also requires
 
 These go beyond the notes under "What holds together" and cannot be argued away:
