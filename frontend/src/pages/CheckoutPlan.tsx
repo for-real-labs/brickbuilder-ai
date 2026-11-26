@@ -1,3 +1,4 @@
+import { META_MEASUREMENT_CHANGED, metaClick, saveMetaClick } from '../utils/metaClick';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Check, LockKeyhole } from 'lucide-react';
@@ -33,7 +34,11 @@ export default function CheckoutPlan() {
   useEffect(() => {
     const update = () => setAttempt(value => value + 1);
     window.addEventListener('google-ad-measurement-changed', update);
-    return () => window.removeEventListener('google-ad-measurement-changed', update);
+    window.addEventListener(META_MEASUREMENT_CHANGED, update);
+    return () => {
+      window.removeEventListener('google-ad-measurement-changed', update);
+      window.removeEventListener(META_MEASUREMENT_CHANGED, update);
+    };
   }, []);
   const [busy, setBusy] = useState(false);
   const [total, setTotal] = useState<number | null>(null);
@@ -54,6 +59,12 @@ export default function CheckoutPlan() {
     return () => { active = false; };
   }, [canPay, user?.id, planKey, attempt]);
   const back = () => { posthog.capture('plan_checkout_back_clicked', { plan_key: planKey }); navigate('/pricing'); };
+  function disableMetaMeasurement() {
+    saveMetaClick();
+    setSession(null);
+    setAttempt(value => value + 1);
+    posthog.capture('meta_subscription_measurement_disabled');
+  }
   return <div className="order-checkout plan-checkout">
     <SEO title="Plan checkout — BrickBuilder AI" description="Subscribe to create with BrickBuilder AI." url="https://brickbuilder.ai/checkout-plan" noIndex />
     <header className="checkout-header"><div className="checkout-header-inner">
@@ -83,6 +94,7 @@ export default function CheckoutPlan() {
               <CheckoutAccount redirectPath={`/checkout-plan?plan=${planKey}`} />
             </CheckoutStep>
             {user && <p className="plan-checkout-signed-in">Signed in as {user.email}</p>}
+            {metaClick() && <button type="button" disabled={busy} className="text-sm underline disabled:opacity-50" onClick={disableMetaMeasurement}>Turn off Meta ad measurement</button>}
             <CheckoutStep title="Payment" number={2} active={!!user} complete={false} disabled={!user || busy} onEdit={() => {}}>
               {billingLoading ? <p role="status">Loading your plan…</p> : account?.has_subscription && !account.cancel_at_period_end && !account.trial_expires_at ? <p>You already have a subscription. <Link to="/billing">Manage your plan in Billing</Link>.</p> : !enabled || !checkoutAvailable ? <p role="status">New subscriptions are temporarily unavailable. Please try again later.</p> : error ? <div className="checkout-error" role="alert">{error}<button onClick={() => { posthog.capture('plan_checkout_retry_clicked', { plan_key: planKey }); setAttempt(value => value + 1); }}>Try again</button><Link to="/billing">View billing</Link></div> : currentSession && user?.email ? <CheckoutPayment key={currentSession.session_id} session={currentSession}
                 publishableKey={import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || ''} subscriptionPlan={planKey} email={user.email} totalCents={plan.monthly_cents}

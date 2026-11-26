@@ -1,3 +1,4 @@
+import { MetaAdMeasurement } from './components/MetaAdMeasurement';
 import { GoogleAdMeasurement } from './components/GoogleAdMeasurement';
 import { captureReferralLink } from './services/referrals';
 import { preparePasswordRecoveryPage } from './services/passwordAuth';
@@ -30,6 +31,7 @@ import { captureSignVisit } from './utils/signAnalytics';
       >
         <AuthProvider>
           <GoogleAdMeasurement />
+          <MetaAdMeasurement />
           <App />
         </AuthProvider>
       </PostHogProvider>

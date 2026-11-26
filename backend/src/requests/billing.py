@@ -1,10 +1,10 @@
 """Authenticated billing routes. Browser input never controls prices or owners."""
 import logging
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 from typing import Literal
 
-from ..utils import billing
+from ..utils import billing, meta_subscription
 from ..utils.auth import get_optional_identity
 
 router = APIRouter(prefix="/billing", tags=["billing"])
@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 class CheckoutRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    meta_click: meta_subscription.MetaClick | None = None
     gclid: str | None = Field(default=None, pattern=r"^[a-zA-Z0-9_-]+$", max_length=500)
     plan_key: Literal["builder", "creator"]
     ui_mode: Literal["hosted", "elements"] = "hosted"
@@ -61,8 +62,9 @@ async def account(identity: dict = Depends(get_optional_identity)):
 
 
 @router.post("/checkout")
-async def checkout(request: CheckoutRequest, identity: dict = Depends(get_optional_identity)):
-    return await run(billing.checkout(identity, request.plan_key, request.ui_mode, request.gclid))
+async def checkout(request: CheckoutRequest, http_request: Request, identity: dict = Depends(get_optional_identity)):
+    attribution = meta_subscription.checkout_metadata(request.meta_click, http_request.headers, live=billing.live_mode())
+    return await run(billing.checkout(identity, request.plan_key, request.ui_mode, request.gclid, meta_attribution=attribution))
 
 
 @router.post("/portal")

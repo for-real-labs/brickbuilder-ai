@@ -198,6 +198,10 @@ export default function PrivacyPolicyPage() {
               </p>
             </PolicySection>
 
+            {import.meta.env.VITE_META_AD_MEASUREMENT === 'true' && <PolicySection title="Optional Meta ad measurement">
+              <p>If you allow measurement after clicking a Meta ad, we keep the click ID in that browser tab for up to seven days. To measure a first paid web subscription, we share the click ID, browser user agent, payment time, amount, currency, and a deduplication ID with Meta. You can decline when prompted or turn off Meta ad measurement in checkout before paying.</p>
+            </PolicySection>}
+
             <PolicySection title="AI processing and your permission">
               <p>
                 In the Expo mobile app, before a generation, AI edit, or model conversion request
