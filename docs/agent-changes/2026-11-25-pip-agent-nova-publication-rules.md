@@ -35,7 +35,7 @@ Pip is now held to what Nova requires before it publishes. The rules are Nova's 
 **Update, 2026-11-26:** the rules were then copied into the Fable agents' own code
 (`fable_agent/solids.py`, `material.py`, `sequence.py`) and are no longer loaded from
 `backend/nova-service`, so the two can change apart. Building orders and collision results were
-identical on 63 saved builds. PRLINK2
+identical on 63 saved builds. [#404](https://github.com/for-real-labs/brickbuilder-ai/pull/404)
 
 ## Why
 
