@@ -669,10 +669,12 @@ it('lets the pet explain the concurrency limit while one build is active', async
 it.each([true, false].flatMap(currentOnly => [
   'You have used your 3 free guest generations. Sign in to keep building.',
   'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 3 All parts builds or 37 Basic builds, or a mix. Sign in for 75 free monthly credits.',
+  'You have used your free Basic guest trial. Sign in for your remaining monthly credits, usable for Basic or All parts builds.',
 ].map(message => ({ currentOnly, message }))))('shows sign-in guidance after the guest trial ($currentOnly, $message)', async ({ currentOnly, message }) => {
   await act(async () => root.render(<PetProvider><BuildBuddyDialogue currentOnly={currentOnly} state="idle"
     turns={[{ id: 1, text: 'Another castle', error: message }]} generations={[]} /></PetProvider>));
-  expect(container.querySelector('[role="status"]')?.textContent).toBe(message);
+  const expected = message.includes('Basic') ? 'Not enough guest credits for this build. Sign in for 75 free monthly credits.' : message;
+  expect(container.querySelector('[role="status"]')?.textContent).toBe(expected);
   const link = container.querySelector<HTMLAnchorElement>('a[href="/login"]');
   expect(link?.textContent).toBe('Sign in to keep building');
   const event = new MouseEvent('click', { bubbles: true, cancelable: true });

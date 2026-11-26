@@ -85,7 +85,7 @@ export function CreditNudge() {
   return <div className={`credit-nudge${low ? ' credit-nudge--low' : ''}`}>
     {low && <PetAvatar still />}
     <p>{low ? <><strong>{pet.name}: {account?.credits_remaining === 0 ? 'Ready for our next build?' : `${account?.credits_remaining} credits left.`}</strong> {highest ? 'Buy additional credits to keep building.' : <>Choose a plan to keep creating{account && account.subscription_provider !== 'apple' && new Date(account.period_end).getTime() > Date.now() ? `, or wait for your reset on ${billingDate(account.period_end)}` : ''}.</>}</>
-      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $2.99.'} Basic builds use 2 credits; All parts uses 20. The Creator plan saves {CREATOR_BRICK_DISCOUNT_PERCENT}% on <CompatibleBricks source="plan_benefit" />.</>}</p>
+      : <><strong>More ideas? More bricks.</strong> {isAppleApp() ? 'Monthly subscriptions available through Apple.' : 'Monthly plans from $2.99.'} All parts builds use 20 credits. The Creator plan saves {CREATOR_BRICK_DISCOUNT_PERCENT}% on <CompatibleBricks source="plan_benefit" />.</>}</p>
     <button type="button" onClick={() => { if (low && highest) { posthog.capture('billing_usage_clicked', { source }); navigate('/billing#credit-packs'); } else openUpgrade(source); }}>{low ? highest ? 'Buy credits' : 'Get more credits' : user ? 'Explore plans' : 'See plans'}<ArrowUpRight size={15} aria-hidden="true" /></button>
     <button type="button" className="credit-nudge-dismiss" aria-label="Dismiss plans banner" onClick={() => { setDismissed(true); posthog.capture('billing_nudge_dismissed', { source, plan_key: account?.plan_key ?? 'guest' }); }}><X size={18} aria-hidden="true" /></button>
   </div>;
@@ -149,8 +149,8 @@ export function GenerationCreditQuote({ allParts, personalSupported = true }: { 
   if (personal && personalSupported && account?.paid_features) return <p className="billing-generation-quote" role="status">Your AI account · No BrickBuilder credits used</p>;
   if (!enabled) return null;
   return <p className="billing-generation-quote" role="status">
-    {allParts ? '20 credits · All parts / AI mesh conversion' : '2 credits · Basic build or edit'}
-    {allParts && account?.paid_features && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses are for Basic only.`}
+    {allParts ? '20 credits · All parts / AI mesh conversion' : '2 credits · Build or edit'}
+    {allParts && account?.paid_features && ` · ${account.monthly_remaining} monthly credits available. Legacy bonuses cannot be used for this build.`}
     {(!user || account?.paid_features === false) && ' · Subscription required'}
   </p>;
 }

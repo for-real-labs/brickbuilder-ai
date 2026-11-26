@@ -1,16 +1,17 @@
 export const BUILD_FAILURE_MESSAGE = 'Oops! I couldn’t make your build. Please try again.';
 
 export const GUEST_GENERATION_LIMIT_MESSAGE = 'You have used your 3 free guest generations. Sign in to keep building.';
-export const GUEST_CREDITS_LIMIT_MESSAGE = 'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 3 All parts builds or 37 Basic builds, or a mix. Sign in for 75 free monthly credits.';
+export const GUEST_CREDITS_LIMIT_MESSAGE = 'Not enough guest credits for this build. Sign in for 75 free monthly credits.';
+const LEGACY_GUEST_CREDITS_LIMIT_MESSAGE = 'Not enough lifetime guest credits for this build. Your free allowance is 75 credits: 3 All parts builds or 37 Basic builds, or a mix. Sign in for 75 free monthly credits.';
 
 export function isGuestLimitMessage(message: string) {
-  return message === GUEST_GENERATION_LIMIT_MESSAGE || message === GUEST_CREDITS_LIMIT_MESSAGE
-    || message === 'You have used your free Basic guest trial. Sign in for your remaining monthly credits, usable for Basic or All parts builds.';
+  return message === GUEST_GENERATION_LIMIT_MESSAGE || message === GUEST_CREDITS_LIMIT_MESSAGE;
 }
 
 // Quota errors are actionable public messages; keep infrastructure errors generic.
 export function buildFailureMessage(error: unknown): string {
   const message = error instanceof Error ? error.message : error;
+  if (message === LEGACY_GUEST_CREDITS_LIMIT_MESSAGE || message === 'You have used your free Basic guest trial. Sign in for your remaining monthly credits, usable for Basic or All parts builds.') return GUEST_CREDITS_LIMIT_MESSAGE;
   if (typeof message === 'string' && message.startsWith('You have used your available credits.')) return 'You’re out of BrickBuilder credits.';
   if (message === 'Generation cancelled. Your AI account was not charged.') return message;
   if (typeof message === 'string' && /^Add your (OpenAI|Claude|openai|anthropic) API key in AI billing settings, or (choose BrickBuilder credits|select BrickBuilder credits)\.$/.test(message)) return message;

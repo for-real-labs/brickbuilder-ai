@@ -118,6 +118,8 @@ it('refreshes an exhausted wallet without competing with the personal-key pet pr
 it('advertises the brick discount as a Creator benefit in the plans banner', async () => {
   auth.user = null;
   await render(<CreditNudge />);
+  expect(container.textContent).not.toContain('Basic builds');
+  expect(container.textContent).toContain('All parts builds use 20 credits.');
   expect(container.querySelector('.credit-nudge')?.textContent).toContain('The Creator plan saves 20% on LEGO® compatible bricks.');
 });
 
@@ -362,7 +364,7 @@ it('does not imply that legacy bonuses can fund an All parts build', async () =>
   account = { ...account, plan_key: 'builder', has_subscription: true, paid_features: true, subscription_status: 'active',
     monthly_credits: 500, monthly_remaining: 10, bonus_remaining: 100, bonus_available: 5, credits_remaining: 15 };
   await render(<><GenerationCreditQuote allParts /><CreditNudge /></>);
-  expect(container.textContent).toContain('10 monthly credits available. Legacy bonuses are for Basic only.');
+  expect(container.textContent).toContain('10 monthly credits available. Legacy bonuses cannot be used for this build.');
   expect(container.querySelector('.credit-nudge--low')).not.toBeNull();
 });
 

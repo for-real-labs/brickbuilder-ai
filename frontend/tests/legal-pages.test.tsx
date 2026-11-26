@@ -21,6 +21,8 @@ describe('directory legal pages', () => {
 
   it('publishes the subscription requirement, recurring billing, cancellation, and age policy consistently', () => {
     const terms = renderLegalDocument(shell, 'terms');
+    expect(terms).not.toContain('Basic builds');
+    expect(terms).toContain('AI edits to models created at the 2-credit rate');
     expect(terms).toContain('Operator: Jake Johnson');
     expect(terms).toContain('at least 13 years old');
     expect(terms).toContain('An active subscription is required');

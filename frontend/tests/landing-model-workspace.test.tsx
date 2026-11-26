@@ -1504,18 +1504,16 @@ it.each(['llmToBricks', 'novaToBricks'])('restores and locks the saved mode and 
   });
   await act(async () => root.render(<LandingPage />));
   await vi.waitFor(() => expect(container.querySelector<HTMLInputElement>('#generation-max-parts')?.value).toBe('37'));
-  const basic = container.querySelector<HTMLButtonElement>('button[value="llm"]')!;
   const all = container.querySelector<HTMLButtonElement>('button[value="nova"]')!;
-  expect(basic.disabled).toBe(true);
+  expect(container.querySelector('button[value="llm"]')).toBeNull();
   expect(all.disabled).toBe(true);
-  expect(basic.getAttribute('aria-pressed')).toBe(String(endpoint === 'llmToBricks'));
   expect(all.getAttribute('aria-pressed')).toBe(String(endpoint === 'novaToBricks'));
   expect(container.querySelector<HTMLInputElement>('#generation-max-parts')!.disabled).toBe(true);
 
   act(() => container.querySelector<HTMLButtonElement>('.landing-create-new')!.click());
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
-  expect(container.querySelector<HTMLButtonElement>('button[value="llm"]')!.disabled).toBe(true);
+  expect(container.querySelector('button[value="llm"]')).toBeNull();
 });
 
 it('lets fork owners view the original and return to their edits without managing the original', async () => {
