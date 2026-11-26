@@ -6,13 +6,14 @@ is closed in between two others before it is placed. A piece that hangs under it
 shown as built together with that support.
 
 The planner reads what the checker measured: which stud sits in which part, and the joints the
-script declared. It reasons about upright stud stacks only. Balance and whether a hand can reach
+script declared. It accounts for upright stud stacks and parts threaded onto an axle. Balance and whether a hand can reach
 a part are outside it.
 """
 
 from __future__ import annotations
 
 import heapq
+from collections import defaultdict
 from dataclasses import dataclass, field, replace
 
 from .kit import Build
@@ -97,6 +98,22 @@ def _shaft_stacks(shafts: dict[int, list[tuple[float, int]]]) -> dict:
     return found
 
 
+def _inside_axle_ends(shafts) -> dict[int, set[int]]:
+    """For each end piece, the shaft and inner pieces that can be installed before capping it."""
+    inside: dict[int, set[int]] = {}
+    for shaft, stack in shafts.items():
+        if len(stack) < 3:
+            continue
+        stations = [station for station, _ in stack]
+        low, high = min(stations), max(stations)
+        inner = {part for station, part in stack if low + 1e-6 < station < high - 1e-6}
+        if inner:
+            for _, part in stack:
+                if part not in inner:
+                    inside.setdefault(part, set()).update(inner | {shaft})
+    return inside
+
+
 def _trapped_on_shaft(index: int, placed: set[int], stacks: dict) -> set[int]:
     """Unplaced pieces on an axle that placing ``index`` now would leave between two seated pieces.
 
@@ -131,10 +148,11 @@ class SequencePlanner:
         if shafts:
             joints = replace(joints, stacks=_shaft_stacks(shafts))
         foundation = self._foundation(build, boxes)
-        order = self._order(build, joints, foundation)
+        inside = _inside_axle_ends(shafts or {})
+        order = self._order(build, joints, foundation, inside)
         self._verify(order, joints, foundation)
         groups = self._together(order, joints)
-        return Plan(tuple(order), self._steps(build, order, groups), frozenset(groups))
+        return Plan(tuple(order), self._steps(build, order, groups, inside), frozenset(groups))
 
     @staticmethod
     def _joints(build: Build, contacts, fits=frozenset()) -> _Joints:
@@ -183,11 +201,11 @@ class SequencePlanner:
         return foundation
 
     @staticmethod
-    def _order(build: Build, joints: _Joints, foundation: set[int]) -> list[int]:
+    def _order(build: Build, joints: _Joints, foundation: set[int], ends=None) -> list[int]:
         """Grow one attached assembly, lowest pieces first, without closing in an unplaced piece.
 
         The pieces on the ground are seated first. With none, the lowest piece starts. Among the
-        pieces that can be attached next, the lower one goes first, then the script's own order.
+        pieces that can be attached next, prefer axle interiors, then lower pieces, then script order.
         A piece may still hang under a bridge while what stands below it is missing.
         """
         heights = [placement.position[1] for placement in build.placements]
@@ -202,18 +220,29 @@ class SequencePlanner:
                 raise NoSequence("The model is not one connected piece",
                                  tuple(sorted(set(range(count)) - reached)))
 
-        def priority(index: int) -> tuple:
-            return (index not in foundation, -heights[index], index)
+        ends = ends or {}
+        caps = defaultdict(set)
+        for end, interior in ends.items():
+            for part in interior:
+                caps[part].add(end)
+        placed: set[int] = set()
 
-        seeds = foundation or {max(range(count), key=lambda index: (heights[index], -index))}
+        def priority(index: int) -> tuple:
+            # If a wheel is reachable from the body before its axle, leave it until the inner
+            # pieces are fitted. An open end is still usable if it is the only way to proceed.
+            premature_end = index in ends and not ends[index] <= placed
+            return (index not in foundation, premature_end, index not in caps, -heights[index], index)
+
+        seeds = foundation or {min(range(count), key=priority)}
         frontier = [priority(index) for index in seeds]
         heapq.heapify(frontier)
         discovered, scheduled = set(seeds), set(seeds)
         waiting: list[set[int]] = [set() for _ in range(count)]
-        placed: set[int] = set()
         order: list[int] = []
         while frontier:
-            index = heapq.heappop(frontier)[2]
+            index = heapq.heappop(frontier)[-1]
+            if index not in scheduled:
+                continue  # an old heap entry for an end piece that was reprioritized
             scheduled.remove(index)
             blockers = (_trapped(index, placed, joints.above, joints.below)
                         | _trapped_on_shaft(index, placed, joints.stacks))
@@ -223,6 +252,9 @@ class SequencePlanner:
                 continue
             order.append(index)
             placed.add(index)
+            for end in caps.get(index, ()):
+                if end in scheduled and ends[end] <= placed:
+                    heapq.heappush(frontier, priority(end))
             for candidate in waiting[index]:
                 if candidate not in placed and candidate not in scheduled:
                     heapq.heappush(frontier, priority(candidate))
@@ -287,24 +319,26 @@ class SequencePlanner:
         return groups
 
     @staticmethod
-    def _steps(build: Build, order: list[int], groups: dict[int, int]) -> tuple[int, ...]:
+    def _steps(build: Build, order: list[int], groups: dict[int, int], inside: dict[int, set[int]]) -> tuple[int, ...]:
         """Keep groups whole; otherwise break at the script's own steps and modules, at a change of
         height and after ``MAX_PARTS_PER_STEP`` pieces."""
         previous = height_before = None
-        number = count = 0
+        number = 0
+        current: set[int] = set()
         group_end = -1
         steps = []
         for position, index in enumerate(order):
             placement = build.placements[index]
             key, height = (placement.step, placement.module), placement.position[1]
             moved = height_before is not None and abs(height - height_before) > 1e-6
+            cap = index in inside and not current.isdisjoint(inside[index])
             if position in groups or position == group_end or (
-                    position >= group_end and (key != previous or count == MAX_PARTS_PER_STEP or moved)):
+                    position >= group_end and (key != previous or len(current) == MAX_PARTS_PER_STEP or moved or cap)):
                 number += 1
-                count = 0
+                current.clear()
             if position in groups:
                 group_end = position + groups[position]
             steps.append(number)
-            count += 1
+            current.add(index)
             previous, height_before = key, height
         return tuple(steps)

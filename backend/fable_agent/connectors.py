@@ -24,6 +24,7 @@ from pathlib import Path
 
 import numpy as np
 
+from .fits import shaft_station
 from .kit import Placement
 
 SHADOW = Path(__file__).parent / "data" / "shadow"
@@ -153,6 +154,11 @@ class ConnectorFindings:
         return any(managed(feature) for feature in self._features.get(index, ()))
 
 
+def _station(hole, axle) -> float:
+    point, axis = hole.position, axle.axis
+    return shaft_station((point.x, point.y, point.z), (axis.x, axis.y, axis.z))
+
+
 def _authored(feature) -> bool:
     """Written down by a person for this part, not inferred from its outline."""
     from ldraw.connection_types import ConnectionSource as Source
@@ -234,7 +240,7 @@ class ConnectorReview:
             if managed(contact.first) and managed(contact.second):
                 male, shaft, receiver, hole = endpoints(contact)
                 if shaft.kind is Kind.AXLE:  # a measured part seated on a measured axle
-                    findings.shafts.setdefault(male.index, []).append((float(hole.position.dot(shaft.axis)),
+                    findings.shafts.setdefault(male.index, []).append((_station(hole, shaft),
                                                                         receiver.index))
         measured = sum(1 for item in inspection.occurrences if any(managed(f) for f in item.connections))
         if measured > TECHNIC_LIMIT:
@@ -317,7 +323,7 @@ class ConnectorReview:
                 apart = hole.position - axle.position
                 along = apart.dot(axle.axis)
                 if abs(along) <= axle.length / 2 and abs(apart - axle.axis * along) <= ON_LINE:
-                    found.setdefault((owner, other), float(hole.position.dot(axle.axis)))
+                    found.setdefault((owner, other), _station(hole, axle))
         return [(axle, other, station) for (axle, other), station in found.items()]
 
     @staticmethod

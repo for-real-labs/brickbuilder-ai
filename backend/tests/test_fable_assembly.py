@@ -643,3 +643,39 @@ def test_truck_deck_cuts_into_the_old_wheels_and_clears_the_wider_axle(tmp_path)
         tyre = Placement("56898", 0, (x, -54, 200), QUARTER_Y, allow_overlap=True)
         report = world.checker.check(Build([tyre, *plates]))
         assert any(issue.kind == "material" for issue in report.errors) is expected
+
+
+def test_through_axle_bricks_get_an_earlier_instruction_step_than_either_wheel(tmp_path):
+    from fable_agent_support import HELPER_PARTS
+    from fable_agent.assembly import AssemblyReview
+
+    # Exercise the shape fallback without the connector registry. The rim has no named hole.
+    parts = {"4624": HELPER_PARTS["4624"],
+             "32064a": "0 Axle carrier\n1 16 0 0 10 1 0 0 0 0 1 0 -20 0 axlehole.dat\n",
+             "3707": "0 Technic Axle 8\n1 16 80 0 0 0 -160 0 1 0 0 0 0 1 axle.dat\n"}
+    world = World(tmp_path, extra=parts)
+    # Put the rims first and all origins at the same height to exercise ordering and step breaks.
+    build = Build([Placement("4624", 0, (x, 0, 0), QUARTER) for x in (-70, 70)]
+                  + [Placement("3707", 0, (0, 0, 0), IDENTITY)]
+                  + [Placement("32064a", 0, (x, 0, 0), QUARTER) for x in (-50, 50)])
+    measured = AssemblyReview(world.library, world.shapes).measure(build.placements)
+    assert measured.fits == {(0, 2), (1, 2), (2, 3), (2, 4)}
+    stack = measured.connectors.shafts[2]
+    assert [part for _, part in sorted(stack)] == [0, 3, 4, 1]
+    plan = SequencePlanner(world.shapes).plan(build, [], {}, measured.fits, measured.connectors.shafts)
+    steps = dict(zip(plan.order, plan.steps))
+    assert max(steps[3], steps[4]) < min(steps[0], steps[1])
+
+
+def test_axle_end_reachable_from_the_body_waits_for_its_supports(tmp_path):
+    world = World(tmp_path)
+    # A base (0) reaches both an end wheel (1) and the chassis (2). Only the chassis leads to
+    # the inner supports (3, 4) without capping the axle (5). The other end wheel is 6.
+    build = Build([Placement("3001", 0, (0, 0, 0), IDENTITY)] * 7)
+    fits = {(0, 1), (0, 2), (2, 3), (3, 5), (4, 5), (1, 5), (5, 6)}
+    boxes = {0: [(0, 0, 0, 40, 24, 40)]}
+    shafts = {5: [(-70, 1), (-50, 3), (50, 4), (70, 6)]}
+    plan = SequencePlanner(world.shapes).plan(build, [], boxes, fits, shafts)
+    steps = dict(zip(plan.order, plan.steps))
+    assert plan.order[0] == 0
+    assert max(steps[3], steps[4]) < min(steps[1], steps[6])
