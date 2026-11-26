@@ -20,9 +20,11 @@ from functools import lru_cache
 from pathlib import Path
 
 LIBRARY = Path(__file__).parent / "library"
-# Characters of example scripts one build is shown: about 8,500 tokens, which costs about 2 cents
-# on the first round and a tenth of a cent on each later one at Pip's default model.
-PROMPT_BUDGET = 30_000
+# Characters of example scripts one build is shown: about 34,000 tokens. At Pip's default model
+# that is up to 9 cents on a first round that misses the provider's cache and a third of a cent
+# on each later one. Sets have no size limit, so a category can hold more than this: the written
+# examples are shown first, then the official sets from small to large, as many as fit.
+PROMPT_BUDGET = 120_000
 OFFICIAL = "LDraw Official Model Repository"
 
 

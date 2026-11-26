@@ -1,7 +1,7 @@
 #: title: Bricktober Toys R Us Store, official set 40144-1
 #: source: LDraw Official Model Repository, set 40144-1, model file by Christian Maglekær
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 32 of 163 parts left out
+#: changes: converted to a build script; 30 of 163 parts left out
 place("3030", "Black", 1, 0, 9)
 place("3030", "Black", 1, 0, 5, rot=180)
 place("3710", "Dark_Bluish_Grey", 1, 1, 9, rot=90)
@@ -75,6 +75,8 @@ place("3010", "White", 4, 3, 12, rot=180)
 place("3003", "Black", 5, 3, 10, rot=180)
 place("32000", "White", 1, 3, 10, rot=270)
 place("32000", "White", 10, 3, 10, rot=270)
+place_ldu("61332", "Black", (220, -38, 230), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("61332", "Black", (220, -38, 210), (1, 0, 0, 0, 1, 0, 0, 0, 1))
 place("3069b", "Red", 5, 5, 8)
 place("3005", "Yellow", 4, 3, 7.5)
 place("3005", "Yellow", 7, 3, 7.5)

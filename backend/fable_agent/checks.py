@@ -269,10 +269,13 @@ class ModelChecker:
             report.errors.append(Issue("limit", f"{report.parts} parts exceeds the limit of {self._max_parts}. "
                                                 "Simplify or use larger parts."))
         cells = self._hash(boxes)
-        self._check_overlaps(placements, boxes, cells, report)
-        contacts = self._check_connections(build, boxes, cells, report)
+        # Joints that can be measured: a peg, pin, bar or axle of one part in a hole or clip of another.
+        fits = self._assembly.fits(placements) if self._assembly is not None else set()
+        self._check_overlaps(placements, boxes, cells, report, self._assembly.seated(fits) if fits else fits)
+        contacts = self._check_connections(build, boxes, cells, report, fits)
         if self._assembly is not None:
-            self._assembly.review(build, boxes, contacts, report, lambda i: self._label(i, placements[i], boxes))
+            self._assembly.review(build, boxes, contacts, fits, report,
+                                  lambda i: self._label(i, placements[i], boxes))
             if free_rotation:
                 report.notes.append(f"{len(free_rotation)} placements use a free rotation; only the solid plastic "
                                     "of plain bricks, plates and tiles is checked on them.")
@@ -319,11 +322,13 @@ class ModelChecker:
     def _hash(boxes: dict[int, list]) -> dict[tuple[int, int], list]:
         return hash_boxes(boxes)
 
-    def _check_overlaps(self, placements, boxes, cells, report: Report) -> None:
-        declared = 0
+    def _check_overlaps(self, placements, boxes, cells, report: Report, fits: set = frozenset()) -> None:
+        declared = fitted = 0
         colliding = []
         for first, second in colliding_pairs(placements, boxes, cells):
-            if placements[first].allow_overlap or placements[second].allow_overlap:
+            if (first, second) in fits:
+                fitted += 1  # seated in each other, or on the same part: coarse shapes that share space
+            elif placements[first].allow_overlap or placements[second].allow_overlap:
                 declared += 1
             else:
                 colliding.append((first, second))
@@ -338,14 +343,20 @@ class ModelChecker:
                                                   f"(by module: {summary})."))
         if declared:
             report.notes.append(f"{declared} overlapping pairs were declared intentional with allow_overlap.")
+        if fitted:
+            report.notes.append(f"{fitted} overlapping pairs are parts seated in or beside a measured joint "
+                                "(pin, bar, clip, hinge or wheel).")
 
-    def _check_connections(self, build: Build, boxes, cells, report: Report) -> list[StudContact]:
+    def _check_connections(self, build: Build, boxes, cells, report: Report,
+                           fits: set = frozenset()) -> list[StudContact]:
         placements = build.placements
         groups = _Groups(len(placements))
         contacts = stud_contacts(placements, self._shapes, boxes, cells, free_rotation=self._assembly is not None)
         for contact in contacts:
             groups.join(contact.stud, contact.receiver)
         for first, second, _ in build.links:
+            groups.join(first, second)
+        for first, second in fits:
             groups.join(first, second)
         if build.links and self._assembly is None:
             report.notes.append(f"{len(build.links)} connections were declared with connect() and not verified.")

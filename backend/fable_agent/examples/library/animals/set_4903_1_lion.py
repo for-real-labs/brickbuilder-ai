@@ -1,7 +1,7 @@
 #: title: Lion, official set 4903-1
 #: source: LDraw Official Model Repository, set 4903-1, model file by Merlijn Wissink [legolijntje]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 4 of 42 parts left out
+#: changes: converted to a build script; 3 of 42 parts left out
 place("3023b", "Tan", 4, 0, 3, rot=270)
 place("3023b", "Tan", 1, 0, 3, rot=270)
 place("3023b", "Tan", 1, 0, 6, rot=270)
@@ -20,6 +20,7 @@ place("3003", "Tan", 2, 7, 5, rot=270)
 place("3020", "Tan", 2, 6, 2, rot=270)
 place("3710", "Dark_Orange", 1, 7, 2)
 place_ldu("61252", "Red", (50, -72, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
+place_ldu("48336", "White", (60, -64.194, 10.757), (-1, 0, 0, 0, 0.924, 0.383, 0, 0.383, -0.924))
 place_ldu("61252", "Red", (70, -72, 50), (1, 0, 0, 0, 1, 0, 0, 0, 1))
 place("3040b", "Tan", 1, 7, 7, rot=90)
 place("3039", "Tan", 1, 7, 3, rot=90)

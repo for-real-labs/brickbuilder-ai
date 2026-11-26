@@ -88,11 +88,12 @@ class SequencePlanner:
     def __init__(self, shapes: ShapeLibrary):
         self._shapes = shapes
 
-    def plan(self, build: Build, contacts, boxes: dict[int, list]) -> Plan:
-        """``contacts`` are the checker's stud contacts; ``boxes`` its model-space boxes per placement."""
+    def plan(self, build: Build, contacts, boxes: dict[int, list], fits=frozenset()) -> Plan:
+        """``contacts`` are the checker's stud contacts, ``boxes`` its model-space boxes per placement
+        and ``fits`` the pairs joined by a measured peg in a hole."""
         if not build.placements:
             raise NoSequence("There are no pieces to place")
-        joints = self._joints(build, contacts)
+        joints = self._joints(build, contacts, fits)
         foundation = self._foundation(build, boxes)
         order = self._order(build, joints, foundation)
         self._verify(order, joints, foundation)
@@ -100,7 +101,7 @@ class SequencePlanner:
         return Plan(tuple(order), self._steps(build, order, groups), frozenset(groups))
 
     @staticmethod
-    def _joints(build: Build, contacts) -> _Joints:
+    def _joints(build: Build, contacts, fits=frozenset()) -> _Joints:
         placements = build.placements
         count = len(placements)
         neighbours, above, below = ([set() for _ in range(count)] for _ in range(3))
@@ -115,7 +116,7 @@ class SequencePlanner:
                     and placements[lower].position[1] > placements[upper].position[1] + 1e-6):
                 above[lower].add(upper)
                 below[upper].add(lower)
-        for first, second, _ in build.links:
+        for first, second in [*((first, second) for first, second, _ in build.links), *fits]:
             neighbours[first].add(second)
             neighbours[second].add(first)
         return _Joints(neighbours, above, below)

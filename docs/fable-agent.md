@@ -260,33 +260,31 @@ the request, and `--examples` on the command line.
    aircraft, boats, spacecraft, houses, buildings, castles, animals, characters or flat
    pictures, or none (`fable_agent/examples/chooser.py`). This is a short model call,
    charged to the build like any other.
-2. Every example of that category is added to the end of the prompt, up to a budget of
-   30,000 characters (about 8,500 tokens). Today every category fits whole. With no
-   fitting category the build runs without examples.
+2. The examples of that category are added to the end of the prompt, up to a budget of
+   120,000 characters (about 34,000 tokens): the written ones first, then the official
+   sets from small to large. Every category fits whole except buildings, where 16 of 22
+   fit and the six largest sets wait. With no fitting category the build runs without
+   examples.
 
 The scripts are in `backend/fable_agent/examples/library/<category>/`:
 
 - 13 written for BrickBuilder with the helpers (eight cars, three houses, a hospital,
   a castle).
-- 28 official LEGO sets from the [LDraw Official Model Repository](https://library.ldraw.org/omr),
-  converted to plain `place` calls in building order. A set is kept only if at least 80% of
-  it survives without the parts the checks cannot join (minifigures, clips, hinges,
-  wheels on pins) and what is left passes every check a Pip build must pass. Of 1,830
-  model files, 28 did: skyscrapers, small houses, animals, small planes and boats. The
-  sets themselves are ordinary buildable sets; they are left out for what Pip can use and
-  check, not for what they are:
+- 62 official LEGO sets from the [LDraw Official Model Repository](https://library.ldraw.org/omr),
+  converted to `place` calls in building order. A set is kept only if at least 80% of
+  its own pieces survive and what is left passes every check a Pip build must pass. A set
+  may be any size a build may be: the largest kept is Tower Bridge, 3,462 pieces.
+  The pieces that do not survive are minifigures, pieces the parts catalog does not stock
+  and has no equivalent for, and pieces whose joint the checks cannot measure.
 
-  | Files | Why it is not an example |
-  |---|---|
-  | 634 | More than 200 pieces: left out to keep the prompt small |
-  | 533 | Over 20% of its pieces are held by clips, hinges or pins, or overlap in Pip's coarse part shapes |
-  | 440 | Over 20% of its pieces are not in the parts catalog Pip builds from |
-  | 74 | Licensed for non-commercial use only, or unreadable |
-  | 61 | Fewer than 15 pieces |
-  | 60 | Nothing stands on the ground after the above, would lose a wheel, a duplicate, or no category |
-  | 28 | Kept |
-
-  No set with wheels passes, so the car examples are all written ones.
+  Of 1,830 model files, 62 pass. The sets themselves are ordinary buildable sets; the
+  rest are left out for what Pip can use and check. Among sets of up to 400 pieces, where
+  this was counted, the two large causes are about equal: over 20% of the pieces are not
+  in the catalog (old wheels and tyres, flexible hoses, electric parts), or over 20% are
+  lost with a joint that is still not measured or with coarse part shapes that overlap
+  (brackets, curved slopes, tyres under mudguards). 74 files are licensed for
+  non-commercial use only and are never used. Only written examples exist for cars: official
+  car sets mostly use wheels the catalog does not stock.
   `backend/scripts/build_fable_examples.py` rebuilds them from a folder of downloaded
   files; the files themselves are not in the repository. Each set and its model file's
   author and licence are credited in `fable_agent/examples/SOURCES.md`.
@@ -403,6 +401,7 @@ Nova's publication checks and are now the Fable agents' own code: nothing is loa
 | Rule | What it refuses | Code |
 |---|---|---|
 | Solid plastic | Two plain bricks, plates or tiles in the same place at any rotation, and anything that cuts into a seat back, dish rim, curved tile or side stud. `allow_overlap` does not excuse it. | `material.py`, `solids.py` |
+| Measured joints | Nothing: these are found, not refused. A peg of one part inside a hole of another counts as attached without `connect()`, and the space the two share is not called an overlap. Found this way: a Technic pin or axle in a hole, a bar in a clip or a hollow stud, a hinge pin in its base, a wheel on its pin or axle, a tyre on its rim. | `fits.py` |
 | Declared joints | A `connect()` between parts that do not touch, or a Technic pin or axle that is in none of the other part's holes. | `joints.py` |
 | One model | Free-standing pieces. They were a warning; a model needs one building order. | `assembly.py` |
 | Building order | A model that cannot be built one piece at a time: each piece must attach to what is already built and must not be closed in first. | `sequence.py` |
@@ -412,10 +411,17 @@ then upward, in steps of at most five connected pieces. A piece that hangs under
 shown as built together with it (`0 !BRICKBUILDER BUILD_TOGETHER`, which the instruction viewer
 already reads). `step()` and `module()` only suggest where steps break.
 
-What this still does not prove: clips, bars, tyres on rims and panes in frames are checked for
-touching only, because the parts library does not name those connectors; the report counts them.
-Balance and whether a hand can reach a part are not checked. Technic joints are recognized
-only where the parts library names the connector (pins, axle pins and their holes).
+Joints are measured from the parts library itself. It draws a peg as a cylinder seen from
+outside and a hole or clip as one seen from inside, so `fits.py` joins two parts when a peg
+and a hole of the same radius lie on one line and overlap. No list of part numbers is kept.
+Axles are cross-shaped and are matched by the library's own names for them. Many rims and
+tyres are drawn without cylinders, so wheels are recognized by name and by how they sit.
+
+What this still does not prove: a pane in its frame, a door on its hinges and a trolley wheel
+in its holder have nothing the library draws as a peg in a hole, so they are still declared
+and checked for touching only; the report counts them. A measured joint says the parts line
+up, not that the joint is strong enough. Balance and whether a hand can reach a part are not
+checked.
 
 When no revision passes, the last build is kept in `rejected/` with its failed checks, and the
 website offers it as an unverified draft.

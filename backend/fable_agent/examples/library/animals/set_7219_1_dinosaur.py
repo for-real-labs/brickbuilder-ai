@@ -1,7 +1,7 @@
 #: title: Dinosaur, official set 7219-1
 #: source: LDraw Official Model Repository, set 7219-1, model file by Merlijn Wissink [legolijntje]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 4 of 34 parts left out
+#: changes: converted to a build script; 2 of 34 parts left out
 place("4286", "Green", 3, 0, 4)
 place("4286", "Green", 0, 0, 4)
 place("3665a", "Green", 3, 3, 5)
@@ -30,5 +30,7 @@ place("4073", "White", 2, 17, 0, rot=270)
 place("4073", "White", 2, 17, 1, rot=270)
 place("3039", "Light_Bluish_Grey", 1, 18, 0)
 place("4070", "Light_Bluish_Grey", 2, 18, 2, rot=270)
+place_ldu("4073", "Black", (64, -158, 50), (0, -1, 0, 0, 0, -1, 1, 0, 0))
 place("4070", "Light_Bluish_Grey", 1, 18, 2, rot=90)
+place_ldu("4073", "Black", (16, -158, 50), (0, 1, 0, 0, 0, 1, 1, 0, 0))
 place("3004", "Light_Bluish_Grey", 1, 18, 3, rot=180)

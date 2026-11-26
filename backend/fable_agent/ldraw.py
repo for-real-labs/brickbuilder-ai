@@ -41,15 +41,31 @@ class Port:
     kind: str  # pin, pin_hole, axle or axle_hole
     position: tuple[float, float, float]
     axis: tuple[float, float, float]
+    length: float = 0.0  # how far the library stretched the connector along its axis: an axle's length
 
 
-# Library primitives that are one whole connector. Axle profiles (axlehol2 ... axleend) are left
-# out: axles themselves are drawn with them, so their names do not say which side they are.
+@dataclass(frozen=True)
+class Cylinder:
+    """A round surface of a part, in part-local LDU: a peg seen from outside, or a hole from inside."""
+
+    inside: bool  # the wall of a hole or clip (drawn inside out in the library), not of a peg
+    base: tuple[float, float, float]
+    axis: tuple[float, float, float]  # unit vector from the base along the surface
+    length: float
+    radius: float
+
+
+# The library's cylinder primitives, such as 4-4cyli.dat (whole) and 1-4cylo.dat (a quarter).
+CYLINDER = re.compile(r"(\d+)-(\d+)cyl[ioc]2?\.dat")
+
+# Library primitives that are one whole connector. The pieces an axle's profile is drawn from
+# (axlehol2, axlehol8, axleend ...) are left out: axles themselves are drawn with them, so their
+# names do not say which side they are.
 PORT_KINDS = (
     ("pin", re.compile(r"(connect|confric|wpin)\d*")),
     ("pin_hole", re.compile(r"(peghole|wpinhole|connhole)\d*")),
     ("axle", re.compile(r"axle")),
-    ("axle_hole", re.compile(r"axlehole")),
+    ("axle_hole", re.compile(r"axlehole|axl[234]hole|axlehol[45]|bush0?")),
 )
 
 
@@ -84,6 +100,7 @@ class LDrawLibrary:
         self._stud_primitive: dict[str, bool] = {}
         self._surfaces: dict[str, np.ndarray] = {}
         self._ports: dict[str, tuple[Port, ...]] = {}
+        self._cylinders: dict[str, tuple[Cylinder, ...]] = {}
         self._colors: dict[int, Color] | None = None
 
     # ----- files ---------------------------------------------------------
@@ -144,19 +161,24 @@ class LDrawLibrary:
         key = str(path)
         if key in self._parsed:
             return self._parsed[key]
-        references: list[tuple[np.ndarray, np.ndarray, str]] = []
+        references: list[tuple[np.ndarray, np.ndarray, str, bool]] = []
         triangles: list[list[float]] = []
+        inverted = False  # "0 BFC INVERTNEXT": the next reference is drawn inside out, as a hole is
         with path.open(encoding="utf-8", errors="replace") as handle:
             for line in handle:
                 tokens = line.split()
                 if not tokens:
                     continue
                 kind = tokens[0]
+                if kind == "0":
+                    inverted = inverted or (tokens[1:2] == ["BFC"] and "INVERTNEXT" in tokens[2:])
+                    continue
+                turned, inverted = inverted, False
                 try:
                     if kind == "1" and len(tokens) >= 15:
                         v = [float(t) for t in tokens[2:14]]
                         matrix = np.array([v[3:6], v[6:9], v[9:12]])
-                        references.append((matrix, np.array(v[0:3]), " ".join(tokens[14:])))
+                        references.append((matrix, np.array(v[0:3]), " ".join(tokens[14:]), turned))
                     elif kind == "3" and len(tokens) >= 11:
                         triangles.append([float(t) for t in tokens[2:11]])
                     elif kind == "4" and len(tokens) >= 14:
@@ -191,7 +213,7 @@ class LDrawLibrary:
         references, own = self._parse(path)
         parts = [np.array(own, dtype=np.float64).reshape(-1, 3, 3)]
         studs = [np.zeros((0, 6))]
-        for matrix, offset, name in references:
+        for matrix, offset, name, _ in references:
             child = self._resolve(name)
             if child is None:
                 continue
@@ -228,7 +250,7 @@ class LDrawLibrary:
                 raise LDrawError("LDraw reference nesting is too deep")
             references, own = self._parse(path)
             parts = [np.array(own, dtype=np.float64).reshape(-1, 3, 3)]
-            for matrix, offset, name in references:
+            for matrix, offset, name, _ in references:
                 child = self._resolve(name)
                 if child is not None:
                     parts.append(self._whole(child, depth + 1) @ matrix.T + offset)
@@ -248,25 +270,64 @@ class LDrawLibrary:
             if depth > MAX_REFERENCE_DEPTH:
                 raise LDrawError("LDraw reference nesting is too deep")
             found: list[Port] = []
-            for matrix, offset, name in self._parse(path)[0]:
+            for matrix, offset, name, _ in self._parse(path)[0]:
                 stem = name.strip().lower().replace("\\", "/").rsplit("/", 1)[-1].removesuffix(".dat")
                 kind = next((kind for kind, pattern in PORT_KINDS if pattern.fullmatch(stem)), None)
                 if kind:
                     axis = matrix @ np.array([0.0, 1.0, 0.0])
-                    length = np.linalg.norm(axis)
+                    length = float(np.linalg.norm(axis))
                     if length > 1e-9:
-                        found.append(Port(kind, tuple(float(v) for v in offset), tuple(float(v) for v in axis / length)))
+                        found.append(Port(kind, tuple(float(v) for v in offset), tuple(float(v) for v in axis / length),
+                                          length))
                     continue
                 child = self._resolve(name)
                 if child is not None:
                     for port in self._connectors(child, depth + 1):
-                        axis = matrix @ np.array(port.axis)
-                        length = np.linalg.norm(axis)
+                        axis = matrix @ (np.array(port.axis) * port.length)
+                        length = float(np.linalg.norm(axis))
                         if length > 1e-9:
                             found.append(Port(port.kind, tuple(float(v) for v in matrix @ np.array(port.position) + offset),
-                                              tuple(float(v) for v in axis / length)))
+                                              tuple(float(v) for v in axis / length), length))
             self._ports[key] = tuple(found)
         return self._ports[key]
+
+    def _round_surfaces(self, path: Path, depth: int) -> tuple[Cylinder, ...]:
+        key = str(path)
+        if key not in self._cylinders:
+            if depth > MAX_REFERENCE_DEPTH:
+                raise LDrawError("LDraw reference nesting is too deep")
+            found: list[Cylinder] = []
+            for matrix, offset, name, inverted in self._parse(path)[0]:
+                stem = name.strip().lower().replace("\\", "/").rsplit("/", 1)[-1]
+                arc = CYLINDER.fullmatch(stem)
+                if arc:
+                    axis, across, along = (matrix @ unit for unit in np.eye(3)[[1, 0, 2]])
+                    length, radius = float(np.linalg.norm(axis)), float(np.linalg.norm(across))
+                    # A true cylinder: round, upright on its axis, and at least a quarter of the way round.
+                    if (length > 1e-6 and radius > 1e-6 and abs(radius - np.linalg.norm(along)) < 0.05
+                            and abs(axis @ across) < 1e-3 * length * radius
+                            and int(arc.group(1)) * 4 >= int(arc.group(2))):
+                        found.append(Cylinder(inverted, tuple(float(v) for v in offset),
+                                              tuple(float(v) for v in axis / length), length, radius))
+                    continue
+                child = self._resolve(name)
+                if child is None:
+                    continue
+                for surface in self._round_surfaces(child, depth + 1):
+                    axis = matrix @ (np.array(surface.axis) * surface.length)
+                    length = float(np.linalg.norm(axis))
+                    side = np.cross(surface.axis, (1.0, 0.0, 0.0) if abs(surface.axis[0]) < 0.9 else (0.0, 1.0, 0.0))
+                    radius = float(np.linalg.norm(matrix @ (side / np.linalg.norm(side) * surface.radius)))
+                    if length > 1e-6:
+                        found.append(Cylinder(surface.inside != inverted,
+                                              tuple(float(v) for v in matrix @ np.array(surface.base) + offset),
+                                              tuple(float(v) for v in axis / length), length, radius))
+            self._cylinders[key] = tuple(found)
+        return self._cylinders[key]
+
+    def cylinders(self, part_id: str) -> tuple[Cylinder, ...]:
+        """The part's round surfaces: pegs (studs, pins, bars) and the holes and clips that take them."""
+        return self._round_surfaces(self._part_file(part_id), 0)
 
     def ports(self, part_id: str) -> tuple[Port, ...]:
         """The part's Technic pins, axles and the holes that take them."""

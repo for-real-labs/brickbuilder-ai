@@ -18,6 +18,7 @@ from collections import defaultdict
 from dataclasses import dataclass
 
 from ..checks import ModelChecker, colliding_pairs, hash_boxes, stud_contacts, world_boxes
+from ..fits import FitFinder, around_a_fit
 from ..kit import Build, Kit, KitError, Placement, rect, ring
 from ..ldraw import LDrawError, LDrawLibrary
 from ..palette import Palette, nearest_color
@@ -33,8 +34,11 @@ QUARTERS = {0: (1, 0, 0, 0, 1, 0, 0, 0, 1), 90: (0, 0, 1, 0, 1, 0, -1, 0, 0),
 
 # Older moulds of a part the catalog stocks under a newer number, where the numbers share nothing.
 # A stand-in is used only when it measures the same as the part it replaces.
-RENUMBERED = {"3794": "15573", "3794a": "15573", "3794b": "15573", "4085a": "4085c", "4085b": "4085c",
-              "6019": "61252", "2555": "15712", "4081a": "4081b", "3684": "3684c", "3683": "3683"}
+RENUMBERED = {
+    "3794": ("15573",), "3794a": ("15573",), "3794b": ("15573",), "4085a": ("4085c",), "4085b": ("4085c",),
+    "6019": ("61252",), "2555": ("15712",), "4081a": ("4081b",), "3684": ("3684c",),
+    "2780": ("61332", "4459"), "3641": ("87414",), "4589": ("59900",), "4265c": ("32123",), "4265b": ("32123",),
+}
 
 
 class StockedParts:
@@ -63,7 +67,7 @@ class StockedParts:
         if self._palette.colors_for(part):
             return part
         target, seen = part, {part}
-        while (target := self._moved_to(target)) and target not in seen:  # the number it moved to
+        while (target := self._moved_to(target)) and target not in seen:  # the number it moved to, or is an alias of
             if self._palette.colors_for(target):
                 return target
             seen.add(target)
@@ -79,16 +83,24 @@ class StockedParts:
             self._variants = defaultdict(list)
             for stocked in self._palette.part_ids():
                 self._variants[re.sub(r"[a-z]+$", "", stocked)].append(stocked)
-        choices = [*self._variants.get(re.sub(r"[a-z]+$", "", part), ()), RENUMBERED.get(part)]
-        return next((choice for choice in choices if choice and self._alike(part, choice)), None)
+        choices = [*self._variants.get(re.sub(r"[a-z]+$", "", part), ()), *RENUMBERED.get(part, ())]
+        return next((choice for choice in choices if self._alike(part, choice)), None)
 
     def _moved_to(self, part: str) -> str | None:
         path = self._library.root / "parts" / f"{part}.dat"
         if not path.is_file():
             return None
         with path.open(encoding="utf-8", errors="replace") as handle:
-            moved = re.fullmatch(r"0 ~Moved to (\S+)", " ".join(handle.readline().split()))
-        return moved.group(1).lower() if moved else None
+            title = " ".join(handle.readline().split())
+            moved = re.fullmatch(r"0 ~Moved to (\S+)", title)
+            if moved:
+                return moved.group(1).lower()
+            if title.startswith("0 ="):  # an alias: the file is one reference to the part it stands for
+                for line in handle:
+                    tokens = line.split()
+                    if len(tokens) == 15 and tokens[0] == "1":
+                        return tokens[14].lower().removesuffix(".dat")
+        return None
 
     def _alike(self, first: str, second: str) -> bool:
         """The same outline and the same studs: one can stand where the other did."""
@@ -105,7 +117,8 @@ class StockedParts:
 # that matches wins, so the narrow ones come first. A set that matches none is not used.
 CATEGORY_WORDS = (
     ("flat", ("flag", "mosaic", "portrait")),
-    ("characters", ("halloween", "pumpkin", "ghost", "santa", "snowman", "robot", "mech", "figure", "brickheadz")),
+    ("characters", ("halloween", "pumpkin", "ghost", "santa", "snowman", "robot", "mech", "figure", "brickheadz",
+                    "bust", "statue", "sculpture", "darth", "yoda")),
     ("spacecraft", ("star destroyer", "starfighter", "x wing", "tie fighter", "spaceship", "space ship", "shuttle",
                     "rocket", "falcon", "ufo")),
     ("aircraft", ("plane", "airplane", "seaplane", "helicopter", "jet", "flyer", "glider", "biplane", "bi plane")),
@@ -158,9 +171,9 @@ class SetModel:
 @dataclass(frozen=True)
 class Limits:
     least_parts: int = 15
-    most_parts: int = 160
+    most_parts: int | None = None  # no cap: a large set is as good an example as a small one
     least_kept: float = 0.8  # of the set's parts that must survive
-    most_raw: float = 0.2  # of the kept parts that may need place_ldu (sideways building)
+    most_raw: float = 0.5  # of the kept parts that may need place_ldu (sideways building)
 
 
 @dataclass(frozen=True)
@@ -241,6 +254,7 @@ class SetImporter:
         self._checker = checker
         self._limits = limits
         self._stock = StockedParts(library, shapes, palette)
+        self._fits = FitFinder(library)
 
     def size(self, model: SetModel) -> int:
         """The set's own parts: real library parts, without its minifigures."""
@@ -258,7 +272,7 @@ class SetImporter:
     def convert(self, model: SetModel) -> Converted | None:
         limits = self._limits
         total = self.size(model)
-        if not limits.least_parts <= total <= limits.most_parts / limits.least_kept:
+        if total < limits.least_parts or (limits.most_parts and total > limits.most_parts / limits.least_kept):
             return None
         build = self._standing(self._stocked(model))
         if build is None:
@@ -269,7 +283,8 @@ class SetImporter:
                 break
             build = kept
         count = len(build.placements)
-        if not limits.least_parts <= count <= limits.most_parts or count < limits.least_kept * total:
+        if (count < limits.least_parts or (limits.most_parts and count > limits.most_parts)
+                or count < limits.least_kept * total):
             return None
         if self._rolling(part for part, *_ in model.parts) > self._rolling(p.part for p in build.placements):
             return None  # a car that lost a wheel is not an example of a car
@@ -337,12 +352,16 @@ class SetImporter:
         if not boxes:
             return Build()
         cells = hash_boxes(boxes)
-        dropped = {second for _, second in colliding_pairs(placements, boxes, cells)}
+        fits = self._fits.find(placements)  # a pin in its hole shares space with it by design
+        seated = around_a_fit(fits)
+        dropped = {second for first, second in colliding_pairs(placements, boxes, cells) if (first, second) not in seated}
         neighbours: dict[int, set[int]] = defaultdict(set)
-        for contact in stud_contacts(placements, self._shapes, boxes, cells, free_rotation=True):
-            if contact.stud not in dropped and contact.receiver not in dropped:
-                neighbours[contact.stud].add(contact.receiver)
-                neighbours[contact.receiver].add(contact.stud)
+        joined = [(contact.stud, contact.receiver)
+                  for contact in stud_contacts(placements, self._shapes, boxes, cells, free_rotation=True)]
+        for first, second in [*joined, *fits]:
+            if first not in dropped and second not in dropped:
+                neighbours[first].add(second)
+                neighbours[second].add(first)
         ground = max(box[4] for own in boxes.values() for box in own)
         seen: set[int] = set()
         best: set[int] = set()

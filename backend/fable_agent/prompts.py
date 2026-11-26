@@ -172,7 +172,8 @@ ASSEMBLY = """# What the report also requires
 These go beyond the notes under "What holds together" and cannot be argued away:
 
 - Solid plastic. Two plain bricks, plates or tiles that share space are an error at any rotation, and so is anything that cuts into a seat back, a dish rim, a curved tile or a side stud. `allow_overlap` does not excuse these: it is only for a part made to nest in another.
-- Declared joints. `connect(a, b)` needs evidence. The two parts must touch, and a Technic pin or axle must lie in a hole of the other part, on the hole's own line. Never use `connect` to hold up a part that is not really attached.
+- Measured joints. The report finds these itself when the two parts line up, and counts them as attached: a Technic pin or axle in a hole, a bar in a clip or in a hollow stud, a hinge pin in its base, a wheel on its pin and a tyre on its rim. They need no `connect` and no `allow_overlap`. If such a part is reported as floating or overlapping, it is not lined up with its hole.
+- Declared joints. `connect(a, b)` is for what cannot be measured, such as a pane in its frame, and it needs evidence. The two parts must touch, and a Technic pin or axle must lie in a hole of the other part, on the hole's own line. Never use `connect` to hold up a part that is not really attached.
 - One model. Everything must be one connected model. Free-standing pieces need a shared base.
 - Building order. The instructions are made for you, from the ground up, in steps of at most five connected pieces. Every piece must attach to something built before it, and must not be closed in between two pieces before it can be placed. `step()` and `module()` only suggest where steps break."""
 

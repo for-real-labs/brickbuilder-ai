@@ -1,7 +1,7 @@
 #: title: John Hancock Center, official set 21001-1
 #: source: LDraw Official Model Repository, set 21001-1, model file by Merlijn Wissink [Legolijntje]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 3 of 69 parts left out
+#: changes: converted to a build script; 2 of 69 parts left out
 place("3030", "Black", 0, 0, 0)
 place("3030", "Black", 0, 0, 4)
 place("4162", "Black", 1, 1, 7)
@@ -68,3 +68,4 @@ place("3623", "Black", 4.5, 47, 3.5, rot=180)
 place("3024", "Black", 5.5, 48, 3.5, rot=180)
 place_ldu("3957b", "White", (140, -392, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
 place_ldu("3957b", "White", (100, -392, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place("3070b", "Black", 5.5, 49, 3.5, rot=180)

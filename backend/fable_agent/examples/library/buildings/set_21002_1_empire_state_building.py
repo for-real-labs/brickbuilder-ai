@@ -1,7 +1,7 @@
 #: title: Empire State Building, official set 21002-1
 #: source: LDraw Official Model Repository, set 21002-1, model file by Orion Pobursky [OrionP]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 6 of 77 parts left out
+#: changes: converted to a build script; 1 of 77 parts left out
 place("3030", "Black", 0, 0, 4)
 place("3030", "Black", 0, 0, 0)
 place("4162", "Black", 0, 1, 0, rot=90)
@@ -65,11 +65,16 @@ place("3005", "Tan", 4.5, 34, 3.5, rot=90)
 place("3004", "Tan", 5.5, 34, 3, rot=90)
 place("3004", "Tan", 3.5, 34, 3, rot=90)
 place("6541", "Tan", 4.5, 37, 3.5, rot=90)
+place("2458", "Tan", 4.5, 37, 3, rot=90)
 place("3004", "Tan", 3.5, 37, 3, rot=90)
 place("3023b", "Tan", 3.5, 40, 3, rot=90)
+place("3023b", "Tan", 5.5, 40, 3, rot=90)
 place("3023b", "Tan", 3.5, 41, 3, rot=90)
+place("3023b", "Tan", 5.5, 41, 3, rot=90)
 place("6541", "Tan", 4.5, 40, 3.5, rot=90)
+place("3069b", "Tan", 5.5, 42, 3, rot=90)
 place("3069b", "Tan", 3.5, 42, 3, rot=90)
 place("3004", "Tan", 4, 43, 3.5, rot=180)
 place("15573", "Tan", 4, 46, 3.5, rot=180)
 place("59900", "Tan", 4.5, 47, 3.5, rot=180)
+place_ldu("30374", "Tan", (100, -456, 80), (-1, 0, 0, 0, 1, 0, 0, 0, -1))

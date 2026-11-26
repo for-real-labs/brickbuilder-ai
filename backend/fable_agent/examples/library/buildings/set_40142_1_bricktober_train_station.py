@@ -1,7 +1,7 @@
 #: title: Bricktober Train Station, official set 40142-1
 #: source: LDraw Official Model Repository, set 40142-1, model file by Christian Maglekær
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 32 of 172 parts left out
+#: changes: converted to a build script; 30 of 172 parts left out
 place("3035", "Black", 7, 0, 5, rot=90)
 place("3036", "Black", 1, 0, 5, rot=90)
 place("54200", "Light_Bluish_Grey", 1, 1, 7, rot=90)
@@ -60,6 +60,8 @@ place("3065", "Trans_Clear", 3, 3, 12)
 place("3065", "Trans_Clear", 7, 3, 12)
 place("32000", "Tan", 1, 3, 10, rot=90)
 place("32000", "Tan", 10, 3, 10, rot=90)
+place_ldu("61332", "Black", (220, -38, 230), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
+place_ldu("61332", "Black", (220, -38, 210), (-1, 0, 0, 0, 1, 0, 0, 0, -1))
 place("3005", "Reddish_Brown", 4, 3, 9, rot=270)
 place("3005", "Reddish_Brown", 7, 3, 9, rot=270)
 place("3005", "Trans_Clear", 5, 3, 9, rot=270)

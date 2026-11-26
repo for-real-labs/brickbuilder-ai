@@ -37,12 +37,12 @@ def test_every_category_is_described_and_the_stocked_ones_have_examples():
 
 def test_examples_carry_their_title_and_source_and_keep_them_out_of_the_script():
     cars = load("cars")
-    assert [example.name for example in cars[:2]] == ["convertible", "jeep"] and not any(e.official for e in cars)
+    assert [example.name for example in cars[:2]] == ["convertible", "jeep"] and not cars[0].official
     police = next(example for example in cars if example.name == "police_car")
     assert police.title == "Police car" and police.source == "written for BrickBuilder"
     assert "#:" not in police.script and police.script.startswith("# Police car") and "chassis(" in police.script
     sets = [example for category in stocked_categories() for example in load(category.id) if example.official]
-    assert len(sets) >= 20
+    assert len(sets) >= 40
     for example in sets:  # every official set is credited, in its file and in the list of sources
         assert "official set" in example.title and "model file by" in example.source and "place(" in example.script
     listed = (examples.LIBRARY.parent / "SOURCES.md").read_text()
@@ -55,9 +55,14 @@ def test_written_examples_come_first_and_a_build_is_shown_only_what_fits_the_bud
     assert buildings[0].name == "hospital" and all(example.official for example in buildings[1:])
     sizes = [len(example.script) for example in buildings[1:]]
     assert sizes == sorted(sizes)  # official sets from small to large
-    for category in stocked_categories():  # today every category fits whole
-        assert shown(category.id) == load(category.id)
-        assert sum(len(example.script) for example in shown(category.id)) <= PROMPT_BUDGET
+    for category in stocked_categories():
+        every, fitting = load(category.id), shown(category.id)
+        assert sum(len(example.script) for example in fitting) <= PROMPT_BUDGET and set(fitting) <= set(every)
+        if sum(len(example.script) for example in every) <= PROMPT_BUDGET:
+            assert fitting == every  # a category that fits is shown whole
+    # Sets have no size limit, so the largest category holds more than one prompt takes: the big ones wait.
+    assert len(shown("buildings")) < len(buildings) and shown("buildings")[0].name == "hospital"
+    assert max(len(example.script) for example in buildings) > 30_000
     few = shown("buildings", budget=len(buildings[0].script) + len(buildings[1].script))
     assert [example.name for example in few] == [buildings[0].name, buildings[1].name]
     assert shown("buildings", budget=10) == ()
@@ -70,8 +75,9 @@ def test_the_prompt_section_names_the_category_and_holds_each_script_whole():
     for example in shown("buildings"):
         assert f"## {example.title}\n\n```python\n{example.script.strip()}\n```" in section
     cars = prompt_section("cars")
-    assert "official LEGO set" not in cars and "where the body starts on the chassis" in cars
-    assert f"Below are {len(shown('cars'))} finished scripts" in cars
+    assert "where the body starts on the chassis" in cars and f"Below are {len(shown('cars'))} finished scripts" in cars
+    houses = prompt_section("houses")
+    assert houses.index("## Log cabin") < houses.index("official set")  # written examples first
 
 
 @pytest.mark.skipif(not (default_library_dir() / "LDConfig.ldr").is_file(), reason="needs an LDraw parts library")
@@ -80,9 +86,9 @@ def test_the_prompt_section_names_the_category_and_holds_each_script_whole():
 def test_every_example_passes_the_checks_a_pip_build_must_pass(example):
     from fable_agent.helpers import bind
     from fable_agent.kit import Kit, rect, ring
-    bench = Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 1500,
-                            "assembly_rules": True})
-    kit = Kit(bench.library, bench.shapes, bench.palette, bench.finder)
+    bench = Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 100_000,
+                            "assembly_rules": True})  # a set may be larger than a build is allowed to be
+    kit = Kit(bench.library, bench.shapes, bench.palette, bench.finder, max_placements=100_000)
     scope = {name: getattr(kit, name) for name in ("place", "place_ldu", "fill", "row", "inset", "connect", "module",
                                                    "step")}
     exec(example.script, {**scope, **bind(kit), "rect": rect, "ring": ring})  # noqa: S102 - our own scripts
@@ -256,6 +262,28 @@ def test_parts_the_checks_cannot_join_are_left_out_and_too_many_reject_the_set(t
     assert importer(world, most_parts=6).convert(read_model(model_file(*hut_lines()))) is None
 
 
+def test_a_part_held_by_a_pin_is_kept_because_the_joint_is_measured(tmp_path):
+    from fable_agent_support import TECHNIC_PARTS
+    world = World(tmp_path, extra=TECHNIC_PARTS, assembly=True)
+    # On the hut: a Technic brick, a pin through its hole, and nothing else holding the pin.
+    brick = f"1 4 100 -24 0 {ONE} 3700.dat"
+    pin = "1 0 100 -14 10 0 0 1 0 1 0 -1 0 0 3673.dat"
+    converted = importer(world).convert(read_model(model_file(*hut_lines(), brick, pin)))
+    assert converted is not None and (converted.parts, converted.of) == (10, 10)
+    assert 'place_ldu("3673"' in converted.script or 'place("3673"' in converted.script
+    assert "connect(" not in converted.script and "allow_overlap" not in converted.script
+
+
+def test_a_set_of_any_size_is_taken_unless_a_limit_is_given(tmp_path):
+    assert Limits().most_parts is None and Limits().most_raw == 0.5
+    world = World(tmp_path, assembly=True)
+    rows = [f"1 2 {80 * column} 0 {40 * row} {ONE} 3020.dat" for column in range(6) for row in range(2)]
+    rows += [f"1 4 {80 * column + 40} -24 {40 * row} {ONE} 3001.dat" for column in range(5) for row in range(2)]
+    rows += [f"1 15 {80 * column} -48 20 {ONE} 3001.dat" for column in range(6)]
+    big = read_model(model_file(*rows))
+    assert importer(world).convert(big).parts == 28 and importer(world, most_parts=20).convert(big) is None
+
+
 def test_a_part_is_matched_to_the_stocked_number_it_moved_to_or_from_or_a_twin_variant(tmp_path):
     from fable_agent_support import COLORS, PARTS
     unstocked = {(part, color) for part in ("3001", "3004a", "3622a") for color in COLORS}
@@ -270,6 +298,13 @@ def test_a_part_is_matched_to_the_stocked_number_it_moved_to_or_from_or_a_twin_v
     assert stock.find("3004a") == "3004"                   # a variant that measures the same
     assert stock.find("3622a") is None                     # a variant that does not
     assert stock.find("not a part!") is None and stock.find("77777") is None
+
+
+def test_an_alias_file_stands_for_the_part_it_points_to(tmp_path):
+    from fable_agent_support import COLORS
+    world = World(tmp_path, skip={("3001alias", color) for color in COLORS},
+                  extra={"3001alias": "0 =Brick  2 x  4\n0 Name: 3001alias.dat\n1 16 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n"})
+    assert StockedParts(world.library, world.shapes, world.palette).find("3001alias") == "3001"
 
 
 @pytest.mark.parametrize(("name", "theme", "category"), [

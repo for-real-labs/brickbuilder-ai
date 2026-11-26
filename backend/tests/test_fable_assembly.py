@@ -149,6 +149,170 @@ def test_the_review_finds_exactly_the_pairs_a_test_of_every_pair_finds(tmp_path)
                              else found <= expected and len(found) == MAX_REPORTED_PAIRS)
 
 
+# ----- joints that are measured ---------------------------------------------
+
+UPRIGHT = (0.0, -1.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0)  # turns a part's x axis to point up
+
+
+def test_the_library_gives_each_part_its_pegs_and_holes(tmp_path):
+    world = World(tmp_path, extra={**TECHNIC_PARTS, "odd": (
+        "0 Odd\n"
+        "1 16 0 0 0 3 0 0 0 5 0 0 0 9 4-4cyli.dat\n"       # an oval: not a round fit
+        "1 16 0 0 0 4 0 0 0 5 0 0 0 4 1-8cyli.dat\n"       # an eighth of a turn: a fillet, not a peg
+        "0 BFC INVERTNEXT\n1 16 0 0 0 1 0 0 0 1 0 0 0 1 peghole.dat\n")})  # a hole turned inside out again
+    library = world.library
+    bar, = library.cylinders("30374")
+    assert (bar.inside, bar.base, bar.axis, bar.length, bar.radius) == (False, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0), 80.0, 4.0)
+    clip, = library.cylinders("4085c")
+    assert clip.inside and (clip.radius, clip.length, clip.axis) == (4.0, 8.0, (0.0, 1.0, 0.0))
+    hole, = library.cylinders("3700")
+    assert hole.inside and (hole.radius, hole.length, hole.base, hole.axis) == (6.0, 20.0, (0.0, 10.0, 10.0),
+                                                                                (0.0, 0.0, -1.0))
+    pin, = library.cylinders("3673")
+    assert not pin.inside and (pin.radius, pin.length, pin.axis) == (6.0, 20.0, (1.0, 0.0, 0.0))
+    turned, = library.cylinders("odd")
+    assert not turned.inside and library.cylinders("3001") == ()
+
+
+def fitted(tmp_path, turn, position):
+    """A clip plate on the base and a bar placed by its LDraw origin; the pairs the finder joins."""
+    from fable_agent.fits import FitFinder
+    world = World(tmp_path, extra=TECHNIC_PARTS)
+    kit = world.kit()
+    clip = kit.place("4085c", "Red", 0, 0, 0)
+    x, y, z = kit.build.placements[clip].position
+    bar = kit.place_ldu("30374", "Black", (x + position[0], y + position[1], z + position[2]), turn,
+                        allow_overlap=True)
+    return FitFinder(world.library).find(kit.build.placements), (clip, bar)
+
+
+def test_a_bar_is_joined_to_a_clip_only_where_it_really_sits_in_it(tmp_path):
+    # The clip's grip is 14 units in front of its plate, upright, from the plate's top down 8.
+    # LDraw's y points down, so a bar that starts 40 above the plate's top runs down through the grip.
+    found, pair = fitted(tmp_path / "in", UPRIGHT, (0, -40, -14))
+    assert found == {pair}
+    assert fitted(tmp_path / "beside", UPRIGHT, (3, -40, -14))[0] == set()       # off the grip's line
+    assert fitted(tmp_path / "across", IDENTITY, (-40, 4, -14))[0] == set()      # lying across it
+    assert fitted(tmp_path / "below", UPRIGHT, (0, 20, -14))[0] == set()         # on the line, but past it
+
+
+def test_a_peg_fits_only_a_hole_of_its_own_size_and_never_another_peg(tmp_path):
+    from fable_agent.fits import FitFinder
+    world = World(tmp_path, extra=TECHNIC_PARTS)
+    kit = world.kit()
+    brick = kit.place("3700", "Red", 0, 0, 0)
+    x, y, z = kit.build.placements[brick].position
+    thin = kit.place_ldu("30374", "Black", (x, y + 10, z + 20), (0, 0, 1, 0, 1, 0, -1, 0, 0), allow_overlap=True)
+    pin = kit.place_ldu("3673", "Black", (x, y + 10, z + 10), (0, 0, 1, 0, 1, 0, -1, 0, 0), allow_overlap=True)
+    twin = kit.place_ldu("3673", "Black", (x, y + 10, z + 10), (0, 0, 1, 0, 1, 0, -1, 0, 0), allow_overlap=True)
+    found = FitFinder(world.library).find(kit.build.placements)
+    assert found == {(brick, pin), (brick, twin)} and thin not in {index for pair in found for index in pair}
+
+
+def test_a_part_held_by_a_pin_needs_no_declared_joint_and_its_overlap_is_expected(tmp_path):
+    def build(world):
+        kit = world.kit()
+        base(kit)
+        brick = kit.place("3700", "Red", 0, 2, 0)
+        x, y, z = kit.build.placements[brick].position
+        kit.place_ldu("3673", "Black", (x, y + 10, z + 10), QUARTER)  # no allow_overlap, no connect()
+        return kit.build
+
+    held = World(tmp_path / "v2", extra=TECHNIC_PARTS, assembly=True)
+    report = held.checker.check(build(held))
+    assert report.ok and report.plan is not None
+    assert any("1 joints were measured" in note for note in report.notes)
+    assert any("1 overlapping pairs are parts seated in or beside a measured joint" in note for note in report.notes)
+    # The first-version methods measure nothing: the same pin is an overlap there, as before.
+    plain = World(tmp_path / "v1", extra=TECHNIC_PARTS)
+    assert "overlap" in kinds(plain.checker.check(build(plain)).errors)
+
+
+def test_a_tyre_on_its_rim_and_a_wheel_on_its_pin_are_measured_by_how_they_sit(tmp_path):
+    from fable_agent.fits import FitFinder
+    from fable_agent_support import HELPER_PARTS
+    world = World(tmp_path, extra={**HELPER_PARTS, **TECHNIC_PARTS})
+    finder = FitFinder(world.library)
+    side = (0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0)  # the wheel's z axis, which it turns on, along model x
+    rim = Placement("4624", 0, (40.0, -20.0, 0.0), side)
+    tyre = Placement("87414", 0, (40.0, -20.0, 0.0), side)
+    pin = Placement("3673", 0, (20.0, -20.0, 0.0), IDENTITY)        # its peg runs along x, through the rim's middle
+    assert finder.find([rim, tyre, pin]) == {(0, 1), (0, 2)}        # tyre on rim, rim on pin; not tyre on pin
+    off = Placement("87414", 0, (40.0, -20.0, 30.0), side)          # a tyre lying beside the wheel
+    flat = Placement("87414", 0, (40.0, -20.0, 0.0), IDENTITY)      # around the same point, turned the wrong way
+    low = Placement("3673", 0, (20.0, -10.0, 0.0), IDENTITY)        # a pin under the wheel's middle, not through it
+    assert finder.find([rim, off]) == set() and finder.find([rim, flat]) == set() and finder.find([rim, low]) == set()
+    assert finder.find([tyre, pin]) == set()                        # a tyre needs a rim
+
+
+def test_parts_seated_on_the_same_part_may_share_coarse_space_but_are_not_joined_by_it(tmp_path):
+    from fable_agent.fits import around_a_fit
+    # A tyre and a pin holder are both fitted to the rim (1); a far part (9) is fitted to nothing shared.
+    assert around_a_fit({(0, 1), (1, 2), (8, 9)}) == {(0, 1), (1, 2), (0, 2), (8, 9)}
+    assert around_a_fit(set()) == set()
+
+    from fable_agent_support import HELPER_PARTS
+    world = World(tmp_path, extra={**HELPER_PARTS, **TECHNIC_PARTS}, assembly=True)
+    side = (0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0)
+    kit = world.kit()
+    kit.fill([(x, z) for x in range(-2, 6) for z in range(-1, 1)], 0, "Green", kind="plate", layers=2)
+    kit.place("3004", "Red", 0, 2, -1)          # a brick under it, so the tyre clears the ground
+    brick = kit.place("3700", "Red", 0, 5, -1)  # its hole points along z
+    x, y, z = kit.build.placements[brick].position
+    pin = kit.place_ldu("3673", "Black", (x, y + 10, z + 10), QUARTER)          # in the hole, sticking out the front
+    rim = kit.place_ldu("4624", "White", (x, y + 10, z + 22), IDENTITY)         # on the pin's line: turns on z
+    tyre = kit.place_ldu("87414", "Black", (x, y + 10, z + 22), IDENTITY)
+    report = world.checker.check(kit.build)
+    assert report.ok, [issue.message for issue in report.errors]
+    assert any("joints were measured" in note for note in report.notes)
+    order = report.plan.order
+    assert order.index(brick) < order.index(pin) < order.index(rim) < order.index(tyre)  # each on what holds it
+
+
+@pytest.mark.skipif(not (default_library_dir() / "LDConfig.ldr").is_file(), reason="needs an LDraw parts library")
+def test_every_wheel_the_helper_mounts_is_measured_on_the_real_parts():
+    from fable_agent.app import Workbench
+    from fable_agent.fits import FitFinder
+    from fable_agent.helpers import HELPERS, bind
+    from fable_agent.kit import Kit, KitError
+    bench = Workbench.open({"ldraw_dir": None, "catalog_path": None, "open_palette": False, "max_parts": 500})
+    finder = FitFinder(bench.library)
+    for style in HELPERS["wheels"].styles:
+        for width in (4, 6, 12):
+            kit = Kit(bench.library, bench.shapes, bench.palette, bench.finder)
+            try:
+                bind(kit)["wheels"](0, 8, 0, style=style, width=width)
+            except KitError:
+                continue
+            placed = kit.build.placements
+            declared = {(min(a, b), max(a, b)) for a, b, _ in kit.build.links}
+            found = finder.find(placed)
+            unmeasured = {(placed[a].part, placed[b].part) for a, b in declared - found}
+            # Only the trolley wheel, which clips into its holder, is taken on the helper's word.
+            assert unmeasured <= {("2655", "2496")}, (style, width, unmeasured)
+            assert found <= declared, (style, width)  # and nothing is joined that the helper did not join
+
+
+@pytest.mark.skipif(not (default_library_dir() / "LDConfig.ldr").is_file(), reason="needs an LDraw parts library")
+def test_real_pins_bars_clips_and_hinges_are_measured():
+    from fable_agent.fits import FitFinder
+    from fable_agent.ldraw import LDrawLibrary
+    library = LDrawLibrary()
+    shown = lambda part: {("hole" if c.inside else "peg", round(c.radius, 1)) for c in library.cylinders(part)}  # noqa: E731
+    assert ("peg", 4.0) in shown("30374") and ("hole", 4.0) in shown("4085c")       # a bar and a clip
+    assert ("hole", 6.0) in shown("3700") and ("peg", 6.0) in shown("3673")         # a Technic hole and pin
+    assert ("hole", 4.0) in shown("2429") and ("peg", 3.9) in shown("2430")         # a hinge base and its top
+    finder = FitFinder(library)
+    hinge = [Placement("2429", 0, (0.0, 0.0, 0.0), IDENTITY), Placement("2430", 0, (0.0, 0.0, 0.0), IDENTITY)]
+    assert finder.find(hinge) == {(0, 1)}
+    swung = [hinge[0], Placement("2430", 0, (0.0, 0.0, 0.0), (0.0, 0.0, 1.0, 0.0, 1.0, 0.0, -1.0, 0.0, 0.0))]
+    assert finder.find(swung) == {(0, 1)}                                           # a hinge still holds when turned
+    apart = [hinge[0], Placement("2430", 0, (40.0, 0.0, 0.0), IDENTITY)]
+    assert finder.find(apart) == set()
+    bricks = [Placement("3001", 0, (0.0, 0.0, 0.0), IDENTITY), Placement("3001", 0, (0.0, -24.0, 0.0), IDENTITY)]
+    assert finder.find(bricks) == set()                                             # studs are the checker's own
+
+
 # ----- declared joints ------------------------------------------------------
 
 
@@ -179,7 +343,8 @@ def pinned(tmp_path, lift=0.0):
 
 def test_a_technic_pin_must_lie_in_a_hole_of_the_part_it_is_joined_to(tmp_path):
     seated = pinned(tmp_path / "in")
-    assert seated.ok and any("1 pins or axles found in their holes, 0 others" in note for note in seated.notes)
+    assert seated.ok and any("1 declared joints: 1 measured as one part seated in the other, 0 others" in note
+                             for note in seated.notes)
     beside = pinned(tmp_path / "off", lift=6)  # still touching the brick, but above the hole
     assert kinds(beside.errors) == ["joint"] and "in none of the other part's holes" in beside.errors[0].message
 
@@ -192,8 +357,8 @@ def test_a_joint_the_library_cannot_name_is_checked_for_touching_and_counted(tmp
     lamp = kit.place("3005", "White", 4, 2, 0)  # beside the wall, on the base
     kit.connect(wall, lamp, "clipped to the wall")
     report = world.checker.check(kit.build)
-    assert report.ok and any("1 declared joints: 0 pins or axles found in their holes, 1 others checked only "
-                             "for touching" in note for note in report.notes)
+    assert report.ok and any("1 declared joints: 0 measured as one part seated in the other, 1 others checked "
+                             "only for touching" in note for note in report.notes)
 
 
 @pytest.mark.skipif(not (default_library_dir() / "LDConfig.ldr").is_file(), reason="needs an LDraw parts library")
@@ -291,7 +456,7 @@ def test_a_model_no_order_can_build_is_reported_with_the_pieces_left_over(tmp_pa
     world = World(tmp_path, assembly=True)
     build = wall(world)
 
-    def blocked(self, build, contacts, boxes):
+    def blocked(self, build, contacts, boxes, fits):
         raise NoSequence("Remaining pieces are disconnected or require a blocked placement", (3, 4))
 
     monkeypatch.setattr(SequencePlanner, "plan", blocked)

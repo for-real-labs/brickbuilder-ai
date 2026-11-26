@@ -1,7 +1,7 @@
 #: title: Speedboat (from Mini Plane), official set 5762-1
 #: source: LDraw Official Model Repository, set 5762-1, model file by Ken Drew [Ken]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 6 of 43 parts left out
+#: changes: converted to a build script; 2 of 43 parts left out
 place("3666", "White", 2, 0, 3, rot=90)
 place("3666", "White", 3, 0, 3, rot=90)
 place("3020", "Orange", 1, 1, 5, rot=180)
@@ -13,11 +13,15 @@ place("41769", "White", 4, 2, 6, rot=180)
 place("41770", "White", 0, 2, 6, rot=180)
 place("54384", "White", 3, 2, 0)
 place("54383", "White", 0, 2, 0)
+place("54200", "Orange", 3, 3, 0)
+place("54200", "Orange", 2, 3, 0)
 place("3034", "Pearl_Silver", 2, 3, 1, rot=90)
 place("3710", "White", 1, 3, 3, rot=90)
 place("3710", "White", 4, 3, 3, rot=90)
 place("3023b", "Orange", 4, 3, 7, rot=90)
 place("3023b", "Orange", 1, 3, 7, rot=90)
+place("54200", "Trans_Brown", 4, 4, 5, rot=270)
+place("54200", "Trans_Brown", 1, 4, 5, rot=90)
 place("15573", "Orange", 2, 4, 1)
 place("3069b", "Orange", 2, 4, 2, rot=90)
 place("3069b", "Orange", 3, 4, 2, rot=90)

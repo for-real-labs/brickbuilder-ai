@@ -27,7 +27,7 @@ FITS = {("pin", "pin_hole"), ("axle", "axle_hole"), ("axle", "pin_hole")}
 class JointFindings:
     apart: tuple[tuple[int, int, str], ...]  # declared joints whose parts do not touch
     missed: tuple[tuple[int, int, str], ...]  # a pin or axle that is in none of the other part's holes
-    seated: int  # pins and axles found in a hole
+    seated: int  # joints measured as one part seated in the other
     touching: int  # other joints, checked for contact only
 
 
@@ -36,11 +36,16 @@ class JointReview:
         self._library = library
         self._shapes = shapes
 
-    def review(self, build: Build, boxes: dict[int, list], studded: set[frozenset[int]]) -> JointFindings:
-        """``boxes`` are the checker's model-space boxes; ``studded`` the pairs already joined by a stud."""
+    def review(self, build: Build, boxes: dict[int, list], studded: set[frozenset[int]],
+               fits: set[tuple[int, int]] = frozenset()) -> JointFindings:
+        """``boxes`` are the checker's model-space boxes, ``studded`` the pairs already joined by a
+        stud and ``fits`` the pairs measured as a peg in a hole (see ``fits``)."""
         apart, missed, seated, touching = [], [], 0, 0
         for first, second, note in build.links:
             a, b = build.placements[first], build.placements[second]
+            if (min(first, second), max(first, second)) in fits:
+                seated += 1
+                continue
             if self._gap(self._boxes(first, a, boxes), self._boxes(second, b, boxes)) > CONTACT_GAP:
                 apart.append((first, second, note))
                 continue

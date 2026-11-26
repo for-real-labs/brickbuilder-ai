@@ -1,14 +1,16 @@
 #: title: Turtle (from Orange Fish), official set 3223-1
 #: source: LDraw Official Model Repository, set 3223-1, model file by Merlijn Wissink [legolijntje]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 2 of 17 parts left out
+#: changes: converted to a build script; 0 of 17 parts left out
 place("3021", "Green", 3, 0, 1, rot=270)
 place("3710", "Green", 4, 0, 4, rot=180)
 place("3710", "Green", 0, 0, 4, rot=180)
 place("3021", "Green", 2, 1, 2, rot=270)
 place_ldu("2429", "Black", (40, -8, 40), (0, 0, 1, 0, 1, 0, -1, 0, 0))
+place_ldu("2430", "Black", (40, -8, 40), (-0.978, 0, -0.208, 0, 1, 0, 0.208, 0, -0.978))
 place("3021", "Green", 4, 1, 2, rot=270)
 place_ldu("2430", "Black", (120, -8, 40), (0, 0, -1, 0, 1, 0, 1, 0, 0))
+place_ldu("2429", "Black", (120, -8, 40), (-0.966, 0, 0.259, 0, 1, 0, -0.259, 0, -0.966))
 place("4073", "Black", 7, 1, 4, rot=180)
 place("4073", "Black", 0, 1, 4, rot=180)
 place("3021", "Orange", 3, 2, 2, rot=90)

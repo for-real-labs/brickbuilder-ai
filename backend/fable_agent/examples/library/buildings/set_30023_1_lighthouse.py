@@ -1,7 +1,7 @@
 #: title: Lighthouse, official set 30023-1
 #: source: LDraw Official Model Repository, set 30023-1, model file by Takeshi Takahashi [RainbowDolphin]
 #: licence: Redistributable under CCAL version 2.0 : see CAreadme.txt
-#: changes: converted to a build script; 1 of 25 parts left out
+#: changes: converted to a build script; 0 of 25 parts left out
 place("3031", "Green", 1, 0, 1)
 place("3001", "Reddish_Brown", 2, 1, 0, rot=90)
 place("3039", "Light_Bluish_Grey", 0, 1, 2, rot=90)
@@ -26,3 +26,4 @@ place("87081", "Black", 1, 20, 1)
 place("3941", "Trans_Yellow", 2, 23, 2)
 place("3941", "Trans_Yellow", 2, 26, 2)
 place("4073", "White", 2.5, 29, 2.5)
+place("43898", "Black", 1.5, 29, 1.5)
