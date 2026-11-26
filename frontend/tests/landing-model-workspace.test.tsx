@@ -45,7 +45,7 @@ vi.mock('../src/hooks/useBuildBuddyChat', () => ({ useBuildBuddyChat: () => ({ t
   requestReply: vi.fn(), updateTurn: buddy.updateTurn, resetConversation: vi.fn() }) }));
 vi.mock('../src/services/getGenerationStatsApi', () => ({ GetGenerationStatsApiService: { getGenerationStats: async () => ({ generation_count: 1, brick_count: 100 }) } }));
 vi.mock('../src/services/getCommunityGenerationsApi', () => ({ GetCommunityGenerationsApiService: { getCommunityGenerations: async () => ({ generations: [] }) } }));
-vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: ({ backToModelButton }: { backToModelButton: React.ReactNode }) => <div>Building instructions{backToModelButton}<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
+vi.mock('../src/pages/InstructionsPage', () => ({ InstructionsViewer: ({ backToModelButton, mobileBackButton }: { backToModelButton: React.ReactNode; mobileBackButton?: React.ReactNode }) => <div>Building instructions{mobileBackButton ?? backToModelButton}<div className="instructions-canvas"><canvas /></div><div className="instructions-parts">Parts list</div></div> }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelContent, modelName, modelPath, onModelLoaded, showRuler, showModelControls }: { showRuler?: boolean; showModelControls?: boolean; modelContent?: string; modelName?: string; modelPath?: string; onModelLoaded?: () => void }) => {
   if (modelPath) return <div data-testid="generation-3d-animation" data-scene={modelPath} />;
   viewer.loaded = onModelLoaded;
@@ -1089,7 +1089,15 @@ it('opens mobile instructions expanded and returns to the model with the dialogu
   expect(panel.querySelector<HTMLButtonElement>('.landing-view-expand')?.hidden).toBe(true);
   expect(document.body.style.overflow).toBe('hidden');
 
-  await act(async () => panel.querySelector<HTMLButtonElement>('.landing-view-back')!.click());
+  expect(panel.querySelector('.landing-expanded-footer')).toBeNull();
+  const back = panel.querySelector<HTMLButtonElement>('.landing-instructions-view .instructions-mobile-back')!;
+  expect(back.textContent?.trim()).toBe('Back');
+  expect(back.querySelector('.lucide-chevron-left')).not.toBeNull();
+  expect(document.activeElement).toBe(back);
+  await act(async () => back.click());
+  expect(posthog.capture).toHaveBeenCalledWith('landing_model_view_collapsed', {
+    generation_id: 'castle', view: 'instructions', source: 'back_button',
+  });
   expect(panel.dataset.expanded).toBe('false');
   expect(panel.dataset.view).toBe('model');
   expect(query.value).toBe('id=castle&exact=1');

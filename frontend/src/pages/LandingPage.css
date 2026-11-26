@@ -375,6 +375,6 @@ body:has(.landing-page .landing-model-panel[data-expanded="true"]) [data-app-ban
     overflow: visible;
     background: transparent;
   }
-  .landing-page .landing-model-panel[data-expanded="true"] .instructions-step-heading { padding-right: 0; }
+  .landing-page .landing-model-panel[data-expanded="true"] .instructions-step-heading { padding-inline: 8px; }
   .landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-header li:has(> [aria-controls~="landing-generation-settings"]) { display: none; }
 }

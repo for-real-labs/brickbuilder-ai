@@ -281,6 +281,7 @@ interface InstructionsViewerProps {
   navigationState?: unknown;
   onStepChange?: (step: number) => void;
   backToModelButton?: React.ReactNode;
+  mobileBackButton?: React.ReactNode;
   embedded?: boolean;
   active?: boolean;
 }
@@ -294,7 +295,7 @@ export function InstructionsViewer(props: InstructionsViewerProps) {
   </>;
 }
 
-function UnlockedInstructionsViewer({ generationId, initialStep, navigationState, onStepChange, backToModelButton, embedded = false, active = true }: InstructionsViewerProps) {
+function UnlockedInstructionsViewer({ generationId, initialStep, navigationState, onStepChange, backToModelButton, mobileBackButton, embedded = false, active = true }: InstructionsViewerProps) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { ldrContent: navigationLdr, modelName: navigationModelName, mpdContent: navigationMpd } =
@@ -1176,7 +1177,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
   };
 
   if (loading) {
-    if (embedded) return <div className="instructions-inline-message"><Loader2 size={24} className="animate-spin" /><p role="status">Loading building instructions…</p>{backToModelButton}</div>;
+    if (embedded) return <div className="instructions-inline-message"><Loader2 size={24} className="animate-spin" /><p role="status">Loading building instructions…</p>{mobileBackButton ?? backToModelButton}</div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1196,7 +1197,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
     if (embedded) return <div className="instructions-inline-message" role="alert"><p>{error}</p><button type="button" className="instructions-retry" onClick={() => {
       posthog.capture('instructions_retry_clicked', { generation_id: generationId, source: 'landing' });
       setLoadAttempt(attempt => attempt + 1);
-    }}>Try again</button>{backToModelButton}</div>;
+    }}>Try again</button>{mobileBackButton ?? backToModelButton}</div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1222,7 +1223,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
 
 
   if (!model || model.steps.length === 0) {
-    if (embedded) return <div className="instructions-inline-message"><p role="status">No building steps found in this model.</p>{backToModelButton}</div>;
+    if (embedded) return <div className="instructions-inline-message"><p role="status">No building steps found in this model.</p>{mobileBackButton ?? backToModelButton}</div>;
     return (
       <div className="min-h-screen text-slate-900" style={{ backgroundColor: "#ffffff" }}>
         <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-4 sm:px-6 md:px-8 lg:px-10 pb-16 pt-6">
@@ -1254,7 +1255,8 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
             {/* Current Step Display */}
             {model.steps[currentStepIndex] && (
               <div className={embedded ? "instructions-step" : "border border-slate-200 rounded-xl p-6"}>
-              <div className="instructions-step-heading flex justify-between items-center mb-4">
+              <div className={`instructions-step-heading flex justify-between items-center mb-4${mobileBackButton ? ' instructions-step-heading--mobile' : ''}`}>
+                {mobileBackButton}
                 <h4 className="text-lg font-semibold text-[#f44336]">
                 Step {model.steps[currentStepIndex].stepNumber}
                 </h4>
@@ -1268,9 +1270,9 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
                     {showPartsList ? 'Step parts' : 'Parts list'}
                   </button>
                 </div>
-                <div className="text-sm text-slate-600">
-                Add {model.steps[currentStepIndex].parts.length} {model.steps[currentStepIndex].parts.length === 1 ? 'part' : 'parts'}
-                </div>
+                {!mobileBackButton && <div className="text-sm text-slate-600">
+                  Add {model.steps[currentStepIndex].parts.length} {model.steps[currentStepIndex].parts.length === 1 ? 'part' : 'parts'}
+                </div>}
               </div>
 
               <div className={embedded ? "instructions-canvas" : "instructions-canvas mb-4 relative h-[380px] sm:h-[460px]"}>

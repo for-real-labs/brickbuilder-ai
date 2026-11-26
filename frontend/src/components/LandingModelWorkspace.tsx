@@ -1,6 +1,6 @@
 import React, { lazy, Suspense, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { ArrowLeft, BookOpen, Maximize2, Minimize2, Ruler } from 'lucide-react';
+import { ArrowLeft, BookOpen, ChevronLeft, Maximize2, Minimize2, Ruler } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { LandingModel } from '../hooks/useLandingModel';
 import { LandingModelOrdering } from './LandingModelOrdering';
@@ -77,6 +77,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const expandButton = useRef<HTMLButtonElement>(null);
   const instructionsButton = useRef<HTMLButtonElement>(null);
   const backButton = useRef<HTMLButtonElement>(null);
+  const focusMobileBack = useCallback((button: HTMLButtonElement | null) => button?.focus({ preventScroll: true }), []);
   const collapseRef = useRef<(source: ViewerCollapseSource) => void>(() => {});
   const showingInstructions = featureAccess === 'allowed' && !pendingEdit && generationId === requestedInstructionsId;
   const mobileInstructions = mobile && showingInstructions;
@@ -129,7 +130,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       if (event.key === 'Escape' && (!mobile || !event.defaultPrevented) && !document.querySelector('.landing-community-dialog[open], .landing-previous-edits-dialog[open]')) { event.preventDefault(); collapseRef.current('escape'); }
     };
     document.addEventListener('keydown', onKeyDown);
-    backButton.current?.focus();
+    if (!mobileInstructions) backButton.current?.focus();
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => {
@@ -178,6 +179,10 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     void acknowledge();
     return () => { cancelled = true; clearTimeout(retry); };
   }, [generation?.generation_id, readyId, busy, markViewed]);
+  const mobileBackButton = mobileInstructions ? <button ref={focusMobileBack} type="button" className="instructions-mobile-back"
+    onClick={() => collapse('back_button')}>
+    <ChevronLeft size={18} aria-hidden="true" />Back
+  </button> : undefined;
   const backToModelButton = showingInstructions && !mobile && <button type="button" className="instructions-heading-button" disabled={busy}
     aria-controls={stageId} onClick={() => {
       posthog.capture('landing_model_3d_view_clicked', { generation_id: generationId, source: 'instructions_header' });
@@ -204,7 +209,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       <section className="landing-model-workspace" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label="Your model workspace">
         <div ref={stage} id={stageId} className="landing-model-stage" data-view={pendingEdit ? 'building' : showingInstructions ? 'instructions' : 'model'} aria-label={pendingEdit ? 'Building your edited model' : showingInstructions ? 'Instructions viewer' : '3D model viewer'}>
           {pendingEdit ? <LdrawGenerationAnimation /> :
-          <Suspense fallback={<div className="instructions-inline-message"><p role="status">Loading viewer…</p>{backToModelButton}</div>}>
+          <Suspense fallback={<div className="instructions-inline-message"><p role="status">Loading viewer…</p>{mobileBackButton ?? backToModelButton}</div>}>
             {!showingInstructions && <ThreeLDRViewer key={generation.generation_id} modelContent={model.content}
               onModelLoaded={() => setReadyId(generation.generation_id)}
               onPreviewCaptured={png => { preview.current = { id: generation.generation_id, png }; }}
@@ -213,7 +218,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id}
                 initialStep={linkedStep === null ? undefined : Number(linkedStep)} onStepChange={onInstructionStepChange} embedded active={showingInstructions}
-                backToModelButton={backToModelButton} />
+                backToModelButton={backToModelButton} mobileBackButton={mobileBackButton} />
             </div>}
           </Suspense>}
         </div>
@@ -277,11 +282,11 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             id={generation.generation_id} busy={busy} onNameSaved={onNameSaved}
             preview={() => preview.current?.id === generation.generation_id ? preview.current.png : undefined} />}
       </div>}
-      <div className="landing-expanded-footer" hidden={!expanded}>
+      {!mobileInstructions && <div className="landing-expanded-footer" hidden={!expanded}>
         <button ref={backButton} type="button" className="landing-action-button landing-view-back" onClick={() => collapse('back_button')}>
           <ArrowLeft size={20} aria-hidden="true" /><span>Go Back</span>
         </button>
-      </div>
+      </div>}
     </dialog>
     {orderable && !pendingEdit && <LandingModelOrdering key={generation.generation_id}
         model={model} busy={busy} onConvert={onConvertKit} showMobileBar={dismissedOrderId !== generation.generation_id && !composerFocused}
