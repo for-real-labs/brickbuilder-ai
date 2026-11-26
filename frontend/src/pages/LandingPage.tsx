@@ -93,6 +93,10 @@ const MODEL_QUALITY_PRESETS: { label: string; value: ModelQuality; modelOption: 
 const DEFAULT_PROMPT_OPTION = "a";
 
 type GenerationMethod = "3d" | "llm" | "nova";
+const BUILD_MODES = [
+  { value: 'llm', label: 'Basic bricks', credits: 2 },
+  { value: 'nova', label: 'All parts', credits: 20 },
+] as const;
 type RandomBuildSuggestion = { status: 'loading' | 'ready' | 'error'; idea: string | null; previousIdeas: string[] };
 export const DEFAULT_GENERATION_METHOD: GenerationMethod = "nova";
 export type ThreeDModel = "sam3d" | "trellis";
@@ -1352,11 +1356,11 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 <div className="mt-3 flex flex-wrap items-center gap-2 text-left sm:gap-3">
                   <div id="landing-builder-mode" role="group" aria-label="Mode"
                     className="flex min-h-11 w-full shrink-0 items-center rounded-full border border-slate-200 bg-slate-100 p-1 sm:w-auto">
-                    {([{ value: 'llm', label: 'Basic bricks', credits: 2 }, { value: 'nova', label: 'All parts', credits: 20 }] as const).map(({ value, label, credits }) => (
+                    {BUILD_MODES.filter(mode => basicBricksEnabled || mode.value !== 'llm').map(({ value, label, credits }) => (
                       <button key={value} type="button" value={value}
                         aria-label={label}
                         aria-pressed={(displayedMethod === '3d' ? 'llm' : displayedMethod) === value}
-                        disabled={(value === 'llm' && !basicBricksEnabled) || Boolean(landingModel.model) || loading || buddyChat.routing || checkingProvider || displayedMethod === '3d'}
+                        disabled={Boolean(landingModel.model) || loading || buddyChat.routing || checkingProvider || displayedMethod === '3d'}
                         onClick={() => {
                           if (value === displayedMethod) return;
                           setGenerationMethod(value);

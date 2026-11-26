@@ -1085,7 +1085,7 @@ describe('LandingPage', () => {
       openSettings();
       const close = panel.querySelector<HTMLButtonElement>('[aria-label="Dismiss generation settings"]')!;
       expect(document.activeElement).toBe(close);
-      act(() => panel.querySelector<HTMLButtonElement>('button[value="llm"]')!.click());
+      expect(panel.querySelector('button[value="llm"]')).toBeNull();
       expect(panel.querySelector('#landing-render-model')).toBeNull();
       act(() => close.click());
       expect(panel.hidden).toBe(true);
@@ -1256,12 +1256,8 @@ it('locks new free-trial builds to All parts', async () => {
     expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
     expect(container.querySelector('.billing-generation-quote')).toBeNull();
     expect([...container.querySelectorAll('header button')].some(button => button.textContent === 'Plans')).toBe(false);
-    const basic = container.querySelector<HTMLButtonElement>('button[value="llm"]')!;
-    expect(basic.disabled).toBe(true);
-    act(() => basic.click());
-    expect(basic.getAttribute('aria-pressed')).toBe('false');
-    expect(container.querySelector('button[value="nova"]')?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelector('.billing-generation-quote')).toBeNull();
+    expect(container.querySelector('button[value="llm"]')).toBeNull();
+    expect(container.textContent).not.toContain('Basic bricks');
   } finally { act(() => root.unmount()); }
 });
 
@@ -1317,7 +1313,7 @@ it('returns from a parts upload to the existing composer and submits its exact i
     Object.defineProperty(picker, 'files', { value: [new File(['parts'], 'owned.csv')] });
     await act(async () => picker.dispatchEvent(new Event('change', { bubbles: true })));
     expect(container.querySelector('h1')?.textContent).toContain('Using owned.csv to design a new LEGO');
-    expect(container.querySelector<HTMLButtonElement>('button[value="llm"]')!.disabled).toBe(true);
+    expect(container.querySelector('button[value="llm"]')).toBeNull();
     expect(PartsInventoryApi.basicCompatibility).not.toHaveBeenCalled();
     const prompt = container.querySelector<HTMLInputElement>('[aria-label="Describe your model"]')!;
     act(() => {
