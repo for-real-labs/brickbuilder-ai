@@ -396,6 +396,14 @@ async def get_user_with_optional_auth(
     """
     return auth_info
 
+
+def require_generation_account(auth_info: dict) -> None:
+    # Hosted generation requires a subscription. Guest identities remain valid for
+    # reading existing builds and free tools; offline local checkouts keep working.
+    if not LOCAL_DB_ENABLED and (not auth_info.get("authenticated") or auth_info.get("is_anonymous")):
+        raise subscription_required()
+
+
 def handle_auth_and_tracking(
     auth_info: dict,
     endpoint: str,
@@ -417,12 +425,8 @@ def handle_auth_and_tracking(
     Raises:
         HTTPException: If user has insufficient credits
     """
-    # Hosted generation requires a subscription. Guest identities remain valid for
-    # reading existing builds and free tools; offline local checkouts keep working.
-    if required_credits > 0 and not LOCAL_DB_ENABLED and (
-        not auth_info.get("authenticated") or auth_info.get("is_anonymous")
-    ):
-        raise subscription_required()
+    if required_credits > 0:
+        require_generation_account(auth_info)
 
     from .posthog_client import track_api_call
     

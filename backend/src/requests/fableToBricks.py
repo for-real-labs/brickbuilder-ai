@@ -317,6 +317,7 @@ async def fable_to_bricks(request, auth_info, source=None):
     variant = FABLE_AGENTS.get(agent_id)
     if variant is None:
         raise HTTPException(422, "Unknown building agent.")
+    auth.require_generation_account(auth_info)
     if request.auth_mode != "api_key" or request.billing_source == "personal":
         raise HTTPException(422, "Fable uses BrickBuilder credits and its configured AI connections.")
     if request.parts_inventory is not None and agent_id != PIP_AGENT:
