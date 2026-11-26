@@ -10,7 +10,9 @@ build limits. It can also start an edit from the saved geometry of a completed N
 
 The automated build test uses a one-brick inventory and a scripted model response. It checks
 that Pip rejects a two-brick draft and publishes a revision using the available brick.
-It does not measure production generation time or AI cost.
+A local smoke test loaded the production set inventory for Exotic Parrot (31136-1). With
+a scripted build response, Pip checked and rendered a three-plate staircase using three
+exact part and color pairs from that set. Neither run measured AI cost or live model quality.
 
 See `backend/src/requests/fableToBricks.py` and `backend/tests/test_fable_web.py`.
 

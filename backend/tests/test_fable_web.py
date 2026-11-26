@@ -558,7 +558,7 @@ def test_pip_builds_with_only_the_supplied_set_colors_and_counts(tmp_path, monke
     one = "place('3005', 4, 0, 0, 0)"
     client = FakeClient([
         reply(tool_use("look_up", "c1", parts=["3005"], search="brick", notes="Check the stock")),
-        reply(tool_use("build", "c2", code=one + "\nplace('3005', 4, 0, 0, 3)", notes="Try two")),
+        reply(tool_use("build", "c2", code=one + "\nplace('3005', 4, 0, 3, 0)", notes="Try two")),
         reply(tool_use("finish", "c3", title="Stack", summary="Two bricks")),
         reply(tool_use("build", "c4", code=one, notes="Use the single red brick")),
         reply(tool_use("finish", "c5", title="Brick", summary="One red brick")),
