@@ -412,8 +412,12 @@ it('shows desktop and mobile 3D controls and closes the help before closing expa
     const toggle = viewer.querySelector<HTMLButtonElement>('.instructions-canvas button[aria-label="3D controls"]')!;
     const help = document.getElementById(toggle.getAttribute('aria-controls')!)!;
     expect(help.hidden).toBe(true);
+    expect(toggle.querySelector('.lucide-info')).not.toBeNull();
     await act(async () => toggle.click());
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-label')).toBe('Close 3D controls');
+    expect(toggle.querySelector('.lucide-info')).toBeNull();
+    expect(toggle.querySelector('.lucide-x')).not.toBeNull();
     expect(help.hidden).toBe(false);
     expect(document.activeElement).toBe(help);
     expect([...help.querySelectorAll('thead th')].map(heading => heading.textContent)).toEqual(['Desktop', 'Mobile']);
@@ -431,6 +435,16 @@ it('shows desktop and mobile 3D controls and closes the help before closing expa
     expect(help.hidden).toBe(true);
     expect(document.activeElement).toBe(toggle);
     expect(viewer.getAttribute('data-expanded')).toBe('true');
+
+    await act(async () => toggle.click());
+    await act(async () => toggle.click());
+    expect(help.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-label')).toBe('3D controls');
+    expect(toggle.querySelector('.lucide-info')).not.toBeNull();
+    expect(document.activeElement).toBe(toggle);
+    expect(posthog.capture).toHaveBeenCalledWith('instructions_viewer_controls_closed', {
+      generation_id: 'nova', source: 'landing', method: 'button',
+    });
 
     await act(async () => toggle.click());
     await act(async () => viewer.querySelector('.instructions-colors-toggle')!.dispatchEvent(new Event('pointerdown', { bubbles: true })));
