@@ -275,14 +275,14 @@ it.each([true, false])('focuses the model editor and restores ruler visibility t
 
   act(() => container.querySelector<HTMLButtonElement>('[aria-label="Apply edit"]')!.focus());
   expect(page.hasAttribute('data-model-edit-focused')).toBe(true);
-  act(() => (model as HTMLElement).click());
+  act(() => model.dispatchEvent(new Event('pointerdown', { bubbles: true })));
   expect(page.hasAttribute('data-model-edit-focused')).toBe(false);
   expect(model.getAttribute('data-ruler')).toBe(String(rulerOn));
   expect(rulerToggle().getAttribute('aria-pressed')).toBe(String(rulerOn));
   expect(input().value).toBe('Add a drawbridge');
 
   act(() => input().focus());
-  act(() => (page as HTMLElement).click());
+  act(() => page.dispatchEvent(new Event('pointerdown', { bubbles: true })));
   expect(page.hasAttribute('data-model-edit-focused')).toBe(false);
   expect(model.getAttribute('data-ruler')).toBe(String(rulerOn));
 

@@ -1081,7 +1081,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   const modelEditFocused = Boolean(focused && landingModel.model && !pendingEdit && !pendingGeneration);
   useEffect(() => {
     if (!modelEditFocused) return;
-    const onOutsideClick = (event: MouseEvent) => {
+    const onOutsidePointerDown = (event: PointerEvent) => {
       const form = promptInputRef.current?.form;
       if (!form || !(event.target instanceof Node) || form.contains(event.target)) return;
       if (document.activeElement instanceof HTMLElement && form.contains(document.activeElement)) {
@@ -1089,8 +1089,8 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
       }
       setFocused(false);
     };
-    document.addEventListener('click', onOutsideClick, true);
-    return () => document.removeEventListener('click', onOutsideClick, true);
+    document.addEventListener('pointerdown', onOutsidePointerDown, true);
+    return () => document.removeEventListener('pointerdown', onOutsidePointerDown, true);
   }, [modelEditFocused]);
   const footerEnabled = !ldrawLanding && !conversationStarted && !pendingGeneration && !inventoryOpen;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
