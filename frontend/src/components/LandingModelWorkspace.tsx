@@ -26,7 +26,7 @@ function subscribeToMobileViewport(onChange: () => void) {
 }
 
 function isMobileViewport() {
-  return window.matchMedia?.(MOBILE_VIEWPORT)?.matches ?? false;
+  return typeof window !== 'undefined' && (window.matchMedia?.(MOBILE_VIEWPORT)?.matches ?? false);
 }
 
 type ViewerCollapseSource = 'back_button' | 'escape' | 'viewer_toolbar';
@@ -72,7 +72,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const stageId = useId();
   const [instructionsId, setInstructionsId] = useState<string | null>(null);
   const lastInstructionStep = useRef<{ id: string; step: number } | null>(null);
-  const [showRuler, setShowRuler] = useState(true);
+  const [showRuler, setShowRuler] = useState(() => !isMobileViewport());
   const [viewerExpanded, setExpanded] = useState(false);
   const mobile = useSyncExternalStore(subscribeToMobileViewport, isMobileViewport, () => false);
   const expandButton = useRef<HTMLButtonElement>(null);
