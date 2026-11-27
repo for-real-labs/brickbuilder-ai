@@ -397,6 +397,51 @@ it('opens instructions from the landing footer and preserves steps, colors and d
   } finally { act(() => root.unmount()); container.remove(); styles.remove(); vi.restoreAllMocks(); }
 });
 
+it('shows desktop and mobile 3D controls and closes the help before closing expanded instructions', async () => {
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(landingModel('nova').generation);
+  vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(instructions);
+  vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: instructions } as never);
+  const container = document.createElement('div');
+  document.body.append(container);
+  const root = createRoot(container);
+  try {
+    await act(async () => root.render(<MemoryRouter initialEntries={['/?id=nova&instructions=1']}>
+      <LandingModelWorkspace model={landingModel('nova')} busy={false}>{null}</LandingModelWorkspace>
+    </MemoryRouter>));
+    const viewer = container.querySelector('.landing-model-panel')!;
+    const toggle = viewer.querySelector<HTMLButtonElement>('.instructions-canvas button[aria-label="3D controls"]')!;
+    const help = document.getElementById(toggle.getAttribute('aria-controls')!)!;
+    expect(help.hidden).toBe(true);
+    await act(async () => toggle.click());
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(help.hidden).toBe(false);
+    expect(document.activeElement).toBe(help);
+    expect([...help.querySelectorAll('thead th')].map(heading => heading.textContent)).toEqual(['Desktop', 'Mobile']);
+    expect([...help.querySelectorAll('tbody tr')].map(row => [...row.children].map(cell => cell.textContent))).toEqual([
+      ['Rotate', 'Left-click and drag', 'One-finger drag'],
+      ['Pan', 'Right-click and drag', 'Two-finger drag'],
+      ['Zoom', 'Scroll', 'Pinch in or out'],
+    ]);
+    expect(posthog.capture).toHaveBeenCalledWith('instructions_viewer_controls_opened', { generation_id: 'nova', source: 'landing' });
+    const wheel = new Event('wheel', { bubbles: true, cancelable: true });
+    help.dispatchEvent(wheel);
+    expect(wheel.defaultPrevented).toBe(false);
+
+    await act(async () => help.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })));
+    expect(help.hidden).toBe(true);
+    expect(document.activeElement).toBe(toggle);
+    expect(viewer.getAttribute('data-expanded')).toBe('true');
+
+    await act(async () => toggle.click());
+    await act(async () => viewer.querySelector('.instructions-colors-toggle')!.dispatchEvent(new Event('pointerdown', { bubbles: true })));
+    expect(help.hidden).toBe(true);
+  } finally {
+    act(() => root.unmount());
+    container.remove();
+    vi.restoreAllMocks();
+  }
+});
+
 it('uses left and right arrows only while landing instructions are visible and focus is outside inputs', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(landingModel('nova').generation);
   vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(instructions);
