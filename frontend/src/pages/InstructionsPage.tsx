@@ -1330,8 +1330,9 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
               <div className={embedded ? "instructions-step" : "border border-slate-200 rounded-xl p-6"}>
               <div className="instructions-step-heading flex justify-between items-center mb-4">
                 {mobileBackButton}
-                <h4 className="text-lg font-semibold text-[#f44336]">
-                Step {model.steps[currentStepIndex].stepNumber}
+                <h4 className="text-right text-lg font-semibold text-[#f44336]">
+                  Step {model.steps[currentStepIndex].stepNumber}
+                  {mobileBackButton && ` * Parts added ${model.steps[currentStepIndex].parts.length}`}
                 </h4>
                 {!mobileBackButton && <div className="instructions-heading-actions">
                   {backToModelButton}

@@ -497,7 +497,7 @@ it.each([[2, 2], [999, 1]])('opens landing instructions directly from step %s an
 });
 
 
-it('puts Back and the step in the mobile heading and aligns both parts controls below navigation', async () => {
+it('shows the step and part count in the mobile heading and keeps both parts controls below navigation', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
   vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
   vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
@@ -510,7 +510,7 @@ it('puts Back and the step in the mobile heading and aligns both parts controls 
       mobileBackButton={<button type="button">Back</button>} /></MemoryRouter>));
     const heading = container.querySelector('.instructions-step-heading')!;
     expect(heading.firstElementChild?.textContent).toBe('Back');
-    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 2');
+    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 2 * Parts added 2');
     expect(heading.querySelector('.instructions-parts-toggle')).toBeNull();
     expect(heading.textContent).not.toContain('Add 2 parts');
     const actions = container.querySelector('.instructions-parts-actions')!;
@@ -528,7 +528,7 @@ it('puts Back and the step in the mobile heading and aligns both parts controls 
     expect(actions.querySelector('.instructions-step-parts-toggle')?.textContent).toBe('Hide parts this step');
     const next = [...container.querySelectorAll('button')].find(button => button.textContent === 'Next')!;
     await act(async () => next.click());
-    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 3');
+    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 3 * Parts added 1');
   } finally {
     act(() => root.unmount());
     container.remove();
