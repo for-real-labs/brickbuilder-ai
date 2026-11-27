@@ -14,7 +14,7 @@ import { GetGenerationApiService } from '../services/getGenerationApi';
 import { useAuth } from '../contexts/AuthContext';
 import { useBilling } from '../contexts/BillingContext';
 import { InstructionsAccessGate } from '../components/PaidFeatureDialog';
-import { Loader2, Upload, Coins, X, Palette, ArrowLeft, LayoutDashboard } from 'lucide-react';
+import { Loader2, Upload, Coins, Info, X, Palette, ArrowLeft, LayoutDashboard } from 'lucide-react';
 import jsPDF from 'jspdf';
 import posthog from 'posthog-js';
 import { SEO } from '../components/SEO';
@@ -284,6 +284,56 @@ interface InstructionsViewerProps {
   mobileBackButton?: React.ReactNode;
   embedded?: boolean;
   active?: boolean;
+}
+
+function InstructionsControlsHelp({ generationId, embedded }: Pick<InstructionsViewerProps, 'generationId' | 'embedded'>) {
+  const [open, setOpen] = useState(false);
+  const helpId = useId();
+  const wrapper = useRef<HTMLDivElement>(null);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const help = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    help.current?.focus({ preventScroll: true });
+    const dismissOutside = (event: Event) => {
+      if (event.target instanceof Node && !wrapper.current?.contains(event.target)) setOpen(false);
+    };
+    document.addEventListener('pointerdown', dismissOutside);
+    document.addEventListener('focusin', dismissOutside);
+    return () => {
+      document.removeEventListener('pointerdown', dismissOutside);
+      document.removeEventListener('focusin', dismissOutside);
+    };
+  }, [open]);
+
+  return <div ref={wrapper} className="instructions-controls-help" onKeyDown={event => {
+    if (!open || event.key !== 'Escape') return;
+    event.preventDefault();
+    event.stopPropagation();
+    setOpen(false);
+    trigger.current?.focus({ preventScroll: true });
+  }}>
+    <button ref={trigger} type="button" className="instructions-controls-help-toggle" aria-label="3D controls"
+      title="3D controls" aria-expanded={open} aria-controls={helpId} onClick={() => {
+        if (!open) posthog.capture('instructions_viewer_controls_opened', {
+          generation_id: generationId, source: embedded ? 'landing' : 'instructions',
+        });
+        setOpen(!open);
+      }}>
+      <Info size={18} aria-hidden="true" />
+    </button>
+    <section ref={help} id={helpId} className="instructions-controls-help-panel" aria-label="3D controls" tabIndex={-1} hidden={!open}>
+      <table>
+        <thead><tr><td /><th scope="col">Desktop</th><th scope="col">Mobile</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Rotate</th><td>Left-click and drag</td><td>One-finger drag</td></tr>
+          <tr><th scope="row">Pan</th><td>Right-click and drag</td><td>Two-finger drag</td></tr>
+          <tr><th scope="row">Zoom</th><td>Scroll</td><td>Pinch in or out</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </div>;
 }
 
 export function InstructionsViewer(props: InstructionsViewerProps) {
@@ -1318,6 +1368,7 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
                         <span>Color: {getColorNameWithFallback(hoveredPart.colorCode, colors)}</span>
                       </div>
                     )}
+                    <InstructionsControlsHelp generationId={generationId} embedded={embedded} />
                     <button
                       type="button"
                       onClick={() => {

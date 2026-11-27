@@ -153,10 +153,13 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
     const element = stage.current;
     if (!element) return;
     // Let the viewer handle rotation/zoom without passing gestures to the page.
-    // Instruction navigation and the parts list keep their normal scrolling.
+    // Instruction navigation, the parts list and the controls help keep their normal scrolling.
     const preventPageScroll = (event: Event) => {
-      if (element.dataset.view === 'instructions'
-        && !(event.target instanceof Element && event.target.closest('.instructions-canvas'))) return;
+      if (element.dataset.view === 'instructions') {
+        const target = event.target;
+        if (!(target instanceof Element) || !target.closest('.instructions-canvas')
+          || target.closest('.instructions-controls-help-panel')) return;
+      }
       if (event.cancelable) event.preventDefault();
       event.stopPropagation();
     };

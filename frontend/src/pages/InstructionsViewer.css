@@ -9,8 +9,16 @@
 .instructions-canvas { position: relative; width: 100%; min-width: 0; min-height: 0; overflow: hidden; border: 1px solid #e2e8f0; border-radius: 0; border-left: 0; border-right: 0; background: #fff; }
 .instructions-canvas > .instructions-colors-toggle { position: absolute; z-index: 5; top: 8px; right: 8px; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; border: 1px solid #e2e8f0; border-radius: 999px; box-shadow: 0 2px 8px #0f172a1a; font-size: 12px; font-weight: 600; white-space: nowrap; }
 /* The builder's viewer controls occupy the canvas's top right corner. */
-.landing-model-panel:not([data-expanded="true"]) .instructions-canvas > .instructions-colors-toggle { top: 64px; }
+.landing-model-panel:not([data-expanded="true"]) .instructions-canvas > :is(.instructions-colors-toggle, .instructions-controls-help) { top: 64px; }
 .instructions-canvas button { min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; }
+.instructions-controls-help { position: absolute; z-index: 9; top: 8px; bottom: 8px; left: 8px; display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: min(288px, calc(100% - 16px)); pointer-events: none; }
+.instructions-controls-help-toggle { flex: 0 0 44px; border: 1px solid #e2e8f0; border-radius: 50%; background: #fff; color: #334155; box-shadow: 0 2px 8px #0f172a1a; cursor: pointer; pointer-events: auto; }
+.instructions-controls-help-toggle:hover, .instructions-controls-help-toggle[aria-expanded="true"] { background: #f1f5f9; }
+.instructions-controls-help-panel { min-height: 0; max-width: 100%; overflow-y: auto; overscroll-behavior: contain; pointer-events: auto; touch-action: pan-y; padding: 8px 10px; border: 1px solid #e2e8f0; border-radius: 14px; background: #fff; color: #334155; text-align: left; font-size: 12px; line-height: 1.4; box-shadow: 0 4px 16px #0f172a26; }
+.instructions-controls-help-panel:focus-visible, .instructions-controls-help-toggle:focus-visible { outline: 2px solid #f44336; outline-offset: -2px; }
+.instructions-controls-help-panel th, .instructions-controls-help-panel td { padding: 4px; vertical-align: top; }
+.instructions-controls-help-panel th { font-weight: 600; }
+.instructions-controls-help-panel tbody tr { border-top: 1px solid #e2e8f0; }
 .instructions-embedded .instructions-navigation { margin: 0 16px; padding: 4px; border: 1px solid #e2e8f0; background: #fff; }
 .instructions-embedded .instructions-navigation button { min-height: 44px; padding: 8px 16px; font-size: 12px; }
 .instructions-embedded .instructions-navigation input { min-height: 44px; width: 48px; font-size: 13px; }
