@@ -412,8 +412,12 @@ it('shows desktop and mobile 3D controls and closes the help before closing expa
     const toggle = viewer.querySelector<HTMLButtonElement>('.instructions-canvas button[aria-label="3D controls"]')!;
     const help = document.getElementById(toggle.getAttribute('aria-controls')!)!;
     expect(help.hidden).toBe(true);
+    expect(toggle.querySelector('.lucide-info')).not.toBeNull();
     await act(async () => toggle.click());
     expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    expect(toggle.getAttribute('aria-label')).toBe('Close 3D controls');
+    expect(toggle.querySelector('.lucide-info')).toBeNull();
+    expect(toggle.querySelector('.lucide-x')).not.toBeNull();
     expect(help.hidden).toBe(false);
     expect(document.activeElement).toBe(help);
     expect([...help.querySelectorAll('thead th')].map(heading => heading.textContent)).toEqual(['Desktop', 'Mobile']);
@@ -431,6 +435,16 @@ it('shows desktop and mobile 3D controls and closes the help before closing expa
     expect(help.hidden).toBe(true);
     expect(document.activeElement).toBe(toggle);
     expect(viewer.getAttribute('data-expanded')).toBe('true');
+
+    await act(async () => toggle.click());
+    await act(async () => toggle.click());
+    expect(help.hidden).toBe(true);
+    expect(toggle.getAttribute('aria-label')).toBe('3D controls');
+    expect(toggle.querySelector('.lucide-info')).not.toBeNull();
+    expect(document.activeElement).toBe(toggle);
+    expect(posthog.capture).toHaveBeenCalledWith('instructions_viewer_controls_closed', {
+      generation_id: 'nova', source: 'landing', method: 'button',
+    });
 
     await act(async () => toggle.click());
     await act(async () => viewer.querySelector('.instructions-colors-toggle')!.dispatchEvent(new Event('pointerdown', { bubbles: true })));
@@ -497,7 +511,7 @@ it.each([[2, 2], [999, 1]])('opens landing instructions directly from step %s an
 });
 
 
-it('puts Back and the step in the mobile heading and aligns both parts controls below navigation', async () => {
+it('shows the step and part count in the mobile heading and keeps both parts controls below navigation', async () => {
   vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue({ generation_id: 'chimney', endpoint: 'novaToBricks', status: 'completed' } as never);
   vi.spyOn(NovaToBricksApiService, 'instructions').mockResolvedValue(chimneyInstructions);
   vi.spyOn(LdrToMpdApiService, 'convertLdrToMpd').mockResolvedValue({ mpd_content: chimneyInstructions } as never);
@@ -510,7 +524,7 @@ it('puts Back and the step in the mobile heading and aligns both parts controls 
       mobileBackButton={<button type="button">Back</button>} /></MemoryRouter>));
     const heading = container.querySelector('.instructions-step-heading')!;
     expect(heading.firstElementChild?.textContent).toBe('Back');
-    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 2');
+    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 2 * Parts added 2');
     expect(heading.querySelector('.instructions-parts-toggle')).toBeNull();
     expect(heading.textContent).not.toContain('Add 2 parts');
     const actions = container.querySelector('.instructions-parts-actions')!;
@@ -528,7 +542,7 @@ it('puts Back and the step in the mobile heading and aligns both parts controls 
     expect(actions.querySelector('.instructions-step-parts-toggle')?.textContent).toBe('Hide parts this step');
     const next = [...container.querySelectorAll('button')].find(button => button.textContent === 'Next')!;
     await act(async () => next.click());
-    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 3');
+    expect(heading.querySelector('h4')?.textContent?.trim()).toBe('Step 3 * Parts added 1');
   } finally {
     act(() => root.unmount());
     container.remove();

@@ -292,6 +292,14 @@ function InstructionsControlsHelp({ generationId, embedded }: Pick<InstructionsV
   const wrapper = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const help = useRef<HTMLElement>(null);
+  const triggerLabel = open ? 'Close 3D controls' : '3D controls';
+  const closeHelp = (method: 'button' | 'escape') => {
+    setOpen(false);
+    trigger.current?.focus({ preventScroll: true });
+    posthog.capture('instructions_viewer_controls_closed', {
+      generation_id: generationId, source: embedded ? 'landing' : 'instructions', method,
+    });
+  };
 
   useEffect(() => {
     if (!open) return;
@@ -311,17 +319,20 @@ function InstructionsControlsHelp({ generationId, embedded }: Pick<InstructionsV
     if (!open || event.key !== 'Escape') return;
     event.preventDefault();
     event.stopPropagation();
-    setOpen(false);
-    trigger.current?.focus({ preventScroll: true });
+    closeHelp('escape');
   }}>
-    <button ref={trigger} type="button" className="instructions-controls-help-toggle" aria-label="3D controls"
-      title="3D controls" aria-expanded={open} aria-controls={helpId} onClick={() => {
-        if (!open) posthog.capture('instructions_viewer_controls_opened', {
+    <button ref={trigger} type="button" className="instructions-controls-help-toggle" aria-label={triggerLabel}
+      title={triggerLabel} aria-expanded={open} aria-controls={helpId} onClick={() => {
+        if (open) {
+          closeHelp('button');
+          return;
+        }
+        posthog.capture('instructions_viewer_controls_opened', {
           generation_id: generationId, source: embedded ? 'landing' : 'instructions',
         });
-        setOpen(!open);
+        setOpen(true);
       }}>
-      <Info size={18} aria-hidden="true" />
+      {open ? <X size={18} aria-hidden="true" /> : <Info size={18} aria-hidden="true" />}
     </button>
     <section ref={help} id={helpId} className="instructions-controls-help-panel" aria-label="3D controls" tabIndex={-1} hidden={!open}>
       <table>
@@ -1330,8 +1341,9 @@ function UnlockedInstructionsViewer({ generationId, initialStep, navigationState
               <div className={embedded ? "instructions-step" : "border border-slate-200 rounded-xl p-6"}>
               <div className="instructions-step-heading flex justify-between items-center mb-4">
                 {mobileBackButton}
-                <h4 className="text-lg font-semibold text-[#f44336]">
-                Step {model.steps[currentStepIndex].stepNumber}
+                <h4 className="text-right text-lg font-semibold text-[#f44336]">
+                  Step {model.steps[currentStepIndex].stepNumber}
+                  {mobileBackButton && ` * Parts added ${model.steps[currentStepIndex].parts.length}`}
                 </h4>
                 {!mobileBackButton && <div className="instructions-heading-actions">
                   {backToModelButton}
