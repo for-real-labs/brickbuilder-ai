@@ -378,3 +378,44 @@ body:has(.landing-page .landing-model-panel[data-expanded="true"]) [data-app-ban
   .landing-page .landing-model-panel[data-expanded="true"] .instructions-step-heading { padding-inline: 8px; }
   .landing-page:has(.landing-model-panel[data-expanded="true"]) .landing-header li:has(> [aria-controls~="landing-generation-settings"]) { display: none; }
 }
+
+body:has(.landing-page[data-model-edit-focused]) [data-app-banner],
+.landing-page[data-model-edit-focused] .landing-header,
+.landing-page[data-model-edit-focused] .landing-desktop-order,
+.landing-page[data-model-edit-focused] .landing-model-conversation > .pet-dialogue,
+.landing-page[data-model-edit-focused] .landing-processing-builds,
+.landing-page[data-model-edit-focused] #landing-generation-settings,
+.landing-page[data-model-edit-focused] #landing-local-provider-settings {
+  display: none;
+}
+.landing-page[data-model-edit-focused] .landing-model-workspace {
+  height: 100%;
+  max-height: none;
+}
+@media (max-width: 1023px) {
+  .landing-page[data-model-edit-focused] .landing-page-content {
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  }
+  .landing-page[data-model-edit-focused] .landing-page-content-inner,
+  .landing-page[data-model-edit-focused] .landing-model-layout,
+  .landing-page[data-model-edit-focused] .landing-model-panel {
+    height: 100%;
+    min-height: 0;
+  }
+  .landing-page[data-model-edit-focused] .landing-model-host {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    gap: 8px;
+    height: 100%;
+    min-height: 0;
+  }
+  .landing-page[data-model-edit-focused] .landing-model-conversation {
+    position: static;
+    width: 100%;
+    max-height: calc(var(--landing-viewport-height, 100dvh) * .4);
+    padding: 0;
+    transform: none;
+    transition: none;
+  }
+}

@@ -1078,6 +1078,20 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
     if (!waitingForSubmission) previousConversationStage.current = nextConversationStarted;
   }, [waitingForSubmission, nextConversationStarted]);
   const welcomeScreen = !conversationStarted && !ldrawLanding && !imageLanding;
+  const modelEditFocused = Boolean(focused && landingModel.model && !pendingEdit && !pendingGeneration);
+  useEffect(() => {
+    if (!modelEditFocused) return;
+    const onOutsidePointerDown = (event: PointerEvent) => {
+      const form = promptInputRef.current?.form;
+      if (!form || !(event.target instanceof Node) || form.contains(event.target)) return;
+      if (document.activeElement instanceof HTMLElement && form.contains(document.activeElement)) {
+        document.activeElement.blur();
+      }
+      setFocused(false);
+    };
+    document.addEventListener('pointerdown', onOutsidePointerDown, true);
+    return () => document.removeEventListener('pointerdown', onOutsidePointerDown, true);
+  }, [modelEditFocused]);
   const footerEnabled = !ldrawLanding && !conversationStarted && !pendingGeneration && !inventoryOpen;
   const uploadFirstComposer = (welcomeScreen || Boolean(randomSuggestion)) && !landingModel.model;
   const createNew = (requestedModelId || landingModel.model) ? <button type="button" className="landing-create-new landing-action-button"
@@ -1107,6 +1121,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
   return (
     <div
       ref={landingViewportRef}
+      data-model-edit-focused={modelEditFocused || undefined}
       className={ldrawLanding ? "min-h-screen overflow-x-hidden text-slate-900 relative" : `landing-page text-slate-900${welcomeScreen ? ' landing-page--welcome' : ''}${conversationStarted ? ' landing-page--conversation-started' : ''}${footerEnabled ? ' landing-page--browse' : ''}`}
       style={{ backgroundColor: "#fbfbfd", '--landing-order-banner-height': `${orderBarHeight}px` } as React.CSSProperties}
       onDragEnter={inventoryOpen ? undefined : handleDragEnter}
@@ -1202,7 +1217,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               }} />
             </div>}
             {!ldrawLanding && <div className="landing-model-host relative z-20 w-full">
-              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused}
+              <LandingModelWorkspace model={landingModel.model} busy={modelBusy || buddyChat.routing} pendingEdit={pendingEdit} building={pendingGeneration} composerFocused={focused} editFocused={modelEditFocused}
                 createNew={createNew} canRename={!historyId && Boolean(session?.access_token)} accessToken={session?.access_token}
                 onRenameRequest={!historyId && !session ? () => setShowLoginModal(true) : undefined} onNameSaved={landingModel.rename}
                 onConvertKit={() => void submitModelEdit(undefined,
@@ -1250,6 +1265,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
             {!pendingEdit && !pendingGeneration && createNewStage !== 'list' ? <form
               aria-label={landingModel.model ? "Edit your brick model" : "Create a brick model"}
               className="w-full"
+              onBlur={event => {
+                if (!event.currentTarget.contains(event.relatedTarget)) setFocused(false);
+              }}
               onSubmit={event => {
                 event.preventDefault();
                 if (settingsOpen) toggleSettings(false);
@@ -1289,7 +1307,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                     aria-describedby={inputValidationMessage ? "generation-input-help" : undefined}
                     value={prompt}
                     onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
+                    onClick={() => setFocused(true)}
                     onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       setPrompt(event.target.value);
                       if (settingsOpen) toggleSettings(false);
@@ -1332,7 +1350,7 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                 {' '}Keep this page open until your build starts.
               </p>}
               {processingBuilds.length > 0 && <button type="button"
-                className="mx-auto mt-2 flex min-h-11 max-w-full items-center justify-center rounded-full px-4 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
+                className="landing-processing-builds mx-auto mt-2 flex min-h-11 max-w-full items-center justify-center rounded-full px-4 text-xs font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-300"
                 onClick={() => {
                   posthog.capture('landing_processing_generations_clicked', { processing_count: processingBuilds.length });
                   navigate('/dashboard?tab=generations');
@@ -1450,18 +1468,9 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
               </div>
               <input ref={fileInputRef} type="file" accept={IMAGE_UPLOAD_ACCEPT} className="hidden" onChange={onFileChange} disabled={loading || buddyChat.routing || preparingImage || (Boolean(landingModel.model) && modelBusy)} />
               {checkingProvider && <p role="status" className="mt-2 text-left text-sm text-slate-500">Checking provider connection…</p>}
-            </form> : null}
-            {welcomeScreen && hasBuildsToday && <button type="button" className="landing-recent-builds pet-chat-action" onClick={showBuilds}>Recent builds</button>}
-              {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
-              {!ldrawLanding && localDevelopment && !loading && !pendingEdit && !pendingGeneration && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
-                <LocalProviderSettings />
-              </div>}
-
-              {(!imageLanding || landingModel.model) && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
-              {(!imageLanding || landingModel.model) && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
               {/* Image thumbnail preview */}
               {!uploadFirstComposer && (!imageLanding || landingModel.model) && imagePreviewUrl && (
-                <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-gray-200 shadow-sm">
+                <div className="mt-3 flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 shadow-sm">
                   <img
                     src={imagePreviewUrl}
                     alt="Uploaded preview"
@@ -1485,6 +1494,15 @@ function LandingPageVisit({ imageLandingPath }: { imageLandingPath?: ImageLandin
                   </button>
                 </div>
               )}
+            </form> : null}
+            {welcomeScreen && hasBuildsToday && <button type="button" className="landing-recent-builds pet-chat-action" onClick={showBuilds}>Recent builds</button>}
+              {landingModel.error && <p role="alert" className="mt-3 text-left text-sm text-red-600">{landingModel.error}</p>}
+              {!ldrawLanding && localDevelopment && !loading && !pendingEdit && !pendingGeneration && <div id="landing-local-provider-settings" hidden={!settingsOpen} onKeyDown={handleSettingsKeyDown} className="w-full">
+                <LocalProviderSettings />
+              </div>}
+
+              {(!imageLanding || landingModel.model) && imageUploadError && <p role="alert" className="text-sm text-red-600">{imageUploadError}</p>}
+              {(!imageLanding || landingModel.model) && preparingImage && <p role="status" className="text-sm text-slate-500">Preparing your image…</p>}
               </LandingModelWorkspace>
             </div>}
 
