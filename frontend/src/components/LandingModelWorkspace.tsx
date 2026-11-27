@@ -37,12 +37,13 @@ export function modelEditSuggestion(model: LandingModel): string {
   return example || `Change the colors of the ${name}`;
 }
 
-export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, historyId, onNoVersion, onConvertKit, createNew, children }: {
+export function LandingModelWorkspace({ model, busy, pendingEdit = false, building = false, composerFocused = false, editFocused = false, onOrderBarHeightChange, canRename = false, accessToken, onRenameRequest, onNameSaved, onViewPreviousEdit, historyId, onNoVersion, onConvertKit, createNew, children }: {
   model: LandingModel | null;
   busy: boolean;
   pendingEdit?: boolean;
   building?: boolean;
   composerFocused?: boolean;
+  editFocused?: boolean;
   onOrderBarHeightChange?: (height: number) => void;
   canRename?: boolean;
   accessToken?: string;
@@ -79,9 +80,9 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
   const backButton = useRef<HTMLButtonElement>(null);
   const focusMobileBack = useCallback((button: HTMLButtonElement | null) => button?.focus({ preventScroll: true }), []);
   const collapseRef = useRef<(source: ViewerCollapseSource) => void>(() => {});
-  const showingInstructions = featureAccess === 'allowed' && !pendingEdit && generationId === requestedInstructionsId;
+  const showingInstructions = !editFocused && featureAccess === 'allowed' && !pendingEdit && generationId === requestedInstructionsId;
   const mobileInstructions = mobile && showingInstructions;
-  const expanded = viewerExpanded || mobileInstructions;
+  const expanded = !editFocused && (viewerExpanded || mobileInstructions);
   const expandLabel = showingInstructions ? (expanded ? 'Exit expanded instructions' : 'Expand instructions') : 'Expand 3D viewer';
   useEffect(() => {
     setInstructionsId(id => id === generationId ? id : null);
@@ -202,7 +203,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
       role={expanded ? 'dialog' : 'region'}
       aria-label={expanded ? (showingInstructions ? 'Expanded instructions' : 'Expanded 3D viewer') : 'Model preview'}
       onCancel={event => { event.preventDefault(); collapse('escape'); }}>
-      {!showingInstructions && (!pendingEdit || createNew) && <div className="landing-model-title-row">
+      {!editFocused && !showingInstructions && (!pendingEdit || createNew) && <div className="landing-model-title-row">
         {createNew && <div className="landing-model-create-new">{createNew}</div>}
         {!pendingEdit && <GenerationTitle key={generation.generation_id} variant="viewer"
           name={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
@@ -217,7 +218,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
               onModelLoaded={() => setReadyId(generation.generation_id)}
               onPreviewCaptured={png => { preview.current = { id: generation.generation_id, png }; }}
               modelName={generation.name || generation.prompt || 'My model'} generationId={generation.generation_id}
-              animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={showRuler} />}
+              animateModelBuild={instructionsId !== generation.generation_id} showModelControls={false} showRuler={!editFocused && showRuler} />}
             {featureAccess === 'allowed' && instructionsId === generation.generation_id && <div className="landing-instructions-view" hidden={!showingInstructions}>
               <InstructionsViewer key={generation.generation_id} generationId={generation.generation_id}
                 initialStep={linkedStep === null ? undefined : Number(linkedStep)} onStepChange={onInstructionStepChange} embedded active={showingInstructions}
@@ -225,7 +226,7 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
             </div>}
           </Suspense>}
         </div>
-        {!pendingEdit && <div className="landing-model-toolbar">
+        {!editFocused && !pendingEdit && <div className="landing-model-toolbar">
           <div className="landing-view-controls">
           {!showingInstructions && <button type="button" className="landing-action-button landing-ruler-toggle"
             aria-label={showRuler ? 'Hide ruler' : 'Show ruler'} title={showRuler ? 'Hide ruler' : 'Show ruler'}
@@ -257,11 +258,11 @@ export function LandingModelWorkspace({ model, busy, pendingEdit = false, buildi
           </button>
           </div>
         </div>}
-        {!pendingEdit && !busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share landing-model-share-overlay">
+        {!editFocused && !pendingEdit && !busy && !showingInstructions && generation.endpoint !== 'uploadLdraw' && <div className="landing-model-share landing-model-share-overlay">
             <ModelShareMenu generationId={generation.generation_id} modelName={generation.name || generation.prompt || 'My model'} placement="above" />
           </div>}
       </section>
-      {!pendingEdit && <div key={`actions-${generation.generation_id}`} className="landing-model-bottom-toolbar" hidden={expanded}>
+      {!editFocused && !pendingEdit && <div key={`actions-${generation.generation_id}`} className="landing-model-bottom-toolbar" hidden={expanded}>
           {!showingInstructions && <button ref={instructionsButton} type="button" className="landing-action-button landing-instructions-toggle" disabled={busy}
             aria-controls={stageId} onClick={() => {
               if (!requireFeature('instructions', 'viewer_footer', generation.generation_id)) return;

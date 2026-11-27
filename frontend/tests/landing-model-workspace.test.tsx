@@ -51,7 +51,7 @@ vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: ({ modelCon
   viewer.loaded = onModelLoaded;
   return <div data-testid="viewer" data-model-name={modelName} data-ruler={String(showRuler)} data-controls={String(showModelControls)}>{modelContent}</div>;
 } }));
-vi.mock('../src/components/FallingBricks', () => ({ default: () => null }));
+vi.mock('../src/components/FallingBricks', () => ({ default: () => <canvas data-testid="falling-bricks" /> }));
 vi.mock('../src/components/SEO', () => ({ SEO: () => null }));
 vi.mock('../src/components/LoginModal', () => ({ default: () => null }));
 vi.mock('../src/components/SiteFooter', () => ({ SiteFooter: () => null }));
@@ -253,6 +253,43 @@ it('shows the headline and stats on plain landing visits and hides them on model
   await act(async () => root.render(<LandingPage />));
   expect(container.querySelector('[data-testid="viewer"]')).toBeNull();
   expect(container.querySelector('.landing-page-intro')?.getAttribute('aria-hidden')).toBe('false');
+});
+
+it.each([true, false])('focuses the model editor and restores ruler visibility to %s on exit', async (rulerOn) => {
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  const page = container.querySelector('.landing-page')!;
+  const model = container.querySelector('[data-testid="viewer"]')!;
+  const background = container.querySelector('[data-testid="falling-bricks"]')!;
+  const rulerToggle = () => container.querySelector<HTMLButtonElement>('.landing-ruler-toggle')!;
+  if (!rulerOn) act(() => rulerToggle().click());
+
+  act(() => input().focus());
+  type('Add a drawbridge');
+  expect(page.hasAttribute('data-model-edit-focused')).toBe(true);
+  expect(model.getAttribute('data-ruler')).toBe('false');
+  expect(container.querySelector('.landing-model-toolbar, .landing-model-bottom-toolbar, .landing-model-share-overlay, .landing-model-title-row')).toBeNull();
+  expect(container.querySelector('[data-testid="viewer"]')).toBe(model);
+  expect(container.querySelector('[data-testid="falling-bricks"]')).toBe(background);
+
+  act(() => container.querySelector<HTMLButtonElement>('[aria-label="Apply edit"]')!.focus());
+  expect(page.hasAttribute('data-model-edit-focused')).toBe(true);
+  act(() => (model as HTMLElement).click());
+  expect(page.hasAttribute('data-model-edit-focused')).toBe(false);
+  expect(model.getAttribute('data-ruler')).toBe(String(rulerOn));
+  expect(rulerToggle().getAttribute('aria-pressed')).toBe(String(rulerOn));
+  expect(input().value).toBe('Add a drawbridge');
+
+  act(() => input().focus());
+  act(() => (page as HTMLElement).click());
+  expect(page.hasAttribute('data-model-edit-focused')).toBe(false);
+  expect(model.getAttribute('data-ruler')).toBe(String(rulerOn));
+
+  act(() => input().focus());
+  act(() => input().blur());
+  expect(page.hasAttribute('data-model-edit-focused')).toBe(false);
+  expect(model.getAttribute('data-ruler')).toBe(String(rulerOn));
 });
 
 it('shows the model name at the top of the viewer while retaining it for model actions', async () => {
