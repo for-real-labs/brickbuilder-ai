@@ -404,6 +404,7 @@ body:has(.landing-page[data-model-edit-focused]) [data-app-banner],
   }
   .landing-page[data-model-edit-focused] .landing-model-host {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr) auto;
     gap: 8px;
     height: 100%;
@@ -412,8 +413,9 @@ body:has(.landing-page[data-model-edit-focused]) [data-app-banner],
   .landing-page[data-model-edit-focused] .landing-model-conversation {
     position: static;
     width: 100%;
-    max-height: 40dvh;
+    max-height: calc(var(--landing-viewport-height, 100dvh) * .4);
     padding: 0;
     transform: none;
+    transition: none;
   }
 }
