@@ -5,12 +5,21 @@ import { beforeEach, afterEach, expect, it, vi } from 'vitest';
 import jsQR from 'jsqr';
 import posthog from 'posthog-js';
 import { InstructionsPostcard, getPostcardTheme } from '../src/components/checkout/InstructionsPostcard';
+import { postcardModelBounds } from '../src/utils/postcardFront';
 
 const orderKitStyles = readFileSync('src/pages/OrderKit.css', 'utf8');
 const billing = vi.hoisted(() => ({ featureAccess: 'allowed', getFeatureAccess: () => billing.featureAccess, requireFeature: vi.fn(() => true) }));
 vi.mock('../src/contexts/BillingContext', () => ({ useBilling: () => billing }));
 
 vi.mock('posthog-js', () => ({ default: { capture: vi.fn() } }));
+const print = vi.hoisted(() => ({
+  verify: vi.fn(async (_id: string, _key: string) => true),
+  render: vi.fn(async (..._args: unknown[]) => new Blob(['test image'], { type: 'image/png' })),
+}));
+vi.mock('../src/services/novaToBricksApi', () => ({ NovaToBricksApiService: { instructionAccess: print.verify } }));
+vi.mock('../src/utils/postcardFront', async importOriginal => ({
+  ...(await importOriginal<typeof import('../src/utils/postcardFront')>()), renderPostcardFront: print.render,
+}));
 const viewer = vi.hoisted(() => ({ props: [] as any[], captureCurrentViewPng: vi.fn(() => 'data:image/png;base64,adjusted-view') }));
 vi.mock('../src/components/ThreeLDRViewer', () => ({ ThreeLDRViewer: (props: any) => {
   viewer.props.push(props);
@@ -33,6 +42,8 @@ beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', { configurable: true, value: function () { this.open = true; } });
   Object.defineProperty(HTMLDialogElement.prototype, 'close', { configurable: true, value: function () { this.open = false; this.dispatchEvent(new Event('close')); } });
   props.onChange.mockReset(); viewer.props = []; viewer.captureCurrentViewPng.mockClear();
+  print.verify.mockClear().mockResolvedValue(true);
+  print.render.mockClear();
   container = document.createElement('div'); document.body.append(container); root = createRoot(container);
 });
 afterEach(() => { act(() => root.unmount()); container.remove(); });
@@ -190,4 +201,58 @@ it('resets the model view without changing the postcard option or QR link', () =
   expect(props.onChange).not.toHaveBeenCalled();
   expect(container.querySelector('a.checkout-postcard-qr')!.getAttribute('href')).toContain('g%2F123');
   expect(posthog.capture).toHaveBeenCalledWith('order_instructions_postcard_model_reset', { generation_id: props.generationId });
+});
+
+it('rejects blank and opaque captures and crops the transparent margins around the model', () => {
+  const data = new Uint8ClampedArray(4 * 4 * 4);
+  const pixels = { data, width: 4, height: 4 } as ImageData;
+  expect(postcardModelBounds(pixels)).toBeNull();
+  data[(1 * pixels.width + 1) * 4 + 3] = 255;
+  data[(2 * pixels.width + 3) * 4 + 3] = 128;
+  expect(postcardModelBounds(pixels)).toEqual({ left: 1, top: 1, width: 3, height: 2 });
+  data.fill(255);
+  expect(postcardModelBounds(pixels)).toBeNull();
+});
+
+it('downloads the 3D artwork with the purchased instruction link and keeps the key out of analytics', async () => {
+  const generationId = '00000000-0000-4000-8000-000000000001';
+  const key = 'z'.repeat(43);
+  const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    expect(this.download).toBe('galaxy-explorer-postcard-front.png');
+  });
+  vi.useFakeTimers();
+  vi.stubGlobal('URL', Object.assign(class extends URL {}, { createObjectURL: () => 'blob:postcard', revokeObjectURL: vi.fn() }));
+  const style = document.createElement('style');
+  style.textContent = orderKitStyles;
+  document.head.append(style);
+  try {
+    render({ generationId }); open();
+    expect(container.querySelector('.checkout-postcard-download')).toBeNull();
+    sessionStorage.setItem(`brickbuilder:instruction-key:${generationId}`, key);
+    render({ generationId });
+    const download = () => container.querySelector<HTMLButtonElement>('.checkout-postcard-download button')!;
+    expect(download().disabled).toBe(true);
+    render({ generationId, modelContent: '0 FILE Galaxy.mpd' });
+    expect(download().disabled).toBe(false);
+    print.verify.mockResolvedValueOnce(false);
+    await act(async () => download().click());
+    expect(print.render).not.toHaveBeenCalled();
+    expect(container.querySelector('[role="status"]')?.textContent).toContain('order email');
+
+    await act(async () => download().click());
+    expect(print.verify).toHaveBeenCalledWith(generationId, key);
+    expect(viewer.captureCurrentViewPng).toHaveBeenCalledWith(1024);
+    expect(print.render).toHaveBeenCalledWith('data:image/png;base64,adjusted-view', props.modelName,
+      `https://brickbuilder.ai/?id=${generationId}&exact=1&instructions=1#access=${key}`,
+      { paper: '#f0f0fb', ink: '#282f61', art: ['#252943', '#3c4066', '#565883'] });
+    expect(click).toHaveBeenCalledOnce();
+    expect(posthog.capture).toHaveBeenCalledWith('order_instructions_postcard_front_downloaded', { generation_id: generationId });
+    expect(JSON.stringify(vi.mocked(posthog.capture).mock.calls)).not.toContain(key);
+  } finally {
+    style.remove();
+    click.mockRestore();
+    vi.runOnlyPendingTimers();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  }
 });
