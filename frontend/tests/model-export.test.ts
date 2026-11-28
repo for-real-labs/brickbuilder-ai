@@ -103,3 +103,8 @@ it('translates Studio mold numbers and transparent colors for BrickLink uploads'
   const xml = await text(createModelExport(placement('3023b.dat', 43), 'Plate', 'xml').blob);
   expect(xml).toContain('<ITEMID>3023</ITEMID><COLOR>15</COLOR>');
 });
+
+it('exports a legacy slope using its identical Studio mold on BrickLink', async () => {
+  const xml = await text(createModelExport(placement('60481a.dat', 0), 'Slope', 'xml').blob);
+  expect(xml).toContain('<ITEMID>60481</ITEMID><COLOR>11</COLOR>');
+});
