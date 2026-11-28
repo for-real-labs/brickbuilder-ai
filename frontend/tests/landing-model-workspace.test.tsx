@@ -1471,6 +1471,27 @@ it('shows the normal footer on the landing page without adding it to the model w
   expect(container.querySelector('.landing-page--browse footer')).not.toBeNull();
 });
 
+it('starts with the ruler off on mobile and restores it after editing if enabled', async () => {
+  vi.stubGlobal('matchMedia', (media: string) => ({
+    matches: media === '(max-width: 767px)', addEventListener: vi.fn(), removeEventListener: vi.fn(),
+  }));
+  query.value = 'id=castle&exact=1';
+  vi.spyOn(GetGenerationApiService, 'getGeneration').mockResolvedValue(generation('castle'));
+  await act(async () => root.render(<LandingPage />));
+  const viewer = container.querySelector('[data-testid="viewer"]')!;
+  const rulerToggle = () => container.querySelector<HTMLButtonElement>('.landing-ruler-toggle')!;
+  expect(rulerToggle().getAttribute('aria-label')).toBe('Show ruler');
+  expect(viewer.getAttribute('data-ruler')).toBe('false');
+
+  act(() => rulerToggle().click());
+  expect(viewer.getAttribute('data-ruler')).toBe('true');
+  act(() => input().focus());
+  expect(viewer.getAttribute('data-ruler')).toBe('false');
+  act(() => input().blur());
+  expect(rulerToggle().getAttribute('aria-label')).toBe('Hide ruler');
+  expect(viewer.getAttribute('data-ruler')).toBe('true');
+});
+
 it('toggles measurements beside expand and preserves the choice across viewer modes', async () => {
   await act(async () => root.render(<LandingModelWorkspace model={{ generation: generation('castle'), content: 'castle mpd' }} busy={false}>{null}</LandingModelWorkspace>));
   const toggle = container.querySelector<HTMLButtonElement>('.landing-ruler-toggle')!;
