@@ -81,15 +81,32 @@ class BrickwithStorefront:
                     return colors
         raise ValueError("Brickwith color references are unavailable")
 
-    def palette_reference(self) -> dict:
+    def palette_reference(self) -> tuple[dict, set[tuple[str, int]]]:
         html = self.read(PALETTE_HELP)
         urls = set(re.findall(r"https://file\.brickwith\.com/open/brickwith-parts-[0-9]+", html))
         if len(urls) != 1:
             raise ValueError("Brickwith palette download could not be identified")
         url = urls.pop()
         palette = self.read(url)
+        pairs = studio_pairs(palette)
         return {"url": url, "sha256": hashlib.sha256(palette.encode()).hexdigest(),
-                "placements": sum(line.startswith("0 ") for line in palette.splitlines())}
+                "placements": len(pairs)}, pairs
+
+
+def studio_pairs(content: str) -> set[tuple[str, int]]:
+    lines = content.splitlines()
+    if lines[1:3] != ["13", "-1"] or not lines[3:] or len(lines[3:]) % 3:
+        raise ValueError("Incomplete Brickwith Studio palette")
+    pairs = set()
+    for part, name, color in zip(lines[3::3], lines[4::3], lines[5::3]):
+        if not part.startswith("0 ") or not name.startswith("1 ") or not color.startswith("2 "):
+            raise ValueError("Invalid Brickwith Studio placement")
+        pairs.add((normalize_part_id(part[2:]), int(color[2:])))
+    return pairs
+
+
+# Brickwith's import result identifies these Studio DAT numbers for the same supplier products.
+STUDIO_IDS = {"GDS-615": "6141", "GDS-618": "60481"}
 
 
 def flight_chunks(html: str):
@@ -99,13 +116,13 @@ def flight_chunks(html: str):
             yield value[1]
 
 
-def catalog_csv(products: list[dict], colors: list[dict]) -> tuple[str, dict]:
+def catalog_csv(products: list[dict], colors: list[dict], palette: set[tuple[str, int]]) -> tuple[str, dict]:
     color_map = {row["color_id"]: row["ldraw_color_id"] for row in colors}
     if len(color_map) != len(colors):
         raise ValueError("Duplicate Brickwith color references")
     output = io.StringIO()
     writer = csv.writer(output, lineterminator="\n")
-    writer.writerow(["part_id", "color_id", "name", "sku", "unit_price", "weight_kg", "supplier_color_id"])
+    writer.writerow(["part_id", "color_id", "name", "sku", "unit_price", "weight_kg", "supplier_color_id", "studio_part_id"])
     variants, unmapped = 0, 0
     seen_skus = set()
     for product in sorted(products, key=lambda row: row["spu_code"]):
@@ -129,17 +146,22 @@ def catalog_csv(products: list[dict], colors: list[dict]) -> tuple[str, dict]:
             weight = nonnegative_decimal(row["weight"]) / 1000  # storefront grams -> kg
             variants += 1
             unmapped += not part_id or color == ""
-            writer.writerow([part_id, color, product["part_name"], sku, str(price), str(weight), row["color_id"]])
+            studio_id = STUDIO_IDS.get(product["spu_code"], part_id)
+            if (studio_id, color) not in palette:
+                studio_id = ""
+            writer.writerow([part_id, color, product["part_name"], sku, str(price), str(weight), row["color_id"], studio_id])
     content = output.getvalue()
     catalog = PartsCatalog.from_csv(content, name="Brickwith")
     return content, {"products": len(products), "variants": variants,
-                     "mapped_part_color_pairs": len(catalog.parts), "unmapped_variants": unmapped}
+                     "mapped_part_color_pairs": len(catalog.parts),
+                     "studio_pairs": len(PartsCatalog.from_csv(content, studio_only=True).parts),
+                     "unmapped_variants": unmapped}
 
 
 def refresh(output: Path, source: BrickwithStorefront | None = None) -> dict:
     source = source or BrickwithStorefront()
-    palette = source.palette_reference()
-    content, counts = catalog_csv(source.products(), source.colors())
+    palette, pairs = source.palette_reference()
+    content, counts = catalog_csv(source.products(), source.colors(), pairs)
     metadata = {"supplier": "Brickwith", "currency": "USD", "fetched_at": datetime.now(timezone.utc).isoformat(),
                 "list_endpoint": BASE + "find_list", "detail_endpoint": BASE + "find_map_array",
                 "color_reference": PRODUCT, "palette": palette, **counts,

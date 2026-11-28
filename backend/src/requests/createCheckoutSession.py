@@ -15,7 +15,7 @@ import stripe
 from ..utils.posthog_client import track_api_call, track_error
 from ..utils.generation_storage import generation_storage
 from ..utils.database import execute_query
-from ..utils.imported_kit import fulfillment_csv
+from ..utils.supplier_catalog import brickwith_csv
 from .getPrice import GetPriceRequest, GetPriceResponse, get_price
 
 logger = logging.getLogger(__name__)
@@ -132,16 +132,11 @@ async def create_checkout_session(request: CreateCheckoutSessionRequest, auth_in
         if quote.conversion_credits is not None:
             raise HTTPException(409, "Convert unavailable parts before ordering this model.")
         amount = checkout_price_cents(quote)
-        if imported or request.quantity > 1:
-            # Pin the exact BOM that was priced, rather than using any existing
-            # artifact attached to the original import.
-            inventory = {(item.part_id.removesuffix('.dat'), item.color_id): item.quantity
-                         for item in quote.parts_breakdown}
-            if not inventory:
-                raise HTTPException(409, "Kit parts list is unavailable.")
-            csv = fulfillment_csv(inventory)
-            checksum = sha256(csv.encode()).hexdigest()
-            parts_list_csv_url = await generation_storage.store_order_parts_snapshot(request.generationId, checksum, csv)
+        if not quote.parts_breakdown:
+            raise HTTPException(409, "Kit parts list is unavailable.")
+        csv = brickwith_csv((item.part_id, item.color_id, item.sku, item.quantity) for item in quote.parts_breakdown)
+        checksum = sha256(csv.encode()).hexdigest()
+        parts_list_csv_url = await generation_storage.store_order_parts_snapshot(request.generationId, checksum, csv)
         pricing = quote.order_pricing
         track_api_call(endpoint="/create-checkout-session", user_id=user_email,
                        request_data={"generationId": request.generationId, "uiMode": request.uiMode, "priceCents": amount})

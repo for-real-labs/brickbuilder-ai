@@ -313,7 +313,7 @@ def test_a_completed_job_exports_the_model_instructions_usage_and_owner_design(t
     ldraw = saved[f"build/{fable.INSTRUCTIONS_FILE}"].decode()
     assert ldraw.startswith("0 Cabin") and "0 STEP" in ldraw and "3020.dat" in ldraw
     storage.store_model_file.assert_awaited_once_with("build", ldraw, "ldr", raise_on_error=True)
-    storage.store_parts_list_csv.assert_awaited_once_with("build", ldraw, raise_on_error=True)
+    storage.store_parts_list_csv.assert_awaited_once_with("build", ldraw, raise_on_error=True, supplier_parts=False)
     assert storage.store_preview_image.await_args.args[1].startswith(b"\x89PNG")
     storage.store_images.assert_not_awaited()
     storage.update_status.assert_awaited_with("build", "completed")
@@ -590,12 +590,14 @@ def test_pip_builds_with_only_the_supplied_set_colors_and_counts(tmp_path, monke
     monkeypatch.setattr(fable_app, "_client", lambda *_: client)
     storage, publish = web_storage(monkeypatch)
     request = nova.NovaToBricksRequest(prompt="Build a tower", max_parts=100, parts_inventory={
-        "name": "Tiny set", "source": "set", "parts": [{"part_id": "3005", "color_id": 4, "quantity": 1}]})
+        "name": "Tiny set", "source": "set", "parts": [{"part_id": "3005", "color_id": 4, "quantity": 1},
+            {"part_id": "4073", "color_id": 46, "quantity": 20}]})
     assert request.building_agent == PIP_AGENT
     error = asyncio.run(fable._build("build", request, PIP_AGENT, FABLE_AGENTS[PIP_AGENT], None, None, "test",
                                      on_progress=AsyncMock()))
     assert error is None
     observed = json.dumps(client.requests, ensure_ascii=False)
+    assert "4073 46 20" not in observed
     assert "3005 4 1" in observed and "2 used, 1 available" in observed
     assert "Red (4) × 1" in observed and "1 colors" in observed
     from src.utils.parts_catalog import flat_model_inventory
@@ -659,3 +661,15 @@ def test_a_busy_pip_inventory_build_never_contacts_nova(monkeypatch):
         asyncio.run(nova.nova_to_bricks(request, ACCOUNT))
     assert refused.value.status_code == 503
     nova._nova_service.assert_not_called()
+
+
+def test_final_export_cannot_bypass_the_supplier_palette(monkeypatch):
+    def publish(prompt, root, options, **kwargs):
+        target = root / "published"
+        target.mkdir(parents=True)
+        (target / "model.ldr").write_text("1 46 0 0 0 1 0 0 0 1 0 0 0 1 4073.dat")
+        return SimpleNamespace(published={"path": "published"})
+
+    monkeypatch.setattr(fable, "start_build", publish)
+    with pytest.raises(ValueError, match="4073.dat color 46"):
+        fable._run("A round plate", FABLE_AGENTS[PIP_AGENT], 50, None, None, "key", lambda *_: None)

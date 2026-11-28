@@ -7,7 +7,7 @@ import pytest
 
 from src.utils.parts_catalog import PartsCatalog, PartsUnavailable, flat_model_inventory, normalize_part_id
 from src.utils.supplier_catalog import DEFAULT_CATALOG
-from scripts.refresh_brickwith_catalog import catalog_csv, refresh, flight_chunks
+from scripts.refresh_brickwith_catalog import catalog_csv, refresh, flight_chunks, studio_pairs
 
 CATALOG = ('part_id,color_id,name,sku,unit_price,weight_kg,max_quantity\n'
            '3001,4,Brick 2 x 4,A,0.15,0.00219,4\n'
@@ -83,7 +83,7 @@ def product(count=1, price='0.15'):
 
 
 def test_storefront_adapter_maps_colors_and_grams_and_retains_unmapped_variants():
-    content, counts = catalog_csv([product()], [{'color_id': '010', 'ldraw_color_id': '4'}])
+    content, counts = catalog_csv([product()], [{'color_id': '010', 'ldraw_color_id': '4'}], {('3001', 4)})
     part = PartsCatalog.from_csv(content).parts[('3001', 4)]
     assert part.weight_kg == Decimal('.00219') and part.unit_price == Decimal('.15')
     assert counts['variants'] == 1
@@ -91,14 +91,14 @@ def test_storefront_adapter_maps_colors_and_grams_and_retains_unmapped_variants(
     content, counts = catalog_csv([product(), {**row, 'spu_code': 'sample', 'metadata': {
         'variantCount': 1, 'showVariants': [{'spu_code': 'sample', 'sku_code': 'sample-999999',
                                           'color_id': '999999', 'price': '1', 'weight': '3'}]}}],
-        [{'color_id': '010', 'ldraw_color_id': '4'}])
+        [{'color_id': '010', 'ldraw_color_id': '4'}], {('3001', 4)})
     assert counts['unmapped_variants'] == 1 and 'sample-999999' in content
 
 
 def test_refresh_does_not_overwrite_good_snapshot_on_truncated_variants(tmp_path):
     output = tmp_path / 'parts.csv'; output.write_text(CATALOG)
     class Source:
-        def palette_reference(self): return {'url': 'reference'}
+        def palette_reference(self): return {'url': 'reference'}, {('3001', 4)}
         def products(self): return [product(count=2)]
         def colors(self): return [{'color_id': '010', 'ldraw_color_id': '4'}]
     with pytest.raises(ValueError, match='truncated'):
@@ -116,7 +116,7 @@ def test_shipped_snapshot_is_complete_and_matches_its_provenance():
     assert hashlib.sha256(DEFAULT_CATALOG.read_bytes()).hexdigest() == metadata['sha256']
     catalog = PartsCatalog.load(DEFAULT_CATALOG)
     assert len(catalog.parts) == metadata['mapped_part_color_pairs']
-    assert metadata['variants'] == metadata['mapped_part_color_pairs'] + metadata['unmapped_variants']
+    assert metadata['variants'] == len({part.sku for part in catalog.parts.values()}) + metadata['unmapped_variants']
     assert catalog.parts[('3001', 4)].unit_price == Decimal('.15')
     assert catalog.parts[('3001', 36)].unit_price == Decimal('.22')
 
@@ -135,3 +135,18 @@ def test_nova_palette_removes_prices_and_supplier_metadata_but_preserves_limits(
     with pytest.raises(ValueError, match='No supplier price'):
         available.quote({('3001', 4): 1})
     assert catalog.quote({('3001', 4): 1})[0] == Decimal('0.15')
+
+
+def test_studio_palette_requires_exact_part_and_color_and_prices_verified_aliases():
+    strict = PartsCatalog.load(DEFAULT_CATALOG, studio_only=True)
+    pricing = PartsCatalog.load(DEFAULT_CATALOG)
+    assert ('4073', 46) not in strict.parts
+    assert strict.parts['6141', 46].sku == pricing.parts['4073', 46].sku == 'GDS-615-130'
+    assert strict.parts['60481', 0].sku == pricing.parts['60481a', 0].sku == 'GDS-618-080'
+    assert len(strict.parts) == json.loads(DEFAULT_CATALOG.with_suffix('.metadata.json').read_text())['studio_pairs']
+    palette = '~+Brickwith Parts\n13\n-1\n0 6141.dat\n1 Round plate\n2 46'
+    assert studio_pairs(palette) == {('6141', 46)}
+    with pytest.raises(ValueError):
+        studio_pairs(palette.rsplit('\n', 1)[0])
+    with pytest.raises(ValueError, match='Studio palette'):
+        PartsCatalog.from_csv(CATALOG, studio_only=True)

@@ -73,13 +73,15 @@ class PartsCatalog:
             raise ValueError("Parts catalog has no mapped, purchasable parts")
 
     @classmethod
-    def from_csv(cls, content: str, *, name: str = "Parts catalog") -> PartsCatalog:
+    def from_csv(cls, content: str, *, name: str = "Parts catalog", studio_only: bool = False) -> PartsCatalog:
         if len(content.encode()) > MAX_CATALOG_BYTES:
             raise ValueError("Parts catalog exceeds its size limit")
         reader = csv.DictReader(io.StringIO(content))
         required = {"part_id", "color_id"}
         if not required.issubset(reader.fieldnames or []):
             raise ValueError("Parts catalog is missing required columns")
+        if studio_only and "studio_part_id" not in reader.fieldnames:
+            raise ValueError("Supplier catalog is missing the Studio palette")
         parts = []
         for row in reader:
             if not row["part_id"] or not row["color_id"]:
@@ -92,16 +94,20 @@ class PartsCatalog:
             sku = row.get('sku') or f"{normalize_part_id(row['part_id'])}-{color}"
             if len(name) > 300 or len(sku) > 100:
                 raise ValueError("Invalid catalog description or SKU")
-            parts.append(CatalogPart(normalize_part_id(row["part_id"]), color,
-                name, sku, nonnegative_decimal(row["unit_price"]) if row.get('unit_price') else None,
-                nonnegative_decimal(row["weight_kg"]) if row.get('weight_kg') else None, limit))
+            identifiers = {row.get("studio_part_id")}
+            if not studio_only:
+                identifiers.add(row["part_id"])
+            for identifier in filter(None, identifiers):
+                parts.append(CatalogPart(normalize_part_id(identifier), color,
+                    name, sku, nonnegative_decimal(row["unit_price"]) if row.get('unit_price') else None,
+                    nonnegative_decimal(row["weight_kg"]) if row.get('weight_kg') else None, limit))
         return cls(parts, name=name)
 
     @classmethod
-    def load(cls, path: Path) -> PartsCatalog:
+    def load(cls, path: Path, *, studio_only: bool = False) -> PartsCatalog:
         if path.stat().st_size > MAX_CATALOG_BYTES:
             raise ValueError("Parts catalog exceeds its size limit")
-        return cls.from_csv(path.read_text(encoding="utf-8"), name=path.stem)
+        return cls.from_csv(path.read_text(encoding="utf-8"), name=path.stem, studio_only=studio_only)
 
     def validate(self, inventory: dict[tuple[str, int], int]) -> None:
         errors, quantities, limits = [], Counter(), {}
