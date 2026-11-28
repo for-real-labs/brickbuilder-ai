@@ -198,22 +198,27 @@
 .checkout-postcard-close { position: absolute; top: 12px; right: 12px; }
 .checkout-postcard-description { font-size: 14px; line-height: 1.6; color: #686c73; margin: 0; max-width: 510px; padding-right: 28px; }
 .checkout-postcard-example { margin: 24px 0; container-type: inline-size; }
-.checkout-postcard { --postcard-ink: #723c2f; --postcard-paper: #fff5e8; --postcard-background: linear-gradient(140deg, #ebc9ab, #f8e9d6 50%, #d59d80); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); width: 100%; aspect-ratio: 7.12 / 5.12; grid-template-rows: minmax(0, 1fr); min-height: 0; border-radius: 4px; background: var(--postcard-paper); box-shadow: 0 8px 24px #252b3614, 0 0 0 1px #252b3614; overflow: hidden; color: var(--postcard-ink); }
-.checkout-postcard-space { --postcard-ink: #282f61; --postcard-paper: #f0f0fb; --postcard-background: radial-gradient(circle at 18% 25%, #a8acf0 0, transparent 30%), radial-gradient(circle at 80% 80%, #bc93c1 0, transparent 40%), linear-gradient(135deg, #252943, #565883); }
-.checkout-postcard-ocean { --postcard-ink: #175664; --postcard-paper: #eff9f7; --postcard-background: radial-gradient(ellipse at top left, #d0f3e8, transparent 65%), linear-gradient(160deg, #7bb9c5, #cae6df 55%, #3d90a7); }
-.checkout-postcard-nature { --postcard-ink: #3b5c40; --postcard-paper: #f3f5e9; --postcard-background: radial-gradient(ellipse at top right, #e7e6b8, transparent 70%), linear-gradient(145deg, #8aa68a, #c7d5b0 50%, #69886f); }
-.checkout-postcard-architecture { --postcard-ink: #35485b; --postcard-paper: #f6f4ef; --postcard-background: repeating-linear-gradient(90deg, transparent 0 29px, #ffffff18 29px 30px), repeating-linear-gradient(0deg, transparent 0 29px, #ffffff18 29px 30px), linear-gradient(145deg, #8fabbc, #dce0de 55%, #8b9aa8); }
+.checkout-postcard { --postcard-ink: #723c2f; --postcard-paper: #fff5e8; --postcard-art-start: #ebc9ab; --postcard-art-middle: #f8e9d6; --postcard-art-end: #d59d80; --postcard-background: linear-gradient(140deg, var(--postcard-art-start), var(--postcard-art-middle) 50%, var(--postcard-art-end)); display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); width: 100%; aspect-ratio: 7.12 / 5.12; grid-template-rows: minmax(0, 1fr); min-height: 0; border-radius: 4px; background: var(--postcard-paper); box-shadow: 0 8px 24px #252b3614, 0 0 0 1px #252b3614; overflow: hidden; color: var(--postcard-ink); }
+.checkout-postcard-space { --postcard-ink: #282f61; --postcard-paper: #f0f0fb; --postcard-art-start: #252943; --postcard-art-middle: #3c4066; --postcard-art-end: #565883; --postcard-background: radial-gradient(circle at 18% 25%, #a8acf0 0, transparent 30%), radial-gradient(circle at 80% 80%, #bc93c1 0, transparent 40%), linear-gradient(135deg, var(--postcard-art-start), var(--postcard-art-end)); }
+.checkout-postcard-ocean { --postcard-ink: #175664; --postcard-paper: #eff9f7; --postcard-art-start: #7bb9c5; --postcard-art-middle: #cae6df; --postcard-art-end: #3d90a7; --postcard-background: radial-gradient(ellipse at top left, #d0f3e8, transparent 65%), linear-gradient(160deg, var(--postcard-art-start), var(--postcard-art-middle) 55%, var(--postcard-art-end)); }
+.checkout-postcard-nature { --postcard-ink: #3b5c40; --postcard-paper: #f3f5e9; --postcard-art-start: #8aa68a; --postcard-art-middle: #c7d5b0; --postcard-art-end: #69886f; --postcard-background: radial-gradient(ellipse at top right, #e7e6b8, transparent 70%), linear-gradient(145deg, var(--postcard-art-start), var(--postcard-art-middle) 50%, var(--postcard-art-end)); }
+.checkout-postcard-architecture { --postcard-ink: #35485b; --postcard-paper: #f6f4ef; --postcard-art-start: #8fabbc; --postcard-art-middle: #dce0de; --postcard-art-end: #8b9aa8; --postcard-background: repeating-linear-gradient(90deg, transparent 0 29px, #ffffff18 29px 30px), repeating-linear-gradient(0deg, transparent 0 29px, #ffffff18 29px 30px), linear-gradient(145deg, var(--postcard-art-start), var(--postcard-art-middle) 55%, var(--postcard-art-end)); }
 .checkout-postcard-art { padding: clamp(8px, 3cqw, 18px); min-height: 0; display: flex; flex-direction: column; justify-content: space-between; align-items: center; gap: 2cqw; background: var(--postcard-background); min-width: 0; }
 .checkout-postcard-model { width: 100%; height: 0; flex: 1; min-height: 0; position: relative; overflow: hidden; }
 .checkout-postcard-model > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 12px 12px #0002); }
 .checkout-postcard-model.is-interactive { cursor: grab; touch-action: none; }
 .checkout-postcard-model.is-interactive:active { cursor: grabbing; }
 .checkout-postcard-model .bg-gray-100 { background: transparent; border-radius: 0; }
-.checkout-postcard-model canvas { touch-action: none; }
+.checkout-postcard-model canvas { touch-action: none; filter: drop-shadow(0 12px 12px #0002); }
 .checkout-postcard-model canvas:focus-visible { outline-offset: -3px; }
 .checkout-postcard-view-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin: -10px 0 14px; color: #686c73; font-size: 11px; }
 .checkout-postcard-view-controls button { display: flex; align-items: center; gap: 6px; min-height: 40px; padding: 8px 10px; border: 1px solid #dce0e5; border-radius: 8px; background: #fff; color: #202124; }
 .checkout-postcard-view-controls button:disabled { opacity: .45; }
+.checkout-postcard-download { margin: 0 0 14px; }
+.checkout-postcard-download button { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; padding: 8px 12px; border: 1px solid #dce0e5; border-radius: 8px; background: #fff; color: #202124; font-size: 13px; }
+.checkout-postcard-download button:hover:not(:disabled) { background: #f3f4f6; }
+.checkout-postcard-download button:disabled { opacity: .45; cursor: default; }
+.checkout-postcard-download p { margin: 8px 0 0; color: #8a3026; font-size: 12px; }
 .checkout-postcard-details { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 4cqw 2.65cqw; min-width: 0; min-height: 0; }
 .checkout-postcard-details h3 { font-family: Georgia, serif; font-size: clamp(14px, 4cqw, 24px); font-weight: 400; line-height: 1.15; overflow-wrap: anywhere; margin: 2cqw 0 3cqw; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; flex-shrink: 0; }
 .checkout-postcard-qr { display: block; width: clamp(64px, 18.2cqw, 110px); aspect-ratio: 1; flex-shrink: 0; max-width: 100%; background: #fff; border: 1px solid #0001; }

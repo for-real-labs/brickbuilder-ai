@@ -1,10 +1,12 @@
 import React from 'react';
-import { Info, Package, RotateCcw, X } from 'lucide-react';
+import { Download, Info, Package, RotateCcw, X } from 'lucide-react';
 import QRCode from 'qrcode';
 import posthog from 'posthog-js';
 import { ThreeLDRViewer, type CameraState, type ExportCaptureApi } from '../ThreeLDRViewer';
 import { useBilling } from '../../contexts/BillingContext';
-import { instructionsUrl as getInstructionsUrl } from '../../utils/instructionLinks';
+import { NovaToBricksApiService } from '../../services/novaToBricksApi';
+import { getInstructionKey, instructionsUrl as getInstructionsUrl } from '../../utils/instructionLinks';
+import { renderPostcardFront } from '../../utils/postcardFront';
 
 export function getPostcardTheme(name: string) {
   if (/\b(space|galaxy|cosmic|star|rocket|planet|moon)\b/i.test(name)) return 'space';
@@ -43,15 +45,23 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
   const [viewVersion, setViewVersion] = React.useState(0);
   const [adjusted, setAdjusted] = React.useState(false);
   const [capturedImage, setCapturedImage] = React.useState<string | null>(null);
+  const [captureAvailable, setCaptureAvailable] = React.useState(false);
+  const [downloading, setDownloading] = React.useState(false);
+  const [downloadError, setDownloadError] = React.useState('');
   const camera = React.useRef<CameraState | undefined>(undefined);
   const captureApi = React.useRef<ExportCaptureApi | null>(null);
   const dialog = React.useRef<HTMLDialogElement>(null);
+  const card = React.useRef<HTMLDivElement>(null);
   const infoButton = React.useRef<HTMLButtonElement>(null);
   const descriptionId = React.useId();
   const instructionsUrl = getInstructionsUrl(generationId);
+  const instructionKey = getInstructionKey(generationId);
   const image = capturedImage || (modelImage && modelImage !== failedImage ? modelImage : null);
   const trackCamera = React.useCallback((view: CameraState) => { camera.current = view; }, []);
-  const captureReady = React.useCallback((api: ExportCaptureApi | null) => { captureApi.current = api; }, []);
+  const captureReady = React.useCallback((api: ExportCaptureApi | null) => {
+    captureApi.current = api;
+    setCaptureAvailable(Boolean(api));
+  }, []);
   const viewInteractionEnded = React.useCallback(() => {
     setAdjusted(true);
     posthog.capture('order_instructions_postcard_model_adjusted', { generation_id: generationId });
@@ -77,6 +87,39 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
     posthog.capture('order_instructions_postcard_model_reset', { generation_id: generationId });
   };
 
+  const downloadFront = async () => {
+    if (!instructionKey || !captureApi.current || !card.current || downloading) return;
+    setDownloading(true);
+    setDownloadError('');
+    try {
+      if (!await NovaToBricksApiService.instructionAccess(generationId, instructionKey)) {
+        setDownloadError('Open the postcard preview link from your order email to download the artwork.');
+        return;
+      }
+      if (!dialog.current?.open || !card.current) return;
+      const modelPng = captureApi.current?.captureCurrentViewPng(1024);
+      if (!modelPng) throw new Error('Model capture failed.');
+      const style = getComputedStyle(card.current);
+      const color = (name: string) => style.getPropertyValue(`--postcard-${name}`).trim();
+      const front = await renderPostcardFront(modelPng, modelName, instructionsUrl, {
+        paper: color('paper'), ink: color('ink'),
+        art: [color('art-start'), color('art-middle'), color('art-end')],
+      });
+      const url = URL.createObjectURL(front);
+      const link = document.createElement('a');
+      const name = modelName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 80);
+      link.href = url;
+      link.download = `${name || 'brickbuilder'}-postcard-front.png`;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+      posthog.capture('order_instructions_postcard_front_downloaded', { generation_id: generationId });
+    } catch {
+      setDownloadError('Could not download the postcard front. Try again once the 3D model is visible.');
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return <div className={`checkout-postcard-option ${selected ? 'is-selected' : ''}`}>
     <label><input type="checkbox" name="shipInstructionsPostcard" checked={selected} disabled={disabled} onChange={event => {
       onChange(event.target.checked);
@@ -98,7 +141,7 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
         <p id={descriptionId} className="checkout-postcard-description">Select this option to ship a post card with a QR code link to the instructions.</p>
         {featureAccess !== 'allowed' && <p className="checkout-postcard-access">Instructions are included with your kit. After purchase, open the link in your confirmation email or scan your postcard.</p>}
         <figure className="checkout-postcard-example" aria-label="7 by 5 inch instructions postcard with bleed (7.12 by 5.12 inches)">
-          <div className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
+          <div ref={card} className={`checkout-postcard checkout-postcard-${getPostcardTheme(modelName)}`}>
             <div className="checkout-postcard-art">
               <div className={`checkout-postcard-model ${modelContent ? 'is-interactive' : ''}`}>
                 {open && viewerVisible && modelContent ? <ThreeLDRViewer key={viewVersion} modelContent={modelContent} modelName={modelName} presentation="model" autoRotate={false} showModelControls={false} showBaseplate={false}
@@ -119,6 +162,12 @@ export function InstructionsPostcard({ selected, onChange, disabled, modelName, 
           </div>
         </figure>
         {modelContent && <div className="checkout-postcard-view-controls"><span>Drag to rotate · scroll or pinch to zoom</span><button type="button" disabled={!adjusted} onClick={resetView}><RotateCcw size={14} aria-hidden="true" />Reset view</button></div>}
+        {instructionKey && <div className="checkout-postcard-download">
+          <button type="button" disabled={!captureAvailable || downloading} onClick={() => void downloadFront()}>
+            <Download size={16} aria-hidden="true" />{downloading ? 'Preparing PNG…' : 'Download postcard front (PNG)'}
+          </button>
+          {downloadError && <p role="status">{downloadError}</p>}
+        </div>}
         <button type="button" className="checkout-primary" onClick={close}>Got it</button>
       </div>
     </dialog>

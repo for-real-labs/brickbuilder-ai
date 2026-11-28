@@ -594,7 +594,7 @@ export interface CameraState {
 
 export interface ExportCaptureApi {
   capturePreviewPng: () => string | null;
-  captureCurrentViewPng: () => string | null;
+  captureCurrentViewPng: (minimumEdge?: number) => string | null;
   capturePreviewVideo: () => Promise<{ blob: Blob; extension: 'mp4' | 'webm' } | null>;
 }
 
@@ -2000,11 +2000,19 @@ export function ThreeLDRViewer({
                       isCaptureInProgressRef.current = false;
                     }
                   },
-                  captureCurrentViewPng: () => {
+                  captureCurrentViewPng: (minimumEdge = 0) => {
+                    const size = renderer.getSize(new THREE.Vector2());
+                    const scale = Math.max(1, minimumEdge / Math.max(1, Math.min(size.x, size.y)));
                     isCaptureInProgressRef.current = true;
-                    try { return captureTransparentPreview(renderer, scene, camera); }
+                    try {
+                      if (scale > 1) renderer.setSize(Math.round(size.x * scale), Math.round(size.y * scale), false);
+                      return captureTransparentPreview(renderer, scene, camera);
+                    }
                     catch { return null; }
-                    finally { isCaptureInProgressRef.current = false; }
+                    finally {
+                      if (scale > 1) renderer.setSize(size.x, size.y, false);
+                      isCaptureInProgressRef.current = false;
+                    }
                   },
                   capturePreviewVideo: async () => {
                     isCaptureInProgressRef.current = true;
