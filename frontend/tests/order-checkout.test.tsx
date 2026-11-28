@@ -190,7 +190,7 @@ it('requires a state or province only for destinations that require it', async (
   }), 'auth-token');
 });
 
-it('updates the truck row with the selected destination and falls back to business days', async () => {
+it('shows fast or standard arrival estimates by destination when a quote is available', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
   vi.setSystemTime(new Date('2026-11-19T22:00:00Z'));
   try {
@@ -203,13 +203,15 @@ it('updates the truck row with the selected destination and falls back to busine
     });
     const summaryText = () => summary.textContent?.replaceAll(/\s/g, ' ').trim();
 
-    expect(summaryText()).toBe('Estimated arrival Dec 16 – 23');
+    expect(summaryText()).toBe('Estimated arrival Nov 30 – Dec 7 with fast shipping');
     await selectCountry('GB');
-    expect(summaryText()).toBe('Estimated arrival Dec 16 – 20');
+    expect(summaryText()).toBe('Estimated arrival Nov 28 – Dec 5 with fast shipping');
     await selectCountry('CN');
-    expect(summaryText()).toBe('Estimated arrival Dec 10 – 13');
+    expect(summaryText()).toBe('Estimated arrival Nov 25 – Dec 2 with fast shipping');
+    await selectCountry('AR');
+    expect(summaryText()).toBe('Estimated arrival Dec 10 – 22');
     await selectCountry('AQ');
-    expect(summaryText()).toBe('Estimated delivery: 8–12 business days');
+    expect(summaryText()).toBe('Delivery estimate unavailable for this destination');
   } finally {
     vi.useRealTimers();
   }

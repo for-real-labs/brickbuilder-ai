@@ -2,7 +2,8 @@ import brickwithTransitDays from '../data/brickwithTransitDays.json';
 
 type TransitMethods = { standard?: number[]; fast?: number[] };
 const transitByCountry: Readonly<Record<string, TransitMethods | undefined>> = brickwithTransitDays;
-const fulfillmentBusinessDays = 12;
+// Recent orders typically shipped within 1–4 business days. Allow five in the estimate.
+const fulfillmentBusinessDays = { min: 1, max: 5 };
 const warehouseDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai' });
 const shortDate = new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
 
@@ -51,13 +52,13 @@ function addBusinessDays(date: Date, days: number) {
 export function getEstimatedArrival(country: string, orderTime = new Date()) {
   if (!Object.hasOwn(transitByCountry, country)) return null;
   const methods = transitByCountry[country];
-  const transit = methods?.standard ?? methods?.fast;
+  const transit = methods?.fast ?? methods?.standard;
   if (!transit) return null;
 
   const orderDay = toWarehouseDay(orderTime);
   const day = orderDay.toISOString().slice(0, 10);
   const [minDelay, maxDelay] = busyPeriods.find(({ start, end }) => start <= day && day <= end)?.delay ?? [0, 0];
-  const earliest = addDays(addBusinessDays(orderDay, fulfillmentBusinessDays + minDelay), transit[0]);
-  const latest = addDays(addBusinessDays(orderDay, fulfillmentBusinessDays + maxDelay), transit[1]);
-  return shortDate.formatRange(earliest, latest);
+  const earliest = addDays(addBusinessDays(orderDay, fulfillmentBusinessDays.min + minDelay), transit[0]);
+  const latest = addDays(addBusinessDays(orderDay, fulfillmentBusinessDays.max + maxDelay), transit[1]);
+  return { dates: shortDate.formatRange(earliest, latest), fast: Boolean(methods?.fast) };
 }
