@@ -7,7 +7,7 @@ from fastapi import HTTPException
 from pydantic import ValidationError
 
 from src.requests import createCheckoutSession as checkout
-from src.requests.getPrice import GetPriceResponse
+from src.requests.getPrice import GetPriceResponse, PartPriceDetail
 from src.utils.order_pricing import price_order
 
 
@@ -19,9 +19,11 @@ def setup(monkeypatch):
     row = {'status': 'completed', 'user_type': 'authenticated', 'user_id': 'owner',
            'name': 'Test Frog', 'parts_list_csv_url': 'https://example.com/parts.csv'}
     storage = AsyncMock(return_value=row)
-    monkeypatch.setattr(checkout, 'generation_storage', SimpleNamespace(get_generation=storage, client=Mock()))
+    monkeypatch.setattr(checkout, 'generation_storage', SimpleNamespace(get_generation=storage, client=Mock(),
+        store_order_parts_snapshot=AsyncMock(return_value='https://example.com/snapshot.csv')))
     quote = GetPriceResponse(generation_id='g', total_price=50, total_parts=240,
-                            total_weight=0.1, unique_part_types=3, message='quote', order_pricing=price_order(50, .1))
+                            total_weight=0.1, unique_part_types=1, parts_breakdown=[PartPriceDetail(part_id='3001.dat', color_id=4,
+                                sku='red', quantity=240, unit_price=.2, total_price=48)], message='quote', order_pricing=price_order(50, .1))
     monkeypatch.setattr(checkout, 'get_price', AsyncMock(return_value=quote))
     create = Mock(return_value=SimpleNamespace(id='cs', url=None, client_secret='client-secret'))
     monkeypatch.setattr(checkout.stripe.checkout.Session, 'create', create)
@@ -46,7 +48,7 @@ def test_custom_checkout_uses_server_price_and_preserves_fulfillment(setup):
     assert params['payment_method_types'] == ['card']
     assert params['return_url'] == 'https://example.com/success?session_id={CHECKOUT_SESSION_ID}'
     assert 'success_url' not in params and 'cancel_url' not in params
-    assert params['metadata'].items() >= {'generationId': 'g', 'partsListCsvUrl': 'https://example.com/parts.csv', 'brickowlCartId': 'cart', 'shipInstructionsPostcard': 'false'}.items()
+    assert params['metadata'].items() >= {'generationId': 'g', 'partsListCsvUrl': 'https://example.com/snapshot.csv', 'brickowlCartId': 'cart', 'shipInstructionsPostcard': 'false'}.items()
     assert params['shipping_address_collection'] == {'allowed_countries': ['US']}
     assert result.client_secret == 'client-secret' and result.price_data.total_price == 50
 
@@ -295,7 +297,7 @@ def test_exact_imported_kit_pins_the_validated_bom(setup):
     snapshot = AsyncMock(return_value='https://example.com/verified.csv')
     checkout.generation_storage.store_order_parts_snapshot = snapshot
     run()
-    assert snapshot.call_args.args[2].splitlines() == ['LdrawId,LDrawColorId,Qty', '3001.dat,4,2']
+    assert snapshot.call_args.args[2].splitlines() == ['Part,Color,ProductId,ElementId,Quantity,LdrawId,LDrawColorId,Qty', ',,red,,2,3001.dat,4,2']
     assert create.call_args.kwargs['metadata']['partsListCsvUrl'] == 'https://example.com/verified.csv'
 
 
@@ -328,7 +330,7 @@ def test_multiple_kits_pin_combined_parts_and_charge_combined_quote(setup):
     checkout.generation_storage.store_order_parts_snapshot = snapshot
     run(quantity=3, priceCents=1)
     assert checkout.get_price.call_args.args[0].quantity == 3
-    assert snapshot.call_args.args[2].splitlines() == ['LdrawId,LDrawColorId,Qty', '3001.dat,4,6']
+    assert snapshot.call_args.args[2].splitlines() == ['Part,Color,ProductId,ElementId,Quantity,LdrawId,LDrawColorId,Qty', ',,red,,6,3001.dat,4,6']
     params = create.call_args.kwargs
     assert params['metadata']['quantity'] == '3'
     assert params['metadata']['partsListCsvUrl'] == 'https://example.com/combined.csv'

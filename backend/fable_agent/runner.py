@@ -83,11 +83,12 @@ class KitSettings:
     cache_dir: str | None = None
     max_placements: int = 6000
     inventory_csv: str | None = None
+    studio_only: bool = False
 
     def to_dict(self) -> dict:
         return {"ldraw_dir": self.ldraw_dir, "catalog_path": self.catalog_path,
                 "open_palette": self.open_palette, "cache_dir": self.cache_dir,
-                "max_placements": self.max_placements, "inventory_csv": self.inventory_csv}
+                "max_placements": self.max_placements, "inventory_csv": self.inventory_csv, "studio_only": self.studio_only}
 
 
 class ScriptRunner(Protocol):

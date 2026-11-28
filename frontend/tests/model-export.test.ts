@@ -98,3 +98,8 @@ it('downloads the named file and releases its temporary URL', () => {
   vi.runAllTimers();
   expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:model');
 });
+
+it('translates Studio mold numbers and transparent colors for BrickLink uploads', async () => {
+  const xml = await text(createModelExport(placement('3023b.dat', 43), 'Plate', 'xml').blob);
+  expect(xml).toContain('<ITEMID>3023</ITEMID><COLOR>15</COLOR>');
+});

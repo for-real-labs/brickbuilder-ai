@@ -22,6 +22,8 @@ from .request_limit_analytics import track_request_limit, daily_limit_value
 from .generation_retry_guard import retry_guard_error
 from .auth import subscription_required, supabase_client
 from .storage_upload import upload_artifact
+from .supplier_catalog import brickwith_csv, get_supplier_catalog
+from .parts_catalog import flat_model_inventory
 from .community_likes import is_community_likes_schema_error
 from .image_processing import convert_base64_to_png
 from .brickowl_utils import parse_ldr_file, generate_parts_list_csv
@@ -667,7 +669,8 @@ class GenerationStorage:
         self,
         generation_id: str,
         ldr_content: str,
-        raise_on_error: bool = False
+        raise_on_error: bool = False,
+        *, supplier_parts: bool = False
     ) -> Optional[str]:
         """
         Generate and store a parts list CSV from LDR content in Supabase Storage
@@ -682,8 +685,16 @@ class GenerationStorage:
         """
         try:
             # Generate the parts list CSV
-            csv_content = generate_parts_list_csv(ldr_content)
-            brick_count = sum(parse_ldr_file(ldr_content).values())
+            if supplier_parts:
+                inventory = flat_model_inventory(ldr_content)
+                catalog = get_supplier_catalog(studio_only=True)
+                catalog.validate(inventory)
+                csv_content = brickwith_csv((part, color, catalog.parts[part, color].sku, count)
+                                            for (part, color), count in inventory.items())
+                brick_count = sum(inventory.values())
+            else:
+                csv_content = generate_parts_list_csv(ldr_content)
+                brick_count = sum(parse_ldr_file(ldr_content).values())
             
             # Upload to Supabase Storage (timestamp for unique URL to bust CDN cache)
             timestamp = int(time.time())

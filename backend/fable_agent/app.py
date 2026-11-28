@@ -97,11 +97,12 @@ class Workbench:
         library = LDrawLibrary(settings.get("ldraw_dir"))
         cache = default_cache_dir()
         shapes = ShapeLibrary(library, cache)
+        studio_only = settings.get("method") == "lean-v2"
         palette = load_palette(library, settings.get("catalog_path"), open_palette=bool(settings.get("open_palette")),
-                               inventory_csv=settings.get("inventory_csv"))
+                               inventory_csv=settings.get("inventory_csv"), studio_only=studio_only)
         kit_settings = KitSettings(str(library.root), settings.get("catalog_path"),
                                    bool(settings.get("open_palette")), str(cache),
-                                   inventory_csv=settings.get("inventory_csv"))
+                                   inventory_csv=settings.get("inventory_csv"), studio_only=studio_only)
         # Whether the publication rules apply is fixed when the session starts, like repair.
         assembly = (AssemblyReview(library, shapes, ConnectorReview(ConnectorLibrary(library.root, cache)),
                                    vehicle=settings.get("vehicle"))
