@@ -243,3 +243,24 @@ def test_maximum_parts_persists_and_cannot_be_relaxed_on_subsequent_revisions():
         asyncio.run(storage.create_generation('owner', 'authenticated', 'Edit', 40,
             endpoint='llmToBricks', edit_generation_id=records[-1]['id'], max_parts=requested_limit))
         assert records[-1]['max_parts'] == (12 if requested_limit == 12 else 25)
+
+
+@pytest.mark.parametrize("part,color,sku", [("4073", 46, "GDS-615-130"), ("3001", 999, None)])
+def test_pip_saves_every_piece_with_or_without_a_supplier_sku(monkeypatch, part, color, sku):
+    from unittest.mock import AsyncMock, Mock
+    from src.utils.parts_catalog import parts_csv_inventory
+
+    storage = GenerationStorage.__new__(GenerationStorage)
+    storage.client = Mock()
+    storage._upload_file_to_storage = AsyncMock(return_value="saved.csv")
+    monkeypatch.setattr("src.utils.generation_storage.execute_query", AsyncMock())
+    placement = f"1 {color} 0 0 0 1 0 0 0 1 0 0 0 1 {part}.dat\n"
+    model = "1 4 0 0 0 1 0 0 0 1 0 0 0 1 3001.dat\n" + placement * 2
+    url = asyncio.run(storage.store_parts_list_csv("build", model, raise_on_error=True, supplier_parts=True))
+    assert url == "saved.csv"
+    csv = storage._upload_file_to_storage.await_args.kwargs["file_content"]
+    assert parts_csv_inventory(csv) == {("3001", 4): 1, (part, color): 2}
+    if sku:
+        assert sku in csv
+    else:
+        assert "ProductId" not in csv

@@ -40,8 +40,6 @@ from ..utils.generation_tasks import start_generation_task
 from ..utils.llm_output import run_with_output
 from ..utils.pip_source_model import source_script
 from ..utils.nova_service import INSTRUCTIONS_FILE
-from ..utils.parts_catalog import PartsCatalog, flat_model_inventory
-from ..utils.supplier_catalog import get_supplier_catalog
 from ..utils.parts_inventory import PartsInventory
 from ..utils.saved_parts_inventory import load_inventory, save_inventory
 from ..utils.prompt_parts_limit import tighter_parts_limit
@@ -175,19 +173,11 @@ def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | 
         if reference:
             picture = root / "reference-upload"
             picture.write_bytes(reference)
-        supplier = get_supplier_catalog(studio_only=True) if variant.method == "lean-v2" else None
-        allowed = supplier
         inventory_csv = None
         if inventory is not None:
-            if supplier is None:
-                raise ValueError("Choose Pip to build from a parts inventory.")
-            available = [part for part in inventory.parts if (part.part_id, part.color_id) in supplier.parts]
-            if not available:
-                raise ValueError("None of the supplied parts are available in the Brickwith palette.")
-            allowed = PartsCatalog([part for key, part in inventory.catalog().parts.items() if key in supplier.parts])
-            inventory_csv = allowed.to_palette_csv()
+            inventory_csv = inventory.catalog().to_palette_csv()
             # Keep the brief bounded on large sets. Every row is also accessible through lookup.
-            rows = [f"{p.part_id} {p.color_id} {p.quantity}" for p in available[:150]]
+            rows = [f"{p.part_id} {p.color_id} {p.quantity}" for p in inventory.parts[:150]]
             prompt += ("\n\nBuild only with the supplied parts. You may use fewer pieces. "
                        "Each row gives part ID, LDraw color and available quantity. "
                        "Use look_up for additional parts and exact quantities.\n" + "\n".join(rows))
@@ -204,16 +194,7 @@ def _run(prompt: str, variant: FableVariant, max_parts: int, reference: bytes | 
             raise ValueError("Fable could not finish a model that passes its checks. Try a simpler request.")
         published = root / "session" / result.published["path"]
         preview = published / "preview.png"
-        ldraw = (published / "model.ldr").read_text(encoding="utf-8")
-        if allowed is not None:
-            # Pip emits flat, stepped LDraw. Reject appended submodels instead of counting a prefix.
-            if any(line.split()[:2] == ["0", "FILE"] for line in ldraw.splitlines()):
-                raise ValueError("Pip exported a submodel instead of flat physical placements.")
-            physical = flat_model_inventory(ldraw)
-            allowed.validate(physical)
-            if inventory is not None:
-                supplier.validate(physical)
-        return Built(ldraw,
+        return Built((published / "model.ldr").read_text(encoding="utf-8"),
                      (published / "build.py").read_text(encoding="utf-8"),
                      preview.read_bytes() if preview.is_file() else None)
 
@@ -287,7 +268,7 @@ async def _build(generation_id, request, agent_id, variant, design, reference, k
                                                   processed_image_url=image)
         await generation_storage.store_model_file(generation_id, built.ldraw, "ldr", raise_on_error=True)
         await generation_storage.store_parts_list_csv(generation_id, built.ldraw, raise_on_error=True,
-                                                          supplier_parts=agent_id in PIP_AGENTS)
+                                                      supplier_parts=agent_id in PIP_AGENTS)
         if built.preview:
             await generation_storage.store_preview_image(generation_id, built.preview)
         await generation_storage.update_status(generation_id, "completed")

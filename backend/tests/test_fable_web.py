@@ -597,7 +597,7 @@ def test_pip_builds_with_only_the_supplied_set_colors_and_counts(tmp_path, monke
                                      on_progress=AsyncMock()))
     assert error is None
     observed = json.dumps(client.requests, ensure_ascii=False)
-    assert "4073 46 20" not in observed
+    assert "4073 46 20" in observed
     assert "3005 4 1" in observed and "2 used, 1 available" in observed
     assert "Red (4) × 1" in observed and "1 colors" in observed
     from src.utils.parts_catalog import flat_model_inventory
@@ -663,13 +663,11 @@ def test_a_busy_pip_inventory_build_never_contacts_nova(monkeypatch):
     nova._nova_service.assert_not_called()
 
 
-def test_final_export_cannot_bypass_the_supplier_palette(monkeypatch):
-    def publish(prompt, root, options, **kwargs):
-        target = root / "published"
-        target.mkdir(parents=True)
-        (target / "model.ldr").write_text("1 46 0 0 0 1 0 0 0 1 0 0 0 1 4073.dat")
-        return SimpleNamespace(published={"path": "published"})
+def test_pip_keeps_the_storefront_part_id_in_its_default_palette():
+    from fable_agent.palette import load_palette
 
-    monkeypatch.setattr(fable, "start_build", publish)
-    with pytest.raises(ValueError, match="4073.dat color 46"):
-        fable._run("A round plate", FABLE_AGENTS[PIP_AGENT], 50, None, None, "key", lambda *_: None)
+    library = Mock()
+    library.has_part.side_effect = lambda part: part in {"4073", "6141"}
+    palette = load_palette(library)
+    assert palette.allows("4073", 46)
+    assert not palette.allows("6141", 46)

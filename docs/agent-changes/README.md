@@ -8,6 +8,7 @@ New documents are written with the `agent-change-log` skill
 
 | Date | Agent | Change |
 |---|---|---|
+| 2026-11-27 | Pip agent | [Restore the original parts palette](2026-11-27-pip-agent-restore-storefront-palette.md) |
 | 2026-11-27 | Pip agent | [Verify the Brickwith Studio palette and use supplier SKUs for orders](2026-11-27-pip-agent-brickwith-palette.md) |
 | 2026-11-26 | Pip agent | [Build with an existing set](2026-11-26-pip-agent-existing-sets.md) |
 | 2026-11-26 | Nova | [Explicit selection in Generation settings](2026-11-26-nova-explicit-selection.md) |
