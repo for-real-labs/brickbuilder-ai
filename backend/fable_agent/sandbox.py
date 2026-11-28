@@ -154,7 +154,7 @@ def build_kit(settings: dict) -> Kit:
     cache = settings.get("cache_dir")
     shapes = ShapeLibrary(library, Path(cache) if cache else None)
     palette = load_palette(library, settings.get("catalog_path"), open_palette=bool(settings.get("open_palette")),
-                           inventory_csv=settings.get("inventory_csv"), studio_only=bool(settings.get("studio_only")))
+                           inventory_csv=settings.get("inventory_csv"))
     return Kit(library, shapes, palette, PartFinder(library, palette),
                max_placements=int(settings.get("max_placements", 6000)))
 

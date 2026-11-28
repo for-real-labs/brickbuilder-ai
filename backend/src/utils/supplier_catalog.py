@@ -12,17 +12,17 @@ DEFAULT_CATALOG = Path(__file__).resolve().parents[1] / "data/brickwith_parts.cs
 
 
 @lru_cache(maxsize=4)
-def _load(path: str, modified: int, studio_only: bool) -> PartsCatalog:
-    return PartsCatalog.load(Path(path), studio_only=studio_only)
+def _load(path: str, modified: int) -> PartsCatalog:
+    return PartsCatalog.load(Path(path))
 
 
 def catalog_path() -> Path:
     return Path(os.getenv("NOVA_PARTS_CATALOG", str(DEFAULT_CATALOG)))
 
 
-def get_supplier_catalog(*, studio_only: bool = False) -> PartsCatalog:
+def get_supplier_catalog() -> PartsCatalog:
     path = catalog_path()
-    return _load(str(path), path.stat().st_mtime_ns, studio_only)
+    return _load(str(path), path.stat().st_mtime_ns)
 
 
 def brickwith_csv(rows: Iterable[tuple[str, int, str, int]]) -> str:

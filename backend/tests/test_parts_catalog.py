@@ -138,7 +138,7 @@ def test_nova_palette_removes_prices_and_supplier_metadata_but_preserves_limits(
 
 
 def test_studio_palette_requires_exact_part_and_color_and_prices_verified_aliases():
-    strict = PartsCatalog.load(DEFAULT_CATALOG, studio_only=True)
+    strict = PartsCatalog.load(DEFAULT_CATALOG, id_column="studio_part_id")
     pricing = PartsCatalog.load(DEFAULT_CATALOG)
     assert ('4073', 46) not in strict.parts
     assert strict.parts['6141', 46].sku == pricing.parts['4073', 46].sku == 'GDS-615-130'
@@ -148,5 +148,5 @@ def test_studio_palette_requires_exact_part_and_color_and_prices_verified_aliase
     assert studio_pairs(palette) == {('6141', 46)}
     with pytest.raises(ValueError):
         studio_pairs(palette.rsplit('\n', 1)[0])
-    with pytest.raises(ValueError, match='Studio palette'):
-        PartsCatalog.from_csv(CATALOG, studio_only=True)
+    with pytest.raises(ValueError, match='studio_part_id'):
+        PartsCatalog.from_csv(CATALOG, id_column="studio_part_id")

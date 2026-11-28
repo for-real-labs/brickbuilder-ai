@@ -684,18 +684,23 @@ class GenerationStorage:
             The storage URL if successful, None if failed (when raise_on_error=False)
         """
         try:
-            # Generate the parts list CSV
+            csv_content = None
             if supplier_parts:
-                inventory = flat_model_inventory(ldr_content)
-                catalog = get_supplier_catalog(studio_only=True)
-                catalog.validate(inventory)
-                csv_content = brickwith_csv((part, color, catalog.parts[part, color].sku, count)
-                                            for (part, color), count in inventory.items())
-                brick_count = sum(inventory.values())
-            else:
+                # Supplier IDs enrich an export. A supplied inventory can include parts
+                # without a supplier SKU and must still save its complete LDraw BOM.
+                try:
+                    inventory = flat_model_inventory(ldr_content)
+                    catalog = get_supplier_catalog()
+                    if inventory.keys() <= catalog.parts.keys():
+                        csv_content = brickwith_csv((part, color, catalog.parts[part, color].sku, count)
+                                                    for (part, color), count in inventory.items())
+                        brick_count = sum(inventory.values())
+                except (OSError, ValueError):
+                    logger.warning("Supplier SKU export unavailable; saving the LDraw BOM", exc_info=True)
+            if csv_content is None:
                 csv_content = generate_parts_list_csv(ldr_content)
                 brick_count = sum(parse_ldr_file(ldr_content).values())
-            
+
             # Upload to Supabase Storage (timestamp for unique URL to bust CDN cache)
             timestamp = int(time.time())
             file_path = f"generations/{generation_id}/parts_list_{timestamp}.csv"

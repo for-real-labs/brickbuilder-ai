@@ -154,7 +154,7 @@ def catalog_csv(products: list[dict], colors: list[dict], palette: set[tuple[str
     catalog = PartsCatalog.from_csv(content, name="Brickwith")
     return content, {"products": len(products), "variants": variants,
                      "mapped_part_color_pairs": len(catalog.parts),
-                     "studio_pairs": len(PartsCatalog.from_csv(content, studio_only=True).parts),
+                     "studio_pairs": len(PartsCatalog.from_csv(content, id_column="studio_part_id").parts),
                      "unmapped_variants": unmapped}
 
 

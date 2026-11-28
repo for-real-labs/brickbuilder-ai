@@ -120,7 +120,7 @@ def nearest_color(library: LDrawLibrary, palette: Palette, part_id: str, color: 
 
 
 def load_palette(library: LDrawLibrary, catalog_path: Path | str | None = None, *, open_palette: bool = False,
-                 inventory_csv: str | None = None, studio_only: bool = False):
+                 inventory_csv: str | None = None):
     """The supplier inventory by default; ``open_palette`` lifts the restriction."""
     from src.utils.parts_catalog import PartsCatalog
 
@@ -131,7 +131,7 @@ def load_palette(library: LDrawLibrary, catalog_path: Path | str | None = None, 
         return palette
     if open_palette:
         return OpenPalette(library)
-    from src.utils.supplier_catalog import get_supplier_catalog
+    from src.utils.supplier_catalog import catalog_path as default_catalog_path
 
-    catalog = PartsCatalog.load(Path(catalog_path)) if catalog_path else get_supplier_catalog(studio_only=studio_only)
-    return CatalogPalette(catalog, library, catalog.name.replace("_", " "))
+    path = Path(catalog_path) if catalog_path else default_catalog_path()
+    return CatalogPalette(PartsCatalog.load(path, id_column="part_id"), library, path.stem.replace("_", " "))
