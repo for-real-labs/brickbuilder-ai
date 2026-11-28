@@ -11,23 +11,28 @@ The frontend/backend country snapshots are checked for parity by tests.
 
 The truck row shows an estimated arrival window based on the selected
 destination. `frontend/src/data/brickwithTransitDays.json` contains the
-English transit ranges returned by Brickwith's checkout quote service on
-November 19, 2026. The sample was one 478-piece kit with 782.257 g of parts.
-All 249 checkout destinations were queried by country with the same kit weight.
-Brickwith returned at least one method for 152 destinations. The remaining 97
-use the “Estimated delivery: 8–12 business days” fallback. The same quote was verified against
-the supplier checkout for the sample's US shipment. Other addresses or parcel
-weights may still receive a quote.
+English transit ranges from Brickwith's checkout quote service. On November 27,
+2026, all 249 destinations were rechecked using one 616-piece, 509.740 g kit.
+Brickwith returned the same ranges as the November 19 snapshot, with a method
+for 152 destinations and Fast for 18. The remaining 97 show that an estimate is
+unavailable. The sample's Utah ZIP returned 7–10 days for Fast and 8–15 for
+Standard. Postal codes, parcel weights, and carrier availability can affect quotes.
 
-The estimate uses Standard when available and Fast for destinations where
-Brickwith returned Fast only. It models dispatch at the end of Brickwith's
-published 12-business-day fulfillment window for 1–99 copies, adds announced
-busy-period extensions, and treats the carrier's quoted days as calendar days.
-The warehouse date uses China Standard Time, with published China holidays
-through 2027 excluded from fulfillment days. Dates roll forward as orders are
-placed. These are country-level estimates based on the sample shipment.
-Actual postal codes, parcel weights, and carrier availability can change them.
-Refresh the snapshot and holiday schedule when Brickwith changes its guidance.
+The estimate uses Fast where available and labels it in the checkout summary.
+Standard supplies the estimate for destinations without Fast. The shipping
+charge still uses the standard pricing calculation. The arrival window combines
+1–5 warehouse business days for typical processing, the published busy-period
+extensions, and the quoted transit range. In 16 matched order confirmations,
+dispatch notices, and delivery notices, warehouse processing took 1–2 weekdays
+and median carrier transit was about 8 calendar days. Brickwith allows up to 12
+business days for normal fulfillment of 1–99 copies. Its checkout does not
+specify a unit beyond days for carrier transit, so the estimate assumes calendar
+days based on the shipment history.
+
+The warehouse date uses China Standard Time and skips weekends and published
+China holidays through 2027. The supplier's Nov 27–Dec 9 and Dec 25–Jan 6 order
+windows add 7–10 business days. Its Jan 27–Feb 27 window adds 10–20 business
+days. Refresh the quotes and holiday schedule when Brickwith changes its guidance.
 
 Sources: [Brickwith shipping policy](https://www.brickwith.com/en/about/help/article/shipping-and-delivery),
 [Brickwith busy periods](https://www.brickwith.com/en/about/help/article/busy-periods-and-holidays-processing-updates),

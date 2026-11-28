@@ -89,6 +89,9 @@ function OrderCheckout() {
   const [country, setCountry] = React.useState<string>('US');
   const regionRequired = shippingCountries.find(destination => destination.code === country)?.requiresRegion === true;
   const estimatedArrival = getEstimatedArrival(country);
+  const deliveryEstimateLabel = estimatedArrival
+    ? `Estimated arrival ${estimatedArrival.dates}${estimatedArrival.fast ? ' with fast shipping' : ''}`
+    : 'Delivery estimate unavailable for this destination';
   const [argentinaTaxId, setArgentinaTaxId] = React.useState('');
   const [taxIdHelpOpen, setTaxIdHelpOpen] = React.useState(false);
   const [delivery, setDelivery] = React.useState<DeliveryDetails>(emptyDelivery);
@@ -342,7 +345,7 @@ function OrderCheckout() {
             </div>
             <div className="checkout-summary-benefits">
               <p aria-live="polite"><Truck size={16} aria-hidden="true" />
-                {estimatedArrival ? `Estimated arrival ${estimatedArrival}` : 'Estimated delivery: 8–12 business days'}
+                {deliveryEstimateLabel}
               </p>
             </div>
           </div>
