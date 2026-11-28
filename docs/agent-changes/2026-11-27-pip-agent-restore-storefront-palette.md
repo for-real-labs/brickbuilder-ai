@@ -2,6 +2,7 @@
 
 - **Date** 2026-11-27
 - **Agent** Pip agent (`pip-agent` and its first release)
+- **Pull request** [#431](https://github.com/for-real-labs/brickbuilder-ai/pull/431)
 
 ## What changed
 
